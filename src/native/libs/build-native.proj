@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
-    <NativeVersionFile Condition="'$(TargetOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <NativeVersionFile Condition="'$(TargetOS)' != 'windows' or '$(TargetsAndroid)' == 'true'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <AssemblyName>.NET Runtime</AssemblyName>
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
@@ -50,7 +50,8 @@
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
       <_KeepNativeSymbolsBuildArg Condition="'$(KeepNativeSymbols)' != 'false'"> -keepnativesymbols</_KeepNativeSymbolsBuildArg>
-      <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
+      <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'"> -DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
+      <_CMakeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)$(_MonoWasmMTCMakeArgs)"</_CMakeArgs>
 
       <!--
         BuildNativeCompiler is a pass-through argument, to pass an argument to build-native.sh. It is intended to be
@@ -73,12 +74,31 @@
     <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" />
   </Target>
 
+  <!-- 
+    This is a workaround when cross-compiling on Windows for Android. 
+
+    https://github.com/dotnet/arcade/issues/15496
+  -->
+  <Target Name="_BeforeAndroidNativeVersionFile" BeforeTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsAndroid)' == 'true'">
+    <PropertyGroup>
+      <NativeVersionFile>$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    </PropertyGroup>
+  </Target>
+  <Target Name="_AfterAndroidNativeVersionFile" AfterTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsAndroid)' == 'true'">
+    <PropertyGroup>
+      <NativeVersionFile>$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="BuildNativeWindows"
           DependsOnTargets="GenerateNativeVersionFile"
           BeforeTargets="Build"
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
+        <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">-DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
+        <_MonoWasmMTCMakeArgs Condition="'$(CMakeArgs)' != ''"> $(_MonoWasmMTCMakeArgs)</_MonoWasmMTCMakeArgs>
+        <_BuildNativeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != ''">$(_BuildNativeArgs) -cmakeargs "$(CMakeArgs)$(_MonoWasmMTCMakeArgs)"</_BuildNativeArgs>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>

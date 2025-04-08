@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 11
+#define READYTORUN_MAJOR_VERSION 12
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 11
+#define MINIMUM_READYTORUN_MAJOR_VERSION 12
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -39,6 +39,7 @@
 // R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis, disable support for LogMethodEnter helper
 // R2R Version 10.1 adds Unbox_TypeTest helper
 // R2R Version 11 uses GCInfo v4, which encodes safe points without -1 offset and does not track return kinds in GCInfo
+// R2R Version 12 requires all return buffers to be always on the stack
 
 struct READYTORUN_CORE_HEADER
 {

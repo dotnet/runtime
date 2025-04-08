@@ -1,0 +1,26 @@
+name: check-no-merge-label
+
+permissions:
+  pull-requests: read
+
+on:
+  pull_request_target:
+    types: [labeled, unlabeled]
+    branches:
+      - 'main'
+      - 'release/**'
+
+jobs:
+  check-labels:
+    if: github.repository == 'dotnet/runtime'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check 'NO-MERGE' label
+      run: |
+        echo "Merging permission is disabled when the 'NO-MERGE' label is applied."
+        if [ "${{ contains(github.event.pull_request.labels.*.name, 'NO-MERGE') }}" = "false" ]; then
+          exit 0
+        else
+          echo "::error:: The 'NO-MERGE' label was applied to the PR. Merging is disabled."
+          exit 1
+        fi

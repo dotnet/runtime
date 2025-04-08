@@ -66,6 +66,9 @@
   <data name="Arg_EmptyOrNullString" xml:space="preserve">
     <value>String cannot be empty or null.</value>
   </data>
+  <data name="Arg_EmptyOrNullString_Named" xml:space="preserve">
+    <value>The `{0}` string cannot be empty or null.</value>
+  </data>
   <data name="Arg_EmptySpan" xml:space="preserve">
     <value>Span may not be empty.</value>
   </data>
@@ -120,6 +123,9 @@
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
   </data>
+  <data name="Argument_SignatureContextTooLong255" xml:space="preserve">
+    <value>The specified signature context exceeds the maximum length of 255 bytes.</value>
+  </data>
   <data name="Argument_StreamNotReadable" xml:space="preserve">
     <value>Stream was not readable.</value>
   </data>
@@ -128,6 +134,9 @@
   </data>
   <data name="Argument_BitsMustBeWholeBytes" xml:space="preserve">
     <value>The value specified in bits must be a whole number of bytes.</value>
+  </data>
+  <data name="Argument_PasswordNullChars" xml:space="preserve">
+    <value>The password contains a Unicode 'NULL' character, which is not permitted.</value>
   </data>
   <data name="Argument_PemEncoding_NoPemFound" xml:space="preserve">
     <value>No PEM encoded data found.</value>
@@ -278,6 +287,9 @@
   </data>
   <data name="Cryptography_ConcurrentUseNotSupported" xml:space="preserve">
     <value>Concurrent operations from multiple threads on this type are not supported.</value>
+  </data>
+  <data name="Cryptography_Cms_UnknownAlgorithm" xml:space="preserve">
+    <value>Unknown algorithm '{0}'.</value>
   </data>
   <data name="Cryptography_CngKeyWrongAlgorithm" xml:space="preserve">
     <value>This key is for algorithm '{0}'. Expected '{1}'.</value>
@@ -480,6 +492,9 @@
   <data name="Cryptography_KeyTooSmall" xml:space="preserve">
     <value>The key is too small for the requested operation.</value>
   </data>
+  <data name="Cryptography_KeyWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The specified key is not the correct size for the indicated algorithm.</value>
+  </data>
   <data name="Cryptography_MatchBlockSize" xml:space="preserve">
     <value>The specified plaintext size is not valid for the padding and block size.</value>
   </data>
@@ -573,8 +588,38 @@
   <data name="Cryptography_Pkcs_PssParametersSaltMismatch" xml:space="preserve">
     <value>PSS salt size {0} is not supported by this platform with hash algorithm {1}.</value>
   </data>
+  <data name="Cryptography_Pkcs12_CannotProcessEncryptedSafeContents" xml:space="preserve">
+    <value>This operation is not valid on an encrypted or enveloped Pkcs12SafeContents.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_CertBagNotX509" xml:space="preserve">
+    <value>The Pkcs12CertBag contents are not an X.509 certificate.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_PfxIsSealed" xml:space="preserve">
+    <value>The Pkcs12Builder can no longer be modified because one of the Seal methods was already invoked.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_PfxMustBeSealed" xml:space="preserve">
+    <value>One of the Seal methods must be invoked on the Pkcs12Builder before invoking an Encode method.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_SafeContentsIsEncrypted" xml:space="preserve">
+    <value>Cannot enumerate the contents of an encrypted or enveloped Pkcs12SafeContents.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_SafeContentsIsReadOnly" xml:space="preserve">
+    <value>New Pkcs12SafeBag values cannot be added to a Pkcs12SafeContents that was read from existing data.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_WrongModeForDecrypt" xml:space="preserve">
+    <value>This decryption operation applies to 'Pkcs12ConfidentialityMode.{0}', but the target object is in 'Pkcs12ConfidentialityMode.{1}'.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_WrongModeForVerify" xml:space="preserve">
+    <value>This verification operation applies to 'Pkcs12IntegrityMode.{0}', but the target object is in 'Pkcs12IntegrityMode.{1}'.</value>
+  </data>
   <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
     <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
+  </data>
+  <data name="Cryptography_Pkcs9_AttributeMismatch" xml:space="preserve">
+    <value>The parameter should be a PKCS 9 attribute.</value>
+  </data>
+  <data name="Cryptography_Pkcs9_MultipleSigningTimeNotAllowed" xml:space="preserve">
+    <value>Cannot add multiple PKCS 9 signing time attributes.</value>
   </data>
   <data name="Cryptography_PlaintextCiphertextLengthMismatch" xml:space="preserve">
     <value>Plaintext and ciphertext must have the same length.</value>
@@ -782,6 +827,12 @@
   </data>
   <data name="HashNameMultipleSetNotSupported" xml:space="preserve">
     <value>Setting the hashname after it's already been set is not supported on this platform.</value>
+  </data>
+  <data name="InvalidOperation_DuplicateItemNotAllowed" xml:space="preserve">
+    <value>Duplicate items are not allowed in the collection.</value>
+  </data>
+  <data name="InvalidOperation_WrongOidInAsnCollection" xml:space="preserve">
+    <value>AsnEncodedData element in the collection has wrong Oid value: expected = '{0}', actual = '{1}'.</value>
   </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started. Call MoveNext.</value>

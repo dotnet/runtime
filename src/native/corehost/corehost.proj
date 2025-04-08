@@ -13,14 +13,11 @@
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OutputRID).$(Configuration)\</IntermediateOutputRootPath>
     <!-- Global location for version files -->
     <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
-    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows)) or '$(TargetsAndroid)' == 'true'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="$(CoreClrProjectRoot)tools/InjectResource/InjectResource.csproj" ReferenceOutputAssembly="false" OutputItemType="InjectResourceTool"/>
-  </ItemGroup>
+  <Target Name="CopySingleFileHost" AfterTargets="Build">
 
-  <Target Name="PrepareSingleFileHostWithEmbeddedDacPrereqs">
     <PropertyGroup>
       <SingleFileHostPath>$(CoreCLRArtifactsPath)/corehost/singlefilehost$(ExeSuffix)</SingleFileHostPath>
       <DacPath>$(CoreCLRArtifactsPath)/mscordaccore$(LibSuffix)</DacPath>
@@ -36,32 +33,13 @@
       <SingleFileHostSymbolsPath>$(CoreCLRArtifactsPath)/corehost/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsPath>
       <SingleFileHostSymbolsDestinationPath>$(DotNetHostBinDir)/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsDestinationPath>
     </PropertyGroup>
-  </Target>
 
-  <!--
-    Target that copies the singlefilehost and embeds the DAC into it.
-    We embed the DAC now instead of during the native build because we need to sign the DAC and signing the DAC during CMake would be ugly.
-  -->
-  <Target Name="PrepareSingleFileHostWithEmbeddedDacCore"
-    Inputs="$(SingleFileHostPath);
-            $(SingleFileHostSymbolsPath);
-            $(DacPath);
-            @(InjectResourceTool)"
-    Outputs="$(SingleFileHostDestinationPath);$(SingleFileHostSymbolsDestinationPath)"
-    DependsOnTargets="ResolveProjectReferences"
-    Condition="'$(RuntimeFlavor)' != 'Mono' and
-               Exists('$(SingleFileHostPath)')">
-    <Copy SourceFiles="$(SingleFileHostPath)" DestinationFiles="$(SingleFileHostDestinationPath)" />
-    <Exec Condition="'$(TargetOS)' == 'windows'"
-          Command="&quot;$(DotNetTool)&quot; exec @(InjectResourceTool) --bin &quot;$(DacPath)&quot; --image &quot;$(SingleFileHostDestinationPath)&quot; --name MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER" />
+    <Copy SourceFiles="$(SingleFileHostPath)" DestinationFiles="$(SingleFileHostDestinationPath)" Condition="Exists('$(SingleFileHostPath)')" />
+    <Copy SourceFiles="$(SingleFileHostSymbolsPath)" DestinationFiles="$(SingleFileHostSymbolsDestinationPath)" Condition="Exists('$(SingleFileHostSymbolsPath)')" />
 
     <!-- Copy symbols if they exist. We may not have separate symbols if they were not stripped from the native binary itself. -->
     <Copy SourceFiles="$(SingleFileHostSymbolsPath)" DestinationFiles="$(SingleFileHostSymbolsDestinationPath)" Condition="Exists('$(SingleFileHostSymbolsPath)')" />
   </Target>
-
-  <Target Name="PrepareSingleFileHostWithEmbeddedDac"
-          DependsOnTargets="PrepareSingleFileHostWithEmbeddedDacPrereqs;PrepareSingleFileHostWithEmbeddedDacCore"
-          AfterTargets="Build"/>
 
   <!-- Target that builds dotnet, hostfxr and hostpolicy with the same version as what NetCoreApp will be built for
        since the build produced artifacts should always version the same (even if they may not get used).
@@ -113,6 +91,22 @@
     <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
+  <!-- 
+    This is a workaround when cross-compiling on Windows for Android. 
+
+    https://github.com/dotnet/arcade/issues/15496
+  -->
+  <Target Name="_BeforeAndroidNativeVersionFile" BeforeTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsAndroid)' == 'true'">
+    <PropertyGroup>
+      <NativeVersionFile>$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    </PropertyGroup>
+  </Target>
+  <Target Name="_AfterAndroidNativeVersionFile" AfterTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsAndroid)' == 'true'">
+    <PropertyGroup>
+      <NativeVersionFile>$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    </PropertyGroup>
+  </Target>
+  
   <Target Name="BuildCoreHostWindows"
           Condition="'$(TargetOS)' == 'windows'"
           AfterTargets="Build"

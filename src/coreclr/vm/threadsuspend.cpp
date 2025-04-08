@@ -613,8 +613,8 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     #endif
     if (pData->fWriteToStressLog)
     {
-        STRESS_LOG5(LF_EH, LL_INFO100, "TAStackCrawlCallBack: STACKCRAWL method:%pM ('%s'), offset %x, Frame:%p, FrameVtable = %pV\n",
-            pMD, METHODNAME(pMD), pCf->IsFrameless()?pCf->GetRelOffset():0, pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+        STRESS_LOG5(LF_EH, LL_INFO100, "TAStackCrawlCallBack: STACKCRAWL method:%pM ('%s'), offset %x, Frame:%p, FrameIdentifier = %s\n",
+            pMD, METHODNAME(pMD), pCf->IsFrameless()?pCf->GetRelOffset():0, pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     }
     #undef METHODNAME
 
@@ -2512,7 +2512,7 @@ bool ThreadStore::IsTrappingThreadsForSuspension()
 
 #ifdef FEATURE_HIJACK
 
-void RedirectedThreadFrame::ExceptionUnwind()
+void RedirectedThreadFrame::ExceptionUnwind_Impl()
 {
     CONTRACTL
     {
@@ -2671,7 +2671,7 @@ void Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFram
         RaiseException(EXCEPTION_HIJACK, 0, 0, NULL);
     }
     __except (++filter_count == 1
-            ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), (RedirectedThreadFrame*)pFrame, pCtx, dwLastError)
+            ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), dac_cast<PTR_RedirectedThreadFrame>(pFrame), pCtx, dwLastError)
             : EXCEPTION_CONTINUE_SEARCH)
     {
         _ASSERTE(!"Reached body of __except in Thread::RedirectedHandledJITCase");
@@ -2699,7 +2699,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     INDEBUG(Thread::ObjectRefFlush(pThread));
 
     // Create a frame on the stack
-    FrameWithCookie<RedirectedThreadFrame> frame(pCtx);
+    RedirectedThreadFrame frame(pCtx);
 
     STRESS_LOG5(LF_SYNC, LL_INFO1000, "In RedirectedHandledJITcase reason 0x%x pFrame = %p pc = %p sp = %p fp = %p", reason, &frame, GetIP(pCtx), GetSP(pCtx), GetFP(pCtx));
 
@@ -3766,10 +3766,9 @@ ThrowControlForThread(
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    *(TADDR*)pfef = FaultingExceptionFrame::GetMethodFrameVPtr();
-    *pfef->GetGSCookiePtr() = GetProcessGSCookie();
+    ((Frame*)pfef)->Init(FrameIdentifier::FaultingExceptionFrame);
 #else // FEATURE_EH_FUNCLETS
-    FrameWithCookie<FaultingExceptionFrame> fef;
+    FaultingExceptionFrame fef;
     FaultingExceptionFrame *pfef = &fef;
 #endif // FEATURE_EH_FUNCLETS
     pfef->InitAndLink(pThread->m_OSContext);
@@ -4843,7 +4842,8 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
 }
 
 HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args)
-           : m_ReturnAddress((TADDR)returnAddress),
+           : Frame(FrameIdentifier::HijackFrame),
+             m_ReturnAddress((TADDR)returnAddress),
              m_Thread(thread),
              m_Args(args)
 {
@@ -4879,7 +4879,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 
     // Build a frame so that stack crawling can proceed from here back to where
     // we will resume execution.
-    FrameWithCookie<HijackFrame> frame((void *)pArgs->ReturnAddress, thread, pArgs);
+    HijackFrame frame((void *)pArgs->ReturnAddress, thread, pArgs);
 
 #ifdef _DEBUG
     BOOL GCOnTransition = FALSE;
@@ -5805,7 +5805,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     {
         // If the thread is at a GC safe point, push a RedirectedThreadFrame with
         // the interrupted context and pulse the GC mode so that GC can proceed.
-        FrameWithCookie<RedirectedThreadFrame> frame(interruptedContext);
+        RedirectedThreadFrame frame(interruptedContext);
 
         frame.Push(pThread);
 

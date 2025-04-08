@@ -89,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType declType = type.GetClosestDefType();
 
-            for (int interfaceIndex = 0; interfaceIndex < declType.RuntimeInterfaces.Length; interfaceIndex++)
+            for (int interfaceIndex = declType.RuntimeInterfaces.Length - 1; interfaceIndex >= 0; interfaceIndex--)
             {
                 DefType interfaceType = declType.RuntimeInterfaces[interfaceIndex];
                 InstantiatedType interfaceOnDefinitionType = interfaceType.IsTypeDefinition ?
@@ -179,7 +179,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (!declMethod.Signature.IsStatic && !needsEntriesForInstanceInterfaceMethodImpls)
                         continue;
 
-                    if(!interfaceType.IsTypeDefinition)
+                    if (!interfaceType.IsTypeDefinition)
                         declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)definitionInterfaceType);
 
                     var implMethod = declMethod.Signature.IsStatic ?

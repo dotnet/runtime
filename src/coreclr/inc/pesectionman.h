@@ -99,10 +99,6 @@ class PESection : public CeeSectionImpl {
                             CeeSectionRelocType reloc = srRelocHighLow,
                             CeeSectionRelocExtra *extra=0);
 
-    // Add a base reloc for the given offset in the current section
-    HRESULT addBaseReloc(unsigned offset, CeeSectionRelocType reloc = srRelocHighLow,
-                            CeeSectionRelocExtra *extra = 0);
-
     // section name
     unsigned char *name() {
         LIMITED_METHOD_CONTRACT;

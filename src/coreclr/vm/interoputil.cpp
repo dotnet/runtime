@@ -1404,22 +1404,8 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
     }
     CONTRACTL_END;
 
-    if (g_fComStarted == FALSE)
-    {
-        FinalizerThread::GetFinalizerThread()->SetRequiresCoInitialize();
-
-        // Attempt to set the thread's apartment model (to MTA by default). May not
-        // succeed (if someone beat us to the punch). That doesn't matter (since
-        // CLR objects are now apartment agile), we only care that a CoInitializeEx
-        // has been performed on this thread by us.
-        if (fCoInitCurrentThread)
-            GetThread()->SetApartment(Thread::AS_InMTA);
-
-        // set the finalizer event
-        FinalizerThread::EnableFinalization();
-
-        g_fComStarted = TRUE;
-    }
+    // COM is expected to be started on finalizer thread during startup
+    _ASSERTE(g_fComStarted);
 }
 
 HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
@@ -1436,15 +1422,8 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
 
     HRESULT hr = S_OK;
 
-    if (!g_fComStarted)
-    {
-        GCX_COOP();
-        EX_TRY
-        {
-            EnsureComStarted(fCoInitCurrentThread);
-        }
-        EX_CATCH_HRESULT(hr);
-    }
+    // COM is expected to be started on finalizer thread during startup
+    _ASSERTE(g_fComStarted);
 
     return hr;
 }
@@ -3913,8 +3892,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
     SafeComHolder<IUnknown> pUnk        = NULL;
-    int                 cch         = 0;
-    CHAR                szIID[GUID_STR_BUFFER_LEN];
+    CHAR                szIID[MINIPAL_GUID_BUFFER_LEN];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 
@@ -3922,8 +3900,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     {
         pCurrCtx = GetCurrentCtxCookie();
 
-        cch = GuidToLPSTR(iid, szIID);
-        _ASSERTE(cch > 0);
+        minipal_guid_as_string(iid, szIID, MINIPAL_GUID_BUFFER_LEN);
 
         if (SUCCEEDED(hrArg))
         {

@@ -272,7 +272,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public sealed override bool HasConditionalStaticDependencies
+        public override bool HasConditionalStaticDependencies
         {
             get
             {
@@ -323,7 +323,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
 
@@ -353,7 +353,7 @@ namespace ILCompiler.DependencyAnalysis
                     "Information about static bases for type with template"));
             }
 
-            if (!_type.IsGenericDefinition && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 foreach (DefType iface in _type.RuntimeInterfaces)
                 {
@@ -1135,7 +1135,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (!_type.IsTypeDefinition)
                 {
-                    IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
+                    IEETypeNode typeDefNode = factory.MaximallyConstructableType(_type) == this ?
+                        factory.ConstructedTypeSymbol(_type.GetTypeDefinition()) : factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(typeDefNode, RelocType.IMAGE_REL_BASED_RELPTR32);
                     else
@@ -1312,7 +1313,8 @@ namespace ILCompiler.DependencyAnalysis
                 // If the whole program view contains a reference to a preallocated RuntimeType
                 // instance for this type, generate a reference to it.
                 // Otherwise, generate as zero to save size.
-                if (!_type.Type.IsCanonicalSubtype(CanonicalFormKind.Any)
+                if (!relocsOnly
+                    && !_type.Type.IsCanonicalSubtype(CanonicalFormKind.Any)
                     && _type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
                 {
                     builder.EmitPointerReloc(runtimeTypeObject);

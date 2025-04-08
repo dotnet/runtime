@@ -366,8 +366,6 @@ namespace Internal.Runtime
     {
         private IntPtr returnValue;
         private IntPtr returnValue2;
-        private IntPtr returnValue3;
-        private IntPtr returnValue4;
     }
 
     [StructLayout(LayoutKind.Sequential)]

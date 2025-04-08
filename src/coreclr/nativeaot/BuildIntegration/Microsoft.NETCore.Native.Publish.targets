@@ -64,18 +64,12 @@
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and '$(_targetOS)' == 'win'"
       Text="Cross-OS native compilation is not supported." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(_targetArchitecture)' != 'x64' and '$(_targetArchitecture)' != 'x86' and '$(_targetArchitecture)' != 'arm64' and '$(_targetArchitecture)' != 'arm'"
-      Text="Native compilation does not support targeting $(RuntimeIdentifier) yet." />
-
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(_hostArchitecture)' != 'x64' and '$(_hostArchitecture)' != 'x86' and '$(_hostArchitecture)' != 'arm64' and '$(_hostArchitecture)' != 'arm'"
-      Text="Native compilation can run on x64, x86, arm64 and arm hosts only." />
-
-    <Error Condition="'$(IlcHostPackagePath)' == '' and '$(RuntimePackagePath)' != '' and ('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64')"
+    <Error Condition="'$(IlcHostPackagePath)' == '' and '$(RuntimePackagePath)' != ''"
       Text="Add a PackageReference for '$(_hostPackageName)' to allow cross-compilation for $(_targetArchitecture)" />
 
     <!-- NativeAOT runtime pack assemblies need to be defined to avoid the default CoreCLR implementations being set as compiler inputs -->
-    <Error Condition="'@(PrivateSdkAssemblies)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
-    <Error Condition="'@(FrameworkAssemblies)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(PrivateSdkAssemblies)' == '' and '$(IlcUseNativeAOTRuntimePackLayout)' != 'true'" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(FrameworkAssemblies)' == '' and '$(IlcUseNativeAOTRuntimePackLayout)' != 'true'" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
 
     <ComputeManagedAssembliesToCompileToNative
       Assemblies="@(_ResolvedCopyLocalPublishAssets)"

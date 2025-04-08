@@ -28,15 +28,16 @@ namespace
     };
 }
 
-sdk_resolver::sdk_resolver(bool allow_prerelease) :
-    sdk_resolver({}, sdk_roll_forward_policy::latest_major, allow_prerelease)
+sdk_resolver::sdk_resolver(bool allow_prerelease)
+    : sdk_resolver({}, sdk_roll_forward_policy::latest_major, allow_prerelease)
 {
 }
 
-sdk_resolver::sdk_resolver(fx_ver_t version, sdk_roll_forward_policy roll_forward, bool allow_prerelease) :
-    requested_version(std::move(version)),
-    roll_forward(roll_forward),
-    allow_prerelease(allow_prerelease)
+sdk_resolver::sdk_resolver(fx_ver_t version, sdk_roll_forward_policy roll_forward, bool allow_prerelease)
+    : requested_version(std::move(version))
+    , roll_forward(roll_forward)
+    , allow_prerelease(allow_prerelease)
+    , has_custom_paths(false)
 {
 }
 
@@ -50,7 +51,7 @@ const fx_ver_t& sdk_resolver::get_requested_version() const
     return requested_version;
 }
 
-pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print_errors) const
+pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print_errors, pal::string_t* out_resolved_root) const
 {
     if (trace::is_enabled())
     {
@@ -60,20 +61,39 @@ pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print
             requested.empty() ? _X("latest") : requested.c_str(),
             to_policy_name(roll_forward),
             allow_prerelease ? _X("true") : _X("false"));
+        if (has_custom_paths)
+        {
+            trace::verbose(_X("  paths = ["));
+            for (const pal::string_t& path : paths)
+            {
+                trace::verbose(_X("    %s"), path.c_str());
+            }
+            trace::verbose(_X("  ]"));
+        }
     }
 
     pal::string_t resolved_sdk_path;
     fx_ver_t resolved_version;
 
-    vector<pal::string_t> locations;
-    get_framework_and_sdk_locations(dotnet_root, /*disable_multilevel_lookup*/ true, &locations);
-
+    std::vector<pal::string_t> locations = get_search_paths(dotnet_root);
     for (auto&& dir : locations)
     {
         append_path(&dir, _X("sdk"));
+        if (!pal::fullpath(&dir, true))
+        {
+            trace::verbose(_X("SDK path [%s] does not exist"), dir.c_str());
+            continue;
+        }
 
+        // Search paths are in priority order. We take the first match and do not
+        // look in any remaining locations.
         if (resolve_sdk_path_and_version(dir, resolved_sdk_path, resolved_version))
         {
+            if (out_resolved_root != nullptr)
+            {
+                out_resolved_root->assign(get_directory(dir));
+            }
+
             break;
         }
     }
@@ -90,8 +110,50 @@ pal::string_t sdk_resolver::resolve(const pal::string_t& dotnet_root, bool print
     return {};
 }
 
+std::vector<pal::string_t> sdk_resolver::get_search_paths(const pal::string_t& dotnet_root) const
+{
+    std::vector<pal::string_t> locations;
+    if (!has_custom_paths)
+    {
+        if (!dotnet_root.empty())
+            locations.push_back(dotnet_root);
+    }
+    else
+    {
+        // Use custom paths specified in the global.json
+        pal::string_t json_dir = get_directory(global_file);
+        for (const pal::string_t& path : paths)
+        {
+            if (path == _X("$host$"))
+            {
+                locations.push_back(dotnet_root);
+            }
+            else if (pal::is_path_rooted(path))
+            {
+                locations.push_back(path);
+            }
+            else
+            {
+                // Path is relative to the global.json
+                pal::string_t full_path = json_dir;
+                append_path(&full_path, path.c_str());
+                locations.push_back(full_path);
+            }
+        }
+    }
+
+    return locations;
+}
+
 void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, const pal::char_t *main_error_prefix) const
 {
+    if (!error_message.empty())
+    {
+        // Custom error message specified in the global.json
+        trace::error(_X("%s%s"), main_error_prefix, error_message.c_str());
+        return;
+    }
+
     bool sdk_exists = false;
     const pal::char_t *no_sdk_message = _X("No .NET SDKs were found.");
     if (!requested_version.is_empty())
@@ -106,7 +168,17 @@ void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, cons
 
         bool has_global_file = !global_file.empty();
         if (has_global_file)
+        {
             trace::error(_X("global.json file: %s"), global_file.c_str());
+            if (has_custom_paths)
+            {
+                trace::error(_X("  Search paths:"));
+                for (const pal::string_t& path : paths)
+                {
+                    trace::error(_X("    %s"), path.c_str());
+                }
+            }
+        }
 
         trace::error(_X("\nInstalled SDKs:"));
         sdk_exists = sdk_info::print_all_sdks(dotnet_root, _X(""));
@@ -126,6 +198,10 @@ void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, cons
     else
     {
         trace::error(_X("%s%s"), main_error_prefix, no_sdk_message);
+        if (has_custom_paths && paths.empty())
+        {
+            trace::error(_X("%sEmpty search paths specified in global.json file: %s"), main_error_prefix, global_file.c_str());
+        }
     }
 
     if (!sdk_exists)
@@ -353,6 +429,43 @@ bool sdk_resolver::parse_global_file(pal::string_t global_file_path)
         }
     }
 
+    const auto& paths_value = sdk->value.FindMember(_X("paths"));
+    if (paths_value != sdk->value.MemberEnd() && !paths_value->value.IsNull())
+    {
+        if (!paths_value->value.IsArray())
+        {
+            trace::warning(_X("Expected an array for 'sdk/paths' value in [%s]"), global_file_path.c_str());
+            return false;
+        }
+
+        has_custom_paths = true;
+        const auto& paths_array = paths_value->value.GetArray();
+        paths.reserve(paths_array.Size());
+        for (uint32_t i = 0; i < paths_array.Size(); ++i)
+        {
+            const auto& path = paths_array[i];
+            if (!path.IsString())
+            {
+                trace::warning(_X("Ignoring non-string 'sdk/paths[%d]' value in [%s]"), global_file_path.c_str());
+                continue;
+            }
+
+            paths.push_back(path.GetString());
+        }
+    }
+
+    const auto& error_message_value = sdk->value.FindMember(_X("errorMessage"));
+    if (error_message_value != sdk->value.MemberEnd() && !error_message_value->value.IsNull())
+    {
+        if (!error_message_value->value.IsString())
+        {
+            trace::warning(_X("Expected a string for the 'sdk/errorMessage' value in [%s]"), global_file_path.c_str());
+            return false;
+        }
+
+        error_message = error_message_value->value.GetString();
+    }
+
     global_file = std::move(global_file_path);
     return true;
 }
@@ -481,13 +594,11 @@ bool sdk_resolver::resolve_sdk_path_and_version(const pal::string_t& dir, pal::s
         }
     }
 
+    // No match - we did not find an exact match and roll forward is disabled
     if (roll_forward == sdk_roll_forward_policy::disable)
-    {
-        // Not yet fully resolved
         return false;
-    }
 
-    bool changed = false;
+    bool found = false;
     pal::string_t resolved_version_str = resolved_version.is_empty() ? pal::string_t{} : resolved_version.as_str();
     sdk_info::enumerate_sdk_paths(
         dir,
@@ -519,17 +630,16 @@ bool sdk_resolver::resolve_sdk_path_and_version(const pal::string_t& dir, pal::s
                 resolved_version_str.empty() ? _X("none") : resolved_version_str.c_str()
             );
 
-            changed = true;
+            found = true;
             resolved_version = version;
             resolved_version_str = std::move(version_str);
         });
 
-    if (changed)
+    if (found)
     {
         sdk_path = dir;
         append_path(&sdk_path, resolved_version_str.c_str());
     }
 
-    // Not yet fully resolved
-    return false;
+    return found;
 }

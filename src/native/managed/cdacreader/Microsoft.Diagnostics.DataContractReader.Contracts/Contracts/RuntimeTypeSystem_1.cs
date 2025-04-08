@@ -170,7 +170,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     }
 
-    private class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
+    private sealed class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
     {
         public static InstantiatedMethodDesc Create(Target target, TargetPointer address) => new InstantiatedMethodDesc(target, address);
 
@@ -207,7 +207,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public TypeHandle[] Instantiation { get; }
     }
 
-    private class DynamicMethodDesc : IData<DynamicMethodDesc>
+    private sealed class DynamicMethodDesc : IData<DynamicMethodDesc>
     {
         public static DynamicMethodDesc Create(Target target, TargetPointer address) => new DynamicMethodDesc(target, address);
 
@@ -234,7 +234,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public bool IsILStub => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
     }
 
-    private class StoredSigMethodDesc : IData<StoredSigMethodDesc>
+    private sealed class StoredSigMethodDesc : IData<StoredSigMethodDesc>
     {
         public static StoredSigMethodDesc Create(Target target, TargetPointer address) => new StoredSigMethodDesc(target, address);
 
@@ -408,7 +408,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return _target.ProcessedData.GetOrAdd<TypeInstantiation>(typeHandle.Address).TypeHandles;
     }
 
-    private class TypeInstantiation : IData<TypeInstantiation>
+    private sealed class TypeInstantiation : IData<TypeInstantiation>
     {
         public static TypeInstantiation Create(Target target, TargetPointer address) => new TypeInstantiation(target, address);
 
@@ -582,7 +582,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return true;
     }
 
-    private class FunctionPointerRetAndArgs : IData<FunctionPointerRetAndArgs>
+    private sealed class FunctionPointerRetAndArgs : IData<FunctionPointerRetAndArgs>
     {
         public static FunctionPointerRetAndArgs Create(Target target, TargetPointer address) => new FunctionPointerRetAndArgs(target, address);
 
@@ -1026,7 +1026,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return TargetPointer.Null;
     }
 
-    private class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries
+    private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries
     {
         private readonly RuntimeTypeSystem_1 _rts;
         public NonValidatedMethodTableQueries(RuntimeTypeSystem_1 rts)

@@ -12,13 +12,8 @@ internal sealed class Array : IData<Array>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Array);
 
-        NumComponents = target.Read<uint>(address + (ulong)type.Fields[FieldNames.NumComponents].Offset);
+        NumComponents = target.Read<uint>(address + (ulong)type.Fields[Constants.FieldNames.Array.NumComponents].Offset);
     }
 
     public uint NumComponents { get; init; }
-
-    internal static class FieldNames
-    {
-        internal const string NumComponents = $"m_{nameof(NumComponents)}";
-    }
 }

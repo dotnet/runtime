@@ -2060,6 +2060,20 @@ public:
         m_jitSwitchedToMinOpt = true;
     }
 
+#ifdef FEATURE_INTERPRETER
+    void SetIsInterpreterCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isInterpreterCode = true;
+    }
+
+    bool IsInterpreterCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isInterpreterCode;
+    }
+#endif // FEATURE_INTERPRETER
+
 #ifdef FEATURE_TIERED_COMPILATION
 public:
     bool JitSwitchedToOptimized() const
@@ -2128,6 +2142,9 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
+#ifdef FEATURE_INTERPRETER
+    bool m_isInterpreterCode; // The generated code is interpreter IR
+#endif // FEATURE_INTERPRETER
     PrepareCodeConfig *m_nextInSameThread;
 };
 
@@ -2371,9 +2388,6 @@ inline MethodDescChunk *MethodDesc::GetMethodDescChunk() const
 }
 
 MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint);
-// convert an entry point into a MethodDesc
-MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT);
-
 
 typedef DPTR(class StoredSigMethodDesc) PTR_StoredSigMethodDesc;
 class StoredSigMethodDesc : public MethodDesc

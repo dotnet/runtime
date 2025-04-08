@@ -438,7 +438,7 @@ namespace System
             if (len >= (nuint)Vector<byte>.Count)
             {
                 // We have enough data for at least one vectorized write.
-                Vector<byte> vector = new (value);
+                Vector<byte> vector = new(value);
                 nuint stopLoopAtOffset = len & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
                 nuint offset = 0;
 

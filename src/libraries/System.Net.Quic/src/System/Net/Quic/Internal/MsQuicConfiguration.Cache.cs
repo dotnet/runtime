@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.Security.Cryptography;
 using System.Security.Authentication;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -45,7 +46,9 @@ internal static partial class MsQuicConfiguration
 
     private readonly struct CacheKey : IEquatable<CacheKey>
     {
-        public readonly List<byte[]> CertificateThumbprints;
+        private const int ThumbprintSize = 64; // SHA512 size
+
+        public readonly ReadOnlyMemory<byte> CertificateThumbprints;
         public readonly QUIC_CREDENTIAL_FLAGS Flags;
         public readonly QUIC_SETTINGS Settings;
         public readonly List<SslApplicationProtocol> ApplicationProtocols;
@@ -53,15 +56,29 @@ internal static partial class MsQuicConfiguration
 
         public CacheKey(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
         {
-            CertificateThumbprints = certificate == null ? new List<byte[]>() : new List<byte[]> { certificate.GetCertHash() };
+            int certCount = certificate == null ? 0 : 1;
+            certCount += intermediates?.Count ?? 0;
+            byte[] certificateThumbprints = new byte[certCount * ThumbprintSize];
+
+            certCount = 0;
+            if (certificate != null)
+            {
+                bool success = certificate.TryGetCertHash(HashAlgorithmName.SHA512, certificateThumbprints.AsSpan(0, ThumbprintSize), out _);
+                Debug.Assert(success);
+                certCount++;
+            }
 
             if (intermediates != null)
             {
                 foreach (X509Certificate2 intermediate in intermediates)
                 {
-                    CertificateThumbprints.Add(intermediate.GetCertHash());
+                    bool success = intermediate.TryGetCertHash(HashAlgorithmName.SHA512, certificateThumbprints.AsSpan(certCount * ThumbprintSize, ThumbprintSize), out _);
+                    Debug.Assert(success);
+                    certCount++;
                 }
             }
+
+            CertificateThumbprints = certificateThumbprints;
 
             Flags = flags;
             Settings = settings;
@@ -74,17 +91,9 @@ internal static partial class MsQuicConfiguration
 
         public bool Equals(CacheKey other)
         {
-            if (CertificateThumbprints.Count != other.CertificateThumbprints.Count)
+            if (!CertificateThumbprints.Span.SequenceEqual(other.CertificateThumbprints.Span))
             {
                 return false;
-            }
-
-            for (int i = 0; i < CertificateThumbprints.Count; i++)
-            {
-                if (!CertificateThumbprints[i].AsSpan().SequenceEqual(other.CertificateThumbprints[i]))
-                {
-                    return false;
-                }
             }
 
             if (ApplicationProtocols.Count != other.ApplicationProtocols.Count)
@@ -110,11 +119,7 @@ internal static partial class MsQuicConfiguration
         {
             HashCode hash = default;
 
-            foreach (var thumbprint in CertificateThumbprints)
-            {
-                hash.AddBytes(thumbprint);
-            }
-
+            hash.AddBytes(CertificateThumbprints.Span);
             hash.Add(Flags);
             hash.Add(Settings);
 

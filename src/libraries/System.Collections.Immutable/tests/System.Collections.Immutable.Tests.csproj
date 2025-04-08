@@ -1,14 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <NoWarn>$(NoWarn);0436</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <NoWarn>$(NoWarn);0436</NoWarn>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- This test library intentionally references an inbox P2P as it needs the implementation, instead of the contract.
+         Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Link="Common\System\Collections\DictionaryExtensions.cs" />
     <!-- Reference internal product components for testing -->
@@ -71,9 +76,12 @@
     <Compile Include="$(CommonTestPath)System\Collections\DebugView.Tests.cs" Link="Common\System\Collections\DebugView.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs" Link="Common\System\Collections\TestingTypes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <ProjectReference Include="..\src\System.Collections.Immutable.csproj" SkipUseReferenceAssembly="true" />
+    <Compile Include="Frozen\FrozenDictionaryAlternateLookupTests.cs" />
+    <Compile Include="Frozen\FrozenSetAlternateLookupTests.cs" />
     <Compile Include="ImmutableListTestBase.cs" />
     <Compile Include="ImmutableListTest.cs" />
     <Compile Include="ImmutableListBuilderTest.cs" />
@@ -91,12 +99,10 @@
     <Compile Include="ImmutableSortedSetBuilderTest.nonnetstandard.cs" />
     <Compile Include="ImmutableSortedDictionaryTest.nonnetstandard.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
-    <Compile Include="Frozen\FrozenDictionaryAlternateLookupTests.cs" />
-    <Compile Include="Frozen\FrozenSetAlternateLookupTests.cs" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Collections.Immutable.csproj" />
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
+
 </Project>

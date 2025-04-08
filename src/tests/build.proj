@@ -265,7 +265,7 @@
         AppDir="$(BuildDir)"
         DiagnosticPorts="$(DiagnosticPorts)"
         ForceInterpreter="$(MonoInterp)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
+        RuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         OutputDir="$(AppDir)"
         ProjectName="$(Category)"
         RuntimeComponents="@(RuntimeComponents)"
@@ -290,141 +290,8 @@
       Condition="'@(TestDirectories)' != ''" />
   </Target>
 
-  <UsingTask TaskName="AppleAppBuilderTask" AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
-  <Target Name="BuildMonoiOSApp">
-    <PropertyGroup>
-      <IntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)'))</IntermediateOutputPath>
-      <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
-      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
-      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
-      <XUnitWrapperFileName>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/', '.')).XUnitWrapper.dll</XUnitWrapperFileName>
-      <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
-      <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
-      <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
-      <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <AssemblyName>$(Category)</AssemblyName>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iossimulator'" >iossimulator</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'ios'" >ios</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvossimulator'" >tvossimulator</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvos'" >tvos</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'maccatalyst'" >maccatalyst</RuntimePackOSSuffix>
-
-      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimePackOSSuffix)-$(TargetArchitecture)/$(Configuration)/runtimes/$(RuntimePackOSSuffix)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
-      <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
-
-      <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
-    </PropertyGroup>
-    <ItemGroup>
-      <AllTestScripts Include="$(_CMDDIR)\**\*.sh" Exclude="$(_CMDDIR)\**\AppBundle\*.sh" />
-      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
-      <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
-      <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
-      <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
-      <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
-      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;" />
-      <EntryPoints Include="testdir-%(TestDlls.Filename)/%(TestDlls.Filename).dll" />
-      <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
-        <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
-      </ExtraDlls>
-      <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
-    </ItemGroup>
-
-    <RemoveDir Directories="$(BundleDir)" />
-    <RemoveDir Directories="$(BuildDir)" />
-
-    <MakeDir Directories="$(BuildDir)" />
-    <MakeDir Directories="$(BuildDir)/testdir-%(TestDlls.Filename)" />
-
-    <Copy
-        SourceFiles="@(RuntimePackNativeLibs)"
-        DestinationFolder="$(BuildDir)" />
-    <Copy
-        SourceFiles="@(RuntimePackLibs)"
-        DestinationFolder="$(BuildDir)" />
-    <Copy
-        SourceFiles="@(TestTargetingPathLibs)"
-        DestinationFolder="$(BuildDir)" />
-    <Copy
-        SourceFiles="%(TestDlls.Identity)"
-        DestinationFolder="$(BuildDir)/testdir-%(TestDlls.Filename)" />
-    <Copy
-        SourceFiles="%(ExtraDlls.Identity)"
-        DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
-
-    <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
-
-    <PropertyGroup>
-      <PublishDir>$(BuildDir)/</PublishDir>
-      <TestProjectName>$(AssemblyName)</TestProjectName>
-      <IgnoreForCI Condition="@(TestDlls->Count()) == 0">true</IgnoreForCI>
-      <UseRuntimeComponents>true</UseRuntimeComponents>
-      <IncludesTestRunner>false</IncludesTestRunner>
-    </PropertyGroup>
-
-    <UpdateRunScriptToHandleMultipleEntryPoints EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)" Condition="'$(BuildTestsOnHelix)' == 'true'">
-      <Output TaskParameter="OutputScript" PropertyName="RunScriptCommand" />
-    </UpdateRunScriptToHandleMultipleEntryPoints>
-  </Target>
-
-  <UsingTask
-    TaskName="UpdateRunScriptToHandleMultipleEntryPoints"
-    TaskFactory="RoslynCodeTaskFactory"
-    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
-  <ParameterGroup>
-    <EntryPoints ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
-    <RunScriptCommand ParameterType="System.String" Required="true" />
-    <AppName ParameterType="System.String" Required="true" />
-    <OutputScript ParameterType="System.String" Output="true" />
-  </ParameterGroup>
-  <Task>
-    <Using Namespace="System"/>
-    <Using Namespace="Microsoft.Build.Framework"/>
-    <Using Namespace="Microsoft.Build.Utilities"/>
-    <Using Namespace="System.Linq"/>
-    <Using Namespace="System.Text"/>
-
-    <!--
-      This code fragment updates the default run script for Helix.
-      With the library tests, there is a single entry point provided as MainLibraryFileName. With the runtime tests, a bundle may have multiple main entry points. The code makes the following changes:
-      - For each main entry point, it adds the mlaunch environment parameters MONO_APPLE_APP_ENTRY_POINT_LIB_NAME and MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX
-      - After each execution, it renames the log file to match the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME entry point
-     -->
-    <Code Type="Fragment" Language="cs">
-      <![CDATA[
-        string[] lines = RunScriptCommand.Split('\n');
-        string lastLine = lines[lines.Length - 1];
-        StringBuilder resultBuilder = new StringBuilder();
-
-        // Iterate over each entry point and modify the run script
-        foreach (ITaskItem item in EntryPoints)
-        {
-            string value = item.ItemSpec;
-
-            // Add the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME and MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX environment parameters to the run script
-            string output = lastLine.Replace("apple test", "apple run").Replace("--signal-app-end", $"--expected-exit-code=100 --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value} --set-env=MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX={value.Split('/')[0]}") + "&& echo \"Test passed\" || { echo \"Test failed\"; exit 1; }";
-            resultBuilder.AppendLine(output);
-
-            // Rename the log file to match the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME
-            resultBuilder.AppendLine("mv \"${output_directory}/net.dot."+AppName+".log\" \"${output_directory}/"+value.Split('/')[0]+".log\"");
-        }
-
-        StringBuilder outputScriptBuilder = new StringBuilder(string.Join("\n", lines.Take(lines.Length - 1)));
-        outputScriptBuilder.AppendLine();
-        outputScriptBuilder.Append(resultBuilder.ToString());
-
-        OutputScript = outputScriptBuilder.ToString();
-      ]]>
-    </Code>
-  </Task>
-</UsingTask>
-
-  <!-- This target builds a Native AOT iOS App -->
-  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="SetupOSSpecificProps">
+  <Target Name="BuildCoreCLRiOSApp">
     <PropertyGroup>
       <CategoryPath>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CategoryPath>
       <CategoryName>$([System.IO.Path]::GetFileName($(CategoryPath)))</CategoryName>
@@ -443,7 +310,10 @@
       <RunAOTCompilation>false</RunAOTCompilation>
       <MonoForceInterpreter>false</MonoForceInterpreter>
     </PropertyGroup>
+  </Target>
 
+  <!-- This target builds a Native AOT iOS App -->
+  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="BuildCoreCLRiOSApp;SetupOSSpecificProps">
     <ItemGroup>
       <NativeDependencies Include="$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o" />
     </ItemGroup>
@@ -484,18 +354,12 @@
         <Properties>_CMDDIR=%(TestDirectories.Identity)</Properties>
       </RunProj>
     </ItemGroup>
-    <MSBuild
-      Projects="@(RunProj)"
-      Targets="BuildMonoiOSApp"
-      BuildInParallel="true"
-      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' != 'nativeaot'"
-    />
 
     <MSBuild
       Projects="@(RunProj)"
       Targets="BuildNativeAOTiOSApp;_AppleGenerateAppBundle;AfterAppleBuild"
       BuildInParallel="true"
-      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' == 'nativeaot'"
+      Condition="'@(TestDirectories)' != '' and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' == 'nativeaot'"
     />
   </Target>
 
@@ -508,7 +372,7 @@
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
       <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
       <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
-      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != '' and '$(TargetsAppleMobile)' != 'true'" />
+      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != ''" />
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(MergedAssemblyMarkerPaths)' != ''" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
       <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(OutOfProcessTestMarkerPaths)' != ''" />
@@ -521,7 +385,6 @@
     </PropertyGroup>
     <ItemGroup>
       <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);@(OutOfProcessTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />
-      <LegacyRunnableTestPaths Condition="'$(TargetsAppleMobile)' == 'true'" Include="@(MergedRunnableTestPaths)" />
     </ItemGroup>
   </Target>
 
@@ -622,6 +485,11 @@
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcUseServerGc)' == 'false'">$(GroupBuildCmd) "/p:IlcUseServerGc=false"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(GroupBuildCmd) /p:ContinuousIntegrationBuild=true</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(BuildTestsOnHelix)' == 'true'">$(GroupBuildCmd) "/p:BuildTestsOnHelix=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(MonoForceInterpreter)' == 'true'">$(GroupBuildCmd) "/p:MonoForceInterpreter=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(RunAOTCompilation)' == 'true'">$(GroupBuildCmd) "/p:RunAOTCompilation=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(DevTeamProvisioning)' != ''">$(GroupBuildCmd) "/p:DevTeamProvisioning=$(DevTeamProvisioning)"</GroupBuildCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
@@ -679,7 +547,7 @@
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' == ''">$(CrossgenCmd) --crossgen2-parallelism 1</CrossgenCmd>
 
       <CrossgenCmd>$(CrossgenCmd) --verify-type-and-field-layout</CrossgenCmd>
-      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(__BinDir)\$(BuildArchitecture)\crossgen2\crossgen2.dll"</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(__BinDir)\$(BuildArchitecture)\crossgen2\crossgen2$(ExeSuffix)"</CrossgenCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Compiling framework using Crossgen2: $(CrossgenCmd)" />

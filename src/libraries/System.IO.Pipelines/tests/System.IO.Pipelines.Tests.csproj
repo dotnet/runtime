@@ -1,8 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- This test library intentionally references an inbox P2P as it needs the implementation, instead of the contract.
+         Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Infrastructure\BasePipeReader.cs" />
     <Compile Include="Infrastructure\HeapBufferPool.cs" />
@@ -46,6 +51,7 @@
     <Compile Include="UnflushedBytesTests.cs" />
     <Compile Include="PipeLengthTests.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="BufferSegmentPoolTest.cs" />
     <Compile Include="PipeReaderWriterFacts.nonnetstandard.cs" />
@@ -54,14 +60,18 @@
     <Compile Include="PipeWriterStreamTests.nonnetstandard.cs" />
     <Compile Include="PipeReaderWriterStreamTests.nonnetstandard.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <ProjectReference Include="..\src\System.IO.Pipelines.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
+
 </Project>

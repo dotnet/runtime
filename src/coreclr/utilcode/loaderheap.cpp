@@ -209,7 +209,7 @@ void RangeList::RemoveRangesWorker(void *id)
 
 #endif // #ifndef DACCESS_COMPILE
 
-BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
+BOOL RangeList::IsInRangeWorker(TADDR address)
 {
     CONTRACTL
     {
@@ -222,46 +222,15 @@ BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
 
     SUPPORTS_DAC;
 
-    RangeListBlock* b = &m_starterBlock;
-    Range* r = b->ranges;
-    Range* rEnd = r + RANGE_COUNT;
-
-    //
-    // Look for a matching element
-    //
-
-    while (TRUE)
+    for (const RangeListBlock* b = &m_starterBlock; b != nullptr; b = b->next)
     {
-        while (r < rEnd)
+        for (const Range r : b->ranges)
         {
-            if (r->id != (TADDR)NULL &&
-                address >= r->start
-                && address < r->end)
-            {
-                if (pID != NULL)
-                {
-                    *pID = r->id;
-                }
+            if (r.id != (TADDR)nullptr && address >= r.start && address < r.end)
                 return TRUE;
-            }
-            r++;
         }
-
-        //
-        // If there are no more blocks, we're done.
-        //
-
-        if (b->next == NULL)
-            return FALSE;
-
-        //
-        // Next block.
-        //
-
-        b = b->next;
-        r = b->ranges;
-        rEnd = r + RANGE_COUNT;
     }
+    return FALSE;
 }
 
 #ifdef DACCESS_COMPILE

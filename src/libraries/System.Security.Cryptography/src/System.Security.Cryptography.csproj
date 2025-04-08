@@ -19,6 +19,7 @@
     <UseOpenSsl Condition="'$(TargetPlatformIdentifier)' == 'unix'">true</UseOpenSsl>
     <UseOpenSslAead Condition="'$(UseOpenSsl)' == 'true' or '$(TargetPlatformIdentifier)' == 'osx'">true</UseOpenSslAead>
     <NeedOpenSslInitializer Condition="'$(UseOpenSslAead)' == 'true'">true</NeedOpenSslInitializer>
+    <DefineConstants Condition="'$(Configuration)' == 'Debug'">$(DefineConstants);DESIGNTIMEINTERFACES</DefineConstants>
   </PropertyGroup>
 
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''" />
@@ -27,10 +28,14 @@
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\PkcsHelpers.cs"
+             Link="Common\Internal\Cryptography\PkcsHelpers.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
+    <Compile Include="$(CommonPath)System\Experimentals.cs"
+             Link="Common\System\Experimentals.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs"
@@ -268,6 +273,19 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\SafeBagAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\SecretBagAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\SecretBagAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs12\SecretBagAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\SecretBagAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\SecretBagAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml</Link>
     </AsnXml>
@@ -289,6 +307,54 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignerInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignerInfoAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AesGcm.cs"
+             Link="Common\System\Security\Cryptography\AesGcm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AesAEAD.cs"
+             Link="Common\System\Security\Cryptography\AesAEAD.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AuthenticationTagMismatchException.cs"
+             Link="Common\System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObject.cs"
+             Link="Common\System\Security\Cryptography\CryptographicAttributeObject.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObjectCollection.cs"
+             Link="Common\System\Security\Cryptography\CryptographicAttributeObjectCollection.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObjectEnumerator.cs"
+             Link="Common\System\Security\Cryptography\CryptographicAttributeObjectEnumerator.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAKeyFormatHelper.cs"
@@ -299,6 +365,8 @@
              Link="Common\System\Security\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\IImportExportShape.cs"
+             Link="Common\System\Security\Cryptography\IImportExportShape.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\IRuntimeAlgorithm.cs"
              Link="Common\System\Security\Cryptography\IRuntimeAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
@@ -307,6 +375,12 @@
              Link="Common\System\Security\Cryptography\KeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
              Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsa.cs"
+             Link="Common\System\Security\Cryptography\MLDsa.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\MLDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
              Link="Common\System\Security\Cryptography\Oids.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.Shared.cs"
@@ -329,6 +403,44 @@
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationBase.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Utf8DataEncoding.cs"
              Link="Common\System\Security\Cryptography\Utf8DataEncoding.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9AttributeObject.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs9AttributeObject.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9ContentType.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs9ContentType.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9DocumentDescription.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs9DocumentDescription.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9DocumentName.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs9DocumentName.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9LocalKeyId.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs9LocalKeyId.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9MessageDigest.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs9MessageDigest.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9SigningTime.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs9SigningTime.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12Builder.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12Builder.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12CertBag.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12CertBag.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12ConfidentialityMode.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12ConfidentialityMode.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12Info.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12Info.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12IntegrityMode.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12IntegrityMode.cs"/>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12KeyBag.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12KeyBag.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12SafeBag.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12SafeBag.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12SafeContents.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12SafeContents.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12SafeContentsBag.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12SafeContentsBag.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12SecretBag.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12SecretBag.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12ShroudedKeyBag.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12ShroudedKeyBag.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs8PrivateKeyInfo.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs8PrivateKeyInfo.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\Pkcs12LoaderLimits.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\Pkcs12LoaderLimits.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\Pkcs12LoadLimitExceededException.cs"
@@ -341,7 +453,6 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />
-    <Compile Include="System\Security\Cryptography\AesAEAD.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.cs" />
     <Compile Include="System\Security\Cryptography\AesCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.cs" />
@@ -357,7 +468,6 @@
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
-    <Compile Include="System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
     <Compile Include="System\Security\Cryptography\Base64Transforms.cs" />
     <Compile Include="System\Security\Cryptography\BasicSymmetricCipher.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.cs" />
@@ -535,6 +645,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\IX509Pal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenFlags.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Pkcs10CertificationRequestInfo.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Pkcs12ExportPbeParameters.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Pkcs9ExtensionRequest.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\PublicKey.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\RSACertificateExtensions.cs" />
@@ -654,6 +765,8 @@
              Link="Common\System\Sha1ForNonSecretPurposes.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.NotSupported.cs" />
@@ -836,6 +949,8 @@
              Link="Common\System\Security\Cryptography\ECOpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECOpenSsl.ImportExport.cs"
              Link="Common\System\Security\Cryptography\ECOpenSsl.ImportExport.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAOpenSsl.cs"
              Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
@@ -1006,6 +1121,8 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaAndroid.cs"
              Link="Common\System\Security\Cryptography\ECDsaAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAAndroid.cs"
              Link="Common\System\Security\Cryptography\RSAAndroid.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
@@ -1135,6 +1252,8 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanSecurityTransforms.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaSecurityTransforms.cs"
              Link="Common\System\Security\Cryptography\ECDsaSecurityTransforms.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.cs"
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
@@ -1601,10 +1720,12 @@
              Link="Common\Interop\Windows\Crypt32\Interop.PfxCertStoreFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXExportFlags.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.PFXExportFlags.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXExportCertStore.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.PFXExportCertStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXExportCertStoreEx.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.PFXExportCertStoreEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXImportCertStore.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.PFXImportCertStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PKCS12_PBES2_EXPORT_PARAMS.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.PKCS12_PBES2_EXPORT_PARAMS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.X509KeyUsageFlags.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.X509KeyUsageFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -1657,6 +1778,10 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeCryptMsgHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AeadCommon.Windows.cs"
+             Link="Common\System\Security\Cryptography\AeadCommon.Windows" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AesGcm.Windows.cs"
+             Link="Common\System\Security\Cryptography\AesGcm.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
@@ -1681,6 +1806,8 @@
              Link="Common\System\Security\Cryptography\ECDsaCng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.SignVerify.cs"
              Link="Common\System\Security\Cryptography\ECDsaCng.SignVerify.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.Windows.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSACng.cs"
              Link="Common\System\Security\Cryptography\RSACng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSACng.EncryptDecrypt.cs"
@@ -1694,10 +1821,8 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
-    <Compile Include="System\Security\Cryptography\AeadCommon.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesCng.Windows.cs" />
-    <Compile Include="System\Security\Cryptography\AesGcm.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Windows.cs" />
     <Compile Include="System\Security\Cryptography\BasicSymmetricCipherCsp.cs" />

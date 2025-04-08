@@ -526,9 +526,10 @@ async function ensureUsedWasmFeatures () {
 export async function start_runtime () {
     try {
         const mark = startMeasure();
+        const environmentVariables = runtimeHelpers.config.environmentVariables || {};
         mono_log_debug("Initializing mono runtime");
-        for (const k in runtimeHelpers.config.environmentVariables) {
-            const v = runtimeHelpers.config.environmentVariables![k];
+        for (const k in environmentVariables) {
+            const v = environmentVariables![k];
             if (typeof (v) === "string")
                 mono_wasm_setenv(k, v);
             else
@@ -537,14 +538,20 @@ export async function start_runtime () {
         if (runtimeHelpers.config.runtimeOptions)
             mono_wasm_set_runtime_options(runtimeHelpers.config.runtimeOptions);
 
-        if (runtimeHelpers.config.aotProfilerOptions)
-            mono_wasm_init_aot_profiler(runtimeHelpers.config.aotProfilerOptions);
-
-        if (runtimeHelpers.config.browserProfilerOptions)
-            mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
-
-        if (runtimeHelpers.config.logProfilerOptions)
-            mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions);
+        if (runtimeHelpers.emscriptenBuildOptions.enablePerfTracing) {
+            const diagnosticPorts = "DOTNET_DiagnosticPorts";
+            const jsReady = "js://ready";
+            if (!environmentVariables[diagnosticPorts]) {
+                environmentVariables[diagnosticPorts] = jsReady;
+                mono_wasm_setenv(diagnosticPorts, jsReady);
+            }
+        } else if (runtimeHelpers.emscriptenBuildOptions.enableAotProfiler) {
+            mono_wasm_init_aot_profiler(runtimeHelpers.config.aotProfilerOptions || {});
+        } else if (runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler) {
+            mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions || {});
+        } else if (runtimeHelpers.emscriptenBuildOptions.enableLogProfiler) {
+            mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions || {});
+        }
 
         mono_wasm_load_runtime();
 

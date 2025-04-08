@@ -187,9 +187,7 @@ namespace System.Text.Json.Nodes
 
                     foreach (KeyValuePair<string, JsonNode?> item in currentDict)
                     {
-                        otherDict.TryGetValue(item.Key, out JsonNode? jsonNode);
-
-                        if (!DeepEquals(item.Value, jsonNode))
+                        if (!otherDict.TryGetValue(item.Key, out JsonNode? jsonNode) || !DeepEquals(item.Value, jsonNode))
                         {
                             return false;
                         }

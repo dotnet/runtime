@@ -112,8 +112,9 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0055`__ | The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead. |
 |  __`SYSLIB0056`__ |  LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm. |
 |  __`SYSLIB0057`__ | Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates. |
-|  __`SYSLIB0058`__ | KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead. |
+|  __`SYSLIB0058`__ | KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead. |
 |  __`SYSLIB0059`__ | SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead. |
+|  __`SYSLIB0060`__ | The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead. |
 
 ## Analyzer Warnings
 
@@ -313,3 +314,4 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 |  __`SYSLIB5003`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental |
 |  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental since performance is not as optimized as `T.DivRem` |
 |  __`SYSLIB5005`__ |     .NET 9 |     TBD | `System.Formats.Nrbf` is experimental |
+|  __`SYSLIB5006`__ |    .NET 10 |     TBD | Types for Post-Quantum Cryptography (PQC) are experimental. |

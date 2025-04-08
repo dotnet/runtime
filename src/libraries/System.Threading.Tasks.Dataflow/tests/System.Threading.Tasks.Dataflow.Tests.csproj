@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
@@ -33,5 +33,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj" />
+    <ProjectReference Include="..\..\System.Linq.AsyncEnumerable\src\System.Linq.AsyncEnumerable.csproj" />
   </ItemGroup>
 </Project>

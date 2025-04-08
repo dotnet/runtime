@@ -752,6 +752,8 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 
 #if defined(TARGET_AMD64)
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
+    rbmIntCalleeTrash = emitComp->rbmIntCalleeTrash;
+    rbmAllInt         = emitComp->rbmAllInt;
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
@@ -9981,7 +9983,6 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
 
     unsigned argStkCnt;
     S_UINT16 argRecCnt(0); // arg count for ESP, ptr-arg count for EBP
-    unsigned gcrefRegs, byrefRegs;
 
 #ifdef JIT32_GCENCODER
     // For the general encoder, we always need to record calls, so we make this call
@@ -10023,26 +10024,19 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
         return;
 #endif
 
-    // Do we have any interesting (i.e., callee-saved) registers live here?
+    // Do we have any interesting registers live here?
 
-    gcrefRegs = byrefRegs = 0;
+    unsigned gcrefRegs = emitThisGCrefRegs.GetIntRegSet() >> REG_INT_FIRST;
+    unsigned byrefRegs = emitThisByrefRegs.GetIntRegSet() >> REG_INT_FIRST;
 
-    // We make a bitmask whose bits correspond to callee-saved register indices (in the sequence
-    // of callee-saved registers only).
-    for (unsigned calleeSavedRegIdx = 0; calleeSavedRegIdx < CNT_CALL_GC_REGS; calleeSavedRegIdx++)
-    {
-        regMaskTP calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
-        if (emitThisGCrefRegs & calleeSavedRbm)
-        {
-            gcrefRegs |= (1 << calleeSavedRegIdx);
-        }
-        if (emitThisByrefRegs & calleeSavedRbm)
-        {
-            byrefRegs |= (1 << calleeSavedRegIdx);
-        }
-    }
+    assert(regMaskTP::FromIntRegSet(SingleTypeRegSet(gcrefRegs << REG_INT_FIRST)) == emitThisGCrefRegs);
+    assert(regMaskTP::FromIntRegSet(SingleTypeRegSet(byrefRegs << REG_INT_FIRST)) == emitThisByrefRegs);
 
 #ifdef JIT32_GCENCODER
+    // x86 does not report GC refs/byrefs in return registers at call sites
+    gcrefRegs &= ~(1u << (REG_INTRET - REG_INT_FIRST));
+    byrefRegs &= ~(1u << (REG_INTRET - REG_INT_FIRST));
+
     // For the general encoder, we always have to record calls, so we don't take this early return.    /* Are there any
     // args to pop at this call site?
 

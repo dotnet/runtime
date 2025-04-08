@@ -426,8 +426,8 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFilterFunclet, _TEXT
 
-#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__FaultingExceptionFrame)
+#define FaultingExceptionFrame_FrameOffset 0
 
 .macro GenerateRedirectedStubWithFrame stub, target
 
@@ -522,6 +522,7 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 //   x12       contains our contract (DispatchToken)
 //   x16,x17   will be trashed
 //
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 
 #define BACKPATCH_FLAG      1
 #define PROMOTE_CHAIN_FLAG  2
@@ -586,7 +587,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  x9
 
 NESTED_END ResolveWorkerAsmStub, _TEXT
-
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
@@ -747,6 +748,22 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG x9
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
+    bl      C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+NESTED_END JIT_Patchpoint, _TEXT
+
+// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+    mov x1, x0
+    mov x0, #0
+    b C_FUNC(JIT_Patchpoint)
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+
 #endif // FEATURE_TIERED_COMPILATION
 
 LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
@@ -757,7 +774,7 @@ LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
     br x9
 LEAF_END JIT_DispatchIndirectCall, _TEXT
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
 // ------------------------------------------------------------------
 // void* GetThreadVarsAddress()
 
@@ -771,12 +788,13 @@ LEAF_ENTRY GetThreadVarsAddress, _TEXT
         ret
 LEAF_END GetThreadVarsAddress, _TEXT
 // ------------------------------------------------------------------
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()
 
+#ifndef TARGET_ANDROID
 // Helper to calculate the offset of native thread local variable `t_ThreadStatics` in TCB. The offset has to be found at runtime
 // once linker does its relocation and fixup of thread locals. The offset, after calculation is returned in `x0` register.
 
@@ -805,4 +823,31 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
         EPILOG_RETURN
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
-#endif // !TARGET_OSX
+#endif // TARGET_ANDROID
+#endif // !TARGET_APPLE
+
+LEAF_ENTRY  JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, x9
+        ldr     w9, [x9]
+        cbnz    w9, LOCAL_LABEL(JIT_PollGCRarePath)
+        ret
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, x9
+        ldr     x9, [x9]
+        br x9
+LEAF_END  JIT_PollGC, _TEXT
+
+#ifdef FEATURE_INTERPRETER
+NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+    mov x1, METHODDESC_REGISTER // pMethodDesc
+
+    bl  C_FUNC(ExecuteInterpretedMethod)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+#endif // FEATURE_INTERPRETER

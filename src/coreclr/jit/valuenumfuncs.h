@@ -149,9 +149,11 @@ ValueNumFuncDef(GetStaticAddrTLS, 1, false, true, false)
 
 ValueNumFuncDef(JitNew, 2, false, true, false)
 ValueNumFuncDef(JitNewArr, 3, false, true, false)
+ValueNumFuncDef(JitNewLclArr, 3, false, true, false)
 ValueNumFuncDef(JitNewMdArr, 4, false, true, false)
 ValueNumFuncDef(JitReadyToRunNew, 2, false, true, false)
 ValueNumFuncDef(JitReadyToRunNewArr, 3, false, true, false)
+ValueNumFuncDef(JitReadyToRunNewLclArr, 3, false, true, false)
 ValueNumFuncDef(Box, 3, false, true, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 

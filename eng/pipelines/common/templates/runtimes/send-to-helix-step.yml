@@ -19,6 +19,7 @@ parameters:
   runCrossGen2: ''
   compositeBuildMode: false
   helixProjectArguments: ''
+  extraHelixArguments: ''
   runInUnloadableContext: ''
   tieringTest: ''
   hotColdSplitting: ''
@@ -38,7 +39,7 @@ steps:
 - template: send-to-helix-inner-step.yml
   parameters:
     osGroup: ${{ parameters.osGroup }}
-    sendParams: ${{ parameters.helixProjectArguments }} ${{ parameters.msbuildParallelism }} /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }}
+    sendParams: ${{ parameters.helixProjectArguments }} ${{ parameters.msbuildParallelism }} /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }} ${{ parameters.extraHelixArguments }}
     condition: and(succeeded(), ${{ parameters.condition }})
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     displayName: ${{ parameters.displayName }}

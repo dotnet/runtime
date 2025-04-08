@@ -24,6 +24,5 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         liblttng-ust-dev \
         libssl-dev \
         libkrb5-dev \
-        zlib1g-dev \
         ninja-build \
         tzdata

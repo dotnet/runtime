@@ -1,0 +1,6 @@
+{
+    "Version" : "1.0.0",
+    "MaxDegreeOfParallelism" : "50",
+    "ExponentialRetryCount" : "5",
+    "EsrpSessionTimeoutInSec" : "1800"
+}

@@ -1871,6 +1871,72 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
+        case NI_Vector128_op_Division:
+        case NI_Vector256_op_Division:
+        {
+            // We can emulate SIMD integer division by converting the 32-bit integer -> 64-bit double,
+            // perform a 64-bit double divide, then convert back to a 32-bit integer. This is generating
+            // something similar to the following managed code:
+            //      if (Vector128.EqualsAny(op2, Vector128<int>.Zero))
+            //      {
+            //          throw new DivideByZeroException();
+            //      }
+            //
+            //      Vector128<int> overflowMask =
+            //          Vector128.Equals(op1, Vector128.Create(int.MinValue)
+            //          & Vector128.Equals(op2, Vector128.Create(-1));
+            //      if (!Vector128.EqualsAll(overflowMask, Vector128<int>.Zero))
+            //      {
+            //          throw new OverflowException();
+            //      }
+            //
+            //      Vector256<double> op1_f64 =
+            //          Vector256.ConvertToDouble(Vector256.WidenLower(Vector128.ToVector256Unsafe(op1))));
+            //      Vector256<double> op2_f64 =
+            //          Vector256.ConvertToDouble(Vector256.WidenLower(Vector128.ToVector256Unsafe(op2))));
+            //      Vector256<double> div_f64 = op1_f64 / op2_f64;
+            //      Vector256<long>   div_i64 = Vector256.ConvertToInt64(div_f64);
+            //      Vector128<int> div_i32 = Vector256.Narrow(div_i64.GetLower(), div_i64.GetUpper());
+            //      return div_i32;
+            regNumber op2Reg   = op2->GetRegNum();
+            regNumber tmpReg1  = internalRegisters.Extract(node, RBM_ALLFLOAT);
+            regNumber tmpReg2  = internalRegisters.Extract(node, RBM_ALLFLOAT);
+            emitAttr  typeSize = emitTypeSize(node->TypeGet());
+            noway_assert(typeSize == EA_16BYTE || typeSize == EA_32BYTE);
+            emitAttr divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
+
+            simd_t negOneIntVec = simd_t::AllBitsSet();
+            simd_t minValueInt{};
+            int    numElements = genTypeSize(node->TypeGet()) / 4;
+            for (int i = 0; i < numElements; i++)
+            {
+                minValueInt.i32[i] = INT_MIN;
+            }
+            CORINFO_FIELD_HANDLE minValueFld = typeSize == EA_16BYTE ? emit->emitSimd16Const(minValueInt.v128[0])
+                                                                     : emit->emitSimd32Const(minValueInt.v256[0]);
+            CORINFO_FIELD_HANDLE negOneFld   = typeSize == EA_16BYTE ? emit->emitSimd16Const(negOneIntVec.v128[0])
+                                                                     : emit->emitSimd32Const(negOneIntVec.v256[0]);
+
+            // div-by-zero check
+            emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg1, tmpReg1, tmpReg1, instOptions);
+            emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, typeSize, tmpReg1, tmpReg1, op2Reg, instOptions);
+            emit->emitIns_R_R(INS_ptest, typeSize, tmpReg1, tmpReg1, instOptions);
+            genJumpToThrowHlpBlk(EJ_jne, SCK_DIV_BY_ZERO);
+
+            // overflow check
+            emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg1, op1Reg, minValueFld, 0, instOptions);
+            emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg2, op2Reg, negOneFld, 0, instOptions);
+            emit->emitIns_SIMD_R_R_R(INS_pand, typeSize, tmpReg1, tmpReg1, tmpReg2, instOptions);
+            emit->emitIns_R_R(INS_ptest, typeSize, tmpReg1, tmpReg1, instOptions);
+            genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+
+            emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg1, op1Reg, instOptions);
+            emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg2, op2Reg, instOptions);
+            emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, targetReg, tmpReg1, tmpReg2, instOptions);
+            emit->emitIns_R_R(INS_cvttpd2dq, divTypeSize, targetReg, targetReg, instOptions);
+            break;
+        }
+
         default:
         {
             unreached();
@@ -2231,15 +2297,47 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg));
             emit->emitIns_Mov(INS_mov, emitTypeSize(targetType), targetReg, op1Reg, /* canSkip */ true);
 
+            instruction ins = INS_crc32;
+#ifdef TARGET_AMD64
+            bool needsEvex = false;
+            if (emit->IsExtendedGPReg(targetReg))
+            {
+                needsEvex = true;
+            }
+            else if (op2->isUsedFromReg() && emit->IsExtendedGPReg(op2->GetRegNum()))
+            {
+                needsEvex = true;
+            }
+            else if (op2->isIndir())
+            {
+                GenTreeIndir* indir = op2->AsIndir();
+
+                // We don't need to check if they are actually enregistered.
+                if (indir->HasBase() && emit->IsExtendedGPReg(indir->Base()->GetRegNum()))
+                {
+                    needsEvex = true;
+                }
+
+                if (indir->HasIndex() && emit->IsExtendedGPReg(indir->Index()->GetRegNum()))
+                {
+                    needsEvex = true;
+                }
+            }
+
+            if (needsEvex)
+            {
+                ins = INS_crc32_apx;
+            }
+#endif                                                               // TARGET_AMD64
             if ((baseType == TYP_UBYTE) || (baseType == TYP_USHORT)) // baseType is the type of the second argument
             {
                 assert(targetType == TYP_INT);
-                genHWIntrinsic_R_RM(node, INS_crc32, emitTypeSize(baseType), targetReg, op2, instOptions);
+                genHWIntrinsic_R_RM(node, ins, emitTypeSize(baseType), targetReg, op2, instOptions);
             }
             else
             {
                 assert((targetType == TYP_INT) || (targetType == TYP_LONG));
-                genHWIntrinsic_R_RM(node, INS_crc32, emitTypeSize(targetType), targetReg, op2, instOptions);
+                genHWIntrinsic_R_RM(node, ins, emitTypeSize(targetType), targetReg, op2, instOptions);
             }
 
             break;

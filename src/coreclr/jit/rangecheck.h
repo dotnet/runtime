@@ -585,6 +585,89 @@ struct RangeOps
         result.uLimit = Limit(Limit::keConstant, -lo);
         return result;
     }
+
+    enum class RelationKind
+    {
+        AlwaysTrue,
+        AlwaysFalse,
+        Unknown
+    };
+
+    //------------------------------------------------------------------------
+    // EvalRelop: Evaluate the relation between two ranges for the given relop
+    //    Example: "x >= y" is AlwaysTrue when "x.LowerLimit() >= y.UpperLimit()"
+    //
+    // Arguments:
+    //    relop      - The relational operator (LE,LT,GE,GT,EQ,NE)
+    //    isUnsigned - True if the comparison is unsigned
+    //    x          - The left range
+    //    y          - The right range
+    //
+    // Returns:
+    //    AlwaysTrue when the given relop always evaluates to true for the given ranges
+    //    AlwaysFalse when the given relop always evaluates to false for the given ranges
+    //    Otherwise Unknown
+    //
+    static RelationKind EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
+    {
+        const Limit& xLower = x.LowerLimit();
+        const Limit& yLower = y.LowerLimit();
+        const Limit& xUpper = x.UpperLimit();
+        const Limit& yUpper = y.UpperLimit();
+
+        // For unsigned comparisons, we only support non-negative ranges.
+        if (isUnsigned)
+        {
+            if (!xLower.IsConstant() || !yUpper.IsConstant() || (xLower.GetConstant() < 0) ||
+                (yLower.GetConstant() < 0))
+            {
+                return RelationKind::Unknown;
+            }
+        }
+
+        switch (relop)
+        {
+            case GT_GE:
+            case GT_LT:
+                if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() >= yUpper.GetConstant()))
+                {
+                    return relop == GT_GE ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                }
+
+                if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant()))
+                {
+                    return relop == GT_GE ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                }
+                break;
+
+            case GT_GT:
+            case GT_LE:
+                if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant()))
+                {
+                    return relop == GT_GT ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                }
+
+                if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() <= yLower.GetConstant()))
+                {
+                    return relop == GT_GT ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                }
+                break;
+
+            case GT_EQ:
+            case GT_NE:
+                if ((xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant())) ||
+                    (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant())))
+                {
+                    return relop == GT_EQ ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                }
+                break;
+
+            default:
+                assert(!"unknown comparison operator");
+                break;
+        }
+        return RelationKind::Unknown;
+    }
 };
 
 class RangeCheck
@@ -593,52 +676,19 @@ public:
     // Constructor
     RangeCheck(Compiler* pCompiler);
 
+    // Entry point to optimize range checks in the method. Assumes value numbering
+    // and assertion prop phases are completed.
+    bool OptimizeRangeChecks();
+
+    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
+
+    // Cheaper version of TryGetRange that is based only on incoming assertions.
+    static bool TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
+
+private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
-
-#ifdef DEBUG
-    // TODO-Cleanup: This code has been kept around just to ensure that the SSA data is still
-    // valid when RangeCheck runs. It should be removed at some point (and perhaps replaced
-    // by a proper SSA validity checker).
-
-    // Location information is used to map where the defs occur in the method.
-    struct Location
-    {
-        BasicBlock*          block;
-        Statement*           stmt;
-        GenTreeLclVarCommon* tree;
-        Location(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree)
-            : block(block)
-            , stmt(stmt)
-            , tree(tree)
-        {
-        }
-
-    private:
-        Location();
-    };
-
-    typedef JitHashTable<INT64, JitLargePrimitiveKeyFuncs<INT64>, Location*> VarToLocMap;
-
-    // Generate a hashcode unique for this ssa var.
-    UINT64 HashCode(unsigned lclNum, unsigned ssaNum);
-
-    // Add a location of the definition of ssa var to the location map.
-    // Requires "hash" to be computed using HashCode.
-    // Requires "location" to be the local definition.
-    void SetDef(UINT64 hash, Location* loc);
-
-    // Given a tree node that is a local, return the Location defining the local.
-    Location* GetDef(GenTreeLclVarCommon* lcl);
-    Location* GetDef(unsigned lclNum, unsigned ssaNum);
-
-    // Given a statement, check if it is a def and add its locations in a map.
-    void MapStmtDefs(const Location& loc);
-
-    // Given the CFG, check if it has defs and add their locations in a map.
-    void MapMethodDefs();
-#endif
 
     int GetArrLength(ValueNum vn);
 
@@ -648,30 +698,22 @@ public:
     // TODO-CQ: This is not general enough.
     bool BetweenBounds(Range& range, GenTree* upper, int arrSize);
 
-    // Entry point to optimize range checks in the method. Assumes value numbering
-    // and assertion prop phases are completed.
-    bool OptimizeRangeChecks();
-
     // Given a "tree" node, check if it contains array bounds check node and
     // optimize to remove it, if possible. Requires "stmt" and "block" that
     // contain the tree.
     void OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* tree);
 
-    // Given the index expression try to find its range.
-    // The range of a variable depends on its rhs which in turn depends on its constituent variables.
-    // The "path" is the path taken in the search for the rhs' range and its constituents' range.
-    // If "monIncreasing" is true, the calculations are made more liberally assuming initial values
-    // at phi definitions for the lower bound.
-    Range GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
+    // Internal worker for GetRange.
+    Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range from the given type
     Range GetRangeFromType(var_types type);
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
-    // Helper for GetRange.
+    // Helper for GetRangeWorker.
     Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
 
-    // Compute the range, rather than retrieve a cached value. Helper for GetRange.
+    // Compute the range, rather than retrieve a cached value. Helper for GetRangeWorker.
     Range ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range for the op1 and op2 for the given binary operator.
@@ -686,7 +728,8 @@ public:
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
 
     // Inspect the assertions about the current ValueNum to refine pRange
-    void MergeEdgeAssertions(ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
+    static void MergeEdgeAssertions(
+        Compiler* comp, ValueNum num, ValueNum preferredBoundVN, ASSERT_VALARG_TP assertions, Range* pRange);
 
     // The maximum possible value of the given "limit". If such a value could not be determined
     // return "false". For example: CORINFO_Array_MaxLength for array length.
@@ -708,10 +751,10 @@ public:
     // calculation that overflows.
     bool DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl, const Range& range);
 
-    bool ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range);
-
     // Does the current "expr", which is a use, involve a definition that overflows.
     bool DoesOverflow(BasicBlock* block, GenTree* tree, const Range& range);
+
+    bool ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range);
 
     // Widen the range by first checking if the induction variable is monotonically increasing.
     // Requires "pRange" to be partially computed.
@@ -728,26 +771,25 @@ public:
     // will be applied for the currently compiled method.
     bool IsOverBudget();
 
-private:
     // Given a lclvar use, try to find the lclvar's defining store and its containing block.
     LclSsaVarDsc* GetSsaDefStore(GenTreeLclVarCommon* lclUse);
 
-    GenTreeBoundsChk* m_pCurBndsChk;
+    // When we have this bound and a constant, we prefer to use this bound (if set)
+    ValueNum m_preferredBound;
 
     // Get the cached overflow values.
     OverflowMap* GetOverflowMap();
+    void         ClearOverflowMap();
     OverflowMap* m_pOverflowMap;
 
     // Get the cached range values.
     RangeMap* GetRangeMap();
+    void      ClearRangeMap();
     RangeMap* m_pRangeMap;
 
+    SearchPath* GetSearchPath();
+    void        ClearSearchPath();
     SearchPath* m_pSearchPath;
-
-#ifdef DEBUG
-    bool         m_fMappedDefs;
-    VarToLocMap* m_pDefTable;
-#endif
 
     Compiler*     m_pCompiler;
     CompAllocator m_alloc;

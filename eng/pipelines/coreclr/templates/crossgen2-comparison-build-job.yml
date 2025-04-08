@@ -69,10 +69,7 @@ jobs:
       - name: target_crossgen2_os
         value: osx
     - name: crossgen2location
-      value: $(productDirectory)$(dir)$(targetFlavor)$(dir)crossgen2$(dir)crossgen2.dll
-    - ${{ if ne(parameters.archType, 'x64') }}:
-      - name: crossgen2location
-        value: $(productDirectory)$(dir)$(targetFlavor)$(dir)x64$(dir)crossgen2$(dir)crossgen2.dll
+      value: $(binDirectory)$(dir)crossgen2_inbuild$(dir)$(archType)$(dir)$(buildConfigUpper)$(dir)crossgen2.dll
     - name: librariesProductDllDir
       value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net10.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
 

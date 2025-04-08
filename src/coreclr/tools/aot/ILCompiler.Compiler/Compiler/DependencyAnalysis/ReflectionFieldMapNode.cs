@@ -77,9 +77,6 @@ namespace ILCompiler.DependencyAnalysis
                     flags = FieldTableFlags.Instance | FieldTableFlags.FieldOffsetEncodedDirectly;
                 }
 
-                if (fieldMapping.MetadataHandle != 0)
-                    flags |= FieldTableFlags.HasMetadataHandle;
-
                 if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                     flags |= FieldTableFlags.IsAnyCanonicalEntry;
 
@@ -98,18 +95,9 @@ namespace ILCompiler.DependencyAnalysis
                 vertex = writer.GetTuple(vertex,
                     writer.GetUnsignedConstant(declaringTypeId));
 
-                if ((flags & FieldTableFlags.HasMetadataHandle) != 0)
-                {
-                    // Only store the offset portion of the metadata handle to get better integer compression
-                    vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant((uint)(fieldMapping.MetadataHandle & MetadataManager.MetadataOffsetMask)));
-                }
-                else
-                {
-                    // No metadata handle means we need to store name
-                    vertex = writer.GetTuple(vertex,
-                        writer.GetStringConstant(field.Name));
-                }
+                // Only store the offset portion of the metadata handle to get better integer compression
+                vertex = writer.GetTuple(vertex,
+                    writer.GetUnsignedConstant((uint)(fieldMapping.MetadataHandle & MetadataManager.MetadataOffsetMask)));
 
                 if ((flags & FieldTableFlags.IsUniversalCanonicalEntry) != 0)
                 {

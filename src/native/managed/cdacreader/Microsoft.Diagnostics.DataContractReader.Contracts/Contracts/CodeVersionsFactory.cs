@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class CodeVersionsFactory : IContractFactory<ICodeVersions>
+public sealed class CodeVersionsFactory : IContractFactory<ICodeVersions>
 {
     ICodeVersions IContractFactory<ICodeVersions>.CreateContract(Target target, int version)
     {

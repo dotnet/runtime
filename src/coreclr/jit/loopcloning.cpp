@@ -80,6 +80,10 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
             arrAddr->gtFlags |= GTF_INX_ADDR_NONNULL;
 
             arr = comp->gtNewIndexIndir(arrAddr->AsIndexAddr());
+
+            // We don't really need to call morph here if we import arr[i] directly
+            // without gtNewArrayIndexAddr (but it's a bit of verbose).
+            arr = comp->fgMorphTree(arr);
         }
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
@@ -861,54 +865,12 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     //
     const weight_t fastLikelihood = fastPathWeightScaleFactor;
 
-    // Choose how to generate the conditions
-    const bool generateOneConditionPerBlock = true;
+    // N = conds.Size() branches must all be true to execute the fast loop.
+    // Use the N'th root....
+    //
+    const weight_t fastLikelihoodPerBlock = exp(log(fastLikelihood) / (weight_t)conds.Size());
 
-    if (generateOneConditionPerBlock)
-    {
-        // N = conds.Size() branches must all be true to execute the fast loop.
-        // Use the N'th root....
-        //
-        const weight_t fastLikelihoodPerBlock = exp(log(fastLikelihood) / (weight_t)conds.Size());
-
-        for (unsigned i = 0; i < conds.Size(); ++i)
-        {
-            BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
-            newBlk->inheritWeight(insertAfter);
-
-            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, slowPreheader->bbNum);
-            FlowEdge* const trueEdge = comp->fgAddRefPred(slowPreheader, newBlk);
-            newBlk->SetTrueEdge(trueEdge);
-            trueEdge->setLikelihood(1 - fastLikelihoodPerBlock);
-
-            if (insertAfter->KindIs(BBJ_COND))
-            {
-                JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
-                FlowEdge* const falseEdge = comp->fgAddRefPred(newBlk, insertAfter);
-                insertAfter->SetFalseEdge(falseEdge);
-                falseEdge->setLikelihood(fastLikelihoodPerBlock);
-            }
-
-            JITDUMP("Adding conditions %u to " FMT_BB "\n", i, newBlk->bbNum);
-
-            GenTree*   cond        = conds[i].ToGenTree(comp, newBlk, /* invert */ true);
-            GenTree*   jmpTrueTree = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond);
-            Statement* stmt        = comp->fgNewStmtFromTree(jmpTrueTree);
-
-            comp->fgInsertStmtAtEnd(newBlk, stmt);
-
-            // Remorph.
-            JITDUMP("Loop cloning condition tree before morphing:\n");
-            DBEXEC(comp->verbose, comp->gtDispTree(jmpTrueTree));
-            JITDUMP("\n");
-            comp->fgMorphBlockStmt(newBlk, stmt DEBUGARG("Loop cloning condition"));
-
-            insertAfter = newBlk;
-        }
-
-        return insertAfter;
-    }
-    else
+    for (unsigned i = 0; i < conds.Size(); ++i)
     {
         BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
         newBlk->inheritWeight(insertAfter);
@@ -916,43 +878,28 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, slowPreheader->bbNum);
         FlowEdge* const trueEdge = comp->fgAddRefPred(slowPreheader, newBlk);
         newBlk->SetTrueEdge(trueEdge);
-        trueEdge->setLikelihood(1.0 - fastLikelihood);
+        trueEdge->setLikelihood(1 - fastLikelihoodPerBlock);
 
         if (insertAfter->KindIs(BBJ_COND))
         {
             JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
             FlowEdge* const falseEdge = comp->fgAddRefPred(newBlk, insertAfter);
             insertAfter->SetFalseEdge(falseEdge);
-            falseEdge->setLikelihood(fastLikelihood);
+            falseEdge->setLikelihood(fastLikelihoodPerBlock);
         }
 
-        JITDUMP("Adding conditions to " FMT_BB "\n", newBlk->bbNum);
+        JITDUMP("Adding conditions %u to " FMT_BB "\n", i, newBlk->bbNum);
 
-        // Get the first condition.
-        GenTree* cond = conds[0].ToGenTree(comp, newBlk, /* invert */ false);
-        for (unsigned i = 1; i < conds.Size(); ++i)
-        {
-            // Append all conditions using AND operator.
-            cond = comp->gtNewOperNode(GT_AND, TYP_INT, cond, conds[i].ToGenTree(comp, newBlk, /* invert */ false));
-        }
-
-        // Add "cond == 0" node
-        cond = comp->gtNewOperNode(GT_EQ, TYP_INT, cond, comp->gtNewIconNode(0));
-
-        // Add jmpTrue "cond == 0"
+        GenTree* cond = conds[i].ToGenTree(comp, newBlk, /* invert */ true);
+        cond->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
         GenTree*   jmpTrueTree = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond);
         Statement* stmt        = comp->fgNewStmtFromTree(jmpTrueTree);
 
         comp->fgInsertStmtAtEnd(newBlk, stmt);
-
-        // Remorph.
-        JITDUMP("Loop cloning condition tree before morphing:\n");
-        DBEXEC(comp->verbose, comp->gtDispTree(jmpTrueTree));
-        JITDUMP("\n");
-        comp->fgMorphBlockStmt(newBlk, stmt DEBUGARG("Loop cloning condition"));
-
-        return newBlk;
+        insertAfter = newBlk;
     }
+
+    return insertAfter;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -1854,7 +1801,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
-    bool cloneLoopsWithEH = false;
+    bool cloneLoopsWithEH = true;
     INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
     INDEBUG(const char* reason);
 
@@ -2008,24 +1955,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     }
 #endif
 
-    bool cloneLoopsWithEH = false;
+    bool cloneLoopsWithEH = true;
     INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
-
-    // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
-    unsigned depth         = loop->GetDepth();
-    weight_t ambientWeight = 1;
-    for (unsigned j = 0; j < depth; j++)
-    {
-        weight_t lastWeight = ambientWeight;
-        ambientWeight *= BB_LOOP_WEIGHT_SCALE;
-        assert(ambientWeight > lastWeight);
-    }
 
     assert(loop->EntryEdges().size() == 1);
     BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
-    // The ambient weight might be higher than we computed above. Be safe by
-    // taking the max with the head block's weight.
-    ambientWeight = max(ambientWeight, preheader->bbWeight);
 
     // We're going to transform this loop:
     //
@@ -2043,8 +1977,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     BasicBlock* fastPreheader = fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
-    fastPreheader->bbWeight = preheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    fastPreheader->CopyFlags(preheader, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
+    fastPreheader->inheritWeight(preheader);
 
     assert(preheader->KindIs(BBJ_ALWAYS));
     assert(preheader->TargetIs(loop->GetHeader()));
@@ -2067,8 +2000,19 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // bottomRedirBlk [BBJ_ALWAYS --> bottomNext]
     // ... slow cloned loop (not yet inserted)
     // bottomNext
-    BasicBlock* bottom  = loop->GetLexicallyBottomMostBlock();
-    BasicBlock* newPred = bottom;
+    BasicBlock* bottom              = loop->GetLexicallyBottomMostBlock();
+    BasicBlock* beforeSlowPreheader = bottom;
+
+    // Ensure the slow loop preheader ends up in the same EH region
+    // as the preheader.
+    //
+    bool           inTry           = false;
+    unsigned const enclosingRegion = ehGetMostNestedRegionIndex(preheader, &inTry);
+    if (!BasicBlock::sameEHRegion(beforeSlowPreheader, preheader))
+    {
+        beforeSlowPreheader = fgFindInsertPoint(enclosingRegion, inTry, bottom, /* endBlk */ nullptr,
+                                                /* nearBlk */ bottom, /* jumpBlk */ nullptr, /* runRarely */ false);
+    }
 
     // Create a new preheader for the slow loop immediately before the slow
     // loop itself. All failed conditions will branch to the slow preheader.
@@ -2078,22 +2022,19 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // The slow preheader needs to go in the same EH region as the preheader.
     //
     JITDUMP("Create unique preheader for slow path loop\n");
-    const bool  extendRegion  = BasicBlock::sameEHRegion(bottom, preheader);
-    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, extendRegion);
-    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
-    slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    slowPreheader->CopyFlags(newPred, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
+    const bool  extendRegion  = BasicBlock::sameEHRegion(beforeSlowPreheader, preheader);
+    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, beforeSlowPreheader, extendRegion);
+    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, beforeSlowPreheader->bbNum);
+    slowPreheader->inheritWeight(preheader);
     slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
 
-    // If we didn't extend the region above (because the last loop
+    // If we didn't extend the region above (because the beforeSlowPreheader
     // block was in some enclosed EH region), put the slow preheader
     // into the appropriate region, and make appropriate extent updates.
     //
     if (!extendRegion)
     {
         slowPreheader->copyEHRegion(preheader);
-        bool     isTry           = false;
-        unsigned enclosingRegion = ehGetMostNestedRegionIndex(slowPreheader, &isTry);
 
         if (enclosingRegion != 0)
         {
@@ -2111,11 +2052,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
             }
         }
     }
-    newPred = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
-
+    //
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
+    BasicBlock*      newPred  = slowPreheader;
 
     if (cloneLoopsWithEH)
     {
@@ -3081,6 +3022,13 @@ PhaseStatus Compiler::optCloneLoops()
             fgInvalidateDfsTree();
             m_dfsTree = fgComputeDfs();
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        }
+
+        if (fgIsUsingProfileWeights())
+        {
+            JITDUMP("optCloneLoops: Profile data needs to be propagated through new loops. Data %s inconsistent.\n",
+                    fgPgoConsistent ? "is now" : "was already");
+            fgPgoConsistent = false;
         }
     }
 

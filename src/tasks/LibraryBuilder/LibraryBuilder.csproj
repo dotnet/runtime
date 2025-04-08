@@ -20,6 +20,7 @@
     <Compile Include="..\Common\Builders\CompiledAssembly.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
     <Compile Include="..\AppleAppBuilder\TargetOS.cs" />
+    <Compile Include="..\AppleAppBuilder\TargetRuntime.cs" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">

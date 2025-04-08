@@ -266,9 +266,15 @@ namespace ILCompiler
 
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
-            return (ConstructedEETypeNode.CreationAllowed(type) && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation()))
-                ? ReadyToRunHelperId.TypeHandle
-                : ReadyToRunHelperId.NecessaryTypeHandle;
+            bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
+                && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation());
+            if (canPotentiallyConstruct)
+                return ReadyToRunHelperId.TypeHandle;
+
+            if (type.IsGenericDefinition && NodeFactory.DevirtualizationManager.IsGenericDefinitionMethodTableReflectionVisible(type))
+                return ReadyToRunHelperId.TypeHandle;
+
+            return ReadyToRunHelperId.NecessaryTypeHandle;
         }
 
         public static MethodDesc GetConstructorForCreateInstanceIntrinsic(TypeDesc type)

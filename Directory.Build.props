@@ -17,45 +17,15 @@
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
   </PropertyGroup>
 
-  <PropertyGroup Label="CalculateTargetOS">
-    <_hostOS>linux</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('FREEBSD'))">freebsd</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('NETBSD'))">netbsd</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('SOLARIS'))">solaris</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('HAIKU'))">haiku</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</_hostOS>
-    <HostOS>$(_hostOS)</HostOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">browser</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
-    <TargetsMobile Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</TargetsMobile>
-    <TargetsAppleMobile Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</TargetsAppleMobile>
-  </PropertyGroup>
-
-  <!-- Platform property is required by RepoLayout.props in Arcade SDK. -->
-  <PropertyGroup Label="CalculateArch">
-    <_hostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</_hostArch>
-    <BuildArchitecture Condition="'$(BuildArchitecture)' == ''">$(_hostArch)</BuildArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'browser' or '$(RuntimeIdentifier)' == 'browser-wasm')">wasm</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'wasi' or '$(RuntimeIdentifier)' == 'wasi-wasm')">wasm</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm'">arm</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'armv6'">armv6</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'armel'">armel</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'arm64'">arm64</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'loongarch64'">loongarch64</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 's390x'">s390x</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'ppc64le'">ppc64le</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
-    <Platform Condition="'$(Platform)' == '' and '$(InferPlatformFromTargetArchitecture)' == 'true'">$(TargetArchitecture)</Platform>
-  </PropertyGroup>
+  <!-- We don't have RepoRoot or RepositoryEngineeringDir available at this point -->
+  <Import Project="$(MSBuildThisFileDirectory)/eng/OSArch.props" />
 
   <PropertyGroup Label="SetOSTargetMinVersions">
     <!--
       Minimum target OS versions, keep in sync with:
         - eng/native/configurecompiler.cmake
         - eng/native/build-commons.sh
+        - eng/native/gen-buildsys.cmd
         - src/native/libs/build-native.sh
         - src/coreclr/tools/aot/ILCompiler.Compiler/Compiler/ObjectWriter/MachObjectWriter.cs
         - src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets
@@ -63,7 +33,7 @@
         - src/mono/msbuild/apple/build/AppleBuild.targets
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
-        - src/tasks/AotCompilerTask/MonoAOTCompiler.props
+        - src/mono/msbuild/common/MonoAOTCompiler.props
         - src/tasks/AppleAppBuilder/Xcode.cs
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
         - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
@@ -190,115 +160,13 @@
     <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">
-    <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
-    <SkipLibrariesNativeRuntimePackages>true</SkipLibrariesNativeRuntimePackages>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">
     <BuildMonoAOTCrossCompilerOnly>true</BuildMonoAOTCrossCompilerOnly>
     <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
     <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
   </PropertyGroup>
 
-  <PropertyGroup Label="CalculatePortableBuild">
-    <PortableBuild Condition="'$(PortableBuild)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">false</PortableBuild>
-    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
-  </PropertyGroup>
-
-  <!-- _portableOS is the portable rid-OS corresponding to the target platform. -->
-  <PropertyGroup Label="CalculatePortableOS">
-    <!-- To determine _portableOS we use TargetOS.
-         TargetOS is not a rid-OS. For example: for Windows it is 'windows' instead of 'win'.
-         And, for flavors of Linux, like 'linux-musl' and 'linux-bionic', TargetOS is 'linux'. -->
-
-    <_portableOS>$(TargetOS.ToLowerInvariant())</_portableOS>
-    <_portableOS Condition="'$(_portableOS)' == 'windows'">win</_portableOS>
-
-    <!-- TargetOS=AnyOS is a sentinel value used by tests, ignore it.  -->
-    <_portableOS Condition="'$(_portableOS)' == 'anyos'">$(__PortableTargetOS)</_portableOS>
-
-    <!-- Detect linux flavors using __PortableTargetOS from the native script. -->
-    <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-musl'">linux-musl</_portableOS>
-    <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-bionic'">linux-bionic</_portableOS>
-
-    <!-- On Windows, we can build for Windows and Mobile.
-         For other TargetOSes, create a "win" build, built from TargetOS sources and "win" pre-built packages. -->
-    <_portableOS Condition="'$(HostOS)' == 'win' and '$(TargetsMobile)' != 'true'">win</_portableOS>
-  </PropertyGroup>
-
-  <!-- PackageRID is used for packages needed for the target. -->
-  <PropertyGroup Label="CalculatePackageRID">
-    <_packageOS>$(_portableOS)</_packageOS>
-
-    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' != 'linux-musl' and '$(_portableOS)' != 'linux-bionic'">$(_hostOS)</_packageOS>
-
-    <!-- source-build sets PackageOS to build with non-portable rid packages that were source-built previously. -->
-    <PackageRID Condition="'$(PackageOS)' != ''">$(PackageOS)-$(TargetArchitecture)</PackageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(_packageOS)-$(TargetArchitecture)</PackageRID>
-  </PropertyGroup>
-
-  <!-- ToolsRID is used for packages needed on the build host. -->
-  <PropertyGroup Label="CalculateToolsRID">
-    <!-- _portableHostOS is the portable rid-OS corresponding to the build host platform.
-
-         To determine _portableHostOS we use _hostOS, similar to how _portableOS is calculated from TargetOS.
-
-         When we're not cross-building we can detect linux flavors by looking at _portableOS
-         because the target platform and the build host platform are the same.
-         For cross-builds, we're currently unable to detect the flavors. -->
-    <_portableHostOS>$(_hostOS)</_portableHostOS>
-    <_portableHostOS Condition="'$(_portableHostOS)' == 'windows'">win</_portableHostOS>
-    <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_portableHostOS>
-
-    <!-- source-build sets ToolsOS to build with non-portable rid packages that were source-built previously. -->
-    <ToolsRID Condition="'$(ToolsOS)' != ''">$(ToolsOS)-$(_hostArch)</ToolsRID>
-    <ToolsRID Condition="'$(ToolsRID)' == ''">$(_portableHostOS)-$(_hostArch)</ToolsRID>
-
-    <!-- Microsoft.NET.Sdk.IL SDK defaults to the portable host rid. Match it to ToolsRID (for source-build). -->
-    <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
-  </PropertyGroup>
-
-  <!-- OutputRID is used to name the target platform.
-       For portable builds, OutputRID matches _portableOS.
-       For non-portable builds, it uses __DistroRid (from the native build script), or falls back to RuntimeInformation.RuntimeIdentifier.
-       Source-build sets OutputRID directly. -->
-  <PropertyGroup Label="CalculateOutputRID">
-    <_hostRid Condition="'$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_hostRid>
-    <_hostRid Condition="'$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostRid>
-
-    <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
-    <_parseDistroRid Condition="'$(_parseDistroRid)' == ''">$(_hostRid)</_parseDistroRid>
-    <_distroRidIndex>$(_parseDistroRid.LastIndexOf('-'))</_distroRidIndex>
-
-    <_outputOS>$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_outputOS>
-    <_outputOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_outputOS>
-
-    <OutputRID Condition="'$(OutputRID)' == ''">$(_outputOS)-$(TargetArchitecture)</OutputRID>
-  </PropertyGroup>
-
-  <PropertyGroup Label="CalculateTargetOSName">
-    <TargetsFreeBSD Condition="'$(TargetOS)' == 'freebsd'">true</TargetsFreeBSD>
-    <Targetsillumos Condition="'$(TargetOS)' == 'illumos'">true</Targetsillumos>
-    <TargetsSolaris Condition="'$(TargetOS)' == 'solaris'">true</TargetsSolaris>
-    <TargetsHaiku Condition="'$(TargetOS)' == 'haiku'">true</TargetsHaiku>
-    <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
-    <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
-    <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
-    <TargetsLinuxGlibc Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxMusl)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</TargetsLinuxGlibc>
-    <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
-    <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>
-    <TargetsiOS Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'">true</TargetsiOS>
-    <TargetstvOS Condition="'$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</TargetstvOS>
-    <TargetsiOSSimulator Condition="'$(TargetOS)' == 'iossimulator'">true</TargetsiOSSimulator>
-    <TargetstvOSSimulator Condition="'$(TargetOS)' == 'tvossimulator'">true</TargetstvOSSimulator>
-    <TargetsAndroid Condition="'$(TargetOS)' == 'android'">true</TargetsAndroid>
-    <TargetsBrowser Condition="'$(TargetOS)' == 'browser'">true</TargetsBrowser>
-    <TargetsWasi Condition="'$(TargetOS)' == 'wasi'">true</TargetsWasi>
-    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsHaiku)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
-  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)RuntimeIdentifier.props" />
 
   <PropertyGroup>
     <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
@@ -333,7 +201,7 @@
     <!-- Runtime doesn't support Arcade-driven target framework filtering. -->
     <NoTargetFrameworkFiltering>true</NoTargetFrameworkFiltering>
 
-    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;ClrDebugSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs;CxxStandardLibrary;CxxStandardLibraryStatic;CxxAbiLibrary</NativeBuildPartitionPropertiesToRemove>
+    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrAllJitsCommunitySubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;ClrDebugSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs;CxxStandardLibrary;CxxStandardLibraryStatic;CxxAbiLibrary</NativeBuildPartitionPropertiesToRemove>
     <UseSystemZlib Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android' or '$(TargetArchitecture)' == 'armv6'">true</UseSystemZlib>
   </PropertyGroup>
 

@@ -25,7 +25,7 @@
 #elif TARGET_LOONGARCH64
 #define THUNK_SIZE  16
 #elif TARGET_RISCV64
-#define THUNK_SIZE  12
+#define THUNK_SIZE  20
 #else
 #define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause RhpGetNumThunksPerBlock to return 0
 #endif
@@ -259,21 +259,27 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
 #elif defined(TARGET_RISCV64)
 
-            // auipc  t0, %hi(delta)      // Load upper immediate with address high bits
-            // ld     t1, %lo(delta)(t0)  // Load data from address in (t0 + lower immediate)
-            // jr     t1                  // Jump and don't link register
+            //auipc    t1, hi(<delta PC to thunk data address>)
+            //addi     t1, t1, lo(<delta PC to thunk data address>)
+            //auipc    t0, hi(<delta to get to last word in data page>)
+            //ld       t0, (t0)
+            //jalr     zero, t0, 0
 
             int delta = (int)(pCurrentDataAddress - pCurrentThunkAddress);
-            uint32_t deltaHi = (delta + 0x800) & 0xfffff000;
-            uint32_t deltaLo = delta << (32 - 12);
-            
-            *((uint32_t*)pCurrentThunkAddress) = 0x00000297 | deltaHi;  // auipc
+            *((uint32_t*)pCurrentThunkAddress) = 0x00000317 | ((((delta + 0x800) & 0xFFFFF000) >> 12) << 12);  // auipc t1, delta[31:12]
             pCurrentThunkAddress += 4;
 
-            *((uint32_t*)pCurrentThunkAddress) = 0x0002B303 | deltaLo;  // addi
+            *((uint32_t*)pCurrentThunkAddress) = 0x00030313 | ((delta & 0xFFF) << 20);  // addi t1, t1, delta[11:0]
             pCurrentThunkAddress += 4;
 
-            *((uint32_t*)pCurrentThunkAddress) = 0x00030067; // jr
+            delta += OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2) - 8;
+            *((uint32_t*)pCurrentThunkAddress) = 0x00000297 | ((((delta + 0x800) & 0xFFFFF000) >> 12) << 12);  // auipc t0, delta[31:12]
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x0002b283 | ((delta & 0xFFF) << 20); // ld t0, (delta[11:0])(t0)
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x00008282;  // jalr zero, t0, 0
             pCurrentThunkAddress += 4;
 
 #else

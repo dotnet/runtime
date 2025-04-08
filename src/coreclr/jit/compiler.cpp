@@ -639,7 +639,7 @@ bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
 //    For vector calling conventions, a vector is considered a "primitive"
 //    type, as it is passed in a single register.
 //
-var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd, bool isVarArg)
+var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd)
 {
     assert(structSize != 0);
 
@@ -648,37 +648,32 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     // Start by determining if we have an HFA/HVA with a single element.
     if (GlobalJitOptions::compFeatureHfa)
     {
-        // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
-        // as if they are not HFA types.
-        if (!(TargetArchitecture::IsArm64 && TargetOS::IsWindows && isVarArg))
+        switch (structSize)
         {
-            switch (structSize)
-            {
-                case 4:
-                case 8:
+            case 4:
+            case 8:
 #ifdef TARGET_ARM64
-                case 16:
+            case 16:
 #endif // TARGET_ARM64
+            {
+                var_types hfaType = GetHfaType(clsHnd);
+                // We're only interested in the case where the struct size is equal to the size of the hfaType.
+                if (varTypeIsValidHfaType(hfaType))
                 {
-                    var_types hfaType = GetHfaType(clsHnd);
-                    // We're only interested in the case where the struct size is equal to the size of the hfaType.
-                    if (varTypeIsValidHfaType(hfaType))
+                    if (genTypeSize(hfaType) == structSize)
                     {
-                        if (genTypeSize(hfaType) == structSize)
-                        {
-                            useType = hfaType;
-                        }
-                        else
-                        {
-                            return TYP_UNKNOWN;
-                        }
+                        useType = hfaType;
+                    }
+                    else
+                    {
+                        return TYP_UNKNOWN;
                     }
                 }
             }
-            if (useType != TYP_UNKNOWN)
-            {
-                return useType;
-            }
+        }
+        if (useType != TYP_UNKNOWN)
+        {
+            return useType;
         }
     }
 
@@ -728,230 +723,6 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
         default:
             useType = TYP_UNKNOWN;
             break;
-    }
-
-    return useType;
-}
-
-//-----------------------------------------------------------------------------
-// getArgTypeForStruct:
-//     Get the type that is used to pass values of the given struct type.
-//     If you have already retrieved the struct size then it should be
-//     passed as the optional fourth argument, as this allows us to avoid
-//     an extra call to getClassSize(clsHnd)
-//
-// Arguments:
-//    clsHnd       - the handle for the struct type
-//    wbPassStruct - An "out" argument with information about how
-//                   the struct is to be passed
-//    isVarArg     - is vararg, used to ignore HFA types for Arm64 windows varargs
-//    structSize   - the size of the struct type,
-//                   or zero if we should call getClassSize(clsHnd)
-//
-// Return Value:
-//    For wbPassStruct you can pass a 'nullptr' and nothing will be written
-//     or returned for that out parameter.
-//    When *wbPassStruct is SPK_PrimitiveType this method's return value
-//       is the primitive type used to pass the struct.
-//    When *wbPassStruct is SPK_ByReference this method's return value
-//       is always TYP_UNKNOWN and the struct type is passed by reference to a copy
-//    When *wbPassStruct is SPK_ByValue or SPK_ByValueAsHfa this method's return value
-//       is always TYP_STRUCT and the struct type is passed by value either
-//       using multiple registers or on the stack.
-//
-// Assumptions:
-//    The size must be the size of the given type.
-//    The given class handle must be for a value type (struct).
-//
-// Notes:
-//    About HFA types:
-//        When the clsHnd is a one element HFA type we return the appropriate
-//         floating point primitive type and *wbPassStruct is SPK_PrimitiveType
-//        If there are two or more elements in the HFA type then the this method's
-//         return value is TYP_STRUCT and *wbPassStruct is SPK_ByValueAsHfa
-//
-var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                        structPassingKind*   wbPassStruct,
-                                        bool                 isVarArg,
-                                        unsigned             structSize)
-{
-    var_types         useType         = TYP_UNKNOWN;
-    structPassingKind howToPassStruct = SPK_Unknown; // We must change this before we return
-
-    assert(structSize != 0);
-
-// Determine if we can pass the struct as a primitive type.
-// Note that on x86 we only pass specific pointer-sized structs that satisfy isTrivialPointerSizedStruct checks.
-#ifndef TARGET_X86
-#ifdef UNIX_AMD64_ABI
-
-    // An 8-byte struct may need to be passed in a floating point register
-    // So we always consult the struct "Classifier" routine
-    //
-    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-    eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, &structDesc);
-
-    if (structDesc.passedInRegisters && (structDesc.eightByteCount != 1))
-    {
-        // We can't pass this as a primitive type.
-    }
-    else if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
-    {
-        // If this is passed as a floating type, use that.
-        // Otherwise, we'll use the general case - we don't want to use the "EightByteType"
-        // directly, because it returns `TYP_INT` for any integral type <= 4 bytes, and
-        // we need to preserve small types.
-        useType = GetEightByteType(structDesc, 0);
-    }
-    else
-#endif // UNIX_AMD64_ABI
-
-        // The largest arg passed in a single register is MAX_PASS_SINGLEREG_BYTES,
-        // so we can skip calling getPrimitiveTypeForStruct when we
-        // have a struct that is larger than that.
-        //
-        if (structSize <= MAX_PASS_SINGLEREG_BYTES)
-        {
-            // We set the "primitive" useType based upon the structSize
-            // and also examine the clsHnd to see if it is an HFA of count one
-            useType = getPrimitiveTypeForStruct(structSize, clsHnd, isVarArg);
-        }
-#else
-    if (isTrivialPointerSizedStruct(clsHnd))
-    {
-        useType = TYP_I_IMPL;
-    }
-#endif // !TARGET_X86
-
-    // Did we change this struct type into a simple "primitive" type?
-    //
-    if (useType != TYP_UNKNOWN)
-    {
-        // Yes, we should use the "primitive" type in 'useType'
-        howToPassStruct = SPK_PrimitiveType;
-    }
-    else // We can't replace the struct with a "primitive" type
-    {
-        // See if we can pass this struct by value, possibly in multiple registers
-        // or if we should pass it by reference to a copy
-        //
-        if (structSize <= MAX_PASS_MULTIREG_BYTES)
-        {
-            // Structs that are HFA/HVA's are passed by value in multiple registers.
-            // Arm64 Windows VarArg methods arguments will not classify HFA/HVA types, they will need to be treated
-            // as if they are not HFA/HVA types.
-            var_types hfaType;
-            if (TargetArchitecture::IsArm64 && TargetOS::IsWindows && isVarArg)
-            {
-                hfaType = TYP_UNDEF;
-            }
-            else
-            {
-                hfaType = GetHfaType(clsHnd);
-            }
-            if (varTypeIsValidHfaType(hfaType))
-            {
-                // HFA's of count one should have been handled by getPrimitiveTypeForStruct
-                assert(GetHfaCount(clsHnd) >= 2);
-
-                // setup wbPassType and useType indicate that this is passed by value as an HFA
-                //  using multiple registers
-                //  (when all of the parameters registers are used, then the stack will be used)
-                howToPassStruct = SPK_ByValueAsHfa;
-                useType         = TYP_STRUCT;
-            }
-            else // Not an HFA struct type
-            {
-
-#ifdef UNIX_AMD64_ABI
-                // The case of (structDesc.eightByteCount == 1) should have already been handled
-                if ((structDesc.eightByteCount > 1) || !structDesc.passedInRegisters)
-                {
-                    // setup wbPassType and useType indicate that this is passed by value in multiple registers
-                    //  (when all of the parameters registers are used, then the stack will be used)
-                    howToPassStruct = SPK_ByValue;
-                    useType         = TYP_STRUCT;
-                }
-                else
-                {
-                    assert(structDesc.eightByteCount == 0);
-                    // Otherwise we pass this struct by reference to a copy
-                    // setup wbPassType and useType indicate that this is passed using one register
-                    //  (by reference to a copy)
-                    howToPassStruct = SPK_ByReference;
-                    useType         = TYP_UNKNOWN;
-                }
-
-#elif defined(TARGET_ARM64)
-
-                // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
-                assert(structSize > TARGET_POINTER_SIZE);
-
-                // On ARM64 structs that are 9-16 bytes are passed by value in multiple registers
-                //
-                if (structSize <= (TARGET_POINTER_SIZE * 2))
-                {
-                    // setup wbPassType and useType indicate that this is passed by value in multiple registers
-                    //  (when all of the parameters registers are used, then the stack will be used)
-                    howToPassStruct = SPK_ByValue;
-                    useType         = TYP_STRUCT;
-                }
-                else // a structSize that is 17-32 bytes in size
-                {
-                    // Otherwise we pass this struct by reference to a copy
-                    // setup wbPassType and useType indicate that this is passed using one register
-                    //  (by reference to a copy)
-                    howToPassStruct = SPK_ByReference;
-                    useType         = TYP_UNKNOWN;
-                }
-
-#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-                // Otherwise we pass this struct by value on the stack
-                // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
-                // On LOONGARCH64 and RISCV64 struct that is 1-16 bytes is passed by value in one/two register(s)
-                howToPassStruct = SPK_ByValue;
-                useType         = TYP_STRUCT;
-
-#else //  TARGET_XXX
-
-                noway_assert(!"Unhandled TARGET in getArgTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
-
-#endif //  TARGET_XXX
-            }
-        }
-        else // (structSize > MAX_PASS_MULTIREG_BYTES)
-        {
-            // We have a (large) struct that can't be replaced with a "primitive" type
-            // and can't be passed in multiple registers
-
-#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
-
-            // Otherwise we pass this struct by value on the stack
-            // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
-            howToPassStruct = SPK_ByValue;
-            useType         = TYP_STRUCT;
-
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-            // Otherwise we pass this struct by reference to a copy
-            // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
-            howToPassStruct = SPK_ByReference;
-            useType         = TYP_UNKNOWN;
-
-#else //  TARGET_XXX
-
-            noway_assert(!"Unhandled TARGET in getArgTypeForStruct");
-
-#endif //  TARGET_XXX
-        }
-    }
-
-    // 'howToPassStruct' must be set to one of the valid values before we return
-    assert(howToPassStruct != SPK_Unknown);
-    if (wbPassStruct != nullptr)
-    {
-        *wbPassStruct = howToPassStruct;
     }
 
     return useType;
@@ -1136,7 +907,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         //
         // The ABI for struct returns in varArg methods, is same as the normal case,
         // so pass false for isVararg
-        useType = getPrimitiveTypeForStruct(structSize, clsHnd, /*isVararg=*/false);
+        useType = getPrimitiveTypeForStruct(structSize, clsHnd);
 
         if (useType != TYP_UNKNOWN)
         {
@@ -2299,6 +2070,7 @@ void Compiler::compSetProcessor()
         if (canUseApxEncoding())
         {
             codeGen->GetEmitter()->SetUseRex2Encoding(true);
+            codeGen->GetEmitter()->SetUsePromotedEVEXEncoding(true);
         }
     }
 #endif // TARGET_XARCH
@@ -3390,11 +3162,24 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
 
+    rbmAllInt         = RBM_ALLINT_INIT;
+    rbmIntCalleeTrash = RBM_INT_CALLEE_TRASH_INIT;
+    cntCalleeTrashInt = CNT_CALLEE_TRASH_INT_INIT;
+    regIntLast        = REG_R15;
+
     if (canUseEvexEncoding())
     {
         rbmAllFloat |= RBM_HIGHFLOAT;
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
+    }
+
+    if (canUseApxEncoding())
+    {
+        rbmAllInt |= RBM_HIGHINT;
+        rbmIntCalleeTrash |= RBM_HIGHINT;
+        cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
+        regIntLast = REG_R23;
     }
 #endif // TARGET_AMD64
 
@@ -4068,8 +3853,8 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     JITDUMP("\n"
             "compRsvdRegCheck\n"
             "  frame size  = %6d\n"
-            "  compArgSize = %6d\n",
-            frameSize, compArgSize);
+            "  lvaParameterStackSize = %6d\n",
+            frameSize, lvaParameterStackSize);
 
     if (opts.MinOpts())
     {
@@ -4139,7 +3924,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     JITDUMP("  maxR11NegativeEncodingOffset     = %6d\n", maxR11NegativeEncodingOffset);
 
     // -1 because otherwise we are computing the address just beyond the last argument, which we don't need to do.
-    unsigned maxR11PositiveOffset = compArgSize + (2 * REGSIZE_BYTES) - 1;
+    unsigned maxR11PositiveOffset = lvaParameterStackSize + (2 * REGSIZE_BYTES) - 1;
     JITDUMP("  maxR11PositiveOffset             = %6d\n", maxR11PositiveOffset);
 
     // The value is positive, but represents a negative offset from R11.
@@ -4170,8 +3955,8 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     JITDUMP("  maxSPPositiveEncodingOffset      = %6d\n", maxSPPositiveEncodingOffset);
 
     // -1 because otherwise we are computing the address just beyond the last argument, which we don't need to do.
-    assert(compArgSize + frameSize > 0);
-    unsigned maxSPPositiveOffset = compArgSize + frameSize - 1;
+    assert(lvaParameterStackSize + frameSize > 0);
+    unsigned maxSPPositiveOffset = lvaParameterStackSize + frameSize - 1;
 
     if (codeGen->isFramePointerUsed())
     {
@@ -4571,7 +4356,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Note: the importer is sensitive to block weights, so this has
     // to happen before importation.
     //
-    activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_PROFILE_FLAGS;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
 
     activePhaseChecks |= PhaseChecks::CHECK_FG_INIT_BLOCK;
@@ -4779,11 +4564,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
 #ifdef DEBUG
     // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
     lvaStressLclFld();
@@ -4825,6 +4605,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, &Compiler::fgComputeBlockWeights);
 
+        // Try again to remove empty try finally/fault clauses
+        //
+        DoPhase(this, PHASE_EMPTY_FINALLY_2, &Compiler::fgRemoveEmptyFinally);
+
+        // Remove empty try regions (try/finally)
+        //
+        DoPhase(this, PHASE_EMPTY_TRY_2, &Compiler::fgRemoveEmptyTry);
+
+        // Remove empty try regions (try/catch/fault)
+        //
+        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
+
         // Invert loops
         //
         DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
@@ -4843,8 +4635,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_DFS_BLOCKS3, &Compiler::fgDfsBlocksAndRemove);
 
-        // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
-        // and sets bbWeight to the loop nesting levels.
+        // Discover and classify natural loops (e.g. mark iterative loops as such).
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
@@ -4859,18 +4650,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Unroll loops
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
-
-        // Try again to remove empty try finally/fault clauses
-        //
-        DoPhase(this, PHASE_EMPTY_FINALLY_2, &Compiler::fgRemoveEmptyFinally);
-
-        // Remove empty try regions (try/finally)
-        //
-        DoPhase(this, PHASE_EMPTY_TRY_2, &Compiler::fgRemoveEmptyTry);
-
-        // Remove empty try regions (try/catch/fault)
-        //
-        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
         // Compute dominators and exceptional entry blocks
         //
@@ -4921,6 +4700,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doAssertionProp           = true;
         bool doVNBasedIntrinExpansion  = true;
         bool doRangeAnalysis           = true;
+        bool doRangeCheckCloning       = true;
         bool doVNBasedDeadStoreRemoval = true;
 
 #if defined(OPT_CONFIG)
@@ -4933,6 +4713,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doCse                     = doValueNum;
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+        doRangeCheckCloning       = doValueNum && doRangeAnalysis;
         doOptimizeIVs             = doAssertionProp && (JitConfig.JitDoOptimizeIVs() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
         doVNBasedIntrinExpansion  = doValueNum;
@@ -5045,6 +4826,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
 
+            if (doRangeCheckCloning)
+            {
+                // Clone blocks with subsequent bounds checks
+                //
+                DoPhase(this, PHASE_RANGE_CHECK_CLONING, &Compiler::optRangeCheckCloning);
+            }
+
             if (doVNBasedIntrinExpansion)
             {
                 // Expand some intrinsics based on VN data
@@ -5128,6 +4916,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Expand thread local access
     DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
 
+    // Expand stack allocated arrays
+    DoPhase(this, PHASE_EXPAND_STACK_ARR, &Compiler::fgExpandStackArrayAllocations);
+
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
@@ -5145,13 +4936,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
-        // Optimize block order
+        // Conditional to switch conversion, and switch peeling
         //
-        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
 
-        // Conditional to Switch conversion
+        // Run flow optimizations before reordering blocks
         //
-        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
+        DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, &Compiler::optOptimizePreLayout);
+
+        // Run profile repair
+        //
+        DoPhase(this, PHASE_REPAIR_PROFILE, &Compiler::fgRepairProfile);
     }
 
 #ifdef DEBUG
@@ -5206,6 +5001,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     stackLevelSetter.Run();
     m_pLowering->FinalizeOutgoingArgSpace();
 
+    FinalizeEH();
+
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
 
@@ -5224,24 +5021,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // We won't introduce new blocks from here on out,
         // so run the new block layout.
         //
-        if (JitConfig.JitDoReversePostOrderLayout())
-        {
-            auto lateLayoutPhase = [this] {
-                fgDoReversePostOrderLayout();
-                fgMoveColdBlocks();
-                fgSearchImprovedLayout();
-                fgInvalidateDfsTree();
-
-                if (compHndBBtabCount != 0)
-                {
-                    fgRebuildEHRegions();
-                }
-
-                return PhaseStatus::MODIFIED_EVERYTHING;
-            };
-
-            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, lateLayoutPhase);
-        }
+        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::fgSearchImprovedLayout);
 
         // Now that the flowgraph is finalized, run post-layout optimizations.
         //
@@ -5343,6 +5123,100 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fflush(compJitFuncInfoFile);
     }
 #endif // FUNC_INFO_LOGGING
+}
+
+//----------------------------------------------------------------------------------------------
+// FinalizeEH: Finalize EH information
+//
+void Compiler::FinalizeEH()
+{
+#if defined(FEATURE_EH_WINDOWS_X86)
+
+    // Grab space for exception handling info on the frame
+    //
+    if (!UsesFunclets() && ehNeedsShadowSPslots())
+    {
+        // Recompute the handler nesting levels, as they may have changed.
+        //
+        unsigned const oldHandlerNestingCount = ehMaxHndNestingCount;
+        ehMaxHndNestingCount                  = 0;
+
+        if (compHndBBtabCount > 0)
+        {
+            for (int XTnum = compHndBBtabCount - 1; XTnum >= 0; XTnum--)
+            {
+                EHblkDsc* const HBtab             = &compHndBBtab[XTnum];
+                unsigned const  enclosingHndIndex = HBtab->ebdEnclosingHndIndex;
+
+                if (enclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    EHblkDsc* const enclosingHBtab  = &compHndBBtab[enclosingHndIndex];
+                    unsigned const  newNestingLevel = enclosingHBtab->ebdHandlerNestingLevel + 1;
+                    HBtab->ebdHandlerNestingLevel   = (unsigned short)newNestingLevel;
+
+                    if (newNestingLevel > ehMaxHndNestingCount)
+                    {
+                        ehMaxHndNestingCount = newNestingLevel;
+                    }
+                }
+                else
+                {
+                    HBtab->ebdHandlerNestingLevel = 0;
+                }
+            }
+
+            // When there is EH, we need to record nesting level + 1
+            //
+            ehMaxHndNestingCount++;
+        }
+
+        if (oldHandlerNestingCount != ehMaxHndNestingCount)
+        {
+            JITDUMP("Finalize EH: max handler nesting count now %u (was %u)\n", oldHandlerNestingCount,
+                    ehMaxHndNestingCount);
+        }
+
+        // The first slot is reserved for ICodeManager::FixContext(ppEndRegion)
+        // ie. the offset of the end-of-last-executed-filter
+        unsigned slotsNeeded = 1;
+
+        unsigned handlerNestingLevel = ehMaxHndNestingCount;
+
+        if (opts.compDbgEnC && (handlerNestingLevel < (unsigned)MAX_EnC_HANDLER_NESTING_LEVEL))
+            handlerNestingLevel = (unsigned)MAX_EnC_HANDLER_NESTING_LEVEL;
+
+        slotsNeeded += handlerNestingLevel;
+
+        // For a filter (which can be active at the same time as a catch/finally handler)
+        slotsNeeded++;
+        // For zero-termination of the shadow-Stack-pointer chain
+        slotsNeeded++;
+
+        lvaShadowSPslotsVar = lvaGrabTempWithImplicitUse(false DEBUGARG("lvaShadowSPslotsVar"));
+        lvaSetStruct(lvaShadowSPslotsVar, typGetBlkLayout(slotsNeeded * TARGET_POINTER_SIZE), false);
+        lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+    }
+
+    // Build up a mapping from EH IDs to EHblkDsc*
+    //
+    assert(m_EHIDtoEHblkDsc == nullptr);
+
+    if (compHndBBtabCount > 0)
+    {
+        m_EHIDtoEHblkDsc = new (getAllocator()) EHIDtoEHblkDscMap(getAllocator());
+
+        for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+        {
+            EHblkDsc* const HBtab = &compHndBBtab[XTnum];
+            m_EHIDtoEHblkDsc->Set(HBtab->ebdID, HBtab);
+        }
+    }
+
+#endif // FEATURE_EH_WINDOWS_X86
+
+    // We should not make any more alterations to the EH table structure.
+    //
+    ehTableFinalized = true;
 }
 
 #if FEATURE_LOOP_ALIGN
@@ -6325,6 +6199,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1);
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1_V512);
             instructionSetFlags.AddInstructionSet(InstructionSet_EVEX);
+        }
+
+        if (JitConfig.EnableAPX() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_APX);
         }
 #endif
 
@@ -8262,67 +8141,6 @@ void Compiler::TransferTestDataToNode(GenTree* from, GenTree* to)
 
 #endif // DEBUG
 
-//------------------------------------------------------------------------
-// GetSignificantSegments:
-//   Compute a segment tree containing all significant (non-padding) segments
-//   for the specified class layout.
-//
-// Parameters:
-//   layout - The layout
-//
-// Returns:
-//   Segment tree containing all significant parts of the layout.
-//
-const StructSegments& Compiler::GetSignificantSegments(ClassLayout* layout)
-{
-    StructSegments* cached;
-    if ((m_significantSegmentsMap != nullptr) && m_significantSegmentsMap->Lookup(layout, &cached))
-    {
-        return *cached;
-    }
-
-    COMP_HANDLE compHnd = info.compCompHnd;
-
-    StructSegments* newSegments = new (this, CMK_Promotion) StructSegments(getAllocator(CMK_Promotion));
-
-    if (layout->IsBlockLayout())
-    {
-        newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
-    }
-    else
-    {
-        CORINFO_TYPE_LAYOUT_NODE nodes[256];
-        size_t                   numNodes = ArrLen(nodes);
-        GetTypeLayoutResult      result   = compHnd->getTypeLayout(layout->GetClassHandle(), nodes, &numNodes);
-
-        if (result != GetTypeLayoutResult::Success)
-        {
-            newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
-        }
-        else
-        {
-            for (size_t i = 0; i < numNodes; i++)
-            {
-                const CORINFO_TYPE_LAYOUT_NODE& node = nodes[i];
-                if ((node.type != CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) ||
-                    node.hasSignificantPadding)
-                {
-                    newSegments->Add(StructSegments::Segment(node.offset, node.offset + node.size));
-                }
-            }
-        }
-    }
-
-    if (m_significantSegmentsMap == nullptr)
-    {
-        m_significantSegmentsMap = new (this, CMK_Promotion) ClassLayoutStructSegmentsMap(getAllocator(CMK_Promotion));
-    }
-
-    m_significantSegmentsMap->Set(layout, newSegments);
-
-    return *newSegments;
-}
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -10149,7 +9967,7 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_M_NOGCCHECK]");
                     }
-                    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+                    if (call->IsSpecialIntrinsic())
                     {
                         chars += printf("[CALL_M_SPECIAL_INTRINSIC]");
                     }
@@ -10448,7 +10266,7 @@ JITDBGAPI void __cdecl dVN(ValueNum vn)
     cVN(JitTls::GetCompiler(), vn);
 }
 
-JITDBGAPI void __cdecl dRegMask(regMaskTP mask)
+JITDBGAPI void __cdecl dRegMask(const regMaskTP& mask)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== dRegMask %u\n", sequenceNumber++);

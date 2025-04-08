@@ -17,8 +17,8 @@
 // WARNING!!  to occur when the stack is unwalkable
 //
 
-        // GSCookie + alignment padding
-OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
+        // alignment padding
+OFFSET_OF_FRAME=0
 
         .macro GenerateRedirectedStubWithFrame STUB, TARGET
 

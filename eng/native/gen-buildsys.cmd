@@ -80,6 +80,33 @@ if /i "%__Arch%" == "wasm" (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"
 )
 
+if /i "%__Os%" == "android" (
+    :: Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
+    set __ANDROID_API_LEVEL=21
+    if "%ANDROID_NDK_ROOT%" == "" (
+        echo Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root.
+        exit /B 1
+    )
+
+    set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_BUILD=1" "-DANDROID_CPP_FEATURES='no-rtti exceptions'"
+    set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_PLATFORM=android-!__ANDROID_API_LEVEL!" "-DANDROID_NATIVE_API_LEVEL=!__ANDROID_API_LEVEL!"
+
+    if "%__Arch%" == "x64" (
+        set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_ABI=x86_64"
+    )
+    if "%__Arch%" == "x86" (
+        set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_ABI=x86"
+    )
+    if "%__Arch%" == "arm64" (
+        set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_ABI=arm64-v8a"
+    )
+    if "%__Arch%" == "x64" (
+        set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_ABI=armeabi-v7a"
+    )
+
+    set __ExtraCmakeParams=!__ExtraCmakeParams! "-DCMAKE_TOOLCHAIN_FILE='%ANDROID_NDK_ROOT:\=/%/build/cmake/android.toolchain.cmake'" "-C %__repoRoot%/eng/native/tryrun.cmake"
+)
+
 :loop
 if [%6] == [] goto end_loop
 set __ExtraCmakeParams=%__ExtraCmakeParams% %6
@@ -111,6 +138,7 @@ if not "%__ConfigureOnly%" == "1" (
 if /i "%__UseEmcmake%" == "1" (
     call "!EMSDK_PATH!/emsdk_env.cmd" > nul 2>&1 && emcmake "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 ) else (
+    echo "%CMakePath% %__ExtraCmakeParams% --no-warn-unused-cli -G %__CmakeGenerator% -B %__IntermediatesDir% -S %__SourceDir%"
     "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 )
 

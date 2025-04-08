@@ -148,10 +148,11 @@ namespace System
 
         private DateTime(ulong dateData)
         {
-            this._dateData = dateData;
+            Debug.Assert((dateData & TicksMask) <= MaxTicks);
+            _dateData = dateData;
         }
 
-        internal static DateTime UnsafeCreate(long ticks) => new DateTime((ulong)ticks);
+        internal static DateTime CreateUnchecked(long ticks) => new DateTime((ulong)ticks);
 
         public DateTime(long ticks, DateTimeKind kind)
         {
@@ -1086,7 +1087,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
 
-            ReadOnlySpan<uint> days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<uint> days = RuntimeHelpers.IsKnownConstant(month) && month == 1 || IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
             if ((uint)day > days[month] - days[month - 1])
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();

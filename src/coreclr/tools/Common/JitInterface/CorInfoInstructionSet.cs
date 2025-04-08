@@ -497,17 +497,17 @@ namespace Internal.JitInterface
 
         public static InstructionSet ConvertToImpliedInstructionSetForVectorInstructionSets(TargetArchitecture architecture, InstructionSet input)
         {
-            switch(architecture)
+            switch (architecture)
             {
             case TargetArchitecture.ARM64:
-                switch(input)
+                switch (input)
                 {
                 case InstructionSet.ARM64_Vector64: return InstructionSet.ARM64_AdvSimd;
                 case InstructionSet.ARM64_Vector128: return InstructionSet.ARM64_AdvSimd;
                 }
                 break;
             case TargetArchitecture.X64:
-                switch(input)
+                switch (input)
                 {
                 case InstructionSet.X64_Vector128: return InstructionSet.X64_SSE;
                 case InstructionSet.X64_Vector256: return InstructionSet.X64_AVX;
@@ -515,7 +515,7 @@ namespace Internal.JitInterface
                 }
                 break;
             case TargetArchitecture.X86:
-                switch(input)
+                switch (input)
                 {
                 case InstructionSet.X86_Vector128: return InstructionSet.X86_SSE;
                 case InstructionSet.X86_Vector256: return InstructionSet.X86_AVX;
@@ -984,7 +984,7 @@ namespace Internal.JitInterface
             do
             {
                 oldflags = resultflags;
-                switch(architecture)
+                switch (architecture)
                 {
 
                 case TargetArchitecture.ARM64:

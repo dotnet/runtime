@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
-internal static class IReJITExtensions
+public static class IReJITExtensions
 {
     public static IEnumerable<TargetNUInt> GetRejitIds(this IReJIT rejit, Target target, TargetPointer methodDesc)
     {

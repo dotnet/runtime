@@ -73,11 +73,6 @@ CObjectType CorUnix::otFile(
                 NULL,   // No immutable data cleanup routine
                 sizeof(CFileProcessLocalData),
                 CFileProcessLocalDataCleanupRoutine,
-                GENERIC_READ|GENERIC_WRITE,  // Ignored -- no Win32 object security support
-                CObjectType::SecuritySupported,
-                CObjectType::OSPersistedSecurityInfo,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::UnwaitableObject,
                 CObjectType::SignalingNotApplicable,
                 CObjectType::ThreadReleaseNotApplicable,
@@ -327,6 +322,15 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             goto LExit;
         }
         lpFilename = lpExistingPath;
+    }
+    else if (pchSeparator == lpExistingPath)
+    {
+        // This is a path in the root i.e. '/tmp'
+        // This scenario will probably only come up in WASM where it is normal to
+        //  have a cwd of '/' and store files in the root of the virtual filesystem
+        lpBuffer.Clear();
+        lpBuffer.Append(lpExistingPath, strlen(lpExistingPath));
+        return NO_ERROR;
     }
     else
     {

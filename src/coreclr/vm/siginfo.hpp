@@ -947,6 +947,14 @@ class MetaSig
         //------------------------------------------------------------------
         CorElementType GetByRefType(TypeHandle* pTy) const;
 
+        //------------------------------------------------------------------
+        // Consume the custom modifiers, if any, in the current signature
+        // and update it.
+        // This is a non destructive operation if the current signature is not
+        // pointing at a sequence of ELEMENT_TYPE_CMOD_REQD or ELEMENT_TYPE_CMOD_OPT.
+        //------------------------------------------------------------------
+        static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig);
+
         // Struct used to capture in/out state during the comparison
         // of element types.
         struct CompareState

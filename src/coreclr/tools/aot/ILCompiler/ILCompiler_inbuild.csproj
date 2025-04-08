@@ -1,8 +1,23 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Publish;PublishItemsOutputGroup">
   <PropertyGroup>
-    <CrossHostArch>$(BuildArchitecture)</CrossHostArch>
-    <OutputPath>$(RuntimeBinDir)/$(CrossHostArch)/ilc/</OutputPath>
-    <RuntimeIdentifier>$(ToolsRID)</RuntimeIdentifier>
+    <CrossHostArch Condition="'$(_BuildAnyCrossArch)' == 'true'">$(BuildArchitecture)</CrossHostArch>
+    <_IsPublishing>true</_IsPublishing>
+    <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+    <PublishDir>$(RuntimeBinDir)$(BuildArchitecture)/ilc/</PublishDir>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <!--
+      Publish with AOT on Windows as Single file doesn't work well when an app has to include DiaSymReader.Native.
+      Publish single-file elsewhere so we don't need to adjust our "AOT in build" logic to handle targeting the SDK RID.
+    -->
+    <PublishAot Condition="$(NETCoreSdkPortableRuntimeIdentifier.StartsWith('win-'))">true</PublishAot>
+    <PublishSingleFile Condition="'$(PublishAot)' != 'true'">true</PublishSingleFile>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CrossBuild)' != 'true' or ('$(StageOneBuild)' != 'true' and '$(StageTwoBuild)' != 'true')">
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
   </PropertyGroup>
   <Import Project="ILCompiler.props" />
 </Project>

@@ -2,7 +2,7 @@
   <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" />
   <PropertyGroup>
     <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
-    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows)) or '$(TargetsAndroid)' == 'true'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <RuntimeVersionFile>$(ArtifactsObjDir)runtime_version.h</RuntimeVersionFile>
     <NativeSourceLinkFile>$(ArtifactsObjDir)native.sourcelink.json</NativeSourceLinkFile>
     <VerifySourceLinkFileExists>false</VerifySourceLinkFileExists>
@@ -14,6 +14,22 @@
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
   <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;OutputPgoPathForCI" />
+  
+  <!-- 
+    This is a workaround when cross-compiling on Windows for Android. 
+
+    https://github.com/dotnet/arcade/issues/15496
+  -->
+  <Target Name="_BeforeAndroidNativeVersionFile" BeforeTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsAndroid)' == 'true'">
+    <PropertyGroup>
+      <NativeVersionFile>$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    </PropertyGroup>
+  </Target>
+  <Target Name="_AfterAndroidNativeVersionFile" AfterTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsAndroid)' == 'true'">
+    <PropertyGroup>
+      <NativeVersionFile>$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    </PropertyGroup>
+  </Target>
   <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" />
   <!--
     This is relatively ugly. The NoTargets SDK sets DebugType=None, but that makes it such that the sourcelink targets

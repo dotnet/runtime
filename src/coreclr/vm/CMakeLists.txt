@@ -1,10 +1,13 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(RUNTIME_DIR ../runtime)
+
 # Needed due to the cmunged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
 include_directories(${CLR_SRC_NATIVE_DIR})
+include_directories(${RUNTIME_DIR})
 
 # needed when zLib compression is used
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
@@ -40,6 +43,9 @@ if(FEATURE_PERFTRACING)
     set(CORECLR_USEREVENTS_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/userevents)
     include_directories(${CORECLR_USEREVENTS_SHIM_DIR})
 endif(FEATURE_PERFTRACING)
+
+add_compile_definitions($<${FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH}:FEATURE_CACHED_INTERFACE_DISPATCH>)
+add_compile_definitions($<${FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH}:FEATURE_VIRTUAL_STUB_DISPATCH>)
 
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
@@ -287,8 +293,11 @@ set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
     assemblynative.cpp
+    assemblyprobeextension.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
+    ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
+    CachedInterfaceDispatchCoreclr.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
@@ -333,6 +342,7 @@ set(VM_SOURCES_WKS
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp
+    interpexec.cpp
     invokeutil.cpp
     jithelpers.cpp
     managedmdimport.cpp
@@ -381,6 +391,7 @@ set(VM_HEADERS_WKS
     ../inc/jithelpers.h
     appdomainnative.hpp
     assemblynative.hpp
+    ../inc/assemblyprobeextension.h
     assemblyspec.hpp
     assemblyspecbase.h
     baseassemblyspec.h
@@ -430,6 +441,7 @@ set(VM_HEADERS_WKS
     interopconverter.h
     interoputil.h
     interoputil.inl
+    interpexec.h
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h
@@ -609,6 +621,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/AsmHelpers.asm
+        ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
         ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
         ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
         ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
@@ -621,6 +634,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
         ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
         ${ARCH_SOURCES_DIR}/Context.asm
@@ -651,7 +665,9 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
         ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
+        ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
     )
 
     set(VM_HEADERS_WKS_ARCH_ASM
@@ -659,11 +675,13 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     )
 endif()
 
+    set(ASM_SUFFIX asm)
 else(CLR_CMAKE_TARGET_WIN32)
 
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
+            ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
             ${ARCH_SOURCES_DIR}/calldescrworkeramd64.S
             ${ARCH_SOURCES_DIR}/externalmethodfixupthunk.S
             ${ARCH_SOURCES_DIR}/getstate.S
@@ -674,6 +692,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/redirectedhandledjitcase.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
             ${ARCH_SOURCES_DIR}/theprestubamd64.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${ARCH_SOURCES_DIR}/Context.S
@@ -702,9 +721,11 @@ else(CLR_CMAKE_TARGET_WIN32)
     elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
+            ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
             ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
@@ -723,8 +744,8 @@ else(CLR_CMAKE_TARGET_WIN32)
         )
     endif()
 
+    set(ASM_SUFFIX S)
 endif(CLR_CMAKE_TARGET_WIN32)
-
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
@@ -855,12 +876,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
     )
 endif()
 
-if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/unixstubs.cpp
-    )
-endif(CLR_CMAKE_HOST_UNIX)
-
 set(VM_SOURCES_DAC_ARCH
     exceptionhandling.cpp
 )
@@ -942,10 +957,12 @@ convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})
 
-add_library_clr(cee_dac ${VM_SOURCES_DAC})
-add_dependencies(cee_dac eventing_headers)
-set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
-target_precompile_headers(cee_dac PRIVATE [["common.h"]])
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    add_library_clr(cee_dac ${VM_SOURCES_DAC})
+    add_dependencies(cee_dac eventing_headers)
+    set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
+    target_precompile_headers(cee_dac PRIVATE [["common.h"]])
+endif()
 
 add_subdirectory(wks)
 

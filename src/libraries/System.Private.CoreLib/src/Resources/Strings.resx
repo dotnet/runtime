@@ -3476,6 +3476,12 @@
   <data name="Lock_Exit_SynchronizationLockException" xml:space="preserve">
     <value>The calling thread does not hold the lock.</value>
   </data>
+  <data name="NamedWaitHandles_IncompatibleNamePrefix" xml:space="preserve">
+    <value>The specified name '{0}' has a prefix that is not compatible with the specified option 'CurrentSessionOnly'.</value>
+  </data>
+  <data name="NamedWaitHandles_ExistingObjectIncompatibleWithCurrentUserOnly" xml:space="preserve">
+    <value>An object with the specified name '{0}' exists and can't be opened because it's not compatible with the specified option 'CurrentUserOnly = true'.</value>
+  </data>
   <data name="SpinLock_IsHeldByCurrentThread" xml:space="preserve">
     <value>Thread tracking is disabled.</value>
   </data>
@@ -4270,12 +4276,6 @@
   </data>
   <data name="CannotCreatePointerOfByRef" xml:space="preserve">
     <value>Cannot create a pointer to a byref: {0}</value>
-  </data>
-  <data name="TypeLoad_TypeNotFound" xml:space="preserve">
-    <value>The type '{0}' cannot be found.</value>
-  </data>
-  <data name="TypeLoad_TypeNotFoundInAssembly" xml:space="preserve">
-    <value>The type '{0}' cannot be found in assembly '{1}'.</value>
   </data>
   <data name="TypeLoad_MethodOverrideNotVirtual" xml:space="preserve">
     <value>Method '{0}' overrides '{1}' but it is not virtual.</value>

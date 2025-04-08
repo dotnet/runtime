@@ -16,7 +16,7 @@ namespace Internal.Runtime.TypeLoader
     {
         // Cache the most recent instance of TypeSystemContext in a weak handle, and reuse it if possible
         // This allows us to avoid recreating the type resolution context again and again, but still allows it to go away once the types are no longer being built
-        private static GCHandle s_cachedContext = GCHandle.Alloc(null, GCHandleType.Weak);
+        private static WeakGCHandle<TypeSystemContext?> s_cachedContext = new WeakGCHandle<TypeSystemContext?>(null);
 
         private static readonly Lock s_lock = new Lock(useTrivialWaits: true);
 
@@ -24,10 +24,9 @@ namespace Internal.Runtime.TypeLoader
         {
             using (s_lock.EnterScope())
             {
-                TypeSystemContext context = (TypeSystemContext)s_cachedContext.Target;
-                if (context != null)
+                if (s_cachedContext.TryGetTarget(out TypeSystemContext? context))
                 {
-                    s_cachedContext.Target = null;
+                    s_cachedContext.SetTarget(null);
                     return context;
                 }
             }
@@ -63,7 +62,7 @@ namespace Internal.Runtime.TypeLoader
             context.FlushTypeBuilderStates();
 
             // No lock needed here - the reference assignment is atomic
-            s_cachedContext.Target = context;
+            s_cachedContext.SetTarget(context);
         }
     }
 }

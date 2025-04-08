@@ -733,8 +733,6 @@ namespace System.Reflection.Emit.Tests
             Assert.True(method3.ReturnParameter.IsRetval);
         }
 
-        public class BaseType<T> { }
-
         [Fact]
         public void GenericTypeWithTypeBuilderGenericParameter_UsedAsParent()
         {
@@ -749,9 +747,53 @@ namespace System.Reflection.Emit.Tests
 
             Assert.NotNull(type.GetConstructor(Type.EmptyTypes)); // Default constructor created
         }
+
+        [Fact]
+        public void CreateGenericTypeFromMetadataLoadContextSignatureTypes()
+        {
+            using TempFile file = TempFile.Create();
+
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder module);
+
+            TypeBuilder childType = module.DefineType("Child");
+            TypeBuilder parentType = module.DefineType("Parent");
+
+            // Get List<T> from MLC and make both reference and value type fields from that.
+            using MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver());
+            Type listOfTType = mlc.CoreAssembly.GetType(typeof(List<>).FullName!);
+
+            // Currently MakeGenericSignatureType() must be used instead of MakeGenericType() for
+            // generic type parameters created with TypeBuilder.
+            Assert.Throws<ArgumentException>(() => listOfTType.MakeGenericType(childType));
+            Type listOfReferenceTypes = Type.MakeGenericSignatureType(listOfTType, childType);
+            parentType.DefineField("ReferenceTypeChildren", listOfReferenceTypes, FieldAttributes.Public);
+
+            // Pre-existing types can use MakeGenericType().
+            Type int32Type = mlc.CoreAssembly.GetType(typeof(int).FullName);
+            Type listOfValueTypes = listOfTType.MakeGenericType(int32Type);
+            parentType.DefineField("ValueTypeChildren", listOfValueTypes, FieldAttributes.Public);
+
+            parentType.CreateType();
+            childType.CreateType();
+
+            // Save and load the dynamically created assembly.
+            ab.Save(file.Path);
+            Module mlcModule = mlc.LoadFromAssemblyPath(file.Path).Modules.First();
+
+            Assert.Equal("Child", mlcModule.GetTypes()[0].Name);
+            Assert.Equal("Parent", mlcModule.GetTypes()[1].Name);
+
+            FieldInfo[] fields = mlcModule.GetTypes()[1].GetFields(BindingFlags.Public | BindingFlags.Instance);
+            Assert.Equal("ReferenceTypeChildren", fields[0].Name);
+            Assert.False(fields[0].FieldType.GetGenericArguments()[0].IsValueType);
+            Assert.Equal("ValueTypeChildren", fields[1].Name);
+            Assert.True(fields[1].FieldType.GetGenericArguments()[0].IsValueType);
+        }
     }
 
     // Test Types
+    public class BaseType<T> { }
+
     public interface INoMethod
     {
     }

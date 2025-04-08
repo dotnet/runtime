@@ -13,7 +13,7 @@ public record BuildOptions : MSBuildOptions
         bool IsPublish                                              = false,
         bool AOT                                                    = false,
         NativeFilesType ExpectedFileType                            = NativeFilesType.FromRuntimePack,
-        string TargetFramework                                      = BuildTestBase.DefaultTargetFramework,
+        string? TargetFramework                                     = null,
         GlobalizationMode GlobalizationMode                         = GlobalizationMode.Sharded,
         string CustomIcuFile                                        = "",
         bool UseCache                                               = true,
@@ -23,14 +23,15 @@ public record BuildOptions : MSBuildOptions
         bool WarnAsError                                            = true,
         RuntimeVariant RuntimeType                                  = RuntimeVariant.SingleThreaded,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
-        string BootConfigFileName                                   = "blazor.boot.json",
+        string BootConfigFileName                                   = "dotnet.boot.js",
         string NonDefaultFrameworkDir                               = "",
-        string ExtraMSBuildArgs                                     = ""
+        string ExtraMSBuildArgs                                     = "",
+        bool WasmPerfTracing                                     = false
     ) : base(
         IsPublish,
+        TargetFramework ?? BuildTestBase.DefaultTargetFramework,
         AOT,
         ExpectedFileType,
-        TargetFramework,
         GlobalizationMode,
         CustomIcuFile,
         UseCache,
@@ -42,7 +43,8 @@ public record BuildOptions : MSBuildOptions
         ExtraBuildEnvironmentVariables,
         BootConfigFileName,
         NonDefaultFrameworkDir,
-        ExtraMSBuildArgs
+        ExtraMSBuildArgs,
+        WasmPerfTracing
     )
     {
     }

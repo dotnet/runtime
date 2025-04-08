@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -119,6 +120,8 @@ internal class BrowserRunner : IAsyncDisposable
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         // codespaces: ignore certificate error -> Microsoft.Playwright.PlaywrightException : net::ERR_CERT_AUTHORITY_INVALID
         string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}", "--ignore-certificate-errors", $"--lang={locale}" };
+        if (headless)
+            chromeArgs = chromeArgs.Append("--headless").ToArray();
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
 
         int attempt = 0;
@@ -128,7 +131,6 @@ internal class BrowserRunner : IAsyncDisposable
             {
                 Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions {
                     ExecutablePath = s_chromePath.Value,
-                    Headless = headless,
                     Args = chromeArgs,
                     Timeout = timeout
                 });
@@ -184,7 +186,7 @@ internal class BrowserRunner : IAsyncDisposable
 
         IPage page = await context.NewPageAsync();
 
-        page.Console += (_, msg) => 
+        page.Console += (_, msg) =>
         {
             string message = msg.Text;
             Match payloadMatch = s_payloadRegex.Match(message);

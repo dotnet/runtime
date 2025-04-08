@@ -11,11 +11,13 @@ using System.Runtime.CompilerServices;
 
 using ArmAes = System.Runtime.Intrinsics.Arm.Aes;
 using X86Aes = System.Runtime.Intrinsics.X86.Aes;
+using TestLibrary;
 using Xunit;
 
 public class Runtime_34587
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
     public static int TestEntryPoint()
     {
         TestLibrary.TestFramework.LogInformation("Supported x86 ISAs:");
@@ -415,7 +417,7 @@ public class Runtime_34587
         testSucceeded = ValidateVector256();
         Console.WriteLine($"ValidateVector256: {testSucceeded}");
         succeeded &= testSucceeded;
-        
+
         return succeeded;
 
         static bool ValidateX86Base()

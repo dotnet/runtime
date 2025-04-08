@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>PAL Tests WASM</title>
+</head>
+<body>
+    <h1>PAL Tests WASM</h1>
+    <pre id="log"></pre>
+    <script>
+        const disabledTestNamePatterns = [
+            "exception_handling/RaiseException", // 3 tests, we don't have stack unwinding available from C native code
+            "file_io/GetFileAttributesEx", // blocks main thread
+            "file_io/GetSystemTime", // blocks main thread
+            "file_io/GetTempFileName./test2/paltest_gettempfilename._test2", // infinite loop
+            "file_io/WriteFile/test5/paltest_writefile_test5", // infinite loop
+            "file_io/SetFilePointer/test7/paltest_setfilepointer_test7", // tries to allocate 4GB of memory in MEMFS when run with chromedriver
+            "filemapping_memmgt/MapViewOfFile/test1/paltest_mapviewoffile_test1", // infinite loop and then chrome crashes
+            "filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/paltest_probememory_probememory_neg1",
+            "miscellaneous/GetTickCount", // blocks main thread
+            "miscellaneous/InterlockedCompareExchange/test2/paltest_interlockedcompareexchange_test2", // MT test
+            "miscellaneous/InterlockedDecrement/test2/paltest_interlockeddecrement_test2", // MT test
+            "miscellaneous/InterlockedIncrement/test2/paltest_interlockedincrement_test2", // MT test
+            "miscellaneous/queryperformancecounter", // blocks main thread
+            "threading/", // we're single-threaded
+            // "threading/CriticalSectionFunctions/test8/paltest_criticalsectionfunctions_test8", // blocks main thread
+        ];
+
+        const nextRunDelay = 50, reloadDelay = 50;
+        nextRunTimeout = -1;
+        nextTestName = location.hash.trim().substring(1);
+        capturingTestCaseNames = nextTestName.length === 0;
+        capturedTestCaseNames = capturingTestCaseNames
+            ? []
+            : JSON.parse(localStorage.getItem("testCaseNames"));
+        paltestsLoaded = false;
+        if (capturingTestCaseNames) {
+            paltests = [];
+                    fetch('paltestlist.txt')
+                        .then(response => response.text())
+                        .then(text => {
+                            text.split(/\r?\n/).forEach(function(line) {
+                                paltests.push(line);
+                            });
+                            paltestsLoaded = true;
+                        });
+        }
+
+        Module = {
+            preRun: function () {
+                // ENV.PAL_DBG_CHANNELS="+all.all";
+                ENV.PAL_DBG_CHANNELS="+all.ERROR";
+            },
+            arguments: capturingTestCaseNames
+                ? ["PrintPalTests"]
+                : [nextTestName],
+            onExit: function (code) {
+                if (capturingTestCaseNames) {
+                    console.log("paltests " + paltests.length + " test name(s). ");
+
+                    capturedTestCaseNames = capturedTestCaseNames.filter(function(testName) {
+                        return paltests.includes(testName);
+                    });
+
+                    missingTests = paltests.filter(function(testName) {
+                        return !capturedTestCaseNames.includes(testName);
+                    });
+
+                    capturedTestCaseNames.sort();
+                    capturedTestCaseNames = capturedTestCaseNames;
+                    localStorage.setItem("testCaseNames", JSON.stringify(capturedTestCaseNames));
+                    localStorage.setItem("missingTestNames", JSON.stringify(missingTests));
+                    localStorage.setItem("passedCount", JSON.stringify(0));
+                    localStorage.setItem("failedCount", JSON.stringify(0));
+                    localStorage.setItem("disabledCount", JSON.stringify(0));
+                    localStorage.setItem("failedTests", JSON.stringify([]));
+                    console.log("Captured " + capturedTestCaseNames.length + " test name(s). Starting test run.");
+                    capturingTestCaseNames = false;
+                } else if (nextRunTimeout < 0) {
+                    if (code == 0) {
+                        passedCount = JSON.parse(localStorage.getItem("passedCount")) + 1;
+                        localStorage.setItem("passedCount", JSON.stringify(passedCount));
+                    } else {
+                        failedCount = JSON.parse(localStorage.getItem("failedCount")) + 1;
+                        localStorage.setItem("failedCount", JSON.stringify(failedCount));
+                        failedTests = JSON.parse(localStorage.getItem("failedTests")) || [];
+                        failedTests.push(Module.arguments[1]);
+                        localStorage.setItem("failedTests", JSON.stringify(failedTests));
+                    }
+                }
+
+                var msg = "'" + Module.arguments[1] + "' exited with code " + code;
+                if (nextRunTimeout < 0)
+                    msg += "; scheduling next test";
+
+                if (code != 0)
+                    console.error(msg);
+                else
+                    console.log(msg);
+
+                if (nextRunTimeout < 0 && capturedTestCaseNames !== null)
+                    nextRunTimeout = window.setTimeout(performNextRun, nextRunDelay);
+            },
+        };
+
+        function isDisabledTest (testName) {
+            if (typeof (testName) !== "string")
+                return false;
+
+            for (let pattern of disabledTestNamePatterns) {
+                if (testName.match(pattern)) {
+                    console.log("Test '" + testName + "' is disabled by regex pattern '" + pattern + "'");
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function pickNextTest (testIndex) {
+            let result = undefined;
+            var lastIndex = testIndex;
+            do {
+                testIndex++;
+                result = capturedTestCaseNames[testIndex];
+            } while (isDisabledTest(result));
+
+            if (testIndex != lastIndex + 1) {
+                disabledCount = JSON.parse(localStorage.getItem("disabledCount")) + testIndex - lastIndex - 1;
+                localStorage.setItem("disabledCount", JSON.stringify(disabledCount));
+            }
+
+            return result;
+        }
+
+        function performNextRun () {
+            nextRunTimeout = -1;
+            const testIndex = capturedTestCaseNames.indexOf(Module.arguments[1]);
+            const nextTestName = pickNextTest(testIndex);
+            console.log("We just ran " + Module.arguments[1] + " which is test index " + testIndex + "; next test is " + nextTestName);
+
+            if (nextTestName === undefined) {
+                location.hash = "";
+                console.error("Number of tests passed: " + localStorage.getItem("passedCount") + " failed: " + localStorage.getItem("failedCount") + " disabled: " + localStorage.getItem("disabledCount"));
+                console.error("  Disabled tests: " + disabledTestNamePatterns.join(", "));
+                console.error("  Failed tests: " + JSON.parse(localStorage.getItem("failedTests")).join(", "));
+                console.error("Test run complete");
+            } else {
+                location.hash = "#" + nextTestName;
+                window.setTimeout(location.reload.bind(location), reloadDelay);
+            }
+        }
+
+        const originalConsoleLog = console.log;
+        console.log = function(message) {
+            originalConsoleLog(message);
+            fetch('/log=paltests-log.txt', {
+                method: 'POST',
+                body: ('stdout: ' + message),
+                headers: {
+                    'Content-Type': 'text/plain'
+                }
+            });
+            if (capturingTestCaseNames) {
+                capturedTestCaseNames.push(message.trim());
+            } else {
+                const elt = document.createElement("span");
+                elt.textContent = message + "\n";
+                document.querySelector("#log").appendChild(elt);
+            }
+        };
+        const originalConsoleError = console.error;
+        console.error = function(message) {
+            originalConsoleError(message);
+            fetch('/log=paltests-log.txt', {
+                method: 'POST',
+                body: ('stderr: ' + message),
+                headers: {
+                    'Content-Type': 'text/plain'
+                }
+            });
+            const elt = document.createElement("span");
+            elt.textContent = message + "\n";
+            elt.style.color = "red";
+            document.querySelector("#log").appendChild(elt);
+        };
+    </script>
+    <script src="paltests.js"></script>
+</body>

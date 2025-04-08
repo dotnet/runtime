@@ -29,17 +29,19 @@ namespace ILCompiler.Dataflow
 
         private readonly TypeCacheHashtable _typeCacheHashtable;
 
+        private readonly Logger _logger;
+
         public CompilerGeneratedState(ILProvider ilProvider, Logger logger)
         {
-            _typeCacheHashtable = new TypeCacheHashtable(ilProvider, logger);
+            _typeCacheHashtable = new TypeCacheHashtable(ilProvider);
+            _logger = logger;
         }
 
         private sealed class TypeCacheHashtable : LockFreeReaderHashtable<MetadataType, TypeCache>
         {
             private ILProvider _ilProvider;
-            private Logger? _logger;
 
-            public TypeCacheHashtable(ILProvider ilProvider, Logger logger) => (_ilProvider, _logger) = (ilProvider, logger);
+            public TypeCacheHashtable(ILProvider ilProvider) => _ilProvider = ilProvider;
 
             protected override bool CompareKeyToValue(MetadataType key, TypeCache value) => key == value.Type;
             protected override bool CompareValueToValue(TypeCache value1, TypeCache value2) => value1.Type == value2.Type;
@@ -47,7 +49,27 @@ namespace ILCompiler.Dataflow
             protected override int GetValueHashCode(TypeCache value) => value.Type.GetHashCode();
 
             protected override TypeCache CreateValueFromKey(MetadataType key)
-                => new TypeCache(key, _logger, _ilProvider);
+                => new TypeCache(key, _ilProvider);
+
+            public TypeCache GetOrCreateValue(MetadataType key, out bool created)
+            {
+                TypeCache existingValue;
+                created = false;
+                if (TryGetValue(key, out existingValue))
+                    return existingValue;
+
+                var newValue = CreateValueFromKey(key);
+                if (TryAdd(newValue))
+                {
+                    created = true;
+                    return newValue;
+                }
+
+                if (!TryGetValue(key, out existingValue))
+                    throw new InvalidOperationException();
+
+                return existingValue;
+            }
         }
 
         private sealed class TypeCache
@@ -64,6 +86,18 @@ namespace ILCompiler.Dataflow
             // or null if the type has no methods with compiler-generated members.
             private Dictionary<MethodDesc, List<TypeSystemEntity>>? _compilerGeneratedMembers;
 
+            // Stores a list of warnings to be emitted at the end of the cache construction
+            private List<(MessageOrigin, DiagnosticId, string[])>? _warnings;
+
+            internal void LogWarnings(Logger? logger)
+            {
+                if (_warnings == null || logger == null)
+                    return;
+
+                foreach (var (origin, id, messageArgs) in _warnings)
+                    logger.LogWarning(origin, id, messageArgs);
+            }
+
             /// <summary>
             /// Walks the type and its descendents to find Roslyn-compiler generated
             /// code and gather information to map it back to original user code. If
@@ -71,7 +105,7 @@ namespace ILCompiler.Dataflow
             /// up and find the nearest containing user type. Returns the nearest user type,
             /// or null if none was found.
             /// </summary>
-            internal TypeCache(MetadataType type, Logger? logger, ILProvider ilProvider)
+            internal TypeCache(MetadataType type, ILProvider ilProvider)
             {
                 Debug.Assert(type == type.GetTypeDefinition());
                 Debug.Assert(!CompilerGeneratedNames.IsStateMachineOrDisplayClass(type.Name));
@@ -81,6 +115,15 @@ namespace ILCompiler.Dataflow
                 var callGraph = new CompilerGeneratedCallGraph();
                 var userDefinedMethods = new HashSet<MethodDesc>();
                 var generatedTypeToTypeArgs = new Dictionary<MetadataType, TypeArgumentInfo>();
+
+                // We delay actually logging the warnings until the compiler-generated type info is
+                // populated for this type, because the type info is needed to determine whether a warning
+                // is suppressed.
+                void AddWarning(MessageOrigin origin, DiagnosticId id, params string[] messageArgs)
+                {
+                    _warnings ??= new List<(MessageOrigin, DiagnosticId, string[])>();
+                    _warnings.Add((origin, id, messageArgs));
+                }
 
                 void ProcessMethod(MethodDesc method)
                 {
@@ -139,7 +182,7 @@ namespace ILCompiler.Dataflow
                                             if (!generatedTypeToTypeArgs.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
                                             {
                                                 var alreadyAssociatedMethod = generatedTypeToTypeArgs[generatedType].CreatingMethod;
-                                                logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
+                                                AddWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
                                             }
                                             continue;
                                         }
@@ -207,7 +250,7 @@ namespace ILCompiler.Dataflow
                         if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd(stateMachineType, method))
                         {
                             var alreadyAssociatedMethod = _compilerGeneratedTypeToUserCodeMethod[stateMachineType];
-                            logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), stateMachineType.GetDisplayName());
+                            AddWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), stateMachineType.GetDisplayName());
                         }
                         // Already warned above if multiple methods map to the same type
                         // Fill in null for argument providers now, the real providers will be filled in later
@@ -263,7 +306,7 @@ namespace ILCompiler.Dataflow
                                 if (!_compilerGeneratedMethodToUserCodeMethod.TryAdd(nestedFunction, userDefinedMethod))
                                 {
                                     var alreadyAssociatedMethod = _compilerGeneratedMethodToUserCodeMethod[nestedFunction];
-                                    logger?.LogWarning(new MessageOrigin(userDefinedMethod), DiagnosticId.MethodsAreAssociatedWithUserMethod, userDefinedMethod.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), nestedFunction.GetDisplayName());
+                                    AddWarning(new MessageOrigin(userDefinedMethod), DiagnosticId.MethodsAreAssociatedWithUserMethod, userDefinedMethod.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), nestedFunction.GetDisplayName());
                                 }
                                 break;
                             case MetadataType stateMachineType:
@@ -295,7 +338,7 @@ namespace ILCompiler.Dataflow
                         {
                             var method = info.CreatingMethod;
                             var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
-                            logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
+                            AddWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
                         }
                     }
                 }
@@ -575,7 +618,10 @@ namespace ILCompiler.Dataflow
             if (userType is null)
                 return null;
 
-            return _typeCacheHashtable.GetOrCreateValue(userType);
+            var typeCache = _typeCacheHashtable.GetOrCreateValue(userType, out bool created);
+            if (created)
+                typeCache.LogWarnings(_logger);
+            return typeCache;
         }
 
         private static TypeDesc? GetFirstConstructorArgumentAsType(CustomAttributeValue<TypeDesc> attribute)

@@ -426,6 +426,7 @@
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\MethodParameterMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NotReadOnlyFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeCalledNode.cs" />
@@ -502,7 +503,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReflectionFieldMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutVertexNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\NativeLayoutSignatureNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericTypesHashtableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericTypesTemplateMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericMethodsHashtableNode.cs" />

@@ -9,13 +9,14 @@
 // RewriteNodeAsCall : Replace the given tree node by a GT_CALL.
 //
 // Arguments:
-//    use          - A pointer-to-a-pointer for the tree node
-//    sig          - The signature info for callHnd
-//    parents      - A pointer to tree walk data providing the context
-//    callHnd      - The method handle of the call to be generated
-//    entryPoint   - The method entrypoint of the call to be generated
-//    operands     - The operand  list of the call to be generated
-//    operandCount - The number of operands in the operand list
+//    use                - A pointer-to-a-pointer for the tree node
+//    sig                - The signature info for callHnd
+//    parents            - A pointer to tree walk data providing the context
+//    callHnd            - The method handle of the call to be generated
+//    entryPoint         - The method entrypoint of the call to be generated
+//    operands           - The operand  list of the call to be generated
+//    operandCount       - The number of operands in the operand list
+//    isSpecialIntrinsic - true if the GT_CALL should be marked as a special intrinsic
 //
 // Return Value:
 //    None.
@@ -29,7 +30,8 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                                      CORINFO_CONST_LOOKUP entryPoint,
 #endif // FEATURE_READYTORUN
                                      GenTree** operands,
-                                     size_t    operandCount)
+                                     size_t    operandCount,
+                                     bool      isSpecialIntrinsic)
 {
     GenTree* const tree           = *use;
     GenTree* const treeFirstNode  = comp->fgGetFirstNode(tree);
@@ -39,6 +41,18 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
     // Create the call node
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->TypeGet());
+
+    if (isSpecialIntrinsic)
+    {
+#if defined(TARGET_XARCH)
+        // Mark this as having been a special intrinsic node
+        //
+        // This is used on xarch to track that it may need vzeroupper inserted to
+        // avoid the perf penalty on some hardware.
+
+        call->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+#endif // TARGET_XARCH
+    }
 
     assert(sig != nullptr);
     var_types retType = JITtype2varType(sig->retType);
@@ -143,7 +157,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         tmpNum = comp->lvaGrabTemp(true DEBUGARG("return buffer for hwintrinsic"));
         comp->lvaSetStruct(tmpNum, sig->retTypeClass, false);
 
-        GenTree*   destAddr = comp->gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
+        GenTree*   destAddr = comp->gtNewLclVarAddrNode(tmpNum, TYP_I_IMPL);
         NewCallArg newArg   = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
 
         call->gtArgs.InsertAfterThisOrFirst(comp, newArg);
@@ -285,11 +299,15 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
     CORINFO_SIG_INFO sigInfo;
     comp->eeGetMethodSig(callHnd, &sigInfo);
 
+    // Regular Intrinsics often have their fallback in native and so
+    // should be treated as "special" once they become calls.
+    bool isSpecialIntrinsic = true;
+
     RewriteNodeAsCall(use, &sigInfo, parents, callHnd,
 #if defined(FEATURE_READYTORUN)
                       intrinsic->gtEntryPoint,
 #endif // FEATURE_READYTORUN
-                      operands, operandCount);
+                      operands, operandCount, isSpecialIntrinsic);
 }
 
 #if defined(FEATURE_HW_INTRINSICS)
@@ -544,11 +562,15 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
         return;
     }
 
+    // Hardware Intrinsics have their fallback in managed and so
+    // shouldn't be treated as "special" once they become calls.
+    bool isSpecialIntrinsic = false;
+
     RewriteNodeAsCall(use, &sigInfo, parents, callHnd,
 #if defined(FEATURE_READYTORUN)
                       hwintrinsic->GetEntryPoint(),
 #endif // FEATURE_READYTORUN
-                      operands, operandCount);
+                      operands, operandCount, isSpecialIntrinsic);
 }
 #endif // FEATURE_HW_INTRINSICS
 

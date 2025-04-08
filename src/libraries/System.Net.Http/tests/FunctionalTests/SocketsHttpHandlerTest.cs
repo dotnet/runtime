@@ -28,10 +28,9 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http11 : SocketsHttpHandler_HttpClientHandler_Asynchrony_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http11(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Relies on finalization")]
         [Fact]
@@ -98,6 +97,25 @@ namespace System.Net.Http.Functional.Tests
                 requestCompleted.SetResult();
             }
         }
+    }
+
+    public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http2 : SocketsHttpHandler_HttpClientHandler_Asynchrony_Test
+    {
+        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
+
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http3 : SocketsHttpHandler_HttpClientHandler_Asynchrony_Test
+    {
+        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http3(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public abstract class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
+    {
+        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task ReadAheadTaskOnConnectionReuse_ExceptionsAreObserved()
@@ -191,7 +209,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ExecutionContext_HttpConnectionLifetimeDoesntKeepContextAlive()
         {
             var clientCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 try
                 {
@@ -217,7 +235,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionAsync(async connection =>
                 {
-                    await connection.ReadRequestHeaderAndSendResponseAsync();
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync();
+
                     await clientCompleted.Task;
                 });
             });
@@ -240,7 +260,7 @@ namespace System.Net.Http.Functional.Tests
             return (tcs.Task, t);
         }
 
-        private sealed class SetOnFinalized
+        protected sealed class SetOnFinalized
         {
             public readonly TaskCompletionSource CompletedWhenFinalized = new(TaskCreationOptions.RunContinuationsAsynchronously);
 

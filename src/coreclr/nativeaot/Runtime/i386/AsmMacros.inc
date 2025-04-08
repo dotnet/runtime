@@ -110,7 +110,6 @@ endm
 ;;
 ;; CONSTANTS -- INTEGER
 ;;
-TSF_Attached                    equ 01h
 TSF_SuppressGcStress            equ 08h
 TSF_DoNotTriggerGc              equ 10h
 

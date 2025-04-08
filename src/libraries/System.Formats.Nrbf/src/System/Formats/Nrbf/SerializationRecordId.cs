@@ -16,6 +16,9 @@ namespace System.Formats.Nrbf;
 /// <summary>
 /// The ID of <see cref="SerializationRecord" />.
 /// </summary>
+/// <remarks>
+/// It can be used the detect cycles in decoded records.
+/// </remarks>
 [DebuggerDisplay("{_id}")]
 public readonly struct SerializationRecordId : IEquatable<SerializationRecordId>
 {

@@ -104,9 +104,9 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!pCF->IsFrameless() && pCF->GetFrame()->GetVTablePtr() == StubDispatchFrame::GetMethodFrameVPtr())
+    if (!pCF->IsFrameless() && pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
     {
-        return !((StubDispatchFrame*)pCF->GetFrame())->SuppressParamTypeArg();
+        return !(dac_cast<PTR_StubDispatchFrame>(pCF->GetFrame()))->SuppressParamTypeArg();
     }
 
     if (!pCF->IsFrameless() || !(pCF->IsActiveFrame() || pCF->IsInterrupted()))
@@ -213,16 +213,14 @@ void GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator 
     if (pLoaderAllocator != NULL && pLoaderAllocator->IsCollectible())
     {
         Object *refCollectionObject = OBJECTREFToObject(pLoaderAllocator->GetExposedObject());
+        if (refCollectionObject != NULL)
+        {
+            INDEBUG(Object *oldObj = refCollectionObject;)
+            fn(&refCollectionObject, sc, CHECK_APP_DOMAIN);
 
-#ifdef _DEBUG
-        Object *oldObj = refCollectionObject;
-#endif
-
-        _ASSERTE(refCollectionObject != NULL);
-        fn(&refCollectionObject, sc, CHECK_APP_DOMAIN);
-
-        // We are reporting the location of a local variable, assert it doesn't change.
-        _ASSERTE(oldObj == refCollectionObject);
+            // We are reporting the location of a local variable, assert it doesn't change.
+            _ASSERTE(oldObj == refCollectionObject);
+        }
     }
 }
 
@@ -369,8 +367,8 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             Frame * pFrame = pCF->GetFrame();
 
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000,
-                "Scanning ExplicitFrame %p AssocMethod = %pM frameVTable = %pV\n",
-                pFrame, pFrame->GetFunction(), *((void**) pFrame));
+                "Scanning ExplicitFrame %p AssocMethod = %pM FrameIdentifier = %s\n",
+                pFrame, pFrame->GetFunction(), Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
             pFrame->GcScanRoots( gcctx->f, gcctx->sc);
         }
     }

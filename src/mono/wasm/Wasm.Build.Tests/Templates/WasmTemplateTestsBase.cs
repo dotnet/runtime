@@ -35,7 +35,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
         {
-            { "while(true)", $"int i = 0;{Environment.NewLine}while(i++ < 0)" },  // the test has to be fast, skip the loop
+            { "while (true)", $"int i = 0;{Environment.NewLine}while (i++ < 0)" },  // the test has to be fast, skip the loop
             { "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample" },
             { "Hello, Browser!", "TestOutput -> Hello, Browser!" }
         };
@@ -60,7 +60,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         Configuration config,
         bool aot,
         string idPrefix = "wbt",
-        bool appendUnicodeToPath = true,
+        bool? appendUnicodeToPath = null,
         string extraArgs = "",
         bool runAnalyzers = true,
         bool addFrameworkArg = false,
@@ -69,7 +69,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         string insertAtEnd = "")
     {
         (string projectName, string logPath, string nugetDir) =
-            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
+            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";
@@ -90,14 +90,14 @@ public class WasmTemplateTestsBase : BuildTestBase
         bool aot,
         TestAsset asset,
         string idPrefix,
-        bool appendUnicodeToPath = true,
+        bool? appendUnicodeToPath = null,
         bool runAnalyzers = true,
         string extraProperties = "",
         string extraItems = "",
         string insertAtEnd = "")
     {
         (string projectName, string logPath, string nugetDir) =
-            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue: s_isWindows && aot);
+            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI, avoidAotLongPathIssue: s_isWindows && aot);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, asset.Name), Path.Combine(_projectDir));
         if (!string.IsNullOrEmpty(asset.RunnableProjectSubPath))
         {
@@ -163,6 +163,12 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
+        if (buildOptions.BootConfigFileName != "dotnet.boot.js")
+        {
+            // Omit implicit default
+            buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:WasmBootConfigFileName={buildOptions.BootConfigFileName}" };
+        }
+
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 
         if (buildOptions.UseCache)
@@ -219,14 +225,15 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected void DeleteFile(string pathRelativeToProjectDir)
     {
         var deletedFilePath = Path.Combine(_projectDir, pathRelativeToProjectDir);
-        if(File.Exists(deletedFilePath))
+        if (File.Exists(deletedFilePath))
         {
             File.Delete(deletedFilePath);
         }
     }
 
-    protected void UpdateBrowserMainJs(string targetFramework = DefaultTargetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
     {
+        targetFramework ??= DefaultTargetFramework;
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
         Version targetFrameworkVersion = new Version(targetFramework.Replace("net", ""));
@@ -366,8 +373,8 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    public string GetBinFrameworkDir(Configuration config, bool forPublish, string framework = DefaultTargetFramework, string? projectDir = null) =>
-        _provider.GetBinFrameworkDir(config, forPublish, framework, projectDir);
+    public string GetBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null) =>
+        _provider.GetBinFrameworkDir(config, forPublish, framework ?? DefaultTargetFramework, projectDir);
 
     public BuildPaths GetBuildPaths(Configuration config, bool forPublish) =>
         _provider.GetBuildPaths(config, forPublish);

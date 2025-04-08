@@ -18,7 +18,7 @@ namespace System.Diagnostics
         /// Construct an ActivitySource object with the input name
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
-        public ActivitySource(string name) : this(name, version: "", tags: null) {}
+        public ActivitySource(string name) : this(name, version: "", tags: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -26,7 +26,7 @@ namespace System.Diagnostics
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public ActivitySource(string name, string? version = "") : this(name, version, tags: null) {}
+        public ActivitySource(string name, string? version = "") : this(name, version, tags: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -34,10 +34,19 @@ namespace System.Diagnostics
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
         /// <param name="tags">The optional ActivitySource tags.</param>
-        public ActivitySource(string name, string? version = "", IEnumerable<KeyValuePair<string, object?>>? tags = default)
+        public ActivitySource(string name, string? version = "", IEnumerable<KeyValuePair<string, object?>>? tags = default) : this(name, version, tags, telemetrySchemaUrl: null) {}
+
+        /// <summary>
+        /// Initialize a new instance of the ActivitySource object using the <see cref="ActivitySourceOptions" />.
+        /// </summary>
+        /// <param name="options">The <see cref="ActivitySourceOptions" /> object to use for initializing the ActivitySource object.</param>
+        public ActivitySource(ActivitySourceOptions options) : this((options ?? throw new ArgumentNullException(nameof(options))).Name, options.Version, options.Tags, options.TelemetrySchemaUrl) {}
+
+        private ActivitySource(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, string? telemetrySchemaUrl)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
+            TelemetrySchemaUrl = telemetrySchemaUrl;
 
             // Sorting the tags to make sure the tags are always in the same order.
             // Sorting can help in comparing the tags used for any scenario.
@@ -83,6 +92,11 @@ namespace System.Diagnostics
         /// Returns the tags associated with the ActivitySource.
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
+
+        /// <summary>
+        /// Returns the telemetry schema URL associated with the ActivitySource.
+        /// </summary>
+        public string? TelemetrySchemaUrl { get; }
 
         /// <summary>
         /// Check if there is any listeners for this ActivitySource.

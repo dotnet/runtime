@@ -210,6 +210,55 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///   Sets the key for this instance.
+        /// </summary>
+        /// <param name="key">The new key for this instance.</param>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The key size is invalid.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     An error occurred while setting the key.
+        ///   </para>
+        /// </exception>
+        public void SetKey(ReadOnlySpan<byte> key)
+        {
+            long bitLength = key.Length * 8L;
+
+            if (bitLength > int.MaxValue || !ValidKeySize((int)bitLength))
+            {
+                throw new CryptographicException(SR.Cryptography_InvalidKeySize);
+            }
+
+            SetKeyCore(key);
+        }
+
+        /// <summary>
+        ///   Sets the key for this instance.
+        /// </summary>
+        /// <param name="key">The new key for this instance.</param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while setting the key.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     <see cref="SymmetricAlgorithm" /> will only call this method after validating the
+        ///     length of <paramref name="key"/> against <see cref="LegalKeySizes"/>.
+        ///     Other callers are expected to similarly ensure that this method is only called with
+        ///     validly-sized inputs.
+        ///   </para>
+        ///   <para>
+        ///     The base class implementation is to assign the <see cref="Key"/> property.
+        ///     Derived types should override this method to avoid copying the key into a new array.
+        ///   </para>
+        /// </remarks>
+        protected virtual void SetKeyCore(ReadOnlySpan<byte> key)
+        {
+            Key = key.ToArray();
+        }
+
         public abstract void GenerateIV();
 
         public abstract void GenerateKey();

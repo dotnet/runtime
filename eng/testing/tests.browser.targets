@@ -207,6 +207,8 @@
     </ItemGroup>
 
     <WriteLinesToFile File="$(WasmMainHtmlPath)" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='$(WasmMainJSFileName)'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" Overwrite="True" Condition="!Exists('$(WasmMainHtmlPath)')"/>
+
+    <ForceMSBuildGC />
   </Target>
 
   <Target Name="_PrepareForAOTOnHelix">

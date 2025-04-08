@@ -441,6 +441,12 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
 {
     INTERNAL_DAC_CALLBACK(this);
 
+    // If the debugger didn't supply a metadata locator interface, fail
+    if (m_pMetaDataLocator == nullptr)
+    {
+        return nullptr;
+    }
+
     ULONG32 cchLocalImagePath = MAX_LONGPATH;
     ULONG32 cchLocalImagePathRequired;
     NewArrayHolder<WCHAR> pwszLocalFilePath = NULL;

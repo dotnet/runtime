@@ -298,32 +298,37 @@ namespace System.Text.Json.Serialization.Metadata
                     supportContinuation: true,
                     supportAsync: false);
 
-                using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
-
+                Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(Options, out PooledByteBufferWriter bufferWriter);
                 Debug.Assert(bufferWriter.CanGetUnflushedBytes);
 
-                state.PipeWriter = bufferWriter;
-                state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
-
-                do
+                try
                 {
-                    isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
-                    writer.Flush();
+                    state.PipeWriter = bufferWriter;
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
 
-                    bufferWriter.WriteToStream(utf8Json);
-                    bufferWriter.Clear();
+                    do
+                    {
+                        isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
+                        writer.Flush();
 
-                    Debug.Assert(state.PendingTask == null);
-                } while (!isFinalBlock);
+                        bufferWriter.WriteToStream(utf8Json);
+                        bufferWriter.Clear();
 
-                if (CanUseSerializeHandler)
+                        Debug.Assert(state.PendingTask == null);
+                    } while (!isFinalBlock);
+
+                    if (CanUseSerializeHandler)
+                    {
+                        // On successful serialization, record the serialization size
+                        // to determine potential suitability of the type for
+                        // fast-path serialization in streaming methods.
+                        Debug.Assert(writer.BytesPending == 0);
+                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    }
+                }
+                finally
                 {
-                    // On successful serialization, record the serialization size
-                    // to determine potential suitability of the type for
-                    // fast-path serialization in streaming methods.
-                    Debug.Assert(writer.BytesPending == 0);
-                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, bufferWriter);
                 }
             }
         }

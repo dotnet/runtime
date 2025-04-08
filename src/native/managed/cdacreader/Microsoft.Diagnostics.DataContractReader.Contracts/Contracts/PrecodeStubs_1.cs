@@ -47,12 +47,12 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         }
     }
 
-    internal sealed class PInvokeImportPrecode : StubPrecode
+    public sealed class PInvokeImportPrecode : StubPrecode
     {
         internal PInvokeImportPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.PInvokeImport) { }
     }
 
-    internal sealed class FixupPrecode : ValidPrecode
+    public sealed class FixupPrecode : ValidPrecode
     {
         internal FixupPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.Fixup) { }
         internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
@@ -64,7 +64,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         }
     }
 
-    internal sealed class ThisPtrRetBufPrecode : ValidPrecode
+    public sealed class ThisPtrRetBufPrecode : ValidPrecode
     {
         internal ThisPtrRetBufPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.ThisPtrRetBuf) { }
 

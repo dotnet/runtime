@@ -76,15 +76,35 @@ public:
 
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
+    regMaskTP rbmAllInt;
     regMaskTP rbmFltCalleeTrash;
+    regMaskTP rbmIntCalleeTrash;
+    regNumber regIntLast;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
+    FORCEINLINE regMaskTP get_RBM_ALLINT() const
+    {
+        return this->rbmAllInt;
+    }
     FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
+    }
+    FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
+    {
+        return this->rbmIntCalleeTrash;
+    }
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return this->regIntLast;
+    }
+#else
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return REG_INT_LAST;
     }
 #endif // TARGET_AMD64
 
@@ -595,7 +615,7 @@ public:
 
 protected:
     //  Keeps track of how many bytes we've pushed on the processor's stack.
-    unsigned genStackLevel;
+    unsigned genStackLevel = 0;
 
 public:
     //--------------------------------------------

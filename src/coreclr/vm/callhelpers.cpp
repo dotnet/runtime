@@ -20,7 +20,7 @@
 
 void AssertMulticoreJitAllowedModule(PCODE pTarget)
 {
-    MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
+    MethodDesc* pMethod = NonVirtualEntry2MethodDesc(pTarget);
 
     Module * pModule = pMethod->GetModule();
 

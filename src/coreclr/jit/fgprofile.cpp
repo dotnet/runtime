@@ -2942,7 +2942,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
         // We now always run repair, to get consistent initial counts
         //
-        JITDUMP("\n%sRepairing profile...\n", opts.IsOSR() ? "blending" : "repairing");
+        JITDUMP("\nRepairing profile...\n");
         ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
     }
 
@@ -4210,10 +4210,7 @@ bool Compiler::fgIncorporateEdgeCounts()
 //
 PhaseStatus Compiler::fgComputeBlockWeights()
 {
-    const bool usingProfileWeights = fgIsUsingProfileWeights();
-    bool       madeChanges         = false;
-    fgModified                     = false;
-    fgCalledCount                  = BB_UNITY_WEIGHT;
+    fgModified = false;
 
 #if DEBUG
     if (verbose)
@@ -4223,40 +4220,28 @@ PhaseStatus Compiler::fgComputeBlockWeights()
     }
 #endif // DEBUG
 
-    weight_t returnWeight = BB_UNITY_WEIGHT;
-
-    madeChanges |= fgComputeMissingBlockWeights(&returnWeight);
-
-    if (usingProfileWeights)
+    if (fgIsUsingProfileWeights())
     {
-        madeChanges |= fgComputeCalledCount(returnWeight);
-    }
-    else
-    {
-        JITDUMP(" -- no profile data, so using default called count\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return fgComputeMissingBlockWeights() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-------------------------------------------------------------
 // fgComputeMissingBlockWeights: determine weights for blocks
 //   that were not profiled and do not yet have weights.
 //
-// Arguments
-//    returnWeight [out] - sum of weights for all return and throw blocks
-//
 // Returns:
 //    true if any changes made
 //
-bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
+bool Compiler::fgComputeMissingBlockWeights()
 {
     BasicBlock* bSrc;
     BasicBlock* bDst;
     unsigned    iterations = 0;
     bool        changed;
     bool        modified = false;
-    weight_t    weight;
 
     // If we have any blocks that did not have profile derived weight
     // we will try to fix their weight up here
@@ -4265,7 +4250,6 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
     do // while (changed)
     {
         changed = false;
-        weight  = 0;
         iterations++;
 
         for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
@@ -4376,14 +4360,6 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bDst->bbSetRunRarely();
                 }
             }
-
-            // Sum up the weights of all of the return blocks and throw blocks
-            // This is used when we have a back-edge into block 1
-            //
-            if (bDst->hasProfileWeight() && bDst->KindIs(BBJ_RETURN, BBJ_THROW))
-            {
-                weight += bDst->bbWeight;
-            }
         }
     }
     // Generally when we synthesize profile estimates we do it in a way where this algorithm will converge
@@ -4400,79 +4376,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
     }
 #endif
 
-    *returnWeight = weight;
-
     return modified;
-}
-
-//-------------------------------------------------------------
-// fgComputeCalledCount: when profile information is in use,
-//   compute fgCalledCount
-//
-// Argument:
-//   returnWeight - sum of weights for all return and throw blocks
-//
-// Returns:
-//   true if any changes were made
-//
-bool Compiler::fgComputeCalledCount(weight_t returnWeight)
-{
-    // When we are not using profile data we have already setup fgCalledCount
-    // only set it here if we are using profile data
-    assert(fgIsUsingProfileWeights());
-    bool madeChanges = false;
-
-    BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
-
-    // OSR methods can have complex entry flow, and so
-    // for OSR we ensure fgFirstBB has plausible profile data.
-    //
-    if (!opts.IsOSR())
-    {
-        // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
-        //
-        while (firstILBlock->HasFlag(BBF_INTERNAL))
-        {
-            firstILBlock = firstILBlock->Next();
-        }
-    }
-
-    // The 'firstILBlock' is now expected to have a profile-derived weight
-    assert(firstILBlock->hasProfileWeight());
-
-    // If the first block only has one ref then we use its weight for fgCalledCount.
-    // Otherwise we have backedges into the first block, so instead we use the sum
-    // of the return block weights for fgCalledCount.
-    //
-    // If the profile data has a 0 for the returnWeight
-    // (i.e. the function never returns because it always throws)
-    // then just use the first block weight rather than 0.
-    //
-    if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == BB_ZERO_WEIGHT))
-    {
-        fgCalledCount = firstILBlock->bbWeight;
-    }
-    else
-    {
-        fgCalledCount = returnWeight;
-    }
-
-    // If we allocated a scratch block as the first BB then we need
-    // to set its profile-derived weight to be fgCalledCount
-    if (fgFirstBB->HasFlag(BBF_INTERNAL))
-    {
-        fgFirstBB->setBBProfileWeight(fgCalledCount);
-        madeChanges = true;
-    }
-
-#if DEBUG
-    if (verbose)
-    {
-        printf("We are using the Profile Weights and fgCalledCount is " FMT_WT "\n", fgCalledCount);
-    }
-#endif
-
-    return madeChanges;
 }
 
 //------------------------------------------------------------------------
@@ -4568,6 +4472,12 @@ void Compiler::fgDebugCheckProfile(PhaseChecks checks)
     else if (hasFlag(checks, PhaseChecks::CHECK_PROFILE))
     {
         ProfileChecks profileChecks = ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT;
+
+        if (hasFlag(checks, PhaseChecks::CHECK_PROFILE_FLAGS))
+        {
+            profileChecks |= ProfileChecks::CHECK_FLAGS;
+        }
+
         fgDebugCheckProfileWeights(profileChecks);
     }
     else if (hasFlag(checks, PhaseChecks::CHECK_LIKELIHOODS))
@@ -4608,6 +4518,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     const bool verifyLikelyWeights = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
     const bool verifyHasLikelihood = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
     const bool verifyLikelihoodSum = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
+    const bool checkProfileFlag    = hasFlag(checks, ProfileChecks::CHECK_FLAGS) && fgIsUsingProfileWeights();
     const bool assertOnFailure     = hasFlag(checks, ProfileChecks::RAISE_ASSERT) && fgPgoConsistent;
     const bool checkAllBlocks      = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
@@ -4630,6 +4541,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     unsigned problemBlocks    = 0;
     unsigned unprofiledBlocks = 0;
     unsigned profiledBlocks   = 0;
+    unsigned unflaggedBlocks  = 0;
     bool     entryProfiled    = false;
     bool     exitProfiled     = false;
     bool     hasTry           = false;
@@ -4640,10 +4552,20 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     //
     for (BasicBlock* const block : Blocks())
     {
-        if (!block->hasProfileWeight() && !checkAllBlocks)
+        if (!block->hasProfileWeight())
         {
-            unprofiledBlocks++;
-            continue;
+            if (checkProfileFlag && (block->bbPreds != nullptr))
+            {
+                // Block has flow into it that isn't marked as profile-derived.
+                //
+                unflaggedBlocks++;
+            }
+
+            if (!checkAllBlocks)
+            {
+                unprofiledBlocks++;
+                continue;
+            }
         }
 
         // There is some profile data to check.
@@ -4826,6 +4748,12 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         {
             assert(!"Inconsistent profile data");
         }
+    }
+
+    if (unflaggedBlocks > 0)
+    {
+        JITDUMP("%d blocks are missing BBF_PROF_WEIGHT flag.\n", unflaggedBlocks);
+        assert(!"Missing BBF_PROF_WEIGHT flag");
     }
 
     return (problemBlocks == 0);
@@ -5050,8 +4978,37 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 #endif // DEBUG
 
 //------------------------------------------------------------------------
+// fgRepairProfile: If we have PGO data and the profile is inconsistent,
+//   run synthesis to re-establish consistency.
+//
+// Returns:
+//   PhaseStatus indicating if profile synthesis ran or not.
+//
+PhaseStatus Compiler::fgRepairProfile()
+{
+    if (fgIsUsingProfileWeights())
+    {
+        if (fgPgoConsistent)
+        {
+            JITDUMP("Profile is already consistent.\n");
+        }
+        else
+        {
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RetainLikelihoods);
+            return PhaseStatus::MODIFIED_EVERYTHING;
+        }
+    }
+    else
+    {
+        JITDUMP("No PGO data. Skipping profile repair.\n");
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
 // fgRepairProfileCondToUncond: attempt to repair profile after modifying
-//   a conditinal branch to an unconditional branch.
+//   a conditional branch to an unconditional branch.
 //
 // Arguments:
 //   block        - block that was just altered

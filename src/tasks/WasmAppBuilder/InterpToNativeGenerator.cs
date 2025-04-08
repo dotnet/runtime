@@ -54,7 +54,7 @@ internal sealed class InterpToNativeGenerator
         }
 
         static (bool isVoid, string nativeType) Result (string signature)
-            => new (SignatureMapper.IsVoidSignature(signature), SignatureMapper.CharToNativeType(signature[0]));
+            => new(SignatureMapper.IsVoidSignature(signature), SignatureMapper.CharToNativeType(signature[0]));
 
         w.Write(
         """

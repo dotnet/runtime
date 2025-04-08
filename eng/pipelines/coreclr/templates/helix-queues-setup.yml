@@ -70,16 +70,16 @@ jobs:
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Ubuntu.2004.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-arm64v8
+        - (Ubuntu.2404.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Ubuntu.2004.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-arm64v8
+        - (Ubuntu.2404.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.321.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
+        - (Alpine.321.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.321.Amd64)Ubuntu.2204.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
+        - (Alpine.321.Amd64)azurelinux.3.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
 
     # Linux musl arm32
     - ${{ if eq(parameters.platform, 'linux_musl_arm') }}:
@@ -98,14 +98,14 @@ jobs:
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - Ubuntu.2204.Amd64.Open
+        - azurelinux.3.amd64.open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - Ubuntu.2204.Amd64
+        - azurelinux.3.amd64
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.1200.ARM64.Open
+        - osx.13.arm64.open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.1200.ARM64
 

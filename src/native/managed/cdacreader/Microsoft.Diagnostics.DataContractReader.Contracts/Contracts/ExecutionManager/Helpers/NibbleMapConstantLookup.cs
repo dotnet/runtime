@@ -29,7 +29,7 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 // In this implementation we may "extend" the lookup period of a function several hundred bytes
 // if there is not another function following it.
 
-internal class NibbleMapConstantLookup : INibbleMap
+internal sealed class NibbleMapConstantLookup : INibbleMap
 {
     private readonly Target _target;
 

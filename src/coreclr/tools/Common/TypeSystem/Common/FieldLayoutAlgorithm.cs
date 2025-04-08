@@ -32,6 +32,11 @@ namespace Internal.TypeSystem
         public abstract bool ComputeContainsGCPointers(DefType type);
 
         /// <summary>
+        /// Compute whether the fields of the specified type contains a byref.
+        /// </summary>
+        public abstract bool ComputeContainsByRefs(DefType type);
+
+        /// <summary>
         /// Compute whether the specified type is a value type that transitively has UnsafeValueTypeAttribute
         /// </summary>
         public abstract bool ComputeIsUnsafeValueType(DefType type);

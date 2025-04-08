@@ -347,7 +347,8 @@ namespace Internal.StackTraceMetadata
                     if ((command & StackTraceDataCommand.UpdateOwningType) != 0)
                     {
                         currentOwningType = Handle.FromIntToken((int)NativePrimitiveDecoder.ReadUInt32(ref pCurrent));
-                        Debug.Assert(currentOwningType.HandleType is HandleType.TypeDefinition or HandleType.TypeReference or HandleType.TypeSpecification);
+                        Debug.Assert((command & StackTraceDataCommand.IsStackTraceHidden) != 0 ||
+                            currentOwningType.HandleType is HandleType.TypeDefinition or HandleType.TypeReference or HandleType.TypeSpecification);
                     }
 
                     if ((command & StackTraceDataCommand.UpdateName) != 0)

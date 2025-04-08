@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34226.241
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StressLogAnalyzer", "src\StressLogAnalyzer.csproj", "{F6699980-10F8-40A3-B927-6A05D9CC9308}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D67D7F2A-1459-4A22-99B2-6B1F56EF4D79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Diagnostics.DataContractReader", "..\..\native\managed\cdacreader\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj", "{D44FD88F-1E43-4F53-9D2C-F0F3925BBE69}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Diagnostics.DataContractReader.Abstractions", "..\..\native\managed\cdacreader\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj", "{67C3CA4E-BBB0-4C0A-A06F-1C32B458F1BC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Diagnostics.DataContractReader.Contracts", "..\..\native\managed\cdacreader\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj", "{EC665835-E05A-439E-8607-D0DFA1E7A18F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F6699980-10F8-40A3-B927-6A05D9CC9308}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6699980-10F8-40A3-B927-6A05D9CC9308}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6699980-10F8-40A3-B927-6A05D9CC9308}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6699980-10F8-40A3-B927-6A05D9CC9308}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D44FD88F-1E43-4F53-9D2C-F0F3925BBE69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D44FD88F-1E43-4F53-9D2C-F0F3925BBE69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D44FD88F-1E43-4F53-9D2C-F0F3925BBE69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D44FD88F-1E43-4F53-9D2C-F0F3925BBE69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67C3CA4E-BBB0-4C0A-A06F-1C32B458F1BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67C3CA4E-BBB0-4C0A-A06F-1C32B458F1BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67C3CA4E-BBB0-4C0A-A06F-1C32B458F1BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67C3CA4E-BBB0-4C0A-A06F-1C32B458F1BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC665835-E05A-439E-8607-D0DFA1E7A18F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC665835-E05A-439E-8607-D0DFA1E7A18F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC665835-E05A-439E-8607-D0DFA1E7A18F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC665835-E05A-439E-8607-D0DFA1E7A18F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7D21BE58-014B-4F94-B2B4-24CEB99D10D0} = {D67D7F2A-1459-4A22-99B2-6B1F56EF4D79}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DB9376FB-190A-4566-99CD-7E00A0D76255}
+	EndGlobalSection
+EndGlobal

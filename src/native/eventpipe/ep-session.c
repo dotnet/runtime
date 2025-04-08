@@ -34,6 +34,8 @@ ep_session_remove_dangling_session_states (EventPipeSession *session);
  * EventPipeSession.
  */
 
+#ifndef PERFTRACING_DISABLE_THREADS
+
 EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 {
 	EP_ASSERT (data != NULL);
@@ -84,6 +86,27 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	return (ep_rt_thread_start_func_return_t)0;
 }
 
+#else // PERFTRACING_DISABLE_THREADS
+
+static size_t streaming_loop_tick(EventPipeSession *const session) {
+	bool events_written = false;
+	bool ok;
+	if (!ep_session_get_streaming_enabled (session)){
+		session->streaming_thread = NULL;
+		return 1; // done
+	}
+	EP_GCX_PREEMP_ENTER
+	ok = ep_session_write_all_buffers_to_file (session, &events_written);
+	EP_GCX_PREEMP_EXIT
+	if (!ok) {
+		ep_disable ((EventPipeSessionID)session);
+		return 1; // done
+	}
+	return 0; // continue
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
+
 static
 void
 session_create_streaming_thread (EventPipeSession *session)
@@ -98,9 +121,14 @@ session_create_streaming_thread (EventPipeSession *session)
 	if (!ep_rt_wait_event_is_valid (&session->rt_thread_shutdown_event))
 		EP_UNREACHABLE ("Unable to create stream flushing thread shutdown event.");
 
+#ifndef PERFTRACING_DISABLE_THREADS
 	ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 	if (!ep_rt_thread_create ((void *)streaming_thread, (void *)session, EP_THREAD_TYPE_SESSION, &thread_id))
 		EP_UNREACHABLE ("Unable to create stream flushing thread.");
+#else
+	ep_rt_volatile_store_uint32_t (&session->started, 1);
+	ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session);
+#endif
 }
 
 static

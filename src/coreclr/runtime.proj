@@ -4,11 +4,13 @@
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
     <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true'">true</HasCdacBuildTool>
+    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != '' and '$(TargetsBrowser)' == 'true'">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="runtime-prereqs.proj" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
+    <PackageReference Condition="'$(TargetsBrowser)' == 'true'" Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
@@ -48,6 +50,7 @@
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
+      <_CoreClrBuildArg Condition="'$(_IcuDir)' != ''" Include="-cmakeargs &quot;-DCLR_CMAKE_ICU_DIR=$(_IcuDir)&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">
@@ -68,6 +71,7 @@
       <_CoreClrBuildArg Condition="'$(ClrJitSubset)' == 'true'" Include="-component jit" />
       <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-component paltests" />
       <_CoreClrBuildArg Condition="'$(ClrAllJitsSubset)' == 'true'" Include="-component alljits" />
+      <_CoreClrBuildArg Condition="'$(ClrAllJitsCommunitySubset)' == 'true'" Include="-component alljits;-cmakeargs &quot;-DCLR_CMAKE_BUILD_COMMUNITY_ALTJITS=1&quot;" />
       <_CoreClrBuildArg Condition="'$(ClrILToolsSubset)' == 'true'" Include="-component iltools" />
       <_CoreClrBuildArg Condition="'$(ClrNativeAotSubset)' == 'true'" Include="-component nativeaot" />
       <_CoreClrBuildArg Condition="'$(ClrSpmiSubset)' == 'true'" Include="-component spmi" />
@@ -75,29 +79,39 @@
       <_CoreClrBuildArg Condition="'$(ClrDebugSubset)' == 'true'" Include="-component debug" />
     </ItemGroup>
 
-    <ItemGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(ANDROID_NDK_ROOT)' != ''">
-      <_CoreClrBuildArg Include="-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_ROOT)/build/cmake/android.toolchain.cmake"/>
-      <_CoreClrBuildArg Include="-DANDROID_NDK=$(ANDROID_NDK_ROOT)"/>
-      <_CoreClrBuildArg Include="-DANDROID_STL=none"/>
-      <_CoreClrBuildArg Include="-DANDROID_CPP_FEATURES=&quot;no-rtti no-exceptions&quot;"/>
-      <_CoreClrBuildArg Include="-DANDROID_PLATFORM=android-$(AndroidApiLevelMin)"/>
-      <_CoreClrBuildArg Condition="'$(Platform)' == 'arm64'" Include="-DANDROID_ABI=arm64-v8a" />
-      <_CoreClrBuildArg Condition="'$(Platform)' == 'arm'" Include="-DANDROID_ABI=armeabi-v7a" />
-      <_CoreClrBuildArg Condition="'$(Platform)' == 'x86'" Include="-DANDROID_ABI=x86" />
-      <_CoreClrBuildArg Condition="'$(Platform)' == 'x64'" Include="-DANDROID_ABI=x86_64" />
+    <PropertyGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(HostCrossOS)' == '' and '$(ANDROID_NDK_ROOT)' != ''">
+      <_AndroidToolChainPath>$([MSBuild]::NormalizePath('$(ANDROID_NDK_ROOT)', 'build', 'cmake', 'android.toolchain.cmake'))</_AndroidToolChainPath>
+    </PropertyGroup>
 
-      <!-- No LTTNG on Android -->
-      <_CoreClrBuildArg Include="-cmakeargs -DFEATURE_EVENT_TRACE=0"/>
+    <ItemGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(HostCrossOS)' == '' and '$(ANDROID_NDK_ROOT)' != ''">
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DANDROID_STL=c++_static&quot;"/>
+      
+      <!-- 
+        Only apply this setting on non-windows builds. Our windows build has a hard
+        time with a value that has spaces in it.
+      -->
+      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows))"
+                        Include="-cmakeargs -DANDROID_CPP_FEATURES=&quot;no-rtti exceptions&quot;"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(DotNetEsrpToolPath)' != ''">
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_CMAKE_ESRP_CLIENT=$(DotNetEsrpToolPath)&quot;" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <_CoreClrBuildArg Include="-keepnativesymbols" />
     </ItemGroup>
 
     <PropertyGroup>
       <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
       <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
+      <_CoreClrBuildPreSource Condition="'$(TargetsBrowser)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))"> </_CoreClrBuildPreSource>
+      <_CoreClrBuildPreSource Condition="'$(TargetsBrowser)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))">source &quot;$(RepoRoot)src/mono/browser/emsdk/emsdk_env.sh&quot; &amp;&amp; </_CoreClrBuildPreSource>
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
-    <Message Text="Executing &quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" Importance="High" />
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')"
+    <Message Text="Executing $(_CoreClrBuildPreSource)$(MSBuildThisFileDirectory)&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" Importance="High" />
+    <Exec Command="$(_CoreClrBuildPreSource)$(MSBuildThisFileDirectory)&quot;$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')"
           IgnoreStandardErrorWarningFormat="true" />
   </Target>
 

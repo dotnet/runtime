@@ -29,6 +29,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define DLLEXPORT
 #endif // !DLLEXPORT
 
+#if defined(HOST_ANDROID)
+#include <android/log.h>
+#endif
+
 /*****************************************************************************/
 
 ICorJitHost* g_jitHost        = nullptr;
@@ -148,7 +152,13 @@ int jitprintf(const char* fmt, ...)
 {
     va_list vl;
     va_start(vl, fmt);
+#if defined(HOST_ANDROID)
+    int status = jitstdout() == procstdout()
+                     ? __android_log_vprint(ANDROID_LOG_VERBOSE, MAIN_CLR_MODULE_NAME_A, fmt, vl)
+                     : vfprintf(jitstdout(), fmt, vl);
+#else
     int status = vfprintf(jitstdout(), fmt, vl);
+#endif
     va_end(vl);
     return status;
 }

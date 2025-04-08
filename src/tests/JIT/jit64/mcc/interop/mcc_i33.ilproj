@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- Test unsupported outside of windows -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <!-- Test uses varargs -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>

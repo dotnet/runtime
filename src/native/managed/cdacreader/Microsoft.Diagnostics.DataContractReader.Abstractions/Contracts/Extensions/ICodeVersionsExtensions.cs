@@ -3,9 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
-internal static class ICodeVersionsExtensions
+public static class ICodeVersionsExtensions
 {
-    internal static NativeCodeVersionHandle GetActiveNativeCodeVersion(this ICodeVersions cv, TargetPointer methodDesc)
+    public static NativeCodeVersionHandle GetActiveNativeCodeVersion(this ICodeVersions cv, TargetPointer methodDesc)
     {
         ILCodeVersionHandle ilCodeVersionHandle = cv.GetActiveILCodeVersion(methodDesc);
         return cv.GetActiveNativeCodeVersionForILCodeVersion(methodDesc, ilCodeVersionHandle);

@@ -401,34 +401,6 @@ EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);
 
 // SEH info forward declarations
 
-#include <pshpack1.h>
-struct DECLSPEC_ALIGN(4) UMEntryThunkCode
-{
-    BYTE            m_alignpad[2];  // used to guarantee alignment of backpactched portion
-    BYTE            m_movEAX;   //MOV EAX,imm32
-    LPVOID          m_uet;      // pointer to start of this structure
-    BYTE            m_jmp;      //JMP NEAR32
-    const BYTE *    m_execstub; // pointer to destination code  // make sure the backpatched portion is dword aligned.
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)&m_movEAX;
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 2;
-    }
-};
-#include <poppack.h>
-
 struct HijackArgs
 {
     DWORD FPUState[3]; // 12 bytes for FPU state (10 bytes for FP top-of-stack + 2 bytes padding)

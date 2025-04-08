@@ -3,48 +3,70 @@
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-internal static class Constants
+public static class Constants
 {
-    internal static class Globals
+    public static class Globals
     {
         // See src/coreclr/debug/runtimeinfo/datadescriptor.h
-        internal const string AppDomain = nameof(AppDomain);
-        internal const string ThreadStore = nameof(ThreadStore);
-        internal const string FinalizerThread = nameof(FinalizerThread);
-        internal const string GCThread = nameof(GCThread);
+        public const string AppDomain = nameof(AppDomain);
+        public const string ThreadStore = nameof(ThreadStore);
+        public const string FinalizerThread = nameof(FinalizerThread);
+        public const string GCThread = nameof(GCThread);
 
-        internal const string FeatureCOMInterop = nameof(FeatureCOMInterop);
-        internal const string FeatureEHFunclets = nameof(FeatureEHFunclets);
+        public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
+        public const string FeatureEHFunclets = nameof(FeatureEHFunclets);
 
-        internal const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
-        internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
+        public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
+        public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
 
-        internal const string ExceptionMethodTable = nameof(ExceptionMethodTable);
-        internal const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
-        internal const string ObjectMethodTable = nameof(ObjectMethodTable);
-        internal const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);
-        internal const string StringMethodTable = nameof(StringMethodTable);
+        public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
+        public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
+        public const string ObjectMethodTable = nameof(ObjectMethodTable);
+        public const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);
+        public const string StringMethodTable = nameof(StringMethodTable);
 
-        internal const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
-        internal const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
+        public const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
+        public const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
 
-        internal const string MethodDescAlignment = nameof(MethodDescAlignment);
-        internal const string ObjectHeaderSize = nameof(ObjectHeaderSize);
-        internal const string SyncBlockValueToObjectOffset = nameof(SyncBlockValueToObjectOffset);
+        public const string StressLogEnabled = nameof(StressLogEnabled);
+        public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);
+        public const string StressLog = nameof(StressLog);
+        public const string StressLogModuleTable = nameof(StressLogModuleTable);
+        public const string StressLogMaxModules = nameof(StressLogMaxModules);
+        public const string StressLogChunkMaxSize = nameof(StressLogChunkMaxSize);
+        public const string StressLogMaxMessageSize = nameof(StressLogMaxMessageSize);
+        public const string StressLogChunkSize = nameof(StressLogChunkSize);
+        public const string StressLogValidChunkSig = nameof(StressLogValidChunkSig);
 
-        internal const string SyncTableEntries = nameof(SyncTableEntries);
+        public const string MethodDescAlignment = nameof(MethodDescAlignment);
+        public const string ObjectHeaderSize = nameof(ObjectHeaderSize);
+        public const string SyncBlockValueToObjectOffset = nameof(SyncBlockValueToObjectOffset);
 
-        internal const string ArrayBoundsZero = nameof(ArrayBoundsZero);
+        public const string SyncTableEntries = nameof(SyncTableEntries);
 
-        internal const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);
-        internal const string DirectorySeparator = nameof(DirectorySeparator);
+        public const string ArrayBoundsZero = nameof(ArrayBoundsZero);
 
-        internal const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
-        internal const string StubCodeBlockLast = nameof(StubCodeBlockLast);
-        internal const string PlatformMetadata = nameof(PlatformMetadata);
-        internal const string ProfilerControlBlock = nameof(ProfilerControlBlock);
+        public const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);
+        public const string DirectorySeparator = nameof(DirectorySeparator);
 
-        internal const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
-        internal const string HashMapValueMask = nameof(HashMapValueMask);
+        public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
+        public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
+        public const string PlatformMetadata = nameof(PlatformMetadata);
+        public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
+
+        public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
+        public const string HashMapValueMask = nameof(HashMapValueMask);
+    }
+    public static class FieldNames
+    {
+        public static class Array
+        {
+            public const string NumComponents = $"m_{nameof(NumComponents)}";
+        }
+
+        public static class ModuleLookupMap
+        {
+            public const string TableData = nameof(TableData);
+        }
     }
 }

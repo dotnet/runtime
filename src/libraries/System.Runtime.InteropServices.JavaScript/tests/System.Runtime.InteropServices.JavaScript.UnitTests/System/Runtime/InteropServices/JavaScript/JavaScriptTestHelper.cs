@@ -1032,6 +1032,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return arg1;
         }
         
+        [JSImport("beforeYield", "JavaScriptTestHelper")]
+        public static partial void BeforeYield();
+
+        [JSImport("isSetTimeoutHit", "JavaScriptTestHelper")]
+        public static partial bool IsSetTimeoutHit();
+
+        [JSImport("isPromiseThenHit", "JavaScriptTestHelper")]
+        public static partial bool IsPromiseThenHit();
+
         [JSImport("callJavaScriptLibrary", "JavaScriptTestHelper")]
         public static partial Task<int> callJavaScriptLibrary(int a, int b);
 

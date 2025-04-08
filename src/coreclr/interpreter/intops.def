@@ -1,0 +1,197 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license
+
+// OPDEF (opsymbol, opstring, oplength, numDestVars (0 or 1), numSourceVars, optype)
+// Currently, opcode, dvar offset, svar offsets as well as any additional instruction data
+// are stored in uint32_t slots in the instruction stream for simplicity. In the future
+// we should add compact opcodes where all data is in uint16_t slots.
+
+OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_RET, "ret", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_VT, "ret.vt", 3, 0, 1, InterpOpInt)
+OPDEF(INTOP_RET_VOID, "ret.void", 1, 0, 0, InterpOpNoArgs)
+
+OPDEF(INTOP_LDC_I4, "ldc.i4", 3, 1, 0, InterpOpInt)
+OPDEF(INTOP_LDC_I4_0, "ldc.i4.0", 2, 1, 0, InterpOpNoArgs)
+OPDEF(INTOP_LDC_I8_0, "ldc.i8.0", 2, 1, 0, InterpOpNoArgs)
+
+OPDEF(INTOP_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_I4_I2, "mov.i4.i2", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_I4_U2, "mov.i4.u2", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_4, "mov.4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_8, "mov.8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_VT, "mov.vt", 4, 1, 1, InterpOpInt)
+
+OPDEF(INTOP_LDLOCA, "ldloca", 3, 1, 0, InterpOpInt)
+
+OPDEF(INTOP_SWITCH, "switch", 0, 0, 1, InterpOpSwitch)
+
+OPDEF(INTOP_BR, "br", 2, 0, 0, InterpOpBranch)
+
+OPDEF(INTOP_BRFALSE_I4, "brfalse.i4", 3, 0, 1, InterpOpBranch)
+OPDEF(INTOP_BRFALSE_I8, "brfalse.i8", 3, 0, 1, InterpOpBranch)
+OPDEF(INTOP_BRTRUE_I4, "brtrue.i4", 3, 0, 1, InterpOpBranch)
+OPDEF(INTOP_BRTRUE_I8, "brtrue.i8", 3, 0, 1, InterpOpBranch)
+
+OPDEF(INTOP_BEQ_I4, "beq.i4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BEQ_I8, "beq.i8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BEQ_R4, "beq.r4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BEQ_R8, "beq.r8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGE_I4, "bge.i4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGE_I8, "bge.i8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGE_R4, "bge.r4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGE_R8, "bge.r8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGT_I4, "bgt.i4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGT_I8, "bgt.i8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGT_R4, "bgt.r4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGT_R8, "bgt.r8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLT_I4, "blt.i4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLT_I8, "blt.i8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLT_R4, "blt.r4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLT_R8, "blt.r8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLE_I4, "ble.i4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLE_I8, "ble.i8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLE_R4, "ble.r4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLE_R8, "ble.r8", 4, 0, 2, InterpOpBranch)
+
+OPDEF(INTOP_BNE_UN_I4, "bne.un.i4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BNE_UN_I8, "bne.un.i8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BNE_UN_R4, "bne.un.r4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BNE_UN_R8, "bne.un.r8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGE_UN_I4, "bge.un.i4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGE_UN_I8, "bge.un.i8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGE_UN_R4, "bge.un.r4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGE_UN_R8, "bge.un.r8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGT_UN_I4, "bgt.un.i4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGT_UN_I8, "bgt.un.i8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGT_UN_R4, "bgt.un.r4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BGT_UN_R8, "bgt.un.r8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLE_UN_I4, "ble.un.i4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLE_UN_I8, "ble.un.i8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLE_UN_R4, "ble.un.r4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLE_UN_R8, "ble.un.r8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLT_UN_I4, "blt.un.i4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLT_UN_I8, "blt.un.i8", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLT_UN_R4, "blt.un.r4", 4, 0, 2, InterpOpBranch)
+OPDEF(INTOP_BLT_UN_R8, "blt.un.r8", 4, 0, 2, InterpOpBranch)
+
+// Unary operations
+
+OPDEF(INTOP_NEG_I4, "neg.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_NEG_I8, "neg.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_NEG_R4, "neg.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_NEG_R8, "neg.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_NOT_I4, "not.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_NOT_I8, "not.i8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_R_UN_I4, "conv.r.un.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R_UN_I8, "conv.r.un.i8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_I1_I4, "conv.i1.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_I1_I8, "conv.i1.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_I1_R4, "conv.i1.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_I1_R8, "conv.i1.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_U1_I4, "conv.u1.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_U1_I8, "conv.u1.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_U1_R4, "conv.u1.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_U1_R8, "conv.u1.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_I2_I4, "conv.i2.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_I2_I8, "conv.i2.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_I2_R4, "conv.i2.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_I2_R8, "conv.i2.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_U2_I4, "conv.u2.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_U2_I8, "conv.u2.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_U2_R4, "conv.u2.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_U2_R8, "conv.u2.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_I4_R4, "conv.i4.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_I4_R8, "conv.i4.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_U4_R4, "conv.u4.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_U4_R8, "conv.u4.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_I8_I4, "conv.i8.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_I8_U4, "conv.i8.u4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_I8_R4, "conv.i8.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_I8_R8, "conv.i8.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_R4_I4, "conv.r4.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R4_I8, "conv.r4.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R4_R8, "conv.r4.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_R8_I4, "conv.r8.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R8_I8, "conv.r8.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R8_R4, "conv.r8.r4", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_U8_R4, "conv.u8.r4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_U8_R8, "conv.u8.r8", 3, 1, 1, InterpOpNoArgs)
+// Unary operations end
+
+// Binary operations
+
+OPDEF(INTOP_ADD_I4, "add.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_ADD_I8, "add.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_ADD_R4, "add.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_ADD_R8, "add.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_SUB_I4, "sub.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SUB_I8, "sub.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SUB_R4, "sub.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SUB_R8, "sub.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_MUL_I4, "mul.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_MUL_I8, "mul.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_MUL_R4, "mul.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_MUL_R8, "mul.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_AND_I4, "and.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_AND_I8, "and.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_OR_I4, "or.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_OR_I8, "or.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_XOR_I4, "xor.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_XOR_I8, "xor.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_SHR_UN_I4, "shr.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SHR_UN_I8, "shr.un.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SHL_I4, "shl.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SHL_I8, "shl.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SHR_I4, "shr.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_SHR_I8, "shr.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_CEQ_I4, "ceq.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CEQ_I8, "ceq.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CEQ_R4, "ceq.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CEQ_R8, "ceq.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_CGT_I4, "cgt.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CGT_I8, "cgt.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CGT_R4, "cgt.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CGT_R8, "cgt.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_CGT_UN_I4, "cgt.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CGT_UN_I8, "cgt.un.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CGT_UN_R4, "cgt.un.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CGT_UN_R8, "cgt.un.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_CLT_I4, "clt.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CLT_I8, "clt.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CLT_R4, "clt.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CLT_R8, "clt.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_CLT_UN_I4, "clt.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CLT_UN_I8, "clt.un.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CLT_UN_R4, "clt.un.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_CLT_UN_R8, "clt.un.r8", 4, 1, 2, InterpOpNoArgs)
+// Binary operations end
+
+// Calls
+OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodToken)
+
+OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)

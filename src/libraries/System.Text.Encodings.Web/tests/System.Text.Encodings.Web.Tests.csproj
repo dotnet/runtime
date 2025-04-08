@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <UnicodeUcdVersion>15.0</UnicodeUcdVersion>
+    <UnicodeUcdVersion>16.0</UnicodeUcdVersion>
     <!-- CS3021: 'type' does not need a CLSCompliant attribute because the assembly does not have a CLSCompliant attribute -->
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">$(NoWarn);CS3021</NoWarn>
   </PropertyGroup>

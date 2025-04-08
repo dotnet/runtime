@@ -1438,7 +1438,10 @@ void EEJitManager::SetCpuInfo()
     #if defined(TARGET_AMD64)
     if ((cpuFeatures & XArchIntrinsicConstants_Apx) != 0)
     {
-        CPUCompileFlags.Set(InstructionSet_APX);
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAPX))
+        {
+            CPUCompileFlags.Set(InstructionSet_APX);
+        }
     }
     #endif  // TARGET_AMD64
 #elif defined(TARGET_ARM64)

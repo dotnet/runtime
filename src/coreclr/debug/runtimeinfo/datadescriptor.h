@@ -223,7 +223,6 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_data<Module>::Assembly)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Base, cdac_data<Module>::Base)
 CDAC_TYPE_FIELD(Module, /*uint32*/, Flags, cdac_data<Module>::Flags)
 CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_data<Module>::LoaderAllocator)
-CDAC_TYPE_FIELD(Module, /*pointer*/, ThunkHeap, cdac_data<Module>::ThunkHeap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_data<Module>::DynamicMetadata)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
 CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
@@ -322,6 +321,58 @@ CDAC_TYPE_BEGIN(DynamicMetadata)
 CDAC_TYPE_FIELD(DynamicMetadata, /*uint32*/, Size, cdac_data<DynamicMetadata>::Size)
 CDAC_TYPE_FIELD(DynamicMetadata, /*inline byte array*/, Data, cdac_data<DynamicMetadata>::Data)
 CDAC_TYPE_END(DynamicMetadata)
+
+#ifdef STRESS_LOG
+CDAC_TYPE_BEGIN(StressLog)
+CDAC_TYPE_SIZE(sizeof(StressLog))
+CDAC_TYPE_FIELD(StressLog, /* uint32 */, LoggedFacilities, cdac_offsets<StressLog>::facilitiesToLog)
+CDAC_TYPE_FIELD(StressLog, /* uint32 */, Level, cdac_offsets<StressLog>::levelToLog)
+CDAC_TYPE_FIELD(StressLog, /* uint32 */, MaxSizePerThread, cdac_offsets<StressLog>::MaxSizePerThread)
+CDAC_TYPE_FIELD(StressLog, /* uint32 */, MaxSizeTotal, cdac_offsets<StressLog>::MaxSizeTotal)
+CDAC_TYPE_FIELD(StressLog, /* uint32 */, TotalChunks, cdac_offsets<StressLog>::totalChunk)
+CDAC_TYPE_FIELD(StressLog, /* pointer */, Logs, cdac_offsets<StressLog>::logs)
+CDAC_TYPE_FIELD(StressLog, /* uint64 */, TickFrequency, cdac_offsets<StressLog>::tickFrequency)
+CDAC_TYPE_FIELD(StressLog, /* uint64 */, StartTimestamp, cdac_offsets<StressLog>::startTimeStamp)
+CDAC_TYPE_FIELD(StressLog, /* nuint */, ModuleOffset, cdac_offsets<StressLog>::moduleOffset)
+CDAC_TYPE_END(StressLog)
+
+CDAC_TYPE_BEGIN(StressLogModuleDesc)
+CDAC_TYPE_SIZE(cdac_offsets<StressLog>::ModuleDesc::type_size)
+CDAC_TYPE_FIELD(StressLogModuleDesc, pointer, BaseAddress, cdac_offsets<StressLog>::ModuleDesc::baseAddress)
+CDAC_TYPE_FIELD(StressLogModuleDesc, nuint, Size, cdac_offsets<StressLog>::ModuleDesc::size)
+CDAC_TYPE_END(StressLogModuleDesc)
+
+CDAC_TYPE_BEGIN(ThreadStressLog)
+CDAC_TYPE_INDETERMINATE(ThreadStressLog)
+CDAC_TYPE_FIELD(ThreadStressLog, /* pointer */, Next, cdac_offsets<ThreadStressLog>::next)
+CDAC_TYPE_FIELD(ThreadStressLog, uint64, ThreadId, cdac_offsets<ThreadStressLog>::threadId)
+CDAC_TYPE_FIELD(ThreadStressLog, uint8, WriteHasWrapped, cdac_offsets<ThreadStressLog>::writeHasWrapped)
+CDAC_TYPE_FIELD(ThreadStressLog, pointer, CurrentPtr, cdac_offsets<ThreadStressLog>::curPtr)
+CDAC_TYPE_FIELD(ThreadStressLog, /* pointer */, ChunkListHead, cdac_offsets<ThreadStressLog>::chunkListHead)
+CDAC_TYPE_FIELD(ThreadStressLog, /* pointer */, ChunkListTail, cdac_offsets<ThreadStressLog>::chunkListTail)
+CDAC_TYPE_FIELD(ThreadStressLog, /* pointer */, CurrentWriteChunk, cdac_offsets<ThreadStressLog>::curWriteChunk)
+CDAC_TYPE_END(ThreadStressLog)
+
+CDAC_TYPE_BEGIN(StressLogChunk)
+CDAC_TYPE_SIZE(sizeof(StressLogChunk))
+CDAC_TYPE_FIELD(StressLogChunk, /* pointer */, Prev, offsetof(StressLogChunk, prev))
+CDAC_TYPE_FIELD(StressLogChunk, /* pointer */, Next, offsetof(StressLogChunk, next))
+CDAC_TYPE_FIELD(StressLogChunk, /* uint8[STRESSLOG_CHUNK_SIZE] */, Buf, offsetof(StressLogChunk, buf))
+CDAC_TYPE_FIELD(StressLogChunk, /* uint32 */, Sig1, offsetof(StressLogChunk, dwSig1))
+CDAC_TYPE_FIELD(StressLogChunk, /* uint32 */, Sig2, offsetof(StressLogChunk, dwSig2))
+CDAC_TYPE_END(StressLogChunk)
+
+// The StressMsg Header is the fixed size portion of the StressMsg
+CDAC_TYPE_BEGIN(StressMsgHeader)
+CDAC_TYPE_SIZE(sizeof(StressMsg))
+CDAC_TYPE_END(StressMsgHeader)
+
+CDAC_TYPE_BEGIN(StressMsg)
+CDAC_TYPE_INDETERMINATE(StressMsg)
+CDAC_TYPE_FIELD(StressMsg, StressMsgHeader, Header, 0)
+CDAC_TYPE_FIELD(StressMsg, /* pointer */, Args, offsetof(StressMsg, args))
+CDAC_TYPE_END(StressMsg)
+#endif
 
 CDAC_TYPE_BEGIN(MethodDesc)
 CDAC_TYPE_SIZE(sizeof(MethodDesc))
@@ -441,7 +492,7 @@ CDAC_TYPE_END(PlatformMetadata)
 
 CDAC_TYPE_BEGIN(StubPrecodeData)
 CDAC_TYPE_INDETERMINATE(StubPrecodeData)
-CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, MethodDesc, offsetof(StubPrecodeData, MethodDesc))
+CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, MethodDesc, offsetof(StubPrecodeData, SecretParam))
 CDAC_TYPE_FIELD(StubPrecodeData, /*uint8*/, Type, offsetof(StubPrecodeData, Type))
 CDAC_TYPE_END(StubPrecodeData)
 
@@ -521,6 +572,10 @@ CDAC_TYPE_END(RangeSection)
 CDAC_TYPE_BEGIN(RealCodeHeader)
 CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
+#ifdef FEATURE_EH_FUNCLETS
+CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
+CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
+#endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
 
 CDAC_TYPE_BEGIN(CodeHeapListNode)
@@ -570,6 +625,26 @@ CDAC_TYPE_FIELD(GCCoverageInfo, /*pointer*/, SavedCode, offsetof(GCCoverageInfo,
 CDAC_TYPE_END(GCCoverageInfo)
 #endif // HAVE_GCCOVER
 
+CDAC_TYPE_BEGIN(Frame)
+CDAC_TYPE_INDETERMINATE(Frame)
+CDAC_TYPE_FIELD(Frame, /*pointer*/, Next, cdac_data<Frame>::Next)
+CDAC_TYPE_END(Frame)
+
+CDAC_TYPE_BEGIN(InlinedCallFrame)
+CDAC_TYPE_SIZE(sizeof(InlinedCallFrame))
+CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallSiteSP, offsetof(InlinedCallFrame, m_pCallSiteSP))
+CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallerReturnAddress, offsetof(InlinedCallFrame, m_pCallerReturnAddress))
+CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CalleeSavedFP, offsetof(InlinedCallFrame, m_pCalleeSavedFP))
+CDAC_TYPE_END(InlinedCallFrame)
+
+#ifdef FEATURE_EH_FUNCLETS
+CDAC_TYPE_BEGIN(SoftwareExceptionFrame)
+CDAC_TYPE_SIZE(sizeof(SoftwareExceptionFrame))
+CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<SoftwareExceptionFrame>::TargetContext)
+CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*pointer*/, ReturnAddress, cdac_data<SoftwareExceptionFrame>::ReturnAddress)
+CDAC_TYPE_END(SoftwareExceptionFrame)
+#endif // FEATURE_EH_FUNCLETS
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -577,6 +652,14 @@ CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+
+// Add FrameIdentifier for all defined Frame types. Used to differentiate Frame objects.
+#define FRAME_TYPE_NAME(frameType) \
+    CDAC_GLOBAL_POINTER(frameType##Identifier, FrameIdentifier::frameType)
+
+    #include "frames.h"
+#undef FRAME_TYPE_NAME
+
 CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #if FEATURE_EH_FUNCLETS
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
@@ -611,6 +694,18 @@ CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
 CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
+#ifdef STRESS_LOG
+CDAC_GLOBAL(StressLogEnabled, uint8, 1)
+CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
+CDAC_GLOBAL(StressLogHasModuleTable, uint8, 1)
+CDAC_GLOBAL_POINTER(StressLogModuleTable, &g_pStressLog->modules)
+CDAC_GLOBAL(StressLogMaxModules, uint64, cdac_offsets<StressLog>::MAX_MODULES)
+CDAC_GLOBAL(StressLogChunkSize, uint32, STRESSLOG_CHUNK_SIZE)
+CDAC_GLOBAL(StressLogValidChunkSig, uint32, StressLogChunk::ValidChunkSig)
+CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize)
+#else
+CDAC_GLOBAL(StressLogEnabled, uint8, 0)
+#endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)

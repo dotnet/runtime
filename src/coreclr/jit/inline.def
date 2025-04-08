@@ -28,6 +28,7 @@ INLINE_OBSERVATION(UNUSED_INITIAL,            bool,   "unused initial observatio
 INLINE_OBSERVATION(BAD_ARGUMENT_NUMBER,       bool,   "invalid argument number",              FATAL,       CALLEE)
 INLINE_OBSERVATION(BAD_LOCAL_NUMBER,          bool,   "invalid local number",                 FATAL,       CALLEE)
 INLINE_OBSERVATION(COMPILATION_ERROR,         bool,   "compilation error",                    FATAL,       CALLEE)
+INLINE_OBSERVATION(EXPLICIT_TAIL_PREFIX,      bool,   "explicit tail prefix in callee",       FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_EH,                    bool,   "has exception handling",               FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_ENDFILTER,             bool,   "has endfilter",                        FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_ENDFINALLY,            bool,   "has endfinally",                       FATAL,       CALLEE)
@@ -36,6 +37,7 @@ INLINE_OBSERVATION(HAS_MANAGED_VARARGS,       bool,   "managed varargs",        
 INLINE_OBSERVATION(HAS_NATIVE_VARARGS,        bool,   "native varargs",                       FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_NO_BODY,               bool,   "has no body",                          FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_NULL_FOR_LDELEM,       bool,   "has null pointer for ldelem",          FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_UNMANAGED_CALLCONV,    bool,   "has unmanaged calling convention",     FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_ARRAY_METHOD,           bool,   "is array method",                      FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_GENERIC_VIRTUAL,        bool,   "generic virtual",                      FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_JIT_NOINLINE,           bool,   "noinline per JitNoinline",             FATAL,       CALLEE)
@@ -55,7 +57,6 @@ INLINE_OBSERVATION(STACK_CRAWL_MARK,          bool,   "uses stack crawl mark",  
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",                   FATAL,       CALLEE)
 INLINE_OBSERVATION(TOO_MANY_ARGUMENTS,        bool,   "too many arguments",                   FATAL,       CALLEE)
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",                      FATAL,       CALLEE)
-INLINE_OBSERVATION(EXPLICIT_TAIL_PREFIX,      bool,   "explicit tail prefix in callee",       FATAL,       CALLEE)
 
 // ------ Callee Performance -------
 
@@ -106,6 +107,7 @@ INLINE_OBSERVATION(NUMBER_OF_ARGUMENTS,       int,    "number of arguments",    
 INLINE_OBSERVATION(NUMBER_OF_BASIC_BLOCKS,    int,    "number of basic blocks",               INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_LOCALS,          int,    "number of locals",                     INFORMATION, CALLEE)
 INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                        INFORMATION, CALLEE)
+INLINE_OBSERVATION(UNBOX_ARG,                 int,    "callee unboxes arg",                   INFORMATION, CALLEE)
 INLINE_OBSERVATION(UNSUPPORTED_OPCODE,        bool,   "unsupported opcode",                   INFORMATION, CALLEE)
 
 // ------ Caller Correctness -------
@@ -194,6 +196,7 @@ INLINE_OBSERVATION(LOG_REPLAY_ACCEPT,         bool,   "accepted by log replay", 
 INLINE_OBSERVATION(PROFILE_FREQUENCY,         double, "frequency from profile data",          INFORMATION, CALLSITE)
 INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                        INFORMATION, CALLSITE)
 INLINE_OBSERVATION(WEIGHT,                    int,    "frequency from block weight",          INFORMATION, CALLSITE)
+INLINE_OBSERVATION(UNBOX_EXACT_ARG,           int,    "unbox of arg with exact class",        INFORMATION, CALLSITE)
 
 // ------ Final Sentinel -------
 

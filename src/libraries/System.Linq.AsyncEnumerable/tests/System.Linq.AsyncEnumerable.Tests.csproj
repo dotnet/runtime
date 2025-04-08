@@ -1,0 +1,85 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <NoWarn>$(NoWarn);CS1998</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AggregateByTests.cs" />
+    <Compile Include="AggregateAsyncTests.cs" />
+    <Compile Include="CastTests.cs" />
+    <Compile Include="ElementAtOrDefaultAsyncTests.cs" />
+    <Compile Include="ElementAtAsyncTests.cs" />
+    <Compile Include="GroupByTests.cs" />
+    <Compile Include="ShuffleTests.cs" />
+    <Compile Include="SingleOrDefaultAsyncTests.cs" />
+    <Compile Include="SingleAsyncTests.cs" />
+    <Compile Include="LastOrDefaultAsyncTests.cs" />
+    <Compile Include="LastAsyncTests.cs" />
+    <Compile Include="FirstOrDefaultAsyncTests.cs" />
+    <Compile Include="FirstAsyncTests.cs" />
+    <Compile Include="CountByTests.cs" />
+    <Compile Include="DistinctByTests.cs" />
+    <Compile Include="GroupJoinTests.cs" />
+    <Compile Include="MinByAsyncTests.cs" />
+    <Compile Include="MaxByAsyncTests.cs" />
+    <Compile Include="RightJoinTests.cs" />
+    <Compile Include="LeftJoinTests.cs" />
+    <Compile Include="JoinTests.cs" />
+    <Compile Include="TakeWhileTests.cs" />
+    <Compile Include="SkipWhileTests.cs" />
+    <Compile Include="TakeLastTests.cs" />
+    <Compile Include="SkipLastTests.cs" />
+    <Compile Include="TakeTests.cs" />
+    <Compile Include="SkipTests.cs" />
+    <Compile Include="ToDictionaryAsyncTests.cs" />
+    <Compile Include="QueryComprehesionTests.cs" />
+    <Compile Include="ToLookupAsyncTests.cs" />
+    <Compile Include="UnionByTests.cs" />
+    <Compile Include="IntersectByTests.cs" />
+    <Compile Include="ExceptByTests.cs" />
+    <Compile Include="OrderByTests.cs" />
+    <Compile Include="ZipTests.cs" />
+    <Compile Include="SequenceEqualAsyncTests.cs" />
+    <Compile Include="WhereTests.cs" />
+    <Compile Include="SelectTests.cs" />
+    <Compile Include="SelectManyTests.cs" />
+    <Compile Include="DefaultIfEmptyTests.cs" />
+    <Compile Include="DistinctTests.cs" />
+    <Compile Include="RepeatTests.cs" />
+    <Compile Include="RangeTests.cs" />
+    <Compile Include="ReverseTests.cs" />
+    <Compile Include="IndexTests.cs" />
+    <Compile Include="ChunkTests.cs" />
+    <Compile Include="IntersectTests.cs" />
+    <Compile Include="ExceptTests.cs" />
+    <Compile Include="ToAsyncEnumerableTests.cs" />
+    <Compile Include="UnionTests.cs" />
+    <Compile Include="ToHashSetAsyncTests.cs" />
+    <Compile Include="ToListAsyncTests.cs" />
+    <Compile Include="ToArrayAsyncTests.cs" />
+    <Compile Include="OfTypeTests.cs" />
+    <Compile Include="CountAsyncTests.cs" />
+    <Compile Include="MaxAsyncTests.cs" />
+    <Compile Include="MinAsyncTests.cs" />
+    <Compile Include="SumAsyncTests.cs" />
+    <Compile Include="AverageAsyncTests.cs" />
+    <Compile Include="ContainsAsyncTests.cs" />
+    <Compile Include="ConcatTests.cs" />
+    <Compile Include="PrependTests.cs" />
+    <Compile Include="AppendTests.cs" />
+    <Compile Include="AnyAsyncTests.cs" />
+    <Compile Include="EmptyTests.cs" />
+    <Compile Include="AllAsyncTests.cs" />
+    <Compile Include="AsyncEnumerableTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <ProjectReference Include="..\src\System.Linq.AsyncEnumerable.csproj" />
+    <ProjectReference Include="..\..\System.Threading.Channels\src\System.Threading.Channels.csproj" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
+  </ItemGroup>
+
+</Project>

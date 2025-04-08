@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class TypeDesc : IData<TypeDesc>
+internal sealed class TypeDesc : IData<TypeDesc>
 {
     static TypeDesc IData<TypeDesc>.Create(Target target, TargetPointer address) => new TypeDesc(target, address);
     public TypeDesc(Target target, TargetPointer address)
@@ -15,7 +15,7 @@ internal class TypeDesc : IData<TypeDesc>
     public uint TypeAndFlags { get; init; }
 }
 
-internal class ParamTypeDesc : IData<ParamTypeDesc>
+internal sealed class ParamTypeDesc : IData<ParamTypeDesc>
 {
     static ParamTypeDesc IData<ParamTypeDesc>.Create(Target target, TargetPointer address) => new ParamTypeDesc(target, address);
     public ParamTypeDesc(Target target, TargetPointer address)
@@ -31,7 +31,7 @@ internal class ParamTypeDesc : IData<ParamTypeDesc>
     public TargetPointer TypeArg { get; init; }
 }
 
-internal class TypeVarTypeDesc : IData<TypeVarTypeDesc>
+internal sealed class TypeVarTypeDesc : IData<TypeVarTypeDesc>
 {
     static TypeVarTypeDesc IData<TypeVarTypeDesc>.Create(Target target, TargetPointer address) => new TypeVarTypeDesc(target, address);
     public TypeVarTypeDesc(Target target, TargetPointer address)
@@ -50,7 +50,7 @@ internal class TypeVarTypeDesc : IData<TypeVarTypeDesc>
     public uint Token { get; init; }
 }
 
-internal class FnPtrTypeDesc : IData<FnPtrTypeDesc>
+internal sealed class FnPtrTypeDesc : IData<FnPtrTypeDesc>
 {
     static FnPtrTypeDesc IData<FnPtrTypeDesc>.Create(Target target, TargetPointer address) => new FnPtrTypeDesc(target, address);
     public FnPtrTypeDesc(Target target, TargetPointer address)
