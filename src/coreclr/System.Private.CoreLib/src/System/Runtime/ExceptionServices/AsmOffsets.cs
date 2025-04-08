@@ -39,9 +39,9 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__SP = 0x3ec;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x3f0;
 #elif TARGET_X86
-    public const int SIZEOF__REGDISPLAY = 0x600;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x5f8;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x5fc;
+    public const int SIZEOF__REGDISPLAY = 0x5fc;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x5f0;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x5f4;
 #elif TARGET_RISCV64
     public const int SIZEOF__REGDISPLAY = 0x6C0;
     public const int OFFSETOF__REGDISPLAY__SP = 0x628;
@@ -96,9 +96,9 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__SP = 0x3e8;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x3ec;
 #elif TARGET_X86
-    public const int SIZEOF__REGDISPLAY = 0x5fc;
-    public const int OFFSETOF__REGDISPLAY__SP = 0x5f4;
-    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x5f8;
+    public const int SIZEOF__REGDISPLAY = 0x5f8;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x5ec;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x5f0;
 #elif TARGET_RISCV64
     public const int SIZEOF__REGDISPLAY = 0x6B0;
     public const int OFFSETOF__REGDISPLAY__SP = 0x620;

@@ -711,7 +711,7 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Esp = (DWORD)((TADDR)pRD->pCurrentContextPointers->Eip + sizeof(TADDR));
+    pRD->pCurrentContext->Esp = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
 
 #define RESTORE_REG(reg) { pRD->pCurrentContext->reg = m_Args->reg; pRD->pCurrentContextPointers->reg = &m_Args->reg; }
 #define CALLEE_SAVED_REGISTER(reg) RESTORE_REG(reg)
@@ -740,7 +740,7 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 #undef ARGUMENT_AND_SCRATCH_REGISTER
 #undef RESTORE_REG
 
-    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
+    pRD->SP  = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
 
 #endif // FEATURE_EH_FUNCLETS
 
