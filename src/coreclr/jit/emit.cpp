@@ -8469,7 +8469,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                 switch (data->dsDataType)
                 {
                     case TYP_FLOAT:
-                        assert(data->dsSize >= 4);
+                        if (data->dsSize < 4)
+                        {
+                            printf("\t<Unexpected data size %d (expected >= 4)\n", data->dsSize);
+                        }
                         printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
                         printf("\t; %9.6g",
                                FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->dsCont[i])));
@@ -8477,7 +8480,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                         break;
 
                     case TYP_DOUBLE:
-                        assert(data->dsSize >= 8);
+                        if (data->dsSize < 8)
+                        {
+                            printf("\t<Unexpected data size %d (expected >= 8)\n", data->dsSize);
+                        }
                         printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
                         printf("\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont[i]));
                         i += 8;
@@ -8498,7 +8504,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 break;
 
                             case 2:
-                                assert((data->dsSize % 2) == 0);
+                                if ((data->dsSize % 2) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%2 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdw\t%04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i]));
                                 for (j = 2; j < 24; j += 2)
                                 {
@@ -8511,7 +8520,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
 
                             case 12:
                             case 4:
-                                assert((data->dsSize % 4) == 0);
+                                if ((data->dsSize % 4) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%4 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdd\t%08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
                                 for (j = 4; j < 24; j += 4)
                                 {
@@ -8526,7 +8538,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                             case 32:
                             case 16:
                             case 8:
-                                assert((data->dsSize % 8) == 0);
+                                if ((data->dsSize % 8) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%8 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
                                 for (j = 8; j < 64; j += 8)
                                 {
@@ -8538,7 +8553,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 break;
 
                             default:
-                                assert(!"unexpected elemSize");
+                                printf("\t<Unexpected elemSize %d)\n", elemSize);
                                 break;
                         }
                 }

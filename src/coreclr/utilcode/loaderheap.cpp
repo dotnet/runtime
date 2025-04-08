@@ -1681,10 +1681,10 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     STATIC_CONTRACT_FAULT;
 
     // Set default value
-            if (pdwExtra)
-            {
-                *pdwExtra = 0;
-            }
+    if (pdwExtra)
+    {
+        *pdwExtra = 0;
+    }
 
     SHOULD_INJECT_FAULT(RETURN NULL);
 

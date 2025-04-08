@@ -667,8 +667,7 @@ void DacDbiInterfaceImpl::GetCompilerFlags (
 
     // Get the underlying module - none of this is AppDomain specific
     Module * pModule = pDomainAssembly->GetAssembly()->GetModule();
-    DWORD dwBits = pModule->GetDebuggerInfoBits();
-    *pfAllowJITOpts = !CORDisableJITOptimizations(dwBits);
+    *pfAllowJITOpts = !pModule->AreJITOptimizationsDisabled();
     *pfEnableEnC = pModule->IsEditAndContinueEnabled();
 
 
