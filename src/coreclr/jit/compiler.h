@@ -6139,8 +6139,6 @@ public:
 
     void fgCompactBlock(BasicBlock* block);
 
-    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
-
     bool fgRenumberBlocks();
 
     bool fgExpandRarelyRunBlocks();
@@ -7016,7 +7014,7 @@ public:
     PhaseStatus optOptimizeBools();
     PhaseStatus optRecognizeAndOptimizeSwitchJumps();
     bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest);
-    bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
+    bool optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion = false);
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
@@ -9913,7 +9911,7 @@ private:
     bool DoJitStressRex2Encoding() const
     {
 #ifdef DEBUG
-        if (JitConfig.JitStressRex2Encoding())
+        if (JitConfig.JitStressRex2Encoding() && compOpportunisticallyDependsOn(InstructionSet_APX))
         {
             // we should make sure EVEX is also stressed when REX2 is stressed, as we will need to guarantee EGPR
             // functionality is properly turned on for every instructions when REX2 is stress.
@@ -9947,7 +9945,7 @@ private:
     bool DoJitStressPromotedEvexEncoding() const
     {
 #ifdef DEBUG
-        if (JitConfig.JitStressPromotedEvexEncoding())
+        if (JitConfig.JitStressPromotedEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_APX))
         {
             return true;
         }
@@ -10793,7 +10791,15 @@ public:
     {
         return info.compMethodSuperPMIIndex != -1;
     }
-#endif // DEBUG
+#else  // !DEBUG
+    // Are we running a replay under SuperPMI?
+    // Note: you can certainly run a SuperPMI replay with a non-DEBUG JIT, and if necessary and useful we could
+    // make compMethodSuperPMIIndex always available.
+    bool RunningSuperPmiReplay() const
+    {
+        return false;
+    }
+#endif // !DEBUG
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
 
@@ -11410,9 +11416,11 @@ public:
 
 #define DEFAULT_MAX_INLINE_SIZE                                                                                        \
     100 // Methods with >  DEFAULT_MAX_INLINE_SIZE IL bytes will never be inlined.
-        // This can be overwritten by setting DOTNET_JITInlineSize env variable.
+        // This can be overwritten by setting DOTNET_JitInlineSize env variable.
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
+
+#define DEFAULT_INLINE_BUDGET 20 // Maximum estimated compile time increase via inlining
 
 #define DEFAULT_MAX_FORCE_INLINE_DEPTH 1 // Methods at more than this level deep will not be force inlined
 
@@ -11443,12 +11451,10 @@ private:
 
 #if defined(DEBUG)
     // These variables are associated with maintaining SQM data about compile time.
-    uint64_t m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
-                                          // in the current compilation.
-    uint64_t m_compCycles;                // Net cycle count for current compilation
-    DWORD m_compTickCountAtEndOfInlining; // The result of GetTickCount() (# ms since some epoch marker) at the end of
-                                          // the inlining phase in the current compilation.
-#endif                                    // defined(DEBUG)
+    int64_t m_compCyclesAtEndOfInlining; // Raw timer count at the end of the inlining phase
+                                         // in the current compilation.
+    int64_t m_compCycles;                // Wall clock elapsed time for current compilation (microseconds)
+#endif                                   // defined(DEBUG)
 
     // Records the SQM-relevant (cycles and tick count).  Should be called after inlining is complete.
     // (We do this after inlining because this marks the last point at which the JIT is likely to cause
