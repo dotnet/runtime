@@ -3870,11 +3870,6 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal static void EnableActivityTracker()
-        {
-            ActivityTracker.Instance.Enable();
-        }
-
 #if NATIVEAOT
         // If EventSource feature is enabled, default EventSources need to be initialized for NativeAOT
         // In CoreCLR, this is done via a call from the runtime as part of coreclr_initialize

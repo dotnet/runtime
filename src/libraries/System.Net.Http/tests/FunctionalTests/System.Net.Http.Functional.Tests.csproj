@@ -32,7 +32,6 @@
     https://github.com/dotnet/docs/blob/main/docs/core/deploying/trimming/trimming-options.md#trim-framework-library-features 
     -->
     <MetricsSupport>true</MetricsSupport>
-    <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">

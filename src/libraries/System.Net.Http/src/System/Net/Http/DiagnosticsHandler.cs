@@ -89,9 +89,6 @@ namespace System.Net.Http
             }
         }
 
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "EnableActivityTracker")]
-        private static extern void EnableActivityTracker(EventSource? instance);
-
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
@@ -99,8 +96,6 @@ namespace System.Net.Http
             // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
             // So some requests happening right after subscription starts might not be instrumented. Similarly,
             // when consumer unsubscribes, extra requests might be instrumented
-            if (!IsGloballyEnabled()) throw new InvalidOperationException("Diagnostics are not enabled.");
-            EnableActivityTracker((EventSource?)null);
 
             // Since we are reusing the request message instance on redirects, clear any existing headers
             // Do so before writing DiagnosticListener events as instrumentations use those to inject headers
