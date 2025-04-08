@@ -6,18 +6,9 @@ set(INTERPRETER_SOURCES
   interpconfig.cpp
   eeinterp.cpp)
 
-# linking against gcinfo causes failures on x86
-if(CLR_CMAKE_HOST_ARCH_I386)
-set(INTERPRETER_LINK_LIBRARIES
-)
-elseif(CLR_CMAKE_TARGET_ARCH_I386)
-set(INTERPRETER_LINK_LIBRARIES
-)
-else()
 set(INTERPRETER_LINK_LIBRARIES
   gcinfo
 )
-endif()
 
 if(CLR_CMAKE_HOST_WIN32)
     list(APPEND INTERPRETER_LINK_LIBRARIES
