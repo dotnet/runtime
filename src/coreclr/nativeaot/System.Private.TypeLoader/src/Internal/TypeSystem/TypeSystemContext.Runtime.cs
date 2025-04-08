@@ -188,10 +188,6 @@ namespace Internal.TypeSystem
             {
                 returnedType = CanonType;
             }
-            else if (rtth.Equals(UniversalCanonType.RuntimeTypeHandle))
-            {
-                returnedType = UniversalCanonType;
-            }
             else if (RuntimeAugments.IsGenericTypeDefinition(rtth))
             {
                 unsafe

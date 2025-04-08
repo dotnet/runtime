@@ -70,12 +70,9 @@ namespace ILCompiler.DependencyAnalysis
 
             if (method.HasInstantiation)
             {
-                if (!method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                foreach (var instArg in method.Instantiation)
                 {
-                    foreach (var instArg in method.Instantiation)
-                    {
-                        dependencies.Add(factory.NecessaryTypeSymbol(instArg), "Reflectable generic method inst arg");
-                    }
+                    dependencies.Add(factory.NecessaryTypeSymbol(instArg), "Reflectable generic method inst arg");
                 }
             }
 
@@ -169,9 +166,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (!factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
                     flags |= InvokeTableFlags.NeedsParameterInterpretation;
 
-                if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
-                    flags |= InvokeTableFlags.IsUniversalCanonicalEntry;
-
                 // TODO: native signature for P/Invokes and UnmanagedCallersOnly methods
                 if (method.IsRawPInvoke() || method.IsUnmanagedCallersOnly)
                     continue;
@@ -207,16 +201,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 if ((flags & InvokeTableFlags.IsGenericMethod) != 0)
                 {
-                    if ((flags & InvokeTableFlags.IsUniversalCanonicalEntry) == 0)
+                    VertexSequence args = new VertexSequence();
+                    for (int i = 0; i < method.Instantiation.Length; i++)
                     {
-                        VertexSequence args = new VertexSequence();
-                        for (int i = 0; i < method.Instantiation.Length; i++)
-                        {
-                            uint argId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(method.Instantiation[i]));
-                            args.Append(writer.GetUnsignedConstant(argId));
-                        }
-                        vertex = writer.GetTuple(vertex, args);
+                        uint argId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(method.Instantiation[i]));
+                        args.Append(writer.GetUnsignedConstant(argId));
                     }
+                    vertex = writer.GetTuple(vertex, args);
                 }
 
                 int hashCode = method.OwningType.GetHashCode();

@@ -380,6 +380,8 @@ void ExInfo::ReleaseResources()
 // static
 void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
 {
+    STRESS_LOG1(LF_EH, LL_INFO100, "Popping ExInfos below SP=%p\n", targetSp);
+
     ExInfo *pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 #if defined(DEBUGGING_SUPPORTED)
     DWORD_PTR dwInterceptStackFrame = 0;

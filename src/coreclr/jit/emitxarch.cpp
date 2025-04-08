@@ -141,6 +141,38 @@ bool emitter::IsPermuteVar2xInstruction(instruction ins)
     }
 }
 
+//------------------------------------------------------------------------
+// IsKMOVInstruction: Is this an Avx512 KMOV instruction?
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if it is a KMOV instruction.
+//
+bool emitter::IsKMOVInstruction(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_kmovb_gpr:
+        case INS_kmovw_gpr:
+        case INS_kmovd_gpr:
+        case INS_kmovq_gpr:
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
+        {
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
 regNumber emitter::getBmiRegNumber(instruction ins)
 {
     switch (ins)
@@ -365,8 +397,14 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
         return false;
     }
 
-    if (HasApxNdd(ins) || HasApxNf(ins) || (ins == INS_crc32_apx))
+    if (HasApxNdd(ins) || HasApxNf(ins))
     {
+        return true;
+    }
+
+    if (ins == INS_crc32_apx)
+    {
+        // With the new opcode, CRC32 is promoted to EVEX with APX.
         return true;
     }
 
@@ -1717,8 +1755,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         // Requires the EVEX encoding due to used registers
         // A special case here is KMOV, the original KMOV introduced in Avx512 can only be encoded in VEX, APX promoted
         // them to EVEX, so only return true when APX is available.
-        if ((ins == INS_kmovb_msk) || (ins == INS_kmovw_msk) || (ins == INS_kmovd_msk) || (ins == INS_kmovq_msk) ||
-            (ins == INS_kmovb_gpr) || (ins == INS_kmovw_gpr) || (ins == INS_kmovd_gpr) || (ins == INS_kmovq_gpr))
+        if (IsKMOVInstruction(ins))
         {
             // Use EVEX only when needed.
             return HasExtendedGPReg(id);
@@ -1757,6 +1794,13 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
             return false;
         }
 
+        if (IsKMOVInstruction(ins))
+        {
+            // KMOV should not be encoded in EVEX when stressing EVEX, as they are supposed to encded in EVEX only
+            // when APX is available, only stressing EVEX is not enough making the encoding valid.
+            return false;
+        }
+
         // Requires the EVEX encoding due to STRESS mode and no change in semantics
         //
         // Some instructions, like VCMPEQW return the value in a SIMD register for
@@ -1769,7 +1813,17 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
     if (IsApxExtendedEvexInstruction(ins) && emitComp->DoJitStressPromotedEvexEncoding())
     {
         // This path will be hit when we stress APX-EVEX and encode VEX with Extended EVEX.
-        return (IsBMIInstruction(ins) && HasApxNf(ins));
+        if (IsKMOVInstruction(ins))
+        {
+            return true;
+        }
+
+        if (IsBMIInstruction(ins))
+        {
+            return HasApxNf(ins);
+        }
+
+        return false;
     }
 #endif // DEBUG
 
@@ -2268,11 +2322,7 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
         switch (ins)
         {
             case INS_cvtss2si:
-            case INS_cvttss2si32:
-            case INS_cvttss2si64:
             case INS_cvtsd2si:
-            case INS_cvttsd2si32:
-            case INS_cvttsd2si64:
             case INS_movd:
             case INS_movnti:
             case INS_andn:
@@ -2285,11 +2335,9 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
             case INS_pdep:
             case INS_pext:
             case INS_rorx:
-#if defined(TARGET_AMD64)
             case INS_sarx:
             case INS_shlx:
             case INS_shrx:
-#endif // TARGET_AMD64
             case INS_vcvtsd2usi:
             case INS_vcvtss2usi:
             {
@@ -2874,32 +2922,25 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
                             case INS_rorx:
                             case INS_pdep:
                             case INS_mulx:
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
                             case INS_shrx:
-#endif
                             {
                                 evexPrefix |= (0x03 << 8);
                                 break;
                             }
 
                             case INS_pext:
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
                             case INS_sarx:
-#endif
                             {
                                 evexPrefix |= (0x02 << 8);
                                 break;
                             }
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
+
                             case INS_shlx:
                             {
                                 evexPrefix |= (0x01 << 8);
                                 break;
                             }
-#endif
+
                             default:
                             {
                                 break;
@@ -3088,32 +3129,25 @@ emitter::code_t emitter::emitExtractVexPrefix(instruction ins, code_t& code) con
                             case INS_rorx:
                             case INS_pdep:
                             case INS_mulx:
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
                             case INS_shrx:
-#endif
                             {
                                 vexPrefix |= 0x03;
                                 break;
                             }
 
                             case INS_pext:
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
                             case INS_sarx:
-#endif
                             {
                                 vexPrefix |= 0x02;
                                 break;
                             }
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
+
                             case INS_shlx:
                             {
                                 vexPrefix |= 0x01;
                                 break;
                             }
-#endif
+
                             default:
                             {
                                 vexPrefix |= 0x00;
@@ -3831,11 +3865,9 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrw:
         case INS_pextrw_sse41:
         case INS_rorx:
-#ifdef TARGET_AMD64
         case INS_shlx:
         case INS_sarx:
         case INS_shrx:
-#endif
         case INS_vcvtsd2usi:
         case INS_vcvtss2usi:
         case INS_vcvttsd2usi32:
@@ -4084,10 +4116,8 @@ unsigned emitter::emitGetVexPrefixSize(instrDesc* id) const
     switch (ins)
     {
         case INS_crc32:
-#if defined(TARGET_AMD64)
         case INS_sarx:
         case INS_shrx:
-#endif // TARGET_AMD64
         {
             // When the prefix is 0x0F38 or 0x0F3A, we must use the 3-byte encoding
             // These are special cases where the pp-bit is 0xF2 or 0xF3 and not 0x66
@@ -8629,7 +8659,7 @@ void emitter::emitIns_R_R_C_R(instruction          ins,
 }
 
 //------------------------------------------------------------------------
-// emitIns_R_R_R_S: emits the code for a instruction that takes a register operand, a variable index +
+// emitIns_R_R_S_R: emits the code for a instruction that takes a register operand, a variable index +
 //                  offset, another register operand, and that returns a value in register
 //
 // Arguments:
@@ -12897,6 +12927,19 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_ARD:
         case IF_RWR_RWR_ARD:
         {
+            if ((ins == INS_bextr) || (ins == INS_bzhi) || (ins == INS_sarx) || (ins == INS_shlx) || (ins == INS_shrx))
+            {
+                // These instructions have their operands swapped to simplify the emitter implementation.
+                // They will appear here as IF_RWR_RRD_ARD but should actually
+                // display as if they were  IF_RWR_ARD_RRD.
+
+                printf("%s", emitRegName(id->idReg1(), attr));
+                printf(", %s", sstr);
+                emitDispAddrMode(id);
+                printf(", %s", emitRegName(id->idReg2(), attr));
+                break;
+            }
+
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
@@ -13194,6 +13237,20 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_SRD:
         case IF_RWR_RWR_SRD:
         {
+            if ((ins == INS_bextr) || (ins == INS_bzhi) || (ins == INS_sarx) || (ins == INS_shlx) || (ins == INS_shrx))
+            {
+                // These instructions have their operands swapped to simplify the emitter implementation.
+                // They will appear here as IF_RWR_RRD_SRD but should actually
+                // display as if they were  IF_RWR_SRD_RRD.
+
+                printf("%s", emitRegName(id->idReg1(), attr));
+                printf(", %s", sstr);
+                emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
+                                 id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                printf(", %s", emitRegName(id->idReg2(), attr));
+                break;
+            }
+
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
@@ -13420,17 +13477,12 @@ void emitter::emitDispIns(
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
 
-            if (ins == INS_bextr || ins == INS_bzhi
-#ifdef TARGET_AMD64
-                || ins == INS_shrx || ins == INS_shlx || ins == INS_sarx
-#endif
-            )
+            if ((ins == INS_bextr) || (ins == INS_bzhi) || (ins == INS_sarx) || (ins == INS_shlx) || (ins == INS_shrx))
             {
-                // BMI bextr,bzhi, shrx, shlx and sarx encode the reg2 in VEX.vvvv and reg3 in modRM,
-                // which is different from most of other instructions
-                regNumber tmp = reg2;
-                reg2          = reg3;
-                reg3          = tmp;
+                // These instructions have their operands swapped to simplify the emitter implementation.
+                // They encode reg3 in VEX.vvvv and reg2 in modRM, which is opposite most instructions.
+                // We swap them back here so they will display in the correct order.
+                std::swap(reg2, reg3);
             }
 
             emitAttr attr3 = attr;
@@ -13777,6 +13829,20 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_MRD:
         case IF_RWR_RWR_MRD:
         {
+            if ((ins == INS_bextr) || (ins == INS_bzhi) || (ins == INS_sarx) || (ins == INS_shlx) || (ins == INS_shrx))
+            {
+                // These instructions have their operands swapped to simplify the emitter implementation.
+                // They will appear here as IF_RWR_RRD_MRD but should actually
+                // display as if they were  IF_RWR_MRD_RRD.
+
+                printf("%s", emitRegName(id->idReg1(), attr));
+                printf(", %s", sstr);
+                offs = emitGetInsDsp(id);
+                emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+                printf(", %s", emitRegName(id->idReg2(), attr));
+                break;
+            }
+
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
@@ -14216,12 +14282,12 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 
 #ifdef DEBUG
     // For cases where 'align' was placed behind a 'jmp' in an IG that does not
-    // immediately preced the loop IG, we do not know in advance the offset of
+    // immediately precede the loop IG, we do not know in advance the offset of
     // IG having loop. For such cases, skip the padding calculation validation.
 
-    // For prejit, `dst` is not aliged as requested, but the final assembly will have them aligned.
+    // For AOT, `dst` is not aligned as requested, but the final assembly will have them aligned.
     // So, just calculate the offset of the current `dst` from the start.
-    size_t offset = emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ? emitCurCodeOffs(dst) : (size_t)dst;
+    size_t offset          = emitComp->IsAot() ? emitCurCodeOffs(dst) : (size_t)dst;
     bool   validatePadding = !alignInstr->isPlacedAfterJmp;
 #endif
 
@@ -14790,7 +14856,7 @@ GOT_DSP:
                     }
 #else  // TARGET_AMD64
        // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
-       // This addr mode should never be used while generating relocatable ngen code nor if
+       // This addr mode should never be used while generating relocatable AOT code nor if
        // the addr can be encoded as pc-relative address.
                     noway_assert(!emitComp->opts.compReloc);
                     noway_assert(codeGen->genAddrRelocTypeHint((size_t)dsp) != IMAGE_REL_BASED_REL32);
@@ -17959,10 +18025,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
         // path, but for those instructions with no tuple information,
         // APX-EVEX treat the scaling factor to be 1 constantly.
         instruction ins = id->idIns();
-        // TODO-XArch-APX:
-        // This assert may need tweak if BMI1 instructions are promoted
-        // into EVEX for multiple features, currently only EVEX.NF.
-        assert(IsApxExtendedEvexInstruction(id->idIns()));
+        assert(IsApxExtendedEvexInstruction(ins) || IsBMIInstruction(ins));
         *dspInByte = ((signed char)dsp == (ssize_t)dsp);
         return dsp;
     }
@@ -18421,7 +18484,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     dst += emitOutputWord(dst, code | 0x0500);
 #else  // TARGET_AMD64
        // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
-       // This addr mode should never be used while generating relocatable ngen code nor if
+       // This addr mode should never be used while generating relocatable AOT code nor if
        // the addr can be encoded as pc-relative address.
                     noway_assert(!emitComp->opts.compReloc);
                     noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != IMAGE_REL_BASED_REL32);
@@ -20053,6 +20116,14 @@ emitter::insFormat emitter::ExtractMemoryFormat(insFormat insFmt) const
     return IF_NONE;
 }
 
+#ifdef TARGET_AMD64
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+/*static*/ bool emitter::emitIns_valid_imm_for_ccmp(INT64 imm)
+{
+    return (((INT32)imm) == imm);
+}
+#endif
+
 #if defined(DEBUG) || defined(LATE_DISASM)
 
 //----------------------------------------------------------------------------------------
@@ -20760,22 +20831,31 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movd:
-        case INS_movq: // only MOVQ xmm, xmm is different (emitted by Sse2.MoveScalar, should use MOVDQU instead)
+        case INS_movq:
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
-                // movd   r32, xmm   or  xmm, r32
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = PERFSCORE_LATENCY_3C;
+                if (isFloatReg(id->idReg1()) && isFloatReg(id->idReg2()))
+                {
+                    // movq   xmm, xmm
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                }
+                else
+                {
+                    // movd   r32/64, xmm   or  xmm, r32/64
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                }
             }
             else if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
-                // movd   xmm, m32
+                // ins   xmm, m32/64
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency += PERFSCORE_LATENCY_2C;
             }
             else
             {
-                // movd   m32, xmm
+                // ins   m32/64, xmm
                 assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency += PERFSCORE_LATENCY_2C;
@@ -21903,7 +21983,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-#ifdef TARGET_AMD64
         case INS_shlx:
         case INS_sarx:
         case INS_shrx:
@@ -21912,7 +21991,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             break;
         }
-#endif
 
         case INS_vpmovb2m:
         case INS_vpmovw2m:

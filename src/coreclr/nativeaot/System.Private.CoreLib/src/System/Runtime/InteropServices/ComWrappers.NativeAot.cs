@@ -110,14 +110,31 @@ namespace System.Runtime.InteropServices
 
             internal static unsafe ManagedObjectWrapper* ToManagedObjectWrapper(ComInterfaceDispatch* dispatchPtr)
             {
-                return ((InternalComInterfaceDispatch*)dispatchPtr)->_thisPtr;
+                InternalComInterfaceDispatch* dispatch = (InternalComInterfaceDispatch*)unchecked((nuint)dispatchPtr & (nuint)InternalComInterfaceDispatch.DispatchAlignmentMask);
+                return dispatch->_thisPtr;
             }
         }
 
         internal unsafe struct InternalComInterfaceDispatch
         {
-            public IntPtr Vtable;
+#if TARGET_64BIT
+            internal const int DispatchAlignment = 64;
+            internal const int NumEntriesInDispatchTable = DispatchAlignment / 8 /* sizeof(void*) */  - 1;
+#else
+            internal const int DispatchAlignment = 16;
+            internal const int NumEntriesInDispatchTable = DispatchAlignment / 4 /* sizeof(void*) */  - 1;
+#endif
+            internal const ulong DispatchAlignmentMask = unchecked((ulong)~(InternalComInterfaceDispatch.DispatchAlignment - 1));
+
             internal ManagedObjectWrapper* _thisPtr;
+
+            public DispatchTable Vtables;
+
+            [InlineArray(NumEntriesInDispatchTable)]
+            internal unsafe struct DispatchTable
+            {
+                private IntPtr _element;
+            }
         }
 
         internal enum CreateComInterfaceFlagsEx
@@ -337,16 +354,23 @@ namespace System.Runtime.InteropServices
                 }
             }
 
+            private unsafe IntPtr GetDispatchPointerAtIndex(int index)
+            {
+                InternalComInterfaceDispatch* dispatch = &Dispatches[index / InternalComInterfaceDispatch.NumEntriesInDispatchTable];
+                IntPtr* vtables = (IntPtr*)(void*)&dispatch->Vtables;
+                return (IntPtr)(&vtables[index % InternalComInterfaceDispatch.NumEntriesInDispatchTable]);
+            }
+
             private unsafe IntPtr AsRuntimeDefined(in Guid riid)
             {
                 // The order of interface lookup here is important.
-                // See CreateCCW() for the expected order.
+                // See CreateManagedObjectWrapper() for the expected order.
                 int i = UserDefinedCount;
                 if ((Flags & CreateComInterfaceFlagsEx.CallerDefinedIUnknown) == 0)
                 {
                     if (riid == IID_IUnknown)
                     {
-                        return (IntPtr)(Dispatches + i);
+                        return GetDispatchPointerAtIndex(i);
                     }
 
                     i++;
@@ -356,7 +380,7 @@ namespace System.Runtime.InteropServices
                 {
                     if (riid == IID_IReferenceTrackerTarget)
                     {
-                        return (IntPtr)(Dispatches + i);
+                        return GetDispatchPointerAtIndex(i);
                     }
 
                     i++;
@@ -365,7 +389,7 @@ namespace System.Runtime.InteropServices
                 {
                     if (riid == IID_TaggedImpl)
                     {
-                        return (IntPtr)(Dispatches + i);
+                        return GetDispatchPointerAtIndex(i);
                     }
                 }
 
@@ -378,7 +402,7 @@ namespace System.Runtime.InteropServices
                 {
                     if (UserDefined[i].IID == riid)
                     {
-                        return (IntPtr)(Dispatches + i);
+                        return GetDispatchPointerAtIndex(i);
                     }
                 }
 
@@ -475,7 +499,7 @@ namespace System.Runtime.InteropServices
                 // Release GC handle created when MOW was built.
                 if (_wrapper->Destroy())
                 {
-                    NativeMemory.Free(_wrapper);
+                    NativeMemory.AlignedFree(_wrapper);
                     _wrapper = null;
                 }
                 else
@@ -747,6 +771,12 @@ namespace System.Runtime.InteropServices
             return managedObjectWrapper.ComIp;
         }
 
+        private static nuint AlignUp(nuint value, nuint alignment)
+        {
+            nuint alignMask = alignment - 1;
+            return (nuint)((value + alignMask) & ~alignMask);
+        }
+
         private unsafe ManagedObjectWrapper* CreateManagedObjectWrapper(object instance, CreateComInterfaceFlags flags)
         {
             ComInterfaceEntry* userDefined = ComputeVtables(instance, flags, out int userDefinedCount);
@@ -777,21 +807,43 @@ namespace System.Runtime.InteropServices
             // Compute size for ManagedObjectWrapper instance.
             int totalDefinedCount = runtimeDefinedCount + userDefinedCount;
 
-            // Allocate memory for the ManagedObjectWrapper.
-            IntPtr wrapperMem = (IntPtr)NativeMemory.Alloc(
-                (nuint)sizeof(ManagedObjectWrapper) + (nuint)totalDefinedCount * (nuint)sizeof(InternalComInterfaceDispatch));
-
-            // Compute the dispatch section offset and ensure it is aligned.
-            ManagedObjectWrapper* mow = (ManagedObjectWrapper*)wrapperMem;
-
-            // Dispatches follow immediately after ManagedObjectWrapper
-            InternalComInterfaceDispatch* pDispatches = (InternalComInterfaceDispatch*)(wrapperMem + sizeof(ManagedObjectWrapper));
-            for (int i = 0; i < totalDefinedCount; i++)
+            int numSections = totalDefinedCount / InternalComInterfaceDispatch.NumEntriesInDispatchTable;
+            if (totalDefinedCount % InternalComInterfaceDispatch.NumEntriesInDispatchTable != 0)
             {
-                pDispatches[i].Vtable = (i < userDefinedCount) ? userDefined[i].Vtable : runtimeDefinedVtable[i - userDefinedCount];
-                pDispatches[i]._thisPtr = mow;
+                // Account for a trailing partial section to fit all of the defined interfaces.
+                numSections++;
             }
 
+            nuint headerSize = AlignUp((nuint)sizeof(ManagedObjectWrapper), InternalComInterfaceDispatch.DispatchAlignment);
+
+            // Instead of allocating a full section even when we have a trailing one, we'll allocate only
+            // as much space as we need to store all of our dispatch tables.
+            nuint dispatchSectionSize = (nuint)totalDefinedCount * (nuint)sizeof(void*) + (nuint)numSections * (nuint)sizeof(void*);
+
+            // Allocate memory for the ManagedObjectWrapper with the correct alignment for our dispatch tables.
+            IntPtr wrapperMem = (IntPtr)NativeMemory.AlignedAlloc(
+                headerSize + dispatchSectionSize,
+                InternalComInterfaceDispatch.DispatchAlignment);
+
+            // Dispatches follow the ManagedObjectWrapper.
+            InternalComInterfaceDispatch* pDispatches = (InternalComInterfaceDispatch*)((nuint)wrapperMem + headerSize);
+            Span<InternalComInterfaceDispatch> dispatches = new Span<InternalComInterfaceDispatch>(pDispatches, numSections);
+            for (int i = 0; i < dispatches.Length; i++)
+            {
+                dispatches[i]._thisPtr = (ManagedObjectWrapper*)wrapperMem;
+                Span<IntPtr> dispatchVtables = dispatches[i].Vtables;
+                for (int j = 0; j < dispatchVtables.Length; j++)
+                {
+                    int index = i * dispatchVtables.Length + j;
+                    if (index >= totalDefinedCount)
+                    {
+                        break;
+                    }
+                    dispatchVtables[j] = (index < userDefinedCount) ? userDefined[index].Vtable : runtimeDefinedVtable[index - userDefinedCount];
+                }
+            }
+
+            ManagedObjectWrapper* mow = (ManagedObjectWrapper*)wrapperMem;
             mow->HolderHandle = IntPtr.Zero;
             mow->RefCount = 0;
             mow->UserDefinedCount = userDefinedCount;

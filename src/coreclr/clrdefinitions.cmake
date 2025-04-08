@@ -213,6 +213,9 @@ if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_
   add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
 endif()
 
+if (FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+  add_definitions(-DFEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+endif()
 
 # Use this function to enable building with a specific target OS and architecture set of defines
 # This is known to work for the set of defines used by the JIT and gcinfo, it is not likely correct for

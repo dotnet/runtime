@@ -3674,6 +3674,9 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "ExecutableHeap",
     "FixupPrecodeHeap",
     "NewStubPrecodeHeap",
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+    "DynamicHelpersStubHeap",
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     "IndcellHeap",
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     "CacheEntryHeap",
@@ -3711,7 +3714,9 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetExecutableHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetFixupPrecodeHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetNewStubPrecodeHeap());
-
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetDynamicHelpersStubHeap());
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
             VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
             if (pVcsMgr == nullptr)
             {

@@ -13,6 +13,7 @@
 #include "stacktrace.h"
 #include "debugmacrosext.h"
 #include "palclr.h"
+#include <minipal/utils.h>
 
 #undef _ASSERTE
 #undef VERIFY

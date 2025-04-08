@@ -3165,6 +3165,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         //[Variation("No Import/Include, NullResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "bug382198.txt", "NullResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "NullResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "bug382198.txt", "NullResolver", true, "XmlReader")]
+        [InlineData("bug93189.xsl", "bug93189.xml", "bug93189.xml", "NullResolver", true, "XmlReader")]
         [Theory]
         public void ValidCases(object param0, object param1, object param2, object param3, object param4, object param5)
         {

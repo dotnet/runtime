@@ -50,35 +50,6 @@ inline LPVOID STDCALL GetCurrentSP()
 
 extern PCODE GetPreStubEntryPoint();
 
-struct ThisPtrRetBufPrecode {
-    static const int Type = 0x01;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-    {
-        _ASSERTE("The ThisPtrRetBufPrecode::Init is not implemented on wasm");
-    }
-
-    TADDR GetMethodDesc()
-    {
-        _ASSERTE("The ThisPtrRetBufPrecode::GetMethodDesc is not implemented on wasm");
-        return 0;
-    }
-
-    PCODE GetTarget()
-    {
-        _ASSERTE("The ThisPtrRetBufPrecode::GetTarget is not implemented on wasm");
-        return 0;
-    }
-
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        _ASSERTE("The ThisPtrRetBufPrecode::SetTargetInterlocked is not implemented on wasm");
-        return FALSE;
-    }
-};
-
-typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
-
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
 //**********************************************************************

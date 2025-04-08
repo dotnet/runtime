@@ -242,9 +242,6 @@ namespace Internal.Runtime.TypeLoader
 
             internal override IntPtr Create(TypeBuilder builder)
             {
-                // TODO (USG): What if this method's instantiation is a non-shareable one (from a normal canonical
-                // perspective) and there's an exact method pointer for the method in question, do we still
-                // construct a method dictionary to be used with the universal canonical method implementation?
                 Debug.Assert(GenericMethod.RuntimeMethodDictionary != IntPtr.Zero);
                 return GenericMethod.RuntimeMethodDictionary;
             }
