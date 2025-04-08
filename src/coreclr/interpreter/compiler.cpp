@@ -4,6 +4,7 @@
 #include "interpreter.h"
 
 #include <inttypes.h>
+#include <new> // for std::bad_alloc
 
 static const StackType g_stackTypeFromInterpType[] =
 {
@@ -37,12 +38,7 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 /*****************************************************************************/
 void DECLSPEC_NORETURN Interp_NOMEM()
 {
-    // Ensure we don't return and that the compiler knows we won't
-#ifdef _MSC_VER
-    __debugbreak();
-#else
-    __builtin_trap();
-#endif
+    throw std::bad_alloc();
 }
 
 // GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
@@ -859,8 +855,8 @@ void InterpCompiler::EmitCode()
 void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 {
 #ifdef FEATURE_INTERPRETER
-    InterpIAllocator* pAllocator = new InterpIAllocator(this);
-    InterpreterGcInfoEncoder* gcInfoEncoder = new InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
+    InterpIAllocator* pAllocator = new (this) InterpIAllocator(this);
+    InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
     assert(gcInfoEncoder);
 
     gcInfoEncoder->SetCodeLength(m_methodCodeSize);
@@ -876,11 +872,6 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     // let's save the values anyway for debugging purposes
     gcInfoEncoder->Emit();
-
-    // Interpreter-FIXME: Why doesn't the JIT code do this? Is it because the placement new it uses automatically frees them
-    //  at the end of JIT compilation?
-    delete gcInfoEncoder;
-    delete pAllocator;
 #endif
 }
 

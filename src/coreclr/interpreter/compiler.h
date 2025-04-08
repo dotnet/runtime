@@ -298,10 +298,12 @@ private:
     CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
 
     void* AllocMethodData(size_t numBytes);
+public:
     // FIXME Mempool allocation currently leaks. We need to add an allocator and then
     // free all memory when method is finished compilling.
     void* AllocMemPool(size_t numBytes);
     void* AllocMemPool0(size_t numBytes);
+private:
     void* AllocTemporary(size_t numBytes);
     void* AllocTemporary0(size_t numBytes);
     void* ReallocTemporary(void* ptr, size_t numBytes);
@@ -438,5 +440,21 @@ public:
 
     int32_t* GetCode(int32_t *pCodeSize);
 };
+
+/*****************************************************************************
+ *  operator new
+ *
+ *  Uses the compiler's AllocMemPool0, which will eventually free automatically at the end of compilation (doesn't yet).
+ */
+
+ inline void* operator new(size_t sz, InterpCompiler* compiler)
+ {
+    return compiler->AllocMemPool0(sz);
+}
+
+ inline void* operator new[](size_t sz, InterpCompiler* compiler)
+ {
+     return compiler->AllocMemPool0(sz);
+ }
 
 #endif //_COMPILER_H_
