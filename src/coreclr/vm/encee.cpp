@@ -250,6 +250,13 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                 // FieldDef token - add a new field
                 LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found field 0x%08x\n", token));
 
+                pFieldDesc = LookupFieldDef(token);
+                if (pFieldDesc)
+                {
+                    // Field already exists - just ignore for now
+                    continue;
+                }
+
                 DWORD dwFlags;
                 IfFailRet(pMDImport->GetFieldDefProps(token, &dwFlags));
 
@@ -271,17 +278,8 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                     SetDynamicRvaField(token, (TADDR)(&pLocalILMemory[dwFieldRVA]));
                 }
 
-                pFieldDesc = LookupFieldDef(token);
-                if (pFieldDesc)
-                {
-                    // Field already exists - just ignore for now
-                    continue;
-                }
-                else
-                {
-                    // Field is new - add it
-                    IfFailRet(AddField(token));
-                }
+                // Field is new - add it
+                IfFailRet(AddField(token));
 
                 break;
         }
@@ -545,7 +543,7 @@ TADDR EditAndContinueModule::GetDynamicRvaField(mdToken token)
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END
