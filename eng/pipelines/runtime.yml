@@ -504,7 +504,7 @@ extends:
           - linux_loongarch64
           jobParameters:
             testScope: innerloop
-            nameSuffix: CoreCLR_TwoStage
+            nameSuffix: CoreCLR_Bootstrapped
             buildArgs: -s clr+libs+host -c $(_BuildConfig) -rc Checked --bootstrap
             timeoutInMinutes: 120
             condition: >-
