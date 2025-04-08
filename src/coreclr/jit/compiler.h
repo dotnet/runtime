@@ -11451,12 +11451,10 @@ private:
 
 #if defined(DEBUG)
     // These variables are associated with maintaining SQM data about compile time.
-    uint64_t m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
-                                          // in the current compilation.
-    uint64_t m_compCycles;                // Net cycle count for current compilation
-    DWORD m_compTickCountAtEndOfInlining; // The result of GetTickCount() (# ms since some epoch marker) at the end of
-                                          // the inlining phase in the current compilation.
-#endif                                    // defined(DEBUG)
+    int64_t m_compCyclesAtEndOfInlining; // Raw timer count at the end of the inlining phase
+                                         // in the current compilation.
+    int64_t m_compCycles;                // Wall clock elapsed time for current compilation (microseconds)
+#endif                                   // defined(DEBUG)
 
     // Records the SQM-relevant (cycles and tick count).  Should be called after inlining is complete.
     // (We do this after inlining because this marks the last point at which the JIT is likely to cause
