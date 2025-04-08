@@ -340,7 +340,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
 
             _exception = exception;
             _isCompleted = true;
-
             return true;
         }
 
