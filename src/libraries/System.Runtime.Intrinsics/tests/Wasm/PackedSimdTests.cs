@@ -381,10 +381,11 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         public unsafe void SplatTypes()
         {
             Assert.Equal(Vector128.Create(2.5f, 2.5f, 2.5f, 2.5f), PackedSimd.Splat(2.5f));
-            Assert.Equal(Vector128.Create(2, 2, 2, 2), PackedSimd.Splat(2L));
+            Assert.Equal(Vector128.Create(-2, -2, -2, -2), PackedSimd.Splat(-2));
+            Assert.Equal(Vector128.Create(2U, 2U, 2U, 2U), PackedSimd.Splat(2U));
             Assert.Equal(Vector128.Create(2.5, 2.5), PackedSimd.Splat(2.5));
-            Assert.Equal(Vector128.Create(2L, 2L, PackedSimd.Splat(2L));
-            Assert.Equal(Vector128.Create(2UL, 2UL, PackedSimd.Splat(2UL));
+            Assert.Equal(Vector128.Create(-2L, -2L), PackedSimd.Splat(-2L));
+            Assert.Equal(Vector128.Create(2UL, 2UL), PackedSimd.Splat(2UL));
             Assert.Equal(Vector128.Create(
                 (byte)2, (byte)2, (byte)2, (byte)2,
                 (byte)2, (byte)2, (byte)2, (byte)2,
