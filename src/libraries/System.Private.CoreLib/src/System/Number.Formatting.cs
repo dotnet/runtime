@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -301,26 +302,36 @@ namespace System
             where TValue : IBinaryInteger<TValue>
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
-            byte* pDigits = stackalloc byte[TDecimal.BufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, TDecimal.BufferLength);
-
-            DecimalIeee754ToNumber<TDecimal, TSignificand, TValue>(value, ref number);
-
-            char* stackPtr = stackalloc char[CharStackBufferSize];
-            var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
-
-            if (fmt != 0)
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(TDecimal.BufferLength);
+            try
             {
-                NumberToString(ref vlb, ref number, fmt, digits, info);
-            }
-            else
-            {
-                NumberToStringFormat(ref vlb, ref number, format, info);
-            }
+                fixed (byte* pDigits = buffer)
+                {
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, TDecimal.BufferLength);
 
-            string result = vlb.AsSpan().ToString();
-            vlb.Dispose();
-            return result;
+                    DecimalIeee754ToNumber<TDecimal, TSignificand, TValue>(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref vlb, ref number, format, info);
+                    }
+
+                    string result = vlb.AsSpan().ToString();
+                    vlb.Dispose();
+                    return result;
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
