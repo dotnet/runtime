@@ -4,6 +4,12 @@
 #include "interpreter.h"
 
 #include <inttypes.h>
+
+// HACK: debugreturn.h breaks constexpr
+#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
+#undef return
+#endif // debug_instrumented_return
+
 #include <new> // for std::bad_alloc
 
 static const StackType g_stackTypeFromInterpType[] =
