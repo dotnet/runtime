@@ -266,7 +266,10 @@ private:
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
+#ifdef DEBUG
+    const char *m_methodName;
     bool m_verbose;
+#endif
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
@@ -424,7 +427,7 @@ private:
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, bool verbose);
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
 
     InterpMethod* CompileMethod();
 
