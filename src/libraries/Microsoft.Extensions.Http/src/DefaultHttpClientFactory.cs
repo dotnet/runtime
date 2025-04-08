@@ -271,33 +271,7 @@ namespace Microsoft.Extensions.Http
 
                 var stopwatch = ValueStopwatch.StartNew();
 
-                int disposedCount = 0;
-                for (int i = 0; i < initialCount; i++)
-                {
-                    // Since we're the only one removing from _expired, TryDequeue must always succeed.
-                    _expiredHandlers.TryDequeue(out ExpiredHandlerTrackingEntry? entry);
-                    Debug.Assert(entry != null, "Entry was null, we should always get an entry back from TryDequeue");
-
-                    if (entry.CanDispose)
-                    {
-                        try
-                        {
-                            entry.InnerHandler.Dispose();
-                            entry.Scope?.Dispose();
-                            disposedCount++;
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.CleanupItemFailed(_logger, entry.Name, ex);
-                        }
-                    }
-                    else
-                    {
-                        // If the entry is still live, put it back in the queue so we can process it
-                        // during the next cleanup cycle.
-                        _expiredHandlers.Enqueue(entry);
-                    }
-                }
+                int disposedCount = CleanupExpiredHandlers();
 
                 Log.CleanupCycleEnd(_logger, stopwatch.GetElapsedTime(), disposedCount, _expiredHandlers.Count);
             }
@@ -311,6 +285,41 @@ namespace Microsoft.Extensions.Http
             {
                 StartCleanupTimer();
             }
+        }
+
+        private int CleanupExpiredHandlers()
+        {
+            int initialCount = _expiredHandlers.Count;
+
+            int disposedCount = 0;
+            for (int i = 0; i < initialCount; i++)
+            {
+                // Since we're the only one removing from _expired, TryDequeue must always succeed.
+                _expiredHandlers.TryDequeue(out ExpiredHandlerTrackingEntry? entry);
+                Debug.Assert(entry != null, "Entry was null, we should always get an entry back from TryDequeue");
+
+                if (entry.CanDispose)
+                {
+                    try
+                    {
+                        entry.InnerHandler.Dispose();
+                        entry.Scope?.Dispose();
+                        disposedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.CleanupItemFailed(_logger, entry.Name, ex);
+                    }
+                }
+                else
+                {
+                    // If the entry is still live, put it back in the queue so we can process it
+                    // during the next cleanup cycle.
+                    _expiredHandlers.Enqueue(entry);
+                }
+            }
+
+            return disposedCount;
         }
 
         private static class Log
