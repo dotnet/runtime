@@ -9243,11 +9243,12 @@ public:
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
-        if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
-        {
-            return Compiler::compVectorTLength;
-        }
-        else if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
+        //if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
+        //{
+        //    return Compiler::compVectorTLength;
+        //}
+        //else
+        if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
         {
             return FP_REGSIZE_BYTES;
         }
@@ -9355,14 +9356,16 @@ public:
         // Return 0 if size is even less than XMM, otherwise - XMM
         return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
 #elif defined(TARGET_ARM64)
-        if (FP_REGSIZE_BYTES < Compiler::compVectorTLength)
-        {
-            if (size >= Compiler::compVectorTLength)
-            {
-                return Compiler::compVectorTLength;
-            }
-        }
-        else
+        //if (FP_REGSIZE_BYTES < Compiler::compVectorTLength)
+        //{
+        //    if (size >= Compiler::compVectorTLength)
+        //    {
+        //        return Compiler::compVectorTLength;
+        //    }
+        //}
+        //else
+        //TODO-VL: For now, disable most of the optimizations like memmove, struct copy,
+        // etc. for VL
         {
             assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
         }
@@ -9614,7 +9617,7 @@ public:
     bool structSizeMightRepresentSIMDType(size_t structSize)
     {
 #ifdef FEATURE_SIMD
-        return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
+        return (structSize >= getMinVectorByteLength()) && (structSize <= getVectorTByteLength());
 #else
         return false;
 #endif // FEATURE_SIMD

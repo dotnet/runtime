@@ -9531,7 +9531,7 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
 //
 void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 {
-// LA, RISC-V and ARM32 more likely to recieve a terrible performance hit from
+// LA, RISC-V and ARM32 more likely to receive a terrible performance hit from
 // unaligned accesses making this optimization questionable.
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if (!comp->opts.OptimizationEnabled())
@@ -9753,7 +9753,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                 }
                 return;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64)
             case TYP_SIMD16:
                 if (comp->getPreferredVectorByteLength() >= 32)
                 {
@@ -9771,7 +9771,11 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                 }
                 tryReusingPrevValue = true;
                 break;
-#endif // TARGET_AMD64 || TARGET_ARM64
+#elif defined(TARGET_ARM64) // TARGET_AMD64
+            case TYP_SIMD16:
+                tryReusingPrevValue = true;
+                break;
+#endif // TARGET_AMD64
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_64BIT
 

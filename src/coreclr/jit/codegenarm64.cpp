@@ -2540,6 +2540,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                                 memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd32_t));
                                 hnd = emit->emitSimd32Const(constValue);
                                 emit->emitIns_R_C(INS_sve_ldr, attr, targetReg, addrReg, hnd, 0);
+                                //emit->emitIns_R_C(INS_adr, EA_8BYTE, addrReg, REG_NA, hnd, 0);
+                                //emit->emitIns_R_R_R_I(INS_sve_ld1b, EA_SCALABLE, targetReg, REG_P1, addrReg, 0, INS_OPTS_SCALABLE_B);
                             }
                         }
                         else
