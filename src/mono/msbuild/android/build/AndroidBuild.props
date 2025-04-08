@@ -10,9 +10,10 @@
     <_HostOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows</_HostOS>
     <_HostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_HostOS>
     <_HostOS Condition="'$(_HostOS)' == ''">linux</_HostOS>
-
     <_IsLibraryMode Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
     <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
+
+    <StaticLinkedRuntime Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(StaticLinkedRuntime)' == ''">true</StaticLinkedRuntime>
 
     <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
     <AndroidBuildDependsOn Condition="'$(UseMonoRuntime)' == 'true'">

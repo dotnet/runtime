@@ -120,11 +120,6 @@ public partial class ApkBuilder
             throw new ArgumentException($"Using DiagnosticPorts targeting Mono requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
         }
 
-        if (IsCoreCLR && StaticLinkedRuntime)
-        {
-            throw new ArgumentException("Static linking is not supported for CoreCLR runtime");
-        }
-
         AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
         if (string.IsNullOrEmpty(MinApiLevel))
@@ -263,7 +258,10 @@ public partial class ApkBuilder
             {
                 runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
             }
-            else if (IsCoreCLR)
+            else if (StaticLinkedRuntime && IsCoreCLR)
+            {
+                runtimeLib = Path.Combine(AppDir, "libcoreclr_static.a");
+            }else if (IsCoreCLR)
             {
                 runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
             }
@@ -277,7 +275,7 @@ public partial class ApkBuilder
                 nativeLibraries += $"{runtimeLib}{Environment.NewLine}";
             }
 
-            if (StaticLinkedRuntime)
+            if (StaticLinkedRuntime && IsMono)
             {
                 string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
 
