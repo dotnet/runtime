@@ -1072,6 +1072,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     GenTree*         source        = tree->gtGetOp1();
     SingleTypeRegSet srcCandidates = RBM_NONE;
     SingleTypeRegSet dstCandidates = RBM_NONE;
+    bool useEvex                   = compiler->canUseEvexEncoding();
 
     // x64 can encode 8 bits of shift and it will use 5 or 6. (the others are masked off)
     // We will allow whatever can be encoded - hope you know what you are doing.
@@ -1086,8 +1087,11 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         if ((genActualType(targetType) == TYP_LONG) && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
             tree->OperIs(GT_ROL, GT_ROR) && (shiftByValue > 0) && (shiftByValue < 64))
         {
-            srcCandidates = BuildApxIncompatibleGPRMask(source, srcCandidates, true);
-            dstCandidates = BuildApxIncompatibleGPRMask(tree, dstCandidates, true);
+            if (!useEvex)
+            {
+                srcCandidates = BuildApxIncompatibleGPRMask(source, srcCandidates, true);
+                dstCandidates = BuildApxIncompatibleGPRMask(tree, dstCandidates, true);
+            }
         }
 #endif
     }
@@ -1096,19 +1100,27 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     {
         // We don'thave any specific register requirements here, so skip the logic that
         // reserves RCX or preferences the source reg.
-        // ToDo-APX : Remove when extended EVEX support is available
-        srcCount += BuildOperandUses(source, BuildApxIncompatibleGPRMask(source, srcCandidates));
-        srcCount += BuildOperandUses(shiftBy, BuildApxIncompatibleGPRMask(shiftBy, dstCandidates));
-        BuildDef(tree, BuildApxIncompatibleGPRMask(tree, dstCandidates, true));
+        if (useEvex)
+        {
+            srcCount += BuildOperandUses(source, srcCandidates);
+            srcCount += BuildOperandUses(shiftBy, srcCandidates);
+            BuildDef(tree, dstCandidates);
+        }
+        else
+        {
+            srcCount += BuildOperandUses(source, BuildApxIncompatibleGPRMask(source, srcCandidates));
+            srcCount += BuildOperandUses(shiftBy, BuildApxIncompatibleGPRMask(shiftBy, dstCandidates));
+            BuildDef(tree, BuildApxIncompatibleGPRMask(tree, dstCandidates, true));
+        }
         return srcCount;
     }
     else
     {
         // This ends up being BMI
         srcCandidates = availableIntRegs & ~SRBM_RCX;
-        srcCandidates = BuildApxIncompatibleGPRMask(source, srcCandidates, true);
+        srcCandidates = useEvex ? srcCandidates : BuildApxIncompatibleGPRMask(source, srcCandidates, true);
         dstCandidates = availableIntRegs & ~SRBM_RCX;
-        dstCandidates = BuildApxIncompatibleGPRMask(tree, dstCandidates, true);
+        dstCandidates = useEvex ? dstCandidates : BuildApxIncompatibleGPRMask(tree, dstCandidates, true);
     }
 
     // Note that Rotate Left/Right instructions don't set ZF and SF flags.
