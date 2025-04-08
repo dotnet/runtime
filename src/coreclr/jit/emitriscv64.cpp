@@ -4146,8 +4146,15 @@ void emitter::emitDispInsName(
                 case 0b0000100:
                     switch (opcode3)
                     {
-                        case 0x0: // ADD.UW
-                            printf("add.uw         %s, %s, %s\n", rd, rs1, rs2);
+                        case 0x0: // ZEXT.W & ADD.UW
+                            if (((code >> 20) & 0x1f) == REG_R0)
+                            {
+                                printf("zext.w         %s, %s\n", rd, rs1);
+                            }
+                            else
+                            {
+                                printf("add.uw         %s, %s, %s\n", rd, rs1, rs2);
+                            }
                             return;
                         default:
                             return emitDispIllegalInstruction(code);
