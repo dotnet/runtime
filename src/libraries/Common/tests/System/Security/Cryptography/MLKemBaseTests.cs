@@ -2,14 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
+using System.Security.Cryptography.Asn1;
+using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
     public abstract class MLKemBaseTests
     {
+        private static readonly PbeParameters s_aes128Pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 2);
+
         public abstract MLKem GenerateKey(MLKemAlgorithm algorithm);
         public abstract MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> seed);
         public abstract MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source);
@@ -495,11 +501,134 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<CryptographicException>(() => kem.ExportPkcs8PrivateKey());
         }
 
+        [Fact]
+        public void ExportEncryptedPkcs8PrivateKey_DecapsulationKey_Roundtrip()
+        {
+            using MLKem kem = ImportDecapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512DecapsulationKey);
+            AssertEncryptedExportPkcs8PrivateKey(kem, MLKemTestData.EncryptedPrivateKeyPassword, s_aes128Pbe, pkcs8 =>
+            {
+                using MLKem imported = MLKem.ImportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword,
+                    pkcs8);
+
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.MLKem512DecapsulationKey,
+                    imported.ExportDecapsulationKey());
+                Assert.Throws<CryptographicException>(() => imported.ExportPrivateSeed());
+            });
+        }
+
+        [Fact]
+        public void ExportEncryptedPkcs8PrivateKey_Seed_Roundtrip()
+        {
+            using MLKem kem = ImportPrivateSeed(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512PrivateSeed);
+            AssertEncryptedExportPkcs8PrivateKey(kem, MLKemTestData.EncryptedPrivateKeyPassword, s_aes128Pbe, pkcs8 =>
+            {
+                using MLKem imported = MLKem.ImportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword,
+                    pkcs8);
+
+                AssertExtensions.SequenceEqual(MLKemTestData.MLKem512PrivateSeed, imported.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.MLKem512DecapsulationKey,
+                    imported.ExportDecapsulationKey());
+            });
+        }
+
+        [Fact]
+        public void ExportEncryptedPkcs8PrivateKey_EncapsulationKey_Fails()
+        {
+            using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
+
+            Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+                kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                    s_aes128Pbe,
+                    destination,
+                    out bytesWritten)));
+
+            Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+                kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                    s_aes128Pbe,
+                    destination,
+                    out bytesWritten)));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword,
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                s_aes128Pbe));
+        }
+
+        [Theory]
+        [MemberData(nameof(ExportPkcs8Parameters))]
+        public void ExportEncryptedPkcs8PrivateKey_PbeParameters(PbeParameters pbeParameters)
+        {
+            using MLKem kem = ImportPrivateSeed(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512PrivateSeed);
+            AssertEncryptedExportPkcs8PrivateKey(kem, MLKemTestData.EncryptedPrivateKeyPassword, pbeParameters, pkcs8 =>
+            {
+                AssertEncryptedPkcs8PrivateKeyContents(pbeParameters, pkcs8);
+            });
+        }
+
+        public static IEnumerable<object[]> ExportPkcs8Parameters
+        {
+            get
+            {
+                yield return new[] { new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 42) };
+                yield return new[] { new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA512, 43) };
+                yield return new[] { new PbeParameters(PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA384, 44) };
+                yield return new[] { new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 24) };
+            }
+        }
+
         private static void AssertExportPkcs8PrivateKey(MLKem kem, Action<byte[]> callback)
         {
-            byte[] pkcs8 = DoTryUntilDone(kem.TryExportPkcs8PrivateKey);
-            callback(pkcs8);
+            callback(DoTryUntilDone(kem.TryExportPkcs8PrivateKey));
             callback(kem.ExportPkcs8PrivateKey());
+        }
+
+        private static void AssertEncryptedExportPkcs8PrivateKey(
+            MLKem kem,
+            string password,
+            PbeParameters pbeParameters,
+            Action<byte[]> callback)
+        {
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+
+            callback(DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+            {
+                return kem.TryExportEncryptedPkcs8PrivateKey(
+                    password.AsSpan(),
+                    pbeParameters,
+                    destination,
+                    out bytesWritten);
+            }));
+
+            callback(kem.ExportEncryptedPkcs8PrivateKey(password, pbeParameters));
+            callback(kem.ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters));
+
+            // PKCS12 PBE requires char-passwords, so don't run byte-password callbacks.
+            if (pbeParameters.EncryptionAlgorithm != PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)
+            {
+                callback(DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+                {
+                    return kem.TryExportEncryptedPkcs8PrivateKey(
+                        new ReadOnlySpan<byte>(passwordBytes),
+                        pbeParameters,
+                        destination,
+                        out bytesWritten);
+                }));
+
+                callback(kem.ExportEncryptedPkcs8PrivateKey(new ReadOnlySpan<byte>(passwordBytes), pbeParameters));
+            }
         }
 
         private delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
@@ -546,6 +675,53 @@ namespace System.Security.Cryptography.Tests
             byte[] ciphertext = encapsulator.Encapsulate(out byte[] encapsulatorSharedSecret);
             byte[] decapsulatedSharedSecret = kem.Decapsulate(ciphertext);
             AssertExtensions.SequenceEqual(encapsulatorSharedSecret, decapsulatedSharedSecret);
+        }
+
+        private static void AssertEncryptedPkcs8PrivateKeyContents(PbeParameters pbeParameters, ReadOnlyMemory<byte> contents)
+        {
+            EncryptedPrivateKeyInfoAsn epki = EncryptedPrivateKeyInfoAsn.Decode(contents, AsnEncodingRules.BER);
+            AlgorithmIdentifierAsn algorithmIdentifier = epki.EncryptionAlgorithm;
+
+            if (pbeParameters.EncryptionAlgorithm == PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)
+            {
+                // pbeWithSHA1And3-KeyTripleDES-CBC
+                Assert.Equal("1.2.840.113549.1.12.1.3", algorithmIdentifier.Algorithm);
+                PBEParameter pbeParameterAsn = PBEParameter.Decode(algorithmIdentifier.Parameters.Value, AsnEncodingRules.BER);
+
+                Assert.Equal(pbeParameters.IterationCount, pbeParameterAsn.IterationCount);
+            }
+            else
+            {
+                Assert.Equal("1.2.840.113549.1.5.13", algorithmIdentifier.Algorithm); // PBES2
+                PBES2Params pbes2Params = PBES2Params.Decode(algorithmIdentifier.Parameters.Value, AsnEncodingRules.BER);
+                Assert.Equal("1.2.840.113549.1.5.12", pbes2Params.KeyDerivationFunc.Algorithm); // PBKDF2
+                Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(
+                    pbes2Params.KeyDerivationFunc.Parameters.Value,
+                    AsnEncodingRules.BER);
+                string expectedEncryptionOid = pbeParameters.EncryptionAlgorithm switch
+                {
+                    PbeEncryptionAlgorithm.Aes128Cbc => "2.16.840.1.101.3.4.1.2",
+                    PbeEncryptionAlgorithm.Aes192Cbc => "2.16.840.1.101.3.4.1.22",
+                    PbeEncryptionAlgorithm.Aes256Cbc => "2.16.840.1.101.3.4.1.42",
+                    _ => throw new CryptographicException(),
+                };
+
+                Assert.Equal(pbeParameters.IterationCount, pbkdf2Params.IterationCount);
+                Assert.Equal(pbeParameters.HashAlgorithm, GetHashAlgorithmFromPbkdf2Params(pbkdf2Params));
+                Assert.Equal(expectedEncryptionOid, pbes2Params.EncryptionScheme.Algorithm);
+            }
+        }
+
+        private static HashAlgorithmName GetHashAlgorithmFromPbkdf2Params(Pbkdf2Params pbkdf2Params)
+        {
+            return pbkdf2Params.Prf.Algorithm switch
+            {
+                "1.2.840.113549.2.7" => HashAlgorithmName.SHA1,
+                "1.2.840.113549.2.9" => HashAlgorithmName.SHA256,
+                "1.2.840.113549.2.10" => HashAlgorithmName.SHA384,
+                "1.2.840.113549.2.11" => HashAlgorithmName.SHA512,
+                string other => throw new XunitException($"Unknown hash algorithm OID '{other}'."),
+            };
         }
 
         public record MLKemTestDecapsulationVector(MLKemAlgorithm Algorithm, string EncapsulationKey, string DecapsulationKey, string Ciphertext, string SharedSecret);

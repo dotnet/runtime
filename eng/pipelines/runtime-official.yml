@@ -353,6 +353,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
+            condition: false
             templatePath: 'templates-official'
             nameSuffix: Workloads
             templateContext:
