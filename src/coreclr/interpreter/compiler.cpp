@@ -37,7 +37,6 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 /*****************************************************************************/
 void DECLSPEC_NORETURN Interp_NOMEM()
 {
-    assert(false);
     // Ensure we don't return and that the compiler knows we won't
 #ifdef _MSC_VER
     __debugbreak();

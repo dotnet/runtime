@@ -6,12 +6,18 @@
 //  because safemath verifies that you've actually performed overflow checks and there's a load-bearing assert somewhere in GcInfoEncoder
 // It is not possible to use libc assert here without linker errors.
 static bool __gcinfo_assert_hack_global = false;
+#ifdef _MSC_VER
 #define GCINFO_ASSERT(expr) if (!(__gcinfo_assert_hack_global = (expr))) { \
-    _DbgBreak();\
+    __debugbreak(); \
 }
-#else
+#else // _MSC_VER
+#define GCINFO_ASSERT(expr) if (!(__gcinfo_assert_hack_global = (expr))) { \
+    __builtin_trap(); \
+}
+#endif // _MSC_VER
+#else // _DEBUG
 #define GCINFO_ASSERT(expr) (void)0
-#endif
+#endif // _DEBUG
 
 // If you want GcInfoEncoder logging to work, replace this macro with an appropriate definition.
 // This previously relied on our common logging infrastructure, but that caused linker failures in the interpreter.
