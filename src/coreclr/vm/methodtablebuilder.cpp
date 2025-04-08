@@ -1127,7 +1127,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (!bmtProp->fIsIntrinsicType)
         return false;
 
@@ -1146,6 +1146,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
     uint32_t     numInstanceFieldBytes = 16;
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
         numInstanceFieldBytes = 64;
@@ -1154,6 +1155,15 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     {
         numInstanceFieldBytes = 32;
     }
+#elif defined(TARGET_ARM64)
+    if (CPUCompileFlags.IsSet(InstructionSet_Sve_Arm64))
+    {
+         // TODO-VL: This should use GetSveLengthFromOS()
+         // Probably use CLRConfig::XXX environment variable
+         // for testing
+        numInstanceFieldBytes = 32;
+    }
+#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
 
     if (numInstanceFieldBytes != 16)
     {
@@ -1166,7 +1176,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 
         return true;
     }
-#endif // TARGET_X86 || TARGET_AMD64
+#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
 
     return false;
 }
