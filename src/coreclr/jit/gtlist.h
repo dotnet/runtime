@@ -291,6 +291,8 @@ GTNODE(SH3ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(SH3ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to riscv64 add.uw instruction. Computes result = op2 + zext(op1[31..0]).
 GTNODE(ADD_UW           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 slli.uw instruction. Computes result = zext(op1[31..0] << imm).
+GTNODE(SLLI_UW          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------

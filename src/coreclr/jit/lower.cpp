@@ -7959,6 +7959,14 @@ void Lowering::LowerShift(GenTreeOp* shift)
         }
     }
 #endif
+
+#ifdef TARGET_RISCV64
+    if (comp->compOpportunisticallyDependsOn(InstructionSet_Zba))
+    {
+        GenTree* next;
+        TryLowerZextLeftShiftToSlliUw(shift, &next);
+    }
+#endif
 }
 
 void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)

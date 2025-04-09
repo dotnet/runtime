@@ -776,6 +776,105 @@ bool Lowering::TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next)
     return false;
 }
 
+//------------------------------------------------------------------------
+// TryLowerZextLeftShiftToSlliUw : Lower LSH(CAST) node to SLLI_UW node.
+//
+// Arguments:
+//    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next)
+{
+    if (comp->opts.OptimizationDisabled())
+    {
+        return false;
+    }
+
+    if (!tree->OperIs(GT_LSH))
+    {
+        return false;
+    }
+
+    if ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF))
+    {
+        return false;
+    }
+
+    if (tree->isContained())
+    {
+        return false;
+    }
+
+    if ((tree->gtFlags & GTF_ALL_EFFECT) != 0)
+    {
+        return false;
+    }
+
+    if (!tree->gtOp1->OperIs(GT_CAST) || !tree->gtOp2->IsCnsIntOrI())
+    {
+        return false;
+    }
+
+    GenTree* index = tree->gtOp1;
+
+    assert(index->IsValue());
+
+    if (index->isContained())
+    {
+        return false;
+    }
+
+    if (!varTypeIsIntegralOrI(index))
+    {
+        return false;
+    }
+
+    // If index is constant, it's better to use immediate instructions.
+    if (index->IsCnsIntOrI())
+    {
+        return false;
+    }
+
+    GenTreeCast* const cast         = index->AsCast();
+    GenTree* const     src          = cast->CastOp();
+    const var_types    srcType      = genActualType(src);
+    const bool         srcUnsigned  = cast->IsUnsigned();
+    const unsigned     srcSize      = genTypeSize(srcType);
+    const var_types    castType     = cast->gtCastType;
+    const bool         castUnsigned = varTypeIsUnsigned(castType);
+    const unsigned     castSize     = genTypeSize(castType);
+
+    bool isZeroExtendIntToLong = varTypeIsIntegralOrI(srcType) && varTypeIsIntegralOrI(castType) && srcSize == 4 &&
+                                 castSize == 8 && (castUnsigned || srcUnsigned);
+
+    if (isZeroExtendIntToLong)
+    {
+        JITDUMP("Removing unused node:\n  ");
+        DISPNODE(cast);
+        BlockRange().Remove(cast);
+        DEBUG_DESTROY_NODE(cast);
+
+        tree->gtOp1 = src;
+        tree->ChangeOper(GT_SLLI_UW);
+
+        JITDUMP("Index:\n  ");
+        DISPNODE(tree->gtOp1);
+
+        JITDUMP("New SLLI_UW node:\n  ");
+        DISPNODE(tree);
+        JITDUMP("\n");
+
+        *next = tree->gtNext;
+
+        return true;
+    }
+
+    return false;
+}
+
 #ifdef FEATURE_SIMD
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.

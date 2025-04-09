@@ -726,7 +726,7 @@ void emitter::emitIns_R_R_I(
 
     if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
         (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
-        INS_flw == ins)
+        INS_flw == ins || INS_slli_uw == ins)
     {
         assert(isGeneralRegister(reg2));
         code |= (reg1 & 0x1f) << 7; // rd
@@ -825,7 +825,7 @@ void emitter::emitIns_R_R_R(
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
-        (INS_sh1add <= ins && ins <= INS_slli_uw))
+        (INS_sh1add <= ins && ins <= INS_sh3add_uw))
     {
 #ifdef DEBUG
         switch (ins)
@@ -920,7 +920,6 @@ void emitter::emitIns_R_R_R(
             case INS_sh1add_uw:
             case INS_sh2add_uw:
             case INS_sh3add_uw:
-            case INS_slli_uw:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -3914,28 +3913,36 @@ void emitter::emitDispInsName(
                         emitDispImmediate(imm12);
                     }
                     return;
-                case 0x1:
+                case 0x1: // SLLIW, SLLI.UW, CLZW, CTZW, & CPOPW
                 {
+                    static constexpr unsigned kSlliwFunct7  = 0b0000000;
+                    static constexpr unsigned kSlliUwFunct6 = 0b000010;
+
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
-                    unsigned shamt  = imm12 & 0x1f; // 5 BITS for SHAMT in RISCV64
-                    switch (funct7)
+                    unsigned funct6 = (imm12 >> 6) & 0x3f;
+                    // SLLIW's instruction code's upper 7 bits have to be equal to zero
+                    if (funct7 == kSlliwFunct7)
                     {
-                        case 0b0110000:
-                        {
-                            static const char* names[] = {"clzw ", "ctzw ", "cpopw"};
-                            // shift amount is treated as funct additional opcode bits
-                            if (shamt >= ARRAY_SIZE(names))
-                                return emitDispIllegalInstruction(code);
-
-                            printf("%s          %s, %s\n", names[shamt], rd, rs1);
-                            return;
-                        }
-                        case 0b0000000:
-                            printf("slliw          %s, %s, %d\n", rd, rs1, shamt);
-                            return;
-
-                        default:
+                        printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
+                    }
+                    // SLLI.UW's instruction code's upper 6 bits have to be equal to 0b000010
+                    else if (funct6 == kSlliUwFunct6)
+                    {
+                        printf("slli.uw        %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
+                    }
+                    else if (funct7 == 0b0110000)
+                    {
+                        static const char* names[] = {"clzw ", "ctzw ", "cpopw"};
+                        // shift amount is treated as funct additional opcode bits
+                        unsigned shamt = imm12 & 0x1f; // 5 BITS for SHAMT in RISCV64
+                        if (shamt >= ARRAY_SIZE(names))
                             return emitDispIllegalInstruction(code);
+
+                        printf("%s          %s, %s\n", names[shamt], rd, rs1);
+                    }
+                    else
+                    {
+                        emitDispIllegalInstruction(code);
                     }
                 }
                     return;

@@ -4589,6 +4589,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForAddUw(treeNode->AsOp());
             break;
 
+        case GT_SLLI_UW:
+            genCodeForSlliUw(treeNode->AsOp());
+            break;
+
         default:
         {
 #ifdef DEBUG
@@ -6760,6 +6764,22 @@ void CodeGen::genCodeForAddUw(GenTreeOp* tree)
 
     GetEmitter()->emitIns_R_R_R(INS_add_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(),
                                 tree->gtOp2->GetRegNum());
+
+    genProduceReg(tree);
+}
+
+void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    emitAttr attr    = emitActualTypeSize(tree);
+    GenTree* shiftBy = tree->gtOp2;
+
+    assert(shiftBy->IsCnsIntOrI());
+
+    unsigned shamt = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+
+    GetEmitter()->emitIns_R_R_I(INS_slli_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(), shamt);
 
     genProduceReg(tree);
 }
