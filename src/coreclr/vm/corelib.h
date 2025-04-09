@@ -888,9 +888,6 @@ DEFINE_PROPERTY(TYPE,               IS_IMPORT,              IsImport,           
 
 DEFINE_CLASS(TYPE_DELEGATOR,        Reflection,             TypeDelegator)
 
-DEFINE_CLASS(UNHANDLED_EVENTARGS,   System,                 UnhandledExceptionEventArgs)
-DEFINE_METHOD(UNHANDLED_EVENTARGS,  CTOR,                   .ctor,                      IM_Obj_Bool_RetVoid)
-
 DEFINE_CLASS(FIRSTCHANCE_EVENTARGS,   ExceptionServices,      FirstChanceExceptionEventArgs)
 DEFINE_METHOD(FIRSTCHANCE_EVENTARGS,  CTOR,                   .ctor,                      IM_Exception_RetVoid)
 

@@ -3412,14 +3412,12 @@ BOOL AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         PRECONDITION(pThrowable != NULL);
     }
     CONTRACTL_END;
 
     BOOL retVal = FALSE;
-
-    GCX_COOP();
 
     EX_TRY
     {
