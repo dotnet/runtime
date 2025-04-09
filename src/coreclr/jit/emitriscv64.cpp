@@ -247,7 +247,7 @@ bool emitter::emitInsIsLoadOrStore(instruction ins)
  *  Returns the specific encoding of the given CPU instruction.
  */
 
-inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/) const
+inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/)
 {
     code_t code = BAD_CODE;
 
@@ -648,7 +648,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins || INS_sext_w == ins)
+    if (INS_mov == ins || INS_sext_w == ins || (INS_clz <= ins && ins <= INS_cpopw))
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -688,7 +688,7 @@ void emitter::emitIns_R_R(
         if (INS_fcvt_d_w != ins && INS_fcvt_d_wu != ins) // fcvt.d.w[u] always produces an exact result
             code |= 0x7 << 12;                           // round according to frm status register
     }
-    else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
+    else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins || INS_fsqrt_s == ins || INS_fsqrt_d == ins)
     {
         assert(isFloatReg(reg1));
         assert(isFloatReg(reg2));
@@ -865,7 +865,6 @@ void emitter::emitIns_R_R_R(
             case INS_fsub_s:
             case INS_fmul_s:
             case INS_fdiv_s:
-            case INS_fsqrt_s:
             case INS_fsgnj_s:
             case INS_fsgnjn_s:
             case INS_fsgnjx_s:
@@ -880,7 +879,6 @@ void emitter::emitIns_R_R_R(
             case INS_fsub_d:
             case INS_fmul_d:
             case INS_fdiv_d:
-            case INS_fsqrt_d:
             case INS_fsgnj_d:
             case INS_fsgnjn_d:
             case INS_fsgnjx_d:
@@ -925,7 +923,7 @@ void emitter::emitIns_R_R_R(
         code |= ((reg1 & 0x1f) << 7);
         code |= ((reg2 & 0x1f) << 15);
         code |= ((reg3 & 0x1f) << 20);
-        if ((INS_fadd_s <= ins && INS_fsqrt_s >= ins) || (INS_fadd_d <= ins && INS_fsqrt_d >= ins))
+        if ((INS_fadd_s <= ins && INS_fdiv_s >= ins) || (INS_fadd_d <= ins && INS_fdiv_d >= ins))
         {
             code |= 0x7 << 12;
         }
@@ -1378,10 +1376,10 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         insCountLimit = absMaxInsCount;
     }
 
-    bool     utilizeSRLI = false;
-    int      srliShiftAmount;
-    uint64_t originalImm = imm;
-    bool     cond1       = (y - x) > 31;
+    bool     utilizeSRLI     = false;
+    int      srliShiftAmount = 0;
+    uint64_t originalImm     = imm;
+    bool     cond1           = (y - x) > 31;
     if ((((uint64_t)imm >> 63) & 0b1) == 0 && cond1)
     {
         srliShiftAmount  = BitOperations::LeadingZeroCount((uint64_t)imm);
@@ -1431,8 +1429,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
      * See the following discussion:
      * https://github.com/dotnet/runtime/pull/113250#discussion_r1987576070 */
 
-    uint32_t offset1        = imm & WordMask(x);
-    uint32_t offset2        = (~(offset1 - 1)) & WordMask(x);
+    uint32_t offset1        = imm & WordMask((uint8_t)x);
+    uint32_t offset2        = (~(offset1 - 1)) & WordMask((uint8_t)x);
     uint32_t offset         = offset1;
     bool     isSubtractMode = false;
 
@@ -1442,8 +1440,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
          * Since adding 1 to it will change the sign bit. Instead, shift x and y
          * to the left by one. */
         int      newX       = x + 1;
-        uint32_t newOffset1 = imm & WordMask(newX);
-        uint32_t newOffset2 = (~(newOffset1 - 1)) & WordMask(newX);
+        uint32_t newOffset1 = imm & WordMask((uint8_t)newX);
+        uint32_t newOffset2 = (~(newOffset1 - 1)) & WordMask((uint8_t)newX);
         if (newOffset2 < offset1)
         {
             x              = newX;
@@ -1495,7 +1493,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     int chunkLsbPos = (x < 11) ? 0 : (x - 11);
     int shift       = (x < 11) ? x : 11;
-    int chunkMask   = (x < 11) ? WordMask(x) : WordMask(11);
+    int chunkMask   = (x < 11) ? WordMask((uint8_t)x) : WordMask(11);
     while (true)
     {
         uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
@@ -1524,7 +1522,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             if (isSubtractMode)
             {
                 ins[numberOfInstructions - 1]    = INS_addi;
-                values[numberOfInstructions - 1] = -chunk;
+                values[numberOfInstructions - 1] = -(int32_t)chunk;
             }
             else
             {
@@ -3807,18 +3805,31 @@ void emitter::emitDispInsName(
                         hasImmediate = false;
                     }
                     break;
-                case 0x1: // SLLI
+                case 0x1:
                 {
-                    static constexpr unsigned kSlliFunct6 = 0b000000;
-
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
-                    // SLLI's instruction code's upper 6 bits have to be equal to zero
-                    if (funct6 != kSlliFunct6)
+                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV64
+                    switch (funct6)
                     {
-                        return emitDispIllegalInstruction(code);
+                        case 0b011000:
+                        {
+                            static const char* names[] = {"clz", "ctz", "cpop"};
+                            // shift amount is treated as additional funct opcode
+                            if (shamt >= ARRAY_SIZE(names))
+                                return emitDispIllegalInstruction(code);
+
+                            printLength  = printf("%s", names[shamt]);
+                            hasImmediate = false;
+                            break;
+                        }
+                        case 0b000000:
+                            printLength = printf("slli");
+                            imm12       = shamt;
+                            break;
+
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
-                    printLength = printf("slli");
-                    imm12 &= 0x3f; // 6 BITS for SHAMT in RISCV64
                 }
                 break;
                 case 0x2: // SLTI
@@ -3893,19 +3904,28 @@ void emitter::emitDispInsName(
                         emitDispImmediate(imm12);
                     }
                     return;
-                case 0x1: // SLLIW
+                case 0x1:
                 {
-                    static constexpr unsigned kSlliwFunct7 = 0b0000000;
-
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
-                    // SLLIW's instruction code's upper 7 bits have to be equal to zero
-                    if (funct7 == kSlliwFunct7)
+                    unsigned shamt  = imm12 & 0x1f; // 5 BITS for SHAMT in RISCV64
+                    switch (funct7)
                     {
-                        printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
-                    }
-                    else
-                    {
-                        emitDispIllegalInstruction(code);
+                        case 0b0110000:
+                        {
+                            static const char* names[] = {"clzw ", "ctzw ", "cpopw"};
+                            // shift amount is treated as funct additional opcode bits
+                            if (shamt >= ARRAY_SIZE(names))
+                                return emitDispIllegalInstruction(code);
+
+                            printf("%s          %s, %s\n", names[shamt], rd, rs1);
+                            return;
+                        }
+                        case 0b0000000:
+                            printf("slliw          %s, %s, %d\n", rd, rs1, shamt);
+                            return;
+
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
                 }
                     return;
@@ -4319,22 +4339,17 @@ void emitter::emitDispInsName(
                 case 0x2C: // FSQRT.S
                     printf("fsqrt.s        %s, %s\n", fd, fs1);
                     return;
-                case 0x10:            // FSGNJ.S & FSGNJN.S & FSGNJX.S
-                    if (opcode4 == 0) // FSGNJ.S
+                case 0x10: // FSGNJ.S & FSGNJN.S & FSGNJX.S
+                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj.s variant");
+                    if (fs1 != fs2)
                     {
-                        printf("fsgnj.s        %s, %s, %s\n", fd, fs1, fs2);
+                        const char* variants[3] = {".s ", "n.s", "x.s"};
+                        printf("fsgnj%s        %s, %s, %s\n", variants[opcode4], fd, fs1, fs2);
                     }
-                    else if (opcode4 == 1) // FSGNJN.S
+                    else // pseudos
                     {
-                        printf("fsgnjn.s       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else if (opcode4 == 2) // FSGNJX.S
-                    {
-                        printf("fsgnjx.s       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                        const char* names[3] = {"fmv.s ", "fneg.s", "fabs.s"};
+                        printf("%s         %s, %s\n", names[opcode4], fd, fs1);
                     }
                     return;
                 case 0x14:            // FMIN.S & FMAX.S
@@ -4422,7 +4437,6 @@ void emitter::emitDispInsName(
                     {
                         printf("fcvt.s.lu      %s, %s\n", fd, xs1);
                     }
-
                     else
                     {
                         NYI_RISCV64("illegal ins within emitDisInsName!");
@@ -4446,22 +4460,17 @@ void emitter::emitDispInsName(
                 case 0x2d: // FSQRT.D
                     printf("fsqrt.d        %s, %s\n", fd, fs1);
                     return;
-                case 0x11:            // FSGNJ.D & FSGNJN.D & FSGNJX.D
-                    if (opcode4 == 0) // FSGNJ.D
+                case 0x11: // FSGNJ.D & FSGNJN.D & FSGNJX.D
+                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj.d variant");
+                    if (fs1 != fs2)
                     {
-                        printf("fsgnj.d        %s, %s, %s\n", fd, fs1, fs2);
+                        const char* variants[3] = {".d ", "n.d", "x.d"};
+                        printf("fsgnj%s        %s, %s, %s\n", variants[opcode4], fd, fs1, fs2);
                     }
-                    else if (opcode4 == 1) // FSGNJN.D
+                    else // pseudos
                     {
-                        printf("fsgnjn.d       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else if (opcode4 == 2) // FSGNJX.D
-                    {
-                        printf("fsgnjx.d       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                        const char* names[3] = {"fmv.d ", "fneg.d", "fabs.d"};
+                        printf("%s         %s, %s\n", names[opcode4], fd, fs1);
                     }
                     return;
                 case 0x15:            // FMIN.D & FMAX.D
