@@ -79,9 +79,9 @@
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.25081.6">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.25204.3">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>1cec3b4a8fb07138136a1ca1e04763bfcf7841db</Sha>
+      <Sha>643689c88b1d5a0f1561383972c4189a0c673abe</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
