@@ -3812,6 +3812,7 @@ void emitter::emitDispInsName(
                     switch (funct6)
                     {
                         case 0b011000:
+                        {
                             static const char* names[] = {"clz", "ctz", "cpop"};
                             // shift amount is treated as additional funct opcode
                             if (shamt >= ARRAY_SIZE(names))
@@ -3820,7 +3821,7 @@ void emitter::emitDispInsName(
                             printLength  = printf("%s", names[shamt]);
                             hasImmediate = false;
                             break;
-
+                        }
                         case 0b000000:
                             printLength = printf("slli");
                             imm12       = shamt;
@@ -3910,6 +3911,7 @@ void emitter::emitDispInsName(
                     switch (funct7)
                     {
                         case 0b0110000:
+                        {
                             static const char* names[] = {"clzw ", "ctzw ", "cpopw"};
                             // shift amount is treated as funct additional opcode bits
                             if (shamt >= ARRAY_SIZE(names))
@@ -3917,7 +3919,7 @@ void emitter::emitDispInsName(
 
                             printf("%s          %s, %s\n", names[shamt], rd, rs1);
                             return;
-
+                        }
                         case 0b0000000:
                             printf("slliw          %s, %s, %d\n", rd, rs1, shamt);
                             return;

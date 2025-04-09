@@ -63,6 +63,9 @@ internal class Program
         TestDataflow.Run();
         TestConversions.Run();
         TestVTables.Run();
+        TestVTableManipulation.Run();
+        TestVTableNegativeScenarios.Run();
+        TestByRefFieldAddressEquality.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -1682,12 +1685,18 @@ class TestVTables
         [FixedAddressValueType]
         public static readonly IUnknownVftbl Vtbl;
 
+        public static nint AbiToProjectionVftablePtr
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+        }
+
         static IUnknownImpl()
         {
             ComWrappers.GetIUnknownImpl(
-                fpQueryInterface: out *(nint*)&((IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl))->QueryInterface,
-                fpAddRef: out *(nint*)&((IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl))->AddRef,
-                fpRelease: out *(nint*)&((IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl))->Release);
+                fpQueryInterface: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl))->QueryInterface,
+                fpAddRef: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl))->AddRef,
+                fpRelease: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl))->Release);
         }
     }
 
@@ -1696,9 +1705,15 @@ class TestVTables
         [FixedAddressValueType]
         public static readonly IInspectableVftbl Vtbl;
 
+        public static nint AbiToProjectionVftablePtr
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+        }
+
         static IInspectableImpl()
         {
-            *(IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl) = IUnknownImpl.Vtbl;
+            *(IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl) = *(IUnknownVftbl*)IUnknownImpl.AbiToProjectionVftablePtr;
 
             Vtbl.GetIids = &GetIids;
             Vtbl.GetRuntimeClassName = &GetRuntimeClassName;
@@ -1713,6 +1728,21 @@ class TestVTables
 
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
         public static int GetTrustLevel(void* thisPtr, int* trustLevel) => 0;
+    }
+
+    internal static unsafe class IStringableImpl
+    {
+        public static readonly IStringableVftbl Vtbl;
+
+        static IStringableImpl()
+        {
+            *(IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl) = *(IInspectableVftbl*)IInspectableImpl.AbiToProjectionVftablePtr;
+
+            Vtbl.ToString = &ToString;
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        public static int ToString(void* thisPtr, nint* value) => 0;
     }
 
     public unsafe struct IUnknownVftbl
@@ -1732,6 +1762,17 @@ class TestVTables
         public delegate* unmanaged[MemberFunction]<void*, int*, int> GetTrustLevel;
     }
 
+    internal unsafe struct IStringableVftbl
+    {
+        public delegate* unmanaged[MemberFunction]<void*, Guid*, void**, int> QueryInterface;
+        public delegate* unmanaged[MemberFunction]<void*, uint> AddRef;
+        public delegate* unmanaged[MemberFunction]<void*, uint> Release;
+        public delegate* unmanaged[MemberFunction]<void*, uint*, Guid**, int> GetIids;
+        public delegate* unmanaged[MemberFunction]<void*, nint*, int> GetRuntimeClassName;
+        public delegate* unmanaged[MemberFunction]<void*, int*, int> GetTrustLevel;
+        public new delegate* unmanaged[MemberFunction]<void*, nint*, int> ToString;
+    }
+
     public static unsafe void Run()
     {
         Assert.IsPreinitialized(typeof(IUnknownImpl));
@@ -1749,6 +1790,200 @@ class TestVTables
         Assert.AreEqual((nuint)release, (nuint)IInspectableImpl.Vtbl.Release);
         Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, uint*, Guid**, int>)&IInspectableImpl.GetIids, (nuint)IInspectableImpl.Vtbl.GetIids);
         Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, int*, int>)&IInspectableImpl.GetTrustLevel, (nuint)IInspectableImpl.Vtbl.GetTrustLevel);
+
+        Assert.IsPreinitialized(typeof(IStringableImpl));
+        Assert.AreEqual((nuint)qi, (nuint)IStringableImpl.Vtbl.QueryInterface);
+        Assert.AreEqual((nuint)addref, (nuint)IStringableImpl.Vtbl.AddRef);
+        Assert.AreEqual((nuint)release, (nuint)IStringableImpl.Vtbl.Release);
+        Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, uint*, Guid**, int>)&IInspectableImpl.GetIids, (nuint)IStringableImpl.Vtbl.GetIids);
+        Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, int*, int>)&IInspectableImpl.GetTrustLevel, (nuint)IStringableImpl.Vtbl.GetTrustLevel);
+        Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, nint*, int>)&IStringableImpl.ToString, (nuint)IStringableImpl.Vtbl.ToString);
+    }
+}
+
+class TestVTableManipulation
+{
+    public unsafe class TinyVtableAImpl
+    {
+        [FixedAddressValueType]
+        public static readonly ITinyVtableA Vtbl = Initialize();
+
+        private static ITinyVtableA Initialize()
+        {
+            ITinyVtableA result = default;
+            result.First = &First;
+            result.Second = &Second;
+            return result;
+        }
+    }
+
+    public unsafe class TinyVtableBImpl
+    {
+        [FixedAddressValueType]
+        public static readonly ITinyVtableB Vtbl;
+
+        public static nint AbiToProjectionVftablePtr => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+
+        static TinyVtableBImpl()
+        {
+            *(ITinyVtableA*)Unsafe.AsPointer(ref Vtbl) = TinyVtableAImpl.Vtbl;
+            Vtbl.Third = &Third;
+        }
+    }
+
+    public unsafe class TinyVtableCImpl
+    {
+        [FixedAddressValueType]
+        public static readonly ITinyVtableC Vtbl;
+
+        static TinyVtableCImpl()
+        {
+            *(ITinyVtableB*)Unsafe.AsPointer(ref Vtbl) = *(ITinyVtableB*)TinyVtableBImpl.AbiToProjectionVftablePtr;
+            Vtbl.Fourth = &Fourth;
+        }
+    }
+
+    public unsafe struct ITinyVtableA
+    {
+        public delegate*<void> First;
+        public delegate*<void> Second;
+    }
+
+    public unsafe struct ITinyVtableB
+    {
+        public delegate*<void> First;
+        public delegate*<void> Second;
+        public delegate*<void> Third;
+    }
+
+    public unsafe struct ITinyVtableC
+    {
+        public delegate*<void> First;
+        public delegate*<void> Second;
+        public delegate*<void> Third;
+        public delegate*<void> Fourth;
+    }
+
+    static void First() { }
+    static void Second() { }
+    static void Third() { }
+    static void Fourth() { }
+
+    public static unsafe void Run()
+    {
+        Assert.IsPreinitialized(typeof(TinyVtableAImpl));
+        Assert.AreEqual((nuint)(delegate*<void>)&First, (nuint)TinyVtableAImpl.Vtbl.First);
+        Assert.AreEqual((nuint)(delegate*<void>)&Second, (nuint)TinyVtableAImpl.Vtbl.Second);
+
+        Assert.IsPreinitialized(typeof(TinyVtableBImpl));
+        Assert.AreEqual((nuint)(delegate*<void>)&First, (nuint)TinyVtableBImpl.Vtbl.First);
+        Assert.AreEqual((nuint)(delegate*<void>)&Second, (nuint)TinyVtableBImpl.Vtbl.Second);
+        Assert.AreEqual((nuint)(delegate*<void>)&Third, (nuint)TinyVtableBImpl.Vtbl.Third);
+
+        Assert.IsPreinitialized(typeof(TinyVtableCImpl));
+        Assert.AreEqual((nuint)(delegate*<void>)&First, (nuint)TinyVtableCImpl.Vtbl.First);
+        Assert.AreEqual((nuint)(delegate*<void>)&Second, (nuint)TinyVtableCImpl.Vtbl.Second);
+        Assert.AreEqual((nuint)(delegate*<void>)&Third, (nuint)TinyVtableCImpl.Vtbl.Third);
+        Assert.AreEqual((nuint)(delegate*<void>)&Fourth, (nuint)TinyVtableCImpl.Vtbl.Fourth);
+    }
+}
+
+class TestVTableNegativeScenarios
+{
+    class StoreIntoNint
+    {
+        public static readonly nint Field;
+
+        unsafe static StoreIntoNint()
+        {
+            ITinyVtable result = default;
+            Field = (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in result));
+        }
+    }
+
+    class WriteNonMethodPointer
+    {
+        public static readonly ITinyVtable Vtbl;
+
+        static unsafe WriteNonMethodPointer()
+        {
+            Vtbl.First = (delegate*<void>)123;
+            Vtbl.Second = (delegate*<void>)456;
+        }
+    }
+
+    unsafe class WriteNonMethodIndirect
+    {
+        public static readonly ITinyVtable Vtbl;
+
+        static void Write(ref delegate*<void> f, int val) => f = (delegate*<void>)val;
+
+        static unsafe WriteNonMethodIndirect()
+        {
+            Write(ref Vtbl.First, 123);
+            Write(ref Vtbl.Second, 456);
+        }
+    }
+
+    static void First() { }
+    static void Second() { }
+
+    public unsafe struct ITinyVtable
+    {
+        public delegate*<void> First;
+        public delegate*<void> Second;
+    }
+
+    public static unsafe void Run()
+    {
+        Assert.IsLazyInitialized(typeof(StoreIntoNint));
+        if (StoreIntoNint.Field == 0)
+            throw new Exception();
+
+        Assert.IsLazyInitialized(typeof(WriteNonMethodPointer));
+        Assert.AreEqual(WriteNonMethodPointer.Vtbl.First, (void*)123);
+        Assert.AreEqual(WriteNonMethodPointer.Vtbl.Second, (void*)456);
+
+        Assert.IsLazyInitialized(typeof(WriteNonMethodIndirect));
+        Assert.AreEqual(WriteNonMethodIndirect.Vtbl.First, (void*)123);
+        Assert.AreEqual(WriteNonMethodIndirect.Vtbl.Second, (void*)456);
+    }
+}
+
+unsafe class TestByRefFieldAddressEquality
+{
+    class ClassWithInitializedByRefs
+    {
+        [FixedAddressValueType]
+        public static readonly int MyByRef = 1234;
+
+        public static nint HiddenGetAddress() => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in MyByRef));
+    }
+
+    class ClassWithUninitializedByRefs
+    {
+        [FixedAddressValueType]
+        public static readonly int MyByRef;
+
+        public static nint HiddenGetAddress() => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in MyByRef));
+    }
+
+    class ClassTakingAddressOfInitialized
+    {
+        public static bool AreEqual = ClassWithInitializedByRefs.HiddenGetAddress() == ClassWithInitializedByRefs.HiddenGetAddress();
+    }
+
+    class ClassTakingAddressOfUninitialized
+    {
+        public static bool AreEqual = ClassWithUninitializedByRefs.HiddenGetAddress() == ClassWithUninitializedByRefs.HiddenGetAddress();
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(ClassTakingAddressOfInitialized));
+        Assert.AreEqual(true, ClassTakingAddressOfInitialized.AreEqual);
+
+        Assert.AreEqual(true, ClassTakingAddressOfUninitialized.AreEqual);
     }
 }
 
