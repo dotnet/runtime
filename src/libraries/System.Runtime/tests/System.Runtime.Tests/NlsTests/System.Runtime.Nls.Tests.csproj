@@ -40,6 +40,8 @@
              Link="System\Uri.MethodsTests.cs" />
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
              Link="Common\System\EnumTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs"
+             Link="Common\System\GenericMathHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\MockType.cs"
              Link="Common\System\MockType.cs" />
     <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs"
