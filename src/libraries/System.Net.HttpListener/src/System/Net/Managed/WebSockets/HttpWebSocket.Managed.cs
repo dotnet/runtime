@@ -151,7 +151,9 @@ namespace System.Net.WebSockets
                     }
                     catch
                     {
-                        // explain why we ignore exceptions here
+                        // We are doing best effort here to handle the case where the user does not properly Dispose the WebSocket.
+                        // If we fail to close the reponse, we are not going to throw an exception and possibly crash.
+                        // We are just going to ignore it and let the GC do its best.
                     }
                 }
             }
