@@ -365,6 +365,7 @@ namespace System.Text.Json.Serialization.Converters
 
         private static long ConvertToInt64(T value)
         {
+            Debug.Assert(s_isSignedEnum);
             return s_enumTypeCode switch
             {
                 TypeCode.Int32 => (int)(object)value,

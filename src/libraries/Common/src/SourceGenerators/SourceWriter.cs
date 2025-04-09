@@ -110,15 +110,12 @@ namespace SourceGenerators
             return next;
         }
 
-        private static void AppendSpan(StringBuilder builder, ReadOnlySpan<char> span)
+        private static unsafe void AppendSpan(StringBuilder builder, ReadOnlySpan<char> span)
         {
-            // There is no StringBuilder.Append(ROS<char>) overload in the NS2.0
-            unsafe
+            // There is no StringBuilder.Append(ReadOnlySpan<char>) overload in the NS2.0
+            fixed (char* ptr = span)
             {
-                fixed (char* ptr = span)
-                {
-                    builder.Append(ptr, span.Length);
-                }
+                builder.Append(ptr, span.Length);
             }
         }
     }

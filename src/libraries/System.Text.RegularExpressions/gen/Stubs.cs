@@ -14,14 +14,13 @@ namespace System.Text
 {
     internal static class StringBuilderExtensions
     {
-        public static StringBuilder Append(this StringBuilder stringBuilder, ReadOnlySpan<char> span)
+        public static unsafe StringBuilder Append(this StringBuilder stringBuilder, ReadOnlySpan<char> span)
         {
-            stringBuilder.EnsureCapacity(span.Length);
-            foreach (char c in span)
+            // There is no StringBuilder.Append(ReadOnlySpan<char>) overload in the NS2.0
+            fixed (char* ptr = &MemoryMarshal.GetReference(span))
             {
-                stringBuilder.Append(c);
+                return stringBuilder.Append(ptr, span.Length);
             }
-            return stringBuilder;
         }
 
         public static ReadOnlyMemory<char>[] GetChunks(this StringBuilder stringBuilder)
