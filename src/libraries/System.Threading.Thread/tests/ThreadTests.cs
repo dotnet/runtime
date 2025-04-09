@@ -1298,5 +1298,33 @@ namespace System.Threading.Threads.Tests
         {
             Assert.True(Thread.GetCurrentProcessorId() >= 0);
         }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int GetThreadDescription(IntPtr hThread, out IntPtr threadDescription);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetCurrentThread();
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void NameNativeThreadBeforeStart()
+        {
+            string threadName = "Test thread name";
+
+            Thread t = new Thread(() =>
+            {
+                IntPtr threadHandle = GetCurrentThread();
+                GetThreadDescription(threadHandle, out IntPtr threadDescriptionPtr);
+
+                string nativeThreadName = Marshal.PtrToStringUni(threadDescriptionPtr);
+                Marshal.FreeHGlobal(threadDescriptionPtr); // Free the unmanaged memory
+                Assert.Equal(threadName, nativeThreadName);
+            }){
+                Name = threadName
+            };
+
+            t.IsBackground = true;
+            t.Start();
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
+        }
     }
 }
