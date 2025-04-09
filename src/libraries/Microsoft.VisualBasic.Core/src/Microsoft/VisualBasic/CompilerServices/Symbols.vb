@@ -524,7 +524,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return System.Linq.Enumerable.ToArray(genericParameter.GetInterfaces)
         End Function
 
-        Friend Shared Function GetClassConstraint(ByVal genericParameter As Type) As Type
+        Friend Shared Function GetClassConstraint(<DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)> ByVal genericParameter As Type) As <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)> Type
             'Returns the class constraint for the type parameter, Nothing if it has
             'no class constraint.
             Debug.Assert(IsGenericParameter(genericParameter), "expected type parameter")
@@ -933,7 +933,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ' implements.
             <SuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
                 Justification:="_type is annotated with .All, so it's Interfaces will be annotated as well and it is safe to call GetMember on the Interfaces.
-                    We should be able to remove once https://github.com/mono/linker/issues/1731 is fixed.")>
+                    We should be able to remove once https://github.com/dotnet/runtime/issues/114425 is fixed.")>
             Friend Function LookupWinRTCollectionInterfaceMembers(ByVal memberName As String) As List(Of MemberInfo)
                 Debug.Assert(Me.IsWindowsRuntimeObject(), "Expected a Windows Runtime Object")
 
@@ -950,9 +950,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return result
             End Function
 
-            <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification:="_type is annotated with .All, so it's BaseType will be annotated as well and it is safe to call GetMember on the BaseType.
-                    We should be able to remove once https://github.com/mono/linker/issues/1731 is fixed.")>
             Friend Function LookupNamedMembers(ByVal memberName As String) As MemberInfo()
                 'Returns an array of members matching MemberName sorted by inheritance (most derived first).
                 'If no members match MemberName, returns an empty array.

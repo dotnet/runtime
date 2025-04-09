@@ -781,7 +781,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				for (int i = 0; i < interfaces.Length; i++) {
 					interfaces[i].RequiresInterfaces ();
 				}
+			}
 
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/114425")]
+			static void GetInterfacesOnInterfaces_Foreach ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type t)
+			{
 				foreach (var i in t.GetInterfaces ())
 					i.RequiresInterfaces ();
 			}
@@ -794,11 +798,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				for (int i = 0; i < interfaces.Length; i++) {
 					interfaces[i].RequiresAll ();
 				}
+			}
 
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/114425")]
+			static void GetAllOnAll_Foreach ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t)
+			{
 				foreach (var i in t.GetInterfaces ())
 					i.RequiresAll ();
 			}
-
 
 			[ExpectedWarning ("IL2072", nameof(Type.GetInterfaces), nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 			static void GetMethodsOnInterfaces ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type t)
@@ -814,7 +821,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				for (int i = 0; i < interfaces.Length; i++) {
 					interfaces[i].RequiresPublicMethods ();
 				}
+			}
 
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/114425")]
+			static void GetMethodsOnAll_Foreach ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t)
+			{
 				foreach (var i in t.GetInterfaces ())
 					i.RequiresPublicMethods ();
 			}
@@ -848,8 +859,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test()
 			{
 				GetInterfacesOnInterfaces (null);
+				GetInterfacesOnInterfaces_Foreach (null);
 				GetAllOnAll (null);
+				GetAllOnAll_Foreach (null);
 				GetMethodsOnAll (null);
+				GetMethodsOnAll_Foreach (null);
 				GetMethodsOnInterfaces (null);
 
 				GetInterfacesOnModified (null);
