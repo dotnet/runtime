@@ -53,7 +53,7 @@ namespace System.Runtime.ExceptionServices
         {
             ArgumentNullException.ThrowIfNull(exception);
 
-            AppContext.OnUnhandledExceptionWorker(exception);
+            AppContext.OnUnhandledException(exception);
         }
     }
 }

@@ -3408,23 +3408,21 @@ BOOL AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
     }
     CONTRACTL_END;
 
-    BOOL retVal = FALSE;
-
     EX_TRY
     {
-        MethodDescCallSite raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION_WORKER);
+        MethodDescCallSite raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION);
         ARG_SLOT args[] =
         {
             ObjToArgSlot(*pThrowable)
         };
-        retVal = raiseEvent.Call_RetBool(args);
+        raiseEvent.Call(args);
     }
     EX_CATCH
     {
     }
     EX_END_CATCH(SwallowAllExceptions)  // Swallow any errors.
 
-    return retVal;
+    return TRUE;
 }
 
 void AppDomain::RaiseExitProcessEvent()

@@ -23,30 +23,30 @@ public class RaiseEvent
     }
 
     [ThreadStatic]
-    static object? s_ExceptionObject;
+    static object? t_ExceptionObject;
 
     [Fact]
     public static void Validate_ExceptionPassedToHandler()
     {
         Console.WriteLine(nameof(Validate_ExceptionPassedToHandler));
 
-        s_ExceptionObject = null;
+        t_ExceptionObject = null;
         Exception ex = new();
         try
         {
             using HandlerRegistration registration = new(Handler);
-            ExceptionHandling.RaiseUnhandledExceptionEvent(ex);
+            ExceptionHandling.RaiseAppDomainUnhandledExceptionEvent(ex);
         }
         catch (Exception e)
         {
             Assert.Fail(e.ToString());
         }
-        Assert.Equal(ex, s_ExceptionObject);
+        Assert.Equal(ex, t_ExceptionObject);
 
         static void Handler(object sender, UnhandledExceptionEventArgs args)
         {
             Assert.True(args.IsTerminating);
-            s_ExceptionObject = args.ExceptionObject;
+            t_ExceptionObject = args.ExceptionObject;
         }
     }
 
@@ -61,7 +61,7 @@ public class RaiseEvent
         try
         {
             using HandlerRegistration registration = new(Handler);
-            ExceptionHandling.RaiseUnhandledExceptionEvent(ex);
+            ExceptionHandling.RaiseAppDomainUnhandledExceptionEvent(ex);
         }
         catch (Exception e)
         {
@@ -73,31 +73,31 @@ public class RaiseEvent
     }
 
     [ThreadStatic]
-    static bool s_UnhandledExceptionHandlerCalled;
+    static bool t_UnhandledExceptionHandlerCalled;
 
     [Fact]
     public static void Validate_UnhandledExceptionHandler_NotCalled()
     {
         Console.WriteLine(nameof(Validate_UnhandledExceptionHandler_NotCalled));
 
-        s_UnhandledExceptionHandlerCalled = false;
+        t_UnhandledExceptionHandlerCalled = false;
         Exception ex = new();
         try
         {
             ExceptionHandling.SetUnhandledExceptionHandler((Exception _) =>
             {
-                s_UnhandledExceptionHandlerCalled = true;
+                t_UnhandledExceptionHandlerCalled = true;
                 return false;
             });
 
             using HandlerRegistration registration = new(Handler);
-            ExceptionHandling.RaiseUnhandledExceptionEvent(ex);
+            ExceptionHandling.RaiseAppDomainUnhandledExceptionEvent(ex);
         }
         catch (Exception e)
         {
             Assert.Fail(e.ToString());
         }
-        Assert.False(s_UnhandledExceptionHandlerCalled);
+        Assert.False(t_UnhandledExceptionHandlerCalled);
 
         static void Handler(object sender, UnhandledExceptionEventArgs args)
         {
@@ -111,7 +111,7 @@ public class RaiseEvent
 
         {
             using HandlerRegistration registration = new(Handler);
-            Assert.Throws<ArgumentNullException>(() => ExceptionHandling.RaiseUnhandledExceptionEvent(null!));
+            Assert.Throws<ArgumentNullException>(() => ExceptionHandling.RaiseAppDomainUnhandledExceptionEvent(null!));
         }
 
         static void Handler(object sender, UnhandledExceptionEventArgs args)

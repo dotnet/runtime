@@ -82,12 +82,13 @@ namespace System
         internal static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
-        internal static bool OnUnhandledExceptionWorker(object e)
+#if NATIVEAOT
+        [System.Runtime.RuntimeExport("OnUnhandledException")]
+#endif
+        internal static void OnUnhandledException(object e)
         {
-            bool registeredHandlers = false;
             if (UnhandledException is UnhandledExceptionEventHandler handlers)
             {
-                registeredHandlers = true;
                 UnhandledExceptionEventArgs args = new(e, isTerminating: true);
                 foreach (UnhandledExceptionEventHandler handler in Delegate.EnumerateInvocationList(handlers))
                 {
@@ -100,8 +101,6 @@ namespace System
                     }
                 }
             }
-
-            return registeredHandlers;
         }
 
         internal static void OnProcessExit()

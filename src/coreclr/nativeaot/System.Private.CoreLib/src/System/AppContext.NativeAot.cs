@@ -30,9 +30,5 @@ namespace System
         {
             FirstChanceException?.Invoke(/* AppDomain */ null, new FirstChanceExceptionEventArgs((Exception)e));
         }
-
-        [RuntimeExport("OnUnhandledException")]
-        internal static void OnUnhandledException(object e)
-            => OnUnhandledExceptionWorker(e);
     }
 }
