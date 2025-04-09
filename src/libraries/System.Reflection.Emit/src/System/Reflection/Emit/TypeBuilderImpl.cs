@@ -966,7 +966,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-// TODO: Huh?
+// Analyzer is not able to propagate `.Interfaces` on `this`.
 #pragma warning disable IL2063
             return match;
 #pragma warning restore IL2063
