@@ -166,6 +166,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_Multiply,
 	SN_Negate,
 	SN_OnesComplement,
+	SN_Round,
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
@@ -1166,6 +1167,11 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Load:
 			case SN_LoadUnsafe:
 				cmethod_name = "LoadVector128";
+				break;
+			case SN_Round:
+				if (csignature->param_count != 1)
+					return FALSE;
+				cmethod_name = "RoundToNearest";
 				break;
 			case SN_WidenLower:
 				cmethod_name = is_unsigned ? "ZeroExtendWideningLower" : "SignExtendWideningLower";
