@@ -5,8 +5,10 @@
 #include "asmconstants.h"
 
 #ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
-
 #define POINTER_SIZE 0x08
+// Since Arm64 supports 4KB, 16KB and 64KB page sizes, as the templates is only defined for 16KB page size, this cannot be used
+// in a general purpose Linux environment. However it CAN be used on Apple platforms, which specify that 16KB is the system standard
+// page size.
 
 #define THUNKS_MAP_SIZE 0x4000
 
@@ -14,7 +16,7 @@
 #define PAGE_SIZE_LOG2 14
 
 
-#define DATA_SLOT(stub, field, thunksPerPage, thunkTemplateName) . - (. - C_FUNC(thunkTemplateName)) + \THUNKS_MAP_SIZE + stub##Data__##field + IN_PAGE_INDEX * STUB_THUNK_CODESIZE
+#define DATA_SLOT(stub, field, thunkSize, thunkTemplateName) C_FUNC(thunkTemplateName) + THUNKS_MAP_SIZE + stub##Data__##field + IN_PAGE_INDEX * thunkSize
 
 // ----------
 // StubPrecode
@@ -22,14 +24,14 @@
 
 #define STUB_PRECODE_CODESIZE 0x18 // 3 instructions, 4 bytes each (and we also have 12 bytes of padding)
 #define STUB_PRECODE_DATASIZE 0x18 // 2 qwords + 1 byte
-.set STUB_PRECODE_NUM_THUNKS_PER_MAPPING,(THUNKS_MAP_SIZE / STUB_PRECODE_CODESIZE)
+.set STUB_PRECODE_NUM_THUNKS_PER_MAPPING, (THUNKS_MAP_SIZE / STUB_PRECODE_CODESIZE)
 
 .macro THUNKS_BLOCK_STUB_PRECODE
     IN_PAGE_INDEX = 0
-    .rept STUB_PRECODE_NUM_THUNKS_PER_MAP
+    .rept STUB_PRECODE_NUM_THUNKS_PER_MAPPING
 
-    ldr x10, DATA_SLOT(StubPrecode, Target, STUB_PRECODE_NUM_THUNKS_PER_MAPPING, StubPrecodeCodeTemplate)
-    ldr x12, DATA_SLOT(StubPrecode, SecretParam, STUB_PRECODE_NUM_THUNKS_PER_MAPPING, StubPrecodeCodeTemplate)
+    ldr x10, DATA_SLOT(StubPrecode, Target, STUB_PRECODE_CODESIZE, StubPrecodeCodeTemplate)
+    ldr x12, DATA_SLOT(StubPrecode, SecretParam, STUB_PRECODE_CODESIZE, StubPrecodeCodeTemplate)
     br x10
 
     brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 2 pointers + 1 byte
@@ -53,18 +55,17 @@ LEAF_END_MARKED StubPrecodeCodeTemplate, _TEXT
 #define FIXUP_PRECODE_CODESIZE 0x18 // 5 instructions, 4 bytes each (and we also have 4 bytes of padding)
 #define FIXUP_PRECODE_DATASIZE 0x18 // 3 qwords
 .set FIXUP_PRECODE_NUM_THUNKS_PER_MAPPING,(THUNKS_MAP_SIZE / FIXUP_PRECODE_CODESIZE)
-#define FIXUP_PRECODE_NUM_THUNKS_PER_MAPPING (THUNKS_MAP_SIZE / FIXUP_PRECODE_CODESIZE)
 
 .macro THUNKS_BLOCK_FIXUP_PRECODE
     IN_PAGE_INDEX = 0
     .rept FIXUP_PRECODE_NUM_THUNKS_PER_MAPPING
 
-    ldr x11, DATA_SLOT(FixupPrecode, Target, FIXUP_PRECODE_NUM_THUNKS_PER_MAPPING, FixupPrecodeCodeTemplate)
+    ldr x11, DATA_SLOT(FixupPrecode, Target, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
     br  x11
-    ldr x12, DATA_SLOT(FixupPrecode, MethodDesc, FIXUP_PRECODE_NUM_THUNKS_PER_MAPPING, FixupPrecodeCodeTemplate)
-    ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk, FIXUP_PRECODE_NUM_THUNKS_PER_MAPPING, FixupPrecodeCodeTemplate)
+    ldr x12, DATA_SLOT(FixupPrecode, MethodDesc, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
+    ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
     br  x11        
-    brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 2 pointers
+    brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
 
     IN_PAGE_INDEX = IN_PAGE_INDEX + 1
     .endr
@@ -82,23 +83,23 @@ LEAF_END_MARKED FixupPrecodeCodeTemplate, _TEXT
 
 #define CALLCOUNTING_CODESIZE 0x28 // 5 instructions, 4 bytes each (and we also have 4 bytes of padding)
 #define CALLCOUNTING_DATASIZE 0x18 // 3 qwords
-#define CALLCOUNTING_NUM_THUNKS_PER_MAPPING (THUNKS_MAP_SIZE / CALLCOUNTING_CODESIZE)
+.set CALLCOUNTING_NUM_THUNKS_PER_MAPPING, (THUNKS_MAP_SIZE / CALLCOUNTING_CODESIZE)
 
 .macro THUNKS_BLOCK_CALLCOUNTING
     IN_PAGE_INDEX = 0
     .rept CALLCOUNTING_NUM_THUNKS_PER_MAPPING
 
-        ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
+        ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell, CALLCOUNTING_CODESIZE, CallCountingStubCodeTemplate)
         ldrh w10, [x9]
         subs w10, w10, #1
         strh w10, [x9]
-        beq LOCAL_LABEL(CountReachedZero\IN_PAGE_INDEX)
-        ldr  x9, DATA_SLOT(CallCountingStub, TargetForMethod)
+        beq 0f
+        ldr  x9, DATA_SLOT(CallCountingStub, TargetForMethod, CALLCOUNTING_CODESIZE, CallCountingStubCodeTemplate)
         br   x9
-LOCAL_LABEL(CountReachedZero\IN_PAGE_INDEX):
-        ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
+0:
+        ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached, CALLCOUNTING_CODESIZE, CallCountingStubCodeTemplate)
         br   x10
-        brk     0xf000      // Stubs need to be 16-byte in size to allow for the data to be 2 pointers
+        brk     0xf000      // Stubs need to be 40-byte in size to allow for the data to be pointer aligned
 
     IN_PAGE_INDEX = IN_PAGE_INDEX + 1
     .endr
@@ -109,8 +110,11 @@ LOCAL_LABEL(CountReachedZero\IN_PAGE_INDEX):
 LEAF_ENTRY CallCountingStubCodeTemplate
     THUNKS_BLOCK_CALLCOUNTING
 LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
+#endif
 
-#else
+#ifdef DATA_SLOT
+#undef DATA_SLOT
+#endif
 #define DATA_SLOT(stub, field) . - (. - C_FUNC(stub##Code\STUB_PAGE_SIZE)) + \STUB_PAGE_SIZE + stub##Data__##field
 
     .irp STUB_PAGE_SIZE, 16384, 32768, 65536
@@ -144,4 +148,3 @@ LOCAL_LABEL(CountReachedZero\STUB_PAGE_SIZE):
     LEAF_END_MARKED CallCountingStubCode\STUB_PAGE_SIZE
 
     .endr
-#endif

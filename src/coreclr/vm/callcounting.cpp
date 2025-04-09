@@ -318,6 +318,12 @@ void CallCountingStub::StaticInitialize()
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unsupported OS page size"));
     }
     #undef ENUM_PAGE_SIZE
+
+    if (CallCountingStubCodeTemplate != NULL && pageSize != 0x4000)
+    {
+        // This should fail if the template is used on a platform which doesn't support the supported page size for templates
+        ThrowHR(COR_E_EXECUTIONENGINE);
+    }
 #else
     _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);
 #endif
