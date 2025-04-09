@@ -372,12 +372,11 @@ extern "C" bool RhInitialize(bool isDll)
 #endif
 
 #if defined(HOST_WINDOWS) || defined(FEATURE_PERFTRACING)
-#if defined(HOST_WINDOWS)
-    at_quick_exit
-#else
-    atexit
+#if defined(DEBUG) && defined(HOST_WINDOWS)
+    // quick_exit works around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640
+    at_quick_exit(&OnProcessExit);
 #endif
-      (&OnProcessExit);
+    atexit(&OnProcessExit);
 #endif
 
 #if defined(HOST_WINDOWS) && defined(FEATURE_PERFTRACING)

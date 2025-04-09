@@ -223,11 +223,11 @@ int main(int argc, char* argv[])
     if (initval != 0)
         return initval;
 
-#if !defined(DEBUG) || !defined(_WIN32)
-    return __managed__Main(argc, argv);
-#else
+#if defined(DEBUG) && defined(_WIN32)
     // quick_exit works around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640
     quick_exit(__managed__Main(argc, argv));
+#else
+    return __managed__Main(argc, argv);
 #endif
 }
 
