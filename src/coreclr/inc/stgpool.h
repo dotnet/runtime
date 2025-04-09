@@ -1414,13 +1414,14 @@ public:
         return MemoryRange(p, m_dwBufferSize);
     }
 
-private:
+public:
     // Raw pointer to buffer. This may change as the buffer grows and gets reallocated.
     PTR_BYTE  m_swBuffer;
 
     // Total size of the buffer in bytes.
     DWORD   m_dwBufferSize;
 
+private:
     // Current index in the buffer. This can be moved around by Seek.
     DWORD   m_dwBufferIndex;
 
