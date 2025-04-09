@@ -30,6 +30,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeMember")]
 			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
+			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			static void DynamicArgument ()
 			{
 				dynamic dynamicObject = "Some string";
@@ -48,6 +49,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeMember")]
+			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			static void MethodWithDynamicParameter (dynamic arg)
 			{
