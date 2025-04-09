@@ -1145,7 +1145,7 @@ public:
     // in a lazy fashion so executables do not take the perf hit unless the load other
     // assemblies
 #ifndef DACCESS_COMPILE
-    static BOOL OnUnhandledException(OBJECTREF *pThrowable);
+    static void OnUnhandledException(OBJECTREF *pThrowable);
 
 #endif
 

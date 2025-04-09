@@ -3397,7 +3397,7 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-BOOL AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
+void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
 {
     CONTRACTL
     {
@@ -3421,8 +3421,6 @@ BOOL AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
     {
     }
     EX_END_CATCH(SwallowAllExceptions)  // Swallow any errors.
-
-    return TRUE;
 }
 
 void AppDomain::RaiseExitProcessEvent()
