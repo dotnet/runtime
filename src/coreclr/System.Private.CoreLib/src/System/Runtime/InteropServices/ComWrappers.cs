@@ -69,7 +69,16 @@ namespace System.Runtime.InteropServices
 
         internal static object? GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(IntPtr comObject, CreateObjectFlags flags)
         {
-            return s_globalInstanceForMarshalling?.GetOrCreateObjectForComInstance(comObject, flags);
+            try
+            {
+                return s_globalInstanceForMarshalling?.GetOrCreateObjectForComInstance(comObject, flags);
+            }
+            catch (ArgumentNullException)
+            {
+                // We've failed to create a managed object for the COM instance.
+                // Fallback to built-in COM.
+                return null;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIReferenceTrackerTargetVftbl")]
