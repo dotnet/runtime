@@ -524,20 +524,14 @@ namespace System.IO.Compression
                     ReadOnlySpan<byte> sizedFileBuffer = fileBufferSpan.Slice(0, currBytesRead);
 
                     // the buffer read must always be large enough to fit the constant section size of at least one header
-                    continueReadingCentralDirectory = continueReadingCentralDirectory
-                        && sizedFileBuffer.Length >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
+                    continueReadingCentralDirectory = sizedFileBuffer.Length >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
 
-                    while (continueReadingCentralDirectory
-                        && currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize < sizedFileBuffer.Length)
+                    while (currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize <= sizedFileBuffer.Length)
                     {
-                        ZipCentralDirectoryFileHeader currentHeader = default;
-
-                        continueReadingCentralDirectory = continueReadingCentralDirectory &&
-                            ZipCentralDirectoryFileHeader.TryReadBlock(sizedFileBuffer.Slice(currPosition), _archiveStream,
-                            saveExtraFieldsAndComments, out bytesConsumed, out currentHeader);
-
-                        if (!continueReadingCentralDirectory)
+                        if (!ZipCentralDirectoryFileHeader.TryReadBlock(sizedFileBuffer.Slice(currPosition), _archiveStream,
+                            saveExtraFieldsAndComments, out bytesConsumed, out ZipCentralDirectoryFileHeader? currentHeader))
                         {
+                            continueReadingCentralDirectory = false;
                             break;
                         }
 
@@ -662,8 +656,7 @@ namespace System.IO.Compression
                         Zip64EndOfCentralDirectoryLocator.FieldLengths.Signature))
                 {
                     // use locator to get to Zip64-EOCD
-                    Zip64EndOfCentralDirectoryLocator locator;
-                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveStream, out locator);
+                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveStream, out Zip64EndOfCentralDirectoryLocator locator);
                     Debug.Assert(zip64eocdLocatorProper); // we just found this using the signature finder, so it should be okay
 
                     if (locator.OffsetOfZip64EOCD > long.MaxValue)

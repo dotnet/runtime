@@ -42,6 +42,18 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public static void Constructor_creates_new_instance_for_four_arg_constructor()
+        {
+            var testDataAnnotationsDerived = new TestClass();
+            var displayName = "testDisplayName";
+            new ValidationContext(testDataAnnotationsDerived, displayName, null, null);
+            var items = new Dictionary<object, object>();
+            new ValidationContext(testDataAnnotationsDerived, displayName, null, items);
+            var serviceProvider = new TestServiceProvider();
+            new ValidationContext(testDataAnnotationsDerived, displayName, serviceProvider, items);
+        }
+
+        [Fact]
         public static void ObjectInstance_and_ObjectType_return_same_instance_and_type_as_passed()
         {
             var testDataAnnotationsDerived = new TestClass();
@@ -86,6 +98,23 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal("ExistingMember", validationContext.DisplayName);
             validationContext.DisplayName = "NonExistentDisplayName";
             Assert.Equal("NonExistentDisplayName", validationContext.DisplayName);
+        }
+
+        [Fact]
+        public static void Can_set_DisplayName_via_constructor()
+        {
+            var displayName = "testDisplayName";
+            var testDataAnnotationsDerived = new TestClass();
+            var validationContext = new ValidationContext(testDataAnnotationsDerived, displayName, null, null);
+            Assert.Equal(displayName, validationContext.DisplayName);
+        }
+
+        [Fact]
+        public static void Setting_DisplayName_to_null_or_empty_via_constructor_throws()
+        {
+            var testDataAnnotationsDerived = new TestClass();
+            AssertExtensions.Throws<ArgumentNullException>("displayName", () => new ValidationContext(testDataAnnotationsDerived, null, null, null));
+            AssertExtensions.Throws<ArgumentException>("displayName", () => new ValidationContext(testDataAnnotationsDerived, string.Empty, null, null));
         }
 
         [Fact]

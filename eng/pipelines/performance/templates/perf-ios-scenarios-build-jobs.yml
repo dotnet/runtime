@@ -1,7 +1,7 @@
 parameters:
   hybridGlobalization: true
-  mono: true
-  nativeAot: true
+  mono: false
+  nativeAot: false
 
 jobs:
   - ${{ if eq(parameters.mono, true) }}:

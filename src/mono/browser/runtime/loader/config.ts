@@ -222,10 +222,6 @@ export function normalizeConfig () {
     runtimeHelpers.diagnosticTracing = loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
 
-    runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
-        && globalThis.performance
-        && typeof globalThis.performance.measure === "function";
-
     loaderHelpers.maxParallelDownloads = config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
     loaderHelpers.enableDownloadRetry = config.enableDownloadRetry !== undefined ? config.enableDownloadRetry : loaderHelpers.enableDownloadRetry;
 }
@@ -240,10 +236,7 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
     try {
         if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
             // if config file location nor assets are provided
-            // Temporal way for tests to opt-in for using boot.js
-            module.configSrc = (globalThis as any)["__DOTNET_INTERNAL_BOOT_CONFIG_SRC"]
-                ?? globalThis.window?.document?.documentElement?.getAttribute("data-dotnet_internal_boot_config_src")
-                ?? "blazor.boot.json";
+            module.configSrc = "dotnet.boot.js";
         }
 
         configFilePath = module.configSrc;
@@ -325,10 +318,25 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
         }
     }
 
+    // Prefer user-defined application environment
+    if (loaderHelpers.config.applicationEnvironment) {
+        loadedConfig.applicationEnvironment = loaderHelpers.config.applicationEnvironment;
+    }
+
     deep_merge_config(loaderHelpers.config, loadedConfig);
 
     if (!loaderHelpers.config.applicationEnvironment) {
         loaderHelpers.config.applicationEnvironment = "Production";
+    }
+
+    if (loaderHelpers.config.debugLevel !== 0 && globalThis.window?.document?.querySelector("script[src*='aspnetcore-browser-refresh']")) {
+        loaderHelpers.config.environmentVariables = loaderHelpers.config.environmentVariables || {};
+        if (!loaderHelpers.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"]) {
+            loaderHelpers.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
+        }
+        if (!loaderHelpers.config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"]) {
+            loaderHelpers.config.environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = "true";
+        }
     }
 
     function fetchBootConfig (url: string): Promise<Response> {
@@ -344,7 +352,7 @@ async function readBootConfigResponse (loadConfigResponse: Response): Promise<Mo
     const config = loaderHelpers.config;
     const loadedConfig: MonoConfig = await loadConfigResponse.json();
 
-    if (!config.applicationEnvironment) {
+    if (!config.applicationEnvironment && !loadedConfig.applicationEnvironment) {
         loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || undefined;
     }
 

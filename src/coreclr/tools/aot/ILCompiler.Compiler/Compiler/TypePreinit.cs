@@ -385,7 +385,7 @@ namespace ILCompiler
                                 }
                                 recursionProtect.Pop();
                                 Value value = nestedPreinit._fieldValues[field];
-                                if (value is ValueTypeValue)
+                                if (value is BaseValueTypeValue)
                                     stack.PushFromLocation(field.FieldType, value);
                                 else if (value is ReferenceTypeValue referenceType)
                                     stack.PushFromLocation(field.FieldType, referenceType.ToForeignInstance(baseInstructionCounter, this));
@@ -839,7 +839,14 @@ namespace ILCompiler
                     case ILOpcode.conv_r8:
                         {
                             StackEntry popped = stack.Pop();
-                            if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
+
+                            if (opcode is ILOpcode.conv_i or ILOpcode.conv_u
+                                && popped.ValueKind == StackValueKind.ByRef)
+                            {
+                                Debug.Assert(popped.Value is ByRefValueBase);
+                                stack.Push(StackValueKind.NativeInt, popped.Value);
+                            }
+                            else if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
                             {
                                 int val = popped.Value.AsInt32();
                                 switch (opcode)
@@ -1158,11 +1165,12 @@ namespace ILCompiler
                             }
 
                             TypeDesc token = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (token.IsGCPointer || popped.Value is not ByRefValue byrefVal)
+                            if (token.IsGCPointer
+                                || popped.Value is not ByRefValueBase byrefVal
+                                || !byrefVal.TryInitialize(token.GetElementSize().AsInt))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                             }
-                            byrefVal.Initialize(token.GetElementSize().AsInt);
                         }
                         break;
 
@@ -1420,10 +1428,11 @@ namespace ILCompiler
                             StackEntry value1 = stack.Pop();
                             StackEntry value2 = stack.Pop();
 
-                            if (value1.ValueKind == value2.ValueKind)
+                            if (value1.ValueKind == value2.ValueKind
+                                && Value.TryCompareEquality(value1.Value, value2.Value, out bool compareResult))
                             {
                                 stack.Push(StackValueKind.Int32,
-                                    Value.Equals(value1.Value, value2.Value)
+                                    compareResult
                                     ? ValueTypeValue.FromInt32(1)
                                     : ValueTypeValue.FromInt32(0));
                             }
@@ -1554,7 +1563,9 @@ namespace ILCompiler
                                     _ => context.Target.PointerSize == 8 ? addend.Value.AsInt64() : addend.Value.AsInt32()
                                 };
 
-                                var previousByRef = (ByRefValue)reference.Value;
+                                if (reference.Value is not ByRefValue previousByRef)
+                                    return Status.Fail(methodIL.OwningMethod, "Byref math with unsupported byref");
+
                                 if (addition > previousByRef.PointedToBytes.Length - previousByRef.PointedToOffset
                                     || addition + previousByRef.PointedToOffset < 0)
                                     return Status.Fail(methodIL.OwningMethod, "Out of range byref access");
@@ -1807,6 +1818,7 @@ namespace ILCompiler
                         break;
 
                     case ILOpcode.stobj:
+                    case ILOpcode.stind_i:
                     case ILOpcode.stind_i1:
                     case ILOpcode.stind_i2:
                     case ILOpcode.stind_i4:
@@ -1821,13 +1833,9 @@ namespace ILCompiler
                                     TypeFlags.Int16 or TypeFlags.Char or TypeFlags.UInt16 => ILOpcode.stind_i2,
                                     TypeFlags.Int32 or TypeFlags.UInt32 => ILOpcode.stind_i4,
                                     TypeFlags.Int64 or TypeFlags.UInt64 => ILOpcode.stind_i8,
+                                    TypeFlags.IntPtr or TypeFlags.UIntPtr => ILOpcode.stind_i,
                                     _ => ILOpcode.stobj,
                                 };
-
-                                if (opcode == ILOpcode.stobj)
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                                }
                             }
 
                             Value val = opcode switch
@@ -1836,19 +1844,19 @@ namespace ILCompiler
                                 ILOpcode.stind_i2 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt16)),
                                 ILOpcode.stind_i4 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt32)),
                                 ILOpcode.stind_i8 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt64)),
-                                _ => throw new NotImplementedException()
+                                ILOpcode.stind_i => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UIntPtr)),
+                                _ => stack.Pop().Value
                             };
 
                             StackEntry location = stack.Pop();
-                            if (location.ValueKind != StackValueKind.ByRef)
+                            if (location.ValueKind != StackValueKind.ByRef && location.ValueKind != StackValueKind.NativeInt)
                                 ThrowHelper.ThrowInvalidProgramException();
 
-                            byte[] dest = ((ByRefValue)location.Value).PointedToBytes;
-                            int destOffset = ((ByRefValue)location.Value).PointedToOffset;
-                            byte[] src = ((ValueTypeValue)val).InstanceBytes;
-                            if (destOffset + src.Length > dest.Length)
-                                return Status.Fail(methodIL.OwningMethod, "Out of bound access");
-                            Array.Copy(src, 0, dest, destOffset, src.Length);
+                            if (location.Value is not ByRefValueBase destValue)
+                                return Status.Fail(methodIL.OwningMethod, "Stind into usupported byref");
+
+                            if (!destValue.TryStore(val))
+                                return Status.Fail(methodIL.OwningMethod, "Byref doesn't support storing value");
                         }
                         break;
 
@@ -1873,7 +1881,9 @@ namespace ILCompiler
 
                             uint sizeBytes = (uint)size.Value.AsInt32();
 
-                            var addressValue = (ByRefValue)addr.Value;
+                            if (addr.Value is not ByRefValue addressValue)
+                                return Status.Fail(methodIL.OwningMethod, "initblk of unsupported byref");
+
                             if (sizeBytes > addressValue.PointedToBytes.Length - addressValue.PointedToOffset
                                 || sizeBytes > int.MaxValue /* paranoid check that cast to int is legit */)
                                 return Status.Fail(methodIL.OwningMethod, opcode);
@@ -1920,6 +1930,10 @@ namespace ILCompiler
             else if (TryGetSpanElementType(locationType, isReadOnlySpan: false, out MetadataType spanElementType))
             {
                 return new ReadOnlySpanValue(spanElementType, Array.Empty<byte>(), 0, 0);
+            }
+            else if (VTableLikeStructValue.IsCompatible(locationType))
+            {
+                return new VTableLikeStructValue((MetadataType)locationType);
             }
             else
             {
@@ -2176,6 +2190,10 @@ namespace ILCompiler
                         return popped.Value;
 
                     case StackValueKind.NativeInt:
+                        // True byref that we converted to nint at some point.
+                        if (locationType.IsByRef && popped.Value is ByRefValueBase)
+                            return popped.Value;
+
                         // If it's none of the natural pointer types, we might need to truncate.
                         if (!locationType.IsPointer
                             && !locationType.IsFunctionPointer
@@ -2273,7 +2291,7 @@ namespace ILCompiler
         {
             bool TrySetField(FieldDesc field, Value value);
             Value GetField(FieldDesc field);
-            ByRefValue GetFieldAddress(FieldDesc field);
+            ByRefValueBase GetFieldAddress(FieldDesc field);
         }
 
         /// <summary>
@@ -2283,6 +2301,8 @@ namespace ILCompiler
         private interface IInternalModelingOnlyValue
         {
         }
+
+        private interface INativeIntConvertibleValue;
 
         /// <summary>
         /// Represents a value that can be assigned into.
@@ -2294,19 +2314,21 @@ namespace ILCompiler
 
         private abstract class Value : ISerializableValue
         {
-            public abstract bool Equals(Value value);
+            public abstract bool TryCompareEquality(Value value, out bool result);
 
-            public static bool Equals(Value value1, Value value2)
+            public static bool TryCompareEquality(Value value1, Value value2, out bool result)
             {
                 if (value1 == value2)
                 {
+                    result = true;
                     return true;
                 }
                 if (value1 == null || value2 == null)
                 {
-                    return false;
+                    result = false;
+                    return true;
                 }
-                return value1.Equals(value2);
+                return value1.TryCompareEquality(value2, out result);
             }
 
             public virtual bool TryCreateByRef(out Value value)
@@ -2370,8 +2392,8 @@ namespace ILCompiler
 
             bool IAssignableValue.TryAssign(Value value)
             {
-                if (!(value is BaseValueTypeValue other)
-                    || other.Size != Size)
+                if ((!(value is BaseValueTypeValue other) || other.Size != Size)
+                    && value is not INativeIntConvertibleValue)
                 {
                     ThrowHelper.ThrowInvalidProgramException();
                 }
@@ -2385,20 +2407,25 @@ namespace ILCompiler
                 return true;
             }
 
-            public override bool Equals(Value value)
+            public override bool TryCompareEquality(Value value, out bool result)
             {
                 if (!(value is ValueTypeValue vtvalue)
                     || vtvalue.InstanceBytes.Length != InstanceBytes.Length)
                 {
-                    ThrowHelper.ThrowInvalidProgramException();
+                    result = false;
+                    return false;
                 }
 
                 for (int i = 0; i < InstanceBytes.Length; i++)
                 {
                     if (InstanceBytes[i] != ((ValueTypeValue)value).InstanceBytes[i])
-                        return false;
+                    {
+                        result = false;
+                        return true;
+                    }
                 }
 
+                result = true;
                 return true;
             }
 
@@ -2436,6 +2463,201 @@ namespace ILCompiler
             public static ValueTypeValue FromDouble(double value) => new ValueTypeValue(BitConverter.GetBytes(value));
         }
 
+        private sealed class VTableLikeStructValue : BaseValueTypeValue, IAssignableValue
+        {
+            private readonly MetadataType _type;
+            private readonly MethodDesc[] _methods;
+
+            public VTableLikeStructValue(MetadataType type)
+                : this(type, new MethodDesc[GetFieldCount(type)])
+            {
+            }
+
+            private VTableLikeStructValue(MetadataType type, MethodDesc[] methods)
+                => (_type, _methods) = (type, methods);
+
+            private static int GetFieldCount(MetadataType type)
+            {
+                Debug.Assert(IsCompatible(type));
+                Debug.Assert(type.InstanceFieldSize.AsInt % type.Context.Target.PointerSize == 0);
+                return type.InstanceFieldSize.AsInt / type.Context.Target.PointerSize;
+            }
+
+            public override int Size => _methods.Length * _type.Context.Target.PointerSize;
+
+            public static bool IsCompatible(TypeDesc type)
+            {
+                if (!type.IsValueType
+                    || type.HasInstantiation
+                    || type is not MetadataType mdType
+                    || !mdType.IsSequentialLayout
+                    || mdType.GetClassLayout() is not { PackingSize: 0, Size: 0 })
+                {
+                    return false;
+                }
+
+                bool hasFields = false;
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (field.IsStatic)
+                        continue;
+
+                    hasFields = true;
+
+                    if (field.FieldType.Category != TypeFlags.FunctionPointer)
+                        return false;
+                }
+
+                return hasFields;
+            }
+
+            public override bool TryCompareEquality(Value value, out bool result)
+            {
+                result = false;
+                return false;
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
+
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
+            {
+                foreach (MethodDesc method in _methods)
+                {
+                    if (method is null)
+                        builder.EmitZeroPointer();
+                    else
+                        builder.EmitPointerReloc(factory.ExactCallableAddressTakenAddress(method, isUnboxingStub: false));
+                }
+            }
+
+            public override bool TryCreateByRef(out Value value)
+            {
+                value = new VTableLikeSlotReferenceValue(_methods, index: 0, _type.Context.Target.PointerSize);
+                return true;
+            }
+
+            public override Value Clone()
+            {
+                return new VTableLikeStructValue(_type, (MethodDesc[])_methods.Clone());
+            }
+
+            bool IAssignableValue.TryAssign(Value value)
+            {
+                if (value is not VTableLikeStructValue other)
+                    return false;
+
+                if (other.Size > Size)
+                    return false;
+
+                Array.Copy(other._methods, _methods, other._methods.Length);
+                return true;
+            }
+
+            private sealed class VTableLikeSlotReferenceValue : ByRefValueBase, IHasInstanceFields
+            {
+                private readonly MethodDesc[] _methods;
+                private readonly int _index;
+                private readonly int _pointerSize;
+
+                public VTableLikeSlotReferenceValue(MethodDesc[] methods, int index, int pointerSize)
+                    => (_methods, _index, _pointerSize) = (methods, index, pointerSize);
+
+                public override bool TryCompareEquality(Value value, out bool result)
+                {
+                    result = false;
+                    return false;
+                }
+
+                public override bool GetRawData(NodeFactory factory, out object data)
+                {
+                    data = null;
+                    return false;
+                }
+
+                public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
+                {
+                    throw new NotSupportedException();
+                }
+
+                public override bool TryStore(Value value)
+                {
+                    if (value is MethodPointerValue methodPointer)
+                    {
+                        _methods[_index] = methodPointer.PointedToMethod;
+                        return true;
+                    }
+                    else if (value is VTableLikeStructValue otherStruct
+                        && _methods.Length - _index >= otherStruct._methods.Length)
+                    {
+                        Array.Copy(otherStruct._methods, 0, _methods, _index, otherStruct._methods.Length);
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                public override Value Clone() => this; // The reference is immutable
+
+                private int GetFieldIndex(FieldDesc field)
+                {
+                    // Not actually invalid program, just difficult to model
+                    if (!VTableLikeStructValue.IsCompatible(field.OwningType))
+                        ThrowHelper.ThrowInvalidProgramException();
+
+                    Debug.Assert(field.Offset.AsInt % _pointerSize == 0 && field.FieldType.IsFunctionPointer);
+
+                    int index = (field.Offset.AsInt / _pointerSize) + _index;
+                    if (index >= _methods.Length)
+                        ThrowHelper.ThrowInvalidProgramException();
+
+                    return index;
+                }
+
+                bool IHasInstanceFields.TrySetField(FieldDesc field, Value value)
+                {
+                    if (value is not MethodPointerValue methodPtr)
+                        return false;
+
+                    _methods[GetFieldIndex(field)] = methodPtr.PointedToMethod;
+                    return true;
+                }
+
+                Value IHasInstanceFields.GetField(FieldDesc field)
+                {
+                    MethodDesc method = _methods[GetFieldIndex(field)];
+
+                    if (method is not null)
+                        return new MethodPointerValue(method);
+                    else
+                        return _pointerSize == 8 ? ValueTypeValue.FromInt64(0) : ValueTypeValue.FromInt32(0);
+                }
+
+                ByRefValueBase IHasInstanceFields.GetFieldAddress(FieldDesc field)
+                {
+                    return new VTableLikeSlotReferenceValue(_methods, GetFieldIndex(field), _pointerSize);
+                }
+
+                public override bool TryInitialize(int size)
+                {
+                    if (size % _pointerSize != 0)
+                        return false;
+
+                    int numSlots = size / _pointerSize;
+                    if (_index + numSlots > _methods.Length)
+                        return false;
+
+                    for (int i = _index; i < numSlots; i++)
+                        _methods[i] = null;
+
+                    return true;
+                }
+            }
+        }
+
         private sealed class RuntimeFieldHandleValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             public FieldDesc Field { get; private set; }
@@ -2447,14 +2669,16 @@ namespace ILCompiler
 
             public override int Size => Field.Context.Target.PointerSize;
 
-            public override bool Equals(Value value)
+            public override bool TryCompareEquality(Value value, out bool result)
             {
                 if (!(value is RuntimeFieldHandleValue))
                 {
-                    ThrowHelper.ThrowInvalidProgramException();
+                    result = false;
+                    return false;
                 }
 
-                return Field == ((RuntimeFieldHandleValue)value).Field;
+                result = Field == ((RuntimeFieldHandleValue)value).Field;
+                return true;
             }
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
@@ -2480,14 +2704,16 @@ namespace ILCompiler
 
             public override int Size => Type.Context.Target.PointerSize;
 
-            public override bool Equals(Value value)
+            public override bool TryCompareEquality(Value value, out bool result)
             {
                 if (!(value is RuntimeTypeHandleValue))
                 {
-                    ThrowHelper.ThrowInvalidProgramException();
+                    result = false;
+                    return false;
                 }
 
-                return Type == ((RuntimeTypeHandleValue)value).Type;
+                result = Type == ((RuntimeTypeHandleValue)value).Type;
+                return true;
             }
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
@@ -2551,11 +2777,9 @@ namespace ILCompiler
 
             public override int Size => 2 * _elementType.Context.Target.PointerSize;
 
-            public override bool Equals(Value value)
+            public override bool TryCompareEquality(Value value, out bool result)
             {
-                // ceq instruction on ReadOnlySpans is hard to support.
-                // We should not see it in the first place.
-                ThrowHelper.ThrowInvalidProgramException();
+                result = false;
                 return false;
             }
 
@@ -2583,7 +2807,7 @@ namespace ILCompiler
             }
         }
 
-        private sealed class ReadOnlySpanReferenceValue : Value, IHasInstanceFields
+        private sealed class ReadOnlySpanReferenceValue : ByRefValueBase, IHasInstanceFields
         {
             private readonly MetadataType _elementType;
             private readonly byte[] _bytes;
@@ -2600,11 +2824,9 @@ namespace ILCompiler
                 _length = length;
             }
 
-            public override bool Equals(Value value)
+            public override bool TryCompareEquality(Value value, out bool result)
             {
-                // ceq instruction on refs to ReadOnlySpans is hard to support.
-                // We should not see it in the first place.
-                ThrowHelper.ThrowInvalidProgramException();
+                result = false;
                 return false;
             }
 
@@ -2649,7 +2871,7 @@ namespace ILCompiler
                 return new ByRefValue(_bytes, _index);
             }
 
-            public ByRefValue GetFieldAddress(FieldDesc field)
+            public ByRefValueBase GetFieldAddress(FieldDesc field)
             {
                 ThrowHelper.ThrowInvalidProgramException();
                 return null; // unreached
@@ -2667,14 +2889,16 @@ namespace ILCompiler
 
             public override int Size => PointedToMethod.Context.Target.PointerSize;
 
-            public override bool Equals(Value value)
+            public override bool TryCompareEquality(Value value, out bool result)
             {
                 if (!(value is MethodPointerValue))
                 {
-                    ThrowHelper.ThrowInvalidProgramException();
+                    result = false;
+                    return false;
                 }
 
-                return PointedToMethod == ((MethodPointerValue)value).PointedToMethod;
+                result = PointedToMethod == ((MethodPointerValue)value).PointedToMethod;
+                return true;
             }
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
@@ -2687,9 +2911,17 @@ namespace ILCompiler
                 data = null;
                 return false;
             }
+
+            public override Value Clone() => this; // Immutable
         }
 
-        private sealed class ByRefValue : Value, IHasInstanceFields
+        private abstract class ByRefValueBase : Value, INativeIntConvertibleValue
+        {
+            public virtual bool TryStore(Value value) => false;
+            public virtual bool TryInitialize(int size) => false;
+        }
+
+        private sealed class ByRefValue : ByRefValueBase, IHasInstanceFields
         {
             public readonly byte[] PointedToBytes;
             public readonly int PointedToOffset;
@@ -2700,33 +2932,53 @@ namespace ILCompiler
                 PointedToOffset = pointedToOffset;
             }
 
-            public override bool Equals(Value value)
+            public override bool TryCompareEquality(Value value, out bool result)
             {
                 if (!(value is ByRefValue))
                 {
-                    ThrowHelper.ThrowInvalidProgramException();
+                    result = false;
+                    return false;
                 }
 
-                return PointedToBytes == ((ByRefValue)value).PointedToBytes
+                result = PointedToBytes == ((ByRefValue)value).PointedToBytes
                     && PointedToOffset == ((ByRefValue)value).PointedToOffset;
+                return true;
             }
 
             Value IHasInstanceFields.GetField(FieldDesc field) => new FieldAccessor(PointedToBytes, PointedToOffset).GetField(field);
             bool IHasInstanceFields.TrySetField(FieldDesc field, Value value) => new FieldAccessor(PointedToBytes, PointedToOffset).TrySetField(field, value);
-            ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(PointedToBytes, PointedToOffset).GetFieldAddress(field);
+            ByRefValueBase IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(PointedToBytes, PointedToOffset).GetFieldAddress(field);
 
-            public void Initialize(int size)
+            public override bool TryInitialize(int size)
             {
                 if ((uint)size > (uint)(PointedToBytes.Length - PointedToOffset))
                 {
-                    ThrowHelper.ThrowInvalidProgramException();
+                    return false;
                 }
 
                 for (int i = PointedToOffset; i < PointedToOffset + size; i++)
                 {
                     PointedToBytes[i] = 0;
                 }
+
+                return true;
             }
+
+            public override bool TryStore(Value value)
+            {
+                if (value is not ValueTypeValue srcVal)
+                    return false;
+
+                byte[] src = srcVal.InstanceBytes;
+                if (PointedToOffset + src.Length > PointedToBytes.Length)
+                    return false;
+
+                Array.Copy(src, 0, PointedToBytes, PointedToOffset, src.Length);
+
+                return true;
+            }
+
+            public override Value Clone() => this; // Immutable
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
@@ -2761,9 +3013,10 @@ namespace ILCompiler
 
             protected ReferenceTypeValue(TypeDesc type) { Type = type; }
 
-            public override bool Equals(Value value)
+            public override bool TryCompareEquality(Value value, out bool result)
             {
-                return this == value;
+                result = this == value;
+                return true;
             }
 
             public abstract ReferenceTypeValue ToForeignInstance(int baseInstructionCounter, TypePreinit preinitContext);
@@ -3101,7 +3354,7 @@ namespace ILCompiler
             }
             Value IHasInstanceFields.GetField(FieldDesc field) => new FieldAccessor(_value).GetField(field);
             bool IHasInstanceFields.TrySetField(FieldDesc field, Value value) => false;
-            ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_value).GetFieldAddress(field);
+            ByRefValueBase IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_value).GetFieldAddress(field);
         }
 
         private sealed class ObjectInstance : AllocatedReferenceTypeValue, IHasInstanceFields, ISerializableReference
@@ -3151,7 +3404,7 @@ namespace ILCompiler
 
             Value IHasInstanceFields.GetField(FieldDesc field) => new FieldAccessor(_data).GetField(field);
             bool IHasInstanceFields.TrySetField(FieldDesc field, Value value) => new FieldAccessor(_data).TrySetField(field, value);
-            ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_data).GetFieldAddress(field);
+            ByRefValueBase IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_data).GetFieldAddress(field);
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
@@ -3223,6 +3476,12 @@ namespace ILCompiler
                     return false;
                 }
 
+                if (value is ByRefValueBase
+                    && (field.FieldType.IsWellKnownType(WellKnownType.IntPtr) || field.FieldType.IsWellKnownType(WellKnownType.UIntPtr)))
+                {
+                    return false;
+                }
+
                 if (value is not ValueTypeValue vtValue)
                 {
                     ThrowHelper.ThrowInvalidProgramException();
@@ -3253,6 +3512,7 @@ namespace ILCompiler
 
             public StackEntry(StackValueKind valueKind, Value value)
             {
+                // TODO: can we assert invariants around value allowed for valueKind?
                 ValueKind = valueKind;
                 Value = value;
             }

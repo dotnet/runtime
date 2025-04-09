@@ -922,15 +922,6 @@ void SystemDomain::Init()
         CoreLibBinder::GetField(FIELD__THREAD_BLOCKING_INFO__OFFSET_OF_LOCK_OWNER_OS_THREAD_ID)
             ->SetStaticValue32(AwareLock::GetOffsetOfHoldingOSThreadId());
     }
-
-#ifdef _DEBUG
-    BOOL fPause = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PauseOnLoad);
-
-    while (fPause)
-    {
-        ClrSleepEx(20, TRUE);
-    }
-#endif // _DEBUG
 }
 
 void SystemDomain::LazyInitGlobalStringLiteralMap()
@@ -1138,10 +1129,6 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pExceptionServicesInternalCallsClass = CoreLibBinder::GetClass(CLASS__EXCEPTIONSERVICES_INTERNALCALLS);
         g_pStackFrameIteratorClass = CoreLibBinder::GetClass(CLASS__STACKFRAMEITERATOR);
 #endif
-
-        // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
-        // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".
-        ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__MONITOR__ENTER));
 
         g_pGetGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_GC_STATIC)->GetMultiCallableAddrOfCode();
         g_pGetNonGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_NONGC_STATIC)->GetMultiCallableAddrOfCode();
@@ -1495,7 +1482,7 @@ void AppDomain::Create()
 
     _ASSERTE(m_pTheAppDomain == NULL);
 
-    AppDomainRefHolder pDomain(new AppDomain());
+    NewHolder<AppDomain> pDomain(new AppDomain());
     pDomain->Init();
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
@@ -1624,8 +1611,6 @@ AppDomain::AppDomain()
     , m_pDelayedLoaderAllocatorUnloadList{NULL}
     , m_friendlyName{NULL}
     , m_pRootAssembly{NULL}
-    , m_dwFlags{0}
-    , m_cRef{1}
 #ifdef FEATURE_COMINTEROP
     , m_pRCWCache{NULL}
 #endif //FEATURE_COMINTEROP
@@ -1633,7 +1618,6 @@ AppDomain::AppDomain()
     , m_pRCWRefCache{NULL}
 #endif // FEATURE_COMWRAPPERS
     , m_Stage{STAGE_CREATING}
-    , m_MemoryPressure{0}
     , m_ForceTrivialWaitOperations{false}
 #ifdef FEATURE_TYPEEQUIVALENCE
     , m_pTypeEquivalenceTable{NULL}
@@ -3363,35 +3347,6 @@ PEAssembly *AppDomain::TryResolveAssemblyUsingEvent(AssemblySpec *pSpec)
     return result;
 }
 
-
-ULONG AppDomain::AddRef()
-{
-    LIMITED_METHOD_CONTRACT;
-    return InterlockedIncrement(&m_cRef);
-}
-
-ULONG AppDomain::Release()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(m_cRef > 0);
-    }
-    CONTRACTL_END;
-
-    ULONG   cRef = InterlockedDecrement(&m_cRef);
-    if (!cRef)
-    {
-        _ASSERTE (m_Stage == STAGE_CREATING);
-        delete this;
-    }
-    return (cRef);
-}
-
-
-
 void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
 {
     CONTRACTL
@@ -3442,26 +3397,22 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating/*=TRUE*/)
+void AppDomain::OnUnhandledException(OBJECTREF *pThrowable)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    BOOL retVal = FALSE;
-
     GCX_COOP();
 
     EX_TRY
     {
-        retVal = GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable, isTerminating);
+        GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable);
     }
     EX_CATCH
     {
     }
     EX_END_CATCH(SwallowAllExceptions)  // Swallow any errors.
-
-    return retVal;
 }
 
 void AppDomain::RaiseExitProcessEvent()
@@ -3483,7 +3434,7 @@ void AppDomain::RaiseExitProcessEvent()
 }
 
 BOOL
-AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating)
+AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable)
 {
     CONTRACTL
     {
@@ -3510,7 +3461,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
     GCPROTECT_BEGIN(gc);
     if (orDelegate != NULL)
     {
-        DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable, isTerminating);
+        DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable);
     }
     GCPROTECT_END();
     return TRUE;
@@ -4386,27 +4337,6 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
     return hr;
 }
 #endif // !defined(DACCESS_COMPILE)
-
-//approximate size of loader data
-//maintained for each assembly
-#define APPROX_LOADER_DATA_PER_ASSEMBLY 8196
-
-size_t AppDomain::EstimateSize()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    size_t retval = sizeof(AppDomain);
-    retval += GetLoaderAllocator()->EstimateSize();
-    //very rough estimate
-    retval += GetAssemblyCount() * APPROX_LOADER_DATA_PER_ASSEMBLY;
-    return retval;
-}
 
 #ifdef DACCESS_COMPILE
 
