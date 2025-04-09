@@ -2,6 +2,6 @@
   <PropertyGroup>
     <TargetFramework>netX.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <WriteImportMapToHtml>true</WriteImportMapToHtml>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
   </PropertyGroup>
 </Project>
