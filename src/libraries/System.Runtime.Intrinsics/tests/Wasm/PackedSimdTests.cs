@@ -378,6 +378,35 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [Fact]
+        public unsafe void SplatTypes()
+        {
+            Assert.Equal(Vector128.Create(2.5f, 2.5f, 2.5f, 2.5f), PackedSimd.Splat(2.5f));
+            Assert.Equal(Vector128.Create(-2, -2, -2, -2), PackedSimd.Splat(-2));
+            Assert.Equal(Vector128.Create(2U, 2U, 2U, 2U), PackedSimd.Splat(2U));
+            Assert.Equal(Vector128.Create(2.5, 2.5), PackedSimd.Splat(2.5));
+            Assert.Equal(Vector128.Create(-2L, -2L), PackedSimd.Splat(-2L));
+            Assert.Equal(Vector128.Create(2UL, 2UL), PackedSimd.Splat(2UL));
+            Assert.Equal(Vector128.Create(
+                (byte)2, (byte)2, (byte)2, (byte)2,
+                (byte)2, (byte)2, (byte)2, (byte)2,
+                (byte)2, (byte)2, (byte)2, (byte)2,
+                (byte)2, (byte)2, (byte)2, (byte)2), PackedSimd.Splat((byte)2));
+            Assert.Equal(Vector128.Create(
+                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
+                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
+                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
+                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2), PackedSimd.Splat((sbyte)-2));
+            Assert.Equal(Vector128.Create(
+                (short)-2, (short)-2, (short)-2, (short)-2,
+                (short)-2, (short)-2, (short)-2, (short)-2), PackedSimd.Splat((short)-2));
+            Assert.Equal(Vector128.Create(
+                (ushort)2, (ushort)2, (ushort)2, (ushort)2,
+                (ushort)2, (ushort)2, (ushort)2, (ushort)2), PackedSimd.Splat((ushort)2));
+            Assert.Equal(Vector128.Create([(nint)2, (nint)2, (nint)2, (nint)2]), PackedSimd.Splat((nint)2));
+            Assert.Equal(Vector128.Create([(nuint)2, (nuint)2, (nuint)2, (nuint)2]), PackedSimd.Splat((nuint)2));
+        }
+
+        [Fact]
         public unsafe void LoadScalarAndSplatInfinityTest()
         {
             float fInf = float.PositiveInfinity;
