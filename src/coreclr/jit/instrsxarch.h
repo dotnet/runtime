@@ -1001,6 +1001,9 @@ INST3(lzcnt_apx,        "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     
 
 // MOVBE
 INST3(movbe,            "movbe",            IUM_WR, PCKMVB(0xF1), BAD_CODE,     PCKMVB(0xF0),                            INS_TT_NONE,    INS_FLAGS_None)
+#ifdef  TARGET_AMD64
+INST3(movbe_apx,        "movbe",            IUM_WR, 0x000061,     BAD_CODE,     0x000060,                                INS_TT_NONE,    INS_FLAGS_None)
+#endif
 
 // POPCNT
 INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            INS_TT_NONE,    Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF | Encoding_REX2)
