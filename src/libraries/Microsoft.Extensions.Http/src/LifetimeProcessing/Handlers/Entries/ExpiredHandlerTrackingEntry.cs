@@ -5,7 +5,7 @@ using System;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Microsoft.Extensions.Http
+namespace Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries
 {
     // Thread-safety: This class is immutable
     internal sealed class ExpiredHandlerTrackingEntry

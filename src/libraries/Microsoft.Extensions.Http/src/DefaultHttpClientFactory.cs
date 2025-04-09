@@ -10,6 +10,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.LifetimeProcessing.Handlers;
+using Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

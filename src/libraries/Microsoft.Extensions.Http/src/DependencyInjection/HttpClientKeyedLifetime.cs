@@ -3,7 +3,7 @@
 
 using System;
 using System.Net.Http;
-using Microsoft.Extensions.Http;
+using Microsoft.Extensions.Http.LifetimeProcessing.Handlers;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

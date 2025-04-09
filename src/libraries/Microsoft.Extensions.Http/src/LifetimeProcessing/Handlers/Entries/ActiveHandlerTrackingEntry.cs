@@ -7,7 +7,7 @@ using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 
-namespace Microsoft.Extensions.Http
+namespace Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries
 {
     // Thread-safety: We treat this class as immutable except for the timer. Creating a new object
     // for the 'expiry' pool simplifies the threading requirements significantly.
