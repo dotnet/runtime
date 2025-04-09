@@ -1543,11 +1543,7 @@ namespace System.Text.RegularExpressions
         public static string OneToStringClass(char c)
             => CharsToStringClass([c]);
 
-        internal static
-#if !NET
-        unsafe
-#endif
-        string CharsToStringClass(ReadOnlySpan<char> chars)
+        internal static string CharsToStringClass(ReadOnlySpan<char> chars)
         {
 #if DEBUG
             // Make sure they're all sorted with no duplicates
@@ -1596,11 +1592,16 @@ namespace System.Text.RegularExpressions
 
             // Get the pointer/length of the span to be able to pass it into string.Create.
             ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
-            return
+
 #if NET
-                string.Create(SetStartIndex + count, tmpChars, static (span, chars) =>
+            return string.Create(SetStartIndex + count, tmpChars, static (span, chars) =>
 #else
-                StringExtensions.Create(SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
+            IntPtr pTmpChars;
+            unsafe
+            {
+                pTmpChars = &tmpChars;
+            }
+            return StringExtensions.Create(SetStartIndex + count, pTmpChars, static (span, charsPtr) =>
 #endif
             {
                 // Fill in the set string
