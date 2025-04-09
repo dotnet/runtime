@@ -130,6 +130,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			class ClassWithRequires
 			{
 				[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
+				[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 				public static void MethodWithDynamicArg (dynamic arg)
 				{
 					arg.DynamicInvocation ();
