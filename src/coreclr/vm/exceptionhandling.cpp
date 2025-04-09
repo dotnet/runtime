@@ -2026,8 +2026,7 @@ UnhandledExceptionHandlerUnix(
 {
     // Unhandled exception happened, so dump the managed stack trace and terminate the process
 
-    DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/,
-        FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
+    DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/);
 
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     return _URC_FATAL_PHASE1_ERROR;

@@ -489,13 +489,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_dwTransientFlags |= PROF_DISABLE_OPTIMIZATIONS;
     }
 
-#if !defined(DACCESS_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
     {
         m_pJitInlinerTrackingMap = new JITInlineTrackingMap(GetLoaderAllocator());
     }
-#endif // !defined(DACCESS_COMPILE)
 #endif // PROFILING_SUPPORTED
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%s\".\n", GetDebugName()));
