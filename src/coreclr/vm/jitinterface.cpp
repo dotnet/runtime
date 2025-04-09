@@ -7555,6 +7555,16 @@ static void getMethodInfoHelper(
             {
                 fILIntrinsic = getILIntrinsicImplementationForActivator(ftn, methInfo, &localSig);
             }
+            else if (CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__INVOKE_HELPERS))
+            {
+                ftn->GenerateFunctionPointerCall(&cxt.TransientResolver, &cxt.Header);
+
+                scopeHnd = cxt.CreateScopeHandle();
+
+                _ASSERTE(cxt.Header != NULL);
+                getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
+                localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
+            }
         }
 
         scopeHnd = cxt.HasTransientMethodDetails()

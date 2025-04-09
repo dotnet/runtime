@@ -386,6 +386,26 @@ void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *
         cArgs--;
     }
 }
+
+void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, SigPointer* pSigPtrTokenEnd, BYTE additionalCallConv)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    BYTE element;
+    IfFailThrowBF(GetByte(&element), BFA_BAD_COMPLUS_SIG, pSigModule);
+    pSigBuilder->AppendByte(element | additionalCallConv);
+
+    while (m_ptr != pSigPtrTokenEnd->m_ptr)
+    {
+        IfFailThrowBF(GetByte(&element), BFA_BAD_COMPLUS_SIG, pSigModule);
+        pSigBuilder->AppendByte(element);
+    }
+}
 #endif // DACCESS_COMPILE
 
 

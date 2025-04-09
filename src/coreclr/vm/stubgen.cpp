@@ -1212,10 +1212,10 @@ void ILCodeStream::EmitCALLVIRT(int token, int numInArgs, int numRetArgs)
     WRAPPER_NO_CONTRACT;
     Emit(CEE_CALLVIRT, (INT16)(numRetArgs - numInArgs), token);
 }
-void ILCodeStream::EmitCALLI(int token, int numInArgs, int numRetArgs)
+void ILCodeStream::EmitCALLI(int token, int numInArgs, int numRetArgs, bool explictThis)
 {
     WRAPPER_NO_CONTRACT;
-    Emit(CEE_CALLI, (INT16)(numRetArgs - numInArgs - 1), token);
+    Emit(CEE_CALLI, (INT16)(numRetArgs - numInArgs - explictThis ? 0 : 1), token);
 }
 void ILCodeStream::EmitCEQ()
 {
