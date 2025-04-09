@@ -120,17 +120,45 @@ namespace System.Net.WebSockets
 
             public override void Dispose()
             {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            private void Dispose(bool disposing)
+            {
                 if (_disposed)
                     return;
                 _disposed = true;
 
-                // Dispose the underlying raw WebSocket
-                _inner.Dispose();
+                if (disposing)
+                {
+                    // Dispose the underlying raw WebSocket
+                    _inner.Dispose();
+                    // Ensure we remove the context from the HttpListener's tracking dictionary
+                    // by forcibly calling Response.Close(). This closes the underlying connection
+                    // and also calls UnregisterContext(context), preventing stale HttpListenerContext objects causing memory leak.
+                    _context.Response.Close();
+                }
+                else
+                {
+                    // Technically we shouldn't be doing the following work when disposing == false,
+                    // as the following work relies on other finalizable objects.
+                    // But given we have little choice: if someone drops the websocket without
+                    // disposing of it we need to close the context to prevent memory leaks.
+                    try
+                    {
+                        _context.Response.Close();
+                    }
+                    catch
+                    {
+                        // explain why we ignore exceptions here
+                    }
+                }
+            }
 
-                // Ensure we remove the context from the HttpListener's tracking dictionary
-                // by forcibly calling Response.Close(). This closes the underlying connection
-                // and also calls UnregisterContext(context), preventing stale HttpListenerContext objects causing memory leak.
-                _context.Response.Close();
+            ~HttpListenerWrappedWebSocket()
+            {
+                Dispose(false);
             }
 
             public override Task<WebSocketReceiveResult> ReceiveAsync(
