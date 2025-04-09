@@ -52,6 +52,8 @@ namespace System.IO.Compression
         public static System.Threading.Tasks.Task<System.IO.Compression.ZipArchiveEntry> CreateEntryFromFileAsync(this System.IO.Compression.ZipArchive destination, string sourceFileName, string entryName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static void ExtractToDirectory(this System.IO.Compression.ZipArchive source, string destinationDirectoryName) { }
         public static void ExtractToDirectory(this System.IO.Compression.ZipArchive source, string destinationDirectoryName, bool overwriteFiles) { }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(this System.IO.Compression.ZipArchive source, string destinationDirectoryName, bool overwriteFiles, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(this System.IO.Compression.ZipArchive source, string destinationDirectoryName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static void ExtractToFile(this System.IO.Compression.ZipArchiveEntry source, string destinationFileName) { }
         public static void ExtractToFile(this System.IO.Compression.ZipArchiveEntry source, string destinationFileName, bool overwrite) { }
     }
