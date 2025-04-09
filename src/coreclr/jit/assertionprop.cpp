@@ -5657,14 +5657,6 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             continue;
         }
 
-        // Make sure we don't have any PHI nodes in the target block.
-#if DEBUG
-        for (Statement* stmt : target->Statements())
-        {
-            assert(!stmt->IsPhiDefnStmt());
-        }
-#endif
-
         AssertionInfo newAssertIdx = NO_ASSERTION_INDEX;
 
         // Is this target a default case?
@@ -5731,6 +5723,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             // It limits the ability to create multiple assertions for the same node.
             GenTree* tree = gtNewNothingNode();
             fgInsertStmtAtBeg(target, fgNewStmtFromTree(tree));
+
             modified = true;
             tree->SetAssertionInfo(newAssertIdx);
         }
