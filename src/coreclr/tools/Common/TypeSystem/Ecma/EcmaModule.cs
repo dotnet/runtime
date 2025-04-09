@@ -701,7 +701,7 @@ namespace Internal.TypeSystem.Ecma
                 {
                     var reader = MetadataReader;
                     var c = reader.StringComparer;
-                    foreach (var attr in reader.GetModuleDefinition().GetCustomAttributes())
+                    foreach (var attr in reader.GetAssemblyDefinition().GetCustomAttributes())
                     {
                         if (reader.GetAttributeNamespaceAndName(attr, out var ns, out var n))
                         {
