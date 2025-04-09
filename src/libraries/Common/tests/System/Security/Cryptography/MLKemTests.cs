@@ -417,6 +417,9 @@ namespace System.Security.Cryptography.Tests
                 MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER", new ReadOnlySpan<byte>(ecP256Key)));
 
             Assert.Throws<CryptographicException>(() =>
+                MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER".AsSpan(), new ReadOnlySpan<byte>(ecP256Key)));
+
+            Assert.Throws<CryptographicException>(() =>
                 MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, new ReadOnlySpan<byte>(ecP256Key)));
         }
 
@@ -430,6 +433,9 @@ namespace System.Security.Cryptography.Tests
 
                 Assert.Throws<CryptographicException>(() =>
                     MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword, oversized));
+
+                Assert.Throws<CryptographicException>(() =>
+                    MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(), oversized));
 
                 Assert.Throws<CryptographicException>(() =>
                     MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPasswordBytes, oversized));
@@ -446,11 +452,26 @@ namespace System.Security.Cryptography.Tests
 
                 Assert.Throws<CryptographicException>(() =>
                     MLKem.ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, pkcs8));
+
+                Assert.Throws<CryptographicException>(() =>
+                    MLKem.ImportEncryptedPkcs8PrivateKey(string.Empty, pkcs8));
             }
         }
 
         [Fact]
         public static void ImportEncryptedPkcs8PrivateKey_Seed_CharPassword()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8EncryptedPrivateKeySeedTestData)
+            {
+                using MLKem kem = MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(), pkcs8);
+
+                Assert.Equal(algorithm, kem.Algorithm);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            }
+        }
+
+        [Fact]
+        public static void ImportEncryptedPkcs8PrivateKey_Seed_StringPassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8) in Pkcs8EncryptedPrivateKeySeedTestData)
             {
@@ -476,6 +497,18 @@ namespace System.Security.Cryptography.Tests
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyExpandedKeyTestData)
             {
+                using MLKem kem = MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(), pkcs8);
+                Assert.Equal(algorithm, kem.Algorithm);
+                byte[] decapsulationKey = kem.ExportDecapsulationKey();
+                AssertExtensions.SequenceEqual(decapKey, decapsulationKey);
+            }
+        }
+
+        [Fact]
+        public static void ImportEncryptedPkcs8PrivateKey_ExpandedKey_StringPassword()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyExpandedKeyTestData)
+            {
                 using MLKem kem = MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword, pkcs8);
                 Assert.Equal(algorithm, kem.Algorithm);
                 byte[] decapsulationKey = kem.ExportDecapsulationKey();
@@ -497,6 +530,20 @@ namespace System.Security.Cryptography.Tests
 
         [Fact]
         public static void ImportEncryptedPkcs8PrivateKey_Both_CharPassword()
+        {
+            foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyBothTestData)
+            {
+                using MLKem kem = MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(), pkcs8);
+                Assert.Equal(algorithm, kem.Algorithm);
+                byte[] decapsulationKey = kem.ExportDecapsulationKey();
+                byte[] seed = kem.ExportPrivateSeed();
+                AssertExtensions.SequenceEqual(decapKey, decapsulationKey);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, seed);
+            }
+        }
+
+        [Fact]
+        public static void ImportEncryptedPkcs8PrivateKey_Both_StringPassword()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8EncryptedPrivateKeyBothTestData)
             {
