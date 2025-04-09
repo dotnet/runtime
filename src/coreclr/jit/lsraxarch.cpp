@@ -1322,9 +1322,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // by Amd64 ABI.
             ctrlExprCandidates = availableIntRegs & ~(RBM_ARG_REGS.GetIntRegSet());
         }
-#if defined(TARGET_AMD64)
-        ctrlExprCandidates = BuildApxIncompatibleGPRMask(ctrlExpr, ctrlExprCandidates, true);
-#endif // TARGET_AMD64
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
 
@@ -3086,10 +3083,13 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 #endif // FEATURE_SIMD
 
+#ifdef TARGET_AMD64
+    const bool canUseApxRegs = (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding());
     if (varTypeUsesIntReg(indirTree->Addr()))
     {
-        useCandidates = BuildApxIncompatibleGPRMask(indirTree->Addr(), useCandidates, true);
+        useCandidates = BuildApxIncompatibleGPRMaskIfNeeded(indirTree->Addr(), useCandidates, canUseApxRegs);
     }
+#endif // TARGET_AMD64
     int srcCount = BuildIndirUses(indirTree, useCandidates);
     if (indirTree->gtOper == GT_STOREIND)
     {
@@ -3146,7 +3146,10 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                     CheckAndMoveRMWLastUse(index, dstIndex);
                 }
 #endif // TARGET_X86
-                srcCandidates = BuildApxIncompatibleGPRMask(source->AsOp(), srcCandidates, true);
+
+#ifdef TARGET_AMD64
+                srcCandidates = BuildApxIncompatibleGPRMaskIfNeeded(source->AsOp(), srcCandidates, canUseApxRegs);
+#endif // TARGET_AMD64
                 srcCount += BuildBinaryUses(source->AsOp(), srcCandidates);
             }
         }
@@ -3161,16 +3164,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
             else
 #endif
             {
-                GenTree* data = indirTree->Data();
-                if (data->isContained() && (data->OperIs(GT_BSWAP, GT_BSWAP16)) && (int)varTypeUsesIntReg(source))
-                {
-                    /// movbe cannot use eGPR
-                    srcCount += BuildOperandUses(source, BuildApxIncompatibleGPRMask(source, RBM_NONE, true));
-                }
-                else
-                {
-                    srcCount += BuildOperandUses(source);
-                }
+                srcCount += BuildOperandUses(source);
             }
         }
     }

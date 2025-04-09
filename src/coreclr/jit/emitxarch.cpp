@@ -402,7 +402,7 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
         return true;
     }
 
-    if (ins == INS_crc32_apx)
+    if (ins == INS_crc32_apx || ins == INS_movbe_apx)
     {
         // With the new opcode, CRC32 is promoted to EVEX with APX.
         return true;
@@ -1953,7 +1953,7 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return true;
     }
 
-    if (ins == INS_crc32_apx)
+    if (ins == INS_crc32_apx || ins == INS_movbe_apx)
     {
         return true;
     }
@@ -6108,7 +6108,11 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
 
     if (data->OperIs(GT_BSWAP, GT_BSWAP16) && data->isContained())
     {
+#ifdef TARGET_AMD64
+        assert(ins == INS_movbe || ins == INS_movbe_apx);
+#else
         assert(ins == INS_movbe);
+#endif 
         data = data->gtGetOp1();
     }
 
@@ -14717,7 +14721,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx)
+        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
         {
             code |= (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
         }
@@ -15602,7 +15606,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx)
+        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
         {
             // The promoted CRC32 is in 1-byte opcode, unlike other instructions on this path, the register encoding for
             // CRC32 need to be done here.
@@ -21980,7 +21984,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         }
 
         case INS_movbe:
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+#ifdef TARGET_AMD64
+        case INS_movbe_apx:
+#endif
+        if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
