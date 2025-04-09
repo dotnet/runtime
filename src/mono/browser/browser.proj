@@ -285,6 +285,7 @@
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
       <_EmccLinkFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=0" />
+      <_EmccLinkFlags Condition="'$(WasmEnableMemory64)' == 'true'" Include="-s MEMORY64=1 -s MAXIMUM_MEMORY=16GB" />
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <!-- for jiterpreter -->
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
@@ -305,7 +306,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
-      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext" />
+      <WasmOptConfigurationFlags Include="--enable-threads;--enable-bulk-memory;--enable-sign-ext;--all-features" />
 
       <!-- workaround for https://github.com/emscripten-core/emscripten/issues/18034 -->
       <_EmccLinkFlags Include="-s TEXTDECODER=0"/>

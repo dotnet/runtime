@@ -842,6 +842,7 @@
       <_WasmCompileArguments Include="&quot;@$(_WasmDefaultFlagsRsp)&quot;" Condition="'$(_WasmDefaultFlagsRsp)' != ''" />
       <_WasmCompileArguments Include="$(_WasmDefaultFlags)" Condition="'$(_WasmDefaultFlags)' != ''" />
       <_WasmCompileArguments Include="&quot;@$(_WasmCompileBitcodeRsp)&quot;" Condition="'$(_WasmCompileBitcodeRsp)' != ''" />
+      <_WasmCompileArguments Include="-s MEMORY64=1" Condition="'$(WasmEnableMemory64)' == 'true'"  />
     </ItemGroup>
 
     <EmccCompile
