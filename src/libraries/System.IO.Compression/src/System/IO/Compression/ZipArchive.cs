@@ -13,7 +13,7 @@ using System.Text;
 
 namespace System.IO.Compression
 {
-    public class ZipArchive : IDisposable
+    public partial class ZipArchive : IDisposable, IAsyncDisposable
     {
         private readonly Stream _archiveStream;
         private ZipArchiveEntry? _archiveStreamOwner;
@@ -592,7 +592,7 @@ namespace System.IO.Compression
                 // If the EOCD has the minimum possible size (no zip file comment), then exactly the previous 4 bytes will contain the signature
                 // But if the EOCD has max possible size, the signature should be found somewhere in the previous 64K + 4 bytes
                 if (!ZipHelper.SeekBackwardsToSignature(_archiveStream,
-                        ZipEndOfCentralDirectoryBlock.SignatureConstantBytes,
+                        ZipEndOfCentralDirectoryBlock.SignatureConstantBytes.AsSpan(),
                         ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.FieldLengths.Signature))
                     throw new InvalidDataException(SR.EOCDNotFound);
 
@@ -652,7 +652,7 @@ namespace System.IO.Compression
                 // Exactly the previous 4 bytes should contain the Zip64-EOCDL signature
                 // if we don't find it, assume it doesn't exist and use data from normal EOCD
                 if (ZipHelper.SeekBackwardsToSignature(_archiveStream,
-                        Zip64EndOfCentralDirectoryLocator.SignatureConstantBytes,
+                        Zip64EndOfCentralDirectoryLocator.SignatureConstantBytes.AsSpan(),
                         Zip64EndOfCentralDirectoryLocator.FieldLengths.Signature))
                 {
                     // use locator to get to Zip64-EOCD
@@ -720,7 +720,7 @@ namespace System.IO.Compression
                         {
                             // Keep track of the expected position of the file entry after the final untouched file entry so that when the loop completes,
                             // we'll know which position to start writing new entries from.
-                            nextFileOffset = Math.Max(nextFileOffset, entry.OffsetOfCompressedData + entry.CompressedLength);
+                            nextFileOffset = Math.Max(nextFileOffset, entry.GetOffsetOfCompressedData() + entry.CompressedLength);
                         }
                         // When calculating the starting offset to load the files from, only look at changed entries which are already in the archive.
                         else

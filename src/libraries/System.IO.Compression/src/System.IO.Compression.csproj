@@ -16,6 +16,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="$(CommonPath)Interop\Interop.zlib.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchive.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchive.Async.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveEntry.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveMode.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipBlocks.cs" />
