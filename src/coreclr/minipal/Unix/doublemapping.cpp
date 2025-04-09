@@ -261,7 +261,7 @@ bool VMToOSInterface::ReleaseRWMapping(void* pStart, size_t size)
 }
 
 #ifndef TARGET_APPLE
-#define MAX_TEMPLATE_THUNK_TYPES 8 // Maximum number of times the CreateTemplate api can be called
+#define MAX_TEMPLATE_THUNK_TYPES 3 // Maximum number of times the CreateTemplate api can be called
 struct TemplateThunkMappingData
 {
     int fdImage;
@@ -269,6 +269,7 @@ struct TemplateThunkMappingData
     void* addrOfStartOfSection; // Always NULL if the template mapping data could not be initialized
     void* addrOfEndOfSection;
     bool imageTemplates;
+    int templatesCreated;
     off_t nonImageTemplateCurrent;
 };
 
@@ -280,6 +281,8 @@ struct InitializeTemplateThunkLocals
 };
 
 static TemplateThunkMappingData *s_pThunkData = NULL;
+
+#ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
 
 static Elf32_Word Elf32_WordMin(Elf32_Word left, Elf32_Word  right)
 {
@@ -338,6 +341,7 @@ static int InitializeTemplateThunkMappingDataPhdrCallback(struct dl_phdr_info *i
     // This isn't the interesting .so
     return 0;
 }
+#endif // FEATURE_MAP_THUNKS_FROM_IMAGE
 
 TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
 {
@@ -349,11 +353,14 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
     locals.data.addrOfEndOfSection = NULL;
     locals.data.imageTemplates = false;
     locals.data.nonImageTemplateCurrent = 0;
+    locals.data.templatesCreated = 0;
 
+#ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
     if (dladdr(pTemplate, &locals.info) != 0)
     {
         dl_iterate_phdr(InitializeTemplateThunkMappingDataPhdrCallback, &locals);
     }
+#endif // FEATURE_MAP_THUNKS_FROM_IMAGE
 
     if (locals.data.addrOfStartOfSection == NULL)
     {
@@ -382,7 +389,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
 #endif
         if (fd != -1)
         {
-            off_t maxFileSize = MAX_TEMPLATE_THUNK_TYPES * 0x10000;
+            off_t maxFileSize = MAX_TEMPLATE_THUNK_TYPES * 0x10000; // The largest page size we support currently is 64KB.
             if (ftruncate(fd, maxFileSize) == -1) // Reserve a decent size chunk of logical memory for these things.
             {
                 close(fd);
@@ -444,6 +451,9 @@ void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize,
     {
         return NULL;
     }
+
+    int templatesCreated = __atomic_add_fetch(&pThunkData->templatesCreated, 1, __ATOMIC_SEQ_CST);
+    assert(templatesCreated <= MAX_TEMPLATE_THUNK_TYPES);
 
     if (!pThunkData->imageTemplates)
     {
