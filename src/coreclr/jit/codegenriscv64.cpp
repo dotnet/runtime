@@ -401,7 +401,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // TODO-RISCV64: Implement varargs (NYI_RISCV64)
 
     assert(block != NULL);
-    assert(block->HasFlag(BBF_FUNCLET_BEG));
+    assert(compiler->bbIsFuncletBeg(block));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -4722,7 +4722,53 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 //
 void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
-    NYI_RISCV64("genIntrinsic-----unimplemented/unused on RISCV64 yet----");
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* op2 = treeNode->gtGetOp2IfPresent();
+
+    emitAttr size = emitActualTypeSize(op1);
+    bool     is4  = (size == EA_4BYTE);
+
+    instruction instr = INS_invalid;
+    switch (treeNode->gtIntrinsicName)
+    {
+        case NI_System_Math_Abs:
+            instr = is4 ? INS_fsgnjx_s : INS_fsgnjx_d;
+            op2   = op1; // "fabs rd, rs" is a pseudo-instruction for "fsgnjx rd, rs, rs"
+            break;
+        case NI_System_Math_Sqrt:
+            instr = is4 ? INS_fsqrt_s : INS_fsqrt_d;
+            break;
+        case NI_System_Math_MinNumber:
+            instr = is4 ? INS_fmin_s : INS_fmin_d;
+            break;
+        case NI_System_Math_MaxNumber:
+            instr = is4 ? INS_fmax_s : INS_fmax_d;
+            break;
+        case NI_PRIMITIVE_LeadingZeroCount:
+            instr = is4 ? INS_clzw : INS_clz;
+            break;
+        case NI_PRIMITIVE_TrailingZeroCount:
+            instr = is4 ? INS_ctzw : INS_ctz;
+            break;
+        case NI_PRIMITIVE_PopCount:
+            instr = is4 ? INS_cpopw : INS_cpop;
+            break;
+        default:
+            NO_WAY("Unknown intrinsic");
+    }
+
+    genConsumeOperands(treeNode->AsOp());
+    regNumber dest = treeNode->GetRegNum();
+    regNumber src1 = op1->GetRegNum();
+    if (op2 == nullptr)
+    {
+        GetEmitter()->emitIns_R_R(instr, size, dest, src1);
+    }
+    else
+    {
+        GetEmitter()->emitIns_R_R_R(instr, size, dest, src1, op2->GetRegNum());
+    }
+    genProduceReg(treeNode);
 }
 
 //---------------------------------------------------------------------
@@ -5236,7 +5282,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
     assert(indexType == TYP_INT || indexType == TYP_LONG);
 #endif // DEBUG
 
-    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, indexReg, bndsChk->gtIndRngFailBB, lengthReg);
+    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, indexReg, nullptr, lengthReg);
 }
 
 //---------------------------------------------------------------------
@@ -5512,7 +5558,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // IndRngFail:
         // ...
         // RngChkExit:
-        genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index->GetRegNum(), node->gtIndRngFailBB, tempReg);
+        genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index->GetRegNum(), nullptr, tempReg);
     }
 
     emitAttr attr = emitActualTypeSize(node);

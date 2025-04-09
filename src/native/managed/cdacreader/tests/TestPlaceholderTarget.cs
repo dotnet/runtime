@@ -51,6 +51,20 @@ internal class TestPlaceholderTarget : Target
         return (pointer.Value & (ulong)(PointerSize - 1)) == 0;
     }
 
+    public override bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value)
+    {
+        value = null;
+        foreach (var global in _globals)
+        {
+            if (global.Name == name)
+            {
+                value = new TargetPointer(global.Value);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public override TargetPointer ReadGlobalPointer(string name)
     {
         foreach (var global in _globals)
@@ -93,6 +107,20 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override TargetNUInt ReadNUInt(ulong address) => DefaultReadNUInt(address);
+
+    public override bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value)
+    {
+        value = default;
+        foreach (var global in _globals)
+        {
+            if (global.Name == name)
+            {
+                value = T.CreateChecked(global.Value);
+                return true;
+            }
+        }
+        return false;
+    }
     public override T ReadGlobal<T>(string name)
     {
         foreach (var global in _globals)
