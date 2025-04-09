@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using JitTest;
+using Xunit;
 
-class WrappedException
+public class WrappedException
 {
     // C# wrapper method calling IL method
     // that throws a non-exception based object
     //
+    [Fact]
     public static void Problem()
     {
         Test.Main();
