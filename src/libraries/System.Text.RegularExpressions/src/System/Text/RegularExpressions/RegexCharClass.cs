@@ -1592,30 +1592,14 @@ namespace System.Text.RegularExpressions
 
             // Get the pointer/length of the span to be able to pass it into string.Create.
             ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
-
 #if NET
             return string.Create(SetStartIndex + count, tmpChars, static (span, chars) =>
-#else
-            IntPtr pTmpChars;
-            unsafe
-            {
-                pTmpChars = (IntPtr)(&tmpChars);
-            }
-            return StringExtensions.Create(SetStartIndex + count, pTmpChars, static (span, charsPtr) =>
-#endif
             {
                 // Fill in the set string
                 span[FlagsIndex] = (char)0;
                 span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
                 span[CategoryLengthIndex] = (char)0;
                 int i = SetStartIndex;
-#if !NET
-                ReadOnlySpan<char> chars;
-                unsafe
-                {
-                    chars = *(ReadOnlySpan<char>*)charsPtr;
-                }
-#endif
                 foreach (char c in chars)
                 {
                     span[i++] = c;
@@ -1626,7 +1610,31 @@ namespace System.Text.RegularExpressions
                 }
                 Debug.Assert(i == span.Length);
             });
+#else
+            unsafe
+            {
+                return StringExtensions.Create(SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
+                {
+                    // Fill in the set string
+                    span[FlagsIndex] = (char)0;
+                    span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
+                    span[CategoryLengthIndex] = (char)0;
+                    int i = SetStartIndex;
+                    ReadOnlySpan<char> chars = *(ReadOnlySpan<char>*)charsPtr;
+                    foreach (char c in chars)
+                    {
+                        span[i++] = c;
+                        if (c != LastChar)
+                        {
+                            span[i++] = (char)(c + 1);
+                        }
+                    }
+                    Debug.Assert(i == span.Length);
+                });
+            }
+#endif
         }
+
 
         /// <summary>
         /// Constructs the string representation of the class.
