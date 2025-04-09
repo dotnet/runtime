@@ -56,5 +56,6 @@ namespace System.IO.Compression
         public static System.Threading.Tasks.Task ExtractToDirectoryAsync(this System.IO.Compression.ZipArchive source, string destinationDirectoryName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static void ExtractToFile(this System.IO.Compression.ZipArchiveEntry source, string destinationFileName) { }
         public static void ExtractToFile(this System.IO.Compression.ZipArchiveEntry source, string destinationFileName, bool overwrite) { }
+        public static System.Threading.Tasks.Task ExtractToFileAsync(this System.IO.Compression.ZipArchiveEntry source, string destinationFileName, bool overwrite, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
 }
