@@ -4,7 +4,7 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-namespace Microsoft.Extensions.Caching.Distributed
+namespace Microsoft.Extensions.Caching.Hybrid
 {
     public abstract partial class HybridCache
     {
