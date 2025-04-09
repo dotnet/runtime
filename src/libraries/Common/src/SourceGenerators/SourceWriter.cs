@@ -112,9 +112,13 @@ namespace SourceGenerators
 
         private static void AppendSpan(StringBuilder builder, ReadOnlySpan<char> span)
         {
-            foreach (char c in span)
+            // There is no StringBuilder.Append(ROS<char>) overload in the NS2.0
+            unsafe
             {
-                builder.Append(c);
+                fixed (char* ptr = span)
+                {
+                    builder.Append(ptr, span.Length);
+                }
             }
         }
     }

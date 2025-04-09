@@ -16,6 +16,7 @@ namespace System.Text
     {
         public static StringBuilder Append(this StringBuilder stringBuilder, ReadOnlySpan<char> span)
         {
+            stringBuilder.EnsureCapacity(span.Length);
             foreach (char c in span)
             {
                 stringBuilder.Append(c);
