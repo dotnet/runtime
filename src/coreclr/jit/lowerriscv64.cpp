@@ -505,6 +505,39 @@ bool IsIntZeroExtCast(GenTreeCast* cast)
            (castUnsigned || srcUnsigned);
 }
 
+// Determine SH(X)ADD(_UW) node for the given shift amount and signedness
+genTreeOps GetShxaddOp(unsigned int shamt, bool isUnsigned)
+{
+    if (isUnsigned)
+    {
+        switch (shamt)
+        {
+            case 1:
+                return GT_SH1ADD_UW;
+            case 2:
+                return GT_SH2ADD_UW;
+            case 3:
+                return GT_SH3ADD_UW;
+            default:
+                unreached();
+        }
+    }
+    else
+    {
+        switch (shamt)
+        {
+            case 1:
+                return GT_SH1ADD;
+            case 2:
+                return GT_SH2ADD;
+            case 3:
+                return GT_SH3ADD;
+            default:
+                unreached();
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // TryLowerShiftAddToShxadd : Lower ADD(LSH) node to SH(X)ADD(.UW) node.
 //
@@ -531,12 +564,12 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
     GenTree* base  = nullptr;
     GenTree* shift = nullptr;
 
-    if (tree->gtOp1->OperIs(GT_LSH) || tree->gtOp1->OperIs(GT_MUL))
+    if (tree->gtOp1->OperIs(GT_LSH, GT_MUL, GT_SLLI_UW))
     {
         shift = tree->gtOp1;
         base  = tree->gtOp2;
     }
-    else if (tree->gtOp2->OperIs(GT_LSH) || tree->gtOp2->OperIs(GT_MUL))
+    else if (tree->gtOp2->OperIs(GT_LSH, GT_MUL, GT_SLLI_UW))
     {
         shift = tree->gtOp2;
         base  = tree->gtOp1;
@@ -544,6 +577,12 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
     else
     {
         return false;
+    }
+
+    bool isSlliUw = false;
+    if (shift->OperIs(GT_SLLI_UW))
+    {
+        isSlliUw = true;
     }
 
     GenTree*     index = shift->gtGetOp1();
@@ -572,25 +611,12 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
     BlockRange().Remove(shift);
     DEBUG_DESTROY_NODE(shift);
 
+    DWORD shamt;
+    BitScanForward(&shamt, scale);
+
     tree->gtOp1 = index;
     tree->gtOp2 = base;
-
-    DWORD shammt;
-    BitScanForward(&shammt, scale);
-    switch (shammt)
-    {
-        case 1:
-            tree->ChangeOper(GT_SH1ADD);
-            break;
-        case 2:
-            tree->ChangeOper(GT_SH2ADD);
-            break;
-        case 3:
-            tree->ChangeOper(GT_SH3ADD);
-            break;
-        default:
-            unreached();
-    }
+    tree->ChangeOper(GetShxaddOp(shamt, isSlliUw));
 
     JITDUMP("Base:\n  ");
     DISPNODE(tree->gtOp2);
@@ -614,21 +640,7 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
             DEBUG_DESTROY_NODE(cast);
 
             tree->gtOp1 = src;
-
-            switch (tree->gtOper)
-            {
-                case GT_SH1ADD:
-                    tree->ChangeOper(GT_SH1ADD_UW);
-                    break;
-                case GT_SH2ADD:
-                    tree->ChangeOper(GT_SH2ADD_UW);
-                    break;
-                case GT_SH3ADD:
-                    tree->ChangeOper(GT_SH3ADD_UW);
-                    break;
-                default:
-                    unreached();
-            }
+            tree->ChangeOper(GetShxaddOp(shamt, true));
 
             JITDUMP("Index:\n  ");
             DISPNODE(tree->gtOp1);

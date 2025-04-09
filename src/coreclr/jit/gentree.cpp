@@ -6522,6 +6522,9 @@ unsigned GenTree::GetScaledIndex()
         case GT_MUL:
             return AsOp()->gtOp2->GetScaleIndexMul();
 
+#ifdef TARGET_RISCV64
+        case GT_SLLI_UW:
+#endif
         case GT_LSH:
             return AsOp()->gtOp2->GetScaleIndexShf();
 
