@@ -113,6 +113,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.SetIndex")]
 			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
+			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			static void Write (dynamic d)
 			{
 				d[0] = 0;
