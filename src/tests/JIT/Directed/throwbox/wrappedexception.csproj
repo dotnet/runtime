@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="wrappedexception.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="filter.ilproj" ReferenceOutputAssembly="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <FilterOutputPath>$(OutputPath)/../filter</FilterOutputPath>
+  </PropertyGroup>
+
+  <Target Name="CopySupportAssembliesToOutputSubfolders" AfterTargets="Build">
+    <Copy SourceFiles="$(FilterOutputPath)/filter.dll" DestinationFolder="$(OutputPath)" />
+  </Target>
+
+</Project>
