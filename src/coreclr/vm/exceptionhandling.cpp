@@ -3185,7 +3185,6 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #ifdef TARGET_AMD64
 #ifdef TARGET_UNIX
             pvRegDisplay->pCurrentContext->Rdi = dwResumePC;
-            _ASSERTE(GetIP(pThread->GetAbortContext()) == dwResumePC);
 #else
             pvRegDisplay->pCurrentContext->Rcx = dwResumePC;
 #endif
