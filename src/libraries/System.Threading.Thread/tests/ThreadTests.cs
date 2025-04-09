@@ -1306,6 +1306,7 @@ namespace System.Threading.Threads.Tests
         private static extern IntPtr GetCurrentThread();
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void NameNativeThreadBeforeStart()
         {
             string threadName = "Test thread name";
