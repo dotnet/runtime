@@ -1685,9 +1685,9 @@ class TestVTables
         static IUnknownImpl()
         {
             ComWrappers.GetIUnknownImpl(
-                fpQueryInterface: out *(nint*)&((IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl))->QueryInterface,
-                fpAddRef: out *(nint*)&((IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl))->AddRef,
-                fpRelease: out *(nint*)&((IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl))->Release);
+                fpQueryInterface: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl))->QueryInterface,
+                fpAddRef: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl))->AddRef,
+                fpRelease: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl))->Release);
         }
     }
 

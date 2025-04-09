@@ -166,6 +166,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_Multiply,
 	SN_Negate,
 	SN_OnesComplement,
+	SN_Round,
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
@@ -992,6 +993,8 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 		arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
 	} else if (arg1->type == MONO_TYPE_PTR) {
 		arg_type = m_type_data_get_type_unchecked (arg1);
+	} else if (MONO_TYPE_IS_VECTOR_PRIMITIVE(arg1)) {
+		arg_type = arg1;
 	} else {
 		// g_printf ("%s arg1 type was not pointer or simd type: %s\n", name, m_class_get_name (vector_klass));
 		return FALSE;
@@ -1166,6 +1169,11 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Load:
 			case SN_LoadUnsafe:
 				cmethod_name = "LoadVector128";
+				break;
+			case SN_Round:
+				if (csignature->param_count != 1)
+					return FALSE;
+				cmethod_name = "RoundToNearest";
 				break;
 			case SN_WidenLower:
 				cmethod_name = is_unsigned ? "ZeroExtendWideningLower" : "SignExtendWideningLower";
