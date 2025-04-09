@@ -26,8 +26,16 @@ namespace System.IO.Compression
         public static void ExtractToDirectory(System.IO.Stream source, string destinationDirectoryName, System.Text.Encoding? entryNameEncoding, bool overwriteFiles) { }
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName) { }
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles) { }
+        public static System.Threading.Tasks.Task ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, System.Text.Encoding? entryNameEncoding) { }
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, System.Text.Encoding? entryNameEncoding, bool overwriteFiles) { }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(System.IO.Stream source, string destinationDirectoryName, bool overwriteFiles, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(System.IO.Stream source, string destinationDirectoryName, System.Text.Encoding? entryNameEncoding, bool overwriteFiles, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(System.IO.Stream source, string destinationDirectoryName, System.Text.Encoding? entryNameEncoding, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(System.IO.Stream source, string destinationDirectoryName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, System.Text.Encoding? entryNameEncoding, bool overwriteFiles, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, System.Text.Encoding? entryNameEncoding, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static System.IO.Compression.ZipArchive Open(string archiveFileName, System.IO.Compression.ZipArchiveMode mode) { throw null; }
         public static System.IO.Compression.ZipArchive Open(string archiveFileName, System.IO.Compression.ZipArchiveMode mode, System.Text.Encoding? entryNameEncoding) { throw null; }
         public static System.Threading.Tasks.Task<System.IO.Compression.ZipArchive> OpenAsync(string archiveFileName, System.IO.Compression.ZipArchiveMode mode, System.Threading.CancellationToken cancellationToken = default) { throw null; }

@@ -10,6 +10,7 @@
     <Compile Include="System\IO\Compression\ZipFile.Create.cs" />
     <Compile Include="System\IO\Compression\ZipFile.Create.Async.cs" />
     <Compile Include="System\IO\Compression\ZipFile.Extract.cs" />
+    <Compile Include="System\IO\Compression\ZipFile.Extract.Async.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Extract.cs" />
     <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
