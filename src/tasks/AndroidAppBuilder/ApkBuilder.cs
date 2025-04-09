@@ -311,6 +311,21 @@ public partial class ApkBuilder
             }
         }
 
+        if (StaticLinkedRuntime && IsCoreCLR)
+        {
+            string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
+                .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            foreach (string lib in staticLibs)
+            {
+                nativeLibraries += $"    {lib}{Environment.NewLine}";
+            }
+
+            nativeLibraries += $"    libc++abi.a{Environment.NewLine}";
+            nativeLibraries += $"    libc++_static.a{Environment.NewLine}";
+        }
+
         StringBuilder extraLinkerArgs = new StringBuilder();
         foreach (ITaskItem item in ExtraLinkerArguments)
         {

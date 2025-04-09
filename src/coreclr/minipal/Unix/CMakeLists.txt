@@ -9,3 +9,7 @@ add_library(coreclrminipal
 )
 
 target_link_libraries(coreclrminipal PRIVATE minipal)
+
+if(CLR_CMAKE_HOST_ANDROID)
+    install_clr(TARGETS coreclrminipal DESTINATIONS . sharedFramework)
+endif()
