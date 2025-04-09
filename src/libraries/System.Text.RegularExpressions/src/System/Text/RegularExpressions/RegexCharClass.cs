@@ -1599,7 +1599,7 @@ namespace System.Text.RegularExpressions
             IntPtr pTmpChars;
             unsafe
             {
-                pTmpChars = &tmpChars;
+                pTmpChars = (IntPtr)(&tmpChars);
             }
             return StringExtensions.Create(SetStartIndex + count, pTmpChars, static (span, charsPtr) =>
 #endif
@@ -1610,7 +1610,11 @@ namespace System.Text.RegularExpressions
                 span[CategoryLengthIndex] = (char)0;
                 int i = SetStartIndex;
 #if !NET
-                ReadOnlySpan<char> chars = *(ReadOnlySpan<char>*)charsPtr;
+                ReadOnlySpan<char> chars;
+                unsafe
+                {
+                    chars = *(ReadOnlySpan<char>*)charsPtr;
+                }
 #endif
                 foreach (char c in chars)
                 {
