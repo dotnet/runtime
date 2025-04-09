@@ -230,11 +230,9 @@ namespace System.Net
             }
             finally
             {
-                state.Dispose();
+                state.ReleaseContext();
             }
 
-            // GetAddrInfoExState is a SafeHandle and Dispose() will only release its' GetAddrInfoExContext pointer;
-            // the rest of the object's state is still valid and the instance will be used as an IThreadPoolWorkItem.
             state.SetResult(result);
         }
 
@@ -375,6 +373,7 @@ namespace System.Net
         // GetAddrInfoExState is a SafeHandle that manages the lifetime of GetAddrInfoExContext*
         // to make sure GetAddrInfoExCancel always takes a valid memory address regardless of the race
         // between cancellation and completion callbacks.
+        // GetAddrInfoExContext* is not used in IThreadPoolWorkItem.Execute(), which runs after the Disposal of the SafeHandle.
         private sealed unsafe class GetAddrInfoExState : SafeHandleZeroOrMinusOneIsInvalid, IThreadPoolWorkItem
         {
             private CancellationTokenRegistration _cancellationRegistration;
@@ -412,6 +411,12 @@ namespace System.Net
             public Task Task => JustAddresses ? (Task)IPAddressArrayBuilder.Task : IPHostEntryBuilder.Task;
 
             internal GetAddrInfoExContext* Context => (GetAddrInfoExContext*)handle;
+
+            /// <summary>
+            /// GetAddrInfoExState is a SafeHandle and Dispose() will only release its' GetAddrInfoExContext pointer;
+            /// the rest of the object's state is still valid and the instance will be used as an IThreadPoolWorkItem.
+            /// </summary>
+            public void ReleaseContext() => Dispose();
 
             public void RegisterForCancellation(CancellationToken cancellationToken)
             {
