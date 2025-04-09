@@ -3410,7 +3410,7 @@ BOOL AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(pThrowable != NULL);
