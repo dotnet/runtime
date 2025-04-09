@@ -20,7 +20,7 @@ namespace System.Tests
             // Create a German culture with explicitly defined genitive month names
             var culture = new CultureInfo("de-DE");
             culture.DateTimeFormat.AbbreviatedMonthGenitiveNames = new[] { "Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez.", "" };
-            culture.DateTimeFormat.MonthGenitiveNames = new[] { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember", "" };
+            culture.DateTimeFormat.MonthGenitiveNames = new[] { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember.", "" };
             culture.DateTimeFormat.DayNames = new[] { "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag" };
             culture.DateTimeFormat.DateSeparator = ".";
             // Regular month names (non-genitive)
