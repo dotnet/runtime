@@ -110,6 +110,9 @@ public abstract class HybridCache
         }
         finally
         {
+            // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
+            // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
+            // the buffer even in the non-synchronous completion scenario.
             key.Clear();
         }
     }
@@ -140,6 +143,9 @@ public abstract class HybridCache
         }
         finally
         {
+            // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
+            // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
+            // the buffer even in the non-synchronous completion scenario.
             key.Clear();
         }
     }
