@@ -84,7 +84,7 @@ struct CDacStringPoolSizes
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(MAKE_FIELDLEN_NAME(tyname,membername), sizeof(#membername)) \
     DECL_LEN(MAKE_FIELDTYPELEN_NAME(tyname,membername), sizeof(#membertyname))
 #define CDAC_GLOBAL_STRING(name, stringval) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
-    DECL_LEN(MAKE_GLOBALVALUELEN_NAME(name), sizeof(#stringval))
+    DECL_LEN(MAKE_GLOBALVALUELEN_NAME(name), sizeof(STRINGIFY(stringval)))
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL(name,tyname,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
     DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(#tyname))
@@ -327,7 +327,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #define CDAC_BASELINE(name) name "\0"
 #define CDAC_TYPE_BEGIN(name) #name "\0"
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" #membertyname "\0"
-#define CDAC_GLOBAL_STRING(name,value) #name "\0" #value "\0"
+#define CDAC_GLOBAL_STRING(name,value) #name "\0" STRINGIFY(value) "\0"
 #define CDAC_GLOBAL_POINTER(name,value) #name "\0"
 #define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
 #include "datadescriptor.h"
