@@ -246,9 +246,6 @@ static int sync_file(minipal_log_flags flags)
 
 static ssize_t write_file(int fd, const char* msg, size_t bytes_to_write)
 {
-    if (fd == -1 || fd == -2)
-        return 0;
-
     assert(bytes_to_write < INT_MAX);
     return _write(fd, msg, (unsigned int)bytes_to_write);
 }
@@ -285,9 +282,6 @@ static int sync_file(minipal_log_flags flags)
 
 static ssize_t write_file(int fd, const char* msg, size_t bytes_to_write)
 {
-    if (fd == -1)
-        return 0;
-
     return write(fd, msg, bytes_to_write);
 }
 #endif
