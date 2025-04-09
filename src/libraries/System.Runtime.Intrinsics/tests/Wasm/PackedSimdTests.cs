@@ -402,7 +402,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             Assert.Equal(Vector128.Create(
                 (ushort)2, (ushort)2, (ushort)2, (ushort)2,
                 (ushort)2, (ushort)2, (ushort)2, (ushort)2), PackedSimd.Splat((ushort)2));
-            Assert.Equal(Vector128.Create([(nint)-2, (nint)-2, (nint)-2, (nint)-2]), PackedSimd.Splat((nint)-2));
+            Assert.Equal(Vector128.Create([(nint)2, (nint)2, (nint)2, (nint)2]), PackedSimd.Splat((nint)2));
             Assert.Equal(Vector128.Create([(nuint)2, (nuint)2, (nuint)2, (nuint)2]), PackedSimd.Splat((nuint)2));
         }
 
