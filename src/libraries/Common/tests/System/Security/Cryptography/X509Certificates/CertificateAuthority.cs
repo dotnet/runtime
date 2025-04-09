@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -790,36 +789,6 @@ SingleResponse ::= SEQUENCE {
             Revoked,
         }
 
-        //[OverloadResolutionPriority(-1)]
-        //internal static void BuildPrivatePki(
-        //    PkiOptions pkiOptions,
-        //    out RevocationResponder responder,
-        //    out CertificateAuthority rootAuthority,
-        //    out CertificateAuthority[] intermediateAuthorities,
-        //    out X509Certificate2 endEntityCert,
-        //    int intermediateAuthorityCount,
-        //    string testName = null,
-        //    bool registerAuthorities = true,
-        //    bool pkiOptionsInSubject = false,
-        //    string subjectName = null,
-        //    int keySize = DefaultKeySize,
-        //    X509ExtensionCollection extensions = null)
-        //{
-        //    BuildPrivatePki(
-        //        pkiOptions,
-        //        out responder,
-        //        out rootAuthority,
-        //        out intermediateAuthorities,
-        //        out endEntityCert,
-        //        intermediateAuthorityCount,
-        //        testName,
-        //        registerAuthorities,
-        //        pkiOptionsInSubject,
-        //        subjectName,
-        //        KeyFactory.RSASize(keySize),
-        //        extensions);
-        //}
-
         internal static void BuildPrivatePki(
             PkiOptions pkiOptions,
             out RevocationResponder responder,
@@ -962,37 +931,6 @@ SingleResponse ::= SEQUENCE {
                 }
             }
         }
-
-        //[OverloadResolutionPriority(-1)]
-        //internal static void BuildPrivatePki(
-        //    PkiOptions pkiOptions,
-        //    out RevocationResponder responder,
-        //    out CertificateAuthority rootAuthority,
-        //    out CertificateAuthority intermediateAuthority,
-        //    out X509Certificate2 endEntityCert,
-        //    string testName = null,
-        //    bool registerAuthorities = true,
-        //    bool pkiOptionsInSubject = false,
-        //    string subjectName = null,
-        //    int keySize = DefaultKeySize,
-        //    X509ExtensionCollection extensions = null)
-        //{
-        //    BuildPrivatePki(
-        //        pkiOptions,
-        //        out responder,
-        //        out rootAuthority,
-        //        out CertificateAuthority[] intermediateAuthorities,
-        //        out endEntityCert,
-        //        intermediateAuthorityCount: 1,
-        //        testName: testName,
-        //        registerAuthorities: registerAuthorities,
-        //        pkiOptionsInSubject: pkiOptionsInSubject,
-        //        subjectName: subjectName,
-        //        keySize: keySize,
-        //        extensions: extensions);
-
-        //    intermediateAuthority = intermediateAuthorities.Single();
-        //}
 
         internal static void BuildPrivatePki(
             PkiOptions pkiOptions,
