@@ -922,15 +922,6 @@ void SystemDomain::Init()
         CoreLibBinder::GetField(FIELD__THREAD_BLOCKING_INFO__OFFSET_OF_LOCK_OWNER_OS_THREAD_ID)
             ->SetStaticValue32(AwareLock::GetOffsetOfHoldingOSThreadId());
     }
-
-#ifdef _DEBUG
-    BOOL fPause = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PauseOnLoad);
-
-    while (fPause)
-    {
-        ClrSleepEx(20, TRUE);
-    }
-#endif // _DEBUG
 }
 
 void SystemDomain::LazyInitGlobalStringLiteralMap()

@@ -7891,6 +7891,13 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     }
 
 #ifdef PROFILING_SUPPORTED
+    if (pOrigCallerModule->IsInliningDisabledByProfiler())
+    {
+        result = INLINE_FAIL;
+        szFailReason = "Inlining is disabled in the compiled method's module by a profiler";
+        goto exit;
+    }
+
     if (CORProfilerPresent())
     {
         // #rejit
@@ -7902,15 +7909,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         {
             result = INLINE_FAIL;
             szFailReason = "ReJIT request disabled inlining from caller";
-            goto exit;
-        }
-
-        // If the profiler has set a mask preventing inlining, always return
-        // false to the jit.
-        if (CORProfilerDisableInlining())
-        {
-            result = INLINE_FAIL;
-            szFailReason = "Profiler disabled inlining globally";
             goto exit;
         }
 
@@ -9569,7 +9567,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 
     case ELEMENT_TYPE_PTR:
         // Load the type eagerly under debugger to make the eval work
-        if (CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
+        if (pModule->AreJITOptimizationsDisabled())
         {
             // NOTE: in some IJW cases, when the type pointed at is unmanaged,
             // the GetTypeHandle may fail, because there is no TypeDef for such type.
@@ -10682,8 +10680,8 @@ bool CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
 
 /*********************************************************************/
 
-void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
-                               void **            ppIndirection)  /* OUT */
+void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
+                                   void **            ppIndirection)  /* OUT */
 {
     CONTRACTL {
         THROWS;
@@ -10808,7 +10806,7 @@ exit: ;
     return result;
 }
 
-PCODE CEEJitInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
+PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
 {
     CONTRACTL {
         THROWS;
@@ -11912,9 +11910,9 @@ void CEEInfo::JitProcessShutdownWork()
 }
 
 /*********************************************************************/
-InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
-                                                  mdToken metaTok,
-                                                  void **ppValue)
+InfoAccessType CEECodeGenInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
+                                                      mdToken metaTok,
+                                                      void **ppValue)
 {
     CONTRACTL {
         THROWS;
@@ -11955,7 +11953,7 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
 }
 
 /*********************************************************************/
-InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
+InfoAccessType CEECodeGenInfo::emptyStringLiteral(void ** ppValue)
 {
     CONTRACTL {
         THROWS;
@@ -12185,8 +12183,8 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
 }
 
 /*********************************************************************/
-CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
-                                                            bool* pIsSpeculative)
+CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
+                                                                bool* pIsSpeculative)
 {
     CONTRACTL {
         THROWS;
@@ -12275,8 +12273,8 @@ static void *GetClassSync(MethodTable *pMT)
 }
 
 /*********************************************************************/
-void* CEEJitInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
-                                void **ppIndirection)
+void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
+                                    void **ppIndirection)
 {
     CONTRACTL {
         THROWS;
@@ -12898,7 +12896,7 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
 #endif // DEBUGGING_SUPPORTED
 
-    if (CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
+    if (pModule->AreJITOptimizationsDisabled())
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
     }
@@ -13939,7 +13937,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             CorInfoHelpFunc corInfoHelpFunc = MapReadyToRunHelper((ReadyToRunHelper)helperNum);
             if (corInfoHelpFunc != CORINFO_HELP_UNDEF)
             {
-                result = (size_t)CEEJitInfo::getHelperFtnStatic(corInfoHelpFunc);
+                result = (size_t)CEECodeGenInfo::getHelperFtnStatic(corInfoHelpFunc);
             }
             else
             {

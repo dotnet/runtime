@@ -2058,8 +2058,6 @@ private:
     SHash<CustAttrHashTraits>   m_caHash;   // Hashed list of custom attribute types seen.
 #endif
 
-    bool        m_bKeepKnownCa;             // Should all known CA's be kept?
-
     MetaDataReorderingOptions m_ReorderingOptions;
 
 #ifdef FEATURE_METADATA_RELEASE_MEMORY_ON_REOPEN

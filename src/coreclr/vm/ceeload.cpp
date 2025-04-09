@@ -478,14 +478,25 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
+#ifdef PROFILING_SUPPORTED
+    // set profiler related JIT flags
+    if (CORProfilerDisableInlining())
+    {
+        m_dwTransientFlags |= PROF_DISABLE_INLINING;
+    }
+    if (CORProfilerDisableOptimizations())
+    {
+        m_dwTransientFlags |= PROF_DISABLE_OPTIMIZATIONS;
+    }
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
     {
         m_pJitInlinerTrackingMap = new JITInlineTrackingMap(GetLoaderAllocator());
     }
-#endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
+#endif // PROFILING_SUPPORTED
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%s\".\n", GetDebugName()));
 }
@@ -507,7 +518,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())
     {
-        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits()));
+        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && AreJITOptimizationsDisabled());
         if (setEnC)
         {
             EnableEditAndContinue();
@@ -1389,7 +1400,9 @@ void Module::FreeClassTables()
         MethodTable * pMT = typeDefIter.GetElement();
         if (pMT != NULL)
         {
-            pMT->GetClass()->Destruct(pMT);
+            ClassLoader::NotifyUnload(pMT, true);
+            pMT->GetClass()->Destruct();
+            ClassLoader::NotifyUnload(pMT, false);
         }
     }
 
@@ -1405,14 +1418,20 @@ void Module::FreeClassTables()
             {
                 TypeHandle th = pEntry->GetTypeHandle();
 
+                // Array EEClass doesn't need notification and there is no work for Destruct()
+                if (th.IsTypeDesc())
+                    continue;
+
+                MethodTable * pMT = th.AsMethodTable();
+                ClassLoader::NotifyUnload(pMT, true);
+
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table
-                // There is nothing interesting to destruct on array EEClass
-                if (!th.IsTypeDesc())
+                if (pMT->IsCanonicalMethodTable())
                 {
-                    MethodTable * pMT = th.AsMethodTable();
-                    if (pMT->IsCanonicalMethodTable())
-                        pMT->GetClass()->Destruct(pMT);
+                    pMT->GetClass()->Destruct();
                 }
+
+                ClassLoader::NotifyUnload(pMT, false);
             }
         }
     }
