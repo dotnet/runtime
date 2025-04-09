@@ -177,7 +177,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void ImportSubjectPublicKeyInfo_WrongParameters()
         {
-            byte[] mlKem512BadParamters = (
+            byte[] mlKem512BadParameters = (
                 "30820342301B0609608648016503040401040E62616420706172616D65746572" +
                 "730382032100002645126709F87B5C6DF9116BA175020895C5C3031AFBBFCDF9" +
                 "5AF2839095396A21F23BB1232091EB8F983BCBC95400D4A335C555187FC2311B" +
@@ -205,7 +205,7 @@ namespace System.Security.Cryptography.Tests
                 "B687DAF440BB483748B7C2F0889F02DAB06EC64F33E59E49931A20084C7E7856" +
                 "3A766B5223909DC385C5BC4BD8AFF51B5CC52F60FD181D8AC43537254ABC2F29" +
                 "E8FCB8698CD4").HexToByteArray();
-            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(mlKem512BadParamters));
+            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(mlKem512BadParameters));
         }
 
         [Fact]

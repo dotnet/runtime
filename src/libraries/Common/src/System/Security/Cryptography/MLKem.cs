@@ -1323,7 +1323,7 @@ namespace System.Security.Cryptography
                             throw new CryptographicException(SR.Argument_KemInvalidEncapsulationKeyLength);
                         }
 
-                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, spki.SubjectPublicKey.Span);
+                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, subjectPublicKey);
                     }
                 }
             }
