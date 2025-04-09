@@ -105,6 +105,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.GetIndex")]
 			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
+			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			static void Read (dynamic d)
 			{
 				var x = d[0];
