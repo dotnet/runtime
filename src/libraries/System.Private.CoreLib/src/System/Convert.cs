@@ -314,12 +314,12 @@ namespace System
         // Conversions to Boolean
         public static bool ToBoolean([NotNullWhen(true)] object? value)
         {
-            return value == null ? false : ((IConvertible)value).ToBoolean(null);
+            return value != null && ((IConvertible)value).ToBoolean(null);
         }
 
         public static bool ToBoolean([NotNullWhen(true)] object? value, IFormatProvider? provider)
         {
-            return value == null ? false : ((IConvertible)value).ToBoolean(provider);
+            return value != null && ((IConvertible)value).ToBoolean(provider);
         }
 
         public static bool ToBoolean(bool value)
