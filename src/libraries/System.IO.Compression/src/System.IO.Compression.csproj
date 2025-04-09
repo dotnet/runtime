@@ -25,6 +25,8 @@
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipBlocks.FieldLocations.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipCustomStreams.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipHelper.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipHelper.Async.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipHelper.Sync.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipVersion.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\BlockType.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\DeflateManagedStream.cs" />
