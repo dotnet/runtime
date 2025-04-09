@@ -260,6 +260,15 @@ INST(amominu_w,     "amominu.w",      0,   0xc000202f) // funct5:11000
 INST(amominu_d,     "amominu.d",      0,   0xc000302f) // funct5:11000
 INST(amomaxu_w,     "amomaxu.w",      0,   0xe000202f) // funct5:11100
 INST(amomaxu_d,     "amomaxu.d",      0,   0xe000302f) // funct5:11100
+
+// Zbb (RV32 + RV64)
+INST(clz,           "clz",            0,   0x60001013)
+INST(clzw,          "clzw",           0,   0x6000101b)
+INST(ctz,           "ctz",            0,   0x60101013)
+INST(ctzw,          "ctzw",           0,   0x6010101b)
+INST(cpop,          "cpop",           0,   0x60201013)
+INST(cpopw,         "cpopw",          0,   0x6020101b)
+
 // clang-format on
 /*****************************************************************************/
 #undef INST

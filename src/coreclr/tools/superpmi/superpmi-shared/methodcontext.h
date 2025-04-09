@@ -915,12 +915,12 @@ public:
 
     struct Environment
     {
-        Environment() : getIntConfigValue(nullptr), getStingConfigValue(nullptr)
+        Environment() : getIntConfigValue(nullptr), getStringConfigValue(nullptr)
         {
         }
 
         LightWeightMap<Agnostic_ConfigIntInfo, DWORD>* getIntConfigValue;
-        LightWeightMap<DWORD, DWORD>*                  getStingConfigValue;
+        LightWeightMap<DWORD, DWORD>*                  getStringConfigValue;
     };
 
     Environment cloneEnvironment();

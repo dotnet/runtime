@@ -116,6 +116,41 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 #endif
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
+#define               OFFSETOF__DynamicHelperStubArgs__Constant1    0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Constant1
+                    == offsetof(DynamicHelperStubArgs, Constant1));
+
+#define               OFFSETOF__DynamicHelperStubArgs__Constant2    0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Constant2
+                    == offsetof(DynamicHelperStubArgs, Constant2));
+
+#define               OFFSETOF__DynamicHelperStubArgs__Helper    0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Helper
+                    == offsetof(DynamicHelperStubArgs, Helper));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__SecondIndir    0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__SecondIndir
+                    == offsetof(GenericDictionaryDynamicHelperStubData, SecondIndir));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__LastIndir    0x4
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__LastIndir
+                    == offsetof(GenericDictionaryDynamicHelperStubData, LastIndir));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__SizeOffset    0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__SizeOffset
+                    == offsetof(GenericDictionaryDynamicHelperStubData, SizeOffset));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__SlotOffset    0xc
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__SlotOffset
+                    == offsetof(GenericDictionaryDynamicHelperStubData, SlotOffset));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__HandleArgs    0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__HandleArgs
+                    == offsetof(GenericDictionaryDynamicHelperStubData, HandleArgs));
+
+#define               OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo    DBG_FRE(0x40, 0x18)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo
+                    == offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
 
 //=========================================
 #define MethodTable__m_dwFlags         0x0
@@ -123,6 +158,10 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags)
 
 #define MethodTable__m_BaseSize         0x04
 ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
+
+#define               OFFSETOF__MethodTable__m_pPerInstInfo    DBG_FRE(0x38, 0x30)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pPerInstInfo
+                    == offsetof(MethodTable, m_pPerInstInfo));
 
 #define MethodTable__m_ElementType     DBG_FRE(0x38, 0x30)
 ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));

@@ -27,19 +27,19 @@ int32_t InterpCompiler::AllocGlobalVarOffset(int var)
 
 // For a var that is local to the current bblock that we process, as we iterate
 // over instructions we mark the first and last intruction using it.
-void InterpCompiler::SetVarLiveRange(int32_t var, int insIndex)
+void InterpCompiler::SetVarLiveRange(int32_t var, InterpInst* ins)
 {
     // We don't track liveness yet for global vars
     if (m_pVars[var].global)
         return;
-    if (m_pVars[var].liveStart == -1)
-        m_pVars[var].liveStart = insIndex;
-    m_pVars[var].liveEnd = insIndex;
+    if (m_pVars[var].liveStart == NULL)
+        m_pVars[var].liveStart = ins;
+    m_pVars[var].liveEnd = ins;
 }
 
 void InterpCompiler::SetVarLiveRangeCB(int32_t *pVar, void *pData)
 {
-    SetVarLiveRange(*pVar, (int)(size_t)pData);
+    SetVarLiveRange(*pVar, (InterpInst*)pData);
 }
 
 void InterpCompiler::InitializeGlobalVar(int32_t var, int bbIndex)
@@ -91,6 +91,7 @@ void InterpCompiler::InitializeGlobalVars()
             ForEachInsVar(pIns, (void*)(size_t)pBB->index, &InterpCompiler::InitializeGlobalVarCB);
         }
     }
+
     m_totalVarsStackSize = ALIGN_UP_TO(m_totalVarsStackSize, INTERP_STACK_ALIGNMENT);
 }
 
@@ -274,7 +275,7 @@ void InterpCompiler::AllocOffsets()
                             // The arg of the call is no longer global
                             *callArgs = newVar;
                             // Also update liveness for this instruction
-                            ForEachInsVar(newInst, (void*)(size_t)insIndex, &InterpCompiler::SetVarLiveRangeCB);
+                            ForEachInsVar(newInst, newInst, &InterpCompiler::SetVarLiveRangeCB);
                             insIndex++;
                         }
                         else
@@ -289,7 +290,7 @@ void InterpCompiler::AllocOffsets()
                 }
             }
             // Set liveStart and liveEnd for every referenced local that is not global
-            ForEachInsVar(pIns, (void*)(size_t)insIndex, &InterpCompiler::SetVarLiveRangeCB);
+            ForEachInsVar(pIns, pIns, &InterpCompiler::SetVarLiveRangeCB);
             insIndex++;
         }
         int32_t currentOffset = m_totalVarsStackSize;
@@ -307,6 +308,7 @@ void InterpCompiler::AllocOffsets()
             {
                 printf("\tins_index %d\t", insIndex);
                 PrintIns(pIns);
+                printf("\n");
             }
 #endif
 
@@ -316,7 +318,7 @@ void InterpCompiler::AllocOffsets()
                 int32_t var = pIns->sVars[i];
                 if (var == CALL_ARGS_SVAR)
                     continue;
-                if (!m_pVars[var].global && m_pVars[var].liveEnd == insIndex)
+                if (!m_pVars[var].global && m_pVars[var].liveEnd == pIns)
                 {
                     // Mark the var as no longer being alive
                     assert(!m_pVars[var].callArgs);
@@ -353,7 +355,7 @@ void InterpCompiler::AllocOffsets()
                     if (currentOffset > finalVarsStackSize)
                         finalVarsStackSize = currentOffset;
 
-                    if (m_pVars[var].liveEnd > insIndex)
+                    if (m_pVars[var].liveEnd != pIns)
                     {
                         // If dVar is still used in the basic block, add it to the active list
                         m_pActiveVars->Add(var);
@@ -375,7 +377,11 @@ void InterpCompiler::AllocOffsets()
                 {
                     int32_t var = m_pActiveVars->Get(i);
                     if (m_pVars[var].alive)
-                        printf(" %d (end %d),", var, m_pVars[var].liveEnd);
+                    {
+                        printf(" %d (end ", var);
+                        PrintIns(m_pVars[var].liveEnd);
+                        printf("),");
+                    }
                 }
                 printf("\n");
             }

@@ -19,6 +19,10 @@
        {
          "PipelineId": 265,
          "PipelineName": "runtime-nativeaot-outerloop"
+       },
+       {
+         "PipelineId": 108,
+         "PipelineName": "runtime-coreclr outerloop"
        }
     ]
 }

@@ -3920,12 +3920,12 @@ private:
     // JITed code and JIT helpers. The space used by m_pPerInstInfo is used to represent the array
     // element type handle for array MethodTables.
 
+    public:
     union
     {
         PerInstInfo_t m_pPerInstInfo;
         TADDR         m_ElementTypeHnd;
     };
-    public:
     union
     {
         PTR_InterfaceInfo   m_pInterfaceMap;

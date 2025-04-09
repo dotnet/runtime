@@ -480,7 +480,7 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 
                 if (!usedIDs.Contains(id))
                 {
-                    printf("CheckCoreLibExtended: Unused ecall found: %s.%s::%s\n", pECClass->m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName, ptr->m_szMethodName);
+                    minipal_log_print_error("CheckCoreLibExtended: Unused ecall found: %s.%s::%s\n", pECClass->m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName, ptr->m_szMethodName);
                     fUnusedFCallsFound = TRUE;
                     continue;
                 }
@@ -490,7 +490,7 @@ BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
 
         if (fUnreferencedType)
         {
-            printf("CheckCoreLibExtended: Unused type found: %s.%s\n", c_rgECClasses[ImplsIndex].m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName);
+            minipal_log_print_error("CheckCoreLibExtended: Unused type found: %s.%s\n", c_rgECClasses[ImplsIndex].m_szNameSpace, c_rgECClasses[ImplsIndex].m_szClassName);
             fUnusedFCallsFound = TRUE;
             continue;
         }

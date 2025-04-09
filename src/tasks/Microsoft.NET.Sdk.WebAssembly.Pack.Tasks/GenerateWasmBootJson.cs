@@ -60,6 +60,8 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] Extensions { get; set; }
 
+    public string[]? Profilers { get; set; }
+
     public string StartupMemoryCache { get; set; }
 
     public string Jiterpreter { get; set; }
@@ -430,6 +432,13 @@ public class GenerateWasmBootJson : Task
                 var config = JsonSerializer.Deserialize<Dictionary<string, object>>(fs, BootJsonBuilderHelper.JsonOptions);
                 result.extensions[key] = config;
             }
+        }
+        Profilers ??= Array.Empty<string>();
+        var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
+        if (browserProfiler != null)
+        {
+            result.environmentVariables ??= new();
+            result.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
         }
 
         helper.ComputeResourcesHash(result);

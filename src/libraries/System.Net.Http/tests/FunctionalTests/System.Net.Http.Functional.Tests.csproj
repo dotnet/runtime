@@ -28,6 +28,10 @@
     <!-- This WASM test is slow on NodeJS. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
     <XunitShowProgress Condition="'$(FeatureWasmManagedThreads)' == 'true'">true</XunitShowProgress>
+    <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
+    https://github.com/dotnet/docs/blob/main/docs/core/deploying/trimming/trimming-options.md#trim-framework-library-features 
+    -->
+    <MetricsSupport>true</MetricsSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
@@ -52,6 +56,8 @@
 
   <ItemGroup>
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'"/>
+
+    <RuntimeHostConfigurationOption Include="System.Net.Http.EnableActivityPropagation" Value="true" Trim="true" Condition="'$(TargetOS)' == 'browser'" />
   </ItemGroup>
 
   <ItemGroup>

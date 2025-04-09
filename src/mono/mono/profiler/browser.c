@@ -31,8 +31,15 @@ struct _MonoProfiler {
 };
 
 static MonoProfiler browser_profiler;
+MonoProfilerHandle profiler_handle;
 static double desired_sample_interval_ms;
 static MonoCallSpec callspec;
+static bool needs_balanced_events = true;
+
+void mono_profiler_init_browser_aot (const char *desc);
+void mono_profiler_init_browser_devtools (const char *desc);
+MonoProfilerHandle mono_profiler_init_browser_eventpipe (void);
+void mono_profiler_fini_browser_eventpipe (void);
 
 #ifdef HOST_BROWSER
 
@@ -197,15 +204,24 @@ tail_call (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
 static MonoProfilerCallInstrumentationFlags
 method_filter (MonoProfiler *prof, MonoMethod *method)
 {
-	if (callspec.len > 0 &&
-		!mono_callspec_eval (method, &callspec))
+	if (!mono_callspec_eval (method, &callspec))
 		return MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
 
-	return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
-			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
-			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
-			MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL |
-			MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
+	if (needs_balanced_events) {
+		// this is for the dev tools profiler
+		// event handlers in this file require that enter/leave are balanced
+		return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
+				MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
+				MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
+				MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL |
+				MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
+	} else {
+		// sampling stack traces only requires subset of events
+		// see ep-rt-mono-runtime-provider.c
+		return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
+				MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
+				MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
+	}
 }
 
 
@@ -257,6 +273,9 @@ parse_arg (const char *arg)
 	else if (match_option (arg, "interval", &val)) {
 		char *end;
 		desired_sample_interval_ms = strtod (val, &end);
+	}
+	else if (match_option (arg, "eventpipe", NULL)) {
+		needs_balanced_events = FALSE;
 	}
 }
 
@@ -316,28 +335,33 @@ parse_args (const char *desc)
 }
 
 
-/**
- * mono_profiler_init_browser:
- * the entry point
- */
-void
-mono_profiler_init_browser (const char *desc)
+static void
+mono_profiler_init_browser_common (const char *desc)
 {
 	desired_sample_interval_ms = 10;// ms
 	memset (&callspec, 0, sizeof (MonoCallSpec));
 
-	// browser:
-	if (desc && desc [7] == ':') {
-		parse_args (desc + 8);
+	parse_args (desc);
+
+	profiler_handle = mono_profiler_create (&browser_profiler);
+	if (callspec.enabled) {
+		mono_profiler_set_call_instrumentation_filter_callback (profiler_handle, method_filter);
+	} else {
+		g_warning ("Profiler: callspec is not enabled, no events will be generated.");
 	}
+}
 
-	MonoProfilerHandle handle = mono_profiler_create (&browser_profiler);
+// is both for eventpipe and devtools
+void
+mono_profiler_init_browser_aot (const char *desc)
+{
+	mono_profiler_init_browser_common (desc);
+}
 
-	mono_profiler_set_call_instrumentation_filter_callback (handle, method_filter);
-
-	if (mono_jit_aot_compiling ()) {
-		return;
-	}
+void
+mono_profiler_init_browser_devtools (const char *desc)
+{
+	mono_profiler_init_browser_common (desc);
 
 #ifdef HOST_BROWSER
 	top_stack_frame_index = -1;
@@ -347,10 +371,27 @@ mono_profiler_init_browser (const char *desc)
 	sample_skip_counter = 1;
 
 	// install this only in production run, not in AOT run
-	mono_profiler_set_method_samplepoint_callback (handle, method_samplepoint);
-	mono_profiler_set_method_enter_callback (handle, method_enter);
-	mono_profiler_set_method_leave_callback (handle, method_leave);
-	mono_profiler_set_method_tail_call_callback (handle, tail_call);
-	mono_profiler_set_method_exception_leave_callback (handle, method_exc_leave);
+	if(callspec.enabled) {
+		mono_profiler_set_method_samplepoint_callback (profiler_handle, method_samplepoint);
+		mono_profiler_set_method_enter_callback (profiler_handle, method_enter);
+		mono_profiler_set_method_leave_callback (profiler_handle, method_leave);
+		mono_profiler_set_method_tail_call_callback (profiler_handle, tail_call);
+		mono_profiler_set_method_exception_leave_callback (profiler_handle, method_exc_leave);
+	}
 #endif /* HOST_BROWSER */
+}
+
+MonoProfilerHandle 
+mono_profiler_init_browser_eventpipe (void)
+{
+	char *desc = g_getenv ("DOTNET_WasmPerfInstrumentation");
+	mono_profiler_init_browser_common (desc);
+	free(desc);
+	return profiler_handle;
+}
+
+void
+mono_profiler_fini_browser_eventpipe (void)
+{
+	mono_profiler_set_call_instrumentation_filter_callback (profiler_handle, NULL);
 }

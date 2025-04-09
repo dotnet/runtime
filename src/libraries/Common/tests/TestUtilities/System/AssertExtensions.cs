@@ -568,7 +568,7 @@ namespace System
             {
                 if (!comparer.Equals(expected, actual[i]))
                 {
-                    throw new XunitException($"Expected {expected?.ToString() ?? "null"} at position {i}; actual {actual[i]?.ToString() ?? "null"}");
+                    throw new XunitException($"Expected {expected?.ToString() ?? "null"} at position {i}{Environment.NewLine}Actual {actual[i]?.ToString() ?? "null"}");
                 }
             }
         }
@@ -676,6 +676,16 @@ namespace System
             E exception = AssertThrows<E, T>(span, action);
             Assert.Equal(expectedParamName, exception.ParamName);
             return exception;
+        }
+
+        public static void FalseExpression(bool expr, [CallerArgumentExpression(nameof(expr))] string exprString = null)
+        {
+            Assert.False(expr, $"Expected \"false\" from the expression: \"{exprString}\".");
+        }
+
+        public static void TrueExpression(bool expr, [CallerArgumentExpression(nameof(expr))] string exprString = null)
+        {
+            Assert.True(expr, $"Expected \"true\" from the expression: \"{exprString}\".");
         }
 
         private class ItemCount

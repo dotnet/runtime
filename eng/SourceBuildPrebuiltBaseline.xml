@@ -36,5 +36,18 @@
     <UsagePattern IdentityGlob="System.IO.Pipelines/7.0.0" />
     <UsagePattern IdentityGlob="System.IO.Pipelines/8.0.*" />
     <UsagePattern IdentityGlob="System.Security.Cryptography.Pkcs/5.0.0" />
+
+    <!-- Dependencies of Roslyn, replaced with live packages during full source build
+         https://github.com/dotnet/runtime/pull/112937#discussion_r2022951143 -->
+    <UsagePattern IdentityGlob="Microsoft.Bcl.AsyncInterfaces/9.0.0" />
+    <UsagePattern IdentityGlob="System.Collections.Immutable/9.0.0" />
+    <UsagePattern IdentityGlob="System.Composition/9.0.0" />
+    <UsagePattern IdentityGlob="System.Composition.AttributedModel/9.0.0" />
+    <UsagePattern IdentityGlob="System.Composition.Convention/9.0.0" />
+    <UsagePattern IdentityGlob="System.Composition.Hosting/9.0.0" />
+    <UsagePattern IdentityGlob="System.Composition.Runtime/9.0.0" />
+    <UsagePattern IdentityGlob="System.Composition.TypedParts/9.0.0" />
+    <UsagePattern IdentityGlob="System.IO.Pipelines/9.0.0" />
+    <UsagePattern IdentityGlob="System.Reflection.Metadata/9.0.0" />
   </IgnorePatterns>
 </UsageData>

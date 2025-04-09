@@ -433,7 +433,7 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
     // do this after initializing bounds so callback has size information
     if (TrackAllocations() ||
         (TrackLargeAllocations() && flags & GC_ALLOC_LARGE_OBJECT_HEAP) ||
-		(TrackPinnedAllocations() && flags & GC_ALLOC_PINNED_OBJECT_HEAP))
+                (TrackPinnedAllocations() && flags & GC_ALLOC_PINNED_OBJECT_HEAP))
     {
         OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
         GCPROTECT_BEGIN(objref);
@@ -1261,34 +1261,34 @@ static unsigned UncheckedBarrierInterval = BarrierCountPrintInterval;
 
 void IncCheckedBarrierCount()
 {
-	++CheckedBarrierCount;
-	if (--CheckedBarrierInterval == 0)
-	{
-		CheckedBarrierInterval = BarrierCountPrintInterval;
-		printf("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
-			CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
-		printf("    [Checked: %lld after heap check, %lld after ephem check, %lld after already dirty check.]\n",
-			CheckedAfterHeapFilter, CheckedAfterRefInEphemFilter, CheckedAfterAlreadyDirtyFilter);
-		printf("    [Unchecked: %lld after ephem check, %lld after already dirty check.]\n",
-			UncheckedAfterRefInEphemFilter, UncheckedAfterAlreadyDirtyFilter);
-		printf("    [Dest in ephem: checked = %lld, unchecked = %lld.]\n",
-			CheckedDestInEphem, UncheckedDestInEphem);
-        printf("    [Checked: %lld are stores to fields of ret buff, %lld via byref args,\n",
+    ++CheckedBarrierCount;
+    if (--CheckedBarrierInterval == 0)
+    {
+        CheckedBarrierInterval = BarrierCountPrintInterval;
+        minipal_log_print_info("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
+            CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
+        minipal_log_print_info("    [Checked: %lld after heap check, %lld after ephem check, %lld after already dirty check.]\n",
+            CheckedAfterHeapFilter, CheckedAfterRefInEphemFilter, CheckedAfterAlreadyDirtyFilter);
+        minipal_log_print_info("    [Unchecked: %lld after ephem check, %lld after already dirty check.]\n",
+            UncheckedAfterRefInEphemFilter, UncheckedAfterAlreadyDirtyFilter);
+        minipal_log_print_info("    [Dest in ephem: checked = %lld, unchecked = %lld.]\n",
+            CheckedDestInEphem, UncheckedDestInEphem);
+        minipal_log_print_info("    [Checked: %lld are stores to fields of ret buff, %lld via byref args,\n",
             CheckedBarrierRetBufCount, CheckedBarrierByrefArgCount);
-        printf("     %lld via other locals, %lld via addr of local.]\n",
+        minipal_log_print_info("     %lld via other locals, %lld via addr of local.]\n",
             CheckedBarrierByrefOtherLocalCount, CheckedBarrierAddrOfLocalCount);
-	}
+    }
 }
 
 void IncUncheckedBarrierCount()
 {
-	++UncheckedBarrierCount;
-	if (--UncheckedBarrierInterval == 0)
-	{
-		printf("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
-			CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
-		UncheckedBarrierInterval = BarrierCountPrintInterval;
-	}
+    ++UncheckedBarrierCount;
+    if (--UncheckedBarrierInterval == 0)
+    {
+        minipal_log_print_info("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
+            CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
+        UncheckedBarrierInterval = BarrierCountPrintInterval;
+    }
 }
 #endif // FEATURE_COUNT_GC_WRITE_BARRIERS
 

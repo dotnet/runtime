@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -52,11 +53,31 @@ namespace System.Security.Cryptography.X509Certificates
         /// <see cref="AsymmetricAlgorithm.ExportSubjectPublicKeyInfo" /> has not been overridden
         /// in a derived class.
         /// </exception>
-        public PublicKey(AsymmetricAlgorithm key)
+        public PublicKey(AsymmetricAlgorithm key) : this(key.ExportSubjectPublicKeyInfo())
         {
-            byte[] subjectPublicKey = key.ExportSubjectPublicKeyInfo();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PublicKey" /> class
+        /// using SubjectPublicKeyInfo from an <see cref="MLKem" />.
+        /// </summary>
+        /// <param name="key">
+        /// An <c>MLKem</c> key to obtain the SubjectPublicKeyInfo from.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        /// The SubjectPublicKeyInfo could not be decoded. The
+        /// <see cref="MLKem.ExportSubjectPublicKeyInfo" /> must return a
+        /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public PublicKey(MLKem key) : this(key.ExportSubjectPublicKeyInfo())
+        {
+        }
+
+        private PublicKey(byte[] subjectPublicKeyInfo)
+        {
             DecodeSubjectPublicKeyInfo(
-                subjectPublicKey,
+                subjectPublicKeyInfo,
                 out Oid localOid,
                 out AsnEncodedData? localParameters,
                 out AsnEncodedData localKeyValue);
@@ -271,6 +292,26 @@ namespace System.Security.Cryptography.X509Certificates
                 ecdh.Dispose();
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="MLKem" /> public key, or <see langword="null" />
+        /// if the key is not an ML-KEM key.
+        /// </summary>
+        /// <returns>
+        /// The public key, or <see langword="null" /> if the key is not an ML-KEM key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key contents are corrupt or could not be read successfully.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [UnsupportedOSPlatform("browser")]
+        public MLKem? GetMLKemPublicKey()
+        {
+            if (MLKemAlgorithm.FromOid(_oid.Value) is null)
+                return null;
+
+            return MLKem.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo());
         }
 
         internal AsnWriter EncodeSubjectPublicKeyInfo()

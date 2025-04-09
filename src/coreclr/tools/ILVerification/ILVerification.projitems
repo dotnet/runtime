@@ -99,6 +99,9 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FieldForInstantiatedType.cs">
       <Link>TypeSystem\Common\FieldForInstantiatedType.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FieldForInstantiatedType.FieldLayout.cs">
+      <Link>TypeSystem\Common\FieldForInstantiatedType.FieldLayout.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FieldDesc.cs">
       <Link>TypeSystem\Common\FieldDesc.cs</Link>
     </Compile>

@@ -18,7 +18,7 @@ namespace System.Formats.Nrbf;
 /// </summary>
 /// <remarks>
 /// NrbfDecoder is an implementation of an NRBF reader, but its behaviors don't strictly follow BinaryFormatter's implementation.
-/// Thus the output of NrbfDecoder shouldn't be used to determine whether a call to BinaryFormatter would be safe.
+/// You shouldn't use the output of NrbfDecoder to determine whether a call to BinaryFormatter would be safe.
 /// </remarks>
 public static class NrbfDecoder
 {

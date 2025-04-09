@@ -226,6 +226,7 @@ public:
         REGNUM_FP = REGNUM_EBP,
         REGNUM_SP = REGNUM_ESP,
 #elif TARGET_AMD64
+        REGNUM_FP = REGNUM_RBP,
         REGNUM_SP = REGNUM_RSP,
 #elif TARGET_ARM
         REGNUM_FP = REGNUM_R11,

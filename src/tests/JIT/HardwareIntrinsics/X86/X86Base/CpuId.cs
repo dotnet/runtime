@@ -381,25 +381,21 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            if (Vector<byte>.Count == 16)
+            int vectorTByteLength = 16;
+            int maxVectorTBitWidth = (GetDotnetEnvVar("MaxVectorTBitWidth", defaultValue: 0) / 128) * 128;
+
+            if ((maxVectorTBitWidth >= 512) && !isAvx512HierarchyDisabled)
             {
-                if (!isAvx2HierarchyDisabled)
-                {
-                    Console.WriteLine($"{typeof(Vector).FullName}.Count returned 16 but the hardware returned 32");
-                    testResult = Fail;
-                }
+                vectorTByteLength = int.Min(64, preferredVectorByteLength);
             }
-            else if (Vector<byte>.Count == 32)
+            else if ((maxVectorTBitWidth is 0 or >= 256) && !isAvx2HierarchyDisabled)
             {
-                if (isAvx2HierarchyDisabled)
-                {
-                    Console.WriteLine($"{typeof(Vector).FullName}.Count returned 32 but the hardware returned 16");
-                    testResult = Fail;
-                }
+                vectorTByteLength = int.Min(32, preferredVectorByteLength);
             }
-            else
+
+            if (Vector<byte>.Count != vectorTByteLength)
             {
-                Console.WriteLine($"{typeof(Vector).FullName}.Count returned {Vector<byte>.Count} which is unexpected");
+                Console.WriteLine($"{typeof(Vector).FullName}.Count returned {Vector<byte>.Count}. The expected value was {vectorTByteLength}.");
                 testResult = Fail;
             }
 

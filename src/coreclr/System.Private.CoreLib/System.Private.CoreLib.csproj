@@ -107,6 +107,10 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\Internal\VersionResilientHashCode.CoreCLR.cs" />
+    <Compile Include="$(CommonPath)Internal\VersionResilientHashCode.cs">
+      <Link>Common\Internal\VersionResilientHashCode.cs</Link>
+    </Compile>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivationContextInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />

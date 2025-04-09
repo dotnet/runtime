@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
@@ -101,6 +102,29 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509Hostname", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int CheckX509Hostname(SafeX509Handle x509, string hostname, int cchHostname);
+
+        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int CryptoNative_IsSignatureAlgorithmAvailable(string algorithm);
+
+        internal static string? IsSignatureAlgorithmAvailable(string algorithm)
+        {
+            const int Available = 1;
+            const int NotAvailable = 0;
+
+            int ret = CryptoNative_IsSignatureAlgorithmAvailable(algorithm);
+            return ret switch
+            {
+                Available => algorithm,
+                NotAvailable => null,
+                int other => throw Fail(other),
+            };
+
+            static CryptographicException Fail(int result)
+            {
+                Debug.Fail($"Unexpected result {result} from {nameof(CryptoNative_IsSignatureAlgorithmAvailable)}");
+                return new CryptographicException();
+            }
+        }
 
         internal static byte[] GetAsn1StringBytes(IntPtr asn1)
         {

@@ -179,7 +179,7 @@ namespace System.Net.Http
         }
 
         [Event(16, Level = EventLevel.Informational)]
-        public void Redirect(string redirectUri)
+        private void Redirect(string redirectUri)
         {
             WriteEvent(eventId: 16, redirectUri);
         }

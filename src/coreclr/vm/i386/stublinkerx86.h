@@ -209,8 +209,6 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitCall(CodeLabel *target, int iArgBytes);
         VOID X86EmitReturn(WORD wArgBytes);
 
-        VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
-
         VOID X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigned preservedRegSet);
 
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);

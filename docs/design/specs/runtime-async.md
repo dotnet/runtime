@@ -49,6 +49,15 @@ Async methods support suspension using one of the following methods:
           public static T Await<T>(Task<T> task);
           [MethodImpl(MethodImplOptions.Async)]
           public static T Await<T>(ValueTask<T> task);
+
+          [MethodImpl(MethodImplOptions.Async)]
+          public static void Await(ConfiguredTaskAwaitable configuredAwaitable);
+          [MethodImpl(MethodImplOptions.Async)]
+          public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable);
+          [MethodImpl(MethodImplOptions.Async)]
+          public static T Await<T>(ConfiguredTaskAwaitable<T> configuredAwaitable);
+          [MethodImpl(MethodImplOptions.Async)]
+          public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable);
       }
   }
   ```

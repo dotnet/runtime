@@ -522,20 +522,6 @@ SearchPathW(
 #define SearchPath  SearchPathW
 
 PALIMPORT
-BOOL
-PALAPI
-CopyFileW(
-      IN LPCWSTR lpExistingFileName,
-      IN LPCWSTR lpNewFileName,
-      IN BOOL bFailIfExists);
-
-#ifdef UNICODE
-#define CopyFile CopyFileW
-#else
-#define CopyFile CopyFileA
-#endif
-
-PALIMPORT
 DWORD
 PALAPI
 GetFileAttributesW(
@@ -710,21 +696,6 @@ GetFullPathNameW(
 #define GetFullPathName GetFullPathNameW
 #else
 #define GetFullPathName GetFullPathNameA
-#endif
-
-PALIMPORT
-UINT
-PALAPI
-GetTempFileNameW(
-         IN LPCWSTR lpPathName,
-         IN LPCWSTR lpPrefixString,
-         IN UINT uUnique,
-         OUT LPWSTR lpTempFileName);
-
-#ifdef UNICODE
-#define GetTempFileName GetTempFileNameW
-#else
-#define GetTempFileName GetTempFileNameA
 #endif
 
 PALIMPORT

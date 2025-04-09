@@ -118,6 +118,8 @@ namespace Thunkerator
         {
             if (arch == "X64")
                 return "AMD64";
+            if (arch == "RiscV64")
+                return "RISCV64";
             return arch;
         }
 

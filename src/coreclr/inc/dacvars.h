@@ -84,6 +84,10 @@ DEFINE_DACVAR(PTR_EEJitManager, ExecutionManager__m_pEEJitManager, ExecutionMana
 #ifdef FEATURE_READYTORUN
 DEFINE_DACVAR(PTR_ReadyToRunJitManager, ExecutionManager__m_pReadyToRunJitManager, ExecutionManager::m_pReadyToRunJitManager)
 #endif
+#ifdef FEATURE_INTERPRETER
+DEFINE_DACVAR(PTR_InterpreterJitManager, ExecutionManager__m_pInterpreterJitManager, ExecutionManager::m_pInterpreterJitManager)
+DEFINE_DACVAR(PTR_InterpreterCodeManager, ExecutionManager__m_pInterpreterCodeMan, ExecutionManager::m_pInterpreterCodeMan)
+#endif
 
 DEFINE_DACVAR_NO_DUMP(VMHELPDEF *, dac__hlpFuncTable, ::hlpFuncTable)
 DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
@@ -116,7 +120,6 @@ DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pExceptionServicesInternalCallsClass, ::g_pExceptionServicesInternalCallsClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pStackFrameIteratorClass, ::g_pStackFrameIteratorClass)
-DEFINE_DACVAR(BOOL, dac__g_isNewExceptionHandlingEnabled, ::g_isNewExceptionHandlingEnabled)
 #endif
 
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)

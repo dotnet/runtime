@@ -222,10 +222,6 @@ export function normalizeConfig () {
     runtimeHelpers.diagnosticTracing = loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
 
-    runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
-        && globalThis.performance
-        && typeof globalThis.performance.measure === "function";
-
     loaderHelpers.maxParallelDownloads = config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
     loaderHelpers.enableDownloadRetry = config.enableDownloadRetry !== undefined ? config.enableDownloadRetry : loaderHelpers.enableDownloadRetry;
 }
@@ -333,7 +329,7 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
         loaderHelpers.config.applicationEnvironment = "Production";
     }
 
-    if (loaderHelpers.config.debugLevel !== 0 && document.querySelector("script[src*='aspnetcore-browser-refresh']")) {
+    if (loaderHelpers.config.debugLevel !== 0 && globalThis.window?.document?.querySelector("script[src*='aspnetcore-browser-refresh']")) {
         loaderHelpers.config.environmentVariables = loaderHelpers.config.environmentVariables || {};
         if (!loaderHelpers.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"]) {
             loaderHelpers.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";

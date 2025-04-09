@@ -35,17 +35,18 @@ class AppDomain;
 //  on the stack.  The FEF is used for unwinding.  If not defined, the unwinding
 //  uses the exception context.
 #define USE_FEF // to mark where code needs to be changed to eliminate the FEF
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
  #undef USE_FEF // Turn off the FEF use on x86.
  #define ELIMINATE_FEF
 #else
  #if defined(ELIMINATE_FEF)
   #undef ELIMINATE_FEF
  #endif
-#endif // TARGET_X86 && !TARGET_UNIX
+#endif // TARGET_X86 && !FEATURE_EH_FUNCLETS
 
 #if defined(FEATURE_EH_FUNCLETS)
 #define RECORD_RESUMABLE_FRAME_SP
+#define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 #endif
 
 //************************************************************************
@@ -137,7 +138,6 @@ public:
      */
     PTR_VOID GetExactGenericArgsToken();
 
-    inline CodeManState * GetCodeManState() { LIMITED_METHOD_DAC_CONTRACT; return & codeManState; }
     /*
        IF YOU USE ANY OF THE SUBSEQUENT FUNCTIONS, YOU NEED TO REALLY UNDERSTAND THE
        STACK-WALKER (INCLUDING UNWINDING OF METHODS IN MANAGED NATIVE CODE)!
@@ -443,8 +443,6 @@ private:
     friend class ExceptionTracker;
     friend void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 #endif // FEATURE_EH_FUNCLETS
-
-    CodeManState      codeManState;
 
     bool              isFrameless;
     bool              isFirst;
@@ -767,6 +765,9 @@ private:
     bool          m_fFuncletNotSeen;
     // Indicates that the stack walk has moved past a funclet
     bool          m_fFoundFirstFunclet;
+#ifdef FEATURE_INTERPRETER
+    bool          m_walkingInterpreterFrames;
+#endif // FEATURE_INTERPRETER
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;

@@ -34,12 +34,12 @@ public record struct StressMsgData(
 public interface IStressLog : IContract
 {
     static string IContract.Name { get; } = nameof(StressLog);
-    public virtual bool HasStressLog() => throw new NotImplementedException();
-    public virtual StressLogData GetStressLogData() => throw new NotImplementedException();
-    public virtual StressLogData GetStressLogData(TargetPointer stressLog) => throw new NotImplementedException();
-    public virtual IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => throw new NotImplementedException();
-    public virtual IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => throw new NotImplementedException();
-    public virtual bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => throw new NotImplementedException();
+    bool HasStressLog() => throw new NotImplementedException();
+    StressLogData GetStressLogData() => throw new NotImplementedException();
+    StressLogData GetStressLogData(TargetPointer stressLog) => throw new NotImplementedException();
+    IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => throw new NotImplementedException();
+    IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => throw new NotImplementedException();
+    bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => throw new NotImplementedException();
 }
 
 public readonly struct StressLog : IStressLog

@@ -94,27 +94,27 @@ void ExecutableAllocator::DumpHolderUsage()
     LARGE_INTEGER freq;
     QueryPerformanceFrequency(&freq);
 
-    fprintf(stderr, "Map time with lock sum: %lldms\n", g_mapTimeWithLockSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map time sum: %lldms\n", g_mapTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map find RX time sum: %lldms\n", g_mapFindRXTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map create time sum: %lldms\n", g_mapCreateTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Unmap time with lock sum: %lldms\n", g_unmapTimeWithLockSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Unmap time sum: %lldms\n", g_unmapTimeSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Map time with lock sum: %lldms\n", g_mapTimeWithLockSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Map time sum: %lldms\n", g_mapTimeSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Map find RX time sum: %lldms\n", g_mapFindRXTimeSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Map create time sum: %lldms\n", g_mapCreateTimeSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Unmap time with lock sum: %lldms\n", g_unmapTimeWithLockSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Unmap time sum: %lldms\n", g_unmapTimeSum / (freq.QuadPart / 1000));
 
-    fprintf(stderr, "Reserve count: %lld\n", g_reserveCount);
-    fprintf(stderr, "Release count: %lld\n", g_releaseCount);
+    minipal_log_print_info("Reserve count: %lld\n", g_reserveCount);
+    minipal_log_print_info("Release count: %lld\n", g_releaseCount);
 
-    fprintf(stderr, "g_MapRW_Calls: %lld\n", g_MapRW_Calls);
-    fprintf(stderr, "g_MapRW_CallsWithCacheMiss: %lld\n", g_MapRW_CallsWithCacheMiss);
-    fprintf(stderr, "g_MapRW_LinkedListWalkDepth: %lld\n", g_MapRW_LinkedListWalkDepth);
-    fprintf(stderr, "g_MapRW_LinkedListAverageDepth: %f\n", (double)g_MapRW_LinkedListWalkDepth/(double)g_MapRW_CallsWithCacheMiss);
-    fprintf(stderr, "g_LinkedListTotalDepth: %lld\n", g_LinkedListTotalDepth);
+    minipal_log_print_info("g_MapRW_Calls: %lld\n", g_MapRW_Calls);
+    minipal_log_print_info("g_MapRW_CallsWithCacheMiss: %lld\n", g_MapRW_CallsWithCacheMiss);
+    minipal_log_print_info("g_MapRW_LinkedListWalkDepth: %lld\n", g_MapRW_LinkedListWalkDepth);
+    minipal_log_print_info("g_MapRW_LinkedListAverageDepth: %f\n", (double)g_MapRW_LinkedListWalkDepth/(double)g_MapRW_CallsWithCacheMiss);
+    minipal_log_print_info("g_LinkedListTotalDepth: %lld\n", g_LinkedListTotalDepth);
 
-    fprintf(stderr, "ExecutableWriterHolder usage:\n");
+    minipal_log_print_info("ExecutableWriterHolder usage:\n");
 
     for (int i = 0; i < s_logMaxIndex; i++)
     {
-        fprintf(stderr, "Count: %d at %s:%d in %s\n", s_usageLog[i].count, s_usageLog[i].source, s_usageLog[i].line, s_usageLog[i].function);
+        minipal_log_print_info("Count: %d at %s:%d in %s\n", s_usageLog[i].count, s_usageLog[i].source, s_usageLog[i].line, s_usageLog[i].function);
     }
 }
 
@@ -251,7 +251,7 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
         {
             if ((customCacheSize > ARRAY_SIZE(m_cachedMapping)) || (customCacheSize <= 0))
             {
-                printf("Invalid value in 'EXECUTABLE_ALLOCATOR_CACHE_SIZE' environment variable'\n");
+                minipal_log_print_error("Invalid value in 'EXECUTABLE_ALLOCATOR_CACHE_SIZE' environment variable'\n");
                 return E_FAIL;
             }
             

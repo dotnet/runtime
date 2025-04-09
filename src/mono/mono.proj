@@ -419,7 +419,6 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeArgs Include="-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true" Condition="'$(KeepNativeSymbols)' == 'true'" />
       <_MonoCMakeArgs Condition="'$(CMakeArgs)' != ''" Include="$(CMakeArgs)"/>
       <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)" />
-      <_MonoCMakeArgs Condition="'$(BuildDarwinFrameworks)' == 'true'" Include="-DBUILD_DARWIN_FRAMEWORKS=1" />
       <_MonoCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
       <_MonoCMakeArgs Include="-DMONO_LIB_NAME=$(MonoLibName)" />
       <_MonoCMakeArgs Include="-DMONO_SHARED_LIB_NAME=$(MonoSharedLibName)" />
@@ -542,6 +541,7 @@ JS_ENGINES = [NODE_JS]
     <!-- Mac Catalyst specific options -->
     <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
       <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_VARIANT=maccatalyst" />
+      <_MonoCMakeArgs Include="-DBUILD_DARWIN_FRAMEWORKS=1" />
       <!-- https://gitlab.kitware.com/cmake/cmake/-/issues/20132 -->
       <_MonoCPPFLAGS Include="-Wno-overriding-t-option" />
       <_MonoCFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios$(MacCatalystVersionMin)-macabi" />
@@ -628,6 +628,7 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,logging" />
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
+      <_MonoCMakeArgs Include="-DBUILD_DARWIN_FRAMEWORKS=1" />
       <_MonoCFLAGS Include="-Werror=partial-availability" />
       <_MonoCFLAGS Condition="'$(TargetstvOS)' == 'true'" Include="-fno-gnu-inline-asm" />
       <_MonoCFLAGS Include="-fexceptions" />

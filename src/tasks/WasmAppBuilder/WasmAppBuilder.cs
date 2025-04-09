@@ -57,6 +57,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     /// </summary>
     public ITaskItem[]? EnvVariables { get; set; }
 
+    /// <summary>
+    /// List of profilers to use.
+    /// </summary>
+    public string[]? Profilers { get; set; }
+
     protected override bool ValidateArguments()
     {
         if (!base.ValidateArguments())
@@ -406,6 +411,14 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             {
                 extraConfiguration[name] = valueObject;
             }
+        }
+
+        Profilers ??= Array.Empty<string>();
+        var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
+        if (browserProfiler != null)
+        {
+            bootConfig.environmentVariables ??= new();
+            bootConfig.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
         }
 
         foreach (ITaskItem env in EnvVariables ?? Enumerable.Empty<ITaskItem>())

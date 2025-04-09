@@ -53,12 +53,14 @@
     <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(JitInterfaceLibraryName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       />
 
     <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       />
   </ItemGroup>
@@ -67,6 +69,7 @@
     <Content Include="$(RuntimeBinDir)/pgort*.dll"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       Condition="'$(PgoInstrument)' != ''"
       />
@@ -92,6 +95,7 @@
     <Content Include="$(DiaSymReaderTargetArchPath)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       />
   </ItemGroup>

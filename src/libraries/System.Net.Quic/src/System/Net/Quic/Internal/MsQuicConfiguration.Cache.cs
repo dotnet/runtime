@@ -16,27 +16,9 @@ namespace System.Net.Quic;
 
 internal static partial class MsQuicConfiguration
 {
-    private const string DisableCacheEnvironmentVariable = "DOTNET_SYSTEM_NET_QUIC_DISABLE_CONFIGURATION_CACHE";
-    private const string DisableCacheCtxSwitch = "System.Net.Quic.DisableConfigurationCache";
-
-    internal static bool ConfigurationCacheEnabled { get; } = GetConfigurationCacheEnabled();
-
-    private static bool GetConfigurationCacheEnabled()
-    {
-        // AppContext switch takes precedence
-        if (AppContext.TryGetSwitch(DisableCacheCtxSwitch, out bool value))
-        {
-            return !value;
-        }
-        // check environment variable second
-        else if (Environment.GetEnvironmentVariable(DisableCacheEnvironmentVariable) is string envVar)
-        {
-            return !(envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
-        }
-
-        // enabled by default
-        return true;
-    }
+    internal static bool ConfigurationCacheEnabled { get; } = !AppContextSwitchHelper.GetBooleanConfig(
+        "System.Net.Quic.DisableConfigurationCache",
+        "DOTNET_SYSTEM_NET_QUIC_DISABLE_CONFIGURATION_CACHE");
 
     private static readonly MsQuicConfigurationCache s_configurationCache = new MsQuicConfigurationCache();
 

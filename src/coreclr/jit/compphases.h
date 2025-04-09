@@ -116,7 +116,8 @@ CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,            "Insert GC Polls",         
 CompPhaseNameMacro(PHASE_CREATE_THROW_HELPERS,       "Create throw helper blocks",     false, -1, true)
 CompPhaseNameMacro(PHASE_DETERMINE_FIRST_COLD_BLOCK, "Determine first cold block",     false, -1, true)
 CompPhaseNameMacro(PHASE_RATIONALIZE,                "Rationalize IR",                 false, -1, false)
-CompPhaseNameMacro(PHASE_REPAIR_PROFILE,             "Repair profile",                 false, -1, false)
+CompPhaseNameMacro(PHASE_REPAIR_PROFILE_POST_MORPH,  "Repair profile post-morph",      false, -1, false)
+CompPhaseNameMacro(PHASE_REPAIR_PROFILE_PRE_LAYOUT,  "Repair profile pre-layout",      false, -1, false)
 
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS,             "Local var liveness",             true,  -1, false)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INIT,        "Local var liveness init",        false, PHASE_LCLVARLIVENESS, false)

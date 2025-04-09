@@ -26,7 +26,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false), value, comparer ?? EqualityComparer<TSource>.Default);
+            return Impl(source.WithCancellation(cancellationToken), value, comparer ?? EqualityComparer<TSource>.Default);
 
             async static ValueTask<bool> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,

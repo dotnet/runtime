@@ -2862,11 +2862,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
 
         if (pCf->IsFrameless())
         {
-#ifndef HOST_64BIT
-            exceptionEIP = (PVOID)pCf->GetRegisterSet()->ControlPC;
-#else
-            exceptionEIP = (PVOID)GetIP(pCf->GetRegisterSet()->pContext);
-#endif //!HOST_64BIT
+            exceptionEIP = (PVOID)GetControlPC(pCf->GetRegisterSet());
         }
         else
         {

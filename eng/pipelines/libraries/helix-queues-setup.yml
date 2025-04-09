@@ -115,7 +115,7 @@ jobs:
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'net481') }}:
         # libraries on mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.Amd64.Server2022.Open
@@ -137,14 +137,14 @@ jobs:
               - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64
 
       # .NETFramework
-      - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
+      - ${{ if eq(parameters.jobParameters.framework, 'net481') }}:
         - Windows.11.Amd64.Client.Open
 
 
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
       # netcoreapp
-      - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'net481') }}:
         # mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.11.Amd64.Client.Open
@@ -155,7 +155,7 @@ jobs:
             - Windows.11.Amd64.Client.Open
 
       # .NETFramework
-      - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
+      - ${{ if eq(parameters.jobParameters.framework, 'net481') }}:
         - Windows.10.Amd64.Client.Open
 
     # windows arm64

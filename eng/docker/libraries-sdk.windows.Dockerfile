@@ -14,7 +14,7 @@ USER ContainerAdministrator
 # remove the existing ASP.NET SDK, we want to keep only the latest one we download later
 RUN Remove-Item -Force -Recurse 'C:/Program Files/dotnet/shared/Microsoft.AspNetCore.App/*'
 
-RUN Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile .\dotnet-install.ps1
+RUN Invoke-WebRequest -Uri https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.ps1 -OutFile .\dotnet-install.ps1
 RUN & .\dotnet-install.ps1 -Channel $env:_DOTNET_INSTALL_CHANNEL -Quality daily -InstallDir 'C:/Program Files/dotnet'
 
 USER ContainerUser

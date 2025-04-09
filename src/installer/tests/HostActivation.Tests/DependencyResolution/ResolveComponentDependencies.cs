@@ -451,7 +451,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             public TestApp CreateComponentWithDependencies(Action<NetCoreAppBuilder> customizer = null, string location = null)
             {
                 TestApp componentWithDependencies = CreateTestApp(location, "ComponentWithDependencies");
-                FileUtils.EnsureDirectoryExists(componentWithDependencies.Location);
+                Directory.CreateDirectory(componentWithDependencies.Location);
                 NetCoreAppBuilder builder = NetCoreAppBuilder.PortableForNETCoreApp(componentWithDependencies)
                     .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
                     .WithProject("ComponentDependency", "1.0.0", p => p.WithAssemblyGroup(null, g => g.WithAsset("ComponentDependency.dll")))

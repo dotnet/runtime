@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' or '$(TargetsOSX)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- Sanitizers increase the binary size, so it ends up outside of our expected range. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
+    <!-- Test infra issue on apple devices: https://github.com/dotnet/runtime/issues/89917 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);AVX512_INTRINSICS;VECTORT512_INTRINSICS</DefineConstants>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--instruction-set:avx512f,avx512f_vl,avx512bw,avx512bw_vl,avx512cd,avx512cd_vl,avx512dq,avx512dq_vl" />
+    <IlcArg Include="--max-vectort-bitwidth:512" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
+    if ! cc -dM -E -march=native - < /dev/null 2>/dev/null | grep -q __AVX512; then
+      echo No support for AVX512, test not applicable.
+      exit 0
+    fi
+]]></CLRTestBashPreCommands>
+
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+    powershell -Command "exit (Add-Type -MemberDefinition '[DllImport(\"kernel32.dll\")] public static extern int IsProcessorFeaturePresent(int ProcessorFeature)%3B' -Name W -PassThru)::IsProcessorFeaturePresent(41)"
+    IF %ERRORLEVEL% EQU 0 (
+      echo No support for AVX512, test not applicable.
+      exit /B 0
+    )
+]]></CLRTestBatchPreCommands>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

@@ -260,6 +260,8 @@ public:
 
     static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
 
+    bool CanAssignFrom(const ClassLayout* sourceLayout);
+
 private:
     const BYTE* GetGCPtrs() const
     {

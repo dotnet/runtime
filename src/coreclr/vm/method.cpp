@@ -2888,7 +2888,7 @@ bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()
     return
         g_pConfig->JitMinOpts() ||
         g_pConfig->GenDebuggableCode() ||
-        CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
+        GetModule()->AreJITOptimizationsDisabled();
 }
 
 #ifndef DACCESS_COMPILE

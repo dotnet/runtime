@@ -372,10 +372,9 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     if (LogFlags & LOG_ENABLE_CONSOLE_LOGGING)
     {
-        WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), pBuffer, buflen, &written, 0);
-        //<TODO>@TODO ...Unnecessary to flush console?</TODO>
+        minipal_log_write_info(pBuffer);
         if (LogFlags & LOG_ENABLE_FLUSH_FILE)
-            FlushFileBuffers( GetStdHandle(STD_OUTPUT_HANDLE) );
+            minipal_log_sync_info();
     }
 
     if (LogFlags & LOG_ENABLE_DEBUGGER_LOGGING)
@@ -415,6 +414,5 @@ VOID LogSpewAlways (const char *fmt, ... )
     LogSpewValist (LF_ALWAYS, LL_ALWAYS, fmt, args);
     va_end(args);
 }
-
 #endif // LOGGING
 

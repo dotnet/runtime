@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExternallyShipping>false</ExternallyShipping>
     <!-- 436: Type conflicts on "Interop" due to InternalsVisibleTo access
@@ -149,11 +149,6 @@
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <ProjectReference Include="..\src\System.Reflection.Metadata.csproj" SkipUseReferenceAssembly="true" />
-  </ItemGroup>
-
-  <!-- For IncrementalHash -->
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
