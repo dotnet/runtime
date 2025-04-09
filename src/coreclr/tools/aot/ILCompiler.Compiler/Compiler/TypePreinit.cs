@@ -1791,7 +1791,7 @@ namespace ILCompiler
                             }
                             else
                             {
-                                return Status.Fail(methodIL.OwningMethod, "Ldind from usupported byref");
+                                return Status.Fail(methodIL.OwningMethod, "Ldind from unsupported byref");
                             }
                         }
                         break;
