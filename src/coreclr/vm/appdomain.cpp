@@ -3397,26 +3397,22 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable)
+void AppDomain::OnUnhandledException(OBJECTREF *pThrowable)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    BOOL retVal = FALSE;
-
     GCX_COOP();
 
     EX_TRY
     {
-        retVal = GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable);
+        GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable);
     }
     EX_CATCH
     {
     }
     EX_END_CATCH(SwallowAllExceptions)  // Swallow any errors.
-
-    return retVal;
 }
 
 void AppDomain::RaiseExitProcessEvent()
