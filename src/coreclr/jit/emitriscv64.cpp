@@ -247,7 +247,7 @@ bool emitter::emitInsIsLoadOrStore(instruction ins)
  *  Returns the specific encoding of the given CPU instruction.
  */
 
-inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/) const
+inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/)
 {
     code_t code = BAD_CODE;
 
@@ -648,7 +648,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins || INS_sext_w == ins)
+    if (INS_mov == ins || INS_sext_w == ins || (INS_clz <= ins && ins <= INS_cpopw))
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -688,7 +688,7 @@ void emitter::emitIns_R_R(
         if (INS_fcvt_d_w != ins && INS_fcvt_d_wu != ins) // fcvt.d.w[u] always produces an exact result
             code |= 0x7 << 12;                           // round according to frm status register
     }
-    else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
+    else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins || INS_fsqrt_s == ins || INS_fsqrt_d == ins)
     {
         assert(isFloatReg(reg1));
         assert(isFloatReg(reg2));
@@ -865,7 +865,6 @@ void emitter::emitIns_R_R_R(
             case INS_fsub_s:
             case INS_fmul_s:
             case INS_fdiv_s:
-            case INS_fsqrt_s:
             case INS_fsgnj_s:
             case INS_fsgnjn_s:
             case INS_fsgnjx_s:
@@ -880,7 +879,6 @@ void emitter::emitIns_R_R_R(
             case INS_fsub_d:
             case INS_fmul_d:
             case INS_fdiv_d:
-            case INS_fsqrt_d:
             case INS_fsgnj_d:
             case INS_fsgnjn_d:
             case INS_fsgnjx_d:
@@ -925,7 +923,7 @@ void emitter::emitIns_R_R_R(
         code |= ((reg1 & 0x1f) << 7);
         code |= ((reg2 & 0x1f) << 15);
         code |= ((reg3 & 0x1f) << 20);
-        if ((INS_fadd_s <= ins && INS_fsqrt_s >= ins) || (INS_fadd_d <= ins && INS_fsqrt_d >= ins))
+        if ((INS_fadd_s <= ins && INS_fdiv_s >= ins) || (INS_fadd_d <= ins && INS_fdiv_d >= ins))
         {
             code |= 0x7 << 12;
         }
@@ -1014,14 +1012,18 @@ void emitter::emitIns_R_C(
 
     id->idSmallCns(offs); // usually is 0.
     id->idInsOpt(INS_OPTS_RC);
-    if (emitComp->opts.compReloc)
+
+    if (emitComp->fgIsBlockCold(emitComp->compCurBB))
     {
-        id->idSetIsDspReloc();
-        id->idCodeSize(8);
+        // Loading constant from cold section might be arbitrarily far,
+        // use emitOutputInstr_OptsRcNoPcRel
+        id->idCodeSize(24);
     }
     else
     {
-        id->idCodeSize(24);
+        // Loading constant from hot section can use auipc,
+        // use emitOutputInstr_OptsRcPcRel
+        id->idCodeSize(8);
     }
 
     if (EA_IS_GCREF(attr))
@@ -1277,6 +1279,8 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     appendToCurIG(id);
 }
 
+static inline constexpr unsigned WordMask(uint8_t bits);
+
 /*****************************************************************************
  *
  *  Emits load of 64-bit constant to register.
@@ -1284,16 +1288,6 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
  */
 void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 {
-    // In the worst case a sequence of 8 instructions will be used:
-    //   LUI + ADDIW + SLLI + ADDI + SLLI + ADDI + SLLI + ADDI
-    //
-    // First 2 instructions (LUI + ADDIW) load up to 31 bit. And followed
-    // sequence of (SLLI + ADDI) is used for loading remaining part by batches
-    // of up to 11 bits.
-    //
-    // Note that LUI, ADDI/W use sign extension so that's why we have to work
-    // with 31 and 11 bit batches there.
-
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
 
@@ -1303,53 +1297,299 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         return;
     }
 
-    // TODO-RISCV64: maybe optimized via emitDataConst(), check #86790
+    /* The following algorithm works based on the following equation:
+     * `imm = high32 + offset1` OR `imm = high32 - offset2`
+     *
+     * high32 will be loaded with `lui + addiw`, while offset
+     * will be loaded with `slli + addi` in 11-bits chunks
+     *
+     * First, determine at which position to partition imm into high32 and offset,
+     * so that it yields the least instruction.
+     * Where high32 = imm[y:x] and imm[63:y] are all zeroes or all ones.
+     *
+     * From the above equation, the value of offset1 & offset2 are:
+     * -> offset1 = imm[x-1:0]
+     * -> offset2 = ~(imm[x-1:0] - 1)
+     * The smaller offset should yield the least instruction. (is this correct?) */
 
-    UINT32 msb = BitOperations::BitScanReverse((uint64_t)imm);
-    UINT32 high31;
-    if (msb > 30)
+    // STEP 1: Determine x & y
+
+    int x;
+    int y;
+    if (((uint64_t)imm >> 63) & 0b1)
     {
-        high31 = (imm >> (msb - 30)) & 0x7FffFFff;
+        // last one position from MSB
+        y = 63 - BitOperations::LeadingZeroCount((uint64_t)~imm) + 1;
     }
     else
     {
-        high31 = imm & 0x7FffFFff;
+        // last zero position from MSB
+        y = 63 - BitOperations::LeadingZeroCount((uint64_t)imm) + 1;
+    }
+    if (imm & 0b1)
+    {
+        // first zero position from LSB
+        x = BitOperations::TrailingZeroCount((uint64_t)~imm);
+    }
+    else
+    {
+        // first one position from LSB
+        x = BitOperations::TrailingZeroCount((uint64_t)imm);
     }
 
-    // Since ADDIW use sign extension fo immediate
-    // we have to adjust higher 19 bit loaded by LUI
-    // for case when low part is bigger than 0x800.
-    INT32 high19 = ((int32_t)(high31 + 0x800)) >> 12;
+    // STEP 2: Determine whether to utilize SRLI or not.
 
-    emitIns_R_I(INS_lui, size, reg, high19);
-    if (high31 & 0xFFF)
+    /* SRLI can be utilized when the input has the following pattern:
+     *
+     * 0...01...10...x
+     * <-n-><-m->
+     *
+     * It will emit instructions to load the left shifted immidiate then
+     * followed by a single SRLI instruction.
+     *
+     * Since it adds 1 instruction, loading the new form should at least remove
+     * two instruction. Two instructions can be removed IF:
+     *  1. y - x > 31, AND
+     *  2. (b - a) < 32, OR
+     *  3. (b - a) - (y - x) >= 11
+     *
+     * Visualization aid:
+     * - Original immidiate
+     *   0...01...10...x
+     *       y       <-x
+     * - Left shifted immidiate
+     *   1...10...x0...0
+     *       b  <-a
+     * */
+
+    constexpr int absMaxInsCount  = 8;
+    constexpr int prefMaxInsCount = 5;
+    assert(prefMaxInsCount <= absMaxInsCount);
+
+    // If we generate more instructions than the prefered maximum instruction count, we'll instead use emitDataConst +
+    // emitIns_R_C combination.
+    int insCountLimit = prefMaxInsCount;
+    // If we are currently generating prolog / epilog, we are currently not inside a method block, therefore, we should
+    // not use the emitDataConst + emitIns_R_C combination.
+    if (emitComp->compGeneratingProlog || emitComp->compGeneratingEpilog)
     {
-        emitIns_R_R_I(INS_addiw, size, reg, reg, high31 & 0xFFF);
+        insCountLimit = absMaxInsCount;
     }
 
-    // And load remaining part part by batches of 11 bits size.
-    INT32 remainingShift = msb - 30;
-
-    UINT32 shiftAccumulator = 0;
-    while (remainingShift > 0)
+    bool     utilizeSRLI     = false;
+    int      srliShiftAmount = 0;
+    uint64_t originalImm     = imm;
+    bool     cond1           = (y - x) > 31;
+    if ((((uint64_t)imm >> 63) & 0b1) == 0 && cond1)
     {
-        UINT32 shift = remainingShift >= 11 ? 11 : remainingShift % 11;
-        UINT32 mask  = 0x7ff >> (11 - shift);
-        remainingShift -= shift;
-        ssize_t low11 = (imm >> remainingShift) & mask;
-        shiftAccumulator += shift;
-
-        if (low11)
+        srliShiftAmount  = BitOperations::LeadingZeroCount((uint64_t)imm);
+        uint64_t tempImm = (uint64_t)imm << srliShiftAmount;
+        int      m       = BitOperations::LeadingZeroCount(~tempImm);
+        int      b       = 64 - m;
+        int      a       = BitOperations::TrailingZeroCount(tempImm);
+        bool     cond2   = (b - a) < 32;
+        bool     cond3   = ((y - x) - (b - a)) >= 11;
+        if (cond2 || cond3)
         {
-            emitIns_R_R_I(INS_slli, size, reg, reg, shiftAccumulator);
-            shiftAccumulator = 0;
-
-            emitIns_R_R_I(INS_addi, size, reg, reg, low11);
+            imm         = tempImm;
+            y           = b;
+            x           = a;
+            utilizeSRLI = true;
+            insCountLimit -= 1;
         }
     }
-    if (shiftAccumulator)
+
+    assert(y >= x);
+    assert((1 <= y) && (y <= 63));
+    assert((1 <= x) && (x <= 63));
+
+    if (y < 32)
     {
-        emitIns_R_R_I(INS_slli, size, reg, reg, shiftAccumulator);
+        y = 31;
+        x = 0;
+    }
+    else if ((y - x) < 31)
+    {
+        y = x + 31;
+    }
+    else
+    {
+        x = y - 31;
+    }
+
+    uint32_t high32 = ((int64_t)imm >> x) & WordMask(32);
+
+    // STEP 3: Determine whether to use high32 + offset1 or high32 - offset2
+
+    /* TODO: Instead of using subtract / add mode, assume that we're always adding
+     * 12-bit chunks. However, if we encounter such 12-bit chunk with MSB == 1,
+     * add 1 to the previous chunk, and add the 12-bit chunk as is, which
+     * essentially does a subtraction. It will generate the least instruction to
+     * load offset.
+     * See the following discussion:
+     * https://github.com/dotnet/runtime/pull/113250#discussion_r1987576070 */
+
+    uint32_t offset1        = imm & WordMask((uint8_t)x);
+    uint32_t offset2        = (~(offset1 - 1)) & WordMask((uint8_t)x);
+    uint32_t offset         = offset1;
+    bool     isSubtractMode = false;
+
+    if ((high32 == 0x7FFFFFFF) && (y != 63))
+    {
+        /* Handle corner case: we cannot do subtract mode if high32 == 0x7FFFFFFF
+         * Since adding 1 to it will change the sign bit. Instead, shift x and y
+         * to the left by one. */
+        int      newX       = x + 1;
+        uint32_t newOffset1 = imm & WordMask((uint8_t)newX);
+        uint32_t newOffset2 = (~(newOffset1 - 1)) & WordMask((uint8_t)newX);
+        if (newOffset2 < offset1)
+        {
+            x              = newX;
+            high32         = ((int64_t)imm >> x) & WordMask(32);
+            offset2        = newOffset2;
+            isSubtractMode = true;
+        }
+    }
+    else if (offset2 < offset1)
+    {
+        isSubtractMode = true;
+    }
+
+    if (isSubtractMode)
+    {
+        offset = offset2;
+        high32 = (high32 + 1) & WordMask(32);
+    }
+
+    assert(absMaxInsCount >= 2);
+    int         numberOfInstructions = 0;
+    instruction ins[absMaxInsCount];
+    int32_t     values[absMaxInsCount];
+
+    // STEP 4: Generate instructions to load high32
+
+    uint32_t upper    = (high32 >> 12) & WordMask(20);
+    uint32_t lower    = high32 & WordMask(12);
+    int      lowerMsb = (lower >> 11) & 0b1;
+    if (lowerMsb == 1)
+    {
+        upper += 1;
+        upper &= WordMask(20);
+    }
+    if (upper != 0)
+    {
+        ins[numberOfInstructions]    = INS_lui;
+        values[numberOfInstructions] = ((upper >> 19) & 0b1) ? (upper + 0xFFF00000) : upper;
+        numberOfInstructions += 1;
+    }
+    if (lower != 0)
+    {
+        ins[numberOfInstructions]    = INS_addiw;
+        values[numberOfInstructions] = lower;
+        numberOfInstructions += 1;
+    }
+
+    // STEP 5: Generate instructions to load offset in 11-bits chunks
+
+    int chunkLsbPos = (x < 11) ? 0 : (x - 11);
+    int shift       = (x < 11) ? x : 11;
+    int chunkMask   = (x < 11) ? WordMask((uint8_t)x) : WordMask(11);
+    while (true)
+    {
+        uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
+
+        if (chunk != 0)
+        {
+            /* We could move our 11 bit chunk window to the right for as many as the
+             * leading zeros.*/
+            int leadingZerosOn11BitsChunk = 11 - (32 - BitOperations::LeadingZeroCount(chunk));
+            if (leadingZerosOn11BitsChunk > 0)
+            {
+                int maxAdditionalShift =
+                    (chunkLsbPos < leadingZerosOn11BitsChunk) ? chunkLsbPos : leadingZerosOn11BitsChunk;
+                chunkLsbPos -= maxAdditionalShift;
+                shift += maxAdditionalShift;
+                chunk = (offset >> chunkLsbPos) & chunkMask;
+            }
+
+            numberOfInstructions += 2;
+            if (numberOfInstructions > insCountLimit)
+            {
+                break;
+            }
+            ins[numberOfInstructions - 2]    = INS_slli;
+            values[numberOfInstructions - 2] = shift;
+            if (isSubtractMode)
+            {
+                ins[numberOfInstructions - 1]    = INS_addi;
+                values[numberOfInstructions - 1] = -(int32_t)chunk;
+            }
+            else
+            {
+                ins[numberOfInstructions - 1]    = INS_addi;
+                values[numberOfInstructions - 1] = chunk;
+            }
+            shift = 0;
+        }
+        if (chunkLsbPos == 0)
+        {
+            break;
+        }
+        shift += (chunkLsbPos < 11) ? chunkLsbPos : 11;
+        chunkMask = (chunkLsbPos < 11) ? (chunkMask >> (11 - chunkLsbPos)) : WordMask(11);
+        chunkLsbPos -= (chunkLsbPos < 11) ? chunkLsbPos : 11;
+    }
+    if (shift > 0)
+    {
+        numberOfInstructions += 1;
+        if (numberOfInstructions <= insCountLimit)
+        {
+            ins[numberOfInstructions - 1]    = INS_slli;
+            values[numberOfInstructions - 1] = shift;
+        }
+    }
+
+    // STEP 6: Determine whether to use emitDataConst or emit generated instructions
+
+    if (numberOfInstructions <= insCountLimit)
+    {
+        for (int i = 0; i < numberOfInstructions; i++)
+        {
+            if ((i == 0) && (ins[0] == INS_lui))
+            {
+                emitIns_R_I(ins[i], size, reg, values[i]);
+            }
+            else if ((i == 0) && ((ins[0] == INS_addiw) || (ins[0] == INS_addi)))
+            {
+                emitIns_R_R_I(ins[i], size, reg, REG_R0, values[i]);
+            }
+            else if (i == 0)
+            {
+                assert(false && "First instruction must be lui / addiw / addi");
+            }
+            else if ((ins[i] == INS_addi) || (ins[i] == INS_addiw) || (ins[i] == INS_slli))
+            {
+                emitIns_R_R_I(ins[i], size, reg, reg, values[i]);
+            }
+            else
+            {
+                assert(false && "Remainding instructions must be addi / addiw / slli");
+            }
+        }
+        if (utilizeSRLI)
+        {
+            emitIns_R_R_I(INS_srli, size, reg, reg, srliShiftAmount);
+        }
+    }
+    else if (size == EA_PTRSIZE)
+    {
+        assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
+        auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
+        emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr), 0);
+    }
+    else
+    {
+        assert(false && "If number of instruction exceeds MAX_NUM_OF_LOAD_IMM_INS, imm must be 8 bytes");
     }
 }
 
@@ -2994,14 +3234,14 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     *ins                 = id->idIns();
     const regNumber reg1 = id->idReg1();
 
-    if (id->idIsReloc())
+    if (id->idCodeSize() == 8)
     {
-        return emitOutputInstr_OptsRcReloc(dst, ins, offset, reg1);
+        return emitOutputInstr_OptsRcPcRel(dst, ins, offset, reg1);
     }
-    return emitOutputInstr_OptsRcNoReloc(dst, ins, offset, reg1);
+    return emitOutputInstr_OptsRcNoPcRel(dst, ins, offset, reg1);
 }
 
-BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsRcPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
     const ssize_t immediate = (emitConsBlock - dst) + offset;
     assert((immediate > 0) && ((immediate & 0x03) == 0));
@@ -3019,7 +3259,7 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsRcNoPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
     const ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) + offset;
     assertCodeLength(static_cast<size_t>(immediate), 48); // RISC-V Linux Kernel SV48
@@ -3544,7 +3784,6 @@ void emitter::emitDispInsName(
             unsigned rd           = (code >> 7) & 0x1f;
             unsigned rs1          = (code >> 15) & 0x1f;
             int      imm12        = static_cast<int>(code) >> 20;
-            bool     isHex        = false;
             bool     hasImmediate = true;
             int      printLength  = 0;
 
@@ -3566,18 +3805,31 @@ void emitter::emitDispInsName(
                         hasImmediate = false;
                     }
                     break;
-                case 0x1: // SLLI
+                case 0x1:
                 {
-                    static constexpr unsigned kSlliFunct6 = 0b000000;
-
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
-                    // SLLI's instruction code's upper 6 bits have to be equal to zero
-                    if (funct6 != kSlliFunct6)
+                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV64
+                    switch (funct6)
                     {
-                        return emitDispIllegalInstruction(code);
+                        case 0b011000:
+                        {
+                            static const char* names[] = {"clz", "ctz", "cpop"};
+                            // shift amount is treated as additional funct opcode
+                            if (shamt >= ARRAY_SIZE(names))
+                                return emitDispIllegalInstruction(code);
+
+                            printLength  = printf("%s", names[shamt]);
+                            hasImmediate = false;
+                            break;
+                        }
+                        case 0b000000:
+                            printLength = printf("slli");
+                            imm12       = shamt;
+                            break;
+
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
-                    printLength = printf("slli");
-                    imm12 &= 0x3f; // 6 BITS for SHAMT in RISCV64
                 }
                 break;
                 case 0x2: // SLTI
@@ -3588,7 +3840,6 @@ void emitter::emitDispInsName(
                     break;
                 case 0x4: // XORI
                     printLength = printf("xori");
-                    isHex       = true;
                     break;
                 case 0x5: // SRLI & SRAI
                 {
@@ -3607,13 +3858,9 @@ void emitter::emitDispInsName(
                 break;
                 case 0x6: // ORI
                     printLength = printf("ori");
-                    imm12 &= 0xfff;
-                    isHex = true;
                     break;
                 case 0x7: // ANDI
                     printLength = printf("andi");
-                    imm12 &= 0xfff;
-                    isHex = true;
                     break;
                 default:
                     return emitDispIllegalInstruction(code);
@@ -3621,17 +3868,17 @@ void emitter::emitDispInsName(
             assert(printLength > 0);
             int paddingLength = kMaxInstructionLength - printLength;
 
-            printf("%*s %s, %s, ", paddingLength, "", RegNames[rd], RegNames[rs1]);
+            printf("%*s %s, %s", paddingLength, "", RegNames[rd], RegNames[rs1]);
             if (hasImmediate)
             {
+                printf(", ");
                 if (opcode2 == 0x0) // ADDI
                 {
-                    assert(!isHex);
                     emitDispImmediate(imm12, false, rs1);
                 }
                 else
                 {
-                    printf(isHex ? "0x%x" : "%d", imm12);
+                    printf("%d", imm12);
                 }
             }
             printf("\n");
@@ -3657,19 +3904,28 @@ void emitter::emitDispInsName(
                         emitDispImmediate(imm12);
                     }
                     return;
-                case 0x1: // SLLIW
+                case 0x1:
                 {
-                    static constexpr unsigned kSlliwFunct7 = 0b0000000;
-
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
-                    // SLLIW's instruction code's upper 7 bits have to be equal to zero
-                    if (funct7 == kSlliwFunct7)
+                    unsigned shamt  = imm12 & 0x1f; // 5 BITS for SHAMT in RISCV64
+                    switch (funct7)
                     {
-                        printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
-                    }
-                    else
-                    {
-                        emitDispIllegalInstruction(code);
+                        case 0b0110000:
+                        {
+                            static const char* names[] = {"clzw ", "ctzw ", "cpopw"};
+                            // shift amount is treated as funct additional opcode bits
+                            if (shamt >= ARRAY_SIZE(names))
+                                return emitDispIllegalInstruction(code);
+
+                            printf("%s          %s, %s\n", names[shamt], rd, rs1);
+                            return;
+                        }
+                        case 0b0000000:
+                            printf("slliw          %s, %s, %d\n", rd, rs1, shamt);
+                            return;
+
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
                 }
                     return;
@@ -4083,22 +4339,17 @@ void emitter::emitDispInsName(
                 case 0x2C: // FSQRT.S
                     printf("fsqrt.s        %s, %s\n", fd, fs1);
                     return;
-                case 0x10:            // FSGNJ.S & FSGNJN.S & FSGNJX.S
-                    if (opcode4 == 0) // FSGNJ.S
+                case 0x10: // FSGNJ.S & FSGNJN.S & FSGNJX.S
+                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj.s variant");
+                    if (fs1 != fs2)
                     {
-                        printf("fsgnj.s        %s, %s, %s\n", fd, fs1, fs2);
+                        const char* variants[3] = {".s ", "n.s", "x.s"};
+                        printf("fsgnj%s        %s, %s, %s\n", variants[opcode4], fd, fs1, fs2);
                     }
-                    else if (opcode4 == 1) // FSGNJN.S
+                    else // pseudos
                     {
-                        printf("fsgnjn.s       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else if (opcode4 == 2) // FSGNJX.S
-                    {
-                        printf("fsgnjx.s       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                        const char* names[3] = {"fmv.s ", "fneg.s", "fabs.s"};
+                        printf("%s         %s, %s\n", names[opcode4], fd, fs1);
                     }
                     return;
                 case 0x14:            // FMIN.S & FMAX.S
@@ -4186,7 +4437,6 @@ void emitter::emitDispInsName(
                     {
                         printf("fcvt.s.lu      %s, %s\n", fd, xs1);
                     }
-
                     else
                     {
                         NYI_RISCV64("illegal ins within emitDisInsName!");
@@ -4210,22 +4460,17 @@ void emitter::emitDispInsName(
                 case 0x2d: // FSQRT.D
                     printf("fsqrt.d        %s, %s\n", fd, fs1);
                     return;
-                case 0x11:            // FSGNJ.D & FSGNJN.D & FSGNJX.D
-                    if (opcode4 == 0) // FSGNJ.D
+                case 0x11: // FSGNJ.D & FSGNJN.D & FSGNJX.D
+                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj.d variant");
+                    if (fs1 != fs2)
                     {
-                        printf("fsgnj.d        %s, %s, %s\n", fd, fs1, fs2);
+                        const char* variants[3] = {".d ", "n.d", "x.d"};
+                        printf("fsgnj%s        %s, %s, %s\n", variants[opcode4], fd, fs1, fs2);
                     }
-                    else if (opcode4 == 1) // FSGNJN.D
+                    else // pseudos
                     {
-                        printf("fsgnjn.d       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else if (opcode4 == 2) // FSGNJX.D
-                    {
-                        printf("fsgnjx.d       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                        const char* names[3] = {"fmv.d ", "fneg.d", "fabs.d"};
+                        printf("%s         %s, %s\n", names[opcode4], fd, fs1);
                     }
                     return;
                 case 0x15:            // FMIN.D & FMAX.D
@@ -5194,11 +5439,10 @@ unsigned emitter::get_curTotalCodeSize()
 //    are NOT accurate and just a function feature.
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    insExecutionCharacteristics result = {
-        .insThroughput       = PERFSCORE_LATENCY_1C,
-        .insLatency          = PERFSCORE_THROUGHPUT_1C,
-        .insMemoryAccessKind = PERFSCORE_MEMORY_NONE,
-    };
+    insExecutionCharacteristics result;
+    result.insThroughput       = PERFSCORE_LATENCY_1C;
+    result.insLatency          = PERFSCORE_THROUGHPUT_1C;
+    result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
 
     unsigned codeSize = id->idCodeSize();
     assert((codeSize >= 4) && (codeSize % sizeof(code_t) == 0));
