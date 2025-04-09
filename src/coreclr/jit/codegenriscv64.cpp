@@ -2766,6 +2766,30 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 }
                 break;
 
+            case GT_SH1ADD:
+                ins = INS_sh1add;
+                break;
+
+            case GT_SH2ADD:
+                ins = INS_sh2add;
+                break;
+
+            case GT_SH3ADD:
+                ins = INS_sh3add;
+                break;
+
+            case GT_SH1ADD_UW:
+                ins = INS_sh1add_uw;
+                break;
+
+            case GT_SH2ADD_UW:
+                ins = INS_sh2add_uw;
+                break;
+
+            case GT_SH3ADD_UW:
+                ins = INS_sh3add_uw;
+                break;
+
             default:
                 NO_WAY("Unhandled oper in genGetInsForOper() - integer");
                 break;
@@ -6745,7 +6769,10 @@ instruction CodeGen::getShxaddVariant(int scale, bool useUnsignedVariant)
 
 void CodeGen::genCodeForShxadd(GenTreeOp* tree)
 {
-    instruction ins = genGetInsForShxadd(tree);
+    instruction ins = genGetInsForOper(tree);
+
+    assert(ins == INS_sh1add || ins == INS_sh2add || ins == INS_sh3add || ins == INS_sh1add_uw ||
+           ins == INS_sh2add_uw || ins == INS_sh3add_uw);
 
     genConsumeOperands(tree);
 
@@ -6758,6 +6785,8 @@ void CodeGen::genCodeForShxadd(GenTreeOp* tree)
 
 void CodeGen::genCodeForAddUw(GenTreeOp* tree)
 {
+    assert(tree->gtOper == GT_ADD_UW);
+
     genConsumeOperands(tree);
 
     emitAttr attr = emitActualTypeSize(tree);
@@ -6770,6 +6799,8 @@ void CodeGen::genCodeForAddUw(GenTreeOp* tree)
 
 void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
 {
+    assert(tree->gtOper == GT_SLLI_UW);
+
     genConsumeOperands(tree);
 
     emitAttr attr    = emitActualTypeSize(tree);
@@ -6782,27 +6813,6 @@ void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
     GetEmitter()->emitIns_R_R_I(INS_slli_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(), shamt);
 
     genProduceReg(tree);
-}
-
-instruction CodeGen::genGetInsForShxadd(GenTreeOp* tree)
-{
-    switch (tree->gtOper)
-    {
-        case GT_SH1ADD:
-            return INS_sh1add;
-        case GT_SH2ADD:
-            return INS_sh2add;
-        case GT_SH3ADD:
-            return INS_sh3add;
-        case GT_SH1ADD_UW:
-            return INS_sh1add_uw;
-        case GT_SH2ADD_UW:
-            return INS_sh2add_uw;
-        case GT_SH3ADD_UW:
-            return INS_sh3add_uw;
-        default:
-            unreached();
-    }
 }
 
 //------------------------------------------------------------------------

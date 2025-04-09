@@ -869,7 +869,6 @@ protected:
     void        genCodeForShxadd(GenTreeOp* tree);
     void        genCodeForAddUw(GenTreeOp* tree);
     void        genCodeForSlliUw(GenTreeOp* tree);
-    instruction genGetInsForShxadd(GenTreeOp* tree);
     instruction getShxaddVariant(int scale, bool useUnsignedVariant);
 #endif
 

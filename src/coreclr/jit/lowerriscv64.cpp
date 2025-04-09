@@ -14,7 +14,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#include "emit.h"
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -491,6 +490,21 @@ void Lowering::LowerRotate(GenTree* tree)
     ContainCheckShiftRotate(tree->AsOp());
 }
 
+// Determine if cast type is 32-bit zero extension
+bool IsIntZeroExtCast(GenTreeCast* cast)
+{
+    GenTree* const  src          = cast->CastOp();
+    const var_types srcType      = genActualType(src);
+    const bool      srcUnsigned  = cast->IsUnsigned();
+    const unsigned  srcSize      = genTypeSize(srcType);
+    const var_types castType     = cast->gtCastType;
+    const bool      castUnsigned = varTypeIsUnsigned(castType);
+    const unsigned  castSize     = genTypeSize(castType);
+
+    return varTypeIsIntegralOrI(srcType) && varTypeIsIntegralOrI(castType) && srcSize == 4 && castSize == 8 &&
+           (castUnsigned || srcUnsigned);
+}
+
 //------------------------------------------------------------------------
 // TryLowerShiftAddToShxadd : Lower ADD(LSH) node to SH(X)ADD(.UW) node.
 //
@@ -508,22 +522,8 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
         return false;
     }
 
-    if (!tree->OperIs(GT_ADD))
-    {
-        return false;
-    }
-
-    if ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF))
-    {
-        return false;
-    }
-
-    if (tree->isContained())
-    {
-        return false;
-    }
-
-    if ((tree->gtFlags & GTF_ALL_EFFECT) != 0)
+    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_ADD) ||
+        ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
     {
         return false;
     }
@@ -556,18 +556,8 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
     assert(base->IsValue());
     assert(index->IsValue());
 
-    if (base->isContained() || index->isContained())
-    {
-        return false;
-    }
-
-    if (!varTypeIsIntegralOrI(base) || !varTypeIsIntegralOrI(index))
-    {
-        return false;
-    }
-
-    // If base / index are constants, it's better to use immediate instructions.
-    if (base->IsCnsIntOrI() || index->IsCnsIntOrI())
+    if (base->isContained() || index->isContained() || !varTypeIsIntegralOrI(base) || !varTypeIsIntegralOrI(index) ||
+        base->IsCnsIntOrI() || index->IsCnsIntOrI())
     {
         return false;
     }
@@ -611,21 +601,12 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
     DISPNODE(tree);
     JITDUMP("\n");
 
-    if (tree->gtOp1->OperIs(GT_CAST))
+    if (index->OperIs(GT_CAST))
     {
-        GenTreeCast* const cast         = tree->gtOp1->AsCast();
-        GenTree* const     src          = cast->CastOp();
-        const var_types    srcType      = genActualType(src);
-        const bool         srcUnsigned  = cast->IsUnsigned();
-        const unsigned     srcSize      = genTypeSize(srcType);
-        const var_types    castType     = cast->gtCastType;
-        const bool         castUnsigned = varTypeIsUnsigned(castType);
-        const unsigned     castSize     = genTypeSize(castType);
+        GenTreeCast* const cast = index->AsCast();
+        GenTree* const     src  = cast->CastOp();
 
-        bool isZeroExtendIntToLong = varTypeIsIntegralOrI(srcType) && varTypeIsIntegralOrI(castType) && srcSize == 4 &&
-                                     castSize == 8 && (castUnsigned || srcUnsigned);
-
-        if (isZeroExtendIntToLong)
+        if (IsIntZeroExtCast(cast))
         {
             JITDUMP("Removing unused node:\n  ");
             DISPNODE(cast);
@@ -679,22 +660,8 @@ bool Lowering::TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next)
         return false;
     }
 
-    if (!tree->OperIs(GT_ADD))
-    {
-        return false;
-    }
-
-    if ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF))
-    {
-        return false;
-    }
-
-    if (tree->isContained())
-    {
-        return false;
-    }
-
-    if ((tree->gtFlags & GTF_ALL_EFFECT) != 0)
+    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_ADD) ||
+        ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
     {
         return false;
     }
@@ -720,35 +687,16 @@ bool Lowering::TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next)
     assert(base->IsValue());
     assert(index->IsValue());
 
-    if (base->isContained() || index->isContained())
+    if (base->isContained() || index->isContained() || !varTypeIsIntegralOrI(base) || !varTypeIsIntegralOrI(index) ||
+        base->IsCnsIntOrI() || index->IsCnsIntOrI())
     {
         return false;
     }
 
-    if (!varTypeIsIntegralOrI(base) || !varTypeIsIntegralOrI(index))
-    {
-        return false;
-    }
+    GenTreeCast* const cast = index->AsCast();
+    GenTree* const     src  = cast->CastOp();
 
-    // If base / index are constants, it's better to use immediate instructions.
-    if (base->IsCnsIntOrI() || index->IsCnsIntOrI())
-    {
-        return false;
-    }
-
-    GenTreeCast* const cast         = index->AsCast();
-    GenTree* const     src          = cast->CastOp();
-    const var_types    srcType      = genActualType(src);
-    const bool         srcUnsigned  = cast->IsUnsigned();
-    const unsigned     srcSize      = genTypeSize(srcType);
-    const var_types    castType     = cast->gtCastType;
-    const bool         castUnsigned = varTypeIsUnsigned(castType);
-    const unsigned     castSize     = genTypeSize(castType);
-
-    bool isZeroExtendIntToLong = varTypeIsIntegralOrI(srcType) && varTypeIsIntegralOrI(castType) && srcSize == 4 &&
-                                 castSize == 8 && (castUnsigned || srcUnsigned);
-
-    if (isZeroExtendIntToLong)
+    if (IsIntZeroExtCast(cast))
     {
         JITDUMP("Removing unused node:\n  ");
         DISPNODE(cast);
@@ -793,27 +741,9 @@ bool Lowering::TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next)
         return false;
     }
 
-    if (!tree->OperIs(GT_LSH))
-    {
-        return false;
-    }
-
-    if ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF))
-    {
-        return false;
-    }
-
-    if (tree->isContained())
-    {
-        return false;
-    }
-
-    if ((tree->gtFlags & GTF_ALL_EFFECT) != 0)
-    {
-        return false;
-    }
-
-    if (!tree->gtOp1->OperIs(GT_CAST) || !tree->gtOp2->IsCnsIntOrI())
+    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_LSH) ||
+        !tree->gtOp1->OperIs(GT_CAST) || !tree->gtOp2->IsCnsIntOrI() ||
+        ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
     {
         return false;
     }
@@ -822,35 +752,15 @@ bool Lowering::TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next)
 
     assert(index->IsValue());
 
-    if (index->isContained())
+    if (index->isContained() || !varTypeIsIntegralOrI(index) || index->IsCnsIntOrI())
     {
         return false;
     }
 
-    if (!varTypeIsIntegralOrI(index))
-    {
-        return false;
-    }
+    GenTreeCast* const cast = index->AsCast();
+    GenTree* const     src  = cast->CastOp();
 
-    // If index is constant, it's better to use immediate instructions.
-    if (index->IsCnsIntOrI())
-    {
-        return false;
-    }
-
-    GenTreeCast* const cast         = index->AsCast();
-    GenTree* const     src          = cast->CastOp();
-    const var_types    srcType      = genActualType(src);
-    const bool         srcUnsigned  = cast->IsUnsigned();
-    const unsigned     srcSize      = genTypeSize(srcType);
-    const var_types    castType     = cast->gtCastType;
-    const bool         castUnsigned = varTypeIsUnsigned(castType);
-    const unsigned     castSize     = genTypeSize(castType);
-
-    bool isZeroExtendIntToLong = varTypeIsIntegralOrI(srcType) && varTypeIsIntegralOrI(castType) && srcSize == 4 &&
-                                 castSize == 8 && (castUnsigned || srcUnsigned);
-
-    if (isZeroExtendIntToLong)
+    if (IsIntZeroExtCast(cast))
     {
         JITDUMP("Removing unused node:\n  ");
         DISPNODE(cast);
