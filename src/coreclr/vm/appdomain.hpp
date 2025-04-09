@@ -1146,8 +1146,7 @@ public:
     // assemblies
 #ifndef DACCESS_COMPILE
     static void OnUnhandledException(OBJECTREF *pThrowable);
-
-#endif
+#endif // !DACCESS_COMPILE
 
     // True iff a debugger is attached to the process (same as CORDebuggerAttached)
     BOOL IsDebuggerAttached (void);
