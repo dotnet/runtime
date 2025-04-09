@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 commandResult.StdErr);
             string filteredStdErr = commandResult.StdErr.Substring(i);
 
-            return new CommandResult(commandResult.StartInfo, commandResult.ExitCode, commandResult.StdOut, filteredStdErr);
+            return new CommandResult(commandResult.StartInfo, commandResult.ProcessId, commandResult.ExitCode, commandResult.StdOut, filteredStdErr);
         }
     }
 }

@@ -827,14 +827,18 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
 }
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
-                                CORINFO_METHOD_INFO* methodInfo,
-                                bool verbose)
+                                CORINFO_METHOD_INFO* methodInfo)
 {
     m_methodHnd = methodInfo->ftn;
     m_compScopeHnd = methodInfo->scope;
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
-    m_verbose = verbose;
+
+#ifdef DEBUG
+    m_methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
+    if (m_methodName && InterpConfig.InterpDump() && !strcmp(m_methodName, InterpConfig.InterpDump()))
+        m_verbose = true;
+#endif
 }
 
 InterpMethod* InterpCompiler::CompileMethod()
@@ -1518,13 +1522,18 @@ CORINFO_METHOD_HANDLE InterpCompiler::ResolveMethodToken(uint32_t token)
 {
     CORINFO_RESOLVED_TOKEN resolvedToken;
 
-    resolvedToken.tokenScope = m_compScopeHnd;
-    resolvedToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
-    resolvedToken.token = token;
-    resolvedToken.tokenType = CORINFO_TOKENKIND_Method;
-    m_compHnd->resolveToken(&resolvedToken);
+    ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
 
     return resolvedToken.hMethod;
+}
+
+CORINFO_CLASS_HANDLE InterpCompiler::ResolveClassToken(uint32_t token)
+{
+    CORINFO_RESOLVED_TOKEN resolvedToken;
+
+    ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+
+    return resolvedToken.hClass;
 }
 
 void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall)
@@ -1622,7 +1631,7 @@ static int32_t GetStindForType(InterpType interpType)
         case InterpTypeI8: return INTOP_STIND_I8;
         case InterpTypeR4: return INTOP_STIND_R4;
         case InterpTypeR8: return INTOP_STIND_R8;
-        case InterpTypeO: return INTOP_STIND_I;
+        case InterpTypeO: return INTOP_STIND_O;
         case InterpTypeVT: return INTOP_STIND_VT;
         case InterpTypeByRef: return INTOP_STIND_I;
         default:
@@ -1794,9 +1803,15 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         goto exit_bad_code;
     }
 
+    m_currentILOffset = -1;
+
+#if DEBUG
+    if (m_methodName && InterpConfig.InterpHalt() && !strcmp(m_methodName, InterpConfig.InterpHalt()))
+        AddIns(INTOP_BREAKPOINT);
+#endif
+
     if ((methodInfo->options & CORINFO_OPT_INIT_LOCALS) && m_ILLocalsSize > 0)
     {
-        m_currentILOffset = 0;
         AddIns(INTOP_INITLOCALS);
         m_pLastNewIns->data[0] = m_ILLocalsOffset;
         m_pLastNewIns->data[1] = m_ILLocalsSize;
@@ -2567,6 +2582,22 @@ retry_emit:
                 EmitBinaryArithmeticOp(INTOP_MUL_I4);
                 m_ip++;
                 break;
+            case CEE_DIV:
+                EmitBinaryArithmeticOp(INTOP_DIV_I4);
+                m_ip++;
+                break;
+            case CEE_DIV_UN:
+                EmitBinaryArithmeticOp(INTOP_DIV_UN_I4);
+                m_ip++;
+                break;
+            case CEE_REM:
+                EmitBinaryArithmeticOp(INTOP_REM_I4);
+                m_ip++;
+                break;
+            case CEE_REM_UN:
+                EmitBinaryArithmeticOp(INTOP_REM_UN_I4);
+                m_ip++;
+                break;
             case CEE_AND:
                 EmitBinaryArithmeticOp(INTOP_AND_I4);
                 m_ip++;
@@ -2668,6 +2699,29 @@ retry_emit:
 
                 // Pop this, the result of the newobj still remains on the stack
                 m_pStackPointer--;
+                break;
+            }
+            case CEE_DUP:
+            {
+                int32_t svar = m_pStackPointer[-1].var;
+                InterpType interpType = m_pVars[svar].interpType;
+                if (interpType == InterpTypeVT)
+                {
+                    int32_t size = m_pVars[svar].size;
+                    AddIns(INTOP_MOV_VT);
+                    m_pLastNewIns->SetSVar(svar);
+                    PushTypeVT(m_pVars[svar].clsHnd, size);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    m_pLastNewIns->data[0] = size;
+                }
+                else
+                {
+                    AddIns(InterpGetMovForType(interpType, false));
+                    m_pLastNewIns->SetSVar(svar);
+                    PushInterpType(interpType, m_pVars[svar].clsHnd);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                }
+                m_ip++;
                 break;
             }
             case CEE_POP:
@@ -3041,6 +3095,30 @@ retry_emit:
                         volatile_ = true;
                         m_ip++;
                         break;
+                    case CEE_INITOBJ:
+                    {
+                        CHECK_STACK(1);
+                        CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                        if (m_compHnd->isValueClass(clsHnd))
+                        {
+                            m_pStackPointer--;
+                            AddIns(INTOP_ZEROBLK_IMM);
+                            m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                            m_pLastNewIns->data[0] = m_compHnd->getClassSize(clsHnd);
+                        }
+                        else
+                        {
+                            AddIns(INTOP_LDNULL);
+                            PushInterpType(InterpTypeO, NULL);
+                            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                            AddIns(INTOP_STIND_O);
+                            m_pStackPointer -= 2;
+                            m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+                        }
+                        m_ip += 5;
+                        break;
+                    }
                     default:
                         assert(0);
                         break;
