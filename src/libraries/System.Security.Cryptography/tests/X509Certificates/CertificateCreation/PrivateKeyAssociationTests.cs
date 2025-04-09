@@ -548,7 +548,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     Assert.InRange(pfxBytes.Length, 100, int.MaxValue);
                 }
 
-                Assert.True(ecdsaOther.VerifyData(data, signature, hashAlgorithm));
+                AssertExtensions.TrueExpression(ecdsaOther.VerifyData(data, signature, hashAlgorithm));
             }
         }
 
@@ -577,7 +577,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         RandomNumberGenerator.Fill(data);
 
                         byte[] signature = priv.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-                        Assert.True(pub.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+                        AssertExtensions.TrueExpression(pub.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
                     });
             }
         }
@@ -627,7 +627,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         RandomNumberGenerator.Fill(data);
 
                         byte[] signature = priv.SignData(data, HashAlgorithmName.SHA1);
-                        Assert.True(pub.VerifyData(data, signature, HashAlgorithmName.SHA1));
+                        AssertExtensions.TrueExpression(pub.VerifyData(data, signature, HashAlgorithmName.SHA1));
                     });
             }
         }
@@ -662,7 +662,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         RandomNumberGenerator.Fill(data);
 
                         byte[] signature = priv.SignData(data, HashAlgorithmName.SHA256);
-                        Assert.True(pub.VerifyData(data, signature, HashAlgorithmName.SHA256));
+                        AssertExtensions.TrueExpression(pub.VerifyData(data, signature, HashAlgorithmName.SHA256));
                     });
             }
         }
@@ -717,10 +717,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Action<TKey, TKey> keyProver)
             where TKey : class, IDisposable
         {
-            AssertExtensions.ThrowsContains<ArgumentException>(
+            Exception e = AssertExtensions.Throws<ArgumentException>(
                 null,
-                () => copyWithPrivateKey(wrongAlgorithmCert, correctPrivateKey),
-                "algorithm");
+                () => copyWithPrivateKey(wrongAlgorithmCert, correctPrivateKey));
+
+            Assert.Contains("algorithm", e.Message);
 
             List<TKey> generatedKeys = new();
 
@@ -729,23 +730,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 TKey incorrectKey = func();
                 generatedKeys.Add(incorrectKey);
 
-                AssertExtensions.ThrowsContains<ArgumentException>(
+                e = AssertExtensions.Throws<ArgumentException>(
                     "privateKey",
-                    () => copyWithPrivateKey(cert, incorrectKey),
-                    "key does not match the public key for this certificate");
+                    () => copyWithPrivateKey(cert, incorrectKey));
+
+                Assert.Contains("key does not match the public key for this certificate", e.Message);
             }
 
             using (X509Certificate2 withKey = copyWithPrivateKey(cert, correctPrivateKey))
             {
-                AssertExtensions.ThrowsContains<InvalidOperationException>(
-                    () => copyWithPrivateKey(withKey, correctPrivateKey),
-                    "already has an associated private key");
+                e = AssertExtensions.Throws<InvalidOperationException>(
+                    () => copyWithPrivateKey(withKey, correctPrivateKey));
+
+                Assert.Contains("already has an associated private key", e.Message);
 
                 foreach (TKey incorrectKey in generatedKeys)
                 {
-                    AssertExtensions.ThrowsContains<InvalidOperationException>(
-                        () => copyWithPrivateKey(withKey, incorrectKey),
-                        "already has an associated private key");
+                    e = AssertExtensions.Throws<InvalidOperationException>(
+                        () => copyWithPrivateKey(withKey, incorrectKey));
+
+                    Assert.Contains("already has an associated private key", e.Message);
                 }
 
                 using (TKey pub = getPublicKey(withKey))

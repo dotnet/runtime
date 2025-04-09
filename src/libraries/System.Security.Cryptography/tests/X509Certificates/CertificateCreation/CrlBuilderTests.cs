@@ -236,7 +236,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                     if (RequiresHashAlgorithm(certKind))
                     {
-                        AssertExtensions.ThrowsContains<ArgumentException>("hashAlgorithm", certAction, "empty");
+                        Exception e = AssertExtensions.Throws<ArgumentException>("hashAlgorithm", certAction);
+
+                        Assert.Contains("empty", e.Message);
                     }
                     else
                     {
