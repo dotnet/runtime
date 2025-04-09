@@ -30,6 +30,8 @@ namespace HttpStress
 
         public static readonly bool IsQuicSupported = QuicListener.IsSupported && QuicConnection.IsSupported;
 
+        private static readonly Dictionary<string, int> s_unobservedExceptions = new Dictionary<string, int>();
+
         public static async Task<int> Main(string[] args)
         {
             if (!TryParseCli(args, out Configuration? config))
@@ -69,6 +71,7 @@ namespace HttpStress
             cmd.AddOption(new Option("-serverMaxFrameSize", "Overrides kestrel max frame size setting.") { Argument = new Argument<int?>("bytes", null) });
             cmd.AddOption(new Option("-serverInitialConnectionWindowSize", "Overrides kestrel initial connection window size setting.") { Argument = new Argument<int?>("bytes", null) });
             cmd.AddOption(new Option("-serverMaxRequestHeaderFieldSize", "Overrides kestrel max request header field size.") { Argument = new Argument<int?>("bytes", null) });
+            cmd.AddOption(new Option("-unobservedEx", "Enable tracking unobserved exceptions.") { Argument = new Argument<bool?>("enable", null) });
 
             ParseResult cmdline = cmd.Parse(args);
             if (cmdline.Errors.Count > 0)
@@ -109,6 +112,7 @@ namespace HttpStress
                 UseHttpSys = cmdline.ValueForOption<bool>("-httpSys"),
                 LogAspNet = cmdline.ValueForOption<bool>("-aspnetlog"),
                 Trace = cmdline.ValueForOption<bool>("-trace"),
+                TrackUnobservedExceptions = cmdline.ValueForOption<bool?>("-unobservedEx"),
                 ServerMaxConcurrentStreams = cmdline.ValueForOption<int?>("-serverMaxConcurrentStreams"),
                 ServerMaxFrameSize = cmdline.ValueForOption<int?>("-serverMaxFrameSize"),
                 ServerInitialConnectionWindowSize = cmdline.ValueForOption<int?>("-serverInitialConnectionWindowSize"),
@@ -164,6 +168,9 @@ namespace HttpStress
 
             Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic")!;
             string msQuicLibraryVersion = (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static)!.GetGetMethod(true)!.Invoke(null, Array.Empty<object?>())!;
+            bool trackUnobservedExceptions = config.TrackUnobservedExceptions.HasValue
+                ? config.TrackUnobservedExceptions.Value
+                : config.RunMode.HasFlag(RunMode.client);
 
             Console.WriteLine("       .NET Core: " + GetAssemblyInfo(typeof(object).Assembly));
             Console.WriteLine("    ASP.NET Core: " + GetAssemblyInfo(typeof(WebHost).Assembly));
@@ -184,7 +191,20 @@ namespace HttpStress
             Console.WriteLine("    Cancellation: " + 100 * config.CancellationProbability + "%");
             Console.WriteLine("Max Content Size: " + config.MaxContentLength);
             Console.WriteLine("Query Parameters: " + config.MaxParameters);
+            Console.WriteLine("   Unobserved Ex: " + (trackUnobservedExceptions ? "Tracked" : "Not tracked"));
             Console.WriteLine();
+
+            if (trackUnobservedExceptions)
+            {
+                TaskScheduler.UnobservedTaskException += (_, e) =>
+                {
+                    lock (s_unobservedExceptions)
+                    {
+                        string text = e.Exception.ToString();
+                        s_unobservedExceptions[text] = s_unobservedExceptions.GetValueOrDefault(text) + 1;
+                    }
+                };
+            }
 
             StressServer? server = null;
             if (config.RunMode.HasFlag(RunMode.server))
@@ -210,8 +230,26 @@ namespace HttpStress
             client?.Stop();
             client?.PrintFinalReport();
 
+            if (trackUnobservedExceptions)
+            {
+                PrintUnobservedExceptions();
+            }
+
             // return nonzero status code if there are stress errors
             return client?.TotalErrorCount == 0 ? ExitCode.Success : ExitCode.StressError;
+        }
+
+        private static void PrintUnobservedExceptions()
+        {
+            Console.WriteLine($"Detected {s_unobservedExceptions.Count} unobserved exceptions:");
+
+            int i = 1;
+            foreach (KeyValuePair<string, int> kv in s_unobservedExceptions.OrderByDescending(p => p.Value))
+            {
+                Console.WriteLine($"Exception type {i++}/{s_unobservedExceptions.Count} (hit {kv.Value} times):");
+                Console.WriteLine(kv.Key);
+                Console.WriteLine();
+            }
         }
 
         private static async Task WaitUntilMaxExecutionTimeElapsedOrKeyboardInterrupt(TimeSpan? maxExecutionTime = null)

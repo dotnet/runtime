@@ -48,6 +48,10 @@
 #include <versionhelpers.h>
 #endif
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -1037,6 +1041,22 @@ static void SetIlsIndex(DWORD tlsIndex)
 #pragma optimize("", on)
 #endif
 
+void InitThreadManagerPerfMapData()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+#ifdef FEATURE_PERFMAP
+    if (IsWriteBarrierCopyEnabled())
+    {
+        size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
+        PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
+    }
+#endif
+}
+
 //---------------------------------------------------------------------------
 // One-time initialization. Called during Dll initialization. So
 // be careful what you do in here!
@@ -1069,6 +1089,9 @@ void InitThreadManager()
             ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
             memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
         }
+#ifdef FEATURE_PERFMAP
+        // We would log the to the perfmap here, but its not yet initialized
+#endif
 
         // Store the JIT_WriteBarrier copy location to a global variable so that helpers
         // can jump to it.
@@ -6874,13 +6897,10 @@ struct ManagedThreadCallState
 {
     ADCallBackFcnType   pTarget;
     LPVOID                       args;
-    UnhandledExceptionLocation   filterType;
 
-    ManagedThreadCallState(ADCallBackFcnType Target,LPVOID Args,
-                        UnhandledExceptionLocation   FilterType):
+    ManagedThreadCallState(ADCallBackFcnType Target,LPVOID Args):
           pTarget(Target),
-          args(Args),
-          filterType(FilterType)
+          args(Args)
     {
         LIMITED_METHOD_CONTRACT;
     };
@@ -7135,10 +7155,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     PAL_ENDTRY;
 }
 
-// Establish the base of a managed thread
-static void ManagedThreadBase_Dispatch(ADCallBackFcnType pTarget,
-                                       LPVOID args,
-                                       UnhandledExceptionLocation filterType)
+void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
 {
     CONTRACTL
     {
@@ -7148,24 +7165,8 @@ static void ManagedThreadBase_Dispatch(ADCallBackFcnType pTarget,
     }
     CONTRACTL_END;
 
-    ManagedThreadCallState CallState(pTarget, args, filterType);
+    ManagedThreadCallState CallState(pTarget, args);
     ManagedThreadBase_DispatchOuter(&CallState);
-}
-
-// And here are the various exposed entrypoints for base thread behavior
-
-// The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
-void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
-{
-    WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_Dispatch(pTarget, args, ManagedThread);
-}
-
-// The Finalizer thread establishes exception handling at its base
-void ManagedThreadBase::FinalizerBase(ADCallBackFcnType pTarget)
-{
-    WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_Dispatch(pTarget, NULL, FinalizerThread);
 }
 
 //+----------------------------------------------------------------------------
@@ -7756,27 +7757,30 @@ void Thread::InitializeSpecialUserModeApc()
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
-#if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
 #if defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
 void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
 {
+    __asan_handle_no_return();
 #if defined(TARGET_AMD64)
     if (targetSSP == 0)
     {
         targetSSP = GetSSP(ContextRecord);
     }
-    __asan_handle_no_return();
     ClrRestoreNonvolatileContextWorker(ContextRecord, targetSSP);
+#elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    // need to pop the SEH records before write over the stack
+    LPVOID oldSP = (LPVOID)GetSP(ContextRecord);
+    PopSEHRecords(oldSP);
+    ResumeAtJit(ContextRecord, oldSP);
 #else
-    __asan_handle_no_return();
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
     RtlRestoreContext(ContextRecord, NULL);
 #endif
 }
-#endif // !(TARGET_WINDOWS && TARGET_X86)
+
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
