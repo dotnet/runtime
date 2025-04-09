@@ -136,7 +136,7 @@ public abstract class HybridCache
     {
         try
         {
-            return GetOrCreateAsync(key.Text, factory, WrappedCallbackCache<T>.Instance, options, tags, cancellationToken);
+            return GetOrCreateAsync(key.Text, state, factory, options, tags, cancellationToken);
         }
         finally
         {
