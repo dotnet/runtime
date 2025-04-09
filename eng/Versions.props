@@ -136,8 +136,18 @@
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
-    <!-- The JSON version that's present in minimum MSBuild / VS version that this release is supported on -->
+
+    <!-- The following package versions are present in minimum MSBuild / VS version that this release is supported on -->
+    <MicrosoftBclAsyncInterfacesToolsetVersion>7.0.0</MicrosoftBclAsyncInterfacesToolsetVersion>
+    <SystemBuffersToolsetVersion>4.5.1</SystemBuffersToolsetVersion>
+    <SystemCollectionsImmutableToolsetVersion>7.0.0</SystemCollectionsImmutableToolsetVersion>
+    <SystemMemoryToolsetVersion>4.5.5</SystemMemoryToolsetVersion>
+    <SystemReflectionMetadataLoadContextToolsetVersion>7.0.0</SystemReflectionMetadataLoadContextToolsetVersion> 
+    <SystemReflectionMetadataToolsetVersion>7.0.0</SystemReflectionMetadataToolsetVersion>
+    <SystemTextEncodingsWebToolsetVersion>7.0.0</SystemTextEncodingsWebToolsetVersion>
     <SystemTextJsonToolsetVersion>7.0.3</SystemTextJsonToolsetVersion>
+    <SystemThreadingTasksExtensionsToolsetVersion>4.5.4</SystemThreadingTasksExtensionsToolsetVersion>
+
     <SystemTextJsonVersion>8.0.0-rc.1.23406.6</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingAccessControlVersion>7.0.0</SystemThreadingAccessControlVersion>
@@ -178,8 +188,10 @@
     <MicrosoftBuildTasksCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildTasksCoreVersion>
     <MicrosoftBuildFrameworkVersion>$(MicrosoftBuildVersion)</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildUtilitiesCoreVersion>
+    <NugetFrameworksVersion>6.2.4</NugetFrameworksVersion>
     <NugetProjectModelVersion>6.2.4</NugetProjectModelVersion>
     <NugetPackagingVersion>6.2.4</NugetPackagingVersion>
+    <NugetVersioningVersion>6.2.4</NugetVersioningVersion>
     <DotnetSosVersion>7.0.412701</DotnetSosVersion>
     <DotnetSosTargetFrameworkVersion>6.0</DotnetSosTargetFrameworkVersion>
     <!-- Testing -->

@@ -13,8 +13,6 @@ using Microsoft.Build.Utilities;
 
 internal sealed class PInvokeTableGenerator
 {
-    private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
-
     private TaskLoggingHelper Log { get; set; }
     private readonly Func<string, string> _fixupSymbolName;
     private readonly HashSet<string> signatures = new();
@@ -168,13 +166,13 @@ internal sealed class PInvokeTableGenerator
                 return false;
 
             PInvoke first = candidates[0];
-            if (TryIsMethodGetParametersUnsupported(first.Method, out _))
+            if (PInvokeCollector.TryIsMethodGetParametersUnsupported(first.Method, out _))
                 return false;
 
             int firstNumArgs = first.Method.GetParameters().Length;
             return candidates
                         .Skip(1)
-                        .Any(c => !TryIsMethodGetParametersUnsupported(c.Method, out _) &&
+                        .Any(c => !PInvokeCollector.TryIsMethodGetParametersUnsupported(c.Method, out _) &&
                                     c.Method.GetParameters().Length != firstNumArgs);
         }
     }
@@ -200,28 +198,6 @@ internal sealed class PInvokeTableGenerator
         _ => "int"
     };
 
-    // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
-    // https://github.com/dotnet/runtime/issues/43791
-    private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
-    {
-        try
-        {
-            method.GetParameters();
-        }
-        catch (NotSupportedException nse)
-        {
-            reason = nse.Message;
-            return true;
-        }
-        catch
-        {
-            // not concerned with other exceptions
-        }
-
-        reason = null;
-        return false;
-    }
-
     private string? GenPInvokeDecl(PInvoke pinvoke)
     {
         var sb = new StringBuilder();
@@ -234,7 +210,7 @@ internal sealed class PInvokeTableGenerator
             return sb.ToString();
         }
 
-        if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
+        if (PInvokeCollector.TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
             // Don't use method.ToString() or any of it's parameters, or return type
             // because at least one of those are unsupported, and will throw
@@ -379,26 +355,6 @@ internal sealed class PInvokeTableGenerator
             w.WriteLine($"\"{module_symbol}_{class_name}_{method_name}\",");
         }
         w.WriteLine("};");
-    }
-
-    private bool HasAssemblyDisableRuntimeMarshallingAttribute(Assembly assembly)
-    {
-        if (!_assemblyDisableRuntimeMarshallingAttributeCache.TryGetValue(assembly, out var value))
-        {
-            _assemblyDisableRuntimeMarshallingAttributeCache[assembly] = value = assembly
-                .GetCustomAttributesData()
-                .Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
-        }
-
-        return value;
-    }
-
-    private static bool IsBlittable(Type type)
-    {
-        if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
-            return true;
-        else
-            return false;
     }
 
     private static void Error(string msg) => throw new LogAsErrorException(msg);
