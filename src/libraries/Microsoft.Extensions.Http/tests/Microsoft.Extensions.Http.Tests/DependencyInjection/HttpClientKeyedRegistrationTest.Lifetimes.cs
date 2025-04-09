@@ -10,11 +10,10 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public partial class HttpClientKeyedRegistrationTest
     {
-        [Theory]
-        [InlineData(typeof(HttpClient))]
-        [InlineData(typeof(HttpMessageHandler))]
-        public void HttpClientOrHandler_RespectsSingletonLifetime(Type clientOrHandler)
+        [Fact]
+        public void HttpClient_RespectsSingletonLifetime()
         {
+            HttpClient clientA, factoryClient;
             var serviceCollection = new ServiceCollection();
 
             AddConfiguredNamedClient(serviceCollection, Test)
@@ -23,64 +22,60 @@ namespace Microsoft.Extensions.DependencyInjection
             var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
 
             var clientFactory = (DefaultHttpClientFactory)rootServices.GetRequiredService<IHttpClientFactory>();
-            object CreateWithFactory(Type type, string name) => type == typeof(HttpClient)
-                ? clientFactory.CreateClient(name)
-                : clientFactory.CreateHandler(name);
 
             // --- root
 
-            Assert.Same( // same singleton instance resolved twice from the root
-                rootServices.GetRequiredKeyedService(clientOrHandler, Test),
-                rootServices.GetRequiredKeyedService(clientOrHandler, Test));
+            Assert.Same(
+                rootServices.GetRequiredKeyedService<HttpClient>(Test),
+                rootServices.GetRequiredKeyedService<HttpClient>(Test));
 
-            Assert.NotSame( // factory creates a different instance each time
-                CreateWithFactory(clientOrHandler, Test),
-                rootServices.GetRequiredKeyedService(clientOrHandler, Test));
+            Assert.NotSame(
+                clientFactory.CreateClient(Test),
+                rootServices.GetRequiredKeyedService<HttpClient>(Test));
 
             // --- scope
 
-            var scopeA = rootServices.CreateScope();
-            var servicesA = scopeA.ServiceProvider;
-
-            Assert.Same( // same singleton instance resolved twice from a scope
-                servicesA.GetRequiredKeyedService(clientOrHandler, Test),
-                servicesA.GetRequiredKeyedService(clientOrHandler, Test));
-
-            Assert.Same( // same singleton instance resolved from root and from scope
-                rootServices.GetRequiredKeyedService(clientOrHandler, Test),
-                servicesA.GetRequiredKeyedService(clientOrHandler, Test));
-
-            Assert.NotSame( // factory creates a different instance each time
-                CreateWithFactory(clientOrHandler, Test),
-                servicesA.GetRequiredKeyedService(clientOrHandler, Test));
-
-            // --- other scope
-
-            var scopeB = rootServices.CreateScope();
-            var servicesB = scopeB.ServiceProvider;
-
-            Assert.Same( // same singleton instance resolved twice from a different scope
-                servicesB.GetRequiredKeyedService(clientOrHandler, Test),
-                servicesB.GetRequiredKeyedService(clientOrHandler, Test));
-
-            Assert.Same( // same singleton instance resolved from two different scopes
-                servicesA.GetRequiredKeyedService(clientOrHandler, Test),
-                servicesB.GetRequiredKeyedService(clientOrHandler, Test));
-
-            // --- scope disposal
-
-            if (clientOrHandler == typeof(HttpClient)) // HttpMessageHandler instances are not disposed
+            using (var scopeA = rootServices.CreateScope())
             {
-                var clientA = servicesA.GetRequiredKeyedService<HttpClient>(Test);
-                var factoryClient = clientFactory.CreateClient(Test);
+                var servicesA = scopeA.ServiceProvider;
+
+                Assert.Same(
+                    servicesA.GetRequiredKeyedService<HttpClient>(Test),
+                    servicesA.GetRequiredKeyedService<HttpClient>(Test));
+
+                Assert.Same(
+                    rootServices.GetRequiredKeyedService<HttpClient>(Test),
+                    servicesA.GetRequiredKeyedService<HttpClient>(Test));
+
+                Assert.NotSame(
+                    clientFactory.CreateClient(Test),
+                    servicesA.GetRequiredKeyedService<HttpClient>(Test));
+
+                // --- other scope
+
+                using (var scopeB = rootServices.CreateScope())
+                {
+                    var servicesB = scopeB.ServiceProvider;
+
+                    Assert.Same(
+                        servicesB.GetRequiredKeyedService<HttpClient>(Test),
+                        servicesB.GetRequiredKeyedService<HttpClient>(Test));
+
+                    Assert.Same(
+                        servicesA.GetRequiredKeyedService<HttpClient>(Test),
+                        servicesB.GetRequiredKeyedService<HttpClient>(Test));
+                }
+
+                clientA = servicesA.GetRequiredKeyedService<HttpClient>(Test);
+                factoryClient = clientFactory.CreateClient(Test);
                 AssertAlive(clientA);
                 AssertAlive(factoryClient);
 
                 scopeA.Dispose();
-
-                AssertAlive(clientA); // singleton instances are not disposed with the scope
-                AssertAlive(factoryClient); // factory instances are not disposed
             }
+
+            AssertAlive(clientA);
+            AssertAlive(factoryClient);
         }
 
         [Fact]
@@ -236,105 +231,134 @@ namespace Microsoft.Extensions.DependencyInjection
                 services.GetRequiredService<ServiceWithTestHandler>().Handler);
         }
 
-        [Theory]
-        [InlineData(typeof(HttpClient), true)]
-        [InlineData(typeof(HttpClient), false)]
-        [InlineData(typeof(HttpMessageHandler), true)]
-        [InlineData(typeof(HttpMessageHandler), false)]
-        public void HttpClientOrHandler_RespectsScopedLifetime(Type clientOrHandler, bool validateScopes)
+        [Fact]
+        public void HttpClient_ScopedLifetime_Success()
         {
             var serviceCollection = new ServiceCollection();
 
             AddConfiguredNamedClient(serviceCollection, Test)
                 .AddAsKeyed(ServiceLifetime.Scoped);
 
-            var rootServices = serviceCollection.BuildServiceProvider(validateScopes);
+            var rootServices = serviceCollection.BuildServiceProvider(false);
 
             var clientFactory = (DefaultHttpClientFactory)rootServices.GetRequiredService<IHttpClientFactory>();
-            object CreateWithFactory(Type type, string name) => type == typeof(HttpClient)
-                ? clientFactory.CreateClient(name)
-                : clientFactory.CreateHandler(name);
 
-            // --- root
+            Assert.Same(
+                rootServices.GetRequiredKeyedService<HttpClient>(Test),
+                rootServices.GetRequiredKeyedService<HttpClient>(Test));
 
-            if (validateScopes)
-            {
-                Assert.Throws<InvalidOperationException>( // cannot resolve scoped instance from root
-                    () => rootServices.GetRequiredKeyedService(clientOrHandler, Test));
-            }
-            else // the root scope behaves like a "normal" scope, and ends up capturing scoped instances
-            {
-                Assert.Same( // same root-captured instance resolved each time
-                    rootServices.GetRequiredKeyedService(clientOrHandler, Test),
-                    rootServices.GetRequiredKeyedService(clientOrHandler, Test));
-
-                Assert.NotSame( // factory creates a different instance each time
-                    CreateWithFactory(clientOrHandler, Test),
-                    rootServices.GetRequiredKeyedService(clientOrHandler, Test));
-            }
-
-            // --- scope
+            Assert.NotSame(
+                clientFactory.CreateClient(Test),
+                rootServices.GetRequiredKeyedService<HttpClient>(Test));
 
             var scopeA = rootServices.CreateScope();
             var servicesA = scopeA.ServiceProvider;
 
-            Assert.Same( // same scoped instance resolved each time
-                servicesA.GetRequiredKeyedService(clientOrHandler, Test),
-                servicesA.GetRequiredKeyedService(clientOrHandler, Test));
+            Assert.Same(
+            servicesA.GetRequiredKeyedService<HttpClient>(Test),
+            servicesA.GetRequiredKeyedService<HttpClient>(Test));
 
             Assert.NotSame(
-                CreateWithFactory(clientOrHandler, Test),
-                servicesA.GetRequiredKeyedService(clientOrHandler, Test));
+                clientFactory.CreateClient(Test),
+                servicesA.GetRequiredKeyedService<HttpClient>(Test));
 
-            if (!validateScopes)
+            Assert.NotSame(
+                rootServices.GetRequiredKeyedService<HttpClient>(Test),
+                servicesA.GetRequiredKeyedService<HttpClient>(Test));
+
+            using (var scopeB = rootServices.CreateScope())
             {
-                Assert.NotSame( // scoped instance is different from the root-captured instance
-                    rootServices.GetRequiredKeyedService(clientOrHandler, Test),
-                    servicesA.GetRequiredKeyedService(clientOrHandler, Test));
-            }
+                var servicesB = scopeB.ServiceProvider;
 
-            // --- other scope
+                Assert.Same(
+                    servicesB.GetRequiredKeyedService<HttpClient>(Test),
+                    servicesB.GetRequiredKeyedService<HttpClient>(Test));
 
-            var scopeB = rootServices.CreateScope();
-            var servicesB = scopeB.ServiceProvider;
+                Assert.NotSame(
+                    servicesA.GetRequiredKeyedService<HttpClient>(Test),
+                    servicesB.GetRequiredKeyedService<HttpClient>(Test));
 
-            Assert.Same( // same scoped instance resolved each time from a different scope
-                servicesB.GetRequiredKeyedService(clientOrHandler, Test),
-                servicesB.GetRequiredKeyedService(clientOrHandler, Test));
-
-            Assert.NotSame( // different scoped instances resolved from different scopes
-                servicesA.GetRequiredKeyedService(clientOrHandler, Test),
-                servicesB.GetRequiredKeyedService(clientOrHandler, Test));
-
-            // --- scope disposal
-
-            if (clientOrHandler == typeof(HttpClient)) // HttpMessageHandler instances are not disposed
-            {
                 var clientA = servicesA.GetRequiredKeyedService<HttpClient>(Test);
                 var clientB = servicesB.GetRequiredKeyedService<HttpClient>(Test);
                 var factoryClient = clientFactory.CreateClient(Test);
-                var rootClient = validateScopes ? null : rootServices.GetRequiredKeyedService<HttpClient>(Test);
 
                 AssertAlive(clientA);
                 AssertAlive(clientB);
                 AssertAlive(factoryClient);
 
-                if (!validateScopes)
-                {
-                    AssertAlive(rootClient);
-                }
-
                 scopeA.Dispose();
 
-                AssertDisposed(clientA); // scoped instance disposed with the respective scope
+                AssertDisposed(clientA);
+                AssertAlive(clientB);
+                AssertAlive(factoryClient);
+            }
+        }
+
+        [Fact]
+        public void HttpClient_ScopedLifetimeWithValidateScopes_Success()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            AddConfiguredNamedClient(serviceCollection, Test)
+                .AddAsKeyed(ServiceLifetime.Scoped);
+
+            var rootServices = serviceCollection.BuildServiceProvider(true);
+
+            var clientFactory = (DefaultHttpClientFactory)rootServices.GetRequiredService<IHttpClientFactory>();
+
+            var scopeA = rootServices.CreateScope();
+            var servicesA = scopeA.ServiceProvider;
+
+            Assert.Same(
+                servicesA.GetRequiredKeyedService<HttpClient>(Test),
+                servicesA.GetRequiredKeyedService<HttpClient>(Test));
+
+            Assert.NotSame(
+                clientFactory.CreateHandler(Test),
+                servicesA.GetRequiredKeyedService<HttpClient>(Test));
+
+            using (var scopeB = rootServices.CreateScope())
+            {
+                var servicesB = scopeB.ServiceProvider;
+
+                Assert.Same(
+                    servicesB.GetRequiredKeyedService<HttpClient>(Test),
+                    servicesB.GetRequiredKeyedService<HttpClient>(Test));
+
+                Assert.NotSame(
+                    servicesA.GetRequiredKeyedService<HttpClient>(Test),
+                    servicesB.GetRequiredKeyedService<HttpClient>(Test));
+
+                var clientA = servicesA.GetRequiredKeyedService<HttpClient>(Test);
+                var clientB = servicesB.GetRequiredKeyedService<HttpClient>(Test);
+                var factoryClient = clientFactory.CreateClient(Test);
+
+                AssertAlive(clientA);
                 AssertAlive(clientB);
                 AssertAlive(factoryClient);
 
-                if (!validateScopes)
-                {
-                    AssertAlive(rootClient);
-                }
+                scopeA.Dispose();
+
+                AssertDisposed(clientA);
+                AssertAlive(clientB);
+                AssertAlive(factoryClient);
             }
+        }
+
+        [Fact]
+        public void HttpClient_ScopedLifetimeWithValidateScopes_ThrowsInvalidOperationException()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            AddConfiguredNamedClient(serviceCollection, Test)
+                .AddAsKeyed(ServiceLifetime.Scoped);
+
+            var rootServices = serviceCollection.BuildServiceProvider(true);
+
+            var clientFactory = (DefaultHttpClientFactory)rootServices.GetRequiredService<IHttpClientFactory>();
+
+            Assert.Throws<InvalidOperationException>(
+                () => rootServices.GetRequiredKeyedService<HttpClient>(Test));
         }
 
         [Theory]
