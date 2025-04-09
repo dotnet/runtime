@@ -135,9 +135,17 @@ inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display) {
     return (LPVOID)display->GetEbpLocation();
 }
 
+inline TADDR GetRegdisplayPCTAddr(REGDISPLAY *display)
+{
+    return display->PCTAddr;
+}
+
 inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 {
     display->PCTAddr = addr;
+#ifdef FEATURE_EH_FUNCLETS
+    display->pCurrentContext->Eip = *PTR_PCODE(addr);
+#endif
     display->ControlPC = *PTR_PCODE(addr);
 }
 
@@ -145,13 +153,12 @@ inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 // This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
 inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
     LIMITED_METHOD_CONTRACT;
-
-    return (TADDR)stackPointer < display->PCTAddr;
+    return (TADDR)stackPointer < GetRegdisplayPCTAddr(display);
 }
 inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return display->PCTAddr;
+    return GetRegdisplayPCTAddr(display);
 }
 
 #elif defined(TARGET_64BIT)

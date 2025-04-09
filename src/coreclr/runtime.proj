@@ -110,7 +110,7 @@
       <_CoreClrBuildPreSource Condition="'$(TargetsBrowser)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))">source &quot;$(RepoRoot)src/mono/browser/emsdk/emsdk_env.sh&quot; &amp;&amp; </_CoreClrBuildPreSource>
     </PropertyGroup>
 
-    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
+    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->
     <Message Text="Executing $(_CoreClrBuildPreSource)$(MSBuildThisFileDirectory)&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" Importance="High" />
     <Exec Command="$(_CoreClrBuildPreSource)$(MSBuildThisFileDirectory)&quot;$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')"
           IgnoreStandardErrorWarningFormat="true" />
