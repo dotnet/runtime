@@ -5416,6 +5416,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Tan:
                         case NI_System_Math_Tanh:
                         case NI_System_Math_Truncate:
+                        case NI_PRIMITIVE_LeadingZeroCount:
+                        case NI_PRIMITIVE_TrailingZeroCount:
+                        case NI_PRIMITIVE_PopCount:
                         {
                             // Giving intrinsics a large fixed execution cost is because we'd like to CSE
                             // them, even if they are implemented by calls. This is different from modeling
@@ -7291,6 +7294,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
 
     switch (OperGet())
     {
+        case GT_ARR_ADDR:
         case GT_BOUNDS_CHECK:
         case GT_IND:
         case GT_BLK:
@@ -7733,27 +7737,20 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            setMethodHasFrozenObjects();
             tree = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-#ifdef DEBUG
-            tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
-#endif
+            INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)pValue);
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
             tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, true);
-#ifdef DEBUG
-            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
-#endif
+            INDEBUG(tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue);
             break;
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
             // Create the first indirection.
             tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_CONST_PTR, true);
-#ifdef DEBUG
-            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
-#endif
+            INDEBUG(tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue);
             // Create the second indirection.
             tree = gtNewIndir(TYP_REF, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT | GTF_IND_NONNULL);
             break;
@@ -8111,11 +8108,7 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
             }
             else
             {
-                // Even if the caller doesn't need the resulting tree let's still conservatively call
-                // setMethodHasFrozenObjects here to make caller's life easier.
-                setMethodHasFrozenObjects();
-                GenTree* tree = gtNewIconEmbHndNode((void*)val, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                return tree;
+                return gtNewIconEmbHndNode((void*)val, nullptr, GTF_ICON_OBJ_HDL, nullptr);
             }
         }
 #ifdef FEATURE_SIMD
@@ -8671,8 +8664,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        if ((varDsc->TypeGet() == type) &&
-            ((type != TYP_STRUCT) || ClassLayout::AreCompatible(layout, varDsc->GetLayout())))
+        if ((varDsc->TypeGet() == type) && ((type != TYP_STRUCT) || layout->CanAssignFrom(varDsc->GetLayout())))
         {
             return gtNewLclvNode(lclNum, type);
         }
@@ -8696,7 +8688,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
 GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags)
 {
     assert((indirFlags & GTF_IND_INVARIANT) == 0);
-    assert(value->IsInitVal() || ClassLayout::AreCompatible(layout, value->GetLayout(this)));
+    assert(value->IsInitVal() || layout->CanAssignFrom(value->GetLayout(this)));
 
     GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, value, layout);
     store->gtFlags |= GTF_ASG;
@@ -8753,8 +8745,7 @@ GenTree* Compiler::gtNewStoreValueNode(
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        if ((varDsc->TypeGet() == type) &&
-            ((type != TYP_STRUCT) || ClassLayout::AreCompatible(layout, varDsc->GetLayout())))
+        if ((varDsc->TypeGet() == type) && ((type != TYP_STRUCT) || varDsc->GetLayout()->CanAssignFrom(layout)))
         {
             return gtNewStoreLclVarNode(lclNum, value);
         }
@@ -9527,7 +9518,6 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                     GenTreeIndexAddr(asIndAddr->Arr(), asIndAddr->Index(), asIndAddr->gtElemType,
                                      asIndAddr->gtStructElemClass, asIndAddr->gtElemSize, asIndAddr->gtLenOffset,
                                      asIndAddr->gtElemOffset, asIndAddr->IsBoundsChecked());
-                copy->AsIndexAddr()->gtIndRngFailBB = asIndAddr->gtIndRngFailBB;
             }
             break;
 
@@ -9625,8 +9615,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy = new (this, GT_BOUNDS_CHECK)
                     GenTreeBoundsChk(tree->AsBoundsChk()->GetIndex(), tree->AsBoundsChk()->GetArrayLength(),
                                      tree->AsBoundsChk()->gtThrowKind);
-                copy->AsBoundsChk()->gtIndRngFailBB = tree->AsBoundsChk()->gtIndRngFailBB;
-                copy->AsBoundsChk()->gtInxType      = tree->AsBoundsChk()->gtInxType;
+                copy->AsBoundsChk()->gtInxType = tree->AsBoundsChk()->gtInxType;
                 break;
 
             case GT_LEA:
@@ -11030,15 +11019,8 @@ void Compiler::gtDispNodeName(GenTree* tree)
         switch (tree->AsBoundsChk()->gtThrowKind)
         {
             case SCK_RNGCHK_FAIL:
-            {
                 bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " %s_Rng", name);
-                if (tree->AsBoundsChk()->gtIndRngFailBB != nullptr)
-                {
-                    bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " -> " FMT_BB,
-                                            tree->AsBoundsChk()->gtIndRngFailBB->bbNum);
-                }
                 break;
-            }
             case SCK_ARG_EXCPN:
                 sprintf_s(bufp, sizeof(buf), " %s_Arg", name);
                 break;
@@ -12025,7 +12007,6 @@ void Compiler::gtDispConst(GenTree* tree)
                     }
                     else
                     {
-                        assert(doesMethodHaveFrozenObjects());
                         printf(" 0x%llx", dspIconVal);
                     }
                 }
@@ -33411,8 +33392,6 @@ bool Compiler::gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         }
         // Non-0 const refs can only occur with frozen objects
         assert(value->IsIconHandle(GTF_ICON_OBJ_HDL));
-        assert(doesMethodHaveFrozenObjects() ||
-               (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenObjects()));
     }
 
     // Try and get a class handle for the array

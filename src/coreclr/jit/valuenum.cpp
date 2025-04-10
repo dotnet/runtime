@@ -9133,7 +9133,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN)
 {
     assert(arg0VN == VNNormalValue(arg0VN));
-    assert(m_pComp->IsMathIntrinsic(gtMathFN));
+    assert(m_pComp->IsMathIntrinsic(gtMathFN) RISCV64_ONLY(|| m_pComp->IsBitCountingIntrinsic(gtMathFN)));
 
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
@@ -9385,10 +9385,8 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                         unreached();
                 }
             }
-            else
+            else if (gtMathFN == NI_System_Math_Round)
             {
-                assert(gtMathFN == NI_System_Math_Round);
-
                 switch (TypeOfVN(arg0VN))
                 {
                     case TYP_DOUBLE:
@@ -9409,6 +9407,58 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                         unreached();
                 }
             }
+            else if (gtMathFN == NI_PRIMITIVE_LeadingZeroCount)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_LONG:
+                        res = BitOperations::LeadingZeroCount((uint64_t)GetConstantInt64(arg0VN));
+                        break;
+
+                    case TYP_INT:
+                        res = BitOperations::LeadingZeroCount((uint32_t)GetConstantInt32(arg0VN));
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else if (gtMathFN == NI_PRIMITIVE_TrailingZeroCount)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_LONG:
+                        res = BitOperations::TrailingZeroCount((uint64_t)GetConstantInt64(arg0VN));
+                        break;
+
+                    case TYP_INT:
+                        res = BitOperations::TrailingZeroCount((uint32_t)GetConstantInt32(arg0VN));
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else if (gtMathFN == NI_PRIMITIVE_PopCount)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_LONG:
+                        res = BitOperations::PopCount((uint64_t)GetConstantInt64(arg0VN));
+                        break;
+
+                    case TYP_INT:
+                        res = BitOperations::PopCount((uint32_t)GetConstantInt32(arg0VN));
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else
+            {
+                unreached();
+            }
 
             return VNForIntCon(res);
         }
@@ -9416,7 +9466,10 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
     else
     {
         assert((typ == TYP_DOUBLE) || (typ == TYP_FLOAT) ||
-               ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round))));
+               ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round))) ||
+               (((typ == TYP_INT) || (typ == TYP_LONG)) &&
+                ((gtMathFN == NI_PRIMITIVE_LeadingZeroCount) || (gtMathFN == NI_PRIMITIVE_TrailingZeroCount) ||
+                 (gtMathFN == NI_PRIMITIVE_PopCount))));
 
         VNFunc vnf = VNF_Boundary;
         switch (gtMathFN)
@@ -9507,6 +9560,15 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                 break;
             case NI_System_Math_Truncate:
                 vnf = VNF_Truncate;
+                break;
+            case NI_PRIMITIVE_LeadingZeroCount:
+                vnf = VNF_LeadingZeroCount;
+                break;
+            case NI_PRIMITIVE_TrailingZeroCount:
+                vnf = VNF_TrailingZeroCount;
+                break;
+            case NI_PRIMITIVE_PopCount:
+                vnf = VNF_PopCount;
                 break;
             default:
                 unreached(); // the above are the only math intrinsics at the time of this writing.
@@ -11622,7 +11684,6 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else
             {
-                assert(doesMethodHaveFrozenObjects());
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
 
@@ -12065,10 +12126,6 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset))
             {
                 ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
-                if (vnStore->IsVNObjHandle(vn))
-                {
-                    setMethodHasFrozenObjects();
-                }
                 tree->gtVNPair.SetBoth(vn);
                 return true;
             }
@@ -12834,7 +12891,7 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         vnStore->VNPUnpackExc(intrinsic->AsOp()->gtOp2->gtVNPair, &arg1VNP, &arg1VNPx);
     }
 
-    if (IsMathIntrinsic(intrinsic->gtIntrinsicName))
+    if (IsMathIntrinsic(intrinsic->gtIntrinsicName) || IsBitCountingIntrinsic(intrinsic->gtIntrinsicName))
     {
         // GT_INTRINSIC is a currently a subtype of binary operators. But most of
         // the math intrinsics are actually unary operations.
@@ -12866,7 +12923,6 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
             if (typeObj != nullptr)
             {
-                setMethodHasFrozenObjects();
                 ValueNum handleVN   = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
                 intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), arg0VNPx);
                 return;
@@ -13606,7 +13662,6 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
             CORINFO_OBJECT_HANDLE obj = info.compCompHnd->getRuntimeTypePointer((CORINFO_CLASS_HANDLE)clsHandle);
             if (obj != nullptr)
             {
-                setMethodHasFrozenObjects();
                 call->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)obj, GTF_ICON_OBJ_HDL));
                 return true;
             }
@@ -14049,7 +14104,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
                 if (typeObj != nullptr)
                 {
-                    setMethodHasFrozenObjects();
                     ValueNum typeObjVN = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
                     call->gtVNPair.SetBoth(vnStore->VNForBitCast(typeObjVN, TYP_STRUCT, genTypeSize(TYP_REF)));
                     return false;

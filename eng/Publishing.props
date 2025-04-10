@@ -36,6 +36,11 @@
     </Artifact>
   </ItemGroup>
 
+  <!-- remove the manifest .Msi packages, they are built in the SDK repo now -->
+  <ItemGroup>
+    <Artifact Remove="$(ArtifactsShippingPackagesDir)*.Manifest-*.Msi.*.nupkg" />
+  </ItemGroup>
+
   <!--
     Mark host-RID-targeting assets as Vertical visibility when building in the VMR.
     We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.

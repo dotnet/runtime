@@ -5,7 +5,9 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 // The type being internal is making unused parameter warnings fire for
 // not-implemented methods. Suppress those warnings.
@@ -23,7 +25,7 @@ namespace System.Security.Cryptography
     ///   cryptographic libraries.
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-    internal abstract partial class SlhDsa : IDisposable
+    public abstract partial class SlhDsa : IDisposable
 #if DESIGNTIMEINTERFACES
 #pragma warning disable SA1001
         , IImportExportShape<SlhDsa>
@@ -45,9 +47,19 @@ namespace System.Security.Cryptography
             Algorithm = algorithm;
         }
 
+        /// <summary>
+        ///   Throws <see cref="ObjectDisposedException" /> if the current instance is disposed.
+        /// </summary>
         protected void ThrowIfDisposed()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+#if NET
+            ObjectDisposedException.ThrowIf(_disposed, typeof(SlhDsa));
+#else
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(typeof(SlhDsa).FullName);
+            }
+#endif
         }
 
         /// <summary>
@@ -71,9 +83,12 @@ namespace System.Security.Cryptography
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
-            _disposed = true;
-            GC.SuppressFinalize(this);
+            if (!_disposed)
+            {
+                _disposed = true;
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
         }
 
         /// <summary>
@@ -109,8 +124,6 @@ namespace System.Security.Cryptography
         /// </exception>
         public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
-            ThrowIfDisposed();
-
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -123,8 +136,10 @@ namespace System.Security.Cryptography
 
             if (destination.Length < signatureSizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
+
+            ThrowIfDisposed();
 
             SignDataCore(data, context, destination.Slice(0, signatureSizeInBytes));
             return signatureSizeInBytes;
@@ -160,8 +175,6 @@ namespace System.Security.Cryptography
         /// </exception>
         public bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context = default)
         {
-            ThrowIfDisposed();
-
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -169,6 +182,8 @@ namespace System.Security.Cryptography
                     context.Length,
                     SR.Argument_SignatureContextTooLong255);
             }
+
+            ThrowIfDisposed();
 
             if (signature.Length != Algorithm.SignatureSizeInBytes)
             {
@@ -246,7 +261,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             AsnWriter writer = ExportSubjectPublicKeyInfoCore();
-            return writer.Encode(static span => PemEncoding.WriteString(PemLabels.SpkiPublicKey, span));
+            return GetEncodedPemString(writer, PemLabels.SpkiPublicKey);
         }
 
         /// <summary>
@@ -327,6 +342,7 @@ namespace System.Security.Cryptography
             throw new NotImplementedException("The PKCS#8 format is still under debate");
         }
 
+#if !NETSTANDARD2_0_OR_GREATER && !NETFRAMEWORK // Remove once PbeParameters is outboxed
         /// <summary>
         ///  Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
         /// </summary>
@@ -351,6 +367,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -393,6 +410,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -445,6 +463,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
@@ -497,6 +516,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
@@ -538,6 +558,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -546,7 +567,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                return writer.Encode(static span => PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, span));
+                return GetEncodedPemString(writer, PemLabels.EncryptedPkcs8PrivateKey);
             }
             finally
             {
@@ -583,6 +604,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -591,13 +613,14 @@ namespace System.Security.Cryptography
 
             try
             {
-                return writer.Encode(static span => PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, span));
+                return GetEncodedPemString(writer, PemLabels.EncryptedPkcs8PrivateKey);
             }
             finally
             {
                 writer.Reset();
             }
         }
+#endif
 
         /// <summary>
         ///  Exports the public-key portion of the current key in the FIPS 205 public key format.
@@ -613,14 +636,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public int ExportSlhDsaPublicKey(Span<byte> destination)
         {
-            ThrowIfDisposed();
-
             int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
 
             if (destination.Length < publicKeySizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
+
+            ThrowIfDisposed();
 
             ExportSlhDsaPublicKeyCore(destination.Slice(0, publicKeySizeInBytes));
             return publicKeySizeInBytes;
@@ -643,14 +666,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public int ExportSlhDsaSecretKey(Span<byte> destination)
         {
-            ThrowIfDisposed();
-
             int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
 
             if (destination.Length < secretKeySizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
+
+            ThrowIfDisposed();
 
             ExportSlhDsaSecretKeyCore(destination.Slice(0, secretKeySizeInBytes));
             return secretKeySizeInBytes;
@@ -673,14 +696,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public int ExportSlhDsaPrivateSeed(Span<byte> destination)
         {
-            ThrowIfDisposed();
-
             int privateSeedSizeInBytes = Algorithm.PrivateSeedSizeInBytes;
 
             if (destination.Length < privateSeedSizeInBytes)
             {
-                throw new ArgumentException(nameof(destination), SR.Argument_DestinationTooShort);
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
+
+            ThrowIfDisposed();
 
             ExportSlhDsaPrivateSeedCore(destination.Slice(0, privateSeedSizeInBytes));
             return privateSeedSizeInBytes;
@@ -692,8 +715,13 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   The generated object.
         /// </returns>
-        public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) =>
-            SlhDsaImplementation.GenerateKeyCore(algorithm);
+        public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
+        {
+            ThrowIfNull(algorithm);
+            ThrowIfNotSupported();
+
+            return SlhDsaImplementation.GenerateKeyCore(algorithm);
+        }
 
         /// <summary>
         ///  Imports an SLH-DSA public key from an X.509 SubjectPublicKeyInfo structure.
@@ -736,8 +764,7 @@ namespace System.Security.Cryptography
                         {
                             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                             spki.Algorithm.Encode(writer);
-                            ThrowAlgorithmUnknown(writer);
-                            Debug.Fail("Execution should have halted in the throw-helper.");
+                            throw Helpers.CreateAlgorithmUnknownException(writer);
                         }
 
                         return SlhDsaImplementation.ImportPublicKey(algorithm, spki.SubjectPublicKey.Span);
@@ -787,8 +814,7 @@ namespace System.Security.Cryptography
                         {
                             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                             pki.PrivateKeyAlgorithm.Encode(writer);
-                            ThrowAlgorithmUnknown(writer);
-                            Debug.Fail("Execution should have halted in the throw-helper.");
+                            throw Helpers.CreateAlgorithmUnknownException(writer);
                         }
 
                         return SlhDsaImplementation.ImportPkcs8PrivateKeyValue(info, pki.PrivateKey.Span);
@@ -1001,13 +1027,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
-            ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PublicKeySizeInBytes)
             {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+                throw new ArgumentException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
             }
+
+            ThrowIfNotSupported();
 
             return SlhDsaImplementation.ImportPublicKey(algorithm, source);
         }
@@ -1039,13 +1066,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
-            ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.SecretKeySizeInBytes)
             {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+                throw new ArgumentException(SR.Argument_SecretKeyWrongSizeForAlgorithm);
             }
+
+            ThrowIfNotSupported();
 
             return SlhDsaImplementation.ImportSecretKey(algorithm, source);
         }
@@ -1077,12 +1105,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNotSupported();
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
             {
-                throw new CryptographicException(SR.Cryptography_KeyWrongSizeForAlgorithm);
+                throw new ArgumentException(SR.Argument_PrivateSeedWrongSizeForAlgorithm);
             }
+
+            ThrowIfNotSupported();
 
             return SlhDsaImplementation.ImportSeed(algorithm, source);
         }
@@ -1163,8 +1193,6 @@ namespace System.Security.Cryptography
 
         private AsnWriter ExportSubjectPublicKeyInfoCore()
         {
-            ThrowIfDisposed();
-
             byte[] rented = CryptoPool.Rent(Algorithm.PublicKeySizeInBytes);
 
             try
@@ -1195,8 +1223,6 @@ namespace System.Security.Cryptography
 
         private AsnWriter ExportEncryptedPkcs8PrivateKeyCore(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ThrowIfDisposed();
-
             // TODO: Determine a more appropriate maximum size once the format is actually known.
             int size = Algorithm.SecretKeySizeInBytes * 2;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
@@ -1227,8 +1253,6 @@ namespace System.Security.Cryptography
 
         private AsnWriter ExportEncryptedPkcs8PrivateKeyCore(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ThrowIfDisposed();
-
             // TODO: Determine a more appropriate maximum size once the format is actually known.
             int initialSize = Algorithm.SecretKeySizeInBytes * 2;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
@@ -1264,16 +1288,26 @@ namespace System.Security.Cryptography
             }
         }
 
-        [DoesNotReturn]
-        private static void ThrowAlgorithmUnknown(AsnWriter encodedId)
+        private static void ThrowIfNull(
+            [NotNull] object? argument,
+            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
         {
-#if NET9_0_OR_GREATER
-            throw encodedId.Encode(static encoded =>
-                new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encoded))));
+#if NET
+            ArgumentNullException.ThrowIfNull(argument, paramName);
 #else
-            throw new CryptographicException(
-                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encodedId.Encode())));
+            if (argument is null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+#endif
+        }
+
+        internal static string GetEncodedPemString(AsnWriter writer, string label)
+        {
+#if NET10_0_OR_GREATER
+            return writer.Encode(label, static (l, span) => PemEncoding.WriteString(l, span));
+#else
+            throw new NotImplementedException();
 #endif
         }
     }

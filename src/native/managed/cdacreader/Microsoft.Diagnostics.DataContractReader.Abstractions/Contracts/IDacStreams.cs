@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface IDacStreams : IContract
 {
     static string IContract.Name { get; } = nameof(DacStreams);
-    public virtual string? StringFromEEAddress(TargetPointer address) => throw new NotImplementedException();
+    string? StringFromEEAddress(TargetPointer address) => throw new NotImplementedException();
 }
 
 public readonly struct DacStreams : IDacStreams
