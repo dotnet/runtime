@@ -2198,8 +2198,15 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
         _ASSERTE( GC_FRAMEREG_REL == spBase );
         // FIXME: The register slot we stash the frame pointer into varies per-architecture.
         // CONTEXTGetFp is unavailable here (including its header doesn't work either).
-        uint8_t* fp = (uint8_t*)GetRegisterSlot(5 /* rbp */, pRD);
-        pObjRef = (OBJECTREF*)(fp + spOffset);
+        uint8_t* fp = NULL;
+#if defined(TARGET_AMD64)
+        fp = (uint8_t*)(pRD->pCurrentContext->Rbp);
+#else
+        _ASSERTE(!"Unimplemented architecture for GetStackSlot");
+#endif
+        // FIXME: We should fail loudly if we don't have an fp
+        if (fp)
+            pObjRef = (OBJECTREF*)(fp + spOffset);
     }
 
     return pObjRef;
