@@ -3407,17 +3407,25 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-void AppDomain::OnUnhandledException(OBJECTREF *pThrowable)
+void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    GCX_COOP();
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(pThrowable != NULL);
+    }
+    CONTRACTL_END;
 
     EX_TRY
     {
-        GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable);
+        MethodDescCallSite raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION);
+        ARG_SLOT args[] =
+        {
+            ObjToArgSlot(*pThrowable)
+        };
+        raiseEvent.Call(args);
     }
     EX_CATCH
     {
@@ -3442,41 +3450,6 @@ void AppDomain::RaiseExitProcessEvent()
     MethodDescCallSite onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
     onProcessExit.Call(NULL);
 }
-
-BOOL
-AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pThrowable != NULL && IsProtectedByGCFrame(pThrowable));
-
-    OBJECTREF orDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__UNHANDLED_EXCEPTION)->GetStaticOBJECTREF();
-    if (orDelegate == NULL)
-        return FALSE;
-
-    struct {
-        OBJECTREF Delegate;
-        OBJECTREF Sender;
-    } gc;
-    gc.Delegate = orDelegate;
-    gc.Sender = NULL;
-
-    GCPROTECT_BEGIN(gc);
-    if (orDelegate != NULL)
-    {
-        DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable);
-    }
-    GCPROTECT_END();
-    return TRUE;
-}
-
 
 DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
 {
