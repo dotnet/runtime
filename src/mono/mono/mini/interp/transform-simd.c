@@ -1187,6 +1187,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_op_Addition:
 				cmethod_name = "Add";
 				break;
+			case SN_Divide:
 			case SN_op_Division:
 				if (scalar_arg != -1)
 					return FALSE;
@@ -1200,6 +1201,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 					return FALSE;
 				cmethod_name = "ShiftLeft";
 				break;
+			case SN_Multiply:
 			case SN_op_Multiply:
 				if (scalar_arg != -1)
 					return FALSE;
@@ -1221,12 +1223,16 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_ConvertToInt32:
 				cmethod_name = "ConvertToInt32Saturate";
+			case SN_ShiftLeft:
+			case SN_ShiftRightLogical:
+			case SN_ShiftRightArithmetic:
+				if (scalar_arg != 1)
+					return FALSE;
+				cmethod_name = cmethod->name;
 				break;
 			case SN_Add:
 			case SN_AndNot:
 			case SN_Subtract:
-			case SN_Multiply:
-			case SN_Divide:
 			case SN_Ceiling:
 			case SN_ConvertToSingle:
 			case SN_Floor:
@@ -1236,9 +1242,6 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Max:
 			case SN_Sqrt:
 			case SN_Xor:
-			case SN_ShiftLeft:
-			case SN_ShiftRightLogical:
-			case SN_ShiftRightArithmetic:
 			case SN_Truncate:
 				cmethod_name = cmethod->name;
 				break;
