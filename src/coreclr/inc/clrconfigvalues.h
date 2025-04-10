@@ -110,11 +110,6 @@
 // * W("Security_LegacyHMACMode") <---------------------- (No EXTERNAL prefix)
 
 ///
-/// AppDomain
-///
-CONFIG_DWORD_INFO(INTERNAL_EnableFullDebug, W("EnableFullDebug"), 0, "Heavy-weight checking for AD boundary violations (AD leaks)")
-
-///
 /// Jit Pitching
 ///
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchEnabled, W("JitPitchEnabled"), (DWORD)0, "Set it to 1 to enable Jit Pitching")
@@ -259,7 +254,6 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("le
 CONFIG_DWORD_INFO(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_LegacyExceptionHandling, W("LegacyExceptionHandling"), 0, "Enable legacy exception handling.");
 CONFIG_DWORD_INFO(INTERNAL_LogStackOverflowExit, W("LogStackOverflowExit"), 0, "Temporary flag to log stack overflow exit process")
 
 ///
@@ -398,8 +392,6 @@ CONFIG_DWORD_INFO(INTERNAL_MD_ApplyDeltaBreak, W("MD_ApplyDeltaBreak"), 0, "ASSE
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_AssertOnBadImageFormat, W("AssertOnBadImageFormat"), 0, "ASSERT when invalid MD read")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_MD_DeltaCheck, W("MD_DeltaCheck"), 1, "Some checks of GUID when applying EnC (?)")
 CONFIG_DWORD_INFO(INTERNAL_MD_EncDelta, W("MD_EncDelta"), 0, "Forces EnC Delta format in MD (?)")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_MD_ForceNoColDesSharing, W("MD_ForceNoColDesSharing"), 0, "Don't know - the only usage I could find is #if 0 (?)")
-CONFIG_DWORD_INFO(INTERNAL_MD_KeepKnownCA, W("MD_KeepKnownCA"), 0, "Something with known CAs (?)")
 CONFIG_DWORD_INFO(INTERNAL_MD_MiniMDBreak, W("MD_MiniMDBreak"), 0, "ASSERT when creating CMiniMdRw class")
 CONFIG_DWORD_INFO(INTERNAL_MD_PreSaveBreak, W("MD_PreSaveBreak"), 0, "ASSERT when calling CMiniMdRw::PreSave")
 CONFIG_DWORD_INFO(INTERNAL_MD_RegMetaBreak, W("MD_RegMetaBreak"), 0, "ASSERT when creating RegMeta class")
@@ -456,13 +448,13 @@ CONFIG_DWORD_INFO(INTERNAL_TestOnlyEnableObjectAllocatedHook, W("TestOnlyEnableO
 CONFIG_DWORD_INFO(INTERNAL_TestOnlyEnableSlowELTHooks, W("TestOnlyEnableSlowELTHooks"), 0, "Test-only flag that forces CLR to initialize on startup as if slow-ELT were requested, to enable post-attach ELT functionality.")
 
 RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_ETW_ObjectAllocationEventsPerTypePerSec, W("ETW_ObjectAllocationEventsPerTypePerSec"), "Desired number of GCSampledObjectAllocation ETW events to be logged per type per second.  If 0, then the default built in to the implementation for the enabled event (e.g., High, Low), will be used.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ProfAPI_ValidateNGENInstrumentation, W("ProfAPI_ValidateNGENInstrumentation"), 0, "This flag enables additional validations when using the IMetaDataEmit APIs for NGEN'ed images to ensure only supported edits are made.")
 
 #ifdef FEATURE_PERFMAP
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapEnabled, W("PerfMapEnabled"), 0, "This flag is used on Linux and macOS to enable writing /tmp/perf-$pid.map. It is disabled by default")
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_PerfMapJitDumpPath, W("PerfMapJitDumpPath"), "Specifies a path to write the perf jitdump file. Defaults to /tmp", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapIgnoreSignal, W("PerfMapIgnoreSignal"), 0, "When perf map is enabled, this option will configure the specified signal to be accepted and ignored as a marker in the perf logs.  It is disabled by default")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapShowOptimizationTiers, W("PerfMapShowOptimizationTiers"), 1, "Shows optimization tiers in the perf map for methods, as part of the symbol name. Useful for seeing separate stack frames for different optimization tiers of each method.")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapStubGranularity, W("PerfMapStubGranularity"), 0, "Report stubs with varying amounts of granularity (low bit being zero indicates attempt to group all stubs of a type together) (second lowest bit being non-zero records stubs at individual allocation sites, which is more expensive, but also more accurate).")
 #endif
 
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_StartupDelayMS, W("StartupDelayMS"), "")
@@ -777,28 +769,18 @@ CONFIG_DWORD_INFO(INTERNAL_ActivatePatchSkip, W("ActivatePatchSkip"), 0, "Allows
 CONFIG_DWORD_INFO(INTERNAL_AlwaysUseMetadataInterfaceMapLayout, W("AlwaysUseMetadataInterfaceMapLayout"), 0, "Used for debugging generic interface map layout.")
 CONFIG_DWORD_INFO(INTERNAL_AssertOnUnneededThis, W("AssertOnUnneededThis"), 0, "While the ConfigDWORD is unnecessary, the contained ASSERT should be kept. This may result in some work tracking down violating MethodDescCallSites.")
 CONFIG_DWORD_INFO(INTERNAL_AssertStacktrace, W("AssertStacktrace"), 1, "")
-CONFIG_DWORD_INFO(INTERNAL_CPUFamily, W("CPUFamily"), 0xFFFFFFFF, "")
-CONFIG_DWORD_INFO(INTERNAL_CPUFeatures, W("CPUFeatures"), 0xFFFFFFFF, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DisableConfigCache, W("DisableConfigCache"), 0, "Used to disable the \"probabilistic\" config cache, which walks through the appropriate config registry keys on init and probabilistically keeps track of which exist.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DisableStackwalkCache, W("DisableStackwalkCache"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DoubleArrayToLargeObjectHeap, W("DoubleArrayToLargeObjectHeap"), 0, "Controls double[] placement")
 CONFIG_STRING_INFO(INTERNAL_DumpOnClassLoad, W("DumpOnClassLoad"), "Dumps information about loaded class to log.")
 CONFIG_DWORD_INFO(INTERNAL_ExpandAllOnLoad, W("ExpandAllOnLoad"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_ForceRelocs, W("ForceRelocs"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_GenerateLongJumpDispatchStubRatio, W("GenerateLongJumpDispatchStubRatio"), 0, "Useful for testing VSD on AMD64")
-CONFIG_DWORD_INFO(INTERNAL_HostManagerConfig, W("HostManagerConfig"), (DWORD)-1, "")
 CONFIG_DWORD_INFO(INTERNAL_HostTestThreadAbort, W("HostTestThreadAbort"), 0, "")
 CONFIG_STRING_INFO(INTERNAL_InvokeHalt, W("InvokeHalt"), "Throws an assert when the given method is invoked through reflection.")
 CONFIG_DWORD_INFO(INTERNAL_MaxStubUnwindInfoSegmentSize, W("MaxStubUnwindInfoSegmentSize"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_MessageDebugOut, W("MessageDebugOut"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NativeImageRequire, W("NativeImageRequire"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_NestedEhOom, W("NestedEhOom"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NoProcedureSplitting, W("NoProcedureSplitting"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_PauseOnLoad, W("PauseOnLoad"), 0, "Stops in SystemDomain::init. I think it can be removed.")
 CONFIG_DWORD_INFO(INTERNAL_PerfAllocsSizeThreshold, W("PerfAllocsSizeThreshold"), 0x3FFFFFFF, "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")
 CONFIG_DWORD_INFO(INTERNAL_PerfNumAllocsThreshold, W("PerfNumAllocsThreshold"), 0x3FFFFFFF, "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")
 CONFIG_STRING_INFO(INTERNAL_PerfTypesToLog, W("PerfTypesToLog"), "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Prepopulate1, W("Prepopulate1"), 1, "")
 CONFIG_STRING_INFO(INTERNAL_PrestubGC, W("PrestubGC"), "")
 CONFIG_STRING_INFO(INTERNAL_PrestubHalt, W("PrestubHalt"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_RestrictedGCStressExe, W("RestrictedGCStressExe"), "")
@@ -816,7 +798,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ThreadGuardPages, W("ThreadGuardPages"), 0, ""
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TraceWrap, W("TraceWrap"), 0, "")
 #endif
 
-CONFIG_DWORD_INFO(INTERNAL_VerifierOff, W("VerifierOff"), 0, "")
 // **
 // PLEASE MOVE ANY CONFIG SWITCH YOU OWN OUT OF THIS SECTION INTO A CATEGORY ABOVE
 //

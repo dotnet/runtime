@@ -501,8 +501,14 @@ namespace System.Runtime
         internal static extern unsafe void RhUnregisterRefCountedHandleCallback(IntPtr pCalloutMethod, MethodTable* pTypeFilter);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetIUnknownAddRef")]
-        internal static extern IntPtr RhGetIUnknownAddRef();
+        [RuntimeImport(RuntimeLibrary,
+#if TARGET_WINDOWS && TARGET_X86
+            "_RhIUnknown_AddRef@4"
+#else
+            "RhIUnknown_AddRef"
+#endif
+        )]
+        internal static extern uint RhIUnknown_AddRef(nint pThis);
 
 #if FEATURE_OBJCMARSHAL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
