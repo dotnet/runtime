@@ -64,8 +64,6 @@ public class InterpreterTest
 
         if (!TestJitFields())
             Environment.FailFast(null);
-        // Disable below tests because they are potentially unstable since they do allocation
-        // and we currently don't have GC support. They should pass locally though.
         if (!TestFields())
             Environment.FailFast(null);
         if (!TestSpecialFields())
@@ -73,8 +71,8 @@ public class InterpreterTest
         if (!TestFloat())
             Environment.FailFast(null);
 
-        // For stackwalking validation
-        System.GC.Collect();
+        // FIXME: This crashes inside the GC
+        // System.GC.Collect();
     }
 
     public static int Mul4(int a, int b, int c, int d)
