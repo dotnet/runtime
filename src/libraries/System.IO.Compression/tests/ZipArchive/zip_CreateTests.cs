@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO.Pipelines;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -49,63 +54,78 @@ namespace System.IO.Compression.Tests
             Assert.Throws<ObjectDisposedException>(() => z.CreateEntry("dirka")); //"Can't create after dispose"
         }
 
-        [Theory]
-        [InlineData("small", false, false)]
-        [InlineData("normal", false, false)]
-        [InlineData("empty", false, false)]
-        [InlineData("emptydir", false, false)]
-        [InlineData("small", true, false)]
-        [InlineData("normal", true, false)]
-        [InlineData("small", false, true)]
-        [InlineData("normal", false, true)]
-        public static async Task CreateNormal_Seekable(string folder, bool useSpansForWriting, bool writeInChunks)
-        {
-            using (var s = new MemoryStream())
-            {
-                var testStream = new WrappedStream(s, false, true, true, null);
-                await CreateFromDir(zfolder(folder), testStream, ZipArchiveMode.Create, useSpansForWriting, writeInChunks);
+        private static readonly string[] _folderNames = [ "small", "normal", "empty", "emptydir" ];
 
-                IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
+        public static IEnumerable<object[]> GetCreateNormal_Seekable_Data()
+        {
+            foreach (bool async in _bools)
+            {
+                foreach (string folder in _folderNames)
+                {
+                    yield return new object[] { folder, false, false, async };
+                }
+
+                yield return new object[] { "small", false, true, async };
+                yield return new object[] { "small", true, false, async };
+                yield return new object[] { "normal", false, true, async };
+                yield return new object[] { "normal", true, false, async };
             }
         }
 
         [Theory]
-        [InlineData("small")]
-        [InlineData("normal")]
-        [InlineData("empty")]
-        [InlineData("emptydir")]
-        public static async Task CreateNormal_Unseekable(string folder)
-        {
-            using (var s = new MemoryStream())
-            {
-                var testStream = new WrappedStream(s, false, true, false, null);
-                await CreateFromDir(zfolder(folder), testStream, ZipArchiveMode.Create);
-
-                IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
-            }
-        }
-
-        [Fact]
-        public static async Task CreateNormal_Unicode_Seekable()
+        [MemberData(nameof(GetCreateNormal_Seekable_Data))]
+        public static async Task CreateNormal_Seekable(string folder, bool useSpansForWriting, bool writeInChunks, bool async)
         {
             using (var s = new MemoryStream())
             {
                 var testStream = new WrappedStream(s, false, true, true, null);
-                await CreateFromDir(zfolder("unicode"), testStream, ZipArchiveMode.Create);
-
-                IsZipSameAsDir(s, zfolder("unicode"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
+                await CreateFromDir(zfolder(folder), testStream, async, ZipArchiveMode.Create, useSpansForWriting: useSpansForWriting, writeInChunks: writeInChunks);
+                await IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true, async: async);
             }
         }
 
-        [Fact]
-        public static async Task CreateNormal_Unicode_Unseekable()
+        public static IEnumerable<object[]> Get_CreateNormal_Unseekable_Data()
+        {
+            foreach (string folder in _folderNames)
+            {
+                yield return new object[] { folder, false };
+                yield return new object[] { folder, true };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_CreateNormal_Unseekable_Data))]
+        public static async Task CreateNormal_Unseekable(string folder, bool async)
         {
             using (var s = new MemoryStream())
             {
                 var testStream = new WrappedStream(s, false, true, false, null);
-                await CreateFromDir(zfolder("unicode"), testStream, ZipArchiveMode.Create);
+                await CreateFromDir(zfolder(folder), testStream, async, ZipArchiveMode.Create);
+                await IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true, async);
+            }
+        }
 
-                IsZipSameAsDir(s, zfolder("unicode"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CreateNormal_Unicode_Seekable(bool async)
+        {
+            using (var s = new MemoryStream())
+            {
+                var testStream = new WrappedStream(s, false, true, true, null);
+                await CreateFromDir(zfolder("unicode"), testStream, async, ZipArchiveMode.Create);
+                await IsZipSameAsDir(s, zfolder("unicode"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CreateNormal_Unicode_Unseekable(bool async)
+        {
+            using (var s = new MemoryStream())
+            {
+                var testStream = new WrappedStream(s, false, true, false, null);
+                await CreateFromDir(zfolder("unicode"), testStream, async, ZipArchiveMode.Create);
+                await IsZipSameAsDir(s, zfolder("unicode"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true, async);
             }
         }
 
@@ -263,21 +283,51 @@ namespace System.IO.Compression.Tests
             AssertUnicodeFileNameAndComment(ms, isUnicodeFlagExpected);
         }
 
-        [Fact]
-        public void Create_VerifyDuplicateEntriesAreAllowed()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Create_VerifyDuplicateEntriesAreAllowed(bool async)
         {
             using var ms = new MemoryStream();
-            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            ZipArchive archive;
+            if (async)
             {
-                string entryName = "foo";
-                AddEntry(archive, entryName, contents: "xxx", DateTimeOffset.Now);
-                AddEntry(archive, entryName, contents: "yyy", DateTimeOffset.Now);
+                archive = await ZipArchive.CreateAsync(ms, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null);
+            }
+            else
+            {
+                archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true);
             }
 
-            using (var archive = new ZipArchive(ms, ZipArchiveMode.Update))
+            string entryName = "foo";
+            await AddEntry(archive, entryName, contents: "xxx", DateTimeOffset.Now, async);
+            await AddEntry(archive, entryName, contents: "yyy", DateTimeOffset.Now, async);
+
+            if (async)
             {
-                Assert.Equal(2, archive.Entries.Count);
+                await archive.DisposeAsync();
+
+                // Open again with different mode
+                archive = await ZipArchive.CreateAsync(ms, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: null);
             }
+            else
+            {
+                archive.Dispose();
+
+                // Open again with different mode
+                archive = new ZipArchive(ms, ZipArchiveMode.Update);
+            }
+
+            Assert.Equal(2, archive.Entries.Count);
+
+            if (async)
+            {
+                await archive.DisposeAsync();
+            }
+            else
+            {
+                archive.Dispose();
+            }
+
         }
 
         private static string ReadStringFromSpan(Span<byte> input)
