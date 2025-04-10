@@ -43,7 +43,7 @@ namespace System.Net.Http.Headers
 
             idx += alpnProtocolNameLength;
 
-            if (alpnProtocolName == "clear")
+            if (alpnProtocolName == AltSvcHeaderValue.ClearString)
             {
                 if (idx != value.Length)
                 {
