@@ -12,8 +12,10 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
+using Xunit.Abstractions;
 
-namespace Systen.Net.Mail.Tests
+namespace System.Net.Mail.Tests
 {
     public class LoopbackSmtpServer : IDisposable
     {
@@ -24,8 +26,10 @@ namespace Systen.Net.Mail.Tests
         public bool SupportSmtpUTF8 = false;
         public bool AdvertiseNtlmAuthSupport = false;
         public bool AdvertiseGssapiAuthSupport = false;
+        public SslServerAuthenticationOptions? SslOptions { get; set; }
         public NetworkCredential ExpectedGssapiCredential { get; set; }
 
+        private ITestOutputHelper? _output;
         private bool _disposed = false;
         private readonly Socket _listenSocket;
         private readonly ConcurrentBag<Socket> _socketsToDispose;
@@ -48,12 +52,15 @@ namespace Systen.Net.Mail.Tests
         public string Password { get; private set; }
         public string AuthMethodUsed { get; private set; }
         public ParsedMailMessage Message { get; private set; }
+        public bool IsEncrypted { get; private set; }
+        public string TlsHostName { get; private set; }
 
         public int ConnectionCount { get; private set; }
         public int MessagesReceived { get; private set; }
 
-        public LoopbackSmtpServer()
+        public LoopbackSmtpServer(ITestOutputHelper? output = null)
         {
+            _output = output;
             _socketsToDispose = new ConcurrentBag<Socket>();
             _listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _socketsToDispose.Add(_listenSocket);
@@ -78,6 +85,7 @@ namespace Systen.Net.Mail.Tests
         private async Task HandleConnectionAsync(Socket socket)
         {
             var buffer = new byte[1024].AsMemory();
+            Stream stream = new NetworkStream(socket);
 
             async ValueTask<string> ReceiveMessageAsync(bool isBody = false)
             {
@@ -87,43 +95,58 @@ namespace Systen.Net.Mail.Tests
                 int received = 0;
                 do
                 {
-                    int read = await socket.ReceiveAsync(buffer.Slice(received), SocketFlags.None);
+                    int read = await stream.ReadAsync(buffer.Slice(received));
+
                     if (read == 0) return null;
                     received += read;
                 }
                 while (received < suffix || !buffer.Slice(received - suffix, suffix).Span.SequenceEqual(terminator.Span));
 
                 MessagesReceived++;
-                return Encoding.UTF8.GetString(buffer.Span.Slice(0, received - suffix));
+                string message = Encoding.UTF8.GetString(buffer.Span.Slice(0, received - suffix));
+                _output?.WriteLine($"Client> {message}");
+                return message;
             }
+
             async ValueTask SendMessageAsync(string text)
             {
                 var bytes = buffer.Slice(0, Encoding.UTF8.GetBytes(text, buffer.Span) + 2);
                 bytes.Span[^2] = (byte)'\r';
                 bytes.Span[^1] = (byte)'\n';
-                await socket.SendAsync(bytes, SocketFlags.None);
+
+                _output?.WriteLine($"Server> {text}");
+                await stream.WriteAsync(bytes);
+                await stream.FlushAsync();
             }
 
             try
             {
                 OnConnected?.Invoke(socket);
                 await SendMessageAsync("220 localhost");
+                bool isFirstMessage = true;
 
-                string message = await ReceiveMessageAsync();
-                Debug.Assert(message.ToLower().StartsWith("helo ") || message.ToLower().StartsWith("ehlo "));
-                ClientDomain = message.Substring(5).ToLower();
-                OnCommandReceived?.Invoke(message.Substring(0, 4), ClientDomain);
-                OnHelloReceived?.Invoke(ClientDomain);
-
-                await SendMessageAsync("250-localhost, mock server here");
-                if (SupportSmtpUTF8) await SendMessageAsync("250-SMTPUTF8");
-                await SendMessageAsync(
-                    "250 AUTH PLAIN LOGIN" +
-                    (AdvertiseNtlmAuthSupport ? " NTLM" : "") +
-                    (AdvertiseGssapiAuthSupport ? " GSSAPI" : ""));
-
-                while ((message = await ReceiveMessageAsync()) != null)
+                while (await ReceiveMessageAsync() is string message && message != null)
                 {
+                    Debug.Assert(!isFirstMessage || (message.ToLower().StartsWith("helo ") || message.ToLower().StartsWith("ehlo ")), "Expected the first message to be HELO/EHLO");
+                    isFirstMessage = false;
+
+                    if (message.ToLower().StartsWith("helo ") || message.ToLower().StartsWith("ehlo "))
+                    {
+                        ClientDomain = message.Substring(5).ToLower();
+                        OnCommandReceived?.Invoke(message.Substring(0, 4), ClientDomain);
+                        OnHelloReceived?.Invoke(ClientDomain);
+
+                        await SendMessageAsync("250-localhost, mock server here");
+                        if (SupportSmtpUTF8) await SendMessageAsync("250-SMTPUTF8");
+                        if (SslOptions != null && stream is not SslStream) await SendMessageAsync("250-STARTTLS");
+                        await SendMessageAsync(
+                            "250 AUTH PLAIN LOGIN" +
+                            (AdvertiseNtlmAuthSupport ? " NTLM" : "") +
+                            (AdvertiseGssapiAuthSupport ? " GSSAPI" : ""));
+
+                        continue;
+                    }
+
                     int colonIndex = message.IndexOf(':');
                     string command = colonIndex == -1 ? message : message.Substring(0, colonIndex);
                     string argument = command.Length == message.Length ? string.Empty : message.Substring(colonIndex + 1).Trim();
@@ -201,6 +224,23 @@ namespace Systen.Net.Mail.Tests
 
                     switch (command.ToUpper())
                     {
+                        case "STARTTLS":
+                            if (SslOptions == null || stream is SslStream)
+                            {
+                                await SendMessageAsync("454 TLS not available");
+                                break;
+                            }
+                            await SendMessageAsync("220 Ready to start TLS");
+
+                            // Upgrade connection to TLS
+                            var sslStream = new SslStream(stream);
+                            await sslStream.AuthenticateAsServerAsync(SslOptions);
+                            IsEncrypted = true;
+                            TlsHostName = sslStream.TargetHostName;
+
+                            stream = sslStream;
+                            break;
+
                         case "MAIL FROM":
                             MailFrom = argument;
                             await SendMessageAsync("250 Ok");
@@ -233,14 +273,7 @@ namespace Systen.Net.Mail.Tests
             catch { }
             finally
             {
-                try
-                {
-                    socket.Shutdown(SocketShutdown.Both);
-                }
-                finally
-                {
-                    socket?.Close();
-                }
+                stream.Dispose();
             }
         }
 

@@ -18,7 +18,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
-using Systen.Net.Mail.Tests;
 using System.Net.Test.Common;
 using Xunit;
 
