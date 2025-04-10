@@ -92,7 +92,7 @@ internal readonly partial struct ZipLocalFileHeader
 
         ushort filenameLength = BinaryPrimitives.ReadUInt16LittleEndian(fixedHeaderBuffer.AsSpan(relativeFilenameLengthLocation));
         ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(fixedHeaderBuffer.AsSpan(relativeExtraFieldLengthLocation));
-        byte[] extraFieldBuffer = Buffers.ArrayPool<byte>.Shared.Rent(extraFieldLength);
+        byte[] extraFieldBuffer = ArrayPool<byte>.Shared.Rent(extraFieldLength);
 
         try
         {
@@ -106,7 +106,7 @@ internal readonly partial struct ZipLocalFileHeader
         }
         finally
         {
-            Buffers.ArrayPool<byte>.Shared.Return(extraFieldBuffer);
+            ArrayPool<byte>.Shared.Return(extraFieldBuffer);
         }
     }
 

@@ -487,6 +487,8 @@ namespace System.IO.Compression
         // ZIP files store values in little endian, so this is reversed.
         public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x01, 0x02];
 
+        private const int StackAllocationThreshold = 512;
+
         // These are the minimum possible size, assuming the zip file comments variable section is empty
         public const int BlockConstantSectionSize = 46;
 
