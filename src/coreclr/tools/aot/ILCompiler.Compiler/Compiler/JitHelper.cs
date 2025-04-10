@@ -66,6 +66,7 @@ namespace ILCompiler
                     {
                         TargetArchitecture.ARM64 => "RhpAssignRefArm64",
                         TargetArchitecture.LoongArch64 => "RhpAssignRefLoongArch64",
+                        TargetArchitecture.RiscV64 => "RhpAssignRefRiscV64",
                         _ => "RhpAssignRef"
                     };
                     break;

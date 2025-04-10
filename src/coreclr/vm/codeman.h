@@ -67,6 +67,9 @@ Abstract:
 #include "pedecoder.h"
 #include "gcinfo.h"
 #include "eexcp.h"
+#ifdef TARGET_X86
+#include "gc_unwind_x86.h"
+#endif
 
 class MethodDesc;
 class ICorJitCompiler;
@@ -2902,6 +2905,8 @@ public:
         WRAPPER_NO_CONTRACT;
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
+
+    PTR_CBYTE   DecodeGCHdrInfo(hdrInfo   ** infoPtr);
 #endif // TARGET_X86
 
 #if defined(TARGET_WASM)
@@ -2925,6 +2930,11 @@ private:
 #ifdef FEATURE_EH_FUNCLETS
     PTR_RUNTIME_FUNCTION m_pFunctionEntry;
 #endif // FEATURE_EH_FUNCLETS
+
+#ifdef TARGET_X86
+    PTR_CBYTE           m_hdrInfoTable;
+    hdrInfo             m_hdrInfoBody;
+#endif
 
 #ifdef TARGET_AMD64
     // Simple helper to return a pointer to the UNWIND_INFO given the offset to the unwind info.
