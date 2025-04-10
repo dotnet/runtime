@@ -984,17 +984,19 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
-        // Once https://github.com/mono/linker/issues/1731 is fixed we can remove the suppression from here as it won't be needed any longer.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:GetMethod",
-            Justification = "The DynamicallyAccessedMembers declarations will ensure the interface methods will be preserved.")]
         internal static MethodInfo? GetTargetMethodWithName(string name,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             Type interfaceType)
         {
-            Type? t = type.GetInterfaces().Where(it => it.Equals(interfaceType)).FirstOrDefault();
-            return t?.GetMethod(name);
+            Type[] interfaces = type.GetInterfaces();
+            for (int i = 0; i < interfaces.Length; i++)
+            {
+                if (interfaces[i].Equals(interfaceType))
+                    return interfaces[i].GetMethod(name);
+            }
+            return null;
         }
 
         private static bool IsArraySegment(Type t)
@@ -1280,9 +1282,6 @@ namespace System.Runtime.Serialization.DataContracts
             return (param == null) ? SR.Format(message, nestedMessage) : SR.Format(message, nestedMessage, param);
         }
 
-        // Once https://github.com/mono/linker/issues/1731 is fixed we can remove the suppression from here as it won't be needed any longer.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:GetMethod",
-            Justification = "The DynamicallyAccessedMembers declarations will ensure the interface methods will be preserved.")]
         private static void FindCollectionMethodsOnInterface(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
@@ -1290,11 +1289,15 @@ namespace System.Runtime.Serialization.DataContracts
             Type interfaceType,
             ref MethodInfo? addMethod, ref MethodInfo? getEnumeratorMethod)
         {
-            Type? t = type.GetInterfaces().Where(it => it.Equals(interfaceType)).FirstOrDefault();
-            if (t != null)
+            Type[] interfaces = type.GetInterfaces();
+            for (int i = 0; i < interfaces.Length; i++)
             {
-                addMethod = t.GetMethod(Globals.AddMethodName) ?? addMethod;
-                getEnumeratorMethod = t.GetMethod(Globals.GetEnumeratorMethodName) ?? getEnumeratorMethod;
+                if (interfaces[i].Equals(interfaceType))
+                {
+                    addMethod = interfaces[i].GetMethod(Globals.AddMethodName) ?? addMethod;
+                    getEnumeratorMethod = interfaces[i].GetMethod(Globals.GetEnumeratorMethodName) ?? getEnumeratorMethod;
+                    break;
+                }
             }
         }
 
