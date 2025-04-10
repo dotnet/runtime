@@ -5,6 +5,8 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
@@ -72,6 +74,12 @@ namespace System.IO.Compression
                 size += field.Size + SizeOfHeader; //size is only size of data
             }
             return size;
+        }
+
+        private void WriteBlockCore(Span<byte> extraFieldHeader)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(extraFieldHeader[FieldLocations.Tag..], _tag);
+            BinaryPrimitives.WriteUInt16LittleEndian(extraFieldHeader[FieldLocations.Size..], _size);
         }
     }
 
