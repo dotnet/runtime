@@ -877,16 +877,14 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
         InterpVar *pVar = &m_pVars[i];
         if (pVar->interpType != InterpTypeO)
             continue;
-        // Don't attempt to assign slots for dead vars (though they shouldn't have an offset anyway)
-        if (!pVar->liveStart)
-            continue;
 
         // Globals are untracked and shouldn't need liveness ranges recorded in the info
         GcSlotFlags flags = (GcSlotFlags)(pVar->global ? GC_SLOT_UNTRACKED : 0);
         uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
         if (slotsByOffset[slotIndex] == ((GcSlotId)-1))
         {
-            slotsByOffset[slotIndex] = gcInfoEncoder->GetStackSlotId(-(pVar->offset), flags);
+            // Important to pass GC_xxx_REL, the default is broken due to GET_CALLER_SP being unimplemented
+            slotsByOffset[slotIndex] = gcInfoEncoder->GetStackSlotId(pVar->offset, flags, GC_FRAMEREG_REL);
             INTERP_DUMP(
                 "Allocated gcinfo slot %u for %svar #%d at offset %d\n",
                 slotsByOffset[slotIndex], pVar->global ? "global " : "",
@@ -912,6 +910,10 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
         InterpVar *pVar = &m_pVars[i];
         // Even if we have a gc slot for this offset, this var might not be an object reference
         if (pVar->interpType != InterpTypeO)
+            continue;
+        // We don't need to report liveness ranges for untracked vars, the gc info decoder will report them
+        //  unconditionally.
+        if (pVar->global)
             continue;
 
         uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
