@@ -62,55 +62,15 @@ internal sealed partial class Zip64EndOfCentralDirectoryRecord
     public static async Task<(bool, Zip64EndOfCentralDirectoryRecord)> TryReadBlockAsync(Stream stream, CancellationToken cancellationToken)
     {
         byte[] blockContents = new byte[BlockConstantSectionSize];
-        int bytesRead;
-
-        Zip64EndOfCentralDirectoryRecord zip64EOCDRecord = new();
-        bytesRead = await stream.ReadAsync(blockContents, cancellationToken).ConfigureAwait(false);
-
-        if (bytesRead < BlockConstantSectionSize)
-        {
-            return (false, zip64EOCDRecord);
-        }
-
-        if (!blockContents.StartsWith(SignatureConstantBytes))
-        {
-            return (false, zip64EOCDRecord);
-        }
-
-        zip64EOCDRecord.SizeOfThisRecord = BinaryPrimitives.ReadUInt64LittleEndian(blockContents.AsSpan(FieldLocations.SizeOfThisRecord));
-        zip64EOCDRecord.VersionMadeBy = BinaryPrimitives.ReadUInt16LittleEndian(blockContents.AsSpan(FieldLocations.VersionMadeBy));
-        zip64EOCDRecord.VersionNeededToExtract = BinaryPrimitives.ReadUInt16LittleEndian(blockContents.AsSpan(FieldLocations.VersionNeededToExtract));
-        zip64EOCDRecord.NumberOfThisDisk = BinaryPrimitives.ReadUInt32LittleEndian(blockContents.AsSpan(FieldLocations.NumberOfThisDisk));
-        zip64EOCDRecord.NumberOfDiskWithStartOfCD = BinaryPrimitives.ReadUInt32LittleEndian(blockContents.AsSpan(FieldLocations.NumberOfDiskWithStartOfCD));
-        zip64EOCDRecord.NumberOfEntriesOnThisDisk = BinaryPrimitives.ReadUInt64LittleEndian(blockContents.AsSpan(FieldLocations.NumberOfEntriesOnThisDisk));
-        zip64EOCDRecord.NumberOfEntriesTotal = BinaryPrimitives.ReadUInt64LittleEndian(blockContents.AsSpan(FieldLocations.NumberOfEntriesTotal));
-        zip64EOCDRecord.SizeOfCentralDirectory = BinaryPrimitives.ReadUInt64LittleEndian(blockContents.AsSpan(FieldLocations.SizeOfCentralDirectory));
-        zip64EOCDRecord.OffsetOfCentralDirectory = BinaryPrimitives.ReadUInt64LittleEndian(blockContents.AsSpan(FieldLocations.OffsetOfCentralDirectory));
-
-        return (true, zip64EOCDRecord);
+        int bytesRead = await stream.ReadAsync(blockContents, cancellationToken).ConfigureAwait(false);
+        bool result = TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryRecord zip64EOCDRecord);
+        return (result, zip64EOCDRecord);
     }
 
     public static async Task WriteBlockAsync(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, CancellationToken cancellationToken)
     {
         byte[] blockContents = new byte[BlockConstantSectionSize];
-
-        SignatureConstantBytes.CopyTo(blockContents.AsSpan(FieldLocations.Signature));
-        BinaryPrimitives.WriteUInt64LittleEndian(blockContents.AsSpan(FieldLocations.SizeOfThisRecord), NormalSize);
-        // version made by: high byte is 0 for MS DOS, low byte is version needed
-        BinaryPrimitives.WriteUInt16LittleEndian(blockContents.AsSpan(FieldLocations.VersionMadeBy), (ushort)ZipVersionNeededValues.Zip64);
-        // version needed is 45 for zip 64 support
-        BinaryPrimitives.WriteUInt16LittleEndian(blockContents.AsSpan(FieldLocations.VersionNeededToExtract), (ushort)ZipVersionNeededValues.Zip64);
-        // number of this disk is 0
-        BinaryPrimitives.WriteUInt32LittleEndian(blockContents.AsSpan(FieldLocations.NumberOfThisDisk), 0);
-        // number of disk with start of central directory is 0
-        BinaryPrimitives.WriteUInt32LittleEndian(blockContents.AsSpan(FieldLocations.NumberOfDiskWithStartOfCD), 0);
-        // number of entries on this disk
-        BinaryPrimitives.WriteInt64LittleEndian(blockContents.AsSpan(FieldLocations.NumberOfEntriesOnThisDisk), numberOfEntries);
-        // number of entries total
-        BinaryPrimitives.WriteInt64LittleEndian(blockContents.AsSpan(FieldLocations.NumberOfEntriesTotal), numberOfEntries);
-        BinaryPrimitives.WriteInt64LittleEndian(blockContents.AsSpan(FieldLocations.SizeOfCentralDirectory), sizeOfCentralDirectory);
-        BinaryPrimitives.WriteInt64LittleEndian(blockContents.AsSpan(FieldLocations.OffsetOfCentralDirectory), startOfCentralDirectory);
-
+        WriteBlockCore(blockContents.AsSpan(), numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory);
         // write Zip 64 EOCD record
         await stream.WriteAsync(blockContents, cancellationToken).ConfigureAwait(false);
     }
