@@ -171,6 +171,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
 	SN_Subtract,
+	SN_Sqrt,
 	SN_Truncate,
 	SN_WidenLower,
 	SN_WidenUpper,
@@ -1234,6 +1235,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Negate:
 			case SN_Min:
 			case SN_Max:
+			case SN_Sqrt:
 			case SN_Xor:
 			case SN_Truncate:
 				cmethod_name = cmethod->name;
