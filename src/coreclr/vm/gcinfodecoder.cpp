@@ -2202,15 +2202,27 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
         uint8_t* fp = (uint8_t *)
 #if defined(TARGET_AMD64)
         pRD->pCurrentContext->Rbp;
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
-        pRD->pCurrentContext->R7;
+#elif defined(TARGET_ARM)
+        // FIXME: CONTEXTGetFp says R7 but cgencpu.h says R11
+        pRD->pCurrentContext->R11;
+#elif defined(TARGET_ARM64)
+        // Speculative based on cgencpu.h
+        pRD->pCurrentContext->Fp;
+#elif defined(TARGET_LOONGARCH)
+        // Speculative based on cgencpu.h
+        pRD->pCurrentContext->Fp;
+#elif defined(TARGET_RISCV64)
+        // Speculative based on cgencpu.h
+        pRD->pCurrentContext->Fp;
 #elif defined(TARGET_S390X)
+        // Speculative based on CONTEXTGetFp
         pRD->pCurrentContext->R11;
 #elif defined(TARGET_POWERPC64)
+        // Speculative based on CONTEXTGetFp
         pRD->pCurrentContext->R31;
 #else
         NULL;
-        _ASSERTE(!"Unimplemented architecture for GetStackSlot");
+        _ASSERTE(!"Unimplemented architecture for TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot");
         return NULL;
 #endif
 
