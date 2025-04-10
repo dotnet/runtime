@@ -547,23 +547,21 @@ extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
     memset(dst, 0, length);
 }
 
-FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
-{
-    FCALL_CONTRACT;
-
-    if (dst != src && byteCount != 0)
-        InlinedMemmoveGCRefsHelper(dst, src, byteCount);
-
-    FC_GC_POLL();
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length)
 {
     QCALL_CONTRACT;
 
     memmove(dst, src, length);
 }
+
+FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
+{
+    FCALL_CONTRACT;
+
+    if (dst != src && byteCount != 0)
+        InlinedMemmoveGCRefsHelper(dst, src, byteCount);
+}
+FCIMPLEND
 
 //
 // GCInterface
@@ -736,9 +734,7 @@ FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
     _ASSERTE(objUNSAFE != NULL);
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
-    FC_GC_POLL_RET();
-    return result;
+    return (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
 }
 FCIMPLEND
 
@@ -756,8 +752,6 @@ FCIMPL0(UINT64, GCInterface::GetSegmentSize)
     _ASSERTE(segment_size < SIZE_T_MAX && large_segment_size < SIZE_T_MAX);
     if (segment_size < large_segment_size)
         segment_size = large_segment_size;
-
-    FC_GC_POLL_RET();
     return (UINT64) segment_size;
 }
 FCIMPLEND
@@ -776,9 +770,7 @@ FCIMPL2(int, GCInterface::CollectionCount, INT32 generation, INT32 getSpecialGCC
     _ASSERTE(generation >= 0);
 
     //We don't need to check the top end because the GC will take care of that.
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
-    FC_GC_POLL_RET();
-    return result;
+    return (INT32)GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
 }
 FCIMPLEND
 
@@ -1110,14 +1102,8 @@ FCIMPL1(void, GCInterface::SuppressFinalize, Object *obj)
 {
     FCALL_CONTRACT;
 
-    // Checked by the caller
-    _ASSERTE(obj != NULL);
-
-    if (!obj->GetMethodTable ()->HasFinalizer())
-        return;
-
+    _ASSERTE(obj->GetMethodTable ()->HasFinalizer());
     GCHeapUtilities::GetGCHeap()->SetFinalizationRun(obj);
-    FC_GC_POLL();
 }
 FCIMPLEND
 

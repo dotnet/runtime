@@ -96,16 +96,32 @@ struct ManagedObjectWrapper
     }
 };
 
+template<typename T>
+struct Span
+{
+    T* _pointer;
+    int _length;
+};
+
 // This structure mirrors the managed type System.Runtime.InteropServices.ComWrappers.InternalComInterfaceDispatch.
 struct InternalComInterfaceDispatch
 {
-    void* Vtable;
     ManagedObjectWrapper* _thisPtr;
+    Span<void*> Vtables;
 };
+
+#ifdef TARGET_64BIT
+constexpr uintptr_t DispatchAlignment = 64;
+#else
+constexpr uintptr_t DispatchAlignment = 16;
+#endif
+
+constexpr uintptr_t DispatchAlignmentMask = ~(DispatchAlignment - 1);
 
 static ManagedObjectWrapper* ToManagedObjectWrapper(void* dispatchPtr)
 {
-    return ((InternalComInterfaceDispatch*)dispatchPtr)->_thisPtr;
+    uintptr_t dispatch = reinterpret_cast<uintptr_t>(dispatchPtr) & DispatchAlignmentMask;
+    return ((InternalComInterfaceDispatch*)dispatch)->_thisPtr;
 }
 
 //
@@ -113,14 +129,8 @@ static ManagedObjectWrapper* ToManagedObjectWrapper(void* dispatchPtr)
 // invokes AddRef while holding a lock that it *also* holds while a GC is in progress.  If AddRef was managed, we would have
 // to synchronize with the GC before entering AddRef, which would deadlock with the other thread holding Xaml's lock.
 //
-static uint32_t __stdcall IUnknown_AddRef(void* pComThis)
+EXTERN_C uint32_t __stdcall RhIUnknown_AddRef(void* pComThis)
 {
     ManagedObjectWrapper* wrapper = ToManagedObjectWrapper(pComThis);
     return wrapper->AddRef();
 }
-
-FCIMPL0(void*, RhGetIUnknownAddRef)
-{
-    return (void*)&IUnknown_AddRef;
-}
-FCIMPLEND
