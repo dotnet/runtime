@@ -296,6 +296,9 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
         public static (int Quotient, int Remainder) DivRem(int left, int right) => Math.DivRem(left, right);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf, DivisionRounding)" />
+        public static (int Quotient, int Remainder) DivRem(int left, int right, DivisionRounding rounding) => Math.DivRem(left, right, rounding);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         [Intrinsic]
         public static int LeadingZeroCount(int value) => BitOperations.LeadingZeroCount((uint)value);
