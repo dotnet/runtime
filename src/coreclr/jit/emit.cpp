@@ -8241,6 +8241,9 @@ void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, reg
         }
     }
 
+    // `vbroadcastss` fills the full SIMD register, so we can't do this last step if the
+    // original constant was smaller than a full reg (e.g. TYP_SIMD8)
+
     if ((dataSize == 8) && (cnsSize >= 16) && (constValue->u32[1] == constValue->u32[0]))
     {
         if (emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX))
