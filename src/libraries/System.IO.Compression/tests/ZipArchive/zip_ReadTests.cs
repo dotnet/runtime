@@ -47,34 +47,21 @@ namespace System.IO.Compression.Tests
         public static async Task ReadStreamOps(bool async)
         {
             MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
-            ZipArchive archive;
-            if (async)
-            {
-                archive = await ZipArchive.CreateAsync(ms, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
-            }
-            else
-            {
-                archive = new ZipArchive(ms, ZipArchiveMode.Read);
-            }
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
             
             foreach (ZipArchiveEntry e in archive.Entries)
             {
-                using (Stream s = e.Open())
-                {
-                    Assert.True(s.CanRead, "Can read to read archive");
-                    Assert.False(s.CanWrite, "Can't write to read archive");
-                    Assert.False(s.CanSeek, "Can't seek on archive");
-                    Assert.Equal(await LengthOfUnseekableStream(s), e.Length); //"Length is not correct on unseekable stream"
-                }
+                Stream s = await OpenEntryStream(async, e);
+                
+                Assert.True(s.CanRead, "Can read to read archive");
+                Assert.False(s.CanWrite, "Can't write to read archive");
+                Assert.False(s.CanSeek, "Can't seek on archive");
+                Assert.Equal(await LengthOfUnseekableStream(s), e.Length); //"Length is not correct on unseekable stream"
+
+                await DisposeStream(async, s);
             }
-            if (async)
-            {
-                await archive.DisposeAsync();
-            }
-            else
-            {
-                archive.Dispose();
-            }
+
+            await DisposeZipArchive(async, archive);
         }
 
         [Fact]
@@ -251,10 +238,13 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [Fact]
-        public static async Task ReadModeInvalidOpsTest()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ReadModeInvalidOpsTest(bool async)
         {
-            ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Read);
+            await using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
             ZipArchiveEntry e = archive.GetEntry("first.txt");
 
             //should also do it on deflated stream
@@ -268,26 +258,26 @@ namespace System.IO.Compression.Tests
             Assert.Throws<NotSupportedException>(() => e.LastWriteTime = new DateTimeOffset()); //"Should not be able to update time"
 
             //on stream
-            Stream s = e.Open();
+            Stream s = await OpenEntryStream(async, e);
             Assert.Throws<NotSupportedException>(() => s.Flush()); //"Should not be able to flush on read stream"
             Assert.Throws<NotSupportedException>(() => s.WriteByte(25)); //"should not be able to write to read stream"
             Assert.Throws<NotSupportedException>(() => s.Position = 4); //"should not be able to seek on read stream"
             Assert.Throws<NotSupportedException>(() => s.Seek(0, SeekOrigin.Begin)); //"should not be able to seek on read stream"
             Assert.Throws<NotSupportedException>(() => s.SetLength(0)); //"should not be able to resize read stream"
 
-            archive.Dispose();
+            await DisposeZipArchive(async, archive);
 
             //after disposed
             Assert.Throws<ObjectDisposedException>(() => { var x = archive.Entries; }); //"Should not be able to get entries on disposed archive"
             Assert.Throws<NotSupportedException>(() => archive.CreateEntry("dirka")); //"should not be able to create on disposed archive"
 
-            Assert.Throws<ObjectDisposedException>(() => e.Open()); //"should not be able to open on disposed archive"
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => OpenEntryStream(async, e)); //"should not be able to open on disposed archive"
             Assert.Throws<NotSupportedException>(() => e.Delete()); //"should not be able to delete on disposed archive"
             Assert.Throws<ObjectDisposedException>(() => { e.LastWriteTime = new DateTimeOffset(); }); //"Should not be able to update on disposed archive"
 
             Assert.Throws<NotSupportedException>(() => s.ReadByte()); //"should not be able to read on disposed archive"
 
-            s.Dispose();
+            await DisposeStream(async, s);
         }
 
         [Fact]
@@ -426,18 +416,10 @@ namespace System.IO.Compression.Tests
             ms.Write(sampleZipFile);
             ms.Seek(0, SeekOrigin.Begin);
 
-            ZipArchive source;
-            if (async)
-            {
-                source = await ZipArchive.CreateAsync(ms, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null);
-            }
-            else
-            {
-                source = new ZipArchive(ms, ZipArchiveMode.Update, leaveOpen: true);
-            }
+            ZipArchive source = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
 
             long previousOffset = long.MinValue;
-            System.Reflection.FieldInfo offsetOfLocalHeader = typeof(ZipArchiveEntry).GetField("_offsetOfLocalHeader", System.Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            FieldInfo offsetOfLocalHeader = typeof(ZipArchiveEntry).GetField("_offsetOfLocalHeader", BindingFlags.NonPublic | BindingFlags.Instance);
 
             for (int i = 0; i < source.Entries.Count; i++)
             {
@@ -448,14 +430,7 @@ namespace System.IO.Compression.Tests
                 previousOffset = offset;
             }
 
-            if (async)
-            {
-                await source.DisposeAsync();
-            }
-            else
-            {
-                source.Dispose();
-            }
+            await DisposeZipArchive(async, source);
         }
 
         [Theory]
@@ -472,15 +447,7 @@ namespace System.IO.Compression.Tests
             ms.Write(sampleZipFile);
             ms.Seek(0, SeekOrigin.Begin);
 
-            ZipArchive source;
-            if (async)
-            {
-                source = await ZipArchive.CreateAsync(ms, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null);
-            }
-            else
-            {
-                source = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true);
-            }
+            ZipArchive source = await CreateZipArchive(async, ms, ZipArchiveMode.Read, true);
 
             long previousOffset = long.MaxValue;
             System.Reflection.FieldInfo offsetOfLocalHeader = typeof(ZipArchiveEntry).GetField("_offsetOfLocalHeader", System.Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
@@ -494,14 +461,7 @@ namespace System.IO.Compression.Tests
                 previousOffset = offset;
             }
 
-            if (async)
-            {
-                await source.DisposeAsync();
-            }
-            else
-            {
-                source.Dispose();
-            }
+            await DisposeZipArchive(async, source);
         }
 
         [Fact]

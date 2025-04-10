@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Tests;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -156,15 +157,7 @@ namespace System.IO.Compression.Tests
 
         public static async Task IsZipSameAsDir(Stream archiveFile, string directory, ZipArchiveMode mode, bool requireExplicit, bool checkTimes, bool async)
         {
-            ZipArchive archive;
-            if (async)
-            {
-                archive = await ZipArchive.CreateAsync(archiveFile, mode, leaveOpen: false, entryNameEncoding: null);
-            }
-            else
-            {
-                archive = new ZipArchive(archiveFile, mode);
-            }
+            ZipArchive archive = await CreateZipArchive(async, archiveFile, mode);
 
             List<FileData> files = FileData.InPath(directory);
 
@@ -375,15 +368,7 @@ namespace System.IO.Compression.Tests
         {
             var files = FileData.InPath(directory);
 
-            ZipArchive archive;
-            if (async)
-            {
-                archive = await ZipArchive.CreateAsync(archiveStream, mode, leaveOpen: true, entryNameEncoding: null);
-            }
-            else
-            {
-                archive = new ZipArchive(archiveStream, mode, leaveOpen: true);
-            }
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, mode, leaveOpen: true);
             
             foreach (var i in files)
             {
@@ -522,16 +507,8 @@ namespace System.IO.Compression.Tests
         public static async Task<byte[]> CreateZipFile(int entryCount, byte[] entryContents, bool async)
         {
             MemoryStream ms = new();
-            
-            ZipArchive createdArchive;
-            if (async)
-            {
-                createdArchive = await ZipArchive.CreateAsync(ms, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null);
-            }
-            else
-            {
-                createdArchive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true);
-            }
+
+            ZipArchive createdArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
                 
             for (int i = 0; i < entryCount; i++)
             {
@@ -587,6 +564,42 @@ namespace System.IO.Compression.Tests
         protected static readonly string ALettersUShortMaxValueMinusOneAndTwoCopyRightChars = ALettersUShortMaxValueMinusOneAndCopyRightChar + Utf8CopyrightChar;
 
         protected static readonly bool[] _bools = [false, true];
+
+        public static async Task<ZipArchive> CreateZipArchive(bool async, Stream stream, ZipArchiveMode mode, bool leaveOpen = false, Encoding entryNameEncoding = null)
+        {
+            return async ?
+                await ZipArchive.CreateAsync(stream, mode, leaveOpen, entryNameEncoding) :
+                new ZipArchive(stream, mode, leaveOpen, entryNameEncoding);
+        }
+
+        public static async Task DisposeZipArchive(bool async, ZipArchive archive)
+        {
+            if (async)
+            {
+                await archive.DisposeAsync();
+            }
+            else
+            {
+                archive.Dispose();
+            }
+        }
+
+        public static async Task<Stream> OpenEntryStream(bool async, ZipArchiveEntry entry)
+        {
+            return async ? await entry.OpenAsync() : entry.Open();
+        }
+
+        public static async Task DisposeStream(bool async, Stream stream)
+        {
+            if (async)
+            {
+                await stream.DisposeAsync();
+            }
+            else
+            {
+                stream.Dispose();
+            }
+        }
 
         public static IEnumerable<object[]> Get_Booleans_Data() => _bools.Select(b => new object[] { b });
 
