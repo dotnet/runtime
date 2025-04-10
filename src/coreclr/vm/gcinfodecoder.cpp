@@ -2176,6 +2176,36 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 
 #endif // Unknown platform
 
+#ifdef FEATURE_INTERPRETER
+template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
+                        INT32           spOffset,
+                        GcStackSlotBase spBase,
+                        PREGDISPLAY     pRD
+                        )
+{
+    OBJECTREF* pObjRef = NULL;
+
+    if( GC_SP_REL == spBase )
+    {
+        _ASSERTE(!"GC_SP_REL is invalid for interpreter frames");
+    }
+    else if( GC_CALLER_SP_REL == spBase )
+    {
+        _ASSERTE(!"GC_CALLER_SP_REL is invalid for interpreter frames");
+    }
+    else
+    {
+        _ASSERTE( GC_FRAMEREG_REL == spBase );
+        // FIXME: The register slot we stash the frame pointer into varies per-architecture.
+        // CONTEXTGetFp is unavailable here (including its header doesn't work either).
+        uint8_t* fp = (uint8_t*)GetRegisterSlot(5 /* rbp */, pRD);
+        pObjRef = (OBJECTREF*)(fp + spOffset);
+    }
+
+    return pObjRef;
+}
+#endif
+
 
 template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::GetStackSlot(
                         INT32           spOffset,
