@@ -44,40 +44,16 @@ internal sealed partial class Zip64EndOfCentralDirectoryLocator
     public static async Task<(bool, Zip64EndOfCentralDirectoryLocator)> TryReadBlockAsync(Stream stream, CancellationToken cancellationToken)
     {
         byte[] blockContents = new byte[TotalSize];
-        int bytesRead;
-
-        Zip64EndOfCentralDirectoryLocator zip64EOCDLocator = new();
-        bytesRead = await stream.ReadAsync(blockContents, cancellationToken).ConfigureAwait(false);
-
-        if (bytesRead < TotalSize)
-        {
-            return (false, zip64EOCDLocator);
-        }
-
-        if (!blockContents.StartsWith(SignatureConstantBytes))
-        {
-            return (false, zip64EOCDLocator);
-        }
-
-        zip64EOCDLocator.NumberOfDiskWithZip64EOCD = BinaryPrimitives.ReadUInt32LittleEndian(blockContents.AsSpan(FieldLocations.NumberOfDiskWithZip64EOCD));
-        zip64EOCDLocator.OffsetOfZip64EOCD = BinaryPrimitives.ReadUInt64LittleEndian(blockContents.AsSpan(FieldLocations.OffsetOfZip64EOCD));
-        zip64EOCDLocator.TotalNumberOfDisks = BinaryPrimitives.ReadUInt32LittleEndian(blockContents.AsSpan(FieldLocations.TotalNumberOfDisks));
-
-        return (true, zip64EOCDLocator);
+        int bytesRead = await stream.ReadAsync(blockContents, cancellationToken).ConfigureAwait(false);
+        bool result = TryReadBlockCore(blockContents.AsSpan(), bytesRead, out Zip64EndOfCentralDirectoryLocator zip64EOCDLocator);
+        return (result, zip64EOCDLocator);
     }
 
-    public static async Task WriteBlockAsync(Stream stream, long zip64EOCDRecordStart, CancellationToken cancellationToken)
+    public static ValueTask WriteBlockAsync(Stream stream, long zip64EOCDRecordStart, CancellationToken cancellationToken)
     {
         byte[] blockContents = new byte[TotalSize];
-
-        SignatureConstantBytes.CopyTo(blockContents.AsSpan(FieldLocations.Signature));
-        // number of disk with start of zip64 eocd
-        BinaryPrimitives.WriteUInt32LittleEndian(blockContents.AsSpan(FieldLocations.NumberOfDiskWithZip64EOCD), 0);
-        BinaryPrimitives.WriteInt64LittleEndian(blockContents.AsSpan(FieldLocations.OffsetOfZip64EOCD), zip64EOCDRecordStart);
-        // total number of disks
-        BinaryPrimitives.WriteUInt32LittleEndian(blockContents.AsSpan(FieldLocations.TotalNumberOfDisks), 1);
-
-        await stream.WriteAsync(blockContents, cancellationToken).ConfigureAwait(false);
+        WriteBlockCore(blockContents.AsSpan(), zip64EOCDRecordStart);
+        return stream.WriteAsync(blockContents, cancellationToken);
     }
 }
 

@@ -373,6 +373,36 @@ namespace System.IO.Compression
         public uint NumberOfDiskWithZip64EOCD;
         public ulong OffsetOfZip64EOCD;
         public uint TotalNumberOfDisks;
+
+        private static bool TryReadBlockCore(Span<byte> blockContents, int bytesRead, out Zip64EndOfCentralDirectoryLocator zip64EOCDLocator)
+        {
+            zip64EOCDLocator = new();
+            if (bytesRead < TotalSize)
+            {
+                return false;
+            }
+
+            if (!blockContents.StartsWith(SignatureConstantBytes))
+            {
+                return false;
+            }
+
+            zip64EOCDLocator.NumberOfDiskWithZip64EOCD = BinaryPrimitives.ReadUInt32LittleEndian(blockContents[FieldLocations.NumberOfDiskWithZip64EOCD..]);
+            zip64EOCDLocator.OffsetOfZip64EOCD = BinaryPrimitives.ReadUInt64LittleEndian(blockContents[FieldLocations.OffsetOfZip64EOCD..]);
+            zip64EOCDLocator.TotalNumberOfDisks = BinaryPrimitives.ReadUInt32LittleEndian(blockContents[FieldLocations.TotalNumberOfDisks..]);
+
+            return true;
+        }
+
+        private static void WriteBlockCore(Span<byte> blockContents, long zip64EOCDRecordStart)
+        {
+            SignatureConstantBytes.CopyTo(blockContents[FieldLocations.Signature..]);
+            // number of disk with start of zip64 eocd
+            BinaryPrimitives.WriteUInt32LittleEndian(blockContents[FieldLocations.NumberOfDiskWithZip64EOCD..], 0);
+            BinaryPrimitives.WriteInt64LittleEndian(blockContents[FieldLocations.OffsetOfZip64EOCD..], zip64EOCDRecordStart);
+            // total number of disks
+            BinaryPrimitives.WriteUInt32LittleEndian(blockContents[FieldLocations.TotalNumberOfDisks..], 1);
+        }
     }
 
     internal sealed partial class Zip64EndOfCentralDirectoryRecord

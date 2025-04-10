@@ -43,39 +43,14 @@ internal sealed partial class Zip64EndOfCentralDirectoryLocator
     public static bool TryReadBlock(Stream stream, out Zip64EndOfCentralDirectoryLocator zip64EOCDLocator)
     {
         Span<byte> blockContents = stackalloc byte[TotalSize];
-        int bytesRead;
-
-        zip64EOCDLocator = new();
-        bytesRead = stream.Read(blockContents);
-
-        if (bytesRead < TotalSize)
-        {
-            return false;
-        }
-
-        if (!blockContents.StartsWith(SignatureConstantBytes))
-        {
-            return false;
-        }
-
-        zip64EOCDLocator.NumberOfDiskWithZip64EOCD = BinaryPrimitives.ReadUInt32LittleEndian(blockContents[FieldLocations.NumberOfDiskWithZip64EOCD..]);
-        zip64EOCDLocator.OffsetOfZip64EOCD = BinaryPrimitives.ReadUInt64LittleEndian(blockContents[FieldLocations.OffsetOfZip64EOCD..]);
-        zip64EOCDLocator.TotalNumberOfDisks = BinaryPrimitives.ReadUInt32LittleEndian(blockContents[FieldLocations.TotalNumberOfDisks..]);
-
-        return true;
+        int bytesRead = stream.Read(blockContents);
+        return TryReadBlockCore(blockContents, bytesRead, out zip64EOCDLocator);
     }
 
     public static void WriteBlock(Stream stream, long zip64EOCDRecordStart)
     {
         Span<byte> blockContents = stackalloc byte[TotalSize];
-
-        SignatureConstantBytes.CopyTo(blockContents[FieldLocations.Signature..]);
-        // number of disk with start of zip64 eocd
-        BinaryPrimitives.WriteUInt32LittleEndian(blockContents[FieldLocations.NumberOfDiskWithZip64EOCD..], 0);
-        BinaryPrimitives.WriteInt64LittleEndian(blockContents[FieldLocations.OffsetOfZip64EOCD..], zip64EOCDRecordStart);
-        // total number of disks
-        BinaryPrimitives.WriteUInt32LittleEndian(blockContents[FieldLocations.TotalNumberOfDisks..], 1);
-
+        WriteBlockCore(blockContents, zip64EOCDRecordStart);
         stream.Write(blockContents);
     }
 }
