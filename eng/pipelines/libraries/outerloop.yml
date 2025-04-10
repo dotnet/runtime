@@ -92,10 +92,10 @@ extends:
               - ${{ if eq(variables['isRollingBuild'], true) }}:
                 - windows_x64
               jobParameters:
-                framework: net48
+                framework: net481
                 testScope: outerloop
-                nameSuffix: NET48
-                buildArgs: -s libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true -f net48
+                nameSuffix: NET481
+                buildArgs: -s libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true -f net481
                 timeoutInMinutes: 180
                 includeAllPlatforms: ${{ variables['isRollingBuild'] }}
                 # extra steps, run tests
@@ -104,4 +104,4 @@ extends:
                     parameters:
                       testScope: outerloop
                       creator: dotnet-bot
-                      extraHelixArguments: /p:BuildTargetFramework=net48
+                      extraHelixArguments: /p:BuildTargetFramework=net481

@@ -42,8 +42,6 @@
              Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs"
-             Link="Common\System\Net\Http\WinInetProxyHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs"
              Link="Common\System\Net\Security\CertificateHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.Windows.cs"
@@ -86,8 +84,6 @@
              Link="ProductionCode\WinHttpTrailersHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs"
              Link="ProductionCode\WinHttpTransportContext.cs" />
-    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs"
-             Link="ProductionCode\HttpWindowsProxy.cs" />
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs"
              Link="ProductionCode\FailedProxyCache.cs" />
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs"
@@ -104,7 +100,6 @@
     <Compile Include="FakeRegistry.cs" />
     <Compile Include="FakeSafeWinHttpHandle.cs" />
     <Compile Include="FakeX509Certificates.cs" />
-    <Compile Include="HttpWindowsProxyTest.cs" />
     <Compile Include="SafeWinHttpHandleTest.cs" />
     <Compile Include="SendRequestHelper.cs" />
     <Compile Include="TestServer.cs" />

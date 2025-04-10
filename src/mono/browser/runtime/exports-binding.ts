@@ -72,7 +72,7 @@ export const mono_wasm_imports = [
     mono_interp_flush_jitcall_queue,
     mono_wasm_free_method_data,
 
-    // browser.c
+    // browser.c, ep-rt-mono-runtime-provider.c
     mono_wasm_profiler_now,
     mono_wasm_profiler_record,
 
