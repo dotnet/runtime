@@ -5503,21 +5503,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     unsigned codeSize = id->idCodeSize();
     assert((codeSize >= 4) && (codeSize % sizeof(code_t) == 0));
 
-    // instrDescLoadImm consits of OpImm, OpImm32, and Lui instructions.
-    if (id->idInsOpt() == INS_OPTS_I)
-    {
-        result.insLatency    = PERFSCORE_LATENCY_1C;
-        result.insThroughput = PERFSCORE_THROUGHPUT_2X * (codeSize / sizeof(code_t));
-        return result;
-    }
-
     // Some instructions like jumps or loads may have not-yet-known simple auxilliary instructions (lui, addi, slli,
     // etc) for building immediates, assume cost of one each.
+    // instrDescLoadImm consits of OpImm, OpImm32, and Lui instructions.
     float immediateBuildingCost = ((codeSize / sizeof(code_t)) - 1) * PERFSCORE_LATENCY_1C;
 
     instruction ins = id->idIns();
     assert(ins != INS_invalid);
-    if (ins == INS_lea)
+    if ((ins == INS_lea) || (id->idInsOpt() == INS_OPTS_I))
     {
         result.insLatency += immediateBuildingCost;
         result.insThroughput += immediateBuildingCost;
