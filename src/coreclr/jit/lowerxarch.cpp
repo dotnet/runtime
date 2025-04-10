@@ -896,18 +896,14 @@ void Lowering::LowerCast(GenTree* tree)
         JITDUMP("LowerCast before:\n");
         DISPTREERANGE(BlockRange(), tree);
 
-        CorInfoType srcBaseType     = (srcType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
-        LIR::Range  castRange       = LIR::EmptyRange();
-        bool        isV512Supported = false;
+        CorInfoType srcBaseType = (srcType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
+        LIR::Range  castRange   = LIR::EmptyRange();
 
         // We'll be using SIMD instructions to fix up castOp before conversion.
         //
         // This creates the equivalent of the following C# code:
         //   var srcVec = Vector128.CreateScalarUnsafe(castOp);
-        //
-        // We will use the input value at least twice, so we preemptively replace it with a lclVar.
 
-        GenTree* srcClone  = nullptr;
         GenTree* srcVector = comp->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, castOp, srcBaseType, 16);
         castRange.InsertAtEnd(srcVector);
 
@@ -916,36 +912,26 @@ void Lowering::LowerCast(GenTree* tree)
             castOp->SetUnusedValue();
         }
 
-        LIR::Use srcUse;
-        LIR::Use::MakeDummyUse(castRange, srcVector, &srcUse);
-        srcUse.ReplaceWithLclVar(comp);
-        srcVector = srcUse.Def();
-
-        if (varTypeIsUnsigned(dstType) && comp->compIsEvexOpportunisticallySupported(isV512Supported))
+        if (varTypeIsUnsigned(dstType) && comp->canUseEvexEncoding())
         {
             // EVEX unsigned conversion instructions saturate positive overflow properly, so as
             // long as we fix up NaN and negative values, we can preserve the existing cast node.
             //
-            // This creates the equivalent of the following C# code:
-            //   castOp = Avx512F.FixupScalar(srcVec, srcVec, Vector128.CreateScalar(0x08080088), 0).ToScalar();
+            // maxs[sd] will take the value from the second operand if the first operand's value is
+            // NaN, which allows us to fix up both negative and NaN values with a single instruction.
             //
-            // table  : 0x08080088 -- set QNAN, SNAN, NEG_INF and NEG_VALUE to +0
-            // control: 0          -- no fault reporting
+            // This creates the equivalent of the following C# code:
+            //   castOp = Sse.MaxScalar(srcVec, Vector128<T>.Zero).ToScalar();
 
-            NamedIntrinsic fixupIntrinsic = isV512Supported ? NI_AVX512F_FixupScalar : NI_AVX10v1_FixupScalar;
+            NamedIntrinsic maxScalarIntrinsic = (srcType == TYP_FLOAT) ? NI_SSE_MaxScalar : NI_SSE2_MaxScalar;
 
-            srcClone                = comp->gtClone(srcVector);
-            GenTreeVecCon* table    = comp->gtNewVconNode(TYP_SIMD16);
-            table->gtSimdVal.u32[0] = 0x08080088;
+            GenTree* zero = comp->gtNewZeroConNode(TYP_SIMD16);
+            GenTree* fixupVal =
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, maxScalarIntrinsic, srcBaseType, 16);
 
-            GenTree* control  = comp->gtNewIconNode(0);
-            GenTree* fixupVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, srcClone, table, control,
-                                                               fixupIntrinsic, srcBaseType, 16);
             GenTree* toScalar = comp->gtNewSimdToScalarNode(srcType, fixupVal, srcBaseType, 16);
 
-            castRange.InsertAtEnd(srcClone);
-            castRange.InsertAtEnd(table);
-            castRange.InsertAtEnd(control);
+            castRange.InsertAtEnd(zero);
             castRange.InsertAtEnd(fixupVal);
             castRange.InsertAtEnd(toScalar);
 
@@ -974,12 +960,12 @@ void Lowering::LowerCast(GenTree* tree)
                     maxIntegralValue = comp->gtNewIconNode(INT32_MAX);
                     if (srcType == TYP_FLOAT)
                     {
-                        maxFloatSimdVal->f32[0] = static_cast<float>(INT32_MAX);
+                        maxFloatSimdVal->f32[0] = 2147483648.0f;
                         convertIntrinsic        = NI_SSE_ConvertToInt32WithTruncation;
                     }
                     else
                     {
-                        maxFloatSimdVal->f64[0] = static_cast<double>(INT32_MAX);
+                        maxFloatSimdVal->f64[0] = 2147483648.0;
                         convertIntrinsic        = NI_SSE2_ConvertToInt32WithTruncation;
                     }
                     break;
@@ -990,14 +976,14 @@ void Lowering::LowerCast(GenTree* tree)
                     maxIntegralValue = comp->gtNewIconNode(static_cast<ssize_t>(UINT32_MAX));
                     if (srcType == TYP_FLOAT)
                     {
-                        maxFloatSimdVal->f32[0] = static_cast<float>(UINT32_MAX);
+                        maxFloatSimdVal->f32[0] = 4294967296.0f;
                         convertIntrinsic        = comp->compOpportunisticallyDependsOn(InstructionSet_SSE_X64)
                                                       ? NI_SSE_X64_ConvertToInt64WithTruncation
                                                       : NI_SSE2_ConvertToVector128Int32WithTruncation;
                     }
                     else
                     {
-                        maxFloatSimdVal->f64[0] = static_cast<double>(UINT32_MAX);
+                        maxFloatSimdVal->f64[0] = 4294967296.0;
                         convertIntrinsic        = comp->compOpportunisticallyDependsOn(InstructionSet_SSE2_X64)
                                                       ? NI_SSE2_X64_ConvertToInt64WithTruncation
                                                       : NI_SSE2_ConvertToVector128Int32WithTruncation;
@@ -1010,12 +996,12 @@ void Lowering::LowerCast(GenTree* tree)
                     maxIntegralValue = comp->gtNewLconNode(INT64_MAX);
                     if (srcType == TYP_FLOAT)
                     {
-                        maxFloatSimdVal->f32[0] = static_cast<float>(INT64_MAX);
+                        maxFloatSimdVal->f32[0] = 9223372036854775808.0f;
                         convertIntrinsic        = NI_SSE_X64_ConvertToInt64WithTruncation;
                     }
                     else
                     {
-                        maxFloatSimdVal->f64[0] = static_cast<double>(INT64_MAX);
+                        maxFloatSimdVal->f64[0] = 9223372036854775808.0;
                         convertIntrinsic        = NI_SSE2_X64_ConvertToInt64WithTruncation;
                     }
                     break;
@@ -1026,12 +1012,12 @@ void Lowering::LowerCast(GenTree* tree)
                     maxIntegralValue = comp->gtNewLconNode(static_cast<int64_t>(UINT64_MAX));
                     if (srcType == TYP_FLOAT)
                     {
-                        maxFloatSimdVal->f32[0] = static_cast<float>(UINT64_MAX);
+                        maxFloatSimdVal->f32[0] = 18446744073709551616.0f;
                         convertIntrinsic        = NI_SSE_X64_ConvertToInt64WithTruncation;
                     }
                     else
                     {
-                        maxFloatSimdVal->f64[0] = static_cast<double>(UINT64_MAX);
+                        maxFloatSimdVal->f64[0] = 18446744073709551616.0;
                         convertIntrinsic        = NI_SSE2_X64_ConvertToInt64WithTruncation;
                     }
                     break;
@@ -1042,6 +1028,13 @@ void Lowering::LowerCast(GenTree* tree)
                 }
             }
 
+            // We will use the input value at least twice, so we preemptively replace it with a lclVar.
+            LIR::Use srcUse;
+            LIR::Use::MakeDummyUse(castRange, srcVector, &srcUse);
+            srcUse.ReplaceWithLclVar(comp);
+            srcVector = srcUse.Def();
+
+            GenTree* srcClone      = nullptr;
             GenTree* convertResult = nullptr;
 
             if (varTypeIsSigned(dstType))
@@ -1118,10 +1111,55 @@ void Lowering::LowerCast(GenTree* tree)
                     maxFloatUse.ReplaceWithLclVar(comp);
                     maxFloatingValue = maxFloatUse.Def();
 
-                    srcClone         = comp->gtClone(srcVector);
-                    GenTree* wrapVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone, maxFloatingValue,
+                    GenTree* floorVal = comp->gtClone(srcVector);
+                    castRange.InsertAtEnd(floorVal);
+
+                    if ((srcType == TYP_DOUBLE) && (dstType == TYP_UINT))
+                    {
+                        // This technique works only if the truncating conversion of the positive and negative
+                        // values causes them to round in the same direction. i.e. there is no rounding, because
+                        // we have a whole number. This is always true if the exponent is larger than the number
+                        // of significand bits, which will always be the case for double->ulong or float->uint.
+                        //
+                        // For double->uint, the double has enough precision to exactly represent any whole number
+                        // in range, with bits left over. e.g. we might have a value of 4294967295.9999995.
+                        // We must, therefore, truncate the value before wrapping it to negative.
+
+                        if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                        {
+                            // This creates the equivalent of the following C# code:
+                            //   floorVal = Sse41.RoundToZeroScalar(srcVector);
+
+                            floorVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, floorVal, NI_SSE41_RoundToZeroScalar,
+                                                                      srcBaseType, 16);
+                            castRange.InsertAtEnd(floorVal);
+                        }
+                        else
+                        {
+                            // We don't have `roundsd` available, but we can truncate the value by simply zeroing out
+                            // the low 21 bits of the double. This works because we know we will only use the negative
+                            // value when the exponent is exactly 31, meaning 31 of the 52 bits in the significand are
+                            // used for the whole portion of the number, and the remaining 21 bits are fractional.
+                            //
+                            // This creates the equivalent of the following C# code:
+                            //   floorVal = ((srcVector.AsUInt64() >>> 21) << 21).AsDouble();
+
+                            GenTree* twentyOne  = comp->gtNewIconNode(21);
+                            GenTree* rightShift = comp->gtNewSimdBinOpNode(GT_RSZ, TYP_SIMD16, floorVal, twentyOne,
+                                                                           CORINFO_TYPE_ULONG, 16);
+                            castRange.InsertAtEnd(twentyOne);
+                            castRange.InsertAtEnd(rightShift);
+
+                            twentyOne = comp->gtClone(twentyOne);
+                            floorVal  = comp->gtNewSimdBinOpNode(GT_LSH, TYP_SIMD16, rightShift, twentyOne,
+                                                                 CORINFO_TYPE_ULONG, 16);
+                            castRange.InsertAtEnd(twentyOne);
+                            castRange.InsertAtEnd(floorVal);
+                        }
+                    }
+
+                    GenTree* wrapVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, floorVal, maxFloatingValue,
                                                                       subtractIntrinsic, srcBaseType, 16);
-                    castRange.InsertAtEnd(srcClone);
                     castRange.InsertAtEnd(wrapVal);
 
                     maxFloatingValue = comp->gtClone(maxFloatingValue);
