@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Security.Authentication;
@@ -44,8 +43,18 @@ namespace System.Net.Mail.Tests
     public abstract class LoopbackServerTestBase<T> : IDisposable
         where T : ISendMethodProvider
     {
-        protected LoopbackSmtpServer Server;
-        protected ITestOutputHelper Output;
+        protected LoopbackSmtpServer Server { get; private set; }
+        protected ITestOutputHelper Output { get; private set; }
+
+        private SmtpClient _smtp;
+
+        protected SmtpClient Smtp
+        {
+            get
+            {
+                return _smtp ??= Server.CreateClient();
+            }
+        }
 
         public LoopbackServerTestBase(ITestOutputHelper output)
         {
@@ -53,19 +62,19 @@ namespace System.Net.Mail.Tests
             Server = new LoopbackSmtpServer(Output);
         }
 
-        private async Task<Exception?> SendMailInternal(SmtpClient client, MailMessage msg)
+        private Task<Exception?> SendMailInternal(MailMessage msg)
         {
             switch (T.SendMethod)
             {
                 case SendMethod.Send:
                     try
                     {
-                        client.Send(msg);
-                        return null;
+                        Smtp.Send(msg);
+                        return Task.FromResult<Exception>(null);
                     }
                     catch (Exception ex)
                     {
-                        return ex;
+                        return Task.FromResult(ex);
                     }
 
                 case SendMethod.SendAsync:
@@ -73,7 +82,7 @@ namespace System.Net.Mail.Tests
                     SendCompletedEventHandler handler = null!;
                     handler = (s, e) =>
                     {
-                        client.SendCompleted -= handler;
+                        Smtp.SendCompleted -= handler;
 
                         if (e.Error != null)
                         {
@@ -88,19 +97,33 @@ namespace System.Net.Mail.Tests
                             tcs.SetResult(null);
                         }
                     };
-                    client.SendCompleted += handler;
-                    client.SendAsync(msg, tcs);
-                    return await tcs.Task;
+                    Smtp.SendCompleted += handler;
+                    try
+                    {
+                        Smtp.SendAsync(msg, tcs);
+                        return tcs.Task;
+                    }
+                    catch (Exception ex)
+                    {
+                        Smtp.SendCompleted -= handler;
+                        return Task.FromResult(ex);
+                    }
 
                 case SendMethod.SendMailAsync:
                     try
                     {
-                        await client.SendMailAsync(msg);
-                        return null;
+                        return Smtp.SendMailAsync(msg).ContinueWith(t =>
+                        {
+                            if (t.IsFaulted)
+                            {
+                                return t.Exception?.InnerException;
+                            }
+                            return null;
+                        });
                     }
                     catch (Exception ex)
                     {
-                        return ex;
+                        return Task.FromResult(ex);
                     }
 
                 default:
@@ -108,15 +131,15 @@ namespace System.Net.Mail.Tests
             }
         }
 
-        protected async Task SendMail(SmtpClient client, MailMessage msg)
+        protected async Task SendMail(MailMessage msg)
         {
-            Exception? ex = await SendMailInternal(client, msg);
+            Exception? ex = await SendMailInternal(msg);
             Assert.Null(ex);
         }
 
-        protected async Task<TException> SendMail<TException>(SmtpClient client, MailMessage msg) where TException : Exception
+        protected async Task<TException> SendMail<TException>(MailMessage msg) where TException : Exception
         {
-            Exception? ex = await SendMailInternal(client, msg);
+            Exception? ex = await SendMailInternal(msg);
 
             if (T.SendMethod != SendMethod.Send && typeof(TException) != typeof(SmtpException))
             {
@@ -126,8 +149,11 @@ namespace System.Net.Mail.Tests
             return Assert.IsType<TException>(ex);
         }
 
-        public void Dispose()
+        protected static string GetClientDomain() => IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
+
+        public virtual void Dispose()
         {
+            _smtp?.Dispose();
             Server?.Dispose();
         }
     }

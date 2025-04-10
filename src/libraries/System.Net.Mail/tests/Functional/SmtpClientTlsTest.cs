@@ -22,7 +22,7 @@ namespace System.Net.Mail.Tests
 
         public CertificateSetup()
         {
-            (serverCert, serverChain) = System.Net.Test.Common.Configuration.Certificates.GenerateCertificates("localhost", nameof(SmtpClientStartTlsTest<>));
+            (serverCert, serverChain) = System.Net.Test.Common.Configuration.Certificates.GenerateCertificates("localhost", nameof(SmtpClientTlsTest<>));
             serverCertContext = SslStreamCertificateContext.Create(serverCert, serverChain);
         }
 
@@ -36,13 +36,13 @@ namespace System.Net.Mail.Tests
         }
     }
 
-    public abstract class SmtpClientStartTlsTest<TSendMethod> : LoopbackServerTestBase<TSendMethod>
+    public abstract class SmtpClientTlsTest<TSendMethod> : LoopbackServerTestBase<TSendMethod>
         where TSendMethod : ISendMethodProvider
     {
         private CertificateSetup _certificateSetup;
         private Func<X509Certificate2, X509Chain, SslPolicyErrors, bool>? _serverCertValidationCallback;
 
-        public SmtpClientStartTlsTest(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output)
+        public SmtpClientTlsTest(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output)
         {
             _certificateSetup = certificateSetup;
             Server.SslOptions = new SslServerAuthenticationOptions
@@ -59,61 +59,57 @@ namespace System.Net.Mail.Tests
         [Fact]
         public async Task EnableSslServerSupports_UsesTls()
         {
-            using SmtpClient client = Server.CreateClient();
             _serverCertValidationCallback = (cert, chain, errors) =>
             {
                 return true;
             };
 
-            client.Credentials = new NetworkCredential("foo", "bar");
-            client.EnableSsl = true;
+            Smtp.Credentials = new NetworkCredential("foo", "bar");
+            Smtp.EnableSsl = true;
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
-            await SendMail(client, msg);
+            await SendMail(msg);
             Assert.True(Server.IsEncrypted, "TLS was not negotiated.");
-            Assert.Equal(client.Host, Server.TlsHostName);
+            Assert.Equal(Smtp.Host, Server.TlsHostName);
         }
 
         [Fact]
         public async Task EnableSsl_NoServerSupport_NoTls()
         {
-            using SmtpClient client = Server.CreateClient();
             Server.SslOptions = null;
 
-            client.Credentials = new NetworkCredential("foo", "bar");
-            client.EnableSsl = true;
+            Smtp.Credentials = new NetworkCredential("foo", "bar");
+            Smtp.EnableSsl = true;
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
-            await SendMail<SmtpException>(client, msg);
+            await SendMail<SmtpException>(msg);
         }
 
         [Fact]
         public async Task DisableSslServerSupport_NoTls()
         {
-            using SmtpClient client = Server.CreateClient();
 
-            client.Credentials = new NetworkCredential("foo", "bar");
-            client.EnableSsl = false;
+            Smtp.Credentials = new NetworkCredential("foo", "bar");
+            Smtp.EnableSsl = false;
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
-            await SendMail(client, msg);
+            await SendMail(msg);
             Assert.False(Server.IsEncrypted, "TLS was negotiated when it should not have been.");
         }
 
         [Fact]
         public async Task AuthenticationException_Propagates()
         {
-            using SmtpClient client = Server.CreateClient();
             _serverCertValidationCallback = (cert, chain, errors) =>
             {
                 return false; // force auth errors
             };
 
-            client.Credentials = new NetworkCredential("foo", "bar");
-            client.EnableSsl = true;
+            Smtp.Credentials = new NetworkCredential("foo", "bar");
+            Smtp.EnableSsl = true;
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
-            await SendMail<AuthenticationException>(client, msg);
+            await SendMail<AuthenticationException>(msg);
         }
 
         [Fact]
@@ -128,19 +124,18 @@ namespace System.Net.Mail.Tests
                 return true;
             };
 
-            using SmtpClient client = Server.CreateClient();
             _serverCertValidationCallback = (cert, chain, errors) =>
             {
                 return true;
             };
 
-            client.Credentials = new NetworkCredential("foo", "bar");
-            client.EnableSsl = true;
-            client.ClientCertificates.Add(clientCert);
+            Smtp.Credentials = new NetworkCredential("foo", "bar");
+            Smtp.EnableSsl = true;
+            Smtp.ClientCertificates.Add(clientCert);
 
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
-            await SendMail(client, msg);
+            await SendMail(msg);
             Assert.True(Server.IsEncrypted, "TLS was not negotiated.");
             Assert.Equal(clientCert, receivedClientCert);
         }
@@ -160,20 +155,20 @@ namespace System.Net.Mail.Tests
     // since the tests change global state (ServicePointManager.ServerCertificateValidationCallback), we need to run them in isolation
 
     [Collection(nameof(DisableParallelization))]
-    public class StartTlsTest_Send : SmtpClientStartTlsTest<SyncSendMethod>, IClassFixture<CertificateSetup>
+    public class SmtpClientTlsTest_Send : SmtpClientTlsTest<SyncSendMethod>, IClassFixture<CertificateSetup>
     {
-        public StartTlsTest_Send(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
+        public SmtpClientTlsTest_Send(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
     }
 
     [Collection(nameof(DisableParallelization))]
-    public class StartTlsTest_SendAsync : SmtpClientStartTlsTest<AsyncSendMethod>, IClassFixture<CertificateSetup>
+    public class SmtpClientTlsTest_SendAsync : SmtpClientTlsTest<AsyncSendMethod>, IClassFixture<CertificateSetup>
     {
-        public StartTlsTest_SendAsync(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
+        public SmtpClientTlsTest_SendAsync(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
     }
 
     [Collection(nameof(DisableParallelization))]
-    public class StartTlsTest_SendMailAsync : SmtpClientStartTlsTest<SendMailAsyncMethod>, IClassFixture<CertificateSetup>
+    public class SmtpClientTlsTest_SendMailAsync : SmtpClientTlsTest<SendMailAsyncMethod>, IClassFixture<CertificateSetup>
     {
-        public StartTlsTest_SendMailAsync(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
+        public SmtpClientTlsTest_SendMailAsync(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
     }
 }
