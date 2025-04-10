@@ -121,7 +121,7 @@ endif()
 ######################################
 # AOT CROSS COMPILER SUPPORT
 ######################################
-
+message("MRH_LOGGING: AOT_TARGET_TRIPLE IS '${AOT_TARGET_TRIPLE}'")
 if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   set(MONO_CROSS_COMPILE 1)
   if(NOT AOT_OFFSETS_FILE STREQUAL "")
@@ -172,7 +172,7 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
     message(FATAL_ERROR "AOT target '${AOT_TARGET_TRIPLE}' not supported.")
   endif()
 endif()
-
+message("MRH_LOGGING: TARGET_ARCH IS '${TARGET_ARCH}'")
 ######################################
 # HOST OS CHECKS
 ######################################
@@ -485,14 +485,17 @@ elseif(TARGET_ARCH STREQUAL "s390x")
   set(TARGET_SIZEOF_VOID_P 8)
   set(SIZEOF_REGISTER 8)
 elseif(TARGET_ARCH STREQUAL "wasm" OR TARGET_ARCH STREQUAL "wasm32")
+  message ("MRH_LOGGING: setting wasm32!")
   set(TARGET_WASM 1)
   set(MONO_ARCHITECTURE "\"wasm\"")
   set(TARGET_SIZEOF_VOID_P 4)
   set(SIZEOF_REGISTER 4)
 elseif(TARGET_ARCH STREQUAL "wasm64" )
+  message ("MRH_LOGGING: setting wasm64!")
   set(TARGET_WASM 1)
   set(MONO_ARCHITECTURE "\"wasm\"")
   set(TARGET_SIZEOF_VOID_P 8)
+  #set(SIZEOF_VOID_P 8)
   set(SIZEOF_REGISTER 8)
 elseif(TARGET_ARCH STREQUAL "ppc64le")
   set(TARGET_POWERPC 1)

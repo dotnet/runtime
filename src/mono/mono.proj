@@ -406,11 +406,24 @@ JS_ENGINES = [NODE_JS]
 
   <!-- Mono runtime build -->
   <Target Name="BuildMonoRuntime">
+
+    <Message Text="MRH_LOGGING: Building mono runtime" Importance="high" />
+    <Message Text="MRH_LOGGING: _MonoLLVMHostArchitecture $(_MonoLLVMHostArchitecture)" Importance="high" />
+    <Message Text="MRH_LOGGING: BuildArchitecture $(BuildArchitecture)" Importance="high" />
+    <Message Text="MRH_LOGGING: TargetArchitecture $(TargetArchitecture)" Importance="high" />
+    
+    
+    
     <PropertyGroup Condition="'$(MonoUseLLVMPackage)' == 'true'">
       <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</_MonoLLVMTargetArchitecture>
       <_MonoLLVMTargetArchitecture Condition="'$(TargetArchitecture)' != 'wasm'">$(TargetArchitecture)</_MonoLLVMTargetArchitecture>
       <_MonoLLVMHostArchitecture Condition="'$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_MonoLLVMHostArchitecture>
     </PropertyGroup>
+
+    <Message Text="MRH_LOGGING: _MonoLLVMHostArchitecture $(_MonoLLVMHostArchitecture)" Importance="high" />
+    <Message Text="MRH_LOGGING: _MonoLLVMTargetArchitecture $(_MonoLLVMTargetArchitecture)" Importance="high" />
+
+    
     <ItemGroup>
       <_MonoCMakeArgs Condition="'$(_MonoUseNinja)' == 'true'" Include="-G Ninja"/>
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=&quot;$(MonoObjDir.Replace('\','/'))out&quot;"/>
@@ -562,6 +575,8 @@ JS_ENGINES = [NODE_JS]
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <MonoAotAbi Condition="'$(TargetArchitecture)' == 'wasm' and '$(BuildArchitecture)' == 'x64'">wasm64-unknown-none</MonoAotAbi>
     </PropertyGroup>
+    <Message Condition="'$(TargetArchitecture)' == 'wasm' and '$(BuildArchitecture)' == 'x64'" Text="MRH_LOGGING: MonoAotAbi: $(MonoAotAbi)" Importance="high" />
+    
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,interpreter,qcalls$(_MonoMinimal)"/>
       <_MonoCMakeArgs Include="-DENABLE_INTERP_LIB=1"/>
