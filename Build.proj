@@ -1,12 +1,5 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <PropertyGroup>
-    <!-- TEMP: These changes should be upstreamed to Arcade -->
-    <RestoreEmbedFilesInBinlog>true</RestoreEmbedFilesInBinlog>
-    <RestoreStaticGraphEnableBinaryLogger>true</RestoreStaticGraphEnableBinaryLogger>
-    <RestoreStaticGraphBinaryLoggerParameters>LogFile=$(ArtifactsLogDir)Restore-Build.proj.binlog</RestoreStaticGraphBinaryLoggerParameters>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(RestoreToolsetOnly)' != 'true'">
     <!-- Subsets are already imported by Directory.Build.props. -->
     <ProjectReference Include="@(ProjectToBuild)" />
