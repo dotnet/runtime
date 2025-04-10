@@ -66,10 +66,10 @@ public class InterpreterTest
             Environment.FailFast(null);
         // Disable below tests because they are potentially unstable since they do allocation
         // and we currently don't have GC support. They should pass locally though.
-//        if (!TestFields())
-//            Environment.FailFast(null);
-//        if (!TestSpecialFields())
-//            Environment.FailFast(null);
+        if (!TestFields())
+            Environment.FailFast(null);
+        if (!TestSpecialFields())
+            Environment.FailFast(null);
         if (!TestFloat())
             Environment.FailFast(null);
 
@@ -160,8 +160,12 @@ public class InterpreterTest
         if (sum != 33)
             return false;
 
+        System.GC.Collect();
+
         staticObj = obj;
         staticStr = str;
+
+        System.GC.Collect();
 
         sum = staticObj.str.a + staticStr.str.a + staticObj.ct + staticStr.ct;
         if (sum != 33)
