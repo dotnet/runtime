@@ -10386,7 +10386,7 @@ MONO_RESTORE_WARNING
 		}
 		case OP_WASM_SIMD_CONV_R8_TO_I4_ZERO: {
 			LLVMValueRef args [] = { lhs };
-			LLVMValueRef val = call_intrins (ctx, ins->inst_c0, args, "");
+			LLVMValueRef val = call_intrins (ctx, (int)ins->inst_c0, args, "");
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, val, LLVMConstNull(v64_i4_t), create_const_vector_4_i32 (0, 1, 2, 3), "");
 			break;
 		}
