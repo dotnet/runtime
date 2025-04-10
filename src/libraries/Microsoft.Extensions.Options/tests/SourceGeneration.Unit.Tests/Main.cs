@@ -25,6 +25,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test;
 public class EmitterTests
 {
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task TestEmitterWithCustomValidator()
     {
         string source = """
@@ -65,6 +66,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task PotentiallyMissingAttributes()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -95,6 +97,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task IgnoredStaticMembers()
     {
         var (d, _) = await RunGenerator(@"
@@ -130,6 +133,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ValidationAttributeOnStaticMember()
     {
         var (d, _) = await RunGenerator(@"
@@ -169,6 +173,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task CircularTypeReferences()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -190,6 +195,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task InvalidValidatorInterface()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -221,6 +227,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task NotValidator()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -251,6 +258,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ValidatorAlreadyImplementValidateFunction()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -289,6 +297,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task NullValidator()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -320,6 +329,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task NoSimpleValidatorConstructor()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -357,6 +367,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task NoStaticValidator()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -377,6 +388,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task BogusModelType()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -391,6 +403,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task CantValidateOpenGenericMembers()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -422,6 +435,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ClosedGenerics()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -458,6 +472,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task NoEligibleMembers()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -490,6 +505,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task AlreadyImplemented()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -513,6 +529,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldNotProduceInfoWhenTheClassHasABaseClass()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -538,6 +555,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldNotProduceInfoWhenTransitiveClassHasABaseClass()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -604,6 +622,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldProduceWarningWhenTheClassHasNoEligibleMembers()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -649,6 +668,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldNotProduceErrorWhenMultipleValidationAnnotationsExist()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -669,6 +689,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldNotProduceErrorWhenDataTypeAttributesAreUsed()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -703,6 +724,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldNotProduceErrorWhenConstVariableIsUsedAsAttributeArgument()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -724,6 +746,7 @@ public class EmitterTests
 
     // Testing on all existing & eligible annotations extending ValidationAttribute that aren't used above
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldNotProduceAnyMessagesWhenExistingValidationsArePlaced()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -764,6 +787,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldNotProduceErrorWhenPropertiesAreUsedAsAttributeArgument()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -784,6 +808,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldSkipWhenOptionsValidatorAttributeDoesNotExist()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -804,6 +829,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldSkipAtrributeWhenAttributeSymbolCannotBeFound()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -826,6 +852,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldSkipAtrributeWhenAttributeSymbolIsNotBasedOnValidationAttribute()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -848,6 +875,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldAcceptAtrributeWhenAttributeIsInDifferentNamespace()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -874,6 +902,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldHandleAtrributePropertiesOtherThanString()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -908,6 +937,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ShouldStoreFloatValuesCorrectly()
     {
         var backupCulture = CultureInfo.CurrentCulture;
@@ -939,6 +969,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task MultiModelValidatorGeneratesOnlyOnePartialTypeBlock()
     {
         var (diagnostics, sources) = await RunGenerator(@"
@@ -988,6 +1019,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task CircularTypeReferencesInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1009,6 +1041,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task NotValidatorInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1039,6 +1072,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task NullValidatorInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1070,6 +1104,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task NoSimpleValidatorConstructorInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1437,6 +1472,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task CantValidateOpenGenericMembersInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1468,6 +1504,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task ClosedGenericsInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1499,6 +1536,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task NotEnumerable()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1520,6 +1558,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task LanguageVersionTest()
     {
         string source = """
@@ -1822,6 +1861,7 @@ string lengthAttribute = "";
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task UsingInterfaceAsPropertyTypeForLengthAttributesTests()
     {
         var (diagnostics, generatedSources) = await RunGenerator(@"""
@@ -1866,6 +1906,7 @@ string lengthAttribute = "";
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task OptionsExtendingSystemClassTest()
     {
         string source = """

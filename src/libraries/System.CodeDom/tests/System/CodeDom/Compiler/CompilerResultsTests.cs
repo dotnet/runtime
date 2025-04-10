@@ -29,6 +29,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
+        [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         public void CompiledAssembly_GetWithPathToAssemblySet_ReturnsExpectedAssembly()
         {
             var results = new CompilerResults(null) { PathToAssembly = AssemblyPathHelper.GetAssemblyLocation(typeof(CompilerResultsTests).Assembly) };
