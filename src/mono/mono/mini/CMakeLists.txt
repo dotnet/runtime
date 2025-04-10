@@ -244,19 +244,23 @@ set(interp_sources
     interp/transform.c
     interp/transform-opt.c
     interp/tiering.h
-    interp/tiering.c
-    interp/jiterpreter.c
+    interp/tiering.c    
     interp/interp-pgo.c)
 set(interp_simd_sources
     interp/interp-simd.c)
 set(interp_stub_sources
     interp-stubs.c)
+set(jiterp_sources 
+    interp/jiterpreter.c)
 
 if(NOT DISABLE_INTERPRETER)
-  if(HOST_WASM)
-    set(mini_interp_sources ${interp_sources})
-  else()
-    set(mini_interp_sources ${interp_sources} ${interp_simd_sources})
+  if(HOST_WASM)    
+      set(mini_interp_sources ${interp_sources})    
+  else()    
+      set(mini_interp_sources ${interp_sources} ${interp_simd_sources})    
+  endif()  
+  if(NOT DISABLE_JITERPRETER)
+    list(APPEND mini_interp_sources ${jiterp_sources})
   endif()
 else()
 set(mini_interp_sources ${interp_stub_sources})

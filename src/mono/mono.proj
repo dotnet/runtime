@@ -568,7 +568,8 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeArgs Include="-DDISABLE_ICALL_TABLES=1"/>
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
-      <_MonoCMakeArgs Include="-DENABLE_WEBCIL=1"/>
+      <_MonoCMakeArgs Include="-DENABLE_WEBCIL=1"/>      
+      <_MonoCMakeArgs Include="-DDISABLE_JITERPRETER=1"/>
       <_MonoCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
       <_MonoCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread"/>
       <_MonoCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
@@ -800,7 +801,8 @@ JS_ENGINES = [NODE_JS]
 
   <!-- Build AOT cross compiler (if available) -->
   <Target Name="BuildMonoCross" Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'" DependsOnTargets="BuildMonoRuntime">
-
+    <Message Text="MRH_LOGGING: Building mono cross" Importance="high" />
+    
     <!-- If you don't specify the AOT host, assume it's the build machine -->
     <PropertyGroup>
       <AotHostArchitecture Condition="'$(AotHostArchitecture)' == ''">$(BuildArchitecture)</AotHostArchitecture>
@@ -877,6 +879,20 @@ JS_ENGINES = [NODE_JS]
       <_ForceRelease Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(Configuration)' == 'Debug'">true</_ForceRelease>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
+    <_MonoAOTCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1" />
+    <_MonoAOTCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="--target=wasm64 -DMEMORY64" />
+    <_MonoAOTCPPFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1"/>
+    <_MonoAOTCPPFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64 --target=wasm64" />
+    <_MonoAOTCXXFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1"/>
+    <_MonoAOTCXXFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64 --target=wasm64" />
+    <MonoAOTCMakeArgs Condition="'$(WasmEnableMemory64)' == 'true'" Include="TARGET_BUILD_ARCH=wasm64" />
+    </ItemGroup>
+    
+    <Message Text="MRH_LOGGING: AotHostOS is set to: $(AotHostOS)" Importance="high" />
+    <Message Text="MRH_LOGGING: Set flags with wasm64 target" Importance="high" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
+
+    
     <!-- Windows specific options -->
     <ItemGroup Condition="'$(AotHostOS)' == 'windows'">
       <_MonoAOTCPPFLAGS Include="-DHOST_WIN32" />

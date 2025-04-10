@@ -221,6 +221,9 @@
 /* Disable the interpreter. */
 #cmakedefine DISABLE_INTERPRETER 1
 
+/* Disable the JITERPRETER. */
+#cmakedefine DISABLE_JITERPRETER 1
+
 /* Disable SIMD intrinsics related optimizations. */
 #cmakedefine DISABLE_SIMD 1
 
