@@ -282,7 +282,9 @@ static int sync_file(minipal_log_flags flags)
 
 static ssize_t write_file(int fd, const char* msg, size_t bytes_to_write)
 {
-    return write(fd, msg, bytes_to_write);
+    ssize_t ret = 0;
+    while ((ret = write(fd, msg, bytes_to_write)) < 0 && errno == EINTR);
+    return ret;
 }
 #endif
 
