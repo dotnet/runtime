@@ -147,25 +147,3 @@ int32_t EvpPKeyGetKeyOctetStringParam(const EVP_PKEY* pKey,
                                       const char* name,
                                       uint8_t* destination,
                                       int32_t destinationLength);
-
-/*
-Internal function to sign a message given a context.
-
-Returns 1 on success, 0 on a mismatched signature, -1 on error.
-*/
-int32_t EvpPKeySignMessage(EVP_PKEY *pkey,
-                           void* extraHandle,
-                           uint8_t* msg, int32_t msgLen,
-                           uint8_t* context, int32_t contextLen,
-                           uint8_t* destination, int32_t destinationLen);
-
-/*
-Internal function to verify a message given a context.
-
-Returns 1 on a verified signature, 0 on a mismatched signature, -1 on error.
-*/
-int32_t EvpPKeyVerifyMessage(EVP_PKEY *pkey,
-                             void* extraHandle,
-                             uint8_t* msg, int32_t msgLen,
-                             uint8_t* context, int32_t contextLen,
-                             uint8_t* sig, int32_t sigLen);

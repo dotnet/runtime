@@ -30,7 +30,7 @@ internal static partial class Interop
             return handle;
         }
 
-        // Must be kept in sync with PalKemId in native shim.
+        // Must be kept in sync with PalSlhDsaId in native shim.
         internal enum PalSlhDsaAlgorithmId
         {
             Unknown = 0,

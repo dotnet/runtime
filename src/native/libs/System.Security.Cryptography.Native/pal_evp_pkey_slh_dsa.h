@@ -7,20 +7,20 @@
 
 typedef enum
 {
-    PalSlhDsaTypeId_Unknown   = 0,
-    PalSlhDsaTypeId_Sha2_128s = 1,
-    PalSlhDsaTypeId_Shake128s = 2,
-    PalSlhDsaTypeId_Sha2_128f = 3,
-    PalSlhDsaTypeId_Shake128f = 4,
-    PalSlhDsaTypeId_Sha2_192s = 5,
-    PalSlhDsaTypeId_Shake192s = 6,
-    PalSlhDsaTypeId_Sha2_192f = 7,
-    PalSlhDsaTypeId_Shake192f = 8,
-    PalSlhDsaTypeId_Sha2_256s = 9,
-    PalSlhDsaTypeId_Shake256s = 10,
-    PalSlhDsaTypeId_Sha2_256f = 11,
-    PalSlhDsaTypeId_Shake256f = 12,
-} PalSlhDsaTypeId;
+    PalSlhDsaId_Unknown   = 0,
+    PalSlhDsaId_Sha2_128s = 1,
+    PalSlhDsaId_Shake128s = 2,
+    PalSlhDsaId_Sha2_128f = 3,
+    PalSlhDsaId_Shake128f = 4,
+    PalSlhDsaId_Sha2_192s = 5,
+    PalSlhDsaId_Shake192s = 6,
+    PalSlhDsaId_Sha2_192f = 7,
+    PalSlhDsaId_Shake192f = 8,
+    PalSlhDsaId_Sha2_256s = 9,
+    PalSlhDsaId_Shake256s = 10,
+    PalSlhDsaId_Sha2_256f = 11,
+    PalSlhDsaId_Shake256f = 12,
+} PalSlhDsaId;
 
 /*
 Generates a new EVP_PKEY with random parameters or if seed is not NULL, uses the seed to generate the key.

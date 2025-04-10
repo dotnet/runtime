@@ -72,9 +72,79 @@ int32_t CryptoNative_SlhDsaSignPure(EVP_PKEY *pkey,
                                     uint8_t* context, int32_t contextLen,
                                     uint8_t* destination, int32_t destinationLen)
 {
+
+    assert(pkey);
+    assert(msg);
+    assert(msgLen >= 0);
+    assert(contextLen >= 0);
+    assert(destination);
     assert(destinationLen >= 7856 /* SLH-DSA-SHA2-128s/SLH-DSA-SHAKE-128s signature size */);
 
-    return EvpPKeySignMessage(pkey, extraHandle, msg, msgLen, context, contextLen, destination, destinationLen);
+#if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
+    if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
+        !API_EXISTS(EVP_PKEY_verify_message_init))
+    {
+        return -1;
+    }
+
+    ERR_clear_error();
+
+    EVP_PKEY_CTX* ctx = NULL;
+
+    int ret = -1;
+
+    ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
+    if (!ctx)
+    {
+        goto done;
+    }
+
+    OSSL_PARAM contextParams[] =
+    {
+        OSSL_PARAM_construct_end(),
+        OSSL_PARAM_construct_end(),
+    };
+
+    if (context)
+    {
+        contextParams[0] = OSSL_PARAM_construct_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, (void*)context, Int32ToSizeT(contextLen));
+    }
+
+    if (EVP_PKEY_sign_message_init(ctx, NULL, contextParams) <= 0)
+    {
+        goto done;
+    }
+
+    size_t dstLen = Int32ToSizeT(destinationLen);
+    if (EVP_PKEY_sign(ctx, destination, &dstLen, msg, Int32ToSizeT(msgLen)) == 1)
+    {
+        if (dstLen != Int32ToSizeT(destinationLen))
+        {
+            assert(false); // length mismatch
+            goto done;
+        }
+
+        ret = 1;
+    }
+    else
+    {
+        ret = 0;
+    }
+
+done:
+    if (ctx != NULL) EVP_PKEY_CTX_free(ctx);
+    return ret;
+#else
+    (void)pkey;
+    (void)extraHandle;
+    (void)msg;
+    (void)msgLen;
+    (void)context;
+    (void)contextLen;
+    (void)destination;
+    (void)destinationLen;
+    return -1;
+#endif
 }
 
 int32_t CryptoNative_SlhDsaVerifyPure(EVP_PKEY *pkey,
@@ -83,9 +153,64 @@ int32_t CryptoNative_SlhDsaVerifyPure(EVP_PKEY *pkey,
                                       uint8_t* context, int32_t contextLen,
                                       uint8_t* sig, int32_t sigLen)
 {
+    assert(pkey);
+    assert(msg);
+    assert(msgLen >= 0);
+    assert(sig);
     assert(sigLen >= 7856 /* SLH-DSA-SHA2-128s/SLH-DSA-SHAKE-128s signature size */);
+    assert(contextLen >= 0);
 
-    return EvpPKeyVerifyMessage(pkey, extraHandle, msg, msgLen, context, contextLen, sig, sigLen);
+#if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
+    if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
+        !API_EXISTS(EVP_PKEY_verify_message_init))
+    {
+        return -1;
+    }
+
+    ERR_clear_error();
+
+    EVP_PKEY_CTX* ctx = NULL;
+
+    int ret = -1;
+
+    ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
+    if (!ctx)
+    {
+        goto done;
+    }
+
+    OSSL_PARAM contextParams[] =
+    {
+        OSSL_PARAM_construct_end(),
+        OSSL_PARAM_construct_end(),
+    };
+
+    if (context)
+    {
+        contextParams[0] = OSSL_PARAM_construct_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, (void*)context, Int32ToSizeT(contextLen));
+    }
+
+    if (EVP_PKEY_verify_message_init(ctx, NULL, contextParams) <= 0)
+    {
+        goto done;
+    }
+
+    ret = EVP_PKEY_verify(ctx, sig, Int32ToSizeT(sigLen), msg, Int32ToSizeT(msgLen)) == 1;
+
+done:
+    if (ctx != NULL) EVP_PKEY_CTX_free(ctx);
+    return ret;
+#else
+    (void)pkey;
+    (void)extraHandle;
+    (void)msg;
+    (void)msgLen;
+    (void)context;
+    (void)contextLen;
+    (void)sig;
+    (void)sigLen;
+    return -1;
+#endif
 }
 
 int32_t CryptoNative_SlhDsaExportSecretKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
@@ -117,55 +242,55 @@ int32_t CryptoNative_SlhDsaGetPalId(const EVP_PKEY* pKey, int32_t* slhDsaTypeId)
         // We don't have to worry about this if we use EVP_PKEY_is_a check instead.
         if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-128s"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Sha2_128s;
+            *slhDsaTypeId = PalSlhDsaId_Sha2_128s;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-128s"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Shake128s;
+            *slhDsaTypeId = PalSlhDsaId_Shake128s;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-128f"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Sha2_128f;
+            *slhDsaTypeId = PalSlhDsaId_Sha2_128f;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-128f"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Shake128f;
+            *slhDsaTypeId = PalSlhDsaId_Shake128f;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-192s"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Sha2_192s;
+            *slhDsaTypeId = PalSlhDsaId_Sha2_192s;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-192s"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Shake192s;
+            *slhDsaTypeId = PalSlhDsaId_Shake192s;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-192f"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Sha2_192f;
+            *slhDsaTypeId = PalSlhDsaId_Sha2_192f;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-192f"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Shake192f;
+            *slhDsaTypeId = PalSlhDsaId_Shake192f;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-256s"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Sha2_256s;
+            *slhDsaTypeId = PalSlhDsaId_Sha2_256s;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-256s"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Shake256s;
+            *slhDsaTypeId = PalSlhDsaId_Shake256s;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-256f"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Sha2_256f;
+            *slhDsaTypeId = PalSlhDsaId_Sha2_256f;
         }
         else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-256f"))
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Shake256f;
+            *slhDsaTypeId = PalSlhDsaId_Shake256f;
         }
         else
         {
-            *slhDsaTypeId = PalSlhDsaTypeId_Unknown;
+            *slhDsaTypeId = PalSlhDsaId_Unknown;
         }
 
         return 1;
@@ -173,6 +298,6 @@ int32_t CryptoNative_SlhDsaGetPalId(const EVP_PKEY* pKey, int32_t* slhDsaTypeId)
 #endif
 
     (void)pKey;
-    *slhDsaTypeId = PalSlhDsaTypeId_Unknown;
+    *slhDsaTypeId = PalSlhDsaId_Unknown;
     return 0;
 }

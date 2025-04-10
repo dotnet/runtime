@@ -21,19 +21,26 @@ namespace System.Security.Cryptography
             _key = key;
         }
 
-        internal static partial bool SupportsAny() =>
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_128s != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake128s != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_128f != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake128f != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_192s != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake192s != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_192f != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake192f != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_256s != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake256s != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_256f != null ||
-            Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake256f != null;
+        internal static partial bool SupportsAny()
+        {
+            bool supportsSlhDsaSha2_128s = Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_128s is not null;
+
+            // Assumption: OpenSSL will either support all of the algorithms or none of them.
+            // Currently all OpenSSL versions satisfy this assumption and we expect it to hold in future versions as well.
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake128s is not null);
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_128f is not null);
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake128f is not null);
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_192s is not null);
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake192s is not null);
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_192f is not null);
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake192f is not null);
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_256s is not null);
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake256s is not null);
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_256f is not null);
+            Debug.Assert(supportsSlhDsaSha2_128s == Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaShake256f is not null);
+
+            return supportsSlhDsaSha2_128s;
+        }
 
         protected override void Dispose(bool disposing)
         {

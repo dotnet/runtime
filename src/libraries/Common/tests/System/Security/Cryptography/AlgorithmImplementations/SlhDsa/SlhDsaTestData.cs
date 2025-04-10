@@ -31,13 +31,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SlhDsaAlgorithm.SlhDsaShake256f,
         ];
 
-        // TODO: Construction tests for OpenSsl, and add hierarchy
-        // SlhDsaTemplateTests -> SlhDsaTestImplTests (use test implementation)
-        //                     -> SlhDsaImplTests -> SlhDsaOpenSslTests (use safe handle to construct)
-        //                                        -> SlhDsaDefaultImplTests (use static factory Api to construct)
-
         public record SlhDsaTestVector(SlhDsaAlgorithm Algorithm, string SecretKey, string PublicKey, string Message, string Context, string Signature);
 
+        // TODO: Add test vectors for remaining algos and for KeyGen and SigVerify
         // The vectors below are generated from the NIST ACVP projections.
         // https://raw.githubusercontent.com/usnistgov/ACVP-Server/refs/heads/master/gen-val/json-files/SLH-DSA-sigGen-FIPS205/internalProjection.json
         public static IEnumerable<SlhDsaTestVector> NistSignTestVectors =
