@@ -54,7 +54,6 @@
       <_ProcessorCountArg> -numproc $(MSBuildNodeCount)</_ProcessorCountArg>
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
-      <_MonoWasmMTCMakeArgs > -DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
       <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
 
       <!--
