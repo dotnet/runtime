@@ -71,6 +71,7 @@ GTNODE(CKFINITE         , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // Che
 GTNODE(LCLHEAP          , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // alloca()
 
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
+GTNODE(RTCHECK          , GenTreeRTCheck     ,0,1,GTK_BINOP|GTK_EXOP|DBK_NOCONTAIN) // runtime check
 
 GTNODE(MEMORYBARRIER    , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE)
 GTNODE(LOCKADD          , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)

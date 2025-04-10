@@ -8023,6 +8023,16 @@ DONE_MORPHING_CHILDREN:
                 if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
                 {
                     fgAddCodeRef(compCurBB, SCK_OVERFLOW);
+
+#ifdef TARGET_ARM64
+                    if (opts.OptimizationEnabled())
+                    {
+                        JITDUMP("Adding division overflow check.\n");
+                        tree->AsOp()->gtOp1 = gtNewDivideOverflowCheck(op1, op2);
+                        tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+                        tree->SetMorphed(this, true);
+                    }
+#endif
                 }
                 else
                 {
@@ -8032,6 +8042,16 @@ DONE_MORPHING_CHILDREN:
                 if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
                 {
                     fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
+
+#ifdef TARGET_ARM64
+                    if (opts.OptimizationEnabled())
+                    {
+                        JITDUMP("Adding divide-by-zero check.\n");
+                        tree->AsOp()->gtOp2 = gtNewDivideByZeroCheck(op2);
+                        tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+                        tree->SetMorphed(this, true);
+                    }
+#endif
                 }
                 else
                 {
@@ -8049,6 +8069,16 @@ DONE_MORPHING_CHILDREN:
             if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
             {
                 fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
+
+#ifdef TARGET_ARM64
+                if (opts.OptimizationEnabled())
+                {
+                    JITDUMP("Adding divide-by-zero check.\n");
+                    tree->AsOp()->gtOp2 = gtNewDivideByZeroCheck(op2);
+                    tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+                    tree->SetMorphed(this, true);
+                }
+#endif
             }
             else
             {

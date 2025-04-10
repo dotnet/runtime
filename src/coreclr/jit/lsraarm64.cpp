@@ -1005,6 +1005,16 @@ int LinearScan::BuildNode(GenTree* tree)
             buildInternalRegisterUses();
             break;
 
+        case GT_RTCHECK:
+        {
+            GenTreeRTCheck* node = tree->AsRTCheck();
+            assert(dstCount == 1);
+            srcCount = BuildOperandUses(node->GetValue());
+            srcCount += BuildOperandUses(node->GetCheck());
+            BuildDef(tree);
+        }
+        break;
+
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* cmpXchgNode = tree->AsCmpXchg();

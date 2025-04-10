@@ -491,6 +491,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genRangeCheck(treeNode);
             break;
 
+#ifdef TARGET_ARM64
+        case GT_RTCHECK:
+            genRuntimeCheck(treeNode);
+            break;
+#endif
+
         case GT_PHYSREG:
             genCodeForPhysReg(treeNode->AsPhysReg());
             break;
