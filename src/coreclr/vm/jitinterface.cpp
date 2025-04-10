@@ -7668,6 +7668,37 @@ static void getMethodInfoHelper(
         &methInfo->locals);
 } // getMethodInfoHelper
 
+
+void CEEInfo::getTransientMethodInfo(MethodDesc* pMD, CORINFO_METHOD_INFO* methInfo)
+{
+    MethodInfoHelperContext cxt{ pMD };
+
+    // We will either find or create transient method details.
+    _ASSERTE(!cxt.HasTransientMethodDetails());
+
+    // IL methods with no RVA indicate there is no implementation defined in metadata.
+    // Check if we previously generated details/implementation for this method.
+    TransientMethodDetails* detailsMaybe = NULL;
+    if (FindTransientMethodDetails(pMD, &detailsMaybe))
+        cxt.UpdateWith(*detailsMaybe);
+
+    getMethodInfoHelper(cxt, methInfo);
+
+    // If we have transient method details we need to handle
+    // the lifetime of the details.
+    if (cxt.HasTransientMethodDetails())
+    {
+        // If we didn't find transient details, but we have them
+        // after getting method info, store them for cleanup.
+        if (detailsMaybe == NULL)
+            AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
+
+        // Reset the context because ownership has either been
+        // transferred or was found in this instance.
+        cxt.UpdateWith({});
+    }
+}
+
 //---------------------------------------------------------------------------------------
 //
 bool
@@ -7704,31 +7735,7 @@ CEEInfo::getMethodInfo(
     }
     else if (ftn->IsIL() && ftn->GetRVA() == 0)
     {
-        // We will either find or create transient method details.
-        _ASSERTE(!cxt.HasTransientMethodDetails());
-
-        // IL methods with no RVA indicate there is no implementation defined in metadata.
-        // Check if we previously generated details/implementation for this method.
-        TransientMethodDetails* detailsMaybe = NULL;
-        if (FindTransientMethodDetails(ftn, &detailsMaybe))
-            cxt.UpdateWith(*detailsMaybe);
-
-        getMethodInfoHelper(cxt, methInfo);
-
-        // If we have transient method details we need to handle
-        // the lifetime of the details.
-        if (cxt.HasTransientMethodDetails())
-        {
-            // If we didn't find transient details, but we have them
-            // after getting method info, store them for cleanup.
-            if (detailsMaybe == NULL)
-                AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
-
-            // Reset the context because ownership has either been
-            // transferred or was found in this instance.
-            cxt.UpdateWith({});
-        }
-
+        getTransientMethodInfo(ftn, methInfo);
         result = true;
     }
 
@@ -7911,41 +7918,13 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             }
             else if (pCallee->IsIL() && pCallee->GetRVA() == 0)
             {
-                MethodInfoHelperContext cxt{ pCallee };
-                // We will either find or create transient method details.
-                _ASSERTE(!cxt.HasTransientMethodDetails());
-
-                // IL methods with no RVA indicate there is no implementation defined in metadata.
-                // Check if we previously generated details/implementation for this method.
-                TransientMethodDetails* detailsMaybe = NULL;
-                if (FindTransientMethodDetails(pCallee, &detailsMaybe))
-                    cxt.UpdateWith(*detailsMaybe);
-
                 CORINFO_METHOD_INFO methodInfo;
-                getMethodInfoHelper(cxt, &methodInfo);
+                getTransientMethodInfo(pCallee, &methodInfo);
 
-                if (cxt.Header->EHCount() > 0)
+                if (methodInfo.EHcount > 0)
                 {
                     result = INLINE_FAIL;
                     szFailReason = "Inlinee and root method have different wrapped exception behavior";
-                }
-
-                // If we have transient method details we need to handle
-                // the lifetime of the details.
-                if (cxt.HasTransientMethodDetails())
-                {
-                    // If we didn't find transient details, but we have them
-                    // after getting method info, store them for cleanup.
-                    if (detailsMaybe == NULL)
-                        AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
-
-                    // Reset the context because ownership has either been
-                    // transferred or was found in this instance.
-                    cxt.UpdateWith({});
-                }
-
-                if (result != INLINE_PASS)
-                {
                     goto exit;
                 }
             }

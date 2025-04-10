@@ -472,6 +472,9 @@ public:
     TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
+    // Get method info for a transient method
+    void getTransientMethodInfo(MethodDesc* pMD, CORINFO_METHOD_INFO* methInfo);
+
 protected:
     SArray<OBJECTHANDLE>*   m_pJitHandles;          // GC handles used by JIT
     MethodDesc*             m_pMethodBeingCompiled; // Top-level method being compiled
