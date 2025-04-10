@@ -43,7 +43,7 @@ namespace System.IO.Compression.Tests
         }
 
         // reads exactly bytesToRead out of stream, unless it is out of bytes
-        public static async Task ReadBytes(Stream stream, byte[] buffer, long bytesToRead)
+        public static async Task ReadBytes(Stream stream, Memory<byte> buffer, long bytesToRead)
         {
             int bytesLeftToRead;
             if (bytesToRead > int.MaxValue)
@@ -58,7 +58,7 @@ namespace System.IO.Compression.Tests
 
             while (bytesLeftToRead > 0)
             {
-                int bytesRead = await stream.ReadAsync(buffer, totalBytesRead, bytesLeftToRead);
+                int bytesRead = await stream.ReadAsync(buffer.Slice(totalBytesRead, bytesLeftToRead));
                 if (bytesRead == 0) throw new IOException("Unexpected end of stream");
 
                 totalBytesRead += bytesRead;
@@ -355,7 +355,7 @@ namespace System.IO.Compression.Tests
 
         /// <param name="useSpansForWriting">Tests the Span and Memory overloads of Write and WriteAsync.</param>
         /// <param name="writeInChunks">Writes in chunks of 5 to test Write with a nonzero offset</param>
-        public static async Task CreateFromDir(string directory, Stream archiveStream, ZipArchiveMode mode, bool async, bool useSpansForWriting = false, bool writeInChunks = false)
+        public static async Task CreateFromDir(string directory, Stream archiveStream, bool async, ZipArchiveMode mode,bool useSpansForWriting = false, bool writeInChunks = false)
         {
             var files = FileData.InPath(directory);
 
@@ -569,6 +569,10 @@ namespace System.IO.Compression.Tests
         protected static readonly string ALettersUShortMaxValue = ALettersUShortMaxValueMinusOne + 'a';
         protected static readonly string ALettersUShortMaxValueMinusOneAndCopyRightChar = ALettersUShortMaxValueMinusOne + Utf8CopyrightChar;
         protected static readonly string ALettersUShortMaxValueMinusOneAndTwoCopyRightChars = ALettersUShortMaxValueMinusOneAndCopyRightChar + Utf8CopyrightChar;
+
+        protected static readonly bool[] _bools = [false, true];
+
+        public static IEnumerable<object[]> Get_Booleans_Data() => _bools.Select(b => new object[] { b });
 
         // Returns pairs that are returned the same way by Utf8 and Latin1
         // Returns: originalComment, expectedComment
