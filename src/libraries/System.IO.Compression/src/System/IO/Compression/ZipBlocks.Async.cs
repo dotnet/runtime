@@ -31,38 +31,11 @@ internal sealed partial class ZipGenericExtraField
 
 internal sealed partial class Zip64ExtraField
 {
-    public async Task WriteBlockAsync(Stream stream, CancellationToken cancellationToken)
+    public ValueTask WriteBlockAsync(Stream stream, CancellationToken cancellationToken)
     {
         byte[] extraFieldData = new byte[TotalSize];
-        int startOffset = ZipGenericExtraField.FieldLocations.DynamicData;
-
-        BinaryPrimitives.WriteUInt16LittleEndian(extraFieldData.AsSpan(FieldLocations.Tag), TagConstant);
-        BinaryPrimitives.WriteUInt16LittleEndian(extraFieldData.AsSpan(FieldLocations.Size), _size);
-
-        if (_uncompressedSize != null)
-        {
-            BinaryPrimitives.WriteInt64LittleEndian(extraFieldData.AsSpan(startOffset), _uncompressedSize.Value);
-            startOffset += FieldLengths.UncompressedSize;
-        }
-
-        if (_compressedSize != null)
-        {
-            BinaryPrimitives.WriteInt64LittleEndian(extraFieldData.AsSpan(startOffset), _compressedSize.Value);
-            startOffset += FieldLengths.CompressedSize;
-        }
-
-        if (_localHeaderOffset != null)
-        {
-            BinaryPrimitives.WriteInt64LittleEndian(extraFieldData.AsSpan(startOffset), _localHeaderOffset.Value);
-            startOffset += FieldLengths.LocalHeaderOffset;
-        }
-
-        if (_startDiskNumber != null)
-        {
-            BinaryPrimitives.WriteUInt32LittleEndian(extraFieldData.AsSpan(startOffset), _startDiskNumber.Value);
-        }
-
-        await stream.WriteAsync(extraFieldData, cancellationToken).ConfigureAwait(false);
+        WriteBlockCore(extraFieldData.AsSpan());
+        return stream.WriteAsync(extraFieldData, cancellationToken);
     }
 }
 

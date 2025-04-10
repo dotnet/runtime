@@ -33,35 +33,7 @@ internal sealed partial class Zip64ExtraField
     public void WriteBlock(Stream stream)
     {
         Span<byte> extraFieldData = stackalloc byte[TotalSize];
-        int startOffset = ZipGenericExtraField.FieldLocations.DynamicData;
-
-        BinaryPrimitives.WriteUInt16LittleEndian(extraFieldData[FieldLocations.Tag..], TagConstant);
-        BinaryPrimitives.WriteUInt16LittleEndian(extraFieldData[FieldLocations.Size..], _size);
-
-        if (_uncompressedSize != null)
-        {
-            BinaryPrimitives.WriteInt64LittleEndian(extraFieldData[startOffset..], _uncompressedSize.Value);
-            startOffset += FieldLengths.UncompressedSize;
-        }
-
-        if (_compressedSize != null)
-        {
-            BinaryPrimitives.WriteInt64LittleEndian(extraFieldData[startOffset..], _compressedSize.Value);
-            startOffset += FieldLengths.CompressedSize;
-        }
-
-        if (_localHeaderOffset != null)
-        {
-            BinaryPrimitives.WriteInt64LittleEndian(extraFieldData[startOffset..], _localHeaderOffset.Value);
-            startOffset += FieldLengths.LocalHeaderOffset;
-        }
-
-        if (_startDiskNumber != null)
-        {
-            BinaryPrimitives.WriteUInt32LittleEndian(extraFieldData[startOffset..], _startDiskNumber.Value);
-            startOffset += FieldLengths.StartDiskNumber;
-        }
-
+        WriteBlockCore(extraFieldData);
         stream.Write(extraFieldData);
     }
 }
