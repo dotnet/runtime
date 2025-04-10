@@ -59,10 +59,7 @@ public:
     // Check if the wrapper has been marked to be destroyed.
     bool IsMarkedToDestroy() const;
 
-    InteropLib::OBJECTHANDLE GetTarget() const
-    {
-        return target;
-    }
+    InteropLib::OBJECTHANDLE GetTarget() const;
 
 public: // IReferenceTrackerTarget
     ULONG AddRefFromReferenceTracker();
@@ -96,7 +93,7 @@ public:
     // End the reference tracking process for external object.
     static HRESULT EndReferenceTracking();
 
-    static HRESULT DetachNonPromotedObjects(InteropLibImports::RuntimeCallContext* cxt);
+    static HRESULT DetachNonPromotedObjects(_In_ InteropLibImports::RuntimeCallContext* cxt);
 };
 
 // Class used to hold COM objects (i.e. IUnknown base class)

@@ -1417,7 +1417,7 @@ namespace System.Runtime.InteropServices
             return (IntPtr)vftbl;
         }
 
-        private static unsafe partial IntPtr CreateDefaultIReferenceTrackerTargetVftbl();
+        private static partial IntPtr CreateDefaultIReferenceTrackerTargetVftbl();
 
         // Wrapper for IWeakReference
         private static unsafe class IWeakReference

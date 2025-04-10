@@ -83,22 +83,21 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIReferenceTrackerTargetVftbl")]
         [SuppressGCTransition]
-        private static unsafe partial IntPtr GetDefaultIReferenceTrackerTargetVftbl();
+        private static partial IntPtr GetDefaultIReferenceTrackerTargetVftbl();
 
-        private static unsafe partial IntPtr CreateDefaultIReferenceTrackerTargetVftbl()
+        private static partial IntPtr CreateDefaultIReferenceTrackerTargetVftbl()
             => GetDefaultIReferenceTrackerTargetVftbl();
 
         private static partial IntPtr GetTaggedImplCurrentVersion()
         {
-            GetTaggedImpl(out IntPtr fpCurrentVersion);
-            return fpCurrentVersion;
+            return GetTaggedImpl();
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetTaggedImpl")]
         [SuppressGCTransition]
-        private static partial void GetTaggedImpl(out IntPtr fpCurrentVersion);
+        private static partial IntPtr GetTaggedImpl();
 
-        internal sealed unsafe partial class ManagedObjectWrapperHolder
+        internal sealed partial class ManagedObjectWrapperHolder
         {
             static partial void RegisterIsRootedCallback()
             {

@@ -388,7 +388,7 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 #endif
 #ifdef FEATURE_COMWRAPPERS
     bool isRooted = false;
-    if (ComWrappersNative::IsRooted((OBJECTREF)pObject, &isRooted))
+    if (ComWrappersNative::IsManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
     {
         return isRooted;
     }

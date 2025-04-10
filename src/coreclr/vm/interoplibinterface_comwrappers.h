@@ -20,7 +20,7 @@ public: // COM activation
     static void MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe);
 
 public: // Unwrapping support
-    static bool IsRooted(_In_ OBJECTREF managedObjectWrapperHolderRef, _Out_ bool* pIsRooted);
+    static bool IsManagedObjectComWrapper(_In_ OBJECTREF managedObjectWrapperHolderRef, _Out_ bool* pIsRooted);
 
 public: // GC interaction
     static void OnFullGCStarted();
@@ -38,8 +38,7 @@ extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::Obje
 
 extern "C" void const* QCALLTYPE ComWrappers_GetIReferenceTrackerTargetVftbl();
 
-extern "C" void QCALLTYPE ComWrappers_GetTaggedImpl(
-    _Out_ void const** fpTaggedIsCurrentVersion);
+extern "C" void const* QCALLTYPE ComWrappers_GetTaggedImpl();
 
 extern "C" void QCALLTYPE ComWrappers_RegisterManagedObjectWrapperForDiagnostics(
     _In_ QCall::ObjectHandleOnStack obj,
@@ -51,13 +50,13 @@ extern "C" void QCALLTYPE ComWrappers_RegisterNativeObjectWrapperForDiagnostics(
 
 extern "C" void QCALLTYPE ComWrappers_RegisterIsRootedCallback();
 
-extern "C" BOOL QCALLTYPE TrackerObjectManager_HasReferenceTrackerManager();
+extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_HasReferenceTrackerManager();
 
-extern "C" BOOL QCALLTYPE TrackerObjectManager_TryRegisterReferenceTrackerManager(_In_ void* manager);
+extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_TryRegisterReferenceTrackerManager(_In_ void* manager);
 
 extern "C" void QCALLTYPE TrackerObjectManager_RegisterNativeObjectWrapperCache(_In_ QCall::ObjectHandleOnStack cache);
 
-extern "C" BOOL QCALLTYPE TrackerObjectManager_IsGlobalPeggingEnabled();
+extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_IsGlobalPeggingEnabled();
 
 class GlobalComWrappersForMarshalling
 {

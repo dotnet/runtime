@@ -96,11 +96,11 @@ namespace
         _ASSERTE(cxt != nullptr);
 
         BOOL walkFailed = FALSE;
-        HRESULT hr;
+        HRESULT hr = S_OK;
 
         IReferenceTracker* trackerTarget = nullptr;
-        OBJECTHANDLE proxyObject = NULL;
-        while (S_OK == (hr = InteropLibImports::IteratorNext(cxt, (void**)&trackerTarget, &proxyObject)))
+        OBJECTHANDLE proxyObject = nullptr;
+        while (InteropLibImports::IteratorNext(cxt, (void**)&trackerTarget, &proxyObject))
         {
             if (trackerTarget == nullptr)
                 continue;
@@ -213,15 +213,13 @@ HRESULT TrackerObjectManager::DetachNonPromotedObjects(_In_ RuntimeCallContext* 
     HRESULT hr;
     IReferenceTracker* trackerTarget = nullptr;
     OBJECTHANDLE proxyObject = NULL;
-    while (S_OK == (hr = InteropLibImports::IteratorNext(cxt, (void**)&trackerTarget, &proxyObject)))
+    while (InteropLibImports::IteratorNext(cxt, (void**)&trackerTarget, &proxyObject))
     {
         if (trackerTarget == nullptr)
             continue;
 
         if (proxyObject == nullptr)
             continue;
-
-        RETURN_IF_FAILED(hr);
 
         if (!InteropLibImports::IsObjectPromoted(proxyObject))
         {

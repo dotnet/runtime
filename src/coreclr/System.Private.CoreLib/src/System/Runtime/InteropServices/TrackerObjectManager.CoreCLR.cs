@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_HasReferenceTrackerManager")]
         [SuppressGCTransition]
-        [return: MarshalAs(UnmanagedType.Bool)]
+        [return: MarshalAs(UnmanagedType.U1)]
         private static partial bool HasReferenceTrackerManagerInternal();
 
         private static partial bool TryRegisterReferenceTrackerManager(IntPtr referenceTrackerManager)
@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_TryRegisterReferenceTrackerManager")]
         [SuppressGCTransition]
-        [return: MarshalAs(UnmanagedType.Bool)]
+        [return: MarshalAs(UnmanagedType.U1)]
         private static partial bool TryRegisterReferenceTrackerManagerInternal(IntPtr referenceTrackerManager);
 
         internal static partial bool IsGlobalPeggingEnabled
@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_IsGlobalPeggingEnabled")]
         [SuppressGCTransition]
-        [return: MarshalAs(UnmanagedType.Bool)]
+        [return: MarshalAs(UnmanagedType.U1)]
         private static partial bool IsGlobalPeggingEnabledInternal();
 
         static partial void RegisterGCCallbacks()

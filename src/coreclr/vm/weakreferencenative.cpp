@@ -96,12 +96,12 @@ extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnSt
     BEGIN_QCALL;
 
     SafeComHolder<IWeakReferenceSource> pWeakReferenceSource(nullptr);
-    _ASSERTE(obj.m_ppObject != nullptr);
 
     {
         // COM helpers assume COOP mode and the arguments are protected refs.
         GCX_COOP();
         OBJECTREF objRef = obj.Get();
+        _ASSERTE(objRef != nullptr);
         GCPROTECT_BEGIN(objRef);
 
         // If the object is not an RCW, then we do not want to use a native COM weak reference to it

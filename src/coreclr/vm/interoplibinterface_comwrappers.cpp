@@ -195,16 +195,19 @@ extern "C" void const* QCALLTYPE ComWrappers_GetIReferenceTrackerTargetVftbl()
     return vftbl;
 }
 
-extern "C" void QCALLTYPE ComWrappers_GetTaggedImpl(
-    _Out_ void const** fpTaggedIsCurrentVersion)
+extern "C" void const* QCALLTYPE ComWrappers_GetTaggedImpl()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
+    void const* fpTaggedIsCurrentVersion = NULL;
+
     BEGIN_QCALL;
 
-    *fpTaggedIsCurrentVersion = InteropLib::Com::GetTaggedCurrentVersionImpl();
+    fpTaggedIsCurrentVersion = InteropLib::Com::GetTaggedCurrentVersionImpl();
 
     END_QCALL;
+
+    return fpTaggedIsCurrentVersion;
 }
 
 extern "C" void QCALLTYPE ComWrappers_RegisterManagedObjectWrapperForDiagnostics(
@@ -217,17 +220,12 @@ extern "C" void QCALLTYPE ComWrappers_RegisterManagedObjectWrapperForDiagnostics
 
     GCX_COOP();
 
-    OBJECTREF objRef = obj.Get();
-    GCPROTECT_BEGIN(objRef);
-
     // Check the object's SyncBlock for a managed object wrapper.
-    SyncBlock* syncBlock = objRef->GetSyncBlock();
+    SyncBlock* syncBlock = obj.Get()->GetSyncBlock();
     InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
     _ASSERTE(syncBlock->IsPrecious());
 
     interopInfo->AddManagedObjectComWrapper(wrapper);
-
-    GCPROTECT_END();
 
     END_QCALL;
 }
@@ -242,54 +240,41 @@ extern "C" void QCALLTYPE ComWrappers_RegisterNativeObjectWrapperForDiagnostics(
 
     GCX_COOP();
 
-    struct
-    {
-        OBJECTREF targetObj;
-        OBJECTREF wrapperObj;
-    } gc;
-
-    gc.targetObj = target.Get();
-    gc.wrapperObj = wrapper.Get();
-
-    GCPROTECT_BEGIN(gc);
-
-    SyncBlock* syncBlock = gc.targetObj->GetSyncBlock();
+    SyncBlock* syncBlock = target.Get()->GetSyncBlock();
     InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
     _ASSERTE(syncBlock->IsPrecious());
 
-    OBJECTHANDLE wrapperHandle = GetAppDomain()->CreateLongWeakHandle(gc.wrapperObj);
+    OBJECTHANDLE wrapperHandle = GetAppDomain()->CreateLongWeakHandle(wrapper.Get());
 
     interopInfo->TrySetExternalComObjectContext((PTR_VOID)wrapperHandle);
-
-    GCPROTECT_END();
 
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE TrackerObjectManager_HasReferenceTrackerManager()
+extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_HasReferenceTrackerManager()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    BOOL hasManager = FALSE;
+    CLR_BOOL hasManager = false;
 
     BEGIN_QCALL;
 
-    hasManager = InteropLib::Com::HasReferenceTrackerManager() ? TRUE : FALSE;
+    hasManager = InteropLib::Com::HasReferenceTrackerManager();
 
     END_QCALL;
 
     return hasManager;
 }
 
-extern "C" BOOL QCALLTYPE TrackerObjectManager_TryRegisterReferenceTrackerManager(_In_ void* manager)
+extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_TryRegisterReferenceTrackerManager(_In_ void* manager)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    BOOL success = FALSE;
+    CLR_BOOL success = false;
 
     BEGIN_QCALL;
 
-    success = InteropLib::Com::TryRegisterReferenceTrackerManager(manager) ? TRUE : FALSE;
+    success = InteropLib::Com::TryRegisterReferenceTrackerManager(manager);
 
     END_QCALL;
 
@@ -497,7 +482,7 @@ namespace InteropLibImports
         GCHandleSetObject::Iterator _iterator;
     };
 
-    HRESULT IteratorNext(
+    bool IteratorNext(
         _In_ RuntimeCallContext* runtimeContext,
         _Outptr_result_maybenull_ void** referenceTracker,
         _Outptr_result_maybenull_ InteropLib::OBJECTHANDLE* proxyHandle) noexcept
@@ -520,7 +505,7 @@ namespace InteropLibImports
         {
             *referenceTracker = NULL;
             *proxyHandle = NULL;
-            return S_FALSE;
+            return false;
         }
         OBJECTHANDLE nativeObjectWrapperHandle = runtimeContext->_iterator.Current();
         REFTRACKEROBJECTWRAPPERREF nativeObjectWrapper = (REFTRACKEROBJECTWRAPPERREF)ObjectFromHandle(nativeObjectWrapperHandle);
@@ -529,12 +514,12 @@ namespace InteropLibImports
         {
             *referenceTracker = NULL;
             *proxyHandle = NULL;
-            return S_OK;
+            return true;
         }
 
         *referenceTracker = dac_cast<PTR_VOID>(nativeObjectWrapper->GetTrackerObject());
         *proxyHandle = static_cast<InteropLib::OBJECTHANDLE>(nativeObjectWrapper->GetProxyHandle());
-        return S_OK;
+        return true;
     }
 
     HRESULT FoundReferencePath(
@@ -583,7 +568,7 @@ namespace
     MethodTable* pManagedObjectWrapperHolderMT = NULL;
 }
 
-bool ComWrappersNative::IsRooted(_In_ OBJECTREF managedObjectWrapperHolderRef, _Out_ bool* pIsRooted)
+bool ComWrappersNative::IsManagedObjectComWrapper(_In_ OBJECTREF managedObjectWrapperHolderRef, _Out_ bool* pIsRooted)
 {
     CONTRACTL
     {
@@ -711,15 +696,15 @@ extern "C" void QCALLTYPE TrackerObjectManager_RegisterNativeObjectWrapperCache(
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE TrackerObjectManager_IsGlobalPeggingEnabled()
+extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_IsGlobalPeggingEnabled()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    BOOL isEnabled = FALSE;
+    CLR_BOOL isEnabled = false;
 
     BEGIN_QCALL;
 
-    isEnabled = InteropLibImports::GetGlobalPeggingState() ? TRUE : FALSE;
+    isEnabled = InteropLibImports::GetGlobalPeggingState();
 
     END_QCALL;
 

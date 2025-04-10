@@ -22,9 +22,7 @@ namespace InteropLibImports
     void SetGlobalPeggingState(_In_ bool state) noexcept;
 
     // Get next External Object Context from the Runtime calling context.
-    // S_OK - Context is valid.
-    // S_FALSE - Iterator has reached end and context out parameter is set to NULL.
-    HRESULT IteratorNext(
+    bool IteratorNext(
         _In_ RuntimeCallContext* runtimeContext,
         _Outptr_result_maybenull_ void** trackerTarget,
         _Outptr_result_maybenull_ InteropLib::OBJECTHANDLE* proxyObject) noexcept;

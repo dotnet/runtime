@@ -598,3 +598,8 @@ ULONG ManagedObjectWrapper::Release(void)
 
     return GetComCount(::InterlockedDecrement64(&_refCount));
 }
+
+InteropLib::OBJECTHANDLE ManagedObjectWrapper::GetTarget() const
+{
+    return target;
+}
