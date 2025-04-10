@@ -19,9 +19,6 @@
 #endif // FEATURE_INTERPRETER
 
 #include "gcinfodecoder.h"
-#ifdef FEATURE_EH_FUNCLETS
-#define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
-#endif
 
 #include "exinfo.h"
 
@@ -119,8 +116,7 @@ TADDR CrawlFrame::GetAmbientSPFromCrawlFrame()
         GetRegisterSet(),
         GetCodeInfo(),
         GetRelOffset(),
-        nestingLevel,
-        GetCodeManState()
+        nestingLevel
         );
 
 #elif defined(TARGET_ARM)
@@ -395,6 +391,7 @@ void ExInfoWalker::WalkToManaged()
 #endif // defined(ELIMINATE_FEF)
 
 #ifdef FEATURE_EH_FUNCLETS
+
 // static
 UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /*= NULL*/)
 {
@@ -408,11 +405,11 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
     CONTRACTL_END;
 
 #ifdef TARGET_X86
-    EECodeInfo codeInfo;
+    EECodeInfo tempCodeInfo;
     if (pCodeInfo == NULL)
     {
-        codeInfo.Init(GetControlPC(pRD));
-        pCodeInfo = &codeInfo;
+        tempCodeInfo.Init(GetControlPC(pRD));
+        pCodeInfo = &tempCodeInfo;
     }
 #endif
 
@@ -435,15 +432,14 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
     else
     {
 #ifdef TARGET_X86
-        GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-        hdrInfo hdrInfoBody;
-        DWORD hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, pCodeInfo->GetRelOffset(), &hdrInfoBody);
+        hdrInfo *hdrInfoBody;
+        PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
         ::UnwindStackFrameX86(pRD,
                             PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
                             pCodeInfo->GetRelOffset(),
-                            &hdrInfoBody,
-                            dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                            hdrInfoBody,
+                            table,
                             PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)),
                             pCodeInfo->IsFunclet(),
                             true);
@@ -507,15 +503,14 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     rd.pCurrentContext = pContext;
     rd.pCurrentContextPointers = pContextPointers != NULL ? pContextPointers : &rd.ctxPtrsOne;
 
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    hdrInfo hdrInfoBody;
-    DWORD hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, pCodeInfo->GetRelOffset(), &hdrInfoBody);
+    hdrInfo *hdrInfoBody;
+    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
     ::UnwindStackFrameX86(&rd,
                           PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
                           pCodeInfo->GetRelOffset(),
-                          &hdrInfoBody,
-                          dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                          hdrInfoBody,
+                          table,
                           PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)),
                           pCodeInfo->IsFunclet(),
                           true);
@@ -1384,9 +1379,6 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
 //
 //    Fields updated by ProcessIp():
 //    isFrameless, and codeInfo
-//
-//    Fields updated by ProcessCurrentFrame():
-//    codeManState
 //
 
 void StackFrameIterator::ResetCrawlFrame()
@@ -2478,8 +2470,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
                             &m_cachedCodeInfo,
                             m_codeManFlags
                                 | m_crawl.GetCodeManagerFlags()
-                                | ((m_flags & PROFILER_DO_STACK_SNAPSHOT) ?  SpeculativeStackwalk : 0),
-                                                    &m_crawl.codeManState))
+                                | ((m_flags & PROFILER_DO_STACK_SNAPSHOT) ?  SpeculativeStackwalk : 0)))
         {
             LOG((LF_CORPROF, LL_INFO100, "**PROF: m_crawl.GetCodeManager()->UnwindStackFrame failure leads to SWA_FAILED.\n"));
             retVal = SWA_FAILED;
@@ -2720,6 +2711,16 @@ void StackFrameIterator::ProcessIp(PCODE Ip)
     m_crawl.codeInfo.Init(Ip, m_scanFlag);
 
     m_crawl.isFrameless = !!m_crawl.codeInfo.IsValid();
+
+#ifdef TARGET_X86
+    if (m_crawl.isFrameless)
+    {
+        // Optimization: Ensure that we decode GC info header early. We will reuse
+        // it several times.
+        hdrInfo *hdrInfoBody;
+        m_crawl.codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
+    }
+#endif
 } // StackFrameIterator::ProcessIp()
 
 //---------------------------------------------------------------------------------------
@@ -2856,12 +2857,6 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             m_frameState = SFITER_DONE;
             return;
         }
-
-        m_crawl.codeManState.dwIsSet = 0;
-#if defined(_DEBUG)
-        memset((void *)m_crawl.codeManState.stateBuf, 0xCD,
-               sizeof(m_crawl.codeManState.stateBuf));
-#endif // _DEBUG
 
 #ifdef FEATURE_INTERPRETER
         if (!m_crawl.isFrameless)
@@ -3076,8 +3071,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
     m_pCachedGSCookie = (GSCookie*)m_crawl.GetCodeManager()->GetGSCookieAddr(
                                                         m_crawl.pRD,
                                                         &m_crawl.codeInfo,
-                                                        m_codeManFlags,
-                                                        &m_crawl.codeManState);
+                                                        m_codeManFlags);
 #endif // !DACCESS_COMPILE
 
     if (!(m_flags & SKIP_GSCOOKIE_CHECK) && m_pCachedGSCookie)
@@ -3147,9 +3141,9 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
 #endif // ELIMINATE_FEF
 
 #ifdef TARGET_X86
-    hdrInfo gcHdrInfo;
-    DecodeGCHdrInfo(m_crawl.codeInfo.GetGCInfoToken(), 0, &gcHdrInfo);
-    bool hasReversePInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+    hdrInfo *gcHdrInfo;
+    m_crawl.codeInfo.DecodeGCHdrInfo(&gcHdrInfo);
+    bool hasReversePInvoke = gcHdrInfo->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // TARGET_X86
 
     ProcessIp(GetControlPC(m_crawl.pRD));

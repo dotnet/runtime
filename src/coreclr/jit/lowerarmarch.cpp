@@ -4146,14 +4146,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 // CndSel(mask, embedded(trueValOp2), op3)
                 //
                 cndSelNode->Op(2) = nestedCndSel->Op(2);
-                if (nestedOp3->IsMaskZero())
-                {
-                    BlockRange().Remove(nestedOp3);
-                }
-                else
-                {
-                    nestedOp3->SetUnusedValue();
-                }
+                nestedOp3->SetUnusedValue();
 
                 BlockRange().Remove(nestedOp1);
                 BlockRange().Remove(nestedCndSel);
@@ -4190,14 +4183,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 op2->SetUnusedValue();
             }
 
-            if (op3->IsMaskZero())
-            {
-                BlockRange().Remove(op3);
-            }
-            else
-            {
-                op3->SetUnusedValue();
-            }
+            op3->SetUnusedValue();
             op1->SetUnusedValue();
 
             GenTree* next = cndSelNode->gtNext;
