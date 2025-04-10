@@ -932,6 +932,35 @@ TADDR Module::GetDynamicIL(mdToken token)
     return entry.m_il;
 }
 
+#ifndef DACCESS_COMPILE
+void Module::SetDynamicRvaField(mdToken token, TADDR blobAddress)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    SetDynamicIL(token, blobAddress);
+}
+#endif // !DACCESS_COMPILE
+
+TADDR Module::GetDynamicRvaField(mdToken token)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    return GetDynamicIL(token);
+}
+
 #if !defined(DACCESS_COMPILE)
 //---------------------------------------------------------------------------------------
 //

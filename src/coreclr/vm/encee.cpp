@@ -525,33 +525,6 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     return hr;
 }
 
-void EditAndContinueModule::SetDynamicRvaField(mdToken token, TADDR blobAddress)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Reuse existing dynamic IL mechanism to store/map the data.
-    SetDynamicIL(token, blobAddress);
-}
-
-TADDR EditAndContinueModule::GetDynamicRvaField(mdToken token)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    // Reuse existing dynamic IL mechanism to store/map the data.
-    return GetDynamicIL(token);
-}
-
 //---------------------------------------------------------------------------------------
 //
 // JitUpdatedFunction - Jit the new version of a function for EnC.
