@@ -826,7 +826,10 @@ void InterpCompiler::EmitCode()
         for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
         {
             if (InterpOpIsEmitNop(ins->opcode))
+            {
+                ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
                 continue;
+            }
 
             ip = EmitCodeIns(ip, ins, &relocs);
         }
@@ -858,25 +861,83 @@ void InterpCompiler::EmitCode()
 
 void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 {
-#ifdef FEATURE_INTERPRETER
     InterpIAllocator* pAllocator = new (this) InterpIAllocator(this);
     InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
     assert(gcInfoEncoder);
 
     gcInfoEncoder->SetCodeLength(m_methodCodeSize);
 
-    // TODO: Request slot IDs for all our locals before finalizing
+    uint32_t stackSlotCount = m_totalVarsStackSize / INTERP_STACK_SLOT_SIZE;
+    GcSlotId *slotsByOffset = (GcSlotId *)alloca(stackSlotCount * sizeof(GcSlotId));
+    // 0 is a valid slot id so default-initialize all the slots to 0xFFFFFFFF
+    memset(slotsByOffset, 0xFF, stackSlotCount * sizeof(GcSlotId));
+
+    INTERP_DUMP("Allocating gcinfo slots for %u vars\n", m_varsSize);
+
+    // Request slot IDs for all our vars, not just IL vars
+    for (int i = 0; i < m_varsSize; i++)
+    {
+        InterpVar *pVar = &m_pVars[i];
+        if (pVar->interpType != InterpTypeO)
+            continue;
+        // Don't attempt to assign slots for dead vars (though they shouldn't have an offset anyway)
+        if (!pVar->liveStart)
+            continue;
+
+        // Globals are untracked and shouldn't need liveness ranges recorded in the info
+        GcSlotFlags flags = (GcSlotFlags)(pVar->global ? GC_SLOT_UNTRACKED : 0);
+        uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
+        if (slotsByOffset[slotIndex] == ((GcSlotId)-1))
+        {
+            slotsByOffset[slotIndex] = gcInfoEncoder->GetStackSlotId(-(pVar->offset), flags);
+            INTERP_DUMP(
+                "Allocated gcinfo slot %u for %svar #%d at offset %d\n",
+                slotsByOffset[slotIndex], pVar->global ? "global " : "",
+                i, pVar->offset
+            );
+        }
+        else
+        {
+            INTERP_DUMP(
+                "Reused gcinfo slot %u for %svar #%d at offset %d\n",
+                slotsByOffset[slotIndex], pVar->global ? "global " : "",
+                i, pVar->offset
+            );
+            assert(!pVar->global);
+        }
+    }
 
     gcInfoEncoder->FinalizeSlotIds();
 
-    // TODO: Use finalized slot IDs to declare live ranges
+    // Now that slot IDs are finalized we want to record live ranges for every var that isn't global
+    for (int i = 0; i < m_varsSize; i++)
+    {
+        InterpVar *pVar = &m_pVars[i];
+        // Even if we have a gc slot for this offset, this var might not be an object reference
+        if (pVar->interpType != InterpTypeO)
+            continue;
+
+        uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
+        GcSlotId slot = slotsByOffset[slotIndex];
+        if (slot == ((GcSlotId)-1))
+            continue;
+        assert(pVar->liveStart);
+        assert(pVar->liveEnd);
+        uint32_t startOffset = pVar->liveStart->nativeOffset,
+            endOffset = pVar->liveEnd->nativeOffset + sizeof(InterpOpcode);
+        INTERP_DUMP(
+            "Recording gcinfo slot %u live range for var #%d: [%d - %u]\n",
+            slotsByOffset[slotIndex], i,
+            startOffset, endOffset
+        );
+        gcInfoEncoder->SetSlotState(startOffset, slot, GC_SLOT_LIVE);
+        gcInfoEncoder->SetSlotState(endOffset, slot, GC_SLOT_DEAD);
+    }
 
     gcInfoEncoder->Build();
 
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
-    // let's save the values anyway for debugging purposes
     gcInfoEncoder->Emit();
-#endif
 }
 
 InterpMethod* InterpCompiler::CreateInterpMethod()
