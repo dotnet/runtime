@@ -16,7 +16,7 @@ namespace Internal.TypeSystem.Ecma
     {
         private readonly PEReader _peReader;
         protected readonly MetadataReader _metadataReader;
-        private volatile bool _isWrapNonExceptionThrowsKnown;
+        private volatile bool _isWrapNonExceptionThrowsComputed;
         private volatile bool _isWrapNonExceptionThrows;
 
         internal interface IEntityHandleObject
@@ -697,35 +697,46 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                if (!_isWrapNonExceptionThrowsKnown)
+                if (!_isWrapNonExceptionThrowsComputed)
                 {
-                    var reader = MetadataReader;
-                    var c = reader.StringComparer;
-                    foreach (var attr in reader.GetAssemblyDefinition().GetCustomAttributes())
-                    {
-                        if (reader.GetAttributeNamespaceAndName(attr, out var ns, out var n))
-                        {
-                            if (c.Equals(ns, "System.Runtime.CompilerServices") && c.Equals(n, "RuntimeCompatibilityAttribute"))
-                            {
-                                var dec = reader.GetCustomAttribute(attr).DecodeValue(new CustomAttributeTypeProvider(this));
+                    ComputeIsWrapNonExceptionThrows();
+                    _isWrapNonExceptionThrowsComputed = true;
+                }
+                return _isWrapNonExceptionThrows;
+            }
+        }
 
-                                foreach (var arg in dec.NamedArguments)
-                                {
-                                    if (arg.Name == "WrapNonExceptionThrows")
-                                    {
-                                        if (!(arg.Value is bool))
-                                            ThrowHelper.ThrowBadImageFormatException();
-                                        _isWrapNonExceptionThrows = (bool)arg.Value;
-                                        break;
-                                    }
-                                }
+        private void ComputeIsWrapNonExceptionThrows()
+        {
+            var reader = MetadataReader;
+            var c = reader.StringComparer;
+            bool foundAttribute = false;
+            foreach (var attr in reader.GetAssemblyDefinition().GetCustomAttributes())
+            {
+                if (reader.GetAttributeNamespaceAndName(attr, out var ns, out var n))
+                {
+                    if (c.Equals(ns, "System.Runtime.CompilerServices") && c.Equals(n, "RuntimeCompatibilityAttribute"))
+                    {
+                        var dec = reader.GetCustomAttribute(attr).DecodeValue(new CustomAttributeTypeProvider(this));
+
+                        foreach (var arg in dec.NamedArguments)
+                        {
+                            if (arg.Name == "WrapNonExceptionThrows")
+                            {
+                                if (!(arg.Value is bool))
+                                    ThrowHelper.ThrowBadImageFormatException();
+                                _isWrapNonExceptionThrows = (bool)arg.Value;
+                                foundAttribute = true;
+                                break;
                             }
                         }
                     }
-
-                    _isWrapNonExceptionThrowsKnown = true;
                 }
-                return _isWrapNonExceptionThrows;
+
+                if (foundAttribute)
+                {
+                    break;
+                }
             }
         }
     }
