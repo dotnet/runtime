@@ -1081,7 +1081,7 @@ CALL_INTERP_SLOT:
                 {
                     pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                     GCX_COOP();
-                    GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, 0x00000002);
+                    GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, collection_blocking | collection_aggressive);
                 }
                 ip++;
                 break;
