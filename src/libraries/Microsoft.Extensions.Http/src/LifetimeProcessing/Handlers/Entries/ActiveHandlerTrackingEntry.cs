@@ -5,13 +5,14 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries.Base;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries
 {
     // Thread-safety: We treat this class as immutable except for the timer. Creating a new object
     // for the 'expiry' pool simplifies the threading requirements significantly.
-    internal sealed class ActiveHandlerTrackingEntry
+    internal sealed class ActiveHandlerTrackingEntry : HandlerTrackingEntryBase
     {
         private static readonly TimerCallback _timerCallback = (s) => ((ActiveHandlerTrackingEntry)s!).Timer_Tick();
         private readonly object _lock;
@@ -24,10 +25,9 @@ namespace Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries
             LifetimeTrackingHttpMessageHandler handler,
             IServiceScope? scope,
             TimeSpan lifetime)
+            : base(name, scope)
         {
-            Name = name;
             Handler = handler;
-            Scope = scope;
             Lifetime = lifetime;
 
             _lock = new object();
@@ -36,10 +36,6 @@ namespace Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries
         public LifetimeTrackingHttpMessageHandler Handler { get; }
 
         public TimeSpan Lifetime { get; }
-
-        public string Name { get; }
-
-        public IServiceScope? Scope { get; }
 
         public void StartExpiryTimer(TimerCallback callback)
         {
