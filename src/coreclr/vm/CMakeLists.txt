@@ -541,6 +541,12 @@ if(FEATURE_OBJCMARSHAL)
     )
 endif(FEATURE_OBJCMARSHAL)
 
+if(FEATURE_JAVAMARSHAL)
+    list(APPEND VM_SOURCES_WKS
+        interoplibinterface_java.cpp
+    )
+endif(FEATURE_JAVAMARSHAL)
+
 if(CLR_CMAKE_TARGET_WIN32)
 
     set(VM_SOURCES_DAC_AND_WKS_WIN32

@@ -436,6 +436,12 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjCMarshal_TryInitializeReferenceTracker)
     DllImportEntry(ObjCMarshal_CreateReferenceTrackingHandle)
 #endif
+#if defined(FEATURE_JAVAMARSHAL)
+    DllImportEntry(JavaMarshal_Initialize)
+    DllImportEntry(JavaMarshal_CreateReferenceTrackingHandle)
+    DllImportEntry(JavaMarshal_ReleaseMarkCrossReferenceResources)
+    DllImportEntry(JavaMarshal_GetContext)
+#endif
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
     DllImportEntry(IsEventSourceLoggingEnabled)
     DllImportEntry(LogEventSource)

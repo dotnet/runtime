@@ -177,6 +177,17 @@ void GCScan::GcScanHandles (promote_func* fn,  int condemned, int max_gen,
     }
 }
 
+#ifdef FEATURE_GCBRIDGE
+void GCScan::GcScanWithBridge (promote_func* fn, int condemned,
+                                    int max_gen, ScanContext* sc)
+{
+    STRESS_LOG0(LF_GC|LF_GCROOTS, LL_INFO10, "GcScanWithBridge\n");
+    _ASSERTE(sc->promotion);
+    _ASSERTE(!sc->concurrent);
+    Ref_TraceGCBridge(condemned, max_gen, sc, fn);
+}
+#endif // FEATURE_GCBRIDGE
+
 /*
  * Scan all handle roots in this 'namespace' for profiling
  */

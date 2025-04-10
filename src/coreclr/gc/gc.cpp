@@ -51,7 +51,7 @@ namespace SVR {
 #else // SERVER_GC
 namespace WKS {
 #endif // SERVER_GC
-    
+
 #include "gcimpl.h"
 #include "gcpriv.h"
 
@@ -6456,9 +6456,9 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            // For a 32-bit process running on a machine with > 64 procs, 
-            // even though the process can only use up to 32 procs, the processor 
-            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0, 
+            // For a 32-bit process running on a machine with > 64 procs,
+            // even though the process can only use up to 32 procs, the processor
+            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0,
             // the GetCurrentProcessorNumber will return a number that's >= 64.
             proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS] = (uint16_t)heap_number;
         }
@@ -6482,9 +6482,9 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            // For a 32-bit process running on a machine with > 64 procs, 
-            // even though the process can only use up to 32 procs, the processor 
-            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0, 
+            // For a 32-bit process running on a machine with > 64 procs,
+            // even though the process can only use up to 32 procs, the processor
+            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0,
             // the GetCurrentProcessorNumber will return a number that's >= 64.
             int adjusted_heap = proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS];
             // with dynamic heap count, need to make sure the value is in range.
@@ -30281,6 +30281,15 @@ void gc_heap::mark_phase (int condemned_gen_number)
         drain_mark_queue();
         fire_mark_event (ETW::GC_ROOT_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
+#ifdef FEATURE_GCBRIDGE
+        dprintf(3,("GCBridge to mark handles"));
+        GCScan::GcScanWithBridge(GCHeap::Promote,
+                                    condemned_gen_number, max_generation,
+                                    &sc);
+        drain_mark_queue();
+        // fire_mark_event (ETW::???, current_promoted_bytes, last_promoted_bytes);
+#endif // FEATURE_GCBRIDGE
+
         if (!full_p)
         {
 #ifdef USE_REGIONS
@@ -42233,7 +42242,7 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
                 size_t card_last_obj = card_of (last_object_processed);
                 clear_cards(card, card_last_obj);
 
-                // We need to be careful of the accounting here because we could be in the situation where there are more set cards between end of 
+                // We need to be careful of the accounting here because we could be in the situation where there are more set cards between end of
                 // last set card batch and last_object_processed. We will be clearing all of them. But we can't count the set cards we haven't
                 // discovered yet or we can get a negative number for n_card_set. However, if last_object_processed lands before what end_card
                 // corresponds to, we can't count the whole batch because it will be handled by a later clear_cards.
