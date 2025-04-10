@@ -5490,12 +5490,8 @@ struct ManagedThreadCallState;
 
 struct ManagedThreadBase
 {
-    // The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
     static void KickOff(ADCallBackFcnType pTarget,
                         LPVOID args);
-
-    // The Finalizer thread uses this path
-    static void FinalizerBase(ADCallBackFcnType pTarget);
 };
 
 

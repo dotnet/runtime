@@ -11,6 +11,10 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/106241 -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Needed for JitOptimizationSensitive -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Test expects particular JIT optimization levels -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
