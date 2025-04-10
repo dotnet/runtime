@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -482,7 +483,7 @@ namespace System.Numerics.Tensors
             internal Enumerator(ReadOnlyTensorSpan<T> span)
             {
                 _span = span;
-                _items = -1;
+                _items = 0;
                 _curIndexes = new nint[_span.Rank];
                 _curIndexes[_span.Rank - 1] = -1;
             }
@@ -496,7 +497,7 @@ namespace System.Numerics.Tensors
                 if (_items < _span.FlattenedLength)
                     _items++;
 
-                return _items < _span.FlattenedLength;
+                return _items <= _span.FlattenedLength;
             }
 
             /// <summary>Gets the element at the current position of the enumerator.</summary>
@@ -823,6 +824,177 @@ namespace System.Numerics.Tensors
 
             if (curIndexesArray != null)
                 ArrayPool<nint>.Shared.Return(curIndexesArray);
+        }
+
+        /// <summary>
+        /// Gets the dimensions of the <see cref="Tensor{T}"/>.
+        /// </summary>
+        public DimensionCollection Dimensions => new DimensionCollection(this);
+
+        /// <summary>
+        /// A collection of the dimensions of a <see cref="Tensor{T}"/>.
+        /// </summary>
+        public ref struct DimensionCollection
+        {
+            private readonly ReadOnlyTensorSpan<T> _tensor;
+
+            internal DimensionCollection(ReadOnlyTensorSpan<T> tensor)
+            {
+                if (tensor == null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(nameof(tensor));
+                }
+
+                _tensor = tensor;
+            }
+
+            /// <summary>
+            /// The number of items in the collection.
+            /// </summary>
+            public int Count => (int)_tensor.Lengths[0];
+
+            /// <summary>
+            /// Is this collection read only?
+            /// </summary>
+            public bool IsReadOnly => true;
+
+            /// <summary>
+            /// Is this collection synchronized?
+            /// </summary>
+            public bool IsSynchronized => false;
+
+            /// <summary>
+            /// Adds the specified tensor to the collection.
+            /// </summary>
+            /// <param name="item">The <see cref="Tensor{T}"/> item to add.</param>
+            public void Add(ReadOnlyTensorSpan<T> item) => ThrowHelper.ThrowNotSupportedDimensionCollectionException();
+
+            /// <summary>
+            /// Removes all items from the collection.
+            /// </summary>
+            public void Clear() => ThrowHelper.ThrowNotSupportedDimensionCollectionException();
+
+            /// <summary>
+            /// Checks if the collection contains the specified item.
+            /// </summary>
+            /// <param name="item"></param>
+            /// <returns></returns>
+            public bool Contains(ReadOnlyTensorSpan<T> item)
+            {
+                ThrowHelper.ThrowNotSupportedDimensionCollectionException();
+                return false;
+            }
+
+            /// <summary>
+            /// Gets an enumerator that iterates through the collection.
+            /// </summary>
+            /// <returns></returns>
+            public Enumerator GetEnumerator(int index ) => new Enumerator(_tensor, index);
+
+            /// <summary>
+            /// Gets an enumerator that iterates through the collection.
+            /// </summary>
+            /// <returns></returns>
+            public Enumerator GetEnumerator() => new Enumerator(_tensor, 0);
+
+            /// <summary>
+            /// Removes the specified item from the collection.
+            /// </summary>
+            /// <param name="item">The <see cref="Tensor{T}"/> item to remove.</param>
+            /// <returns>Bool</returns>
+            public bool Remove(ReadOnlyTensorSpan<T> item)
+            {
+                ThrowHelper.ThrowNotSupportedDimensionCollectionException();
+                return false;
+            }
+
+            /// <summary>
+            /// Enumerator for the <see cref="DimensionCollection"/>.
+            /// </summary>
+            public ref struct Enumerator
+            {
+                private readonly ReadOnlyTensorSpan<T> _tensor;
+                private int _dimension;
+                private nint[] _curIndices;
+                private NRange[] _curRanges;
+                private nint _curIndex;
+                private nint _items;
+
+                internal Enumerator(ReadOnlyTensorSpan<T> tensor, int dimension)
+                {
+                    _tensor = tensor;
+                    _dimension = dimension;
+                    _curIndices = new nint[_tensor.Rank];
+                    _curIndices[_dimension] = -1;
+
+                    _curRanges = new NRange[_tensor.Rank];
+                    _curIndex = 0;
+
+                    for (int i = 0; i < _tensor.Rank; i++)
+                    {
+                        _curRanges[i] = new NRange(new NIndex(0), new NIndex(0, true));
+                    }
+
+                    _items = 1;
+                    for (int i = 0; i <= _dimension; i++)
+                    {
+                        _items *= _tensor.Lengths[i];
+                    }
+                }
+
+                /// <summary>
+                /// Advances the enumerator to the next element of the collection.
+                /// </summary>
+                /// <returns><see langword="true"/> if the enumerator moved, <see langword="false"/> otherwise.</returns>
+                public bool MoveNext()
+                {
+                    _curIndex++;
+
+                    TensorSpanHelpers.AdjustIndexes(_dimension, 1, ref _curIndices, _tensor.Lengths);
+
+                    for (int i = 0; i <= _dimension; i++)
+                    {
+                        _curRanges[i] = new NRange(new NIndex(_curIndices[i]), new NIndex(_curIndices[i] + 1));
+                    }
+
+                    if (_curIndex <= _items)
+                        return true;
+
+                    return false;
+                }
+
+                /// <summary>
+                /// Resets the enumerator to the beginning of the span.
+                /// </summary>
+                public void Reset()
+                {
+                    _curIndex = 0;
+                    _curIndices.AsSpan().Clear();
+                    _curIndices[_dimension] = -1;
+                }
+
+                /// <summary>
+                /// Disposes of the enumerator.
+                /// </summary>
+                public void Dispose()
+                {
+
+                }
+
+                internal int Count => (int)_items;
+
+                /// <summary>
+                /// Current <see cref="Tensor{T}"/> value of the <see cref="IEnumerator{T}"/>
+                /// </summary>
+                public ReadOnlyTensorSpan<T> Current
+                {
+                    get
+                    {
+                        ReadOnlyTensorSpan<T> toReturn = _tensor.Slice(_curRanges);
+                        return new ReadOnlyTensorSpan<T>(ref toReturn._reference, toReturn.Lengths.Slice(_dimension), toReturn.Strides.Slice(_dimension), toReturn._shape._memoryLength);
+                    }
+                }
+            }
         }
     }
 }
