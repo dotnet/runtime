@@ -173,30 +173,6 @@ BOOL InstallUnhandledExceptionFilter();
 #endif //!defined(TARGET_UNIX)
 LONG __stdcall COMUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo);
 
-
-//////////////
-// A list of places where we might have unhandled exceptions or other serious faults. These can be used as a mask in
-// DbgJITDebuggerLaunchSetting to help control when we decide to ask the user about whether or not to launch a debugger.
-//
-enum UnhandledExceptionLocation
-    {
-    ProcessWideHandler    = 0x000001,
-    ManagedThread         = 0x000002, // Does not terminate the application. CLR swallows the unhandled exception.
-    ThreadPoolThread      = 0x000004, // ditto.
-    FinalizerThread       = 0x000008, // ditto.
-    FatalStackOverflow    = 0x000010,
-    SystemNotification    = 0x000020, // CLR will swallow after the notification occurs
-    FatalExecutionEngineException = 0x000040,
-    ClassInitUnhandledException   = 0x000080, // Does not terminate the application. CLR transforms this into TypeInitializationException
-
-    MaximumLocationValue  = 0x800000, // This is the maximum location value you're allowed to use. (Max 24 bits allowed.)
-
-    // This is a mask of all the locations that the debugger will attach to by default.
-    DefaultDebuggerAttach = ProcessWideHandler |
-                            FatalStackOverflow |
-                            FatalExecutionEngineException
-};
-
 #ifdef HOST_WINDOWS
 #include <generatedumpflags.h>
 void InitializeCrashDump();
@@ -207,12 +183,6 @@ bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags, LPSTR errorMess
 // Generates crash dumps if enabled for both Windows and Linux
 void CrashDumpAndTerminateProcess(UINT exitCode);
 
-struct ThreadBaseExceptionFilterParam
-{
-    UnhandledExceptionLocation location;
-};
-
-LONG ThreadBaseExceptionSwallowingFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 
 // Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
@@ -224,8 +194,6 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv);
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
                                            BOOL useLastThrownObject = FALSE,
-                                           BOOL isThreadBaseFilter = FALSE,
-                                           BOOL sendAppDomainEvents = TRUE,
                                            BOOL sendWindowsEventLog = FALSE);
 
 void ReplaceExceptionContextRecord(T_CONTEXT *pTarget, T_CONTEXT *pSource);

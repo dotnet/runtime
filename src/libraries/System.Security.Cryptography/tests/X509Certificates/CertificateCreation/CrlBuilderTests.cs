@@ -16,6 +16,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     {
         private const string CertParam = "issuerCertificate";
 
+        public enum CertKind
+        {
+            ECDsa,
+            RsaPkcs1,
+            RsaPss,
+        }
+
+        public static IEnumerable<object[]> SupportedCertKinds()
+        {
+            yield return new object[] { CertKind.ECDsa };
+            yield return new object[] { CertKind.RsaPkcs1 };
+            yield return new object[] { CertKind.RsaPss };
+        }
+
         [Fact]
         public static void AddEntryArgumentValidation()
         {
@@ -153,63 +167,104 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 });
         }
 
-        [Fact]
-        public static void BuildWithNoHashAlgorithm()
+        [Theory]
+        [MemberData(nameof(SupportedCertKinds))]
+        public static void BuildWithNoHashAlgorithm(CertKind certKind)
         {
             BuildCertificateAndRun(
+                certKind,
                 new X509Extension[]
                 {
                     X509BasicConstraintsExtension.CreateForCertificateAuthority(),
                 },
-                static (cert, now) =>
+                static (certKind, cert, now) =>
                 {
                     HashAlgorithmName hashAlg = default;
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
-                    Assert.Throws<ArgumentNullException>(
-                        "hashAlgorithm",
-                        () => builder.Build(cert, 0, now.AddMinutes(5), hashAlg, null, now));
+                    Action certBuild = () => builder.Build(cert, 0, now.AddMinutes(5), hashAlg, null, now);
 
-                    using (ECDsa key = cert.GetECDsaPrivateKey())
+                    if (RequiresHashAlgorithm(certKind))
                     {
-                        X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
-                        X500DistinguishedName dn = cert.SubjectName;
+                        Assert.Throws<ArgumentNullException>("hashAlgorithm", certBuild);
+                    }
+                    else
+                    {
+                        // Assert.NoThrow
+                        certBuild();
+                    }
 
-                        Assert.Throws<ArgumentNullException>(
-                            "hashAlgorithm",
-                            () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, null, now));
+                    X509SignatureGenerator gen = GetSignatureGenerator(certKind, cert, out IDisposable key);
+
+                    using (key)
+                    {
+                        X500DistinguishedName dn = cert.SubjectName;
+                        X509AuthorityKeyIdentifierExtension akid =
+                            X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false);
+
+                        Action genBuild = () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, akid, now);
+
+                        if (RequiresHashAlgorithm(certKind))
+                        {
+                            Assert.Throws<ArgumentNullException>("hashAlgorithm", genBuild);
+                        }
+                        else
+                        {
+                            // Assert.NoThrow
+                            genBuild();
+                        }
                     }
                 });
         }
 
-        [Fact]
-        public static void BuildWithEmptyHashAlgorithm()
+        [Theory]
+        [MemberData(nameof(SupportedCertKinds))]
+        public static void BuildWithEmptyHashAlgorithm(CertKind certKind)
         {
             BuildCertificateAndRun(
+                certKind,
                 new X509Extension[]
                 {
                     X509BasicConstraintsExtension.CreateForCertificateAuthority(),
                 },
-                static (cert, now) =>
+                static (certKind, cert, now) =>
                 {
                     HashAlgorithmName hashAlg = new HashAlgorithmName("");
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
-                    ArgumentException e = Assert.Throws<ArgumentException>(
-                        "hashAlgorithm",
-                        () => builder.Build(cert, 0, now.AddMinutes(5), hashAlg, null, now));
 
-                    Assert.Contains("empty", e.Message);
+                    Action certAction = () => builder.Build(cert, 0, now.AddMinutes(5), hashAlg, null, now);
 
-                    using (ECDsa key = cert.GetECDsaPrivateKey())
+                    if (RequiresHashAlgorithm(certKind))
                     {
-                        X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
-                        X500DistinguishedName dn = cert.SubjectName;
-
-                        e = Assert.Throws<ArgumentException>(
-                            "hashAlgorithm",
-                            () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, null, now));
+                        Exception e = AssertExtensions.Throws<ArgumentException>("hashAlgorithm", certAction);
 
                         Assert.Contains("empty", e.Message);
+                    }
+                    else
+                    {
+                        // Assert.NoThrow
+                        certAction();
+                    }
+
+                    X509SignatureGenerator gen = GetSignatureGenerator(certKind, cert, out IDisposable key);
+
+                    using (key)
+                    {
+                        X500DistinguishedName dn = cert.SubjectName;
+                        X509AuthorityKeyIdentifierExtension akid =
+                            X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false);
+
+                        Action genAction = () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, akid, now);
+
+                        if (RequiresHashAlgorithm(certKind))
+                        {
+                            Assert.Throws<ArgumentException>("hashAlgorithm", genAction);
+                        }
+                        else
+                        {
+                            // Assert.NoThrow
+                            genAction();
+                        }
                     }
                 });
         }
@@ -349,7 +404,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
-        public static void BuildEmpty()
+        public static void BuildEmptyRsaPkcs1()
         {
             BuildRsaCertificateAndRun(
                 new X509Extension[]
@@ -371,7 +426,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     // In fact, because RSASSA-PKCS1 is a deterministic algorithm, we can check it for a fixed output.
 
                     AssertExtensions.SequenceEqual(BuildEmptyExpectedCrl, built);
-                });
+                },
+                callerName: "BuildEmpty");
         }
 
         [Theory]
@@ -421,20 +477,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 });
         }
 
-        [Fact]
-        public static void BuildEmptyEcdsa()
+        [Theory]
+        [MemberData(nameof(SupportedCertKinds))]
+        public static void BuildEmpty(CertKind certKind)
         {
             BuildCertificateAndRun(
+                certKind,
                 new X509Extension[]
                 {
                     X509BasicConstraintsExtension.CreateForCertificateAuthority(),
                 },
-                (cert, now) =>
+                (certKind, cert, now) =>
                 {
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
                     DateTimeOffset nextUpdate = now.AddHours(1);
-                    byte[] crl = builder.Build(cert, 2, nextUpdate, HashAlgorithmName.SHA256);
+                    HashAlgorithmName hashAlg = RequiresHashAlgorithm(certKind) ? HashAlgorithmName.SHA256 : default;
+
+                    byte[] crl = builder.Build(cert, 2, nextUpdate, hashAlg, GetRsaPadding(certKind));
 
                     AsnReader reader = new AsnReader(crl, AsnEncodingRules.DER);
                     reader = reader.ReadSequence();
@@ -444,16 +504,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     byte[] signature = reader.ReadBitString(out _);
                     reader.ThrowIfNotEmpty();
 
-                    using (ECDsa pubKey = cert.GetECDsaPublicKey())
-                    {
-                        Assert.True(
-                            pubKey.VerifyData(
-                                tbs.Span,
-                                signature,
-                                HashAlgorithmName.SHA256,
-                                DSASignatureFormat.Rfc3279DerSequence),
-                            "Certificate public key verifies CRL");
-                    }
+                    VerifySignature(certKind, cert, tbs.Span, signature, hashAlg);
 
                     VerifyCrlFields(
                         crl,
@@ -465,26 +516,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 });
         }
 
-        [Fact]
-        public static void BuildEmptyEcdsa_NoSubjectKeyIdentifier()
+        [Theory]
+        [MemberData(nameof(SupportedCertKinds))]
+        public static void BuildEmpty_NoSubjectKeyIdentifier(CertKind certKind)
         {
             BuildCertificateAndRun(
+                certKind,
                 new X509Extension[]
                 {
                     X509BasicConstraintsExtension.CreateForCertificateAuthority(),
                 },
-                (cert, now) =>
+                (certKind, cert, now) =>
                 {
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
                     DateTimeOffset nextUpdate = now.AddHours(1);
                     DateTimeOffset thisUpdate = now;
+                    HashAlgorithmName hashAlg = RequiresHashAlgorithm(certKind) ? HashAlgorithmName.SHA256 : default;
 
                     byte[] crl = builder.Build(
                         cert,
                         2,
                         nextUpdate,
-                        HashAlgorithmName.SHA256,
-                        thisUpdate: thisUpdate);
+                        hashAlg,
+                        GetRsaPadding(certKind),
+                        thisUpdate);
 
                     AsnReader reader = new AsnReader(crl, AsnEncodingRules.DER);
                     reader = reader.ReadSequence();
@@ -494,16 +549,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     byte[] signature = reader.ReadBitString(out _);
                     reader.ThrowIfNotEmpty();
 
-                    using (ECDsa pubKey = cert.GetECDsaPublicKey())
-                    {
-                        Assert.True(
-                            pubKey.VerifyData(
-                                tbs.Span,
-                                signature,
-                                HashAlgorithmName.SHA256,
-                                DSASignatureFormat.Rfc3279DerSequence),
-                            "Certificate public key verifies CRL");
-                    }
+                    VerifySignature(certKind, cert, tbs.Span, signature, hashAlg);
 
                     VerifyCrlFields(
                         crl,
@@ -1430,17 +1476,34 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
         }
 
         private static void BuildCertificateAndRun(
+            CertKind certKind,
             IEnumerable<X509Extension> extensions,
-            Action<X509Certificate2, DateTimeOffset> action,
+            Action<CertKind, X509Certificate2, DateTimeOffset> action,
             bool addSubjectKeyIdentifier = true,
             [CallerMemberName] string callerName = null)
         {
-            using (ECDsa key = ECDsa.Create())
+            string subjectName = $"CN=\"{callerName}\"";
+            CertificateRequest req;
+            IDisposable key = null;
+
+            try
             {
-                CertificateRequest req = new CertificateRequest(
-                    $"CN=\"{callerName}\"",
-                    key,
-                    HashAlgorithmName.SHA384);
+                if (certKind == CertKind.ECDsa)
+                {
+                    ECDsa ecdsa = ECDsa.Create();
+                    key = ecdsa;
+                    req = new CertificateRequest(subjectName, ecdsa, HashAlgorithmName.SHA384);
+                }
+                else if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss)
+                {
+                    RSA rsa = RSA.Create(TestData.RsaBigExponentParams);
+                    key = rsa;
+                    req = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA384, GetRsaPadding(certKind));
+                }
+                else
+                {
+                    throw new NotSupportedException($"Unsupported CertKind: {certKind}");
+                }
 
                 if (addSubjectKeyIdentifier)
                 {
@@ -1456,9 +1519,27 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
 
                 using (X509Certificate2 cert = req.CreateSelfSigned(now.AddMonths(-1), now.AddMonths(1)))
                 {
-                    action(cert, now);
+                    action(certKind, cert, now);
                 }
             }
+            finally
+            {
+                key?.Dispose();
+            }
+        }
+
+        private static void BuildCertificateAndRun(
+            IEnumerable<X509Extension> extensions,
+            Action<X509Certificate2, DateTimeOffset> action,
+            bool addSubjectKeyIdentifier = true,
+            [CallerMemberName] string callerName = null)
+        {
+            BuildCertificateAndRun(
+                CertKind.ECDsa,
+                extensions,
+                (certKind, cert, now) => action(cert, now),
+                addSubjectKeyIdentifier,
+                callerName);
         }
 
         private static void BuildRsaCertificateAndRun(
@@ -1467,31 +1548,12 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             bool addSubjectKeyIdentifier = true,
             [CallerMemberName] string callerName = null)
         {
-            using (RSA key = RSA.Create(TestData.RsaBigExponentParams))
-            {
-                CertificateRequest req = new CertificateRequest(
-                    $"CN=\"{callerName}\"",
-                    key,
-                    HashAlgorithmName.SHA384,
-                    RSASignaturePadding.Pkcs1);
-
-                if (addSubjectKeyIdentifier)
-                {
-                    req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
-                }
-
-                foreach (X509Extension ext in extensions)
-                {
-                    req.CertificateExtensions.Add(ext);
-                }
-
-                DateTimeOffset now = DateTimeOffset.UtcNow;
-
-                using (X509Certificate2 cert = req.CreateSelfSigned(now.AddMonths(-1), now.AddMonths(1)))
-                {
-                    action(cert, now);
-                }
-            }
+            BuildCertificateAndRun(
+                CertKind.RsaPkcs1,
+                extensions,
+                (certKind, cert, now) => action(cert, now),
+                addSubjectKeyIdentifier,
+                callerName);
         }
 
         private static void VerifyCrlFields(
@@ -1577,6 +1639,78 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             }
 
             return reader.ReadGeneralizedTime();
+        }
+
+        private static X509SignatureGenerator GetSignatureGenerator(
+            CertKind certKind,
+            X509Certificate2 cert,
+            out IDisposable key)
+        {
+            if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss)
+            {
+                RSA rsa = cert.GetRSAPrivateKey();
+                key = rsa;
+                return X509SignatureGenerator.CreateForRSA(rsa, GetRsaPadding(certKind));
+            }
+            else if (certKind == CertKind.ECDsa)
+            {
+                ECDsa ecdsa = cert.GetECDsaPrivateKey();
+                key = ecdsa;
+                return X509SignatureGenerator.CreateForECDsa(ecdsa);
+            }
+            else
+            {
+                throw new NotSupportedException($"Unsupported CertKind: {certKind}");
+            }
+        }
+
+        private static void VerifySignature(
+            CertKind certKind,
+            X509Certificate2 cert,
+            ReadOnlySpan<byte> data,
+            ReadOnlySpan<byte> signature,
+            HashAlgorithmName hashAlgorithm)
+        {
+            bool signatureValid;
+
+            if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss)
+            {
+                using RSA rsa = cert.GetRSAPublicKey();
+                signatureValid = rsa.VerifyData(data, signature, hashAlgorithm, GetRsaPadding(certKind));
+            }
+            else if (certKind == CertKind.ECDsa)
+            {
+                using ECDsa ecdsa = cert.GetECDsaPublicKey();
+                signatureValid = ecdsa.VerifyData(data, signature, hashAlgorithm, DSASignatureFormat.Rfc3279DerSequence);
+            }
+            else
+            {
+                throw new NotSupportedException($"Unsupported CertKind: {certKind}");
+            }
+
+            if (!signatureValid)
+            {
+                Assert.Fail($"{certKind} signature validation failed when it should have succeeded.");
+            }
+        }
+
+        private static bool RequiresHashAlgorithm(CertKind certKind)
+        {
+            return certKind switch
+            {
+                CertKind.ECDsa or CertKind.RsaPkcs1 or CertKind.RsaPss => true,
+                _ => throw new NotSupportedException(certKind.ToString())
+            };
+        }
+
+        private static RSASignaturePadding GetRsaPadding(CertKind certKind)
+        {
+            return certKind switch
+            {
+                CertKind.RsaPkcs1 => RSASignaturePadding.Pkcs1,
+                CertKind.RsaPss => RSASignaturePadding.Pss,
+                _ => null,
+            };
         }
 
         private static ReadOnlySpan<byte> BuildEmptyExpectedCrl => new byte[]
