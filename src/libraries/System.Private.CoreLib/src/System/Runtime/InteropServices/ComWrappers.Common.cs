@@ -1066,7 +1066,9 @@ namespace System.Runtime.InteropServices
                         {
                             // The unwrapped object has a CCW in this context. Compare with identity
                             // so we can see if it's the CCW for the unwrapped object in this context.
-                            if (unwrappedWrapperInThisContext.ComIp == identity)
+                            // Don't unwrap Activated wrappers, as we shouldn't peer through COM Activation.
+                            if (unwrappedWrapperInThisContext.ComIp == identity
+                                && !unwrappedWrapperInThisContext.IsActivated)
                             {
                                 retValue = unwrapped;
                                 return true;
