@@ -2672,13 +2672,13 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
 
             // Since SVE uses "mul vl", we need to make sure that we calculate
             // the offset correctly.
-            if (Compiler::compVectorTLength > 16) // TODO-VL: Convert it into helper method
+            if (Compiler::UseSveForVectorT())
             {
-                if ((imm % Compiler::compVectorTLength) == 0)
+                if ((imm % Compiler::GetVectorTLength()) == 0)
                 {
                     // If imm is a multiple of Compiler::compVectorTLength,
                     // we can use the `[#imm mul vl]`
-                    imm = imm / Compiler::compVectorTLength;
+                    imm = imm / Compiler::GetVectorTLength();
                 }
                 else
                 {
@@ -2712,13 +2712,13 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
 
             // Since SVE uses "mul vl", we need to make sure that we calculate
             // the offset correctly.
-            if (Compiler::compVectorTLength > 16) // TODO-VL: Convert it into helper method
+            if (Compiler::UseSveForVectorT())
             {
-                if ((imm % Compiler::compVectorTLength) == 0)
+                if ((imm % Compiler::GetVectorTLength()) == 0)
                 {
                     // If imm is a multiple of Compiler::compVectorTLength,
                     // we can use the `[#imm mul vl]`
-                    imm = imm / Compiler::compVectorTLength;
+                    imm = imm / Compiler::GetVectorTLength();
                 }
                 else
                 {

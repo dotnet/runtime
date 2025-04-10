@@ -1638,19 +1638,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector_CreateSequence:
         {
-            //TODO-VL: Check if similar check is needed at other places in this methods.
-            if (simdSize > 16)
-            {
-                op2 = impPopStack().val;
-                op1 = impPopStack().val;
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_Sve_Index, simdBaseJitType, simdSize);
-            }
+            assert(Compiler::UseSveForSimdSize(simdSize));
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_Sve_Index, simdBaseJitType, simdSize);
             break;
         }
 
         case NI_Vector_ToScalar:
         {
-            if (simdSize > 16)
+            if (UseSveForSimdSize(simdSize))
             {
                 op1 = impSIMDPopStack();
 

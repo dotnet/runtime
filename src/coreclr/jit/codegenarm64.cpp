@@ -5502,7 +5502,7 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
     unsigned       varSize = emitTypeSize(varDsc->GetRegisterType(lclNode));
-    assert((varSize == 16) || (varSize == Compiler::compVectorTLength));
+    assert((varSize == 16) || (Compiler::SizeMatchesVectorTLength(varSize)));
 
     regNumber op1Reg = genConsumeReg(op1);
     assert(op1Reg != REG_NA);
@@ -5573,7 +5573,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
 
     unsigned       varSize = emitTypeSize(varDsc->GetRegisterType(lclNode));
-    assert((varSize == 16) || (varSize == Compiler::compVectorTLength));
+    assert((varSize == 16) || (Compiler::SizeMatchesVectorTLength(varSize)));
 
     regNumber srcReg = node->GetRegNum();
     assert((srcReg != REG_NA) || (varTypeIsSIMDVL(node->TypeGet())));

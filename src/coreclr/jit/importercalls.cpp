@@ -10653,14 +10653,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                             uint32_t size = getVectorTByteLength();
                             assert((size == 16) || (size == 32) || (size == 64));
-                            bool useAgnosticVL = false;
+                            bool useSizeAgnosticVector = false;
 #ifdef TARGET_ARM64
-                            useAgnosticVL = compExactlyDependsOn(InstructionSet_Sve_Arm64) && (size > 16);
+                            useSizeAgnosticVector = UseSveForVectorT();
 #endif
 
                             const char* lookupClassName = className;
 
-                            if (!useAgnosticVL)
+                            if (!useSizeAgnosticVector)
                             {
                                 switch (size)
                                 {
@@ -10691,7 +10691,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                             const char* lookupMethodName = methodName;
 
-                            if (!useAgnosticVL && ((strncmp(methodName, "As", 2) == 0) && (methodName[2] != '\0')))
+                            if (!useSizeAgnosticVector && ((strncmp(methodName, "As", 2) == 0) && (methodName[2] != '\0')))
                             {
                                 if (strncmp(methodName + 2, "Vector", 6) == 0)
                                 {

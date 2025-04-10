@@ -125,10 +125,10 @@ var_types ABIPassingSegment::GetRegisterType() const
                 return TYP_SIMD16;
 #ifdef TARGET_ARM64
             case 32:
-                assert(Size == Compiler::compVectorTLength);
+                assert(Compiler::SizeMatchesVectorTLength(Size));
                 return TYP_SIMD32;
             case 64:
-                assert(Size == Compiler::compVectorTLength);
+                assert(Compiler::SizeMatchesVectorTLength(Size));
                 return TYP_SIMD64;
 #endif // TARGET_ARM64
 #endif // FEATURE_SIMD

@@ -11693,11 +11693,23 @@ uint32_t CEEJitInfo::getTargetVectorLength()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef TARGET_ARM64
-    return GetSveLengthFromOS();
-#else
-    UNREACHABLE();      // only called on Arm64
-#endif
+ #ifdef TARGET_ARM64
+     CORJIT_FLAGS corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+     if (corjitFlags.IsSet(InstructionSet_Sve) || corjitFlags.IsSet(InstructionSet_Sve_Arm64))
+     {
+         return GetSveLengthFromOS();
+     }
+     else if (corjitFlags.IsSet(InstructionSet_AdvSimd) || corjitFlags.IsSet(InstructionSet_AdvSimd_Arm64))
+     {
+         return 16;
+     }
+     else
+     {
+         return 0;
+     }
+ #else
+     UNREACHABLE();      // only called on Arm64
+ #endif
 }
 
 uint32_t CEEJitInfo::getExpectedTargetArchitecture()
@@ -14379,13 +14391,23 @@ uint32_t CEEInfo::getExpectedTargetArchitecture()
 
 uint32_t CEEInfo::getTargetVectorLength()
 {
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef TARGET_ARM64
-    return GetSveLengthFromOS();
-#else
-    UNREACHABLE();      // only called on Arm64
-#endif
+ #ifdef TARGET_ARM64
+     CORJIT_FLAGS corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+     if (corjitFlags.IsSet(InstructionSet_Sve) || corjitFlags.IsSet(InstructionSet_Sve_Arm64))
+     {
+         return GetSveLengthFromOS();
+     }
+     else if (corjitFlags.IsSet(InstructionSet_AdvSimd) || corjitFlags.IsSet(InstructionSet_AdvSimd_Arm64))
+     {
+         return 16;
+     }
+     else
+     {
+         return 0;
+     }
+ #else
+     UNREACHABLE();      // only called on Arm64
+ #endif
 }
 
 void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,

@@ -6805,7 +6805,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (genActualType(lclTyp) == TYP_I_IMPL)
                 {
                     impBashVarAddrsToI(op1);
-                }
+                } 
 
                 // If this is a local and the local is a ref type, see
                 // if we can improve type information based on the

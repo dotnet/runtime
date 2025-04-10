@@ -850,6 +850,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_Sha1, LAST_NI_Sha1 },
     { FIRST_NI_Sha256, LAST_NI_Sha256 },
     { NI_Illegal, NI_Illegal },                         // Atomics
+    { FIRST_NI_Vector, LAST_NI_Vector },
     { FIRST_NI_Vector64, LAST_NI_Vector64 },
     { FIRST_NI_Vector128, LAST_NI_Vector128 },
     { NI_Illegal, NI_Illegal },                         // Dczva
@@ -866,7 +867,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                         // Sha1_Arm64
     { NI_Illegal, NI_Illegal },                         // Sha256_Arm64
     { NI_Illegal, NI_Illegal },                         // Sve_Arm64
-    { FIRST_NI_Vector, LAST_NI_Vector },
 #else
 #error Unsupported platform
 #endif
@@ -1235,7 +1235,8 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
 #if defined(TARGET_ARM64)
     else if ((FIRST_NI_Vector <= id) && (id <= LAST_NI_Vector))
     {
-        return Compiler::compVectorTLength;
+        assert(Compiler::UseSveForVectorT());
+        return Compiler::GetVectorTLength();
     }
 #endif
 
@@ -2012,7 +2013,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
 #if defined(TARGET_ARM64)
-            if ((simdSize != 8) && (simdSize != 16) && (simdSize != compVectorTLength))
+            if ((simdSize != 8) && (simdSize != 16) && (!SizeMatchesVectorTLength(simdSize)))
 #elif defined(TARGET_XARCH)
             if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
 #endif // TARGET_*

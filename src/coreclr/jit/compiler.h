@@ -2610,10 +2610,6 @@ public:
     EHNodeDsc* ehnTree; // root of the tree comprising the EHnodes.
     EHNodeDsc* ehnNext; // root of the tree comprising the EHnodes.
 
-#if defined(TARGET_ARM64)
-    static unsigned compVectorTLength;
-#endif
-
     struct EHNodeDsc
     {
         enum EHBlockType
@@ -8907,6 +8903,34 @@ private:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
+#if defined(TARGET_ARM64)
+private:
+
+    static unsigned compVectorTLength;
+    static unsigned compMinVectorTLengthForSve;
+    static bool compUseSveForVectorT;
+
+public:
+    FORCEINLINE static unsigned GetVectorTLength()
+    {
+        return compVectorTLength;
+    }
+    FORCEINLINE static bool UseSveForVectorT()
+    {
+        return compUseSveForVectorT;
+    }
+    FORCEINLINE static bool UseSveForSimdSize(unsigned simdSize)
+    {
+        return compUseSveForVectorT && (simdSize >= compMinVectorTLengthForSve);
+    }
+    FORCEINLINE static bool SizeMatchesVectorTLength(unsigned simdSize)
+    {
+        return simdSize == compVectorTLength;
+    }
+#endif
+
+public:
+
     bool IsBaselineSimdIsaSupported()
     {
 #ifdef FEATURE_SIMD
@@ -9192,7 +9216,7 @@ public:
 #elif defined(TARGET_ARM64)
         if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
         {
-            return Compiler::compVectorTLength;
+            return GetVectorTLength();
         }
         else if (compExactlyDependsOn(InstructionSet_VectorT128))
         {
@@ -9617,7 +9641,11 @@ public:
     bool structSizeMightRepresentSIMDType(size_t structSize)
     {
 #ifdef FEATURE_SIMD
+#if defined(TARGET_ARM64)
         return (structSize >= getMinVectorByteLength()) && (structSize <= getVectorTByteLength());
+#else
+        return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
+#endif // TARGET_ARM64
 #else
         return false;
 #endif // FEATURE_SIMD

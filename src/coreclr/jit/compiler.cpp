@@ -490,15 +490,6 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
     info.compHasNextCallRetAddr = false;
     info.compIsVarArgs          = false;
-
-#if defined(TARGET_ARM64)
-    // TODO-VL: This should come from runtime itself and then override with this environment variable
-    Compiler::compVectorTLength = ReinterpretHexAsDecimal(JitConfig.VariableVectorLength());
-    //genTypeSizes[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength;
-    //emitTypeSizes[TYP_SIMDVL]     = (unsigned short)Compiler::compVectorTLength;
-    //emitTypeActSz[TYP_SIMDVL]     = EA_SCALABLE;
-    //genTypeStSzs[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength / sizeof(int);
-#endif // TARGET_ARM64
 }
 
 //------------------------------------------------------------------------
@@ -685,7 +676,7 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             return useType;
         }
 #ifdef TARGET_ARM64
-        if (structSize == compVectorTLength)
+        if (SizeMatchesVectorTLength(structSize))
         {
             var_types hfaType = GetHfaType(clsHnd);
             return varTypeIsSIMDVL(hfaType) ? hfaType : TYP_UNKNOWN;
@@ -919,7 +910,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     if (canReturnInRegister && (useType == TYP_UNKNOWN) &&
         (structSize <= MAX_PASS_SINGLEREG_BYTES)
 #ifdef TARGET_ARM64
-         || (varTypeIsSIMDVL(GetHfaType(clsHnd)) && (structSize == compVectorTLength))
+         || (varTypeIsSIMDVL(GetHfaType(clsHnd)) && (SizeMatchesVectorTLength(structSize)))
 #endif
         )
     {
@@ -2161,6 +2152,8 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
 
 #ifdef TARGET_ARM64
 unsigned Compiler::compVectorTLength = 0;
+unsigned Compiler::compMinVectorTLengthForSve = 0;
+bool Compiler::compUseSveForVectorT = false;
 #endif
 
 void Compiler::compInitOptions(JitFlags* jitFlags)
@@ -2602,6 +2595,50 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 #endif // DEBUG
     }
+
+
+#if defined(TARGET_ARM64)
+
+    compMinVectorTLengthForSve = ReinterpretHexAsDecimal(JitConfig.MinVectorLengthForSve());
+    bool isInvalidMinVectorTLength = false;
+    // Should be at least 16B or 128b
+    isInvalidMinVectorTLength |= (compMinVectorTLengthForSve < 16);
+    // Should be at most 256B or 2048b
+    isInvalidMinVectorTLength |= (compMinVectorTLengthForSve > 256);
+    // Should be power of 2
+    isInvalidMinVectorTLength |= ((compMinVectorTLengthForSve & (compMinVectorTLengthForSve - 1)) != 0);
+
+    if (isInvalidMinVectorTLength)
+    {
+        // In that case, default it to 32B.
+        compMinVectorTLengthForSve = 32;
+    }
+
+    if (info.compMatchedVM)
+    {
+        compVectorTLength = info.compCompHnd->getTargetVectorLength();
+        CORINFO_InstructionSetFlags instructionSetFlags = jitFlags->GetInstructionSetFlags();
+
+        if (!instructionSetFlags.HasInstructionSet(InstructionSet_Sve) && !instructionSetFlags.HasInstructionSet(InstructionSet_Sve_Arm64))
+        {
+            compMinVectorTLengthForSve = UINT_MAX;
+        }
+    }
+    else
+    {
+        // For altjit, just use the default 16B
+        // To use SVE: Set DOTNET_SimulatedVLForSve >= DOTNET_MinVectorLengthForSve
+        // To use NEON: Set DOTNET_SimulatedVLForSve < DOTNET_MinVectorLengthForSve
+        compVectorTLength = 16;
+    }
+
+    compUseSveForVectorT = (compVectorTLength >= compMinVectorTLengthForSve);
+
+    //genTypeSizes[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength;
+    //emitTypeSizes[TYP_SIMDVL]     = (unsigned short)Compiler::compVectorTLength;
+    //emitTypeActSz[TYP_SIMDVL]     = EA_SCALABLE;
+    //genTypeStSzs[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength / sizeof(int);
+#endif // TARGET_ARM64
 
     if (compIsForInlining())
     {
