@@ -275,8 +275,8 @@ CDAC_TYPE_END(PEImageLayout)
 
 CDAC_TYPE_BEGIN(CGrowableSymbolStream)
 CDAC_TYPE_INDETERMINATE(CGrowableSymbolStream)
-CDAC_TYPE_FIELD(CGrowableSymbolStream, /*pointer*/, Buffer, offsetof(CGrowableStream, m_swBuffer))
-CDAC_TYPE_FIELD(CGrowableSymbolStream, /*uint32*/, BufferSize, offsetof(CGrowableStream, m_dwBufferSize))
+CDAC_TYPE_FIELD(CGrowableSymbolStream, /*pointer*/, Buffer, cdac_data<CGrowableStream>::Buffer)
+CDAC_TYPE_FIELD(CGrowableSymbolStream, /*uint32*/, Size, cdac_data<CGrowableStream>::Size)
 CDAC_TYPE_END(CGrowableSymbolStream)
 
 CDAC_TYPE_BEGIN(ProbeExtensionResult)

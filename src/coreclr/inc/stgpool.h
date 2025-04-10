@@ -49,6 +49,8 @@ class StgStringPool;
 class StgBlobPool;
 class StgCodePool;
 
+template<typename T> struct cdac_data;
+
 //  Perform binary search on index table.
 //
 class RIDBinarySearch : public CBinarySearch<UINT32>
@@ -1414,14 +1416,13 @@ public:
         return MemoryRange(p, m_dwBufferSize);
     }
 
-public:
+private:
     // Raw pointer to buffer. This may change as the buffer grows and gets reallocated.
     PTR_BYTE  m_swBuffer;
 
     // Total size of the buffer in bytes.
     DWORD   m_dwBufferSize;
 
-private:
     // Current index in the buffer. This can be moved around by Seek.
     DWORD   m_dwBufferIndex;
 
@@ -1501,6 +1502,15 @@ public:
          IStream ** ppstm);
 
 #endif // DACCESS_COMPILE
+
+    friend struct cdac_data<CGrowableStream>;
 }; // class CGrowableStream
+
+template<>
+struct cdac_data<CGrowableStream>
+{
+    static constexpr size_t Buffer = offsetof(CGrowableStream, m_swBuffer);
+    static constexpr size_t Size = offsetof(CGrowableStream, m_dwBufferSize);
+};
 
 #endif // __StgPool_h__
