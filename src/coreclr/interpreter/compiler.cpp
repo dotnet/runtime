@@ -862,7 +862,7 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
     assert(gcInfoEncoder);
 
-    gcInfoEncoder->SetCodeLength(m_methodCodeSize);
+    gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
 
     uint32_t stackSlotCount = m_totalVarsStackSize / INTERP_STACK_SLOT_SIZE;
     GcSlotId *slotsByOffset = (GcSlotId *)alloca(stackSlotCount * sizeof(GcSlotId));
@@ -920,8 +920,8 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
             continue;
         assert(pVar->liveStart);
         assert(pVar->liveEnd);
-        uint32_t startOffset = pVar->liveStart->nativeOffset,
-            endOffset = pVar->liveEnd->nativeOffset + sizeof(InterpOpcode);
+        uint32_t startOffset = ConvertOffset(GetLiveStartOffset(i)),
+            endOffset = ConvertOffset(GetLiveEndOffset(i));
         INTERP_DUMP(
             "Recording gcinfo slot %u live range for var #%d: [%d - %u]\n",
             slotsByOffset[slotIndex], i,
