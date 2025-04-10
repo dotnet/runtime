@@ -1081,18 +1081,6 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 
 	bool is_packedsimd = strcmp (m_class_get_name (cmethod->klass), "PackedSimd") == 0;
 	// NOTE: Linker substitutions (used in AOT) will prevent this from running.
-	if ((id == SN_get_IsSupported) || (id == SN_get_IsHardwareAccelerated)) {
-		if (!is_packedsimd) {
-			// We don't want to emit the IsSupported or IsHardwareAccelerated methods for Vector* here
-			return FALSE;
-		}
-#if HOST_BROWSER
-		interp_add_ins (td, MINT_LDC_I4_1);
-#else
-		interp_add_ins (td, MINT_LDC_I4_0);
-#endif
-		goto opcode_added;
-	}
 
 	if (is_packedsimd) {
 		if (csignature->ret->type == MONO_TYPE_VOID && csignature->param_count > 1 && mono_type_is_pointer (csignature->params [0])) {
@@ -1116,6 +1104,20 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 
 	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
 		return FALSE;
+
+	// NOTE: Linker substitutions (used in AOT) will prevent this from running.
+	if ((id == SN_get_IsSupported) || (id == SN_get_IsHardwareAccelerated)) {
+		if (!is_packedsimd) {
+			// We don't want to emit the IsSupported or IsHardwareAccelerated methods for Vector* here
+			return FALSE;
+		}
+#if HOST_BROWSER
+		interp_add_ins (td, MINT_LDC_I4_1);
+#else
+		interp_add_ins (td, MINT_LDC_I4_0);
+#endif
+		goto opcode_added;
+	}
 
 #if HOST_BROWSER
 	if (!is_packedsimd) {
