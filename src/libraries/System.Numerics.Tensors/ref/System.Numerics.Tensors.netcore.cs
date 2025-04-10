@@ -168,12 +168,16 @@ namespace System.Numerics.Tensors
         public bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
         public void FlattenTo(scoped System.Span<T> destination) { throw null; }
-        public ref partial struct Enumerator
+        public ref partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
             private int _dummyPrimitive;
             public ref readonly T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
+            T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { throw null; }
+            void System.IDisposable.Dispose() { throw null; }
         }
     }
     [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
@@ -822,12 +826,16 @@ namespace System.Numerics.Tensors
         public override string ToString() { throw null; }
         public bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
-        public ref partial struct Enumerator
+        public ref partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
             private int _dummyPrimitive;
             public ref T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
+            T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { throw null; }
+            void System.IDisposable.Dispose() { throw null; }
         }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]

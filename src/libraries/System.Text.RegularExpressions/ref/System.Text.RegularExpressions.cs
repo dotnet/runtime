@@ -241,21 +241,27 @@ namespace System.Text.RegularExpressions
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected bool UseOptionR() { throw null; }
         protected internal static void ValidateMatchTimeout(System.TimeSpan matchTimeout) { }
-        public ref partial struct ValueMatchEnumerator
+        public ref partial struct ValueMatchEnumerator : System.Collections.Generic.IEnumerator<System.Text.RegularExpressions.ValueMatch>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
             private int _dummyPrimitive;
             public readonly System.Text.RegularExpressions.ValueMatch Current { get { throw null; } }
             public readonly System.Text.RegularExpressions.Regex.ValueMatchEnumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
+            readonly object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { throw null; }
+            void System.IDisposable.Dispose() { throw null; }
         }
-        public ref partial struct ValueSplitEnumerator
+        public ref partial struct ValueSplitEnumerator : System.Collections.Generic.IEnumerator<System.Range>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
             private int _dummyPrimitive;
             public readonly System.Range Current { get { throw null; } }
             public readonly System.Text.RegularExpressions.Regex.ValueSplitEnumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
+            readonly object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { throw null; }
+            void System.IDisposable.Dispose() { throw null; }
         }
     }
     [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the GeneratedRegexAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
