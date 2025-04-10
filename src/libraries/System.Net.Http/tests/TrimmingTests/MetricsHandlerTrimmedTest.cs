@@ -22,7 +22,7 @@ class Program
 
         Type metricsHandler = GetHttpType("System.Net.Http.Metrics.MetricsHandler");
 
-        // DecompressionHandler should have been trimmed
+        // MetricsHandler should have been trimmed
         if (metricsHandler is not null)
         {
             return -1;
