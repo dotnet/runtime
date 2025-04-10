@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
-using System.Net.Http.Metrics;
 using System.Net.Quic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -288,7 +287,7 @@ namespace System.Net.Http
                     if (queueStartingTimestamp != 0)
                     {
                         TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
-                        if (MetricsHandler.IsGloballyEnabled)
+                        if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
                         {
                             _pool.Settings._metrics!.RequestLeftQueue(request, Pool, duration, versionMajor: 3);
                         }

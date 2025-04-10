@@ -18,7 +18,7 @@ namespace System.Net.Http.Metrics
 
         public MetricsHandler(HttpMessageHandler innerHandler, IMeterFactory? meterFactory, out Meter meter)
         {
-            Debug.Assert(IsGloballyEnabled);
+            Debug.Assert(GlobalHttpSettings.MetricsHandler.IsGloballyEnabled);
 
             _innerHandler = innerHandler;
 
@@ -36,9 +36,6 @@ namespace System.Net.Http.Metrics
                 advice: DiagnosticsHelper.ShortHistogramAdvice);
         }
 
-        [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
-        internal static bool IsGloballyEnabled => GlobalHttpSettings.MetricsHandler.EnableMetrics;
-
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (_activeRequests.Enabled || _requestsDuration.Enabled)
@@ -55,7 +52,7 @@ namespace System.Net.Http.Metrics
 
         private async ValueTask<HttpResponseMessage> SendAsyncWithMetrics(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            Debug.Assert(IsGloballyEnabled);
+            Debug.Assert(GlobalHttpSettings.MetricsHandler.IsGloballyEnabled);
 
             (long startTimestamp, bool recordCurrentRequests) = RequestStart(request);
             HttpResponseMessage? response = null;

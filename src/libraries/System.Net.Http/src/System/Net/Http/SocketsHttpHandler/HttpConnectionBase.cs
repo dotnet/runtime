@@ -56,26 +56,29 @@ namespace System.Net.Http
         protected void MarkConnectionAsEstablished(Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
         {
             ConnectionSetupActivity = connectionSetupActivity;
-            Debug.Assert(_pool.Settings._metrics is not null);
-
-            SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics;
-            if (MetricsHandler.IsGloballyEnabled && (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled))
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
             {
-                // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
-                string protocol =
-                    this is HttpConnection ? "1.1" :
-                    this is Http2Connection ? "2" :
-                    "3";
+                Debug.Assert(_pool.Settings._metrics is not null);
 
-                _connectionMetrics = new ConnectionMetrics(
-                    metrics,
-                    protocol,
-                    _pool.IsSecure ? "https" : "http",
-                    _pool.OriginAuthority.HostValue,
-                    _pool.OriginAuthority.Port,
-                    remoteEndPoint?.Address?.ToString());
+                SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics!;
+                if (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled)
+                {
+                    // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
+                    string protocol =
+                        this is HttpConnection ? "1.1" :
+                        this is Http2Connection ? "2" :
+                        "3";
 
-                _connectionMetrics.ConnectionEstablished();
+                    _connectionMetrics = new ConnectionMetrics(
+                        metrics,
+                        protocol,
+                        _pool.IsSecure ? "https" : "http",
+                        _pool.OriginAuthority.HostValue,
+                        _pool.OriginAuthority.Port,
+                        remoteEndPoint?.Address?.ToString());
+
+                    _connectionMetrics.ConnectionEstablished();
+                }
             }
 
             _idleSinceTickCount = _creationTickCount;

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
-using System.Net.Http.Metrics;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Runtime.ExceptionServices;
@@ -88,7 +87,9 @@ namespace System.Net.Http
                         ThrowGetVersionException(request, 3, reasonException);
                     }
 
-                    long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || (MetricsHandler.IsGloballyEnabled && Settings._metrics!.RequestsQueueDuration.Enabled) ? Stopwatch.GetTimestamp() : 0;
+                    long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && Settings._metrics!.RequestsQueueDuration.Enabled)
+                        ? Stopwatch.GetTimestamp()
+                        : 0;
                     Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(authority);
 
                     if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out http3ConnectionWaiter))
