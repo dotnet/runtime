@@ -42,11 +42,11 @@ internal readonly struct Loader_1 : ILoader
         return module.PEAssembly;
     }
 
-    bool ILoader.TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint flags)
+    bool ILoader.TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags)
     {
         baseAddress = TargetPointer.Null;
         size = 0;
-        flags = 0;
+        imageFlags = 0;
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
 
         if (module.PEAssembly == TargetPointer.Null)
@@ -66,7 +66,7 @@ internal readonly struct Loader_1 : ILoader
 
         baseAddress = peImageLayout.Base;
         size = peImageLayout.Size;
-        flags = peImageLayout.Flags;
+        imageFlags = peImageLayout.Flags;
 
         return true;
     }
@@ -103,6 +103,7 @@ internal readonly struct Loader_1 : ILoader
 
         Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
 
+        // 0 is the invalid type. See assemblyprobeextension.h for details
         return peImage.ProbeExtensionResult.Type != 0;
     }
 
