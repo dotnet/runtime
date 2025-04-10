@@ -31,6 +31,7 @@ record struct ModuleLookupTables(
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer module);
+TargetPointer GetRootAssembly();
 TargetPointer GetAssembly(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
@@ -64,13 +65,27 @@ Data descriptors used:
 | `ModuleLookupMap` | `TableData` | Start of the mapping table's data |
 | `ModuleLookupMap` | `SupportedFlagsMask` | Mask for flag bits on lookup map entries |
 | `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
-| `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map
-| `Assembly` | `IsCollectible` | Flag indicating if this is module may be collected
+| `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map |
+| `Assembly` | `IsCollectible` | Flag indicating if this is module may be collected |
+| `AppDomain` | `RootAssembly` | Pointer to the root assembly |
+
+Global variables used:
+| Global Name | Type | Purpose |
+| --- | --- | --- |
+| `AppDomain` | TargetPointer | Pointer to the global AppDomain |
+
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
 {
     return new ModuleHandle(modulePointer);
+}
+
+TargetPointer GetRootAssembly()
+{
+    TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+    AppDomain appDomain = // read AppDomain object starting at appDomainPointer
+    return appDomain.RootAssembly;
 }
 
 TargetPointer GetAssembly(ModuleHandle handle)

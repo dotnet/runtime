@@ -22,6 +22,13 @@ internal readonly struct Loader_1 : ILoader
         return new ModuleHandle(modulePointer);
     }
 
+    TargetPointer ILoader.GetRootAssembly()
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(appDomainPointer);
+        return appDomain.RootAssembly;
+    }
+
     TargetPointer ILoader.GetAssembly(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);

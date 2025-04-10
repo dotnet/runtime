@@ -38,6 +38,7 @@ public interface ILoader : IContract
 
     ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
 
+    TargetPointer GetRootAssembly() => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
