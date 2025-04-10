@@ -166,10 +166,10 @@ namespace System.IO.Compression.Tests
                 archive = new ZipArchive(archiveFile, mode);
             }
 
-            int count = 0;
-
             List<FileData> files = FileData.InPath(directory);
-            Assert.All<FileData>(files, async (file) =>
+
+            int count = 0;
+            foreach (FileData file in files)
             {
                 count++;
                 string entryName = file.FullName;
@@ -185,6 +185,10 @@ namespace System.IO.Compression.Tests
                 {
                     Assert.NotNull(entry);
 
+                    // IMPORTANT: Call Length before opening the entry in Update mode
+                    long givenLength = entry.Length;
+                    var buffer = new byte[entry.Length];
+
                     Stream entryStream;
                     if (async)
                     {
@@ -194,10 +198,6 @@ namespace System.IO.Compression.Tests
                     {
                         entryStream = entry.Open();
                     }
-
-                    long givenLength = entry.Length;
-
-                    var buffer = new byte[entry.Length];
 
                     await ReadAllBytes(entryStream, buffer, 0, buffer.Length, async);
 #if NET
@@ -255,28 +255,44 @@ namespace System.IO.Compression.Tests
                     }
                     else
                     {
-                        using (Stream es = entry.Open())
+                        Stream es;
+                        if (async)
+                        {
+                            es = await entry.OpenAsync();
+                        }
+                        else
+                        {
+                            es = entry.Open();
+                        }
+
+                        try
+                        {
+                            Assert.Equal(0, es.Length);
+                        }
+                        catch (NotSupportedException)
                         {
                             try
                             {
-                                Assert.Equal(0, es.Length);
+                                Assert.Equal(-1, es.ReadByte());
                             }
-                            catch (NotSupportedException)
+                            catch (Exception)
                             {
-                                try
-                                {
-                                    Assert.Equal(-1, es.ReadByte());
-                                }
-                                catch (Exception)
-                                {
-                                    Console.WriteLine("Didn't return EOF");
-                                    throw;
-                                }
+                                Console.WriteLine("Didn't return EOF");
+                                throw;
                             }
+                        }
+
+                        if (async)
+                        {
+                            await es.DisposeAsync();
+                        }
+                        else
+                        {
+                            es.Dispose();
                         }
                     }
                 }
-            });
+            }
             Assert.Equal(count, archive.Entries.Count);
 
             if (async)
