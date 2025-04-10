@@ -43,8 +43,12 @@
     <FileSignInfo Include="mscordaccore.dll" CertificateName="None" />
     <FileSignInfo Include="mscordbi.dll" CertificateName="None" />
 
-    <!-- On MacOS, we need to sign a number of our executables with the Mac developer cert with hardening enabled. -->
-    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;corerun;createdump" CertificateName="MacDeveloperHarden" />
+    <!-- On MacOS, we need to sign a number of our executables with the Mac developer cert with hardening enabled.
+         Avoid doing this on Linux, which has the same executable names -->
+    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;corerun;createdump;singlefilehost;crossgen2;ilasm;ilc;ildasm;llc;mono-aot-cross;opt;Mono" CertificateName="MacDeveloperHarden" />
+    <!-- Additionally, we need to notarize any .pkg files -->
+    <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg" />
+    <FileSignInfo Include="@(MacOSPkg->'%(Filename)%(Extension)')" CertificateName="MacDeveloperWithNotarization" />
 
     <!-- We don't need to code sign .js files because they are not used in Windows Script Host. -->
     <!-- WARNING: Needs to happed outside of any target -->
@@ -56,28 +60,6 @@
     <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
-
-    <FileExtensionSignInfo Include=".msi" CertificateName="MicrosoftDotNet500" />
-
-    <!--
-      Removal is temporarily needed as we integrate support for these extensions into SignTool.
-      Should be cleaned up after https://github.com/dotnet/arcade/issues/14432,
-      https://github.com/dotnet/arcade/issues/14433, and
-      https://github.com/dotnet/arcade/issues/14435 are completed.
-     -->
-    <FileExtensionSignInfo Remove=".deb;.rpm;.pkg" />
-    <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
-    <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
-  </ItemGroup>
-
-  <!--
-    Ensure that we sign the AZL3 RPM with the LinuxSignMariner key.
-    This package name has the version in it, so we need to use a wildcard to discover the right name.
-  -->
-  <ItemGroup>
-    <AzureLinuxRPM Include="$(ArtifactsPackagesDir)**/*-azl.*-*.rpm" />
-    <AzureLinuxRPM Include="$(ArtifactsPackagesDir)**/*-azl-*.rpm" />
-    <FileSignInfo Include="@(AzureLinuxRPM->'%(Filename)%(Extension)')" CertificateName="LinuxSignMariner" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true'">
@@ -107,12 +89,16 @@
   <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
     <Artifact Include="@(BlobArtifact)" />
 
+    <!-- this is built in the SDK repo now -->
+    <!--
     <Artifact Include="$(ArtifactsDir)VSSetup\**\*.zip"
               Condition="Exists('$(ArtifactsDir)VSSetup')"
               Kind="Blob"
               ChecksumPath="%(FullPath).sha512"
               IsVSSetup="true"
+              IsShipping="true"
               SubBlobFolder="workloads/" />
+    -->
   </ItemGroup>
 
   <!--

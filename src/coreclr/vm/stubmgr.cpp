@@ -1015,6 +1015,9 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
             case PRECODE_STUB:
             case PRECODE_NDIRECT_IMPORT:
             case PRECODE_UMENTRY_THUNK:
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+            case PRECODE_THISPTR_RETBUF:
+#endif // HAS_THISPTR_RETBUF_PRECODE
                 return TRUE;
             default:
                 return FALSE;
@@ -1501,7 +1504,6 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
     switch (GetStubKind(stubStartAddress))
     {
-    case STUB_CODE_BLOCK_PRECODE:
     case STUB_CODE_BLOCK_JUMPSTUB:
     case STUB_CODE_BLOCK_STUBLINK:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
@@ -1533,9 +1535,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     switch (GetStubKind(stubStartAddress))
     {
-    case STUB_CODE_BLOCK_PRECODE:
-        return PrecodeStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
-
     case STUB_CODE_BLOCK_JUMPSTUB:
         return JumpStubStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
 
@@ -1572,9 +1571,6 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
 
     switch (GetStubKind(addr))
     {
-    case STUB_CODE_BLOCK_PRECODE:
-        return W("MethodDescPrestub");
-
     case STUB_CODE_BLOCK_JUMPSTUB:
         return W("JumpStub");
 

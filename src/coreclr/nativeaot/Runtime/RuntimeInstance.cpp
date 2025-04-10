@@ -21,7 +21,6 @@
 #include "shash.h"
 #include "TypeManager.h"
 #include "MethodTable.h"
-#include "varint.h"
 
 #include "CommonMacros.inl"
 #include "slist.inl"

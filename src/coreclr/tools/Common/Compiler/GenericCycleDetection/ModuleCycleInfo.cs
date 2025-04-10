@@ -142,7 +142,20 @@ namespace ILCompiler
                 {
                     case TypeFlags.Array:
                     case TypeFlags.SzArray:
-                        return IsDeepPossiblyCyclicInstantiation(((ParameterizedType)type).ParameterType, ref breadthCounter, seenTypes);
+                        TypeDesc parameterType = type;
+                        int arrayNesting = 0;
+                        do
+                        {
+                            parameterType = ((ParameterizedType)parameterType).ParameterType;
+                            arrayNesting++;
+                        } while (parameterType.IsArray);
+
+                        if (arrayNesting > _depthCutoff)
+                        {
+                            return true;
+                        }
+
+                        return IsDeepPossiblyCyclicInstantiation(parameterType, ref breadthCounter, seenTypes);
                     default:
                         TypeDesc typeDef = type.GetTypeDefinition();
                         if (type != typeDef)

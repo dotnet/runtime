@@ -192,4 +192,7 @@
   <data name="InvalidServiceKeyType" xml:space="preserve">
     <value>The type of the key used for lookup doesn't match the type in the constructor parameter with the ServiceKey attribute.</value>
   </data>
+  <data name="KeyedServiceAnyKeyUsedToResolveService" xml:space="preserve">
+    <value>KeyedService.AnyKey cannot be used to resolve a single service.</value>
+  </data>
 </root>
