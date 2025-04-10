@@ -3921,8 +3921,6 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
     ExInfo* pExInfo = pThis->GetNextExInfo();
     bool isCollided = false;
 
-    MethodDesc *pMD = pThis->m_crawl.GetFunction();
-
     do
     {
         *uExCollideClauseIdx = 0xffffffff;
@@ -3948,7 +3946,6 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
             codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
             unwoundReversePInvoke = hdrInfoBody->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
-            bool isFilterFunclet = false;
             bool isPropagatingToExternalNativeCode = false;
         
             EH_LOG((LL_INFO100, "SfiNext: reached native frame at IP=%p, SP=%p, unwoundReversePInvoke=%d\n",
@@ -4089,7 +4086,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
             }
             else if (pTopExInfo->m_passNumber == 1)
             {
-                pMD = pFrame->GetFunction();
+                MethodDesc *pMD = pFrame->GetFunction();
                 if (pMD != NULL)
                 {
                     GCX_COOP();
