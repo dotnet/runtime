@@ -858,6 +858,7 @@ void InterpCompiler::EmitCode()
 
 void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 {
+#ifdef FEATURE_INTERPRETER
     InterpIAllocator* pAllocator = new (this) InterpIAllocator(this);
     InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
     assert(gcInfoEncoder);
@@ -940,6 +941,7 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     gcInfoEncoder->Emit();
 
     fflush(stdout);
+#endif
 }
 
 InterpMethod* InterpCompiler::CreateInterpMethod()
