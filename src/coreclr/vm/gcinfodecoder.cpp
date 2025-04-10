@@ -2196,23 +2196,28 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
     else
     {
         _ASSERTE( GC_FRAMEREG_REL == spBase );
-        // FIXME: The register slot we stash the frame pointer into varies per-architecture.
+
+        // HACK: The register slot we stash the frame pointer into varies per-architecture.
         // CONTEXTGetFp is unavailable here (including its header doesn't work either).
-        uint8_t* fp = NULL;
-#if defined(TARGET_AMD64)
-        fp = (uint8_t*)(pRD->pCurrentContext->Rbp);
+        uint8_t* fp = (uint8_t *)
+#if defined(HOST_AMD64)
+        pRD->pCurrentContext->Rbp;
+#elif defined(HOST_ARM)
+        pRD->pCurrentContext->R7;
+#elif defined(HOST_S390X)
+        pRD->pCurrentContext->R11;
+#elif defined(HOST_POWERPC64)
+        pRD->pCurrentContext->R31;
 #else
+        NULL;
         _ASSERTE(!"Unimplemented architecture for GetStackSlot");
+        return NULL;
 #endif
-        // FIXME: We should fail loudly if we don't have an fp
-        if (fp)
-            pObjRef = (OBJECTREF*)(fp + spOffset);
+
+        pObjRef = (OBJECTREF*)(fp + spOffset);
     }
 
-    if (pObjRef)
-        printf("interp sp+%u at offset %p points to %p\n", spOffset, pObjRef, *(void **)pObjRef);
-    else
-        printf("interp sp+%u has a null address", spOffset);
+    // printf("interp sp+%u at offset %p points to %p\n", spOffset, pObjRef, *(void **)pObjRef);
     return pObjRef;
 }
 #endif
