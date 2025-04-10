@@ -296,7 +296,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 },
                 static (certKind, cert, now) =>
                 {
-                    HashAlgorithmName hashAlg = new HashAlgorithmName("");
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
                     // Assert.NoThrow

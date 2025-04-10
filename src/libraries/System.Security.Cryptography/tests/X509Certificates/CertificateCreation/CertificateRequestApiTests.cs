@@ -297,7 +297,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     () => req.Create(name, gen, now.AddMinutes(-1), now.AddMinutes(1), new byte[] { 1, 2, 3 }));
             }
 
-            using (RSA rsa = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSA rsa = RSA.Create(Rsa.Tests.TestData.RSA2048Params))
             {
                 X509SignatureGenerator gen = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
 

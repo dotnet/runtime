@@ -189,6 +189,9 @@ namespace System.Security.Cryptography.X509Certificates
         ///   An ML-DSA key whose public key material will be included in the certificate or certificate request.
         ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
         /// </param>
+        /// <exceotion cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exceotion>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public CertificateRequest(
             string subjectName,
@@ -214,6 +217,9 @@ namespace System.Security.Cryptography.X509Certificates
         ///   An ML-DSA key whose public key material will be included in the certificate or certificate request.
         ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
         /// </param>
+        /// <exceotion cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exceotion>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public CertificateRequest(
             X500DistinguishedName subjectName,

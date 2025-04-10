@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
-        ///  Creates a signature generator for ML-DSA signatures using the specified key.
+        ///   Creates a signature generator for ML-DSA signatures using the specified key.
         /// </summary>
         /// <param name="key">
         ///   The private key.
@@ -44,6 +44,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// <returns>
         ///   An <see cref="X509SignatureGenerator" /> object for ML-DSA signatures.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public static X509SignatureGenerator CreateForMLDsa(MLDsa key)
         {
