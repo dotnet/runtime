@@ -5675,7 +5675,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             //           default: %name.Length is >= 8 here%
             //       }
             //
-            if (value > 0)
+            if ((value > 0) && !vnStore->IsVNConstant(opVN))
             {
                 AssertionDsc dsc   = {};
                 dsc.assertionKind  = OAK_NOT_EQUAL;
@@ -5688,12 +5688,14 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
                     // Create "arrBnd >= value" assertion
                     dsc.op1.kind = O1K_CONSTANT_LOOP_BND;
                     dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
+                    assert(vnStore->IsVNConstantBound(dsc.op1.vn));
                 }
                 else
                 {
                     // Create "X u>= value" assertion
                     dsc.op1.kind = O1K_CONSTANT_LOOP_BND_UN;
                     dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
+                    assert(vnStore->IsVNConstantBoundUnsigned(dsc.op1.vn));
                 }
                 newAssertIdx = optAddAssertion(&dsc);
             }
