@@ -390,8 +390,6 @@
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
-    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs"
-             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
     <Compile Include="$(CommonPath)\System\Net\UriScheme.cs"
              Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs"
