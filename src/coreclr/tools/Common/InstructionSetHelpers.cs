@@ -233,6 +233,10 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint8");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint8_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint16");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint16_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
                 }
             }
