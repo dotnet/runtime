@@ -139,6 +139,20 @@
       <Link>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml.cs">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml.cs</Link>
+      <DependentUpon>System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml.cs">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml.cs</Link>
+      <DependentUpon>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\OtherNameAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml</Link>
     </AsnXml>
@@ -386,6 +400,8 @@
             Link="Common\System\Security\Cryptography\MLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemAlgorithm.cs"
             Link="Common\System\Security\Cryptography\MLKemAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemPkcs8.cs"
+            Link="Common\System\Security\Cryptography\MLKemPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
              Link="Common\System\Security\Cryptography\Oids.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.Shared.cs"
@@ -398,6 +414,8 @@
              Link="Common\System\Security\Cryptography\PbeParameters.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
              Link="Common\System\Security\Cryptography\PemLabels.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemKeyHelpers.Factory.cs"
+             Link="Common\System\Security\Cryptography\PemKeyHelpers.Factory.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
              Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.cs"

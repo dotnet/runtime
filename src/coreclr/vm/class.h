@@ -726,7 +726,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     void *operator new(size_t size, LoaderHeap* pHeap, AllocMemTracker *pamTracker);
-    void Destruct(MethodTable * pMT);
+    void Destruct();
 
     static EEClass * CreateMinimalClass(LoaderHeap *pHeap, AllocMemTracker *pamTracker);
 #endif // !DACCESS_COMPILE

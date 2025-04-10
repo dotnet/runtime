@@ -3159,111 +3159,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 
 #ifdef TARGET_ARM64
 //------------------------------------------------------------------------
-// TryLowerAndOrToCCMP : Lower AND/OR of two conditions into test + CCMP + SETCC nodes.
-//
-// Arguments:
-//    tree - pointer to the node
-//    next - [out] Next node to lower if this function returns true
-//
-// Return Value:
-//    false if no changes were made
-//
-bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
-{
-    assert(tree->OperIs(GT_AND, GT_OR));
-
-    if (!comp->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
-
-    if ((op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1())) ||
-        (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1())))
-    {
-        JITDUMP("[%06u] is a potential candidate for CCMP:\n", Compiler::dspTreeID(tree));
-        DISPTREERANGE(BlockRange(), tree);
-        JITDUMP("\n");
-    }
-
-    // Find out whether an operand is eligible to be converted to a conditional
-    // compare. It must be a normal integral relop; for example, we cannot
-    // conditionally perform a floating point comparison and there is no "ctst"
-    // instruction that would allow us to conditionally implement
-    // TEST_EQ/TEST_NE.
-    //
-    // For the other operand we can allow more arbitrary operations that set
-    // the condition flags; the final transformation into the flags def is done
-    // by TryLowerConditionToFlagsNode.
-    //
-    GenCondition cond1;
-    if (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1()) && IsInvariantInRange(op2, tree) &&
-        (op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
-        (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()) &&
-        TryLowerConditionToFlagsNode(tree, op1, &cond1))
-    {
-        // Fall through, converting op2 to the CCMP
-    }
-    else if (op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1()) && IsInvariantInRange(op1, tree) &&
-             (op1->gtGetOp1()->IsIntegralConst() || !op1->gtGetOp1()->isContained()) &&
-             (op1->gtGetOp2() == nullptr || op1->gtGetOp2()->IsIntegralConst() || !op1->gtGetOp2()->isContained()) &&
-             TryLowerConditionToFlagsNode(tree, op2, &cond1))
-    {
-        std::swap(op1, op2);
-    }
-    else
-    {
-        JITDUMP("  ..could not turn [%06u] or [%06u] into a def of flags, bailing\n", Compiler::dspTreeID(op1),
-                Compiler::dspTreeID(op2));
-        return false;
-    }
-
-    BlockRange().Remove(op2);
-    BlockRange().InsertBefore(tree, op2);
-
-    GenCondition cond2 = GenCondition::FromRelop(op2);
-    op2->SetOper(GT_CCMP);
-    op2->gtType = TYP_VOID;
-    op2->gtFlags |= GTF_SET_FLAGS;
-
-    op2->gtGetOp1()->ClearContained();
-    op2->gtGetOp2()->ClearContained();
-
-    GenTreeCCMP* ccmp = op2->AsCCMP();
-
-    if (tree->OperIs(GT_AND))
-    {
-        // If the first comparison succeeds then do the second comparison.
-        ccmp->gtCondition = cond1;
-        // Otherwise set the condition flags to something that makes the second
-        // one fail.
-        ccmp->gtFlagsVal = TruthifyingFlags(GenCondition::Reverse(cond2));
-    }
-    else
-    {
-        // If the first comparison fails then do the second comparison.
-        ccmp->gtCondition = GenCondition::Reverse(cond1);
-        // Otherwise set the condition flags to something that makes the second
-        // one succeed.
-        ccmp->gtFlagsVal = TruthifyingFlags(cond2);
-    }
-
-    ContainCheckConditionalCompare(ccmp);
-
-    tree->SetOper(GT_SETCC);
-    tree->AsCC()->gtCondition = cond2;
-
-    JITDUMP("Conversion was legal. Result:\n");
-    DISPTREERANGE(BlockRange(), tree);
-    JITDUMP("\n");
-
-    *next = tree->gtNext;
-    return true;
-}
-
-//------------------------------------------------------------------------
 // TruthifyingFlags: Get a flags immediate that will make a specified condition true.
 //
 // Arguments:
@@ -3301,28 +3196,6 @@ insCflags Lowering::TruthifyingFlags(GenCondition condition)
             return INS_FLAGS_NONE;
     }
 }
-
-//------------------------------------------------------------------------
-// ContainCheckConditionalCompare: determine whether the source of a compare within a compare chain should be contained.
-//
-// Arguments:
-//    node - pointer to the node
-//
-void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
-{
-    GenTree* op2 = cmp->gtOp2;
-
-    if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
-    {
-        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
-
-        if (emitter::emitIns_valid_imm_for_ccmp(immVal))
-        {
-            MakeSrcContained(cmp, op2);
-        }
-    }
-}
-
 #endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
@@ -4285,14 +4158,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 // CndSel(mask, embedded(trueValOp2), op3)
                 //
                 cndSelNode->Op(2) = nestedCndSel->Op(2);
-                if (nestedOp3->IsMaskZero())
-                {
-                    BlockRange().Remove(nestedOp3);
-                }
-                else
-                {
-                    nestedOp3->SetUnusedValue();
-                }
+                nestedOp3->SetUnusedValue();
 
                 BlockRange().Remove(nestedOp1);
                 BlockRange().Remove(nestedCndSel);
@@ -4329,14 +4195,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 op2->SetUnusedValue();
             }
 
-            if (op3->IsMaskZero())
-            {
-                BlockRange().Remove(op3);
-            }
-            else
-            {
-                op3->SetUnusedValue();
-            }
+            op3->SetUnusedValue();
             op1->SetUnusedValue();
 
             GenTree* next = cndSelNode->gtNext;

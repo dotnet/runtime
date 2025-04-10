@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.Net;
 using Test.Cryptography;
 using Xunit;
@@ -716,6 +717,105 @@ BgkqhkiG9w0BAQsFAAMBAA==
             attr = req.OtherRequestAttributes[1];
             Assert.Equal("1.2.840.113549.1.9.7", attr.Oid.Value);
             Assert.Equal("0C053132333435", attr.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void LoadCreate_MatchesCreate_RSAPkcs1()
+        {
+            using (RSA key = RSA.Create(2048))
+            {
+                LoadCreate_MatchesCreate(
+                    new CertificateRequest(
+                        "CN=Roundtrip, O=RSA, OU=PKCS1",
+                        key,
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pkcs1),
+                    X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1),
+                    deterministicSignature: true);
+            }
+        }
+
+        [Fact]
+        public static void LoadCreate_MatchesCreate_RSAPss()
+        {
+            using (RSA key = RSA.Create(2048))
+            {
+                LoadCreate_MatchesCreate(
+                    new CertificateRequest(
+                        "CN=Roundtrip, O=RSA, OU=PSS",
+                        key,
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pss),
+                    X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pss),
+                    deterministicSignature: false);
+            }
+        }
+
+        [Fact]
+        public static void LoadCreate_MatchesCreate_ECDsa()
+        {
+            using (ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP384))
+            {
+                LoadCreate_MatchesCreate(
+                    new CertificateRequest(
+                        "CN=Roundtrip, O=EC-DSA",
+                        key,
+                        HashAlgorithmName.SHA256),
+                    X509SignatureGenerator.CreateForECDsa(key),
+                    deterministicSignature: false);
+            }
+        }
+
+        private static void LoadCreate_MatchesCreate(
+            CertificateRequest request,
+            X509SignatureGenerator generator,
+            bool deterministicSignature)
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset notBefore = now.AddMonths(-1);
+            DateTimeOffset notAfter = now.AddMonths(1);
+            byte[] serial = new byte[] { 0x02, 0x04, 0x06, 0x08, 0x07, 0x05, 0x03, 0x01 };
+
+            request.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(request.PublicKey, false));
+            request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("0.0.1", null) }, false));
+
+            byte[] pkcs10 = request.CreateSigningRequest(generator);
+            CertificateRequest loaded = CertificateRequest.LoadSigningRequest(
+                pkcs10,
+                HashAlgorithmName.SHA256,
+                CertificateRequestLoadOptions.UnsafeLoadCertificateExtensions);
+
+            using (X509Certificate2 one = request.Create(request.SubjectName, generator, notBefore, notAfter, serial))
+            using (X509Certificate2 two = loaded.Create(request.SubjectName, generator, notBefore, notAfter, serial))
+            {
+                if (deterministicSignature)
+                {
+                    AssertExtensions.SequenceEqual(one.RawDataMemory.Span, two.RawDataMemory.Span);
+                }
+                else
+                {
+                    // tbsCertificate and signatureAlgorithm should match, signature should not.
+                    //
+                    // Certificate  ::=  SEQUENCE  {
+                    //      tbsCertificate       TBSCertificate,
+                    //      signatureAlgorithm   AlgorithmIdentifier,
+                    //      signature            BIT STRING  }
+
+                    AsnValueReader readerOne = new AsnValueReader(one.RawDataMemory.Span, AsnEncodingRules.DER);
+                    AsnValueReader readerTwo = new AsnValueReader(two.RawDataMemory.Span, AsnEncodingRules.DER);
+
+                    AsnValueReader certOne = readerOne.ReadSequence();
+                    AsnValueReader certTwo = readerTwo.ReadSequence();
+                    readerOne.ThrowIfNotEmpty();
+                    readerTwo.ThrowIfNotEmpty();
+
+                    AssertExtensions.SequenceEqual(certOne.ReadEncodedValue(), certTwo.ReadEncodedValue());
+                    AssertExtensions.SequenceEqual(certOne.ReadEncodedValue(), certTwo.ReadEncodedValue());
+                    AssertExtensions.SequenceNotEqual(certOne.ReadEncodedValue(), certTwo.ReadEncodedValue());
+                    certOne.ThrowIfNotEmpty();
+                    certTwo.ThrowIfNotEmpty();
+                }
+            }
         }
 
         private static void VerifyBigExponentRequest(
