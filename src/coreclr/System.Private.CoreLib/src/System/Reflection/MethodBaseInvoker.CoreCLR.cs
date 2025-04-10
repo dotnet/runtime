@@ -11,18 +11,9 @@ namespace System.Reflection
 
         internal unsafe MethodBaseInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
         {
-            if (method.Name == "__nevertrue__")
-            {
-                // We temporarily need to make the intrinsics non-trimmable and called so R2R includes them.
-                // Once the intrinsics are used by reflection, we don't need to do this.
-                InvokeHelpers.KeepIntrinsics();
-            }
-            else
-            {
-                _signature = method.Signature;
-                _invocationFlags = method.ComputeAndUpdateInvocationFlags();
-                _invokeFunc_RefArgs = InterpretedInvoke_Method;
-            }
+            _signature = method.Signature;
+            _invocationFlags = method.ComputeAndUpdateInvocationFlags();
+            _invokeFunc_RefArgs = InterpretedInvoke_Method;
         }
 
         internal unsafe MethodBaseInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.Signature.Arguments)

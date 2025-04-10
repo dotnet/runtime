@@ -486,7 +486,7 @@ DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
 DEFINE_CLASS(METHODBASEINVOKER,     Reflection,             MethodBaseInvoker)
 
-DEFINE_CLASS(INVOKE_HELPERS,        Reflection,             InvokeHelpers)
+DEFINE_CLASS(INVOKE_HELPERS,        Reflection,             InstanceCalliHelper)
 
 DEFINE_CLASS_U(Reflection,          RuntimeMethodInfo,      NoClass)
 DEFINE_FIELD_U(m_handle,            ReflectMethodObject,    m_pMD)

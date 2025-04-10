@@ -8,7 +8,7 @@
 
 namespace Internal.IL
 {
-    public class InvokeHelpersIntrinsics
+    public class InstanceCalliHelperIntrinsics
     {
         public static MethodIL EmitIL(MethodDesc method)
         {

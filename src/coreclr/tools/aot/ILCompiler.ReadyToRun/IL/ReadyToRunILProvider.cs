@@ -85,9 +85,9 @@ namespace Internal.IL
                 return UnsafeIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name == "InvokeHelpers" && mdType.Namespace == "System.Reflection")
+            if (mdType.Name == "InstanceCalliHelper" && mdType.Namespace == "System.Reflection")
             {
-                return InvokeHelpersIntrinsics.EmitIL(method);
+                return InstanceCalliHelperIntrinsics.EmitIL(method);
             }
 
             return null;
