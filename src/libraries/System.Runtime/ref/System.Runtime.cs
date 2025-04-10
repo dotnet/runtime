@@ -14093,6 +14093,7 @@ namespace System.Runtime.ExceptionServices
     public static partial class ExceptionHandling
     {
         public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
+        public static void RaiseAppDomainUnhandledExceptionEvent(object exception) { }
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {

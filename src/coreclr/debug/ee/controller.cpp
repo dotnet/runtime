@@ -4469,7 +4469,19 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
         ThisFunctionMayHaveTriggerAGC();
     }
 #endif
-
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    if (pCurThread->m_State & Thread::TS_SSToExitApcCall)
+    {
+        if (!CheckActivationSafePoint(GetIP(pContext)))
+        {
+            return FALSE;
+        }
+        pCurThread->SetThreadState(Thread::TS_SSToExitApcCallDone);
+        pCurThread->ResetThreadState(Thread::TS_SSToExitApcCall);        
+        DebuggerController::UnapplyTraceFlag(pCurThread);
+        pCurThread->MarkForSuspensionAndWait(Thread::TS_DebugSuspendPending);
+    }
+#endif
 
 
     // Must restore the filter context. After the filter context is gone, we're
@@ -5926,7 +5938,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
 #ifdef TARGET_X86
     LOG((LF_CORDB,LL_INFO1000, "GetJitInfo for pc = 0x%x (addr of "
         "that value:0x%x)\n", (const BYTE*)(GetControlPC(&info->m_activeFrame.registers)),
-        info->m_activeFrame.registers.PCTAddr));
+        GetRegdisplayPCTAddr(&info->m_activeFrame.registers)));
 #endif
 
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and

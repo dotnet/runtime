@@ -76,6 +76,7 @@ System.Net.Http.WinHttpHandler</PackageDescription>
              Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs"
              Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
+    <Compile Include="System\Net\Http\CachedCertificateValue.cs" />
     <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />
     <Compile Include="System\Net\Http\NoWriteNoSeekStreamContent.cs" />
     <Compile Include="System\Net\Http\WinHttpAuthHelper.cs" />
@@ -113,6 +114,7 @@ System.Net.Http.WinHttpHandler</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 

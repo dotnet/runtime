@@ -72,6 +72,18 @@ namespace System.Threading
 
                 try
                 {
+#if TARGET_OSX || NATIVEAOT
+                    // On other platforms, when the underlying native thread is created,
+                    // the thread name is set to the name of the managed thread by another thread.
+                    // However, on OS X and NativeAOT (across all OSes), only the thread itself can set its name.
+                    // Therefore, by this point the native thread is still unnamed as it has not started yet.
+                    Thread thread = Thread.CurrentThread;
+                    if (!string.IsNullOrEmpty(thread.Name))
+                    {
+                        // Name the underlying native thread to match the managed thread name.
+                        thread.ThreadNameChanged(thread.Name);
+                    }
+#endif
                     if (start is ThreadStart threadStart)
                     {
                         threadStart();
@@ -719,15 +731,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetCurrentProcessorId()
         {
-            if (s_isProcessorNumberReallyFast)
-                return GetCurrentProcessorNumber();
-
             return ProcessorIdCache.GetCurrentProcessorId();
         }
-
-        // a speed check will determine refresh rate of the cache and will report if caching is not advisable.
-        // we will record that in a readonly static so that it could become a JIT constant and bypass caching entirely.
-        private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck();
 
 #if FEATURE_WASM_MANAGED_THREADS
         [ThreadStatic]

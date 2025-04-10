@@ -19,9 +19,6 @@
 #endif // FEATURE_INTERPRETER
 
 #include "gcinfodecoder.h"
-#ifdef FEATURE_EH_FUNCLETS
-#define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
-#endif
 
 #include "exinfo.h"
 
@@ -119,8 +116,7 @@ TADDR CrawlFrame::GetAmbientSPFromCrawlFrame()
         GetRegisterSet(),
         GetCodeInfo(),
         GetRelOffset(),
-        nestingLevel,
-        GetCodeManState()
+        nestingLevel
         );
 
 #elif defined(TARGET_ARM)
@@ -395,6 +391,7 @@ void ExInfoWalker::WalkToManaged()
 #endif // defined(ELIMINATE_FEF)
 
 #ifdef FEATURE_EH_FUNCLETS
+
 // static
 UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /*= NULL*/)
 {
@@ -408,11 +405,11 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
     CONTRACTL_END;
 
 #ifdef TARGET_X86
-    EECodeInfo codeInfo;
+    EECodeInfo tempCodeInfo;
     if (pCodeInfo == NULL)
     {
-        codeInfo.Init(GetControlPC(pRD));
-        pCodeInfo = &codeInfo;
+        tempCodeInfo.Init(GetControlPC(pRD));
+        pCodeInfo = &tempCodeInfo;
     }
 #endif
 
@@ -435,15 +432,14 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
     else
     {
 #ifdef TARGET_X86
-        GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-        hdrInfo hdrInfoBody;
-        DWORD hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, pCodeInfo->GetRelOffset(), &hdrInfoBody);
+        hdrInfo *hdrInfoBody;
+        PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
         ::UnwindStackFrameX86(pRD,
                             PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
                             pCodeInfo->GetRelOffset(),
-                            &hdrInfoBody,
-                            dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                            hdrInfoBody,
+                            table,
                             PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)),
                             pCodeInfo->IsFunclet(),
                             true);
@@ -507,15 +503,14 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     rd.pCurrentContext = pContext;
     rd.pCurrentContextPointers = pContextPointers != NULL ? pContextPointers : &rd.ctxPtrsOne;
 
-    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    hdrInfo hdrInfoBody;
-    DWORD hdrInfoSize = (DWORD)DecodeGCHdrInfo(gcInfoToken, pCodeInfo->GetRelOffset(), &hdrInfoBody);
+    hdrInfo *hdrInfoBody;
+    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
     ::UnwindStackFrameX86(&rd,
                           PTR_CBYTE(pCodeInfo->GetSavedMethodCode()),
                           pCodeInfo->GetRelOffset(),
-                          &hdrInfoBody,
-                          dac_cast<PTR_CBYTE>(gcInfoToken.Info) + hdrInfoSize,
+                          hdrInfoBody,
+                          table,
                           PTR_CBYTE(pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo)),
                           pCodeInfo->IsFunclet(),
                           true);
@@ -625,7 +620,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 {
     PCODE uControlPc;
 
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
+#if defined(_DEBUG) && defined(TARGET_WINDOWS) && !defined(TARGET_X86)
     UINT_PTR uImageBase;
 
     PT_RUNTIME_FUNCTION pFunctionEntry  = RtlLookupFunctionEntry((UINT_PTR)GetIP(pContext),
@@ -633,7 +628,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
                                                                 NULL);
 
     CONSISTENCY_CHECK(NULL == pFunctionEntry);
-#endif // _DEBUG && !TARGET_UNIX
+#endif // _DEBUG && TARGET_WINDOWS && !TARGET_X86
 
 #if defined(TARGET_AMD64)
 
@@ -1385,9 +1380,6 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
 //    Fields updated by ProcessIp():
 //    isFrameless, and codeInfo
 //
-//    Fields updated by ProcessCurrentFrame():
-//    codeManState
-//
 
 void StackFrameIterator::ResetCrawlFrame()
 {
@@ -1628,7 +1620,6 @@ StackWalkAction StackFrameIterator::Filter(void)
         fSkippingFunclet = false;
 
 #if defined(FEATURE_EH_FUNCLETS)
-        ExceptionTracker* pTracker = NULL;
         ExInfo* pExInfo = NULL;
 
         pExInfo = (PTR_ExInfo)m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
@@ -1746,70 +1737,6 @@ ProcessFuncletsForGCReporting:
                     // Check if we are in the mode of enumerating GC references (or not)
                     if (m_flags & GC_FUNCLET_REFERENCE_REPORTING)
                     {
-#ifdef TARGET_UNIX
-                        // For interleaved exception handling on non-windows systems, we need to find out if the current frame
-                        // was a caller of an already executed exception handler based on the previous exception trackers.
-                        // The handler funclet frames are already gone from the stack, so the exception trackers are the
-                        // only source of evidence about it.
-                        // This is different from Windows where the full stack is preserved until an exception is fully handled
-                        // and so we can detect it just from walking the stack.
-                        // The filter funclet frames are different, they behave the same way on Windows and Unix. They can be present
-                        // on the stack when we reach their parent frame if the filter hasn't finished running yet or they can be
-                        // gone if the filter completed running, either successfully or with unhandled exception.
-                        // So the special handling below ignores trackers belonging to filter clauses.
-                        bool fProcessingFilterFunclet = !m_sfFuncletParent.IsNull() && !(m_fProcessNonFilterFunclet || m_fProcessIntermediaryNonFilterFunclet);
-                        if (!fRecheckCurrentFrame && !fSkippingFunclet && (pTracker != NULL) && !fProcessingFilterFunclet)
-                        {
-                            // The stack walker is not skipping frames now, which means it didn't find a funclet frame that
-                            // would require skipping the current frame. If we find a tracker with caller of actual handling
-                            // frame matching the current frame, it means that the funclet stack frame was reclaimed.
-                            StackFrame sfFuncletParent;
-                            ExceptionTracker* pCurrTracker = pTracker;
-
-                            bool hasFuncletStarted = pTracker->GetEHClauseInfo()->IsManagedCodeEntered();
-
-                            while (pCurrTracker != NULL)
-                            {
-                                // Ignore exception trackers for filter clauses, since their frames are handled the same way as on Windows
-                                if (pCurrTracker->GetEHClauseInfo()->GetClauseType() != COR_PRF_CLAUSE_FILTER)
-                                {
-                                    if (hasFuncletStarted)
-                                    {
-                                        sfFuncletParent = pCurrTracker->GetCallerOfEnclosingClause();
-                                        if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
-                                        {
-                                            break;
-                                        }
-                                    }
-
-                                    sfFuncletParent = pCurrTracker->GetCallerOfCollapsedEnclosingClause();
-                                    if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
-                                    {
-                                        break;
-                                    }
-                                }
-
-                                // Funclets handling exception for trackers older than the current one were always started,
-                                // since the current tracker was created due to an exception in the funclet belonging to
-                                // the previous tracker.
-                                hasFuncletStarted = true;
-                                pCurrTracker = (PTR_ExceptionTracker)pCurrTracker->GetPreviousExceptionTracker();
-                            }
-
-                            if (pCurrTracker != NULL)
-                            {
-                                // The current frame is a parent of a funclet that was already unwound and removed from the stack
-                                // Set the members the same way we would set them on Windows when we
-                                // would detect this just from stack walking.
-                                m_sfParent = sfFuncletParent;
-                                m_sfFuncletParent = sfFuncletParent;
-                                m_fProcessNonFilterFunclet = true;
-                                m_fDidFuncletReportGCReferences = false;
-                                fSkippingFunclet = true;
-                            }
-                        }
-#endif // TARGET_UNIX
-
                         fRecheckCurrentFrame = false;
                         // Do we already have a reference to a funclet parent?
                         if (!m_sfFuncletParent.IsNull())
@@ -2095,9 +2022,8 @@ ProcessFuncletsForGCReporting:
                                         STRESS_LOG2(LF_GCROOTS, LL_INFO100,
                                             "STACKWALK: Reached parent of funclet which didn't report GC roots, since funclet is already unwound, pExInfo->m_sfCallerOfActualHandlerFrame=%p, m_sfFuncletParent=%p\n", (void*)pExInfo->m_sfCallerOfActualHandlerFrame.SP, (void*)m_sfFuncletParent.SP);
 
-                                        _ASSERT(pExInfo != NULL || pTracker != NULL);
-                                        if ((pExInfo && pExInfo->m_sfCallerOfActualHandlerFrame == m_sfFuncletParent) ||
-                                            (pTracker && pTracker->GetCallerOfActualHandlingFrame() == m_sfFuncletParent))
+                                        _ASSERT(pExInfo != NULL);
+                                        if (pExInfo && pExInfo->m_sfCallerOfActualHandlerFrame == m_sfFuncletParent)
                                         {
                                             // we should not skip reporting for this parent frame
                                             shouldSkipReporting = false;
@@ -2544,8 +2470,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
                             &m_cachedCodeInfo,
                             m_codeManFlags
                                 | m_crawl.GetCodeManagerFlags()
-                                | ((m_flags & PROFILER_DO_STACK_SNAPSHOT) ?  SpeculativeStackwalk : 0),
-                                                    &m_crawl.codeManState))
+                                | ((m_flags & PROFILER_DO_STACK_SNAPSHOT) ?  SpeculativeStackwalk : 0)))
         {
             LOG((LF_CORPROF, LL_INFO100, "**PROF: m_crawl.GetCodeManager()->UnwindStackFrame failure leads to SWA_FAILED.\n"));
             retVal = SWA_FAILED;
@@ -2786,6 +2711,16 @@ void StackFrameIterator::ProcessIp(PCODE Ip)
     m_crawl.codeInfo.Init(Ip, m_scanFlag);
 
     m_crawl.isFrameless = !!m_crawl.codeInfo.IsValid();
+
+#ifdef TARGET_X86
+    if (m_crawl.isFrameless)
+    {
+        // Optimization: Ensure that we decode GC info header early. We will reuse
+        // it several times.
+        hdrInfo *hdrInfoBody;
+        m_crawl.codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
+    }
+#endif
 } // StackFrameIterator::ProcessIp()
 
 //---------------------------------------------------------------------------------------
@@ -2923,12 +2858,6 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             return;
         }
 
-        m_crawl.codeManState.dwIsSet = 0;
-#if defined(_DEBUG)
-        memset((void *)m_crawl.codeManState.stateBuf, 0xCD,
-               sizeof(m_crawl.codeManState.stateBuf));
-#endif // _DEBUG
-
 #ifdef FEATURE_INTERPRETER
         if (!m_crawl.isFrameless)
         {
@@ -2942,6 +2871,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     PREGDISPLAY pRD = m_crawl.GetRegisterSet();
                     SetIP(pRD->pCurrentContext, (TADDR)pTOSInterpMethodContextFrame->ip);
                     SetSP(pRD->pCurrentContext, dac_cast<TADDR>(pTOSInterpMethodContextFrame));
+                    SetFP(pRD->pCurrentContext, (TADDR)pTOSInterpMethodContextFrame->pStack);
                     pRD->pCurrentContext->ContextFlags = CONTEXT_CONTROL;
                     SyncRegDisplayToCurrentContext(pRD);
                     ProcessIp(GetControlPC(pRD));
@@ -3141,8 +3071,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
     m_pCachedGSCookie = (GSCookie*)m_crawl.GetCodeManager()->GetGSCookieAddr(
                                                         m_crawl.pRD,
                                                         &m_crawl.codeInfo,
-                                                        m_codeManFlags,
-                                                        &m_crawl.codeManState);
+                                                        m_codeManFlags);
 #endif // !DACCESS_COMPILE
 
     if (!(m_flags & SKIP_GSCOOKIE_CHECK) && m_pCachedGSCookie)
@@ -3212,9 +3141,9 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
 #endif // ELIMINATE_FEF
 
 #ifdef TARGET_X86
-    hdrInfo gcHdrInfo;
-    DecodeGCHdrInfo(m_crawl.codeInfo.GetGCInfoToken(), 0, &gcHdrInfo);
-    bool hasReversePInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+    hdrInfo *gcHdrInfo;
+    m_crawl.codeInfo.DecodeGCHdrInfo(&gcHdrInfo);
+    bool hasReversePInvoke = gcHdrInfo->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // TARGET_X86
 
     ProcessIp(GetControlPC(m_crawl.pRD));

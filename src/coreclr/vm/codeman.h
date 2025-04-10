@@ -67,6 +67,9 @@ Abstract:
 #include "pedecoder.h"
 #include "gcinfo.h"
 #include "eexcp.h"
+#ifdef TARGET_X86
+#include "gc_unwind_x86.h"
+#endif
 
 class MethodDesc;
 class ICorJitCompiler;
@@ -87,6 +90,7 @@ class EECodeInfo;
 
 #define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)GetOsPageSize()-1))
 #define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (GetOsPageSize()-1)) & ~((size_t)GetOsPageSize()-1))
+
 
 enum StubCodeBlockKind : int
 {
@@ -111,6 +115,44 @@ enum StubCodeBlockKind : int
     // Placeholdes used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
 };
+
+inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
+{
+    switch (kind)
+    {
+    case STUB_CODE_BLOCK_JUMPSTUB:
+        return "JumpStub";
+    case STUB_CODE_BLOCK_STUBLINK:
+        return "StubLinkStub";
+    case STUB_CODE_BLOCK_MANAGED:
+        return "Managed";
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+        return "MethodCallThunk";
+    case STUB_CODE_BLOCK_DYNAMICHELPER:
+        return "MethodCallThunk";
+    case STUB_CODE_BLOCK_FIXUPPRECODE:
+        return "MethodCallThunk";
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+        return "VSD_DispatchStub";
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+        return "VSD_ResolveStub";
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+        return "VSD_LookupStub";
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
+        return "VSD_VTableStub";
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+    default:
+        return "Unknown";
+    }
+}
+
+void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind);
+#ifndef FEATURE_PERFMAP
+inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
+{
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Method header which exists just before the code.
@@ -2863,6 +2905,8 @@ public:
         WRAPPER_NO_CONTRACT;
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
+
+    PTR_CBYTE   DecodeGCHdrInfo(hdrInfo   ** infoPtr);
 #endif // TARGET_X86
 
 #if defined(TARGET_WASM)
@@ -2886,6 +2930,11 @@ private:
 #ifdef FEATURE_EH_FUNCLETS
     PTR_RUNTIME_FUNCTION m_pFunctionEntry;
 #endif // FEATURE_EH_FUNCLETS
+
+#ifdef TARGET_X86
+    PTR_CBYTE           m_hdrInfoTable;
+    hdrInfo             m_hdrInfoBody;
+#endif
 
 #ifdef TARGET_AMD64
     // Simple helper to return a pointer to the UNWIND_INFO given the offset to the unwind info.
