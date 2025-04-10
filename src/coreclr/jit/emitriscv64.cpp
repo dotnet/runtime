@@ -4790,7 +4790,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_LCL_ADDR, GT_LEA));
+        assert(addr->OperIs(GT_LCL_ADDR, GT_LEA, GT_CNS_INT));
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -4947,6 +4947,18 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 {
                     emitIns_R_S(ins, attr, dataReg, lclNum, offset);
                 }
+            }
+            else if (addr->OperIs(GT_CNS_INT))
+            {
+                assert(memBase == indir->Addr());
+                ssize_t cns = addr->AsIntCon()->IconValue();
+
+                // Move lower 11-bits to load / store offset
+                uint64_t off = cns & 0x7ff;
+                cns &= 0xfffffffffffff800;
+
+                emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
+                emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
             }
             else if (isValidSimm12(offset))
             {

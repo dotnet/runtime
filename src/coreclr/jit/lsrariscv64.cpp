@@ -854,6 +854,10 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 buildInternalIntRegisterDefForNode(indirTree);
             }
         }
+        else if (addr->OperGet() == GT_CNS_INT)
+        {
+            buildInternalIntRegisterDefForNode(indirTree);
+        }
     }
 
 #ifdef FEATURE_SIMD
