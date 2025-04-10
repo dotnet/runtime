@@ -2209,6 +2209,10 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
             pObjRef = (OBJECTREF*)(fp + spOffset);
     }
 
+    if (pObjRef)
+        printf("interp sp+%u at offset %p points to %p\n", spOffset, pObjRef, *(void **)pObjRef);
+    else
+        printf("interp sp+%u has a null address", spOffset);
     return pObjRef;
 }
 #endif

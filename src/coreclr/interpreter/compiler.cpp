@@ -925,8 +925,9 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
         uint32_t startOffset = ConvertOffset(GetLiveStartOffset(i)),
             endOffset = ConvertOffset(GetLiveEndOffset(i));
         INTERP_DUMP(
-            "Recording gcinfo slot %u live range for var #%d: [%d - %u]\n",
+            "Recording gcinfo slot %u live range for var #%d: [IR_%04x - IR_%04x] [%u - %u]\n",
             slotsByOffset[slotIndex], i,
+            GetLiveStartOffset(i), GetLiveEndOffset(i),
             startOffset, endOffset
         );
         gcInfoEncoder->SetSlotState(startOffset, slot, GC_SLOT_LIVE);
@@ -937,6 +938,8 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     gcInfoEncoder->Emit();
+
+    fflush(stdout);
 }
 
 InterpMethod* InterpCompiler::CreateInterpMethod()
