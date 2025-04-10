@@ -1,5 +1,5 @@
 @if not defined _echo @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 :SetupArgs
 :: Initialize the args that will be passed to cmake
@@ -20,6 +20,7 @@ set CMAKE_BUILD_TYPE=Debug
 set __Ninja=1
 set __icuDir=""
 set __usePThreads=0
+set __useMemory64=0
 set __ExtraCmakeParams=
 
 :Arg_Loop
@@ -47,6 +48,7 @@ if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
 
 if /i [%1] == [icudir] ( set __icuDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [usepthreads] ( set __usePThreads=1&&shift&goto Arg_Loop)
+if /i [%1] == [useMemory64] ( set __useMemory64=1&&shift&goto Arg_Loop)
 
 if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=$2"&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [-cmakeargs] ( set __ExtraCmakeParams=%__ExtraCmakeParams% %2&&shift&&shift&goto Arg_Loop)
@@ -79,6 +81,10 @@ if NOT %__icuDir% == "" (
 )
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_USE_PTHREADS=%__usePThreads%"
 
+if %__useMemory64% == 1 (
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_USE_MEMORY64=1"
+    echo "MRH_LOGGING_CMD: set -DCMAKE_USE_MEMORY64, params now: !__ExtraCmakeParams!""
+)
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 

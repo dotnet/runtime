@@ -39,7 +39,7 @@
   <Target Name="BuildNativeUnix"
           DependsOnTargets="GenerateNativeVersionFile"
           BeforeTargets="Build"
-          Condition="!$([MSBuild]::IsOsPlatform(Windows))">
+          Condition="!$([MSBuild]::IsOsPlatform(Windows))">    
     <PropertyGroup>
       <_BuildNativeArgs Condition="'$(Ninja)' == 'true'">$(_BuildNativeArgs) ninja</_BuildNativeArgs>
       <!--
@@ -96,10 +96,18 @@
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
-        <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">-DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
-        <_MonoWasmMTCMakeArgs Condition="'$(CMakeArgs)' != ''"> $(_MonoWasmMTCMakeArgs)</_MonoWasmMTCMakeArgs>
+        <_BuildNativeArgs Condition="'$(WasmEnableMemory64)' == 'true'">$(_BuildNativeArgs) useMemory64</_BuildNativeArgs>
+        <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">-DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>        
+        <_MonoWasmMTCMakeArgs Condition="'$(CMakeArgs)' != ''"> $(_MonoWasmMTCMakeArgs)</_MonoWasmMTCMakeArgs>        
         <_BuildNativeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != ''">$(_BuildNativeArgs) -cmakeargs "$(CMakeArgs)$(_MonoWasmMTCMakeArgs)"</_BuildNativeArgs>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(WasmEnableMemory64)'">
+      
+    </PropertyGroup >
+
+    <Message Text="MRH_LOGGING: Building BuildNativeWindows, cmakeargs = $(CMakeArgs). _BuildNativeArgs = $(_BuildNativeArgs)" Importance="high" />
+    
     <!-- Run script that uses CMake to generate and build the native files. -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
     <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" />
