@@ -666,7 +666,7 @@ void MorphCopyBlockHelper::PrepareSrc()
     assert(m_store->TypeGet() == m_src->TypeGet());
     if (m_store->TypeIs(TYP_STRUCT))
     {
-        assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
+        assert(m_blockLayout->CanAssignFrom(m_src->GetLayout(m_comp)));
     }
 }
 

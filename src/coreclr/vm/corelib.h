@@ -99,7 +99,7 @@ DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, ACCESSTYPE,        _accessType)
 DEFINE_CLASS(APPCONTEXT,            System,                 AppContext)
 DEFINE_METHOD(APPCONTEXT,   SETUP,              Setup,          SM_PtrPtrChar_PtrPtrChar_Int_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_RetVoid)
-DEFINE_FIELD(APPCONTEXT, UNHANDLED_EXCEPTION,           UnhandledException)
+DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_Obj_RetVoid)
 DEFINE_FIELD(APPCONTEXT, FIRST_CHANCE_EXCEPTION,        FirstChanceException)
 
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
@@ -267,14 +267,23 @@ DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
-#ifndef TARGET_64BIT
-DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_INT64, MultiplyChecked,            SM_Long_Long_RetLong)
-DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_UINT64, MultiplyChecked,           SM_ULong_ULong_RetULong)
-#endif
-DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED, ConvertToInt32Checked,    NoSig)
-DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED, ConvertToUInt32Checked,  NoSig)
-DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED, ConvertToInt64Checked,    NoSig)
-DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED, ConvertToUInt64Checked,  NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED,    ConvertToInt32Checked,    NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED,   ConvertToUInt32Checked,   NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED,    ConvertToInt64Checked,    NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED,   ConvertToUInt64Checked,   NoSig)
+
+#ifdef TARGET_32BIT
+DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_INT64,      MultiplyChecked,          SM_Long_Long_RetLong)
+DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_UINT64,     MultiplyChecked,          SM_ULong_ULong_RetULong)
+DEFINE_METHOD(MATH,                 DIV_INT32,                   DivInt32,                 NoSig)
+DEFINE_METHOD(MATH,                 DIV_UINT32,                  DivUInt32,                NoSig)
+DEFINE_METHOD(MATH,                 DIV_INT64,                   DivInt64,                 NoSig)
+DEFINE_METHOD(MATH,                 DIV_UINT64,                  DivUInt64,                NoSig)
+DEFINE_METHOD(MATH,                 MOD_INT32,                   ModInt32,                 NoSig)
+DEFINE_METHOD(MATH,                 MOD_UINT32,                  ModUInt32,                NoSig)
+DEFINE_METHOD(MATH,                 MOD_INT64,                   ModInt64,                 NoSig)
+DEFINE_METHOD(MATH,                 MOD_UINT64,                  ModUInt64,                NoSig)
+#endif // TARGET_32BIT
 
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
@@ -602,6 +611,9 @@ END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
 DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
+DEFINE_METHOD(MONITOR,              EXIT,                   Exit,                       SM_Obj_RetVoid)
+DEFINE_METHOD(MONITOR,              RELIABLEENTER,          Enter,                      SM_Obj_RefBool_RetVoid)
+DEFINE_METHOD(MONITOR,              EXIT_IF_TAKEN,          ExitIfLockTaken,            SM_Obj_RefBool_RetVoid)
 
 DEFINE_CLASS(THREAD_BLOCKING_INFO,  Threading,              ThreadBlockingInfo)
 DEFINE_FIELD(THREAD_BLOCKING_INFO,  OFFSET_OF_LOCK_OWNER_OS_THREAD_ID, s_monitorObjectOffsetOfLockOwnerOSThreadId)
@@ -886,9 +898,6 @@ DEFINE_METHOD(TYPE,                 GET_TYPE_FROM_HANDLE,   GetTypeFromHandle,  
 DEFINE_PROPERTY(TYPE,               IS_IMPORT,              IsImport,                   Bool)
 
 DEFINE_CLASS(TYPE_DELEGATOR,        Reflection,             TypeDelegator)
-
-DEFINE_CLASS(UNHANDLED_EVENTARGS,   System,                 UnhandledExceptionEventArgs)
-DEFINE_METHOD(UNHANDLED_EVENTARGS,  CTOR,                   .ctor,                      IM_Obj_Bool_RetVoid)
 
 DEFINE_CLASS(FIRSTCHANCE_EVENTARGS,   ExceptionServices,      FirstChanceExceptionEventArgs)
 DEFINE_METHOD(FIRSTCHANCE_EVENTARGS,  CTOR,                   .ctor,                      IM_Exception_RetVoid)

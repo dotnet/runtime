@@ -7,6 +7,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class ExpressionTreeRewriter : ExprVisitorBase
     {
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]

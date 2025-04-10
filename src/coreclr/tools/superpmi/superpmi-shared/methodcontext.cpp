@@ -1196,14 +1196,12 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_ALT_JIT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED:
         return "CORJIT_FLAG_FROZEN_ALLOC_ALLOWED";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_READYTORUN:
-        return "CORJIT_FLAG_READYTORUN";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_AOT:
+        return "CORJIT_FLAG_AOT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_ENTERLEAVE:
         return "CORJIT_FLAG_PROF_ENTERLEAVE";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE:
         return "CORJIT_FLAG_PROF_NO_PINVOKE_INLINE";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PREJIT:
-        return "CORJIT_FLAG_PREJIT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_RELOC:
         return "CORJIT_FLAG_RELOC";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_IL_STUB:
@@ -7494,7 +7492,7 @@ MethodContext::Environment MethodContext::cloneEnvironment()
     }
     if (GetStringConfigValue != nullptr)
     {
-        env.getStingConfigValue = new LightWeightMap<DWORD, DWORD>(*GetStringConfigValue);
+        env.getStringConfigValue = new LightWeightMap<DWORD, DWORD>(*GetStringConfigValue);
     }
     return env;
 }
@@ -7520,7 +7518,7 @@ bool MethodContext::IsEnvironmentHeaderEqual(const Environment& prevEnv)
     {
         return false;
     }
-    if (!AreLWMHeadersEqual(prevEnv.getStingConfigValue, GetStringConfigValue))
+    if (!AreLWMHeadersEqual(prevEnv.getStringConfigValue, GetStringConfigValue))
     {
         return false;
     }
@@ -7534,7 +7532,7 @@ bool MethodContext::IsEnvironmentContentEqual(const Environment& prevEnv)
     {
         return false;
     }
-    if (!IsStringContentEqual(prevEnv.getStingConfigValue, GetStringConfigValue))
+    if (!IsStringContentEqual(prevEnv.getStringConfigValue, GetStringConfigValue))
     {
         return false;
     }

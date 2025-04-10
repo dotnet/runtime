@@ -293,6 +293,7 @@ set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
     assemblynative.cpp
+    assemblyprobeextension.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
@@ -377,6 +378,7 @@ set(VM_SOURCES_WKS
     threaddebugblockinginfo.cpp
     threadsuspend.cpp
     typeparse.cpp
+    unsafeaccessors.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
@@ -390,6 +392,7 @@ set(VM_HEADERS_WKS
     ../inc/jithelpers.h
     appdomainnative.hpp
     assemblynative.hpp
+    ../inc/assemblyprobeextension.h
     assemblyspec.hpp
     assemblyspecbase.h
     baseassemblyspec.h
@@ -649,6 +652,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
     set(VM_SOURCES_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
         ${ARCH_SOURCES_DIR}/asmhelpers.asm
+        ${ARCH_SOURCES_DIR}/ehhelpers.asm
         ${ARCH_SOURCES_DIR}/gmsasm.asm
         ${ARCH_SOURCES_DIR}/jithelp.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm

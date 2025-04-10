@@ -206,6 +206,16 @@ FCFuncStart(gMathFuncs)
     FCFuncElement("Sqrt", COMDouble::Sqrt)
     FCFuncElement("Tan", COMDouble::Tan)
     FCFuncElement("Tanh", COMDouble::Tanh)
+#ifdef TARGET_32BIT
+    FCFuncElement("DivInt32Internal", DivModInt::DivInt32)
+    FCFuncElement("DivUInt32Internal", DivModInt::DivUInt32)
+    FCFuncElement("DivInt64Internal", DivModInt::DivInt64)
+    FCFuncElement("DivUInt64Internal", DivModInt::DivUInt64)
+    FCFuncElement("ModInt32Internal", DivModInt::ModInt32)
+    FCFuncElement("ModUInt32Internal", DivModInt::ModUInt32)
+    FCFuncElement("ModInt64Internal", DivModInt::ModInt64)
+    FCFuncElement("ModUInt64Internal", DivModInt::ModUInt64)
+#endif // TARGET_32BIT
 FCFuncEnd()
 
 FCFuncStart(gMathFFuncs)
@@ -314,11 +324,11 @@ FCFuncStart(gJitInfoFuncs)
 FCFuncEnd()
 
 FCFuncStart(gMonitorFuncs)
-    FCFuncElement("Enter", JIT_MonEnter)
-    FCFuncElement("ReliableEnter", JIT_MonReliableEnter)
-    FCFuncElement("ReliableEnterTimeout", JIT_MonTryEnter)
-    FCFuncElement("Exit", JIT_MonExit)
     FCFuncElement("IsEnteredNative", ObjectNative::IsLockHeld)
+
+    FCFuncElement("TryEnter_FastPath", ObjectNative::Monitor_TryEnter_FastPath)
+    FCFuncElement("TryEnter_FastPath_WithTimeout", ObjectNative::Monitor_TryEnter_FastPath_WithTimeout)
+    FCFuncElement("Exit_FastPath", ObjectNative::Monitor_Exit_FastPath)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeHelpers)
