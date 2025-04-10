@@ -5,13 +5,13 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace TestBitwiseClearShift
+namespace TestBic
 {
     public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         [Fact]
-        public static int CheckBitwiseClearShift()
+        public static int CheckBic()
         {
             bool fail = false;
 
@@ -91,6 +91,26 @@ namespace TestBitwiseClearShift
             }
 
             if (!BicsBinOpSingleLine(0x66665555, 0x9999AAAA, 0xFFFFFFFD, 0x2))
+            {
+                fail = true;
+            }
+
+            if (!BicsGreaterThan(1, 2))
+            {
+                fail = true;
+            }
+
+            if (!BicsGreaterThanEq(-2, -2))
+            {
+                fail = true;
+            }
+
+            if (!BicsLessThan(-2, 15))
+            {
+                fail = true;
+            }
+
+            if (!BicsLessThanEq(-6, 6))
             {
                 fail = true;
             }
@@ -265,6 +285,34 @@ namespace TestBitwiseClearShift
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return ((~a & b) != 0) & ((c & ~d) != 0);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsGreaterThan(int a, int b)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & ~b) > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsGreaterThanEq(int a, int b)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & ~b) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsLessThan(int a, int b)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & ~b) < 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsLessThanEq(int a, int b)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & ~b) <= 0;
         }
     }
 }
