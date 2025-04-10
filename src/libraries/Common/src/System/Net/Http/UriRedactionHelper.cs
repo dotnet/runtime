@@ -62,7 +62,7 @@ namespace System.Net.Http
 
             if (!uri.IsAbsoluteUri)
             {
-                // We cannot guarantee the redaction of UserInfo for relative Uris without implementing some subset of Uri parsing in this package.
+                // We cannot guarantee the redaction of UserInfo for relative Uris without implementing some subset of Uri parsing.
                 // To avoid this, we redact the whole Uri. Seeing a relative Uri here requires a custom handler chain with
                 // custom expansion logic implemented by the user's HttpMessageHandler.
                 // In such advanced scenarios we recommend users to log the Uri in their handler.
