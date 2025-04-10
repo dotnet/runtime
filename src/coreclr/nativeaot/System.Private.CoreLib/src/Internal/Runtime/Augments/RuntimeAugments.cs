@@ -547,6 +547,11 @@ namespace Internal.Runtime.Augments
             return result;
         }
 
+        public static unsafe IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
+        {
+            return RuntimeImports.RhResolveDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot));
+        }
+
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToMethodTable()->IsPointer;
