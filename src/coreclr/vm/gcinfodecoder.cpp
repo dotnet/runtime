@@ -2200,13 +2200,13 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
         // HACK: The register slot we stash the frame pointer into varies per-architecture.
         // CONTEXTGetFp is unavailable here (including its header doesn't work either).
         uint8_t* fp = (uint8_t *)
-#if defined(HOST_AMD64)
+#if defined(TARGET_AMD64)
         pRD->pCurrentContext->Rbp;
-#elif defined(HOST_ARM)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
         pRD->pCurrentContext->R7;
-#elif defined(HOST_S390X)
+#elif defined(TARGET_S390X)
         pRD->pCurrentContext->R11;
-#elif defined(HOST_POWERPC64)
+#elif defined(TARGET_POWERPC64)
         pRD->pCurrentContext->R31;
 #else
         NULL;
