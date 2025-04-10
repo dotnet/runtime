@@ -6689,8 +6689,7 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
             {
                 SetIP(pctx, 0);
 #ifdef TARGET_X86
-                pRD->ControlPC = pctx->Eip;
-                pRD->PCTAddr = (TADDR)&(pctx->Eip);
+                SetRegdisplayPCTAddr(pRD, (TADDR)&(pctx->Eip));
 #elif defined(TARGET_AMD64)
                 // nothing more to do here, on Win64 setting the IP to 0 is enough.
 #elif defined(TARGET_ARM)
@@ -6897,13 +6896,10 @@ struct ManagedThreadCallState
 {
     ADCallBackFcnType   pTarget;
     LPVOID                       args;
-    UnhandledExceptionLocation   filterType;
 
-    ManagedThreadCallState(ADCallBackFcnType Target,LPVOID Args,
-                        UnhandledExceptionLocation   FilterType):
+    ManagedThreadCallState(ADCallBackFcnType Target,LPVOID Args):
           pTarget(Target),
-          args(Args),
-          filterType(FilterType)
+          args(Args)
     {
         LIMITED_METHOD_CONTRACT;
     };
@@ -7158,10 +7154,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     PAL_ENDTRY;
 }
 
-// Establish the base of a managed thread
-static void ManagedThreadBase_Dispatch(ADCallBackFcnType pTarget,
-                                       LPVOID args,
-                                       UnhandledExceptionLocation filterType)
+void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
 {
     CONTRACTL
     {
@@ -7171,24 +7164,8 @@ static void ManagedThreadBase_Dispatch(ADCallBackFcnType pTarget,
     }
     CONTRACTL_END;
 
-    ManagedThreadCallState CallState(pTarget, args, filterType);
+    ManagedThreadCallState CallState(pTarget, args);
     ManagedThreadBase_DispatchOuter(&CallState);
-}
-
-// And here are the various exposed entrypoints for base thread behavior
-
-// The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
-void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
-{
-    WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_Dispatch(pTarget, args, ManagedThread);
-}
-
-// The Finalizer thread establishes exception handling at its base
-void ManagedThreadBase::FinalizerBase(ADCallBackFcnType pTarget)
-{
-    WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_Dispatch(pTarget, NULL, FinalizerThread);
 }
 
 //+----------------------------------------------------------------------------

@@ -14708,6 +14708,10 @@ EECodeInfo::EECodeInfo()
 #ifdef FEATURE_EH_FUNCLETS
     m_pFunctionEntry = NULL;
 #endif
+
+#ifdef TARGET_X86
+    m_hdrInfoTable = NULL;
+#endif
 }
 
 void EECodeInfo::Init(PCODE codeAddress)
@@ -14728,6 +14732,10 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     } CONTRACTL_END;
 
     m_codeAddress = codeAddress;
+
+#ifdef TARGET_X86
+    m_hdrInfoTable = NULL;
+#endif
 
     RangeSection * pRS = ExecutionManager::FindCodeRange(codeAddress, scanFlag);
     if (pRS == NULL)
@@ -14873,6 +14881,23 @@ BOOL EECodeInfo::HasFrameRegister()
 
 #endif // defined(FEATURE_EH_FUNCLETS)
 
+#if defined(TARGET_X86)
+
+PTR_CBYTE EECodeInfo::DecodeGCHdrInfo(hdrInfo ** infoPtr)
+{
+    if (m_hdrInfoTable == NULL)
+    {
+        GCInfoToken gcInfoToken = GetGCInfoToken();
+        DWORD hdrInfoSize = (DWORD)::DecodeGCHdrInfo(gcInfoToken, m_relOffset, &m_hdrInfoBody);
+        _ASSERTE(hdrInfoSize != 0);
+        m_hdrInfoTable = (PTR_CBYTE)gcInfoToken.Info + hdrInfoSize;
+    }
+
+    *infoPtr = &m_hdrInfoBody;
+    return m_hdrInfoTable;
+}
+
+#endif // TARGET_X86
 
 #if defined(TARGET_AMD64)
 // ----------------------------------------------------------------------------
