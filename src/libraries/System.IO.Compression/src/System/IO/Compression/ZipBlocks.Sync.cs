@@ -163,7 +163,6 @@ internal sealed partial class ZipCentralDirectoryFileHeader
     {
         header = null;
 
-        const int StackAllocationThreshold = 512;
 
         bytesRead = 0;
 
@@ -218,7 +217,7 @@ internal sealed partial class ZipCentralDirectoryFileHeader
             {
                 if (dynamicHeaderSize > StackAllocationThreshold)
                 {
-                    arrayPoolBuffer = System.Buffers.ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);
+                    arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);
                 }
 
                 Span<byte> collatedHeader = dynamicHeaderSize <= StackAllocationThreshold ? stackalloc byte[StackAllocationThreshold].Slice(0, dynamicHeaderSize) : arrayPoolBuffer.AsSpan(0, dynamicHeaderSize);
@@ -264,7 +263,7 @@ internal sealed partial class ZipCentralDirectoryFileHeader
         {
             if (arrayPoolBuffer != null)
             {
-                System.Buffers.ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
+                ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
             }
         }
 
@@ -284,32 +283,7 @@ internal sealed partial class ZipEndOfCentralDirectoryBlock
     public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
     {
         Span<byte> blockContents = stackalloc byte[TotalSize];
-
-        ushort numberOfEntriesTruncated = numberOfEntries > ushort.MaxValue ?
-                                                    ZipHelper.Mask16Bit : (ushort)numberOfEntries;
-        uint startOfCentralDirectoryTruncated = startOfCentralDirectory > uint.MaxValue ?
-                                                    ZipHelper.Mask32Bit : (uint)startOfCentralDirectory;
-        uint sizeOfCentralDirectoryTruncated = sizeOfCentralDirectory > uint.MaxValue ?
-                                                    ZipHelper.Mask32Bit : (uint)sizeOfCentralDirectory;
-
-        SignatureConstantBytes.CopyTo(blockContents[FieldLocations.Signature..]);
-        // number of this disk
-        BinaryPrimitives.WriteUInt16LittleEndian(blockContents[FieldLocations.NumberOfThisDisk..], 0);
-        // number of disk with start of CD
-        BinaryPrimitives.WriteUInt16LittleEndian(blockContents[FieldLocations.NumberOfTheDiskWithTheStartOfTheCentralDirectory..], 0);
-        // number of entries on this disk's cd
-        BinaryPrimitives.WriteUInt16LittleEndian(blockContents[FieldLocations.NumberOfEntriesInTheCentralDirectoryOnThisDisk..], numberOfEntriesTruncated);
-        // number of entries in entire cd
-        BinaryPrimitives.WriteUInt16LittleEndian(blockContents[FieldLocations.NumberOfEntriesInTheCentralDirectory..], numberOfEntriesTruncated);
-        BinaryPrimitives.WriteUInt32LittleEndian(blockContents[FieldLocations.SizeOfCentralDirectory..], sizeOfCentralDirectoryTruncated);
-        BinaryPrimitives.WriteUInt32LittleEndian(blockContents[FieldLocations.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber..], startOfCentralDirectoryTruncated);
-
-        // Should be valid because of how we read archiveComment in TryReadBlock:
-        Debug.Assert(archiveComment.Length <= ZipFileCommentMaxLength);
-
-        // zip file comment length
-        BinaryPrimitives.WriteUInt16LittleEndian(blockContents[FieldLocations.ArchiveCommentLength..], (ushort)archiveComment.Length);
-
+        WriteBlockCore(blockContents, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory, archiveComment.Length);
         stream.Write(blockContents);
         if (archiveComment.Length > 0)
         {
@@ -320,11 +294,10 @@ internal sealed partial class ZipEndOfCentralDirectoryBlock
     public static bool TryReadBlock(Stream stream, out ZipEndOfCentralDirectoryBlock eocdBlock)
     {
         Span<byte> blockContents = stackalloc byte[TotalSize];
-        int bytesRead;
+
+        int bytesRead = stream.Read(blockContents);
 
         eocdBlock = new();
-        bytesRead = stream.Read(blockContents);
-
         if (bytesRead < TotalSize)
         {
             return false;
@@ -335,16 +308,7 @@ internal sealed partial class ZipEndOfCentralDirectoryBlock
             return false;
         }
 
-        eocdBlock.Signature = BinaryPrimitives.ReadUInt32LittleEndian(blockContents[FieldLocations.Signature..]);
-        eocdBlock.NumberOfThisDisk = BinaryPrimitives.ReadUInt16LittleEndian(blockContents[FieldLocations.NumberOfThisDisk..]);
-        eocdBlock.NumberOfTheDiskWithTheStartOfTheCentralDirectory = BinaryPrimitives.ReadUInt16LittleEndian(blockContents[FieldLocations.NumberOfTheDiskWithTheStartOfTheCentralDirectory..]);
-        eocdBlock.NumberOfEntriesInTheCentralDirectoryOnThisDisk = BinaryPrimitives.ReadUInt16LittleEndian(blockContents[FieldLocations.NumberOfEntriesInTheCentralDirectoryOnThisDisk..]);
-        eocdBlock.NumberOfEntriesInTheCentralDirectory = BinaryPrimitives.ReadUInt16LittleEndian(blockContents[FieldLocations.NumberOfEntriesInTheCentralDirectory..]);
-        eocdBlock.SizeOfCentralDirectory = BinaryPrimitives.ReadUInt32LittleEndian(blockContents[FieldLocations.SizeOfCentralDirectory..]);
-        eocdBlock.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber =
-            BinaryPrimitives.ReadUInt32LittleEndian(blockContents[FieldLocations.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber..]);
-
-        ushort commentLength = BinaryPrimitives.ReadUInt16LittleEndian(blockContents[FieldLocations.ArchiveCommentLength..]);
+        TryReadBlockCore(blockContents, eocdBlock, out ushort commentLength);
 
         if (stream.Position + commentLength > stream.Length)
         {
