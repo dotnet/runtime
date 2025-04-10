@@ -152,6 +152,8 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_BitwiseAnd,
 	SN_BitwiseOr,
 	SN_Ceiling,
+	SN_ConvertToInt32,
+	SN_ConvertToSingle,
 	SN_Divide,
 	SN_Equals,
 	SN_Floor,
@@ -1219,6 +1221,8 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_op_UnsignedRightShift:
 				cmethod_name = "ShiftRightLogical";
 				break;
+			case SN_ConvertToInt32:
+				cmethod_name = "ConvertToInt32Saturate";
 			case SN_ShiftLeft:
 			case SN_ShiftRightLogical:
 			case SN_ShiftRightArithmetic:
@@ -1230,6 +1234,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_AndNot:
 			case SN_Subtract:
 			case SN_Ceiling:
+			case SN_ConvertToSingle:
 			case SN_Floor:
 			case SN_Abs:
 			case SN_Negate:
