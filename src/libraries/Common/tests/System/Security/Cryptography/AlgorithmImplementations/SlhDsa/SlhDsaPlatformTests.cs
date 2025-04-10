@@ -10,10 +10,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [Fact]
         public static void IsSupported_AgreesWithPlatform()
         {
-            Assert.Equal(PlatformSupportsMLKem(), SlhDsa.IsSupported);
+            Assert.Equal(PlatformSupportsSlhDsa(), SlhDsa.IsSupported);
         }
 
-        private static bool PlatformSupportsMLKem()
+        private static bool PlatformSupportsSlhDsa()
         {
             if (PlatformDetection.IsOpenSsl3_5)
             {
