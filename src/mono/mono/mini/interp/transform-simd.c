@@ -153,6 +153,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_BitwiseOr,
 	SN_Ceiling,
 	SN_ConvertToInt32,
+	SN_ConvertToSingle,
 	SN_Divide,
 	SN_Equals,
 	SN_Floor,
@@ -1227,6 +1228,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Multiply:
 			case SN_Divide:
 			case SN_Ceiling:
+			case SN_ConvertToSingle:
 			case SN_Floor:
 			case SN_Abs:
 			case SN_Negate:
