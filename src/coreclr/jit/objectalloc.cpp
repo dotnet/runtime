@@ -1782,14 +1782,13 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 GenTree* const addr = parent->AsIndir()->Addr();
 
                 // For loads from local structs we may be tracking the underlying fields.
-
                 //
                 // We can assume that the local being read is lclNum, since we have walked up to this node from a leaf
                 // local.
                 //
                 // We only track through the first indir.
                 //
-                if (m_trackFields && isAddress && addr->OperIs(GT_FIELD_ADDR) && (lclDsc->TypeGet() != TYP_REF))
+                if (m_trackFields && isAddress && addr->OperIs(GT_FIELD_ADDR))
                 {
                     JITDUMP("... load local.field\n");
                     ++parentIndex;
@@ -1953,7 +1952,6 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
             case GT_QMARK:
             case GT_ADD:
             case GT_FIELD_ADDR:
-            case GT_LCL_ADDR:
             case GT_BOX:
                 if (parent->TypeGet() != newType)
                 {
