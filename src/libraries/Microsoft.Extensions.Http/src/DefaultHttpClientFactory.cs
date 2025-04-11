@@ -15,12 +15,19 @@ using Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Timer = System.Timers.Timer;
 
 namespace Microsoft.Extensions.Http
 {
     internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory
     {
-        private static readonly TimerCallback _cleanupCallback = (s) => ((DefaultHttpClientFactory)s!).CleanupTimer_Tick();
+        // Default time of 10s for cleanup seems reasonable.
+        // Quick math:
+        // 10 distinct named clients * expiry time >= 1s = approximate cleanup queue of 100 items
+        //
+        // This seems frequent enough. We also rely on GC occurring to actually trigger disposal.
+        private const double DefaultCleanupInterval = 10000;
+
         private readonly IServiceProvider _services;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;
@@ -28,21 +35,12 @@ namespace Microsoft.Extensions.Http
         private readonly Func<string, Lazy<ActiveHandlerTrackingEntry>> _entryFactory;
         private readonly Lazy<ILogger> _logger;
 
-        // Default time of 10s for cleanup seems reasonable.
-        // Quick math:
-        // 10 distinct named clients * expiry time >= 1s = approximate cleanup queue of 100 items
-        //
-        // This seems frequent enough. We also rely on GC occurring to actually trigger disposal.
-        private readonly TimeSpan DefaultCleanupInterval = TimeSpan.FromSeconds(10);
-
         // We use a new timer for each regular cleanup cycle, protected with a lock. Note that this scheme
         // doesn't give us anything to dispose, as the timer is started/stopped as needed.
         //
         // There's no need for the factory itself to be disposable. If you stop using it, eventually everything will
         // get reclaimed.
-        private Timer? _cleanupTimer;
-        private readonly object _cleanupTimerLock;
-        private readonly object _cleanupActiveLock;
+        private Timer _cleanupTimer;
 
         // Collection of 'active' handlers.
         //
@@ -59,7 +57,6 @@ namespace Microsoft.Extensions.Http
         //
         // internal for tests
         internal readonly ConcurrentQueue<ExpiredHandlerTrackingEntry> _expiredHandlers;
-        private readonly TimerCallback _expiryCallback;
 
         public DefaultHttpClientFactory(
             IServiceProvider services,
@@ -88,10 +85,12 @@ namespace Microsoft.Extensions.Http
             };
 
             _expiredHandlers = new ConcurrentQueue<ExpiredHandlerTrackingEntry>();
-            _expiryCallback = ExpiryTimer_Tick;
 
-            _cleanupTimerLock = new object();
-            _cleanupActiveLock = new object();
+            _cleanupTimer = new Timer(DefaultCleanupInterval)
+            {
+                AutoReset = false
+            };
+            _cleanupTimer.Elapsed += (_, _) => CleanupTimer_Tick();
 
             // We want to prevent a circular dependency between ILoggerFactory and IHttpClientFactory, in case
             // any of ILoggerProvider instances use IHttpClientFactory to send logs to an external server.
@@ -192,15 +191,13 @@ namespace Microsoft.Extensions.Http
         }
 
         // Internal for tests
-        internal void ExpiryTimer_Tick(object? state)
+        internal void ExpiryTimer_Tick(ActiveHandlerTrackingEntry activeHandler)
         {
-            var active = (ActiveHandlerTrackingEntry)state!;
-
             // The timer callback should be the only one removing from the active collection. If we can't find
             // our entry in the collection, then this is a bug.
-            bool removed = _activeHandlers.TryRemove(active.Name, out Lazy<ActiveHandlerTrackingEntry>? found);
+            bool removed = _activeHandlers.TryRemove(activeHandler.Name, out Lazy<ActiveHandlerTrackingEntry>? found);
             Debug.Assert(removed, "Entry not found. We should always be able to remove the entry");
-            Debug.Assert(object.ReferenceEquals(active, found!.Value), "Different entry found. The entry should not have been replaced");
+            Debug.Assert(object.ReferenceEquals(activeHandler, found!.Value), "Different entry found. The entry should not have been replaced");
 
             // At this point the handler is no longer 'active' and will not be handed out to any new clients.
             // However we haven't dropped our strong reference to the handler, so we can't yet determine if
@@ -208,10 +205,11 @@ namespace Microsoft.Extensions.Http
             //
             // We use a different state object to track expired handlers. This allows any other thread that acquired
             // the 'active' entry to use it without safety problems.
-            var expired = new ExpiredHandlerTrackingEntry(active);
+            var expired = new ExpiredHandlerTrackingEntry(activeHandler);
             _expiredHandlers.Enqueue(expired);
+            activeHandler.Dispose();
 
-            Log.HandlerExpired(_logger, active.Name, active.Lifetime);
+            Log.HandlerExpired(_logger, activeHandler.Name, activeHandler.Lifetime);
 
             StartCleanupTimer();
         }
@@ -219,26 +217,19 @@ namespace Microsoft.Extensions.Http
         // Internal so it can be overridden in tests
         internal virtual void StartHandlerEntryTimer(ActiveHandlerTrackingEntry entry)
         {
-            entry.StartExpiryTimer(_expiryCallback);
+            entry.StartExpiryTimer(ExpiryTimer_Tick);
         }
 
         // Internal so it can be overridden in tests
         internal virtual void StartCleanupTimer()
         {
-            lock (_cleanupTimerLock)
-            {
-                _cleanupTimer ??= NonCapturingTimer.Create(_cleanupCallback, this, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
-            }
+            _cleanupTimer.Start();
         }
 
         // Internal so it can be overridden in tests
         internal virtual void StopCleanupTimer()
         {
-            lock (_cleanupTimerLock)
-            {
-                _cleanupTimer!.Dispose();
-                _cleanupTimer = null;
-            }
+            _cleanupTimer.Stop();
         }
 
         // Internal for tests
@@ -254,18 +245,6 @@ namespace Microsoft.Extensions.Http
             // whether we need to start the timer.
             StopCleanupTimer();
 
-            if (!Monitor.TryEnter(_cleanupActiveLock))
-            {
-                // We don't want to run a concurrent cleanup cycle. This can happen if the cleanup cycle takes
-                // a long time for some reason. Since we're running user code inside Dispose, it's definitely
-                // possible.
-                //
-                // If we end up in that position, just make sure the timer gets started again. It should be cheap
-                // to run a 'no-op' cleanup.
-                StartCleanupTimer();
-                return;
-            }
-
             try
             {
                 int initialCount = _expiredHandlers.Count;
@@ -279,13 +258,11 @@ namespace Microsoft.Extensions.Http
             }
             finally
             {
-                Monitor.Exit(_cleanupActiveLock);
-            }
-
-            // We didn't totally empty the cleanup queue, try again later.
-            if (!_expiredHandlers.IsEmpty)
-            {
-                StartCleanupTimer();
+                // We didn't totally empty the cleanup queue, try again later.
+                if (!_expiredHandlers.IsEmpty)
+                {
+                    StartCleanupTimer();
+                }
             }
         }
 

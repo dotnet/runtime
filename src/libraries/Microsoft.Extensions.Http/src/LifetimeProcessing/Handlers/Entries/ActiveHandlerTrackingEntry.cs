@@ -7,18 +7,18 @@ using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries.Base;
 using Microsoft.Extensions.Internal;
+using Timer = System.Timers.Timer;
 
 namespace Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries
 {
     // Thread-safety: We treat this class as immutable except for the timer. Creating a new object
     // for the 'expiry' pool simplifies the threading requirements significantly.
-    internal sealed class ActiveHandlerTrackingEntry : HandlerTrackingEntryBase
+    internal sealed class ActiveHandlerTrackingEntry : HandlerTrackingEntryBase, IDisposable
     {
-        private static readonly TimerCallback _timerCallback = (s) => ((ActiveHandlerTrackingEntry)s!).Timer_Tick();
         private readonly object _lock;
-        private bool _timerInitialized;
+        private bool _isDisposed;
         private Timer? _timer;
-        private TimerCallback? _callback;
+        private Action<ActiveHandlerTrackingEntry>? _callback;
 
         public ActiveHandlerTrackingEntry(
             string name,
@@ -31,41 +31,45 @@ namespace Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries
             Lifetime = lifetime;
 
             _lock = new object();
+            _timer = new Timer(lifetime.TotalMilliseconds)
+            {
+                AutoReset = false
+            };
+            _timer.Elapsed += (_, _) => Timer_Tick();
         }
 
         public LifetimeTrackingHttpMessageHandler Handler { get; }
 
         public TimeSpan Lifetime { get; }
 
-        public void StartExpiryTimer(TimerCallback callback)
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        public void StartExpiryTimer(Action<ActiveHandlerTrackingEntry> callback)
         {
             if (Lifetime == Timeout.InfiniteTimeSpan)
             {
                 return; // never expires.
             }
 
-            if (Volatile.Read(ref _timerInitialized))
-            {
-                return;
-            }
-
-            StartExpiryTimerSlow(callback);
+            _callback = callback;
+            _timer!.Start();
         }
 
-        private void StartExpiryTimerSlow(TimerCallback callback)
+        private void Dispose(bool disposing)
         {
-            Debug.Assert(Lifetime != Timeout.InfiniteTimeSpan);
-
-            lock (_lock)
+            if (!_isDisposed)
             {
-                if (Volatile.Read(ref _timerInitialized))
-                {
-                    return;
-                }
+                _isDisposed = true;
 
-                _callback = callback;
-                _timer = NonCapturingTimer.Create(_timerCallback, this, Lifetime, Timeout.InfiniteTimeSpan);
-                _timerInitialized = true;
+                if (disposing)
+                {
+                    _timer?.Dispose();
+                    _timer = null;
+                }
             }
         }
 
@@ -74,16 +78,7 @@ namespace Microsoft.Extensions.Http.LifetimeProcessing.Handlers.Entries
             Debug.Assert(_callback != null);
             Debug.Assert(_timer != null);
 
-            lock (_lock)
-            {
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                    _timer = null;
-
-                    _callback(this);
-                }
-            }
+            _callback(this);
         }
     }
 }
