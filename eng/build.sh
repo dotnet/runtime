@@ -14,6 +14,11 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
+export MSBUILD_TELEMETRY_SAMPLE_RATE=1.0
+export MSBUILDFLUSHNODESTELEMETRYINTOCONSOLE=1
+export MSBUILDOUTPUTNODESTELEMETRY=1
+export DOTNET_CLI_TELEMETRY_OPTOUT=0
+
 usage()
 {
   echo "Common settings:"
