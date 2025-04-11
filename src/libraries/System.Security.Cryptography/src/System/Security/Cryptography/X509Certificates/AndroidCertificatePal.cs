@@ -447,6 +447,12 @@ namespace System.Security.Cryptography.X509Certificates
             return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid(ecKey);
         }
 
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            // MLDsa is not supported on Android
+            return null;
+        }
+
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
             DSAImplementation.DSAAndroid? typedKey = privateKey as DSAImplementation.DSAAndroid;
@@ -496,6 +502,12 @@ namespace System.Security.Cryptography.X509Certificates
                 typedKey.ImportParameters(ecParameters);
                 return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
             }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLDsa privateKey)
+        {
+            throw new PlatformNotSupportedException(
+                SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
         }
 
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)

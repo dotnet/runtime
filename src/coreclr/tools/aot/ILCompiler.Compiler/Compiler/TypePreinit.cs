@@ -41,6 +41,7 @@ namespace ILCompiler
         private readonly Dictionary<FieldDesc, Value> _fieldValues = new Dictionary<FieldDesc, Value>();
         private readonly Dictionary<string, StringInstance> _internedStrings = new Dictionary<string, StringInstance>();
         private readonly Dictionary<TypeDesc, RuntimeTypeValue> _internedTypes = new Dictionary<TypeDesc, RuntimeTypeValue>();
+        private readonly Dictionary<MetadataType, NestedPreinitResult> _nestedPreinitResults = new Dictionary<MetadataType, NestedPreinitResult>();
 
         private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
         {
@@ -107,6 +108,40 @@ namespace ILCompiler
             }
 
             return new PreinitializationInfo(type, status.FailureReason);
+        }
+
+        private bool TryGetNestedPreinitResult(MethodDesc callingMethod, MetadataType type, Stack<MethodDesc> recursionProtect, ref int instructionCounter, out NestedPreinitResult result)
+        {
+            if (!_nestedPreinitResults.TryGetValue(type, out result))
+            {
+                TypePreinit nestedPreinit = new TypePreinit(type, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations);
+                recursionProtect ??= new Stack<MethodDesc>();
+                recursionProtect.Push(callingMethod);
+
+                // Since we don't reset the instruction counter as we interpret the nested cctor,
+                // remember the instruction counter before we start interpreting so that we can subtract
+                // the instructions later when we convert object instances allocated in the nested
+                // cctor to foreign instances in the currently analyzed cctor.
+                // E.g. if the nested cctor allocates a new object at the beginning of the cctor,
+                // we should treat it as a ForeignTypeInstance with allocation site ID 0, not allocation
+                // site ID of `instructionCounter + 0`.
+                // We could also reset the counter, but we use the instruction counter as a complexity cutoff
+                // and resetting it would lead to unpredictable analysis durations.
+                int baseInstructionCounter = instructionCounter;
+                Status status = nestedPreinit.TryScanMethod(type.GetStaticConstructor(), null, recursionProtect, ref instructionCounter, out Value _);
+                if (!status.IsSuccessful)
+                {
+                    result = default;
+                    return false;
+                }
+                recursionProtect.Pop();
+
+                result = new NestedPreinitResult(nestedPreinit._fieldValues, baseInstructionCounter);
+
+                _nestedPreinitResults.Add(type, result);
+            }
+
+            return true;
         }
 
         private Status TryScanMethod(MethodDesc method, Value[] parameters, Stack<MethodDesc> recursionProtect, ref int instructionCounter, out Value returnValue)
@@ -344,67 +379,6 @@ namespace ILCompiler
                         break;
 
                     case ILOpcode.ldsfld:
-                        {
-                            FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (!field.IsStatic || field.IsLiteral)
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
-                            if (field.IsThreadStatic || field.HasRva)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
-                            }
-
-                            if (field.OwningType == _type)
-                            {
-                                stack.PushFromLocation(field.FieldType, _fieldValues[field]);
-                            }
-                            else if (_readOnlyPolicy.IsReadOnly(field)
-                                && field.OwningType.HasStaticConstructor
-                                && _policy.CanPreinitialize(field.OwningType))
-                            {
-                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations);
-                                recursionProtect ??= new Stack<MethodDesc>();
-                                recursionProtect.Push(methodIL.OwningMethod);
-
-                                // Since we don't reset the instruction counter as we interpret the nested cctor,
-                                // remember the instruction counter before we start interpreting so that we can subtract
-                                // the instructions later when we convert object instances allocated in the nested
-                                // cctor to foreign instances in the currently analyzed cctor.
-                                // E.g. if the nested cctor allocates a new object at the beginning of the cctor,
-                                // we should treat it as a ForeignTypeInstance with allocation site ID 0, not allocation
-                                // site ID of `instructionCounter + 0`.
-                                // We could also reset the counter, but we use the instruction counter as a complexity cutoff
-                                // and resetting it would lead to unpredictable analysis durations.
-                                int baseInstructionCounter = instructionCounter;
-                                Status status = nestedPreinit.TryScanMethod(field.OwningType.GetStaticConstructor(), null, recursionProtect, ref instructionCounter, out Value _);
-                                if (!status.IsSuccessful)
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Nested cctor failed to preinit");
-                                }
-                                recursionProtect.Pop();
-                                Value value = nestedPreinit._fieldValues[field];
-                                if (value is BaseValueTypeValue)
-                                    stack.PushFromLocation(field.FieldType, value);
-                                else if (value is ReferenceTypeValue referenceType)
-                                    stack.PushFromLocation(field.FieldType, referenceType.ToForeignInstance(baseInstructionCounter, this));
-                                else
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-                            else if (_readOnlyPolicy.IsReadOnly(field)
-                                && !field.OwningType.HasStaticConstructor)
-                            {
-                                // (Effectively) read only field but no static constructor to set it: the value is default-initialized.
-                                stack.PushFromLocation(field.FieldType, NewUninitializedLocationValue(field.FieldType));
-                            }
-                            else
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Load from other non-initonly static");
-                            }
-                        }
-                        break;
-
                     case ILOpcode.ldsflda:
                         {
                             FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
@@ -413,28 +387,60 @@ namespace ILCompiler
                                 ThrowHelper.ThrowInvalidProgramException();
                             }
 
-                            if (field.OwningType != _type)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Address of other static");
-                            }
-
                             if (field.IsThreadStatic || field.HasRva)
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
-                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                            if (opcode != ILOpcode.ldsfld
+                                && _flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                             }
 
-                            Value fieldValue = _fieldValues[field];
-                            if (fieldValue == null || !fieldValue.TryCreateByRef(out Value byRefValue))
+                            Value fieldValue;
+                            if (field.OwningType == _type)
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported byref");
+                                fieldValue = _fieldValues[field];
+                            }
+                            else if (_readOnlyPolicy.IsReadOnly(field)
+                                && field.OwningType.HasStaticConstructor
+                                && _policy.CanPreinitialize(field.OwningType))
+                            {
+                                if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)field.OwningType, recursionProtect, ref instructionCounter, out NestedPreinitResult nestedPreinitResult))
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Nested cctor failed to preinit");
+                                }
+
+                                if (!nestedPreinitResult.TryGetFieldValue(this, field, out fieldValue))
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
+                            }
+                            else if (_readOnlyPolicy.IsReadOnly(field)
+                                && opcode != ILOpcode.ldsflda // We need to intern these for correctness in ldsfda scenarios
+                                && !field.OwningType.HasStaticConstructor)
+                            {
+                                // (Effectively) read only field but no static constructor to set it: the value is default-initialized.
+                                fieldValue = NewUninitializedLocationValue(field.FieldType);
+                            }
+                            else
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Load from other non-initonly static");
                             }
 
-                            stack.Push(StackValueKind.ByRef, byRefValue);
+                            if (opcode == ILOpcode.ldsfld)
+                            {
+                                stack.PushFromLocation(field.FieldType, fieldValue);
+                            }
+                            else
+                            {
+                                Debug.Assert(opcode == ILOpcode.ldsflda);
+                                if (fieldValue == null || !fieldValue.TryCreateByRef(out Value byRefValue))
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported byref");
+                                }
+
+                                stack.Push(StackValueKind.ByRef, byRefValue);
+                            }
                         }
                         break;
 
@@ -465,9 +471,13 @@ namespace ILCompiler
 
                             if (owningType.HasStaticConstructor
                                     && owningType != methodIL.OwningMethod.OwningType
+                                    && (method.Signature.IsStatic || method.IsConstructor || owningType.IsValueType || owningType.IsInterface) // ECMA-335 I.8.9.5
                                     && !((MetadataType)owningType).IsBeforeFieldInit)
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
+                                // Static constructor needs to execute before we do the call. If we can preinitialize, consider it executed,
+                                // otherwise there might be side effects we'd miss by letting this through.
+                                if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)owningType, recursionProtect, ref instructionCounter, out _))
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
                             }
 
                             if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(method))
@@ -523,7 +533,10 @@ namespace ILCompiler
                                     && owningType != methodIL.OwningMethod.OwningType
                                     && !((MetadataType)owningType).IsBeforeFieldInit)
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
+                                // Static constructor needs to execute before we do the call. If we can preinitialize, consider it executed,
+                                // otherwise there might be side effects we'd miss by letting this through.
+                                if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)owningType, recursionProtect, ref instructionCounter, out _))
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
                             }
 
                             if (!owningType.IsDefType)
@@ -1755,64 +1768,30 @@ namespace ILCompiler
                     case ILOpcode.ldind_u4:
                     case ILOpcode.ldind_i8:
                         {
-                            if (opcode == ILOpcode.ldobj)
+                            TypeDesc type = opcode switch
                             {
-                                TypeDesc type = methodIL.GetObject(reader.ReadILToken()) as TypeDesc;
-                                opcode = type.Category switch
-                                {
-                                    TypeFlags.SByte => ILOpcode.ldind_i1,
-                                    TypeFlags.Boolean or TypeFlags.Byte => ILOpcode.ldind_u1,
-                                    TypeFlags.Int16 => ILOpcode.ldind_i2,
-                                    TypeFlags.Char or TypeFlags.UInt16 => ILOpcode.ldind_u2,
-                                    TypeFlags.Int32 => ILOpcode.ldind_i4,
-                                    TypeFlags.UInt32 => ILOpcode.ldind_u4,
-                                    TypeFlags.Int64 or TypeFlags.UInt64 => ILOpcode.ldind_i8,
-                                    TypeFlags.Single => ILOpcode.ldind_r4,
-                                    TypeFlags.Double => ILOpcode.ldind_r8,
-                                    _ => ILOpcode.ldobj,
-                                };
-
-                                if (opcode == ILOpcode.ldobj)
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                                }
-                            }
+                                ILOpcode.ldind_i1 => context.GetWellKnownType(WellKnownType.SByte),
+                                ILOpcode.ldind_u1 => context.GetWellKnownType(WellKnownType.Byte),
+                                ILOpcode.ldind_i2 => context.GetWellKnownType(WellKnownType.Int16),
+                                ILOpcode.ldind_u2 => context.GetWellKnownType(WellKnownType.UInt16),
+                                ILOpcode.ldind_i4 => context.GetWellKnownType(WellKnownType.Int32),
+                                ILOpcode.ldind_u4 => context.GetWellKnownType(WellKnownType.UInt32),
+                                ILOpcode.ldind_i8 => context.GetWellKnownType(WellKnownType.Int64),
+                                _ /* ldobj */ => (TypeDesc)methodIL.GetObject(reader.ReadILToken()),
+                            };
 
                             StackEntry entry = stack.Pop();
-                            if (entry.Value is ByRefValue byRefVal)
+                            if (entry.ValueKind != StackValueKind.ByRef && entry.ValueKind != StackValueKind.NativeInt)
+                                ThrowHelper.ThrowInvalidProgramException();
+
+                            if (entry.Value is ByRefValueBase byRefVal
+                                && byRefVal.TryLoad(type, out Value dereferenced))
                             {
-                                switch (opcode)
-                                {
-                                    case ILOpcode.ldind_i1:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsSByte()));
-                                        break;
-                                    case ILOpcode.ldind_u1:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)byRefVal.DereferenceAsSByte()));
-                                        break;
-                                    case ILOpcode.ldind_i2:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsInt16()));
-                                        break;
-                                    case ILOpcode.ldind_u2:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)byRefVal.DereferenceAsInt16()));
-                                        break;
-                                    case ILOpcode.ldind_i4:
-                                    case ILOpcode.ldind_u4:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsInt32()));
-                                        break;
-                                    case ILOpcode.ldind_i8:
-                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(byRefVal.DereferenceAsInt64()));
-                                        break;
-                                    case ILOpcode.ldind_r4:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(byRefVal.DereferenceAsSingle()));
-                                        break;
-                                    case ILOpcode.ldind_r8:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(byRefVal.DereferenceAsDouble()));
-                                        break;
-                                }
+                                stack.PushFromLocation(type, dereferenced);
                             }
                             else
                             {
-                                ThrowHelper.ThrowInvalidProgramException();
+                                return Status.Fail(methodIL.OwningMethod, "Ldind from unsupported byref");
                             }
                         }
                         break;
@@ -2600,6 +2579,22 @@ namespace ILCompiler
                     return false;
                 }
 
+                public override bool TryLoad(TypeDesc type, out Value value)
+                {
+                    if (!VTableLikeStructValue.IsCompatible(type)
+                        || type is not MetadataType mdType
+                        || mdType.InstanceFieldSize.AsInt > (_methods.Length - _index) * _pointerSize)
+                    {
+                        value = null;
+                        return false;
+                    }
+
+                    MethodDesc[] slots = new MethodDesc[GetFieldCount(mdType)];
+                    Array.Copy(_methods, _index, slots, 0, slots.Length);
+                    value = new VTableLikeStructValue(mdType, slots);
+                    return true;
+                }
+
                 public override Value Clone() => this; // The reference is immutable
 
                 private int GetFieldIndex(FieldDesc field)
@@ -2918,6 +2913,11 @@ namespace ILCompiler
         private abstract class ByRefValueBase : Value, INativeIntConvertibleValue
         {
             public virtual bool TryStore(Value value) => false;
+            public virtual bool TryLoad(TypeDesc type, out Value value)
+            {
+                value = null;
+                return false;
+            }
             public virtual bool TryInitialize(int size) => false;
         }
 
@@ -2978,6 +2978,21 @@ namespace ILCompiler
                 return true;
             }
 
+            public override bool TryLoad(TypeDesc type, out Value value)
+            {
+                if (!type.IsPrimitive
+                    || ((MetadataType)type).InstanceFieldSize.AsInt > PointedToBytes.Length - PointedToOffset)
+                {
+                    value = null;
+                    return false;
+                }
+
+                var result = new ValueTypeValue(type);
+                Array.Copy(PointedToBytes, PointedToOffset, result.InstanceBytes, 0, result.InstanceBytes.Length);
+                value = result;
+                return true;
+            }
+
             public override Value Clone() => this; // Immutable
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
@@ -2991,20 +3006,6 @@ namespace ILCompiler
                 data = null;
                 return false;
             }
-
-            private ReadOnlySpan<byte> AsExactByteCount(int count)
-            {
-                if (PointedToOffset + count > PointedToBytes.Length)
-                    ThrowHelper.ThrowInvalidProgramException();
-                return new ReadOnlySpan<byte>(PointedToBytes, PointedToOffset, count);
-            }
-
-            public sbyte DereferenceAsSByte() => (sbyte)AsExactByteCount(1)[0];
-            public short DereferenceAsInt16() => BitConverter.ToInt16(AsExactByteCount(2));
-            public int DereferenceAsInt32() => BitConverter.ToInt32(AsExactByteCount(4));
-            public long DereferenceAsInt64() => BitConverter.ToInt64(AsExactByteCount(8));
-            public float DereferenceAsSingle() => BitConverter.ToSingle(AsExactByteCount(4));
-            public double DereferenceAsDouble() => BitConverter.ToDouble(AsExactByteCount(8));
         }
 
         private abstract class ReferenceTypeValue : Value
@@ -3539,6 +3540,34 @@ namespace ILCompiler
             public static Status Fail(MethodDesc method, string detail)
             {
                 return new Status($"Method '{method}': {detail}");
+            }
+        }
+
+        private readonly struct NestedPreinitResult
+        {
+            private readonly Dictionary<FieldDesc, Value> _fieldValues;
+            private readonly int _baseInstructionCounter;
+
+            public NestedPreinitResult(Dictionary<FieldDesc, Value> fieldValues, int baseInstructionCounter)
+                => (_fieldValues, _baseInstructionCounter) = (fieldValues, baseInstructionCounter);
+
+            public bool TryGetFieldValue(TypePreinit context, FieldDesc field, out Value value)
+            {
+                Value fieldValue = _fieldValues[field];
+
+                if (fieldValue is ReferenceTypeValue referenceType)
+                {
+                    value = referenceType.ToForeignInstance(_baseInstructionCounter, context);
+                    return true;
+                }
+                else if (fieldValue is BaseValueTypeValue)
+                {
+                    value = fieldValue;
+                    return true;
+                }
+
+                value = null;
+                return false;
             }
         }
 

@@ -12637,7 +12637,6 @@ void Compiler::impFixPredLists()
 
                         BasicBlock* const continuation = predBlock->Next();
                         FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
-                        newEdge->setLikelihood(1.0 / predCount);
 
                         if (usingProfileWeights && (finallyWeight != BB_ZERO_WEIGHT))
                         {
@@ -12679,7 +12678,8 @@ void Compiler::impFixPredLists()
                 {
                     BasicBlock* const callFinallyRet = callFinally->Next();
                     callFinallyRet->setBBProfileWeight(callFinallyRet->computeIncomingWeight());
-                    profileConsistent &= fgProfileWeightsEqual(callFinally->bbWeight, callFinallyRet->bbWeight);
+                    profileConsistent &=
+                        fgProfileWeightsConsistentOrSmall(callFinally->bbWeight, callFinallyRet->bbWeight);
                 }
 
                 if (!profileConsistent)

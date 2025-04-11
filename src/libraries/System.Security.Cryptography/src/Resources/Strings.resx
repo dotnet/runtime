@@ -291,6 +291,9 @@
   <data name="Cryptography_CertReq_NoKeyProvided" xml:space="preserve">
     <value>This method cannot be used since no signing key was provided via a constructor, use an overload accepting an X509SignatureGenerator instead.</value>
   </data>
+  <data name="Cryptography_CertReq_NoHashAlgorithmProvided" xml:space="preserve">
+    <value>The intended signature algorithm requires a HashAlgorithmName, but one was not provided when building the CertificateRequest object.</value>
+  </data>
   <data name="Cryptography_CertReq_NotAfterNotNested" xml:space="preserve">
     <value>The requested notAfter value ({0}) is later than issuerCertificate.NotAfter ({1}).</value>
   </data>

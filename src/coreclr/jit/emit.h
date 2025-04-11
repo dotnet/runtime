@@ -2761,6 +2761,14 @@ private:
 
     bool emitForceStoreGCState;
 
+    // This flag is used together with `emitForceStoreGCState`. After we set
+    // emitForceStoreGCState = true, we will mark `emitAddedLabel` to true whenever
+    // we see a label IG. In emitSavIG, we will reset `emitForceStoreGCState = false`
+    // only after seeing `emitAddedLabel == true`. Until then, we will keep recording
+    // GC_VARS on the IGs.
+
+    bool emitAddedLabel;
+
     // emitThis* variables are used during emission, to track GC updates
     // on a per-instruction basis. During code generation, per-instruction
     // tracking is done with variables gcVarPtrSetCur, gcRegGCrefSetCur,
