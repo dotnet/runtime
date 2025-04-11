@@ -1007,14 +1007,14 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         VarSetOps::Assign(emitComp, emitPrevGCrefVars, emitThisGCrefVars);
         emitPrevGCrefRegs = emitThisGCrefRegs;
         emitPrevByrefRegs = emitThisByrefRegs;
-    }
 
-    if (emitAddedLabel)
-    {
-        // Reset emitForceStoreGCState only after seeing label. It will keep
-        // marking IGs with IGF_GC_VARS flag until that.
-        emitForceStoreGCState = false;
-        emitAddedLabel        = false;
+        if (emitAddedLabel)
+        {
+            // Reset emitForceStoreGCState only after seeing label. It will keep
+            // marking IGs with IGF_GC_VARS flag until that.
+            emitForceStoreGCState = false;
+            emitAddedLabel        = false;
+        }
     }
 
 #ifdef DEBUG
@@ -1283,6 +1283,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitPrevByrefRegs = RBM_NONE;
 
     emitForceStoreGCState = false;
+    emitAddedLabel        = false;
 
 #ifdef DEBUG
 
@@ -2845,10 +2846,7 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
         }
     }
 
-    if (emitForceStoreGCState)
-    {
-        emitAddedLabel = true;
-    }
+    emitAddedLabel = true;
 
     /* Create a new IG if the current one is non-empty */
 
