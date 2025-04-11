@@ -13560,6 +13560,11 @@ namespace System.Runtime.CompilerServices
     {
         private T t;
     }
+    [System.Runtime.CompilerServices.InlineArray(16)]
+    public struct InlineArray16<T>
+    {
+        private T t;
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct, AllowMultiple=false)]
     public sealed partial class InlineArrayAttribute : System.Attribute
     {
