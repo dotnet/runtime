@@ -6,14 +6,6 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-#if NET
-using System.Runtime.Intrinsics.X86;
-#endif
-
-#if NET
-using System.Runtime.Intrinsics.Arm;
-#endif
-
 namespace System.Text.Encodings.Web
 {
     /// <summary>
@@ -26,10 +18,14 @@ namespace System.Text.Encodings.Web
     /// </summary>
     internal sealed partial class OptimizedInboxTextEncoder
     {
-        private readonly AllowedAsciiCodePoints _allowedAsciiCodePoints;
         private readonly AsciiPreescapedData _asciiPreescapedData;
         private readonly AllowedBmpCodePointsBitmap _allowedBmpCodePoints;
         private readonly ScalarEscaperBase _scalarEscaper;
+
+#if NET
+        private readonly SearchValues<byte> _allowedAsciiBytes;
+        private readonly SearchValues<char> _allowedAsciiChars;
+#endif
 
         internal OptimizedInboxTextEncoder(
             ScalarEscaperBase scalarEscaper,
@@ -71,7 +67,26 @@ namespace System.Text.Encodings.Web
             // Now that disallowed characters have been filtered out, we're free to populate
             // the ASCII maps and pre-escaped data caches.
             _asciiPreescapedData.PopulatePreescapedData(_allowedBmpCodePoints, scalarEscaper);
-            _allowedAsciiCodePoints.PopulateAllowedCodePoints(_allowedBmpCodePoints);
+
+#if NET
+            // Create the SearchValues instances for vectorized fast paths.
+            Span<byte> allowedAsciiBytes = stackalloc byte[128];
+            Span<char> allowedAsciiChars = stackalloc char[128];
+            int allowedAsciiCount = 0;
+
+            for (int i = 0; i < 128; i++)
+            {
+                if (_allowedBmpCodePoints.IsCharAllowed((char)i))
+                {
+                    allowedAsciiBytes[allowedAsciiCount] = (byte)i;
+                    allowedAsciiChars[allowedAsciiCount] = (char)i;
+                    allowedAsciiCount++;
+                }
+            }
+
+            _allowedAsciiBytes = SearchValues.Create(allowedAsciiBytes.Slice(0, allowedAsciiCount));
+            _allowedAsciiChars = SearchValues.Create(allowedAsciiChars.Slice(0, allowedAsciiCount));
+#endif
         }
 
         [Obsolete("FindFirstCharacterToEncode has been deprecated. It should only be used by the TextEncoder adapter.")]
@@ -343,53 +358,23 @@ namespace System.Text.Encodings.Web
 
         public int GetIndexOfFirstByteToEncode(ReadOnlySpan<byte> data)
         {
+            int asciiBytesSkipped = 0;
+
+#if NET
             // First, try calling the SIMD-enabled version.
             // The SIMD-enabled version handles only ASCII characters.
+            asciiBytesSkipped = data.IndexOfAnyExcept(_allowedAsciiBytes);
+
+            if ((uint)asciiBytesSkipped >= (uint)data.Length || UnicodeUtility.IsAsciiCodePoint(data[asciiBytesSkipped]))
+            {
+                // We either processed the whole span (in which case asciiBytesSkipped is -1), or we've found a disallowed ASCII byte.
+                return asciiBytesSkipped;
+            }
+#endif
 
             int dataOriginalLength = data.Length;
 
-#if NET
-            if (Ssse3.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
-            {
-                int asciiBytesSkipped;
-                unsafe
-                {
-                    fixed (byte* pData = data)
-                    {
-                        nuint asciiBytesSkippedNInt;
-                        if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
-                        {
-                            asciiBytesSkippedNInt = GetIndexOfFirstByteToEncodeAdvSimd64(pData, (uint)dataOriginalLength);
-                        }
-                        else
-                        {
-                            Debug.Assert(Ssse3.IsSupported, "#ifdef was ill-formed.");
-                            asciiBytesSkippedNInt = GetIndexOfFirstByteToEncodeSsse3(pData, (uint)dataOriginalLength);
-                        }
-                        Debug.Assert(0 <= asciiBytesSkippedNInt && asciiBytesSkippedNInt <= (uint)dataOriginalLength);
-                        asciiBytesSkipped = (int)asciiBytesSkippedNInt;
-                    }
-                }
-
-                if ((uint)data.Length <= (uint)asciiBytesSkipped)
-                {
-                    Debug.Assert(asciiBytesSkipped == data.Length);
-                    return -1; // all data consumed
-                }
-
-                // Quick check: We know some data remains in the buffer. If the first byte is an ASCII
-                // byte, that means it already failed the vectorized logic, and there's no need to run
-                // down the slower "decode scalar-by-scalar" code path. In that case we'll exit now.
-
-                if (UnicodeUtility.IsAsciiCodePoint(data[asciiBytesSkipped]))
-                {
-                    return asciiBytesSkipped;
-                }
-
-                data = data.Slice((int)asciiBytesSkipped);
-                Debug.Assert(!data.IsEmpty);
-            }
-#endif
+            data = data.Slice(asciiBytesSkipped);
 
             // If there's any leftover data, try consuming it now.
 
@@ -409,26 +394,27 @@ namespace System.Text.Encodings.Web
 
         public unsafe int GetIndexOfFirstCharToEncode(ReadOnlySpan<char> data)
         {
+            int asciiCharsSkipped = 0;
+
+#if NET
+            // First, try calling the SIMD-enabled version.
+            // The SIMD-enabled version handles only ASCII characters.
+            if (data.Length >= 8)
+            {
+                asciiCharsSkipped = data.IndexOfAnyExcept(_allowedAsciiChars);
+
+                if ((uint)asciiCharsSkipped >= (uint)data.Length || char.IsAscii(data[asciiCharsSkipped]))
+                {
+                    // We either processed the whole span (in which case asciiCharsSkipped is -1), or we've found a disallowed ASCII char.
+                    return asciiCharsSkipped;
+                }
+            }
+#endif
+
             fixed (char* pData = data)
             {
                 nuint lengthInChars = (uint)data.Length;
-
-                // First, try calling the SIMD-enabled version.
-                // The SIMD-enabled version handles only ASCII characters.
-
-                nuint idx = 0;
-#if NET
-                if (Ssse3.IsSupported)
-                {
-                    idx = GetIndexOfFirstCharToEncodeSsse3(pData, lengthInChars);
-                }
-                else if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
-                {
-                    idx = GetIndexOfFirstCharToEncodeAdvSimd64(pData, lengthInChars);
-                }
-
-                Debug.Assert(0 <= idx && idx <= lengthInChars);
-#endif
+                nuint idx = (uint)asciiCharsSkipped;
 
                 // If there's any leftover data, try consuming it now.
 
