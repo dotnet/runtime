@@ -270,6 +270,7 @@
     <Compile Include="Compiler\ReadyToRunXmlRootProvider.cs" />
     <Compile Include="IBC\IBCProfileData.cs" />
     <Compile Include="IBC\IBCProfileParser.cs" />
+    <Compile Include="IL\Stubs\InstanceCalliHelperIntrinsics.cs" />
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
