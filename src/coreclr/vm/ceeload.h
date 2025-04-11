@@ -1524,8 +1524,18 @@ public:
     void   StartUnload();
 
 public:
+#ifndef DACCESS_COMPILE
     void SetDynamicIL(mdToken token, TADDR blobAddress);
+#endif // !DACCESS_COMPILE
     TADDR GetDynamicIL(mdToken token);
+
+protected:
+#ifndef DACCESS_COMPILE
+    void SetDynamicRvaField(mdToken token, TADDR blobAddress);
+#endif // !DACCESS_COMPILE
+
+public:
+    TADDR GetDynamicRvaField(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
 #if !defined(DACCESS_COMPILE)

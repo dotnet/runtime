@@ -697,7 +697,7 @@ FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
     if (pModule->IsEditAndContinueEnabled() && pFD->IsEnCNew())
     {
         EnCFieldDesc *pEnCFD = (EnCFieldDesc*)pFD;
-        // we may not have the full FieldDesc info at applyEnC time becuase we don't
+        // we may not have the full FieldDesc info at applyEnC time because we don't
         // have a thread so can't do things like load classes (due to possible exceptions)
         if (pEnCFD->NeedsFixup())
         {

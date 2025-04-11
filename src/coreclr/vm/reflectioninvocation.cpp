@@ -1154,10 +1154,8 @@ extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, 
 
     if (pField != NULL && pField->IsRVA())
     {
-        Module* pModule = pField->GetModule();
-        *address = pModule->GetRvaField(pField->GetOffset());
+        *address = pField->GetStaticAddressHandle(NULL);
         *size = pField->LoadSize();
-
         ret = TRUE;
     }
 
