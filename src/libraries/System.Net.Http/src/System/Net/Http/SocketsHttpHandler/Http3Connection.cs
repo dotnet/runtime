@@ -177,21 +177,31 @@ namespace System.Net.Http
             }
         }
 
-        public bool TryReserveStream()
+        /// <summary>
+        /// When EnableMultipleHttp3Connections is false: always reserve a stream, return a bool indicating if the stream is immediately available.
+        /// When EnableMultipleHttp3Connections is true: reserve a stream only if it's available meaning that the return value also indicates whether it has been reserved.
+        /// </summary>
+        public bool ReserveStream()
         {
+            bool singleConnection = !_pool.Settings.EnableMultipleHttp3Connections;
+
             lock (SyncObj)
             {
-                Debug.Assert(_availableRequestStreamsCount >= 0);
+                // For the single connection case, we allow the counter to go below zero.
+                Debug.Assert(singleConnection || _availableRequestStreamsCount >= 0);
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount}");
 
-                if (_availableRequestStreamsCount == 0)
+                bool streamAvailable = _availableRequestStreamsCount > 0;
+
+                // Do not let the counter to go below zero when EnableMultipleHttp3Connections is true.
+                // This equivalent to an immediate ReleaseStream() for the case no stream is immediately available.
+                if (singleConnection || _availableRequestStreamsCount > 0)
                 {
-                    return false;
+                    --_availableRequestStreamsCount;
                 }
 
-                --_availableRequestStreamsCount;
-                return true;
+                return streamAvailable;
             }
         }
 
@@ -199,7 +209,7 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                Debug.Assert(_availableRequestStreamsCount >= 0);
+                Debug.Assert(!_pool.Settings.EnableMultipleHttp3Connections || _availableRequestStreamsCount >= 0);
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount}");
                 ++_availableRequestStreamsCount;
@@ -215,10 +225,12 @@ namespace System.Net.Http
 
             lock (SyncObj)
             {
-                Debug.Assert(_availableRequestStreamsCount >= 0);
+                Debug.Assert(_availableStreamsWaiter is null || _availableRequestStreamsCount >= 0);
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount} + bidirectionalStreamsCountIncrement = {args.BidirectionalIncrement}");
 
+                // Since _availableStreamsWaiter is only used in the multi-connection case, when _availableRequestStreamsCount cannot go below zero,
+                // we don't need to check the value of _availableRequestStreamsCount here.
                 _availableRequestStreamsCount += args.BidirectionalIncrement;
                 _availableStreamsWaiter?.SetResult(!ShuttingDown);
                 _availableStreamsWaiter = null;
@@ -227,6 +239,9 @@ namespace System.Net.Http
 
         public Task<bool> WaitForAvailableStreamsAsync()
         {
+            // In the single connection case, _availableStreamsWaiter notifications do not guarantee that _availableRequestStreamsCount >= 0.
+            Debug.Assert(_pool.Settings.EnableMultipleHttp3Connections, "Calling WaitForAvailableStreamsAsync() is invalid when EnableMultipleHttp3Connections is false.");
+
             lock (SyncObj)
             {
                 Debug.Assert(_availableRequestStreamsCount >= 0);
@@ -246,7 +261,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, WaitForHttp3ConnectionActivity waitForConnectionActivity, bool streamReserved, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, WaitForHttp3ConnectionActivity waitForConnectionActivity, bool streamAvailable, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -260,9 +275,8 @@ namespace System.Net.Http
                     QuicConnection? conn = _connection;
                     if (conn != null)
                     {
-                        // We found a connection in the pool, but couldn't reserve a stream.
-                        // OpenOutboundStreamAsync is expected to wait for an available stream.
-                        if (!waitForConnectionActivity.Started && !streamReserved)
+                        // We found a connection in the pool, but it did not have available streams, OpenOutboundStreamAsync() is expected to wait.
+                        if (!waitForConnectionActivity.Started && !streamAvailable)
                         {
                             waitForConnectionActivity.Start();
                         }
