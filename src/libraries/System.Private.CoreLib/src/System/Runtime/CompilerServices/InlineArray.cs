@@ -142,4 +142,14 @@ namespace System.Runtime.CompilerServices
     {
         private T t;
     }
+
+    /// <summary>
+    /// Represents an inline array of <typeparamref name="T"/> with a fixed length of 16.
+    /// </summary>
+    /// <typeparam name="T">The type of elements in the array.</typeparam>
+    [InlineArray(16)]
+    public struct InlineArray16<T>
+    {
+        private T t;
+    }
 }

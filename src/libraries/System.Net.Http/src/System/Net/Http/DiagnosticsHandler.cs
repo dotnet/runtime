@@ -129,7 +129,7 @@ namespace System.Net.Http
                     {
                         activity.SetTag("server.address", requestUri.Host);
                         activity.SetTag("server.port", requestUri.Port);
-                        activity.SetTag("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
+                        activity.SetTag("url.full", UriRedactionHelper.GetRedactedUriString(requestUri));
                     }
                 }
 
