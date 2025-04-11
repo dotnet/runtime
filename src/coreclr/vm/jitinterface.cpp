@@ -7558,12 +7558,6 @@ static void getMethodInfoHelper(
             else if (CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__INSTANCE_CALLI_HELPER))
             {
                 ftn->GenerateFunctionPointerCall(&cxt.TransientResolver, &cxt.Header);
-
-                scopeHnd = cxt.CreateScopeHandle();
-
-                _ASSERTE(cxt.Header != NULL);
-                getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
-                localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
             }
         }
 

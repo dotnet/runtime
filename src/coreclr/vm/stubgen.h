@@ -858,7 +858,7 @@ public:
     void EmitBRFALSE    (ILCodeLabel* pCodeLabel);
     void EmitBRTRUE     (ILCodeLabel* pCodeLabel);
     void EmitCALL       (int token, int numInArgs, int numRetArgs);
-    void EmitCALLI      (int token, int numInArgs, int numRetArgs, bool explicitThis = false);
+    void EmitCALLI      (int token, int numInArgs, int numRetArgs);
     void EmitCALLVIRT   (int token, int numInArgs, int numRetArgs);
     void EmitCEQ        ();
     void EmitCGT        ();

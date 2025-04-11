@@ -8,9 +8,9 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     STANDARD_VM_CONTRACT;
     _ASSERTE(resolver != NULL);
     _ASSERTE(methodILDecoder != NULL);
-    _ASSERTE(*resolver == NULL && *methodILDecoder == NULL);
+    _ASSERTE(*resolver == NULL && *methodILDecoder != NULL);
     _ASSERTE(IsIL());
-    _ASSERTE(GetRVA() == 0);
+    _ASSERTE(GetRVA() != 0);
 
     // Intrinsic must be a static method.
     _ASSERTE(IsStatic());
@@ -31,18 +31,14 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
 
     ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // Move to the function pointer argument.
-    declarationSig.SkipArg(); // Skip "this".
-
+    // Copy the existing signature to add HASTHIS and EXPLICITTHIS.
     CorElementType fnType = declarationSig.NextArg();
     _ASSERTE(fnType == ELEMENT_TYPE_FNPTR);
-
     SigPointer spToken = declarationSig.GetArgProps();
-    spToken.GetByte(NULL); 
+    spToken.GetByte(nullptr); // Skip the element type (ELEMENT_TYPE_FNPTR)
     declarationSig.SkipArg();
     SigPointer sigPtrTokenEnd = declarationSig.GetArgProps();
 
-    // Copy the existing signature so we can add HAS_THIS and EXPLICIT_THIS.
     SigBuilder sigBuilder;
     spToken.CopySignature(GetModule(), &sigBuilder, &sigPtrTokenEnd, IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS);
 
@@ -51,22 +47,13 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     PCCOR_SIGNATURE pSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature((DWORD*)&sigLen);
     mdToken fcnPtrToken = pCode->GetSigToken(pSig, sigLen);
 
-    // Create a local and store the function pointer value in it.
-    LocalDesc localDesc(ELEMENT_TYPE_FNPTR);
-    localDesc.pSigModule = GetModule();
-    localDesc.pSig = pSig;
-    DWORD localIndex = pCode->NewLocal(localDesc);
-    pCode->EmitLDARG(1);
-    pCode->EmitSTLOC(localIndex);
-
     // Load "this" and each argument to the function pointer.
-    pCode->EmitLDARG(0);
-    for (UINT i = 2; i < argCount; ++i)
+    for (UINT i = 1; i < argCount; ++i)
         pCode->EmitLDARG(i);
 
     // Load the function pointer and call it.
-    pCode->EmitLDLOC(localIndex);
-    pCode->EmitCALLI(fcnPtrToken, argCount - 1, declarationSig.IsReturnTypeVoid() ? 0 : 1, /*explictThis*/ true);
+    pCode->EmitLDARG(0);
+    pCode->EmitCALLI(fcnPtrToken, argCount - 2, declarationSig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     // Generate all IL associated data for JIT

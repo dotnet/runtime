@@ -399,12 +399,7 @@ void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, SigP
     BYTE element;
     IfFailThrowBF(GetByte(&element), BFA_BAD_COMPLUS_SIG, pSigModule);
     pSigBuilder->AppendByte(element | additionalCallConv);
-
-    while (m_ptr != pSigPtrTokenEnd->m_ptr)
-    {
-        IfFailThrowBF(GetByte(&element), BFA_BAD_COMPLUS_SIG, pSigModule);
-        pSigBuilder->AppendByte(element);
-    }
+    pSigBuilder->AppendBlob((const PVOID)m_ptr, pSigPtrTokenEnd->m_ptr - m_ptr);
 }
 #endif // DACCESS_COMPILE
 
