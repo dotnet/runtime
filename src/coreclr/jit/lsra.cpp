@@ -7420,7 +7420,7 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     // while on x86 we can spill directly to memory.
     regNumber spillReg = refPosition->assignedReg();
 #ifdef TARGET_ARM64
-    bool isVariableVL = varTypeIsSIMDVL(tree->TypeGet());
+    bool isVariableVL = varTypeIsSIMDVL(varDsc->TypeGet());
     bool spillToMem   = refPosition->spillAfter || isVariableVL;
     assert((spillReg != REG_NA) || isVariableVL);
 #else
