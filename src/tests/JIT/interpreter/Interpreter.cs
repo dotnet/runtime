@@ -51,7 +51,7 @@ public class InterpreterTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void RunInterpreterTests()
     {
-//      Console.WriteLine("Run interp tests");
+        // Console.WriteLine("Run interp tests");
         if (SumN(50) != 1275)
             Environment.FailFast(null);
         if (Mul4(53, 24, 13, 131) != 2166216)
@@ -61,16 +61,20 @@ public class InterpreterTest
 
         if (!PowLoop(20, 10, 1661992960))
             Environment.FailFast(null);
+
         if (!TestJitFields())
             Environment.FailFast(null);
-        // Disable below tests because they are potentially unstable since they do allocation
-        // and we currently don't have GC support. They should pass locally though.
-//        if (!TestFields())
-//            Environment.FailFast(null);
-//        if (!TestSpecialFields())
-//            Environment.FailFast(null);
+        if (!TestFields())
+            Environment.FailFast(null);
+        // FIXME: Calling TestSpecialFields causes the following System.GC.Collect to fail.
+        /*
+        if (!TestSpecialFields())
+            Environment.FailFast(null);
+        */
         if (!TestFloat())
             Environment.FailFast(null);
+
+        System.GC.Collect();
     }
 
     public static int Mul4(int a, int b, int c, int d)
@@ -156,8 +160,12 @@ public class InterpreterTest
         if (sum != 33)
             return false;
 
+        System.GC.Collect();
+
         staticObj = obj;
         staticStr = str;
+
+        System.GC.Collect();
 
         sum = staticObj.str.a + staticStr.str.a + staticObj.ct + staticStr.ct;
         if (sum != 33)
@@ -181,6 +189,9 @@ public class InterpreterTest
     {
         threadStaticObj = new MyObj(1);
         threadStaticStr = new MyStruct2(2);
+
+        // FIXME: This crashes in the GC. We don't report any live GC locals and inspection of the stack shows no GC objects on it
+        // System.GC.Collect();
 
         int sum = threadStaticObj.str.a + threadStaticStr.str.a + threadStaticObj.ct + threadStaticStr.ct;
         if (sum != 33)

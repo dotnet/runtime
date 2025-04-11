@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+#include "gcinfoencoder.h"
 #include "interpreter.h"
 
 #include <inttypes.h>
+
+#include <new> // for std::bad_alloc
 
 static const StackType g_stackTypeFromInterpType[] =
 {
@@ -33,7 +36,50 @@ static const InterpType g_interpTypeFromStackType[] =
 
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
 
-// FIXME Use specific allocators for their intended purpose
+/*****************************************************************************/
+void DECLSPEC_NORETURN Interp_NOMEM()
+{
+    throw std::bad_alloc();
+}
+
+// GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
+class InterpIAllocator : public IAllocator
+{
+    InterpCompiler *m_pCompiler;
+
+public:
+    InterpIAllocator(InterpCompiler *compiler)
+        : m_pCompiler(compiler)
+    {
+    }
+
+    // Allocates a block of memory at least `sz` in size.
+    virtual void* Alloc(size_t sz) override
+    {
+        return m_pCompiler->AllocMethodData(sz);
+    }
+
+    // Allocates a block of memory at least `elems * elemSize` in size.
+    virtual void* ArrayAlloc(size_t elems, size_t elemSize) override
+    {
+        // Ensure that elems * elemSize does not overflow.
+        if (elems > (SIZE_MAX / elemSize))
+        {
+            Interp_NOMEM();
+        }
+
+        return m_pCompiler->AllocMethodData(elems * elemSize);
+    }
+
+    // Frees the block of memory pointed to by p.
+    virtual void Free(void* p) override
+    {
+        // Interpreter-FIXME: m_pCompiler->FreeMethodData
+        free(p);
+    }
+};
+
+// Interpreter-FIXME Use specific allocators for their intended purpose
 // Allocator for data that is kept alive throughout application execution,
 // being freed only if the associated method gets freed.
 void* InterpCompiler::AllocMethodData(size_t numBytes)
@@ -777,7 +823,10 @@ void InterpCompiler::EmitCode()
         for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
         {
             if (InterpOpIsEmitNop(ins->opcode))
+            {
+                ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
                 continue;
+            }
 
             ip = EmitCodeIns(ip, ins, &relocs);
         }
@@ -805,6 +854,94 @@ void InterpCompiler::EmitCode()
         m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
     }
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
+}
+
+void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
+{
+#ifdef FEATURE_INTERPRETER
+    InterpIAllocator* pAllocator = new (this) InterpIAllocator(this);
+    InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
+    assert(gcInfoEncoder);
+
+    gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
+
+    uint32_t stackSlotCount = m_totalVarsStackSize / INTERP_STACK_SLOT_SIZE;
+    GcSlotId *slotsByOffset = (GcSlotId *)alloca(stackSlotCount * sizeof(GcSlotId));
+    // 0 is a valid slot id so default-initialize all the slots to 0xFFFFFFFF
+    memset(slotsByOffset, 0xFF, stackSlotCount * sizeof(GcSlotId));
+
+    INTERP_DUMP("Allocating gcinfo slots for %u vars\n", m_varsSize);
+
+    // Request slot IDs for all our vars, not just IL vars
+    for (int i = 0; i < m_varsSize; i++)
+    {
+        InterpVar *pVar = &m_pVars[i];
+        if (pVar->interpType != InterpTypeO)
+            continue;
+
+        // Globals are untracked and shouldn't need liveness ranges recorded in the info
+        GcSlotFlags flags = (GcSlotFlags)(pVar->global ? GC_SLOT_UNTRACKED : 0);
+        uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
+        if (slotsByOffset[slotIndex] == ((GcSlotId)-1))
+        {
+            // Important to pass GC_xxx_REL, the default is broken due to GET_CALLER_SP being unimplemented
+            slotsByOffset[slotIndex] = gcInfoEncoder->GetStackSlotId(pVar->offset, flags, GC_FRAMEREG_REL);
+            INTERP_DUMP(
+                "Allocated gcinfo slot %u for %svar #%d at offset %d\n",
+                slotsByOffset[slotIndex], pVar->global ? "global " : "",
+                i, pVar->offset
+            );
+        }
+        else
+        {
+            INTERP_DUMP(
+                "Reused gcinfo slot %u for %svar #%d at offset %d\n",
+                slotsByOffset[slotIndex], pVar->global ? "global " : "",
+                i, pVar->offset
+            );
+            assert(!pVar->global);
+        }
+    }
+
+    gcInfoEncoder->FinalizeSlotIds();
+
+    // Now that slot IDs are finalized we want to record live ranges for every var that isn't global
+    for (int i = 0; i < m_varsSize; i++)
+    {
+        InterpVar *pVar = &m_pVars[i];
+        // Even if we have a gc slot for this offset, this var might not be an object reference
+        if (pVar->interpType != InterpTypeO)
+            continue;
+        // We don't need to report liveness ranges for untracked vars, the gc info decoder will report them
+        //  unconditionally.
+        if (pVar->global)
+            continue;
+
+        uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
+        GcSlotId slot = slotsByOffset[slotIndex];
+        if (slot == ((GcSlotId)-1))
+            continue;
+        assert(pVar->liveStart);
+        assert(pVar->liveEnd);
+        uint32_t startOffset = ConvertOffset(GetLiveStartOffset(i)),
+            endOffset = ConvertOffset(GetLiveEndOffset(i));
+        INTERP_DUMP(
+            "Recording gcinfo slot %u live range for var #%d: [IR_%04x - IR_%04x] [%u - %u]\n",
+            slotsByOffset[slotIndex], i,
+            GetLiveStartOffset(i), GetLiveEndOffset(i),
+            startOffset, endOffset
+        );
+        gcInfoEncoder->SetSlotState(startOffset, slot, GC_SLOT_LIVE);
+        gcInfoEncoder->SetSlotState(endOffset, slot, GC_SLOT_DEAD);
+    }
+
+    gcInfoEncoder->Build();
+
+    // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
+    gcInfoEncoder->Emit();
+
+    fflush(stdout);
+#endif
 }
 
 InterpMethod* InterpCompiler::CreateInterpMethod()
@@ -1501,6 +1638,15 @@ bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SI
             {
                 AddIns(INTOP_NOP);
                 m_pStackPointer--;
+                return true;
+            }
+        }
+        else if (className && !strcmp(className, "GC"))
+        {
+            if (methodName && !strcmp(methodName, "Collect"))
+            {
+                AddIns(INTOP_GC_COLLECT);
+                // Not reducing the stack pointer because we expect the version with no arguments
                 return true;
             }
         }

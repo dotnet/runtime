@@ -4,6 +4,8 @@
 #ifndef SOS_INCLUDE
 #include "common.h"
 #endif
+
+#include "gcinfohelpers.h"
 #include "gcinfodumper.h"
 #include "gcinfodecoder.h"
 
@@ -390,7 +392,7 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
             }
 #endif
             {
-                _ASSERTE(iReg < nCONTEXTRegisters);
+                GCINFO_ASSERT(iReg < nCONTEXTRegisters);
 #ifdef TARGET_ARM
                 pReg = *(SIZE_T**)(pContext + rgRegisters[iReg].cbContextOffset);
                 if (iEncodedReg == 12)
@@ -867,7 +869,7 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
 #endif
         if(safePointDecoder.IsSafePoint(safePointOffset))
         {
-            _ASSERTE(!fNewInterruptible);
+            GCINFO_ASSERT(!fNewInterruptible);
             if (pfnSafePointFunc(safePointOffset, pvData))
                 break;
 
@@ -883,7 +885,7 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
                                                     | DECODE_NO_VALIDATION),
                                offset);
 
-        _ASSERTE(!m_pRecords);
+        GCINFO_ASSERT(!m_pRecords);
 
         if(!fNewInterruptible && (flags == ActiveStackFrame))
         {

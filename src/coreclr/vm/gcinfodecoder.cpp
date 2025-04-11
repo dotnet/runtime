@@ -2176,6 +2176,64 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 
 #endif // Unknown platform
 
+#ifdef FEATURE_INTERPRETER
+template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
+                        INT32           spOffset,
+                        GcStackSlotBase spBase,
+                        PREGDISPLAY     pRD
+                        )
+{
+    OBJECTREF* pObjRef = NULL;
+
+    if( GC_SP_REL == spBase )
+    {
+        _ASSERTE(!"GC_SP_REL is invalid for interpreter frames");
+    }
+    else if( GC_CALLER_SP_REL == spBase )
+    {
+        _ASSERTE(!"GC_CALLER_SP_REL is invalid for interpreter frames");
+    }
+    else
+    {
+        _ASSERTE( GC_FRAMEREG_REL == spBase );
+
+        // HACK: The register slot we stash the frame pointer into varies per-architecture.
+        // CONTEXTGetFp is unavailable here (including its header doesn't work either).
+        uint8_t* fp = (uint8_t *)
+#if defined(TARGET_AMD64)
+        pRD->pCurrentContext->Rbp;
+#elif defined(TARGET_ARM)
+        // FIXME: CONTEXTGetFp says R7 but cgencpu.h says R11
+        pRD->pCurrentContext->R11;
+#elif defined(TARGET_ARM64)
+        // Speculative based on cgencpu.h
+        pRD->pCurrentContext->Fp;
+#elif defined(TARGET_LOONGARCH)
+        // Speculative based on cgencpu.h
+        pRD->pCurrentContext->Fp;
+#elif defined(TARGET_RISCV64)
+        // Speculative based on cgencpu.h
+        pRD->pCurrentContext->Fp;
+#elif defined(TARGET_S390X)
+        // Speculative based on CONTEXTGetFp
+        pRD->pCurrentContext->R11;
+#elif defined(TARGET_POWERPC64)
+        // Speculative based on CONTEXTGetFp
+        pRD->pCurrentContext->R31;
+#else
+        NULL;
+        _ASSERTE(!"Unimplemented architecture for TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot");
+        return NULL;
+#endif
+
+        pObjRef = (OBJECTREF*)(fp + spOffset);
+    }
+
+    // printf("interp sp+%u at offset %p points to %p\n", spOffset, pObjRef, *(void **)pObjRef);
+    return pObjRef;
+}
+#endif
+
 
 template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::GetStackSlot(
                         INT32           spOffset,
@@ -2277,5 +2335,9 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportSt
 
 // Instantiate the decoder so other files can use it
 template class TGcInfoDecoder<TargetGcInfoEncoding>;
+
+#ifdef FEATURE_INTERPRETER
+template class TGcInfoDecoder<InterpreterGcInfoEncoding>;
+#endif // FEATURE_INTERPRETER
 
 #endif // USE_GC_INFO_DECODER
