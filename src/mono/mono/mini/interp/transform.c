@@ -2736,7 +2736,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				default: return FALSE;
 			}
 		}
-	} 
+	}
 
 	return FALSE;
 }
@@ -10036,8 +10036,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 		// FIXME Publishing of seq points seems to be racy with tiereing. We can have both tiered and untiered method
 		// running at the same time. We could therefore get the optimized imethod seq points for the unoptimized method.
-		gpointer seq_points = NULL;
-		dn_simdhash_ght_try_get_value (jit_mm->seq_points, imethod->method, (void **)&seq_points);
+		gpointer seq_points = dn_simdhash_ght_get_value_or_default (jit_mm->seq_points, imethod->method);
 		if (!seq_points || seq_points != imethod->jinfo->seq_points)
 			dn_simdhash_ght_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
 	}

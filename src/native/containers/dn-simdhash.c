@@ -4,12 +4,160 @@
 #include "dn-simdhash.h"
 #include "dn-simdhash-utils.h"
 
+static uint32_t spaced_primes[] = {
+	1,
+	3,
+	7,
+	11,
+	17,
+	23,
+	29,
+	37,
+	47,
+	59,
+	71,
+	89,
+	107,
+	131,
+	163,
+	197,
+	239,
+	293,
+	353,
+	431,
+	521,
+	631,
+	761,
+	919,
+	1103,
+	1327,
+	1597,
+	1931,
+	2333,
+	2801,
+	3371,
+	4049,
+	4861,
+	5839,
+	7013,
+	8419,
+	10103,
+	12143,
+	14591,
+	17519,
+	21023,
+	25229,
+	30293,
+	36353,
+	43627,
+	52361,
+	62851,
+	75431,
+	90523,
+	108631,
+	130363,
+	156437,
+	187751,
+	225307,
+	270371,
+	324449,
+	389357,
+	467237,
+	560689,
+	672827,
+	807403,
+	968897,
+	1162687,
+	1395263,
+	1674319,
+	2009191,
+	2411033,
+	2893249,
+	3471899,
+	4166287,
+	4999559,
+	5999471,
+	7199369,
+	7919311,
+	8711267,
+	9582409,
+	10540661,
+	11594729,
+	12754219,
+	14029643,
+	15432619,
+	16975891,
+	18673483,
+	20540831,
+	22594919,
+	24854419,
+	27339863,
+	30073853,
+	33081239,
+	36389369,
+	40028333,
+	44031179,
+	48434303,
+	53277769,
+	58605563,
+	64466147,
+	70912783,
+	78004061,
+	85804471,
+	94384919,
+	103823417,
+	114205771,
+	125626351,
+	138189017,
+	152007971,
+	167208817,
+	183929719,
+	202322693,
+	222554977,
+	244810487,
+	269291537,
+	296220709,
+	325842779,
+	358427071,
+	394269781,
+	433696759,
+	477066449,
+	524773133,
+	577250461,
+	634975519,
+	698473099,
+	768320467,
+	845152513,
+	929667799,
+	1022634581,
+	1124898043,
+	1237387859,
+	1361126671,
+	1497239377,
+	1646963321,
+	1811659669,
+	1992825643,
+};
+
+static uint32_t
+next_prime_number (uint32_t x)
+{
+	int i, c = (sizeof(spaced_primes)/sizeof(spaced_primes[0]));
+	for (i = 0; i < c; i++) {
+		if (x <= spaced_primes [i])
+			return spaced_primes [i];
+	}
+	return next_power_of_two(i);
+}
+
 static uint32_t
 compute_adjusted_capacity (uint32_t requested_capacity)
 {
 	uint64_t _capacity = requested_capacity;
 	_capacity *= DN_SIMDHASH_SIZING_PERCENTAGE;
 	_capacity /= 100;
+	if (_capacity < requested_capacity)
+		_capacity = requested_capacity;
 	dn_simdhash_assert(_capacity <= UINT32_MAX);
 	return (uint32_t)_capacity;
 }
@@ -64,8 +212,12 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 	if (bucket_count < DN_SIMDHASH_MIN_BUCKET_COUNT)
 		bucket_count = DN_SIMDHASH_MIN_BUCKET_COUNT;
 	dn_simdhash_assert(bucket_count < UINT32_MAX);
+#if DN_SIMDHASH_POWER_OF_TWO_BUCKETS
 	// Bucket count must be a power of two (this enables more efficient hashcode -> bucket mapping)
 	bucket_count = next_power_of_two((uint32_t)bucket_count);
+#else
+	bucket_count = next_prime_number((uint32_t)bucket_count);
+#endif
 	size_t value_count = bucket_count * hash->meta->bucket_capacity;
 	dn_simdhash_assert(value_count <= UINT32_MAX);
 
