@@ -187,6 +187,73 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
+    if (comp->opts.OptimizationEnabled())
+    {
+        GenTree*& op1 = binOp->gtOp1;
+        GenTree*& op2 = binOp->gtOp2;
+
+        bool isOp1Negated = op1->OperIs(GT_NOT);
+        bool isOp2Negated = op2->OperIs(GT_NOT);
+        if (binOp->OperIs(GT_AND, GT_OR, GT_XOR) && (isOp1Negated || isOp2Negated))
+        {
+            if ((isOp1Negated && isOp2Negated) || comp->compOpportunisticallyDependsOn(InstructionSet_Zbb))
+            {
+                if (isOp1Negated)
+                {
+                    BlockRange().Remove(op1);
+                    op1 = op1->AsUnOp()->gtGetOp1();
+                }
+                if (isOp2Negated)
+                {
+                    BlockRange().Remove(op2);
+                    op2 = op2->AsUnOp()->gtGetOp1();
+                }
+
+                if (isOp1Negated != isOp2Negated)
+                {
+                    assert(comp->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                    if (isOp1Negated)
+                        std::swap(op1, op2);
+
+                    genTreeOps operNot = GT_NONE;
+                    switch (binOp->OperGet())
+                    {
+                        case GT_AND:
+                            operNot = GT_AND_NOT;
+                            break;
+                        case GT_OR:
+                            operNot = GT_OR_NOT;
+                            break;
+                        default:
+                            assert(binOp->OperIs(GT_XOR));
+                            operNot = GT_XOR_NOT;
+                            break;
+                    }
+                    binOp->ChangeOper(operNot);
+                }
+                else if (binOp->OperIs(GT_AND, GT_OR)) // XOR is good after negation removal, (~a ^ ~b) == (a ^ b)
+                {
+                    assert(isOp1Negated && isOp2Negated);
+                    LIR::Use use;
+                    if (BlockRange().TryGetUse(binOp, &use))
+                    {
+                        // (~a | ~b) == ~(a & b),  (~a & ~b) == ~(a | b)
+                        genTreeOps reverseOper = binOp->OperIs(GT_AND) ? GT_OR : GT_AND;
+                        binOp->ChangeOper(reverseOper);
+
+                        GenTreeUnOp* negation = comp->gtNewOperNode(GT_NOT, binOp->gtType, binOp);
+                        BlockRange().InsertAfter(binOp, negation);
+                        use.ReplaceWith(negation);
+                    }
+                    else
+                    {
+                        binOp->SetUnusedValue();
+                    }
+                }
+            }
+        }
+    }
+
     ContainCheckBinary(binOp);
 
     return binOp->gtNext;
