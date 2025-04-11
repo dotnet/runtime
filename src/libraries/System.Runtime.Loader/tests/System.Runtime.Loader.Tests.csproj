@@ -13,15 +13,20 @@
     <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
   </PropertyGroup>
-  <ItemGroup>
+
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
     <Compile Include="ApplyUpdateTest.cs" />
     <Compile Include="ApplyUpdateUtil.cs" />
+    <Compile Include="MetadataUpdateHandlerAttributeTest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="AssemblyExtensionsTest.cs" />
     <Compile Include="AssemblyLoadContextTest.cs" />
     <Compile Include="CollectibleAssemblyLoadContextTest.cs" />
     <Compile Include="ContextualReflection.cs" />
     <Compile Include="CustomTPALoadContext.cs" />
-    <Compile Include="MetadataUpdateHandlerAttributeTest.cs" />
     <Compile Include="ResourceAssemblyLoadContext.cs" />
     <Compile Include="SatelliteAssemblies.cs" />
     <Compile Include="LoaderLinkTest.cs" />
@@ -45,7 +50,10 @@
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
     <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
+  </ItemGroup>
 
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
     <!-- ApplyUpdate tests -->
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj" />
