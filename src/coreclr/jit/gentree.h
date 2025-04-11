@@ -4238,6 +4238,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_GUARDED_DEVIRT_CHAIN    = 0x00080000, // this call is a candidate for chained guarded devirtualization
     GTF_CALL_M_ALLOC_SIDE_EFFECTS      = 0x00100000, // this is a call to an allocator with side effects
     GTF_CALL_M_SUPPRESS_GC_TRANSITION  = 0x00200000, // suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
+    GTF_CALL_M_ASYNC                   = 0x00400000, // this call is a runtime async method call
     GTF_CALL_M_EXPANDED_EARLY          = 0x00800000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x01000000, // ldvirtftn on an interface type
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x02000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
@@ -4563,6 +4564,7 @@ enum class WellKnownArg : unsigned
     ThisPointer,
     VarArgsCookie,
     InstParam,
+    AsyncContinuation,
     RetBuffer,
     PInvokeFrame,
     WrapperDelegateCell,
@@ -4741,6 +4743,7 @@ class CallArgs
 #endif
     bool m_hasThisPointer           : 1;
     bool m_hasRetBuffer             : 1;
+    bool m_hasAsyncContinuation     : 1;
     bool m_isVarArgs                : 1;
     bool m_abiInformationDetermined : 1;
     bool m_hasAddedFinalArgs        : 1;
@@ -4788,6 +4791,7 @@ public:
     CallArg* InsertAfter(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertAfterUnchecked(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertInstParam(Compiler* comp, GenTree* node);
+    CallArg* InsertAsyncContinuationParam(Compiler* comp, GenTree* node);
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void     PushLateBack(CallArg* arg);
     void     Remove(CallArg* arg);
@@ -4815,6 +4819,7 @@ public:
     // clang-format off
     bool HasThisPointer() const { return m_hasThisPointer; }
     bool HasRetBuffer() const { return m_hasRetBuffer; }
+    bool HasAsyncContinuation() const { return m_hasAsyncContinuation; }
     bool IsVarArgs() const { return m_isVarArgs; }
     void SetIsVarArgs() { m_isVarArgs = true; }
     void ClearIsVarArgs() { m_isVarArgs = false; }
@@ -5018,6 +5023,13 @@ struct GenTreeCall final : public GenTree
         gtReturnTypeDesc.Reset();
 #endif
     }
+
+    void SetIsAsync()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_ASYNC;
+    }
+
+    bool IsAsync() const;
 
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.

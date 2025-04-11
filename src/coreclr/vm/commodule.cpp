@@ -302,7 +302,13 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
         COMPlusThrow(kNotSupportedException);
     }
 
-    if (pMeth->GetMethodTable()->GetModule() == pModule)
+    if (pMeth->IsAsync2VariantMethod())
+    {
+        _ASSERTE(!"Should not have come here!");
+        COMPlusThrow(kNotSupportedException);
+    }
+
+    if ((pMeth->GetMethodTable()->GetModule() == pModule))
     {
         // If the passed in method is defined in the same module, just return the MethodDef token
         memberRefE = pMeth->GetMemberDef();

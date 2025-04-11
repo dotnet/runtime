@@ -2541,6 +2541,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         fgAdjustForAddressExposedOrWrittenThis();
     }
 
+    if (compIsStructMethodThatOperatesOnCopy())
+    {
+        fgInitializeThisCopyVar();
+    }
+
     // Now that we've seen the IL, set lvSingleDef for root method
     // locals.
     //
@@ -2578,7 +2583,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 //    change. The original this (info.compThisArg) then remains
 //    unmodified in the method.  fgAddInternal is responsible for
 //    adding the code to copy the initial this into the temp.
-
+//
 void Compiler::fgAdjustForAddressExposedOrWrittenThis()
 {
     LclVarDsc* thisVarDsc = lvaGetDesc(info.compThisArg);
@@ -2609,6 +2614,21 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
         thisVarDsc->CleanAddressExposed();
         thisVarDsc->lvHasILStoreOp = false;
     }
+}
+
+//------------------------------------------------------------------------
+// fgInitializeThisCopyVar:
+//   Initialize the local used to copy the "this" instance to for struct
+//   methods with CORINFO_OPT_COPY_STRUCT_INSTANCE set.
+//
+void Compiler::fgInitializeThisCopyVar()
+{
+    assert(lvaThisCopyVar == BAD_VAR_NUM);
+    lvaThisCopyVar = lvaGrabTemp(false DEBUGARG("Copy of 'this'"));
+    lvaSetStruct(lvaThisCopyVar, info.compClassHnd, false);
+
+    LclVarDsc* lclDsc     = lvaGetDesc(lvaThisCopyVar);
+    lclDsc->lvHasLdAddrOp = 1;
 }
 
 //------------------------------------------------------------------------
