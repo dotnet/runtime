@@ -3,8 +3,10 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -74,7 +76,14 @@ namespace System
                 return Stream.Null;
             }
 
-            return new WindowsConsoleStream(handle, access, useFileAPIs);
+            if (useFileAPIs)
+            {
+                return new AnonymousPipeClientStream(
+                    handleType == Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE ? PipeDirection.In : PipeDirection.Out,
+                    new SafePipeHandle(handle, ownsHandle: true));
+            }
+
+            return new WindowsConsoleStream(handle, access);
         }
 
         // Checks whether stdout or stderr are writable.  Do NOT pass
@@ -1154,15 +1163,13 @@ namespace System
 
             private readonly bool _isPipe; // When reading from pipes, we need to properly handle EOF cases.
             private IntPtr _handle;
-            private readonly bool _useFileAPIs;
 
-            internal WindowsConsoleStream(IntPtr handle, FileAccess access, bool useFileAPIs)
+            internal WindowsConsoleStream(IntPtr handle, FileAccess access)
                 : base(access)
             {
                 Debug.Assert(handle != IntPtr.Zero && handle != InvalidHandleValue, "ConsoleStream expects a valid handle!");
                 _handle = handle;
                 _isPipe = Interop.Kernel32.GetFileType(handle) == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
-                _useFileAPIs = useFileAPIs;
             }
 
             protected override void Dispose(bool disposing)
@@ -1178,7 +1185,7 @@ namespace System
 
             public override int Read(Span<byte> buffer)
             {
-                int errCode = ReadFileNative(_handle, buffer, _isPipe, out int bytesRead, _useFileAPIs);
+                int errCode = ReadFileNative(_handle, buffer, _isPipe, out int bytesRead);
                 if (Interop.Errors.ERROR_SUCCESS != errCode)
                 {
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
@@ -1189,7 +1196,7 @@ namespace System
 
             public override void Write(ReadOnlySpan<byte> buffer)
             {
-                int errCode = WriteFileNative(_handle, buffer, _useFileAPIs);
+                int errCode = WriteFileNative(_handle, buffer, false);
                 if (Interop.Errors.ERROR_SUCCESS != errCode)
                 {
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
@@ -1207,7 +1214,7 @@ namespace System
             // world working set and to avoid requiring a reference to the
             // System.IO.FileSystem contract.
 
-            private static unsafe int ReadFileNative(IntPtr hFile, Span<byte> buffer, bool isPipe, out int bytesRead, bool useFileAPIs)
+            private static unsafe int ReadFileNative(IntPtr hFile, Span<byte> buffer, bool isPipe, out int bytesRead)
             {
                 if (buffer.IsEmpty)
                 {
@@ -1218,18 +1225,12 @@ namespace System
                 bool readSuccess;
                 fixed (byte* p = buffer)
                 {
-                    if (useFileAPIs)
-                    {
-                        readSuccess = (0 != Interop.Kernel32.ReadFile(hFile, p, buffer.Length, out bytesRead, IntPtr.Zero));
-                    }
-                    else
-                    {
-                        // If the code page could be Unicode, we should use ReadConsole instead, e.g.
-                        int charsRead;
-                        readSuccess = Interop.Kernel32.ReadConsole(hFile, p, buffer.Length / BytesPerWChar, out charsRead, IntPtr.Zero);
-                        bytesRead = charsRead * BytesPerWChar;
-                    }
+                    // If the code page could be Unicode, we should use ReadConsole instead, e.g.
+                    int charsRead;
+                    readSuccess = Interop.Kernel32.ReadConsole(hFile, p, buffer.Length / BytesPerWChar, out charsRead, IntPtr.Zero);
+                    bytesRead = charsRead * BytesPerWChar;
                 }
+
                 if (readSuccess)
                     return Interop.Errors.ERROR_SUCCESS;
 
