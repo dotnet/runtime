@@ -4953,9 +4953,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 assert(memBase == indir->Addr());
                 ssize_t cns = addr->AsIntCon()->IconValue();
 
-                // Move lower 11-bits to load / store offset
-                uint64_t off = cns & 0x7ff;
-                cns &= 0xfffffffffffff800;
+                ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+                cns -= off;
 
                 emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
                 emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
