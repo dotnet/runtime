@@ -18,6 +18,7 @@ using Xunit;
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
         internal sealed class ConfigBindingGenTestDriver

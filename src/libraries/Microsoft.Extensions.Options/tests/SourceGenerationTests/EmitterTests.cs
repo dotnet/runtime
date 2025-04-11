@@ -18,6 +18,7 @@ namespace Microsoft.Gen.OptionsValidation.Test;
 public class EmitterTests
 {
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("Singlefile applications Assembly.Location is expected to be empty", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public async Task TestEmitter()
     {
         var sources = new List<string>();
