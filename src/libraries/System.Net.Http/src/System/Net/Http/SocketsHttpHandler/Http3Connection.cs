@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Http.Metrics;
 using System.Net.Quic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -245,7 +246,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, Activity? waitForConnectionActivity, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, WaitForHttp3ConnectionActivity waitForConnectionActivity, bool streamReserved, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -253,11 +254,19 @@ namespace System.Net.Http
 
             try
             {
+                Exception? exception = null;
                 try
                 {
                     QuicConnection? conn = _connection;
                     if (conn != null)
                     {
+                        // We found a connection in the pool, but couldn't reserve a stream.
+                        // OpenOutboundStreamAsync is expected to wait for an available stream.
+                        if (!waitForConnectionActivity.Started && !streamReserved)
+                        {
+                            waitForConnectionActivity.Start();
+                        }
+
                         quicStream = await conn.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, cancellationToken).ConfigureAwait(false);
 
                         requestStream = new Http3RequestStream(request, this, quicStream);
@@ -275,26 +284,15 @@ namespace System.Net.Http
                 // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
                 catch (ObjectDisposedException e)
                 {
-                    ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, e);
+                    exception = e;
                 }
                 catch (QuicException e) when (e.QuicError != QuicError.OperationAborted)
                 {
-                    ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, e);
+                    exception = e;
                 }
                 finally
                 {
-                    waitForConnectionActivity?.Stop();
-                    if (queueStartingTimestamp != 0)
-                    {
-                        TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
-
-                        _pool.Settings._metrics!.RequestLeftQueue(request, Pool, duration, versionMajor: 3);
-
-                        if (HttpTelemetry.Log.IsEnabled())
-                        {
-                            HttpTelemetry.Log.RequestLeftQueue(versionMajor: 3, duration);
-                        }
-                    }
+                    waitForConnectionActivity.Stop(request, Pool, exception);
                 }
 
                 if (quicStream == null)
@@ -315,7 +313,7 @@ namespace System.Net.Http
                     throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
-                Debug.Assert(waitForConnectionActivity?.IsStopped != false);
+                waitForConnectionActivity.AssertActivityNotRunning();
                 if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
@@ -924,6 +922,59 @@ namespace System.Net.Http
                     payloadLength -= readLength;
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Tracks telemetry signals associated with the time period an HTTP/3 request spends waiting for a usable HTTP/3 connection:
+    /// the wait_for_connection Activity, the RequestLeftQueue EventSource event and the http.client.request.time_in_queue metric.
+    /// </summary>
+    internal struct WaitForHttp3ConnectionActivity
+    {
+        private readonly SocketsHttpHandlerMetrics _metrics;
+        private readonly HttpAuthority _authority;
+        private Activity? _activity;
+        private long _startTimestamp;
+
+        public WaitForHttp3ConnectionActivity(SocketsHttpHandlerMetrics metrics, HttpAuthority authority)
+        {
+            _metrics = metrics;
+            _authority = authority;
+        }
+
+        public bool Started { get; private set; }
+
+        public void Start()
+        {
+            Debug.Assert(!Started);
+            _startTimestamp = HttpTelemetry.Log.IsEnabled() || _metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
+            _activity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(_authority);
+            Started = true;
+        }
+
+        public void Stop(HttpRequestMessage request, HttpConnectionPool pool, Exception? exception)
+        {
+            if (exception is not null)
+            {
+                ConnectionSetupDistributedTracing.ReportError(_activity, exception);
+            }
+
+            _activity?.Stop();
+
+            if (_startTimestamp != 0)
+            {
+                TimeSpan duration = Stopwatch.GetElapsedTime(_startTimestamp);
+                _metrics!.RequestLeftQueue(request, pool, duration, versionMajor: 3);
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    HttpTelemetry.Log.RequestLeftQueue(3, duration);
+                }
+            }
+        }
+
+        public void AssertActivityNotRunning()
+        {
+            Debug.Assert(_activity?.IsStopped != false);
         }
     }
 }
