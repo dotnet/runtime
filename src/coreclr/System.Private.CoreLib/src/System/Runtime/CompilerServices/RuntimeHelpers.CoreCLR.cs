@@ -511,7 +511,8 @@ namespace System.Runtime.CompilerServices
             IntPtr callersRetAddr;
             TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
             PortableTailCallFrame* prevFrame = tls->Frame;
-            if (callersRetAddr == prevFrame->TailCallAwareReturnAddress)
+            // TODO-PAC: Implement stripping of PAC from return addresses in coreclr
+            if ((callersRetAddr & 0x0000FFFFFFFFFFFF) == (prevFrame->TailCallAwareReturnAddress & 0x0000FFFFFFFFFFFF))
             {
                 prevFrame->NextCall = callTarget;
                 return;
