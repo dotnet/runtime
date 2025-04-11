@@ -238,6 +238,10 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 
 * Adding a reference type field, a `ref` field, or a field involving a generic type parameter without the `unmanaged` constraint, to a value type that formerly had none of those field kinds. If the value type already contains at least one such field, adding another is non-breaking. This rule applies recursively to new fields that contain value types that may also introduce a new field kind.
 
+* Adding `partial` modifier to an interface method
+
+    Roslyn has [a spec violation](https://github.com/dotnet/roslyn/blob/6f6d64494dc75614f14ef1ac66dde3cc8d2d0092/docs/compilers/CSharp/Deviations%20from%20Standard.md#interface-partial-methods) that makes partial interface methods implicitly non-virtual, so make sure to add also `virtual` modifier (then it won't be a breaking change) when adding `partial` modifier to an interface method that has been implicitly virtual before.
+
 ### Signatures
 &#10003; **Allowed**
 * Adding `params` to a parameter
