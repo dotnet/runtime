@@ -538,7 +538,7 @@ namespace System.Net.Http
             }
 
             // DiagnosticsHandler is inserted before RedirectHandler so that trace propagation is done on redirects as well
-            if (GlobalHttpSettings.DiagnosticsHandler.IsGloballyEnabled && settings._activityHeadersPropagator is DistributedContextPropagator propagator)
+            if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && settings._activityHeadersPropagator is DistributedContextPropagator propagator)
             {
                 handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
             }
