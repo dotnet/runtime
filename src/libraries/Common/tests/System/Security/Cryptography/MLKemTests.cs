@@ -170,7 +170,6 @@ namespace System.Security.Cryptography.Tests
             byte[] ecP256Spki = Convert.FromBase64String(@"
                 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEuiPJ2IV089LVrXZGDo9Mc542UZZE
                 UtPQVd60Ckb/u5OXHAlmITVzFPThKI+N/bUMEnnHEmF8ZDUtLiQPBaKiMQ==");
-
             Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(ecP256Spki));
         }
 
