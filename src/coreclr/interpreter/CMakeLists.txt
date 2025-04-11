@@ -7,6 +7,7 @@ set(INTERPRETER_SOURCES
   eeinterp.cpp)
 
 set(INTERPRETER_LINK_LIBRARIES
+  gcinfo
 )
 
 if(CLR_CMAKE_HOST_WIN32)
