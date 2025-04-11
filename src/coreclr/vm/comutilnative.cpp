@@ -584,32 +584,30 @@ FCIMPL0(INT64, GCInterface::GetTotalPauseDuration)
 }
 FCIMPLEND
 
-FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
+FCIMPL2(void, GCInterface::GetMemoryInfo, GCMemoryInfoData* pData, int kind)
 {
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();
 
-    GCMEMORYINFODATAREF objGCMemoryInfo = (GCMEMORYINFODATAREF)(ObjectToOBJECTREF (objUNSAFE));
-
-    UINT64* genInfoRaw = (UINT64*)&(objGCMemoryInfo->generationInfo0);
-    UINT64* pauseInfoRaw = (UINT64*)&(objGCMemoryInfo->pauseDuration0);
+    UINT64* genInfoRaw = (UINT64*)&(pData->generationInfo0);
+    UINT64* pauseInfoRaw = (UINT64*)&(pData->pauseDuration0);
 
     return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(
-        &(objGCMemoryInfo->highMemLoadThresholdBytes),
-        &(objGCMemoryInfo->totalAvailableMemoryBytes),
-        &(objGCMemoryInfo->lastRecordedMemLoadBytes),
-        &(objGCMemoryInfo->lastRecordedHeapSizeBytes),
-        &(objGCMemoryInfo->lastRecordedFragmentationBytes),
-        &(objGCMemoryInfo->totalCommittedBytes),
-        &(objGCMemoryInfo->promotedBytes),
-        &(objGCMemoryInfo->pinnedObjectCount),
-        &(objGCMemoryInfo->finalizationPendingCount),
-        &(objGCMemoryInfo->index),
-        &(objGCMemoryInfo->generation),
-        &(objGCMemoryInfo->pauseTimePercent),
-        (bool*)&(objGCMemoryInfo->isCompaction),
-        (bool*)&(objGCMemoryInfo->isConcurrent),
+        &(pData->highMemLoadThresholdBytes),
+        &(pData->totalAvailableMemoryBytes),
+        &(pData->lastRecordedMemLoadBytes),
+        &(pData->lastRecordedHeapSizeBytes),
+        &(pData->lastRecordedFragmentationBytes),
+        &(pData->totalCommittedBytes),
+        &(pData->promotedBytes),
+        &(pData->pinnedObjectCount),
+        &(pData->finalizationPendingCount),
+        &(pData->index),
+        &(pData->generation),
+        &(pData->pauseTimePercent),
+        (bool*)&(pData->isCompaction),
+        (bool*)&(pData->isConcurrent),
         genInfoRaw,
         pauseInfoRaw,
         kind);

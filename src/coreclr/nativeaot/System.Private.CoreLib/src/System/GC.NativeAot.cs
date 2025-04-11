@@ -764,7 +764,7 @@ namespace System
         /// <summary>Gets garbage collection memory information.</summary>
         /// <param name="kind">The kind of collection for which to retrieve memory information.</param>
         /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
-        public static GCMemoryInfo GetGCMemoryInfo(GCKind kind)
+        public static unsafe GCMemoryInfo GetGCMemoryInfo(GCKind kind)
         {
             if ((kind < GCKind.Any) || (kind > GCKind.Background))
             {
@@ -775,8 +775,8 @@ namespace System
                                           GCKind.Background));
             }
 
-            var data = new GCMemoryInfoData();
-            RuntimeImports.RhGetMemoryInfo(ref data.GetRawData(), kind);
+            GCMemoryInfoData data = default;
+            RuntimeImports.RhGetMemoryInfo(&data, kind);
             return new GCMemoryInfo(data);
         }
 
