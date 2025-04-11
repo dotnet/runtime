@@ -145,6 +145,8 @@ namespace System.Diagnostics.Metrics
             result = new KeyValuePair<string, object?>[count];
             array.AsSpan().Slice(0, count).CopyTo(result.AsSpan());
 
+            Array.Clear(array, 0, count);
+
             // Note that we don't include the return of the array inside a finally block per the established guidelines for ArrayPool.
             // We don't expect the above to throw an exception, but if it does it would be infrequent and the GC will collect the array.
             ArrayPool<KeyValuePair<string, object?>>.Shared.Return(array);
@@ -155,7 +157,10 @@ namespace System.Diagnostics.Metrics
             {
                 KeyValuePair<string, object?>[] newArray = ArrayPool<KeyValuePair<string, object?>>.Shared.Rent(length * 2);
                 array.CopyTo(newArray, 0);
+
+                Array.Clear(array, 0, array.Length);
                 ArrayPool<KeyValuePair<string, object?>>.Shared.Return(array);
+
                 array = newArray;
                 length = array.Length;
             }
