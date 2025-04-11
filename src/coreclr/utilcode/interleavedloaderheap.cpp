@@ -76,16 +76,11 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
     for (pSearch = m_pFirstBlock; pSearch; pSearch = pNext)
     {
         void *  pVirtualAddress;
-        BOOL    fReleaseMemory;
 
         pVirtualAddress = pSearch->pVirtualAddress;
-        fReleaseMemory = pSearch->m_fReleaseMemory;
         pNext = pSearch->pNext;
 
-        if (fReleaseMemory)
-        {
-            ExecutableAllocator::Instance()->Release(pVirtualAddress);
-        }
+        ExecutableAllocator::Instance()->Release(pVirtualAddress);
 
         delete pSearch;
     }
@@ -148,7 +143,6 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
 
     ReservedMemoryHolder pData = NULL;
-    BOOL fReleaseMemory = TRUE;
 
     // Figure out how much to reserve
     dwSizeToReserve = dwSizeToCommit;
@@ -177,11 +171,6 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     // could be to leak the users memory and reserve+commit a new block, Another option would be to fail the alloc mem
     // and notify the user to provide more reserved mem.
     _ASSERTE((dwSizeToCommit <= dwSizeToReserve) && "Loaderheap tried to commit more memory than reserved by user");
-
-    if (!fReleaseMemory)
-    {
-        pData.SuppressRelease();
-    }
 
     size_t dwSizeToCommitPart = dwSizeToCommit;
 
@@ -219,7 +208,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
     pNewBlock->pVirtualAddress  = pData;
     pNewBlock->pNext            = m_pFirstBlock;
-    pNewBlock->m_fReleaseMemory = fReleaseMemory;
+    pNewBlock->m_fReleaseMemory = TRUE;
 
     // Add to the linked list
     m_pFirstBlock = pNewBlock;
