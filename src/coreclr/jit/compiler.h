@@ -9251,9 +9251,25 @@ public:
         {
             return min(getMaxVectorByteLength(), preferredVectorByteLength);
         }
-#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
+        if (IsBaselineVector512IsaSupportedOpportunistically())
+        {
+            preferredVectorByteLength = ZMM_REGSIZE_BYTES;
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            preferredVectorByteLength = YMM_REGSIZE_BYTES;
+        }
+        else
+        {
+            preferredVectorByteLength = XMM_REGSIZE_BYTES;
+        }
+
+        assert(preferredVectorByteLength <= getMaxVectorByteLength());
+        return preferredVectorByteLength;
+#else
         return getMaxVectorByteLength();
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
     }
 
     //------------------------------------------------------------------------

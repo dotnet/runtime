@@ -200,19 +200,22 @@ namespace System.CommandLine
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
-                    // TODO: Enable optimistic usage of AVX2 once we validate it doesn't break Vector<T> usage
-                    // optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
-
-                    if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX2))
-                    {
-                        optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
-                    }
-
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
+
+                    // Since we have added AVX2 to the optimistic set, the Vector<T> ISA chosen for the optimistic
+                    // set can be up to VectorT256. We want to avoid a situation where VectorT128 was chosen for the
+                    // supported set (based on AVX only) and the opportunistic set includes a different size.
+
+                    if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_VectorT128))
+                    {
+                        maxVectorTBitWidth = 128;
+                    }
                 }
 
                 Debug.Assert(InstructionSet.X64_AVX512F == InstructionSet.X86_AVX512F);
