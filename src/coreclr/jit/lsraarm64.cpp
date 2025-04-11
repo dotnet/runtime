@@ -1481,6 +1481,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             srcCount += BuildContainedCselUses(containedCselOp, delayFreeOp, candidates);
         }
+        else if ((intrin.category == HW_Category_SIMDByIndexedElement) && (genTypeSize(intrin.baseType) == 2) && !HWIntrinsicInfo::HasImmediateOperand(intrin.id))
+        {
+            // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g.
+            // "MLA (by element)") have encoding that restricts what registers that can be used for the indexed element when
+            // the element size is H (i.e. 2 bytes).
+            if (((opNum == 2) || (opNum == 3)))
+            {
+                // For those intrinsics, just force the delay-free registers, so they do not conflict with the definition.
+                srcCount += BuildDelayFreeUses(operand, nullptr, candidates);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(operand, candidates);
+            }
+        }
         // Only build as delay free use if register types match
         else if ((delayFreeOp != nullptr) &&
                  (varTypeUsesSameRegType(delayFreeOp->TypeGet(), operand->TypeGet()) ||
