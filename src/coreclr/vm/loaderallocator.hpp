@@ -317,7 +317,7 @@ protected:
     PTR_LoaderHeap      m_pExecutableHeap;
 #ifdef FEATURE_READYTORUN
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
-    PTR_InterleavedLoaderHeap      m_pDynamicHelpersStubHeap; // R2R Stubs for dynamic helpers. Seperate from m_pNewStubPrecodeHeap to avoid allowing these stubs to take up cache space once the process is fully hot.
+    PTR_InterleavedLoaderHeap      m_pDynamicHelpersStubHeap; // R2R Stubs for dynamic helpers. Separate from m_pNewStubPrecodeHeap to avoid allowing these stubs to take up cache space once the process is fully hot.
 #else
     PTR_CodeFragmentHeap m_pDynamicHelpersHeap;
 #endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
