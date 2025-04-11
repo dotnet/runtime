@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Tests
             {
                 signature = new byte[algorithm.SignatureSizeInBytes];
                 Assert.Equal(signature.Length, mldsa.SignData(data, signature));
-                Assert.True(mldsa.VerifyData(data, signature));
+                AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
                 publicKey = new byte[algorithm.PublicKeySizeInBytes];
                 Assert.Equal(publicKey.Length, mldsa.ExportMLDsaPublicKey(publicKey));
@@ -92,14 +92,14 @@ namespace System.Security.Cryptography.Tests
 
             using (MLDsa mldsa = ImportSecretKey(algorithm, secretKey))
             {
-                Assert.True(mldsa.VerifyData(data, signature));
+                AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
                 signature.AsSpan().Fill(0);
                 Assert.Equal(signature.Length, mldsa.SignData(data, signature));
 
-                Assert.True(mldsa.VerifyData(data, signature));
+                AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
                 data[0] ^= 1;
-                Assert.False(mldsa.VerifyData(data, signature));
+                AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature));
             }
         }
 
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Tests
 
             using (MLDsa mldsa = ImportPrivateSeed(algorithm, privateSeed))
             {
-                Assert.True(mldsa.VerifyData(data, signature));
+                AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
                 signature.AsSpan().Fill(0);
                 Assert.Equal(signature.Length, mldsa.SignData(data, signature));
@@ -197,27 +197,60 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyData(testCase.Message, testCase.Signature, testCase.Context));
         }
 
-        private static void ExerciseSuccessfulVerify(MLDsa mldsa, byte[] data, byte[] signature, byte[] context)
+        protected static void ExerciseSuccessfulVerify(MLDsa mldsa, byte[] data, byte[] signature, byte[] context)
         {
-            Assert.True(mldsa.VerifyData(data, signature, context));
+            AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature, context));
             data[0] ^= 1;
-            Assert.False(mldsa.VerifyData(data, signature, context));
+            AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, context));
             data[0] ^= 1;
 
             signature[0] ^= 1;
-            Assert.False(mldsa.VerifyData(data, signature, context));
+            AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, context));
             signature[0] ^= 1;
 
             if (context.Length > 0)
             {
-                Assert.False(mldsa.VerifyData(data, signature, []));
+                AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, []));
 
                 context[0] ^= 1;
-                Assert.False(mldsa.VerifyData(data, signature, context));
+                AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, context));
                 context[0] ^= 1;
             }
+            else
+            {
+                AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, [0]));
+                AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, [1, 2, 3]));
+            }
 
-            Assert.True(mldsa.VerifyData(data, signature, context));
+            AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature, context));
+        }
+
+        protected static void VerifyDisposed(MLDsa mldsa)
+        {
+            PbeParameters pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 10);
+
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignData([], new byte[mldsa.Algorithm.SignatureSizeInBytes]));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyData([], new byte[mldsa.Algorithm.SignatureSizeInBytes]));
+
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateSeed(new byte[mldsa.Algorithm.PrivateSeedSizeInBytes]));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPublicKey(new byte[mldsa.Algorithm.PublicKeySizeInBytes]));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaSecretKey(new byte[mldsa.Algorithm.SecretKeySizeInBytes]));
+
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportPkcs8PrivateKey());
+            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportPkcs8PrivateKey(new byte[10000], out _));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportPkcs8PrivateKeyPem());
+
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKey([1, 2, 3], pbeParams));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKey("123", pbeParams));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportEncryptedPkcs8PrivateKey([1, 2, 3], pbeParams, new byte[10000], out _));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportEncryptedPkcs8PrivateKey("123", pbeParams, new byte[10000], out _));
+
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKeyPem([1, 2, 3], pbeParams));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKeyPem("123", pbeParams));
+
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportSubjectPublicKeyInfo());
+            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportSubjectPublicKeyInfo(new byte[10000], out _));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportSubjectPublicKeyInfoPem());
         }
     }
 }

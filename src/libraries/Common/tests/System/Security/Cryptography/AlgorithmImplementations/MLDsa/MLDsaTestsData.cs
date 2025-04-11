@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.Tests
 
         public static IEnumerable<object[]> AllNistTestCases()
         {
-            foreach (var nistTestCase in s_nistTestCases)
+            foreach (MLDsaNistTestCase nistTestCase in s_nistTestCases)
             {
                 yield return [nistTestCase];
             }

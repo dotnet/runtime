@@ -16,19 +16,19 @@ namespace System.Security.Cryptography.Tests
 
         protected override MLDsa ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            SafeEvpPKeyHandle key = Interop.Crypto.MLDsaGenerateKey(algorithm.Name, source);
+            using SafeEvpPKeyHandle key = Interop.Crypto.MLDsaGenerateKey(algorithm.Name, source);
             return new MLDsaOpenSsl(key);
         }
 
         protected override MLDsa ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: true);
+            using SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: true);
             return new MLDsaOpenSsl(key);
         }
 
         protected override MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: false);
+            using SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: false);
             return new MLDsaOpenSsl(key);
         }
 
@@ -49,20 +49,79 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void MLDsaOpenSsl_DuplicateKeyHandle()
         {
-            using SafeEvpPKeyHandle key = Interop.Crypto.EvpKemGeneratePkey(MLDsaAlgorithm.MLDsa44.Name);
+            using SafeEvpPKeyHandle key = Interop.Crypto.MLDsaGenerateKey(MLDsaAlgorithm.MLDsa44.Name, ReadOnlySpan<byte>.Empty);
             using MLDsaOpenSsl mldsa = new(key);
+            Assert.Same(MLDsaAlgorithm.MLDsa44, mldsa.Algorithm);
+
             SafeEvpPKeyHandle secondKey;
 
             using (secondKey = mldsa.DuplicateKeyHandle())
             {
-                Assert.False(secondKey.IsInvalid, nameof(secondKey.IsInvalid));
+                AssertExtensions.FalseExpression(secondKey.IsInvalid);
             }
 
-            Assert.True(secondKey.IsInvalid, nameof(secondKey.IsInvalid));
-            Assert.False(key.IsInvalid, nameof(key.IsInvalid));
+            AssertExtensions.TrueExpression(secondKey.IsInvalid, nameof(secondKey.IsInvalid));
+            AssertExtensions.FalseExpression(key.IsInvalid, nameof(key.IsInvalid));
 
-            byte[] seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes];
-            Assert.NotEqual(0, mldsa.ExportMLDsaPrivateSeed(seed)); // does not throw
+            VerifyInstanceIsUsable(mldsa);
+        }
+
+        [Fact]
+        public void MLDsaOpenSsl_DuplicateKeyHandleLifetime()
+        {
+            MLDsaOpenSsl one;
+            MLDsaOpenSsl two;
+
+            using (SafeEvpPKeyHandle key = Interop.Crypto.MLDsaGenerateKey(MLDsaAlgorithm.MLDsa44.Name, ReadOnlySpan<byte>.Empty))
+            {
+                one = new MLDsaOpenSsl(key);
+                Assert.Same(MLDsaAlgorithm.MLDsa44, one.Algorithm);
+            }
+
+            using (SafeEvpPKeyHandle dup = one.DuplicateKeyHandle())
+            {
+                two = new MLDsaOpenSsl(dup);
+                Assert.Same(MLDsaAlgorithm.MLDsa44, one.Algorithm);
+            }
+
+            using (two)
+            {
+                byte[] data = [ 1, 1, 2, 3, 5, 8 ];
+                byte[] context = [ 13, 21 ];
+                byte[] oneSignature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
+
+                using (one)
+                {
+                    Assert.Equal(oneSignature.Length, one.SignData(data, oneSignature, context));
+                    VerifyInstanceIsUsable(one);
+                    VerifyInstanceIsUsable(two);
+                }
+
+                VerifyDisposed(one);
+                Assert.Throws<ObjectDisposedException>(() => one.DuplicateKeyHandle());
+
+                VerifyInstanceIsUsable(two);
+                ExerciseSuccessfulVerify(two, data, oneSignature, context);
+            }
+
+            VerifyDisposed(two);
+            Assert.Throws<ObjectDisposedException>(() => two.DuplicateKeyHandle());
+        }
+
+        private static void VerifyInstanceIsUsable(MLDsaOpenSsl mldsa)
+        {
+            byte[] seed = new byte[mldsa.Algorithm.PrivateSeedSizeInBytes];
+            Assert.Equal(mldsa.Algorithm.PrivateSeedSizeInBytes, mldsa.ExportMLDsaPrivateSeed(seed)); // does not throw
+
+            byte[] secretKey = new byte[mldsa.Algorithm.SecretKeySizeInBytes];
+            Assert.Equal(mldsa.Algorithm.SecretKeySizeInBytes, mldsa.ExportMLDsaSecretKey(secretKey)); // does not throw
+
+            // usable
+            byte[] data = [ 1, 2, 3 ];
+            byte[] context = [ 4 ];
+            byte[] signature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
+            mldsa.SignData(data, signature, context);
+            ExerciseSuccessfulVerify(mldsa, data, signature, context);
         }
     }
 }

@@ -61,30 +61,7 @@ namespace System.Security.Cryptography.Tests
             mldsa.Dispose();
             mldsa.Dispose(); // no throw
 
-            PbeParameters pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 10);
-
-            Assert.Throws<ObjectDisposedException>(() => mldsa.SignData([], new byte[mldsa.Algorithm.SignatureSizeInBytes]));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyData([], new byte[mldsa.Algorithm.SignatureSizeInBytes]));
-
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateSeed(new byte[mldsa.Algorithm.PrivateSeedSizeInBytes]));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPublicKey(new byte[mldsa.Algorithm.PublicKeySizeInBytes]));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaSecretKey(new byte[mldsa.Algorithm.SecretKeySizeInBytes]));
-
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportPkcs8PrivateKey());
-            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportPkcs8PrivateKey(new byte[10000], out _));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportPkcs8PrivateKeyPem());
-
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKey([1, 2, 3], pbeParams));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKey("123", pbeParams));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportEncryptedPkcs8PrivateKey([1, 2, 3], pbeParams, new byte[10000], out _));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportEncryptedPkcs8PrivateKey("123", pbeParams, new byte[10000], out _));
-
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKeyPem([1, 2, 3], pbeParams));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportEncryptedPkcs8PrivateKeyPem("123", pbeParams));
-
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportSubjectPublicKeyInfo());
-            Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportSubjectPublicKeyInfo(new byte[10000], out _));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportSubjectPublicKeyInfoPem());
+            VerifyDisposed(mldsa);
         }
     }
 }

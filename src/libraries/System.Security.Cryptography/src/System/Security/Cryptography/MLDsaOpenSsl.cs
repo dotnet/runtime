@@ -23,6 +23,8 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
     public sealed partial class MLDsaOpenSsl : MLDsa
     {
+        private SafeEvpPKeyHandle _key;
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="MLDsaOpenSsl" /> class from an existing OpenSSL key
         ///   represented as an <c>EVP_PKEY*</c>.
@@ -49,12 +51,9 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("windows")]
         public MLDsaOpenSsl(SafeEvpPKeyHandle pkeyHandle) : base(AlgorithmFromHandle(pkeyHandle, out SafeEvpPKeyHandle upRefHandle))
         {
-            Initialize(upRefHandle);
+            _key = upRefHandle;
         }
 
-        // This partial can go away if partial constructors are available.
-        // https://github.com/dotnet/csharplang/issues/9058
-        private partial void Initialize(SafeEvpPKeyHandle upRefHandle);
         private static partial MLDsaAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle);
 
         /// <summary>

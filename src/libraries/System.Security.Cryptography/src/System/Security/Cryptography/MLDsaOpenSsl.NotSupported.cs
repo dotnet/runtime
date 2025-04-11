@@ -7,13 +7,6 @@ namespace System.Security.Cryptography
 {
     public sealed partial class MLDsaOpenSsl : MLDsa
     {
-#pragma warning disable CA1822 // Member does not access instance data and can be marked static
-        private partial void Initialize(SafeEvpPKeyHandle upRefHandle)
-#pragma warning restore CA1822
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         private static partial MLDsaAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle)
         {
             throw new PlatformNotSupportedException();

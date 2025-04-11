@@ -10,11 +10,6 @@ namespace System.Security.Cryptography
 {
     public sealed partial class MLDsaOpenSsl : MLDsa
     {
-        private SafeEvpPKeyHandle _key;
-
-        [MemberNotNull(nameof(_key))]
-        private partial void Initialize(SafeEvpPKeyHandle upRefHandle) => _key = upRefHandle;
-
         public partial SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             ThrowIfDisposed();
