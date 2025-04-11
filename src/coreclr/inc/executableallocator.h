@@ -276,7 +276,7 @@ public:
     // If templateInImage is not null, it will attempt to use it as the template, otherwise it will create an temporary in memory file to serve as the template
     // Some OS/Architectures may/may not be able to work with this, so this api is permitted to return NULL, and callers should have an alternate approach using
     // the codePageGenerator directly.
-    void* CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size));
+    void* CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
 };
 
 #define ExecutableWriterHolder ExecutableWriterHolderNoLog

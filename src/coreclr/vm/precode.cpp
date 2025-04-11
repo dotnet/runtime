@@ -545,19 +545,19 @@ void StubPrecode::StaticInitialize()
     InitializeLoaderHeapConfig(&s_stubPrecodeHeapConfig, StubPrecode::CodeSize, (void*)StubPrecodeCodeTemplate, StubPrecode::GenerateCodePage);
 }
 
-void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
+void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / StubPrecode::CodeSize) * StubPrecode::CodeSize;
     for (int i = 0; i < totalCodeSize; i += StubPrecode::CodeSize)
     {
-        memcpy(pageBase + i, (const void*)StubPrecodeCode, (BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode);
+        memcpy(pageBase + i, (const void*)StubPrecodeCode, (uint8_t*)StubPrecodeCode_End - (uint8_t*)StubPrecodeCode);
 
-        BYTE* pTargetSlot = pageBaseRX + i + pageSize + offsetof(StubPrecodeData, Target);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_Target_Offset)) = pTargetSlot;
+        uint8_t* pTargetSlot = pageBaseRX + i + pageSize + offsetof(StubPrecodeData, Target);
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_Target_Offset)) = pTargetSlot;
 
         BYTE* pMethodDescSlot = pageBaseRX + i + pageSize + offsetof(StubPrecodeData, SecretParam);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset)) = pMethodDescSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset)) = pMethodDescSlot;
     }
 #else // TARGET_X86
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)StubPrecodeCode), StubPrecode::CodeSize, pageSize);
@@ -690,7 +690,7 @@ void FixupPrecode::StaticInitialize()
     InitializeLoaderHeapConfig(&s_fixupStubPrecodeHeapConfig, FixupPrecode::CodeSize, (void*)FixupPrecodeCodeTemplate, FixupPrecode::GenerateCodePage);
 }
 
-void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
+void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize;
@@ -698,14 +698,14 @@ void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pag
     for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
     {
         memcpy(pageBase + i, (const void*)FixupPrecodeCode, FixupPrecode::CodeSize);
-        BYTE* pTargetSlot = pageBaseRX + i + pageSize + offsetof(FixupPrecodeData, Target);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_Target_Offset)) = pTargetSlot;
+        uint8_t* pTargetSlot = pageBaseRX + i + pageSize + offsetof(FixupPrecodeData, Target);
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_Target_Offset)) = pTargetSlot;
 
         BYTE* pMethodDescSlot = pageBaseRX + i + pageSize + offsetof(FixupPrecodeData, MethodDesc);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_MethodDesc_Offset)) = pMethodDescSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_MethodDesc_Offset)) = pMethodDescSlot;
 
         BYTE* pPrecodeFixupThunkSlot = pageBaseRX + i + pageSize + offsetof(FixupPrecodeData, PrecodeFixupThunk);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_PrecodeFixupThunk_Offset)) = pPrecodeFixupThunkSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_PrecodeFixupThunk_Offset)) = pPrecodeFixupThunkSlot;
     }
 #else // TARGET_X86
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)FixupPrecodeCode), FixupPrecode::CodeSize, pageSize);

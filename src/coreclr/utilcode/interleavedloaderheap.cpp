@@ -539,7 +539,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
     return pResult;
 }
 
-void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size))
+void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
 {
     pConfig->StubSize = (uint32_t)stubSize;
     pConfig->Template = ExecutableAllocator::Instance()->CreateTemplate(templateInImage, GetStubCodePageSize(), codePageGenerator);

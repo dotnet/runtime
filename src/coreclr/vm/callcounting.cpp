@@ -333,7 +333,7 @@ void CallCountingStub::StaticInitialize()
 
 #endif // DACCESS_COMPILE
 
-void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
+void CallCountingStub::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / CallCountingStub::CodeSize) * CallCountingStub::CodeSize;
@@ -344,13 +344,13 @@ void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T
 
         // Set absolute addresses of the slots in the stub
         BYTE* pCounterSlot = pageBaseRX + i + pageSize + offsetof(CallCountingStubData, RemainingCallCountCell);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_RemainingCallCountCell_Offset)) = pCounterSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_RemainingCallCountCell_Offset)) = pCounterSlot;
 
         BYTE* pTargetSlot = pageBaseRX + i + pageSize + offsetof(CallCountingStubData, TargetForMethod);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForMethod_Offset)) = pTargetSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForMethod_Offset)) = pTargetSlot;
 
         BYTE* pCountReachedZeroSlot = pageBaseRX + i + pageSize + offsetof(CallCountingStubData, TargetForThresholdReached);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForThresholdReached_Offset)) = pCountReachedZeroSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForThresholdReached_Offset)) = pCountReachedZeroSlot;
     }
 #else // TARGET_X86
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)CallCountingStubCode), CallCountingStub::CodeSize, pageSize);

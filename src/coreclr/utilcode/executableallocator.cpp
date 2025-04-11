@@ -1031,7 +1031,7 @@ void ExecutableAllocator::FreeThunksFromTemplate(void *pThunks, size_t templateS
     }
 }
 
-void* ExecutableAllocator::CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size))
+void* ExecutableAllocator::CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
 {
     return VMToOSInterface::CreateTemplate(templateInImage, templateSize, codePageGenerator);
 }
