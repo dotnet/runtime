@@ -10,11 +10,6 @@ namespace System.Security.Cryptography
 {
     public sealed partial class SlhDsaOpenSsl
     {
-        private SafeEvpPKeyHandle _key;
-
-        [MemberNotNull(nameof(_key))]
-        private partial void Initialize(SafeEvpPKeyHandle upRefHandle) => _key = upRefHandle;
-
         public partial SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             ThrowIfDisposed();
@@ -83,9 +78,6 @@ namespace System.Security.Cryptography
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.Crypto.SlhDsaVerifyPure(_key, data, context, signature);
-
-        protected override void ExportSlhDsaPrivateSeedCore(Span<byte> destination) =>
-            Interop.Crypto.SlhDsaExportSeed(_key, destination);
 
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportPublicKey(_key, destination);

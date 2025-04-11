@@ -53,7 +53,7 @@ namespace System.Security.Cryptography
 
         internal static partial SlhDsa GenerateKeyCore(SlhDsaAlgorithm algorithm)
         {
-            SafeEvpPKeyHandle key = Interop.Crypto.SlhDsaGenerateKey(algorithm.Name, ReadOnlySpan<byte>.Empty);
+            SafeEvpPKeyHandle key = Interop.Crypto.SlhDsaGenerateKey(algorithm.Name);
             return new SlhDsaImplementation(algorithm, key);
         }
 
@@ -69,9 +69,6 @@ namespace System.Security.Cryptography
         protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportSecretKey(_key, destination);
 
-        protected override void ExportSlhDsaPrivateSeedCore(Span<byte> destination) =>
-            Interop.Crypto.SlhDsaExportSeed(_key, destination);
-
         internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(source.Length == algorithm.PublicKeySizeInBytes, $"Public key was expected to be {algorithm.PublicKeySizeInBytes} bytes, but was {source.Length} bytes.");
@@ -86,13 +83,6 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(source.Length == algorithm.SecretKeySizeInBytes, $"Secret key was expected to be {algorithm.SecretKeySizeInBytes} bytes, but was {source.Length} bytes.");
             SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: true);
-            return new SlhDsaImplementation(algorithm, key);
-        }
-
-        internal static partial SlhDsa ImportSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
-        {
-            Debug.Assert(source.Length == algorithm.PrivateSeedSizeInBytes, $"Seed was expected to be {algorithm.PrivateSeedSizeInBytes} bytes, but was {source.Length} bytes.");
-            SafeEvpPKeyHandle key = Interop.Crypto.SlhDsaGenerateKey(algorithm.Name, source);
             return new SlhDsaImplementation(algorithm, key);
         }
     }

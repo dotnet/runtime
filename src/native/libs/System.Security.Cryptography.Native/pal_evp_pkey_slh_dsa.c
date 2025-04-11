@@ -7,7 +7,7 @@
 #include "openssl.h"
 #include <assert.h>
 
-EVP_PKEY* CryptoNative_SlhDsaGenerateKey(const char* keyType, uint8_t* seed, int32_t seedLen)
+EVP_PKEY* CryptoNative_SlhDsaGenerateKey(const char* keyType)
 {
 #if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
     if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
@@ -31,20 +31,6 @@ EVP_PKEY* CryptoNative_SlhDsaGenerateKey(const char* keyType, uint8_t* seed, int
         goto done;
     }
 
-    if (seed)
-    {
-        OSSL_PARAM params[] =
-        {
-            OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_SLH_DSA_SEED, (void*)seed, Int32ToSizeT(seedLen)),
-            OSSL_PARAM_construct_end(),
-        };
-
-        if (EVP_PKEY_CTX_set_params(pctx, params) <= 0)
-        {
-            goto done;
-        }
-    }
-
     if (EVP_PKEY_keygen(pctx, &pkey) != 1 && pkey != NULL)
     {
         EVP_PKEY_free(pkey);
@@ -60,8 +46,6 @@ done:
     return pkey;
 #else
     (void)keyType;
-    (void)seed;
-    (void)seedLen;
     return NULL;
 #endif
 }
@@ -216,11 +200,6 @@ done:
 int32_t CryptoNative_SlhDsaExportSecretKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
 {
     return EvpPKeyGetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PRIV_KEY, destination, destinationLength);
-}
-
-int32_t CryptoNative_SlhDsaExportSeed(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
-{
-    return EvpPKeyGetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_SLH_DSA_SEED, destination, destinationLength);
 }
 
 int32_t CryptoNative_SlhDsaExportPublicKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)

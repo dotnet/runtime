@@ -12,7 +12,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
     public sealed class SlhDsaDefaultImplementationTests : SlhDsaImplementationTestsBase
     {
         protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) => SlhDsa.GenerateKey(algorithm);
-        protected override SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> seed) => SlhDsa.ImportSlhDsaPrivateSeed(algorithm, seed);
         protected override SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => SlhDsa.ImportSlhDsaPublicKey(algorithm, source);
         protected override SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => SlhDsa.ImportSlhDsaSecretKey(algorithm, source);
     }

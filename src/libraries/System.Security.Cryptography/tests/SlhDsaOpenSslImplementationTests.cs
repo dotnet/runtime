@@ -13,13 +13,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
     {
         protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
         {
-            using SafeEvpPKeyHandle key = Interop.Crypto.SlhDsaGenerateKey(algorithm.Name, ReadOnlySpan<byte>.Empty);
-            return new SlhDsaOpenSsl(key);
-        }
-
-        protected override SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> seed)
-        {
-            using SafeEvpPKeyHandle key = Interop.Crypto.SlhDsaGenerateKey(algorithm.Name, seed);
+            using SafeEvpPKeyHandle key = Interop.Crypto.SlhDsaGenerateKey(algorithm.Name);
             return new SlhDsaOpenSsl(key);
         }
 

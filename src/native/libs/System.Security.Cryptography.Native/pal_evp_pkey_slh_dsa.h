@@ -23,10 +23,10 @@ typedef enum
 } PalSlhDsaId;
 
 /*
-Generates a new EVP_PKEY with random parameters or if seed is not NULL, uses the seed to generate the key.
+Generates a new EVP_PKEY with random parameters.
 The keyType is the type of the key (e.g., "SLH-DSA-SHA2-128s").
 */
-PALEXPORT EVP_PKEY* CryptoNative_SlhDsaGenerateKey(const char* keyType, uint8_t* seed, int32_t seedLen);
+PALEXPORT EVP_PKEY* CryptoNative_SlhDsaGenerateKey(const char* keyType);
 
 /*
 Sign a message using the provided SLH-DSA key.
@@ -54,11 +54,6 @@ PALEXPORT int32_t CryptoNative_SlhDsaVerifyPure(EVP_PKEY *pkey,
 Export the secret key from the given SLH-DSA key.
 */
 PALEXPORT int32_t CryptoNative_SlhDsaExportSecretKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength);
-
-/*
-Export the seed from the given SLH-DSA key which can be used to generate secret key.
-*/
-PALEXPORT int32_t CryptoNative_SlhDsaExportSeed(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength);
 
 /*
 Export the public key from the given SLH-DSA key.

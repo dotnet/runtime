@@ -283,7 +283,6 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_RsaVerifyHash)
     DllImportEntry(CryptoNative_SlhDsaExportPublicKey)
     DllImportEntry(CryptoNative_SlhDsaExportSecretKey)
-    DllImportEntry(CryptoNative_SlhDsaExportSeed)
     DllImportEntry(CryptoNative_SlhDsaGenerateKey)
     DllImportEntry(CryptoNative_SlhDsaGetPalId)
     DllImportEntry(CryptoNative_SlhDsaSignPure)

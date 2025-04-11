@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    public class SlhDsaConstructionTests : SlhDsaConstructionTestsBase
+    public class SlhDsaOpenSslConstructionTests : SlhDsaConstructionTestsBase
     {
         [Fact]
         public static void SlhDsaOpenSsl_NotSupportedOnNonUnixPlatforms()
@@ -15,12 +15,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
-        {
-            Assert.Fail();
-            throw new PlatformNotSupportedException();
-        }
-
-        protected override SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> seed)
         {
             Assert.Fail();
             throw new PlatformNotSupportedException();

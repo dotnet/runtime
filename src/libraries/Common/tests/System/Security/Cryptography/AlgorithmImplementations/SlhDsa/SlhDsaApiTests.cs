@@ -65,28 +65,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(ApiWithDestinationSpanTestData))]
-        public static void CallsExportSlhDsaPrivateSeedCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
-        {
-            using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.CreateOverriddenCoreMethodsFail(algorithm);
-
-            int privateSeedSize = algorithm.PrivateSeedSizeInBytes;
-            byte[] privateSeed = new byte[privateSeedSize + 2 * PaddingSize];
-            privateSeed.AsSpan().Fill(42);
-
-            slhDsa.ExportSlhDsaPrivateSeedCoreHook = (Span<byte> destination) =>
-            {
-                Assert.Equal(privateSeedSize, destination.Length);
-                destination.Fill(1);
-            };
-
-            // Extra bytes in destination buffer should not be touched
-            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
-            slhDsa.ExportSlhDsaPrivateSeed(privateSeed.AsSpan(PaddingSize, privateSeedSize + extraBytes));
-            AssertExpectedFill(privateSeed, fillElement: 1, paddingElement: 42, PaddingSize, privateSeedSize);
-        }
-
-        [Theory]
-        [MemberData(nameof(ApiWithDestinationSpanTestData))]
         public static void CallsSignDataCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.CreateOverriddenCoreMethodsFail(algorithm);
@@ -146,15 +124,15 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             // Since `returnValue` is true, this shows the Core method doesn't get called for the wrong sized signature.
             returnValue = true;
-            Assert.False(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize - 1), testContext));
-            Assert.False(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize + 1), testContext));
+            AssertExtensions.FalseExpression(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize - 1), testContext));
+            AssertExtensions.FalseExpression(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize + 1), testContext));
 
             // But does for the right one.
-            Assert.True(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize), testContext));
+            AssertExtensions.TrueExpression(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize), testContext));
 
             // And just to prove that the Core method controls the answer...
             returnValue = false;
-            Assert.False(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize), testContext));
+            AssertExtensions.FalseExpression(slhDsa.VerifyData(testData, testSignature.AsSpan(0, signatureSize), testContext));
         }
 
         [Theory]
@@ -167,12 +145,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             // First Dispose call should invoke overridden Dispose should be called
             slhDsa.DisposeHook = (bool disposing) =>
             {
-                Assert.True(disposing);
+                AssertExtensions.TrueExpression(disposing);
                 disposeCalled = true;
             };
 
             slhDsa.Dispose();
-            Assert.True(disposeCalled);
+            AssertExtensions.TrueExpression(disposeCalled);
 
             // Subsequent Dispose calls should be a no-op
             slhDsa.DisposeHook = _ => Assert.Fail();
@@ -182,9 +160,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) =>
-            SlhDsaMockImplementation.CreateOverriddenCoreMethodsFail(algorithm);
-
-        protected override SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> seed) =>
             SlhDsaMockImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
         protected override SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>

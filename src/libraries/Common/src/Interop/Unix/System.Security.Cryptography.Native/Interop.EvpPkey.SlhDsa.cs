@@ -13,11 +13,11 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
-        private static partial SafeEvpPKeyHandle CryptoNative_SlhDsaGenerateKey(string keyType, ReadOnlySpan<byte> seed, int seedLength);
+        private static partial SafeEvpPKeyHandle CryptoNative_SlhDsaGenerateKey(string keyType);
 
-        internal static SafeEvpPKeyHandle SlhDsaGenerateKey(string algorithmName, ReadOnlySpan<byte> seed)
+        internal static SafeEvpPKeyHandle SlhDsaGenerateKey(string algorithmName)
         {
-            SafeEvpPKeyHandle handle = CryptoNative_SlhDsaGenerateKey(algorithmName, seed, seed.Length);
+            SafeEvpPKeyHandle handle = CryptoNative_SlhDsaGenerateKey(algorithmName);
             Debug.Assert(handle != null, "handle != null");
 
             if (handle.IsInvalid)
@@ -135,16 +135,10 @@ internal static partial class Interop
         private static partial int CryptoNative_SlhDsaExportSecretKey(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
 
         [LibraryImport(Libraries.CryptoNative)]
-        private static partial int CryptoNative_SlhDsaExportSeed(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
-
-        [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_SlhDsaExportPublicKey(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
 
         internal static void SlhDsaExportSecretKey(SafeEvpPKeyHandle key, Span<byte> destination) =>
             Interop.Crypto.ExportKeyContents(key, destination, CryptoNative_SlhDsaExportSecretKey);
-
-        internal static void SlhDsaExportSeed(SafeEvpPKeyHandle key, Span<byte> destination) =>
-            Interop.Crypto.ExportKeyContents(key, destination, CryptoNative_SlhDsaExportSeed);
 
         internal static void SlhDsaExportPublicKey(SafeEvpPKeyHandle key, Span<byte> destination) =>
             Interop.Crypto.ExportKeyContents(key, destination, CryptoNative_SlhDsaExportPublicKey);

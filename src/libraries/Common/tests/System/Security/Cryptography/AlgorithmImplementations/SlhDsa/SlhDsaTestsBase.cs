@@ -13,7 +13,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
     public abstract class SlhDsaTestsBase
     {
         protected abstract SlhDsa GenerateKey(SlhDsaAlgorithm algorithm);
-        protected abstract SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> seed);
         protected abstract SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         protected abstract SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
     }
