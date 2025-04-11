@@ -172,4 +172,4 @@ public:
     };
 };
 
-#endif
+#endif // _INTEROPLIBINTERFACE_COMWRAPPERS_H_

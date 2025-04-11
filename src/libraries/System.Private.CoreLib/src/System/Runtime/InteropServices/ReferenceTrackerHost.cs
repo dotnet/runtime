@@ -47,7 +47,6 @@ namespace System.Runtime.InteropServices
             {
                 return Marshal.GetHRForException(e);
             }
-
         }
 
         [UnmanagedCallersOnly]
@@ -71,7 +70,6 @@ namespace System.Runtime.InteropServices
             {
                 return Marshal.GetHRForException(e);
             }
-
         }
 
         // Creates a proxy object (managed object wrapper) that points to the given IUnknown.
@@ -156,7 +154,7 @@ namespace System.Runtime.InteropServices
             if (*guid == ComWrappers.IID_IReferenceTrackerHost || *guid == ComWrappers.IID_IUnknown)
             {
                 *ppObject = pThis;
-                return 0;
+                return HResults.S_OK;
             }
             else
             {
