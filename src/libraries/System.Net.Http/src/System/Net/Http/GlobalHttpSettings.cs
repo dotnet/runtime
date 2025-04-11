@@ -28,10 +28,8 @@ namespace System.Net.Http
 
         internal static class MetricsHandler
         {
-            internal static bool IsGloballyEnabled { get; } = EnableMetrics;
-
             [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
-            public static bool EnableMetrics { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+            public static bool IsGloballyEnabled { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Diagnostics.Metrics.Meter.IsSupported",
                 true);
         }
