@@ -119,60 +119,25 @@ namespace System.IO.Compression
         /// </param>
         /// <exception cref="ArgumentException">If a Unicode encoding other than UTF-8 is specified for the <code>entryNameEncoding</code>.</exception>
         public ZipArchive(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
+            : this(mode, leaveOpen, entryNameEncoding, backingStream: null, archiveStream: null)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            EntryNameAndCommentEncoding = entryNameEncoding;
             Stream? extraTempStream = null;
 
             try
             {
                 _backingStream = null;
 
-                // check stream against mode
-                switch (mode)
+                if (ValidateMode(mode, stream))
                 {
-                    case ZipArchiveMode.Create:
-                        if (!stream.CanWrite)
-                            throw new ArgumentException(SR.CreateModeCapabilities);
-                        break;
-                    case ZipArchiveMode.Read:
-                        if (!stream.CanRead)
-                            throw new ArgumentException(SR.ReadModeCapabilities);
-                        if (!stream.CanSeek)
-                        {
-                            _backingStream = stream;
-                            extraTempStream = stream = new MemoryStream();
-                            _backingStream.CopyTo(stream);
-                            stream.Seek(0, SeekOrigin.Begin);
-                        }
-                        break;
-                    case ZipArchiveMode.Update:
-                        if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek)
-                            throw new ArgumentException(SR.UpdateModeCapabilities);
-                        break;
-                    default:
-                        // still have to throw this, because stream constructor doesn't do mode argument checks
-                        throw new ArgumentOutOfRangeException(nameof(mode));
+                    _backingStream = stream;
+                    extraTempStream = stream = new MemoryStream();
+                    _backingStream.CopyTo(stream);
+                    stream.Seek(0, SeekOrigin.Begin);
                 }
 
-                _mode = mode;
-                if (mode == ZipArchiveMode.Create && !stream.CanSeek)
-                    _archiveStream = new PositionPreservingWriteOnlyStreamWrapper(stream);
-                else
-                    _archiveStream = stream;
-                _archiveStreamOwner = null;
-                _entries = new List<ZipArchiveEntry>();
-                _entriesCollection = new ReadOnlyCollection<ZipArchiveEntry>(_entries);
-                _entriesDictionary = new Dictionary<string, ZipArchiveEntry>();
-                Changed = ChangeState.Unchanged;
-                _readEntries = false;
-                _leaveOpen = leaveOpen;
-                _centralDirectoryStart = 0; // invalid until ReadCentralDirectory
-                _isDisposed = false;
-                _numberOfThisDisk = 0; // invalid until ReadCentralDirectory
-                _archiveComment = Array.Empty<byte>();
-                _firstDeletedEntryOffset = long.MaxValue;
+                _archiveStream = DecideArchiveStream(mode, stream);
 
                 switch (mode)
                 {
@@ -193,10 +158,7 @@ namespace System.IO.Compression
                         {
                             ReadEndOfCentralDirectory();
                             EnsureCentralDirectoryRead();
-                            foreach (ZipArchiveEntry entry in _entries)
-                            {
-                                entry.ThrowIfNotOpenable(needToUncompress: false, needToLoadIntoMemory: true);
-                            }
+                            CheckIfEntriesAreOpenable();
                         }
                         break;
                 }
@@ -204,8 +166,79 @@ namespace System.IO.Compression
             catch
             {
                 extraTempStream?.Dispose();
-
                 throw;
+            }
+        }
+
+        /// Helper constructor that initializes some of the essential ZipArchive
+        /// information that other constructors initialize the same way.
+        /// Validations, checks and entry collection need to be done outside this constructor.
+        private ZipArchive(ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, Stream? backingStream, Stream? archiveStream)
+        {
+            _backingStream = backingStream;
+            _archiveStream = archiveStream!; // If null, this needs to be set by the calling constructor
+            _mode = mode;
+            EntryNameAndCommentEncoding = entryNameEncoding;
+            _archiveStreamOwner = null;
+            _entries = new List<ZipArchiveEntry>();
+            _entriesCollection = new ReadOnlyCollection<ZipArchiveEntry>(_entries);
+            _entriesDictionary = new Dictionary<string, ZipArchiveEntry>();
+            Changed = ChangeState.Unchanged;
+            _readEntries = false;
+            _leaveOpen = leaveOpen;
+            _centralDirectoryStart = 0; // invalid until ReadCentralDirectory
+            _isDisposed = false;
+            _numberOfThisDisk = 0; // invalid until ReadCentralDirectory
+            _archiveComment = Array.Empty<byte>();
+            _firstDeletedEntryOffset = long.MaxValue;
+        }
+
+        // Confirms that the specified stream is compatible with the specified mode.
+        // Returns a boolean that indicates that further work needs to be done for when
+        // the mode is Read and the stream is unseekable.
+        private static bool ValidateMode(ZipArchiveMode mode, Stream stream)
+        {
+            // check stream against mode
+            bool isReadModeAndUnseekable = false;
+
+            switch (mode)
+            {
+                case ZipArchiveMode.Create:
+                    if (!stream.CanWrite)
+                        throw new ArgumentException(SR.CreateModeCapabilities);
+                    break;
+                case ZipArchiveMode.Read:
+                    if (!stream.CanRead)
+                        throw new ArgumentException(SR.ReadModeCapabilities);
+                    if (!stream.CanSeek)
+                    {
+                        isReadModeAndUnseekable = true;
+                    }
+                    break;
+                case ZipArchiveMode.Update:
+                    if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek)
+                        throw new ArgumentException(SR.UpdateModeCapabilities);
+                    break;
+                default:
+                    // still have to throw this, because stream constructor doesn't do mode argument checks
+                    throw new ArgumentOutOfRangeException(nameof(mode));
+            }
+
+            return isReadModeAndUnseekable;
+        }
+
+        // Depending on mode and stream seekability, we will decide if the archive
+        // stream needs to be wrapped or not by another stream to help with writing.
+        private static Stream DecideArchiveStream(ZipArchiveMode mode, Stream stream) =>
+            mode == ZipArchiveMode.Create && !stream.CanSeek ?
+                new PositionPreservingWriteOnlyStreamWrapper(stream) :
+                stream;
+
+        private void CheckIfEntriesAreOpenable()
+        {
+            foreach (ZipArchiveEntry entry in _entries)
+            {
+                entry.ThrowIfNotOpenable(needToUncompress: false, needToLoadIntoMemory: true);
             }
         }
 

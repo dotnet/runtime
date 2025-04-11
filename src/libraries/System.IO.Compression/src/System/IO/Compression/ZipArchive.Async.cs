@@ -75,44 +75,15 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
         {
             Stream? backingStream = null;
 
-            // check stream against mode
-            switch (mode)
+            if (ValidateMode(mode, stream))
             {
-                case ZipArchiveMode.Create:
-                    if (!stream.CanWrite)
-                        throw new ArgumentException(SR.CreateModeCapabilities);
-                    break;
-                case ZipArchiveMode.Read:
-                    if (!stream.CanRead)
-                        throw new ArgumentException(SR.ReadModeCapabilities);
-                    if (!stream.CanSeek)
-                    {
-                        backingStream = stream;
-                        extraTempStream = stream = new MemoryStream();
-                        await backingStream.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
-                        stream.Seek(0, SeekOrigin.Begin);
-                    }
-                    break;
-                case ZipArchiveMode.Update:
-                    if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek)
-                        throw new ArgumentException(SR.UpdateModeCapabilities);
-                    break;
-                default:
-                    // still have to throw this, because stream constructor doesn't do mode argument checks
-                    throw new ArgumentOutOfRangeException(nameof(mode));
+                backingStream = stream;
+                extraTempStream = stream = new MemoryStream();
+                await backingStream.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+                stream.Seek(0, SeekOrigin.Begin);
             }
 
-            Stream archiveStream;
-            if (mode == ZipArchiveMode.Create && !stream.CanSeek)
-            {
-                archiveStream = new PositionPreservingWriteOnlyStreamWrapper(stream);
-            }
-            else
-            {
-                archiveStream = stream;
-            }
-
-            ZipArchive zipArchive = new(mode, leaveOpen, entryNameEncoding, backingStream, archiveStream, cancellationToken);
+            ZipArchive zipArchive = new(mode, leaveOpen, entryNameEncoding, backingStream, DecideArchiveStream(mode, stream));
 
             switch (mode)
             {
@@ -133,10 +104,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     {
                         await zipArchive.ReadEndOfCentralDirectoryAsync(cancellationToken).ConfigureAwait(false);
                         await zipArchive.EnsureCentralDirectoryReadAsync(cancellationToken).ConfigureAwait(false);
-                        foreach (ZipArchiveEntry entry in zipArchive._entries)
-                        {
-                            entry.ThrowIfNotOpenable(needToUncompress: false, needToLoadIntoMemory: true);
-                        }
+                        zipArchive.CheckIfEntriesAreOpenable();
                     }
                     break;
             }
@@ -153,33 +121,6 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
 
             throw;
         }
-    }
-
-    /// <summary>
-    /// This is a helper constructor for <see cref="CreateAsync"/>. It initializes most of the essential
-    /// ZipArchive information but the collection of entries needs to be done asynchronously, so it is
-    /// done by <see cref="CreateAsync"/>.
-    /// </summary>
-    private ZipArchive(ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, Stream? backingStream, Stream archiveStream, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        _backingStream = backingStream;
-        _mode = mode;
-        _archiveStream = archiveStream;
-        EntryNameAndCommentEncoding = entryNameEncoding;
-        _archiveStreamOwner = null;
-        _entries = new List<ZipArchiveEntry>();
-        _entriesCollection = new ReadOnlyCollection<ZipArchiveEntry>(_entries);
-        _entriesDictionary = new Dictionary<string, ZipArchiveEntry>();
-        Changed = ChangeState.Unchanged;
-        _readEntries = false;
-        _leaveOpen = leaveOpen;
-        _centralDirectoryStart = 0; // invalid until ReadCentralDirectory
-        _isDisposed = false;
-        _numberOfThisDisk = 0; // invalid until ReadCentralDirectory
-        _archiveComment = Array.Empty<byte>();
-        _firstDeletedEntryOffset = long.MaxValue;
     }
 
     public async ValueTask DisposeAsync()
