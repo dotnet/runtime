@@ -21,7 +21,7 @@ namespace System.Net.Http
         {
             var withTelemetry = HttpTelemetry.Log.IsEnabled()
                                 || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && pool.Settings._metrics!.RequestsQueueDuration.Enabled)
-                                || (GlobalHttpSettings.DiagnosticsHandler.IsGloballyEnabled && Activity.Current?.Source == DiagnosticsHandler.s_activitySource);
+                                || (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && Activity.Current?.Source == DiagnosticsHandler.s_activitySource);
             return withTelemetry
                 ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
                 : WaitWithCancellationAsync(async, requestCancellationToken);

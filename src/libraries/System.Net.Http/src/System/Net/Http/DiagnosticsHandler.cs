@@ -24,7 +24,7 @@ namespace System.Net.Http
 
         public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {
-            Debug.Assert(GlobalHttpSettings.DiagnosticsHandler.IsGloballyEnabled);
+            Debug.Assert(GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation);
             Debug.Assert(innerHandler is not null && propagator is not null);
 
             _innerHandler = innerHandler;

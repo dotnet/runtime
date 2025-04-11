@@ -49,7 +49,7 @@ namespace System.Net.Http
                         {
                             handler = new MetricsHandler(handler, _nativeMeterFactory, out _);
                         }
-                        if (GlobalHttpSettings.DiagnosticsHandler.IsGloballyEnabled)
+                        if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation)
                         {
                             handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
                         }

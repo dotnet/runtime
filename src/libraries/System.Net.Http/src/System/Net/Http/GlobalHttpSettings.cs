@@ -13,8 +13,6 @@ namespace System.Net.Http
     {
         internal static class DiagnosticsHandler
         {
-            internal static bool IsGloballyEnabled { get; } =  EnableActivityPropagation;
-
             [FeatureSwitchDefinition("System.Net.Http.EnableActivityPropagation")]
             public static bool EnableActivityPropagation { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.Http.EnableActivityPropagation",
