@@ -19,15 +19,16 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        public static unsafe partial void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        public static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
             => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]
+        [SuppressGCTransition]
         private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
         private static readonly ConditionalWeakTable<object, List<ManagedObjectWrapperHolder>> s_allManagedObjectWrapperTable = [];
 
-        static unsafe partial void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
+        private static unsafe void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
         {
             // Record the relationship between the managed object and this wrapper.
             // This will ensure that we keep all ManagedObjectWrapperHolders alive as long as the managed object is alive,
@@ -45,7 +46,7 @@ namespace System.Runtime.InteropServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_RegisterManagedObjectWrapperForDiagnostics")]
         private static unsafe partial void RegisterManagedObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack instance, ManagedObjectWrapper* wrapper);
 
-        static partial void RegisterNativeObjectWrapperForDiagnostics(NativeObjectWrapper registeredWrapper)
+        private static void RegisterNativeObjectWrapperForDiagnostics(NativeObjectWrapper registeredWrapper)
         {
             object target = registeredWrapper.ProxyHandle.Target!;
             RegisterNativeObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack.Create(ref target), ObjectHandleOnStack.Create(ref registeredWrapper));
@@ -99,10 +100,10 @@ namespace System.Runtime.InteropServices
         [SuppressGCTransition]
         private static partial IntPtr GetDefaultIReferenceTrackerTargetVftbl();
 
-        private static partial IntPtr CreateDefaultIReferenceTrackerTargetVftbl()
+        private static IntPtr CreateDefaultIReferenceTrackerTargetVftbl()
             => GetDefaultIReferenceTrackerTargetVftbl();
 
-        private static partial IntPtr GetTaggedImplCurrentVersion()
+        private static IntPtr GetTaggedImplCurrentVersion()
         {
             return GetTaggedImpl();
         }
@@ -113,15 +114,10 @@ namespace System.Runtime.InteropServices
 
         internal sealed partial class ManagedObjectWrapperHolder
         {
-            static partial void RegisterIsRootedCallback()
-            {
-                RegisterIsRootedCallbackInternal();
-            }
-
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_RegisterIsRootedCallback")]
-            private static partial void RegisterIsRootedCallbackInternal();
+            private static partial void RegisterIsRootedCallback();
 
-            private static partial IntPtr AllocateRefCountedHandle(ManagedObjectWrapperHolder holder)
+            private static IntPtr AllocateRefCountedHandle(ManagedObjectWrapperHolder holder)
             {
                 return AllocateRefCountedHandle(ObjectHandleOnStack.Create(ref holder));
             }

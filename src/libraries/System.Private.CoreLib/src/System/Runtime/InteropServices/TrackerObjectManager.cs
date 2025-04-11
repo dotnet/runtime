@@ -37,14 +37,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal static partial bool IsGlobalPeggingEnabled { get; }
-
-        private static partial bool HasReferenceTrackerManager { get; }
-
-        private static partial bool TryRegisterReferenceTrackerManager(IntPtr referenceTrackerManager);
-
-        static partial void RegisterGCCallbacks();
-
         internal static void AfterWrapperCreated(IntPtr referenceTracker)
         {
             Debug.Assert(referenceTracker != IntPtr.Zero);

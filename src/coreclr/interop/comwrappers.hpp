@@ -79,9 +79,9 @@ public: // Lifetime
 class TrackerObjectManager
 {
 public:
-    static HRESULT HasReferenceTrackerManager();
+    static bool HasReferenceTrackerManager();
 
-    static HRESULT TryRegisterReferenceTrackerManager(_In_ IReferenceTrackerManager* manager);
+    static bool TryRegisterReferenceTrackerManager(_In_ IReferenceTrackerManager* manager);
 
     // Called before wrapper is about to be finalized (the same lifetime as short weak handle).
     static HRESULT BeforeWrapperFinalized(_In_ IReferenceTracker* obj);

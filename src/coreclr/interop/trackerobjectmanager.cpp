@@ -9,14 +9,11 @@ using RuntimeCallContext = InteropLibImports::RuntimeCallContext;
 
 namespace
 {
-    // 3cf184b4-7ccb-4dda-8455-7e6ce99a3298
-    const GUID IID_IReferenceTrackerManager = { 0x3cf184b4, 0x7ccb, 0x4dda, { 0x84, 0x55, 0x7e, 0x6c, 0xe9, 0x9a, 0x32, 0x98} };
-
     // 04b3486c-4687-4229-8d14-505ab584dd88
     const GUID IID_IFindReferenceTargetsCallback = { 0x04b3486c, 0x4687, 0x4229, { 0x8d, 0x14, 0x50, 0x5a, 0xb5, 0x84, 0xdd, 0x88} };
 
     VolatilePtr<IReferenceTrackerManager> s_TrackerManager; // The one and only Tracker Manager instance
-    Volatile<BOOL> s_HasTrackingStarted = FALSE;
+    Volatile<bool> s_HasTrackingStarted = false;
 
     // Indicates if walking the external objects is needed.
     // (i.e. Have any IReferenceTracker instances been found?)
@@ -95,7 +92,7 @@ namespace
     {
         _ASSERTE(cxt != nullptr);
 
-        BOOL walkFailed = FALSE;
+        bool walkFailed = false;
         HRESULT hr = S_OK;
 
         IReferenceTracker* trackerTarget = nullptr;
@@ -115,26 +112,26 @@ namespace
         if (FAILED(hr))
         {
             // Remember the fact that we've failed and stop walking
-            walkFailed = TRUE;
+            walkFailed = true;
             InteropLibImports::SetGlobalPeggingState(true);
         }
 
         _ASSERTE(s_TrackerManager != nullptr);
-        (void)s_TrackerManager->FindTrackerTargetsCompleted(walkFailed);
+        (void)s_TrackerManager->FindTrackerTargetsCompleted(walkFailed ? TRUE : FALSE);
 
         return hr;
     }
 }
 
-HRESULT TrackerObjectManager::HasReferenceTrackerManager()
+bool TrackerObjectManager::HasReferenceTrackerManager()
 {
-    return (s_TrackerManager != nullptr) ? S_OK : S_FALSE;
+    return s_TrackerManager != nullptr;
 }
 
-HRESULT TrackerObjectManager::TryRegisterReferenceTrackerManager(_In_ IReferenceTrackerManager* manager)
+bool TrackerObjectManager::TryRegisterReferenceTrackerManager(_In_ IReferenceTrackerManager* manager)
 {
     _ASSERTE(manager != nullptr);
-    return (InterlockedCompareExchangePointer((void**)&s_TrackerManager, manager, nullptr) == nullptr) ? S_OK : S_FALSE;
+    return InterlockedCompareExchangePointer((void**)&s_TrackerManager, manager, nullptr) == nullptr;
 }
 
 HRESULT TrackerObjectManager::BeforeWrapperFinalized(_In_ IReferenceTracker* obj)
@@ -161,10 +158,10 @@ HRESULT TrackerObjectManager::BeginReferenceTracking(_In_ RuntimeCallContext* cx
 
     HRESULT hr;
 
-    _ASSERTE(s_HasTrackingStarted == FALSE);
+    _ASSERTE(s_HasTrackingStarted == false);
     _ASSERTE(InteropLibImports::GetGlobalPeggingState());
 
-    s_HasTrackingStarted = TRUE;
+    s_HasTrackingStarted = true;
 
     // Let the tracker runtime know we are about to walk external objects so that
     // they can lock their reference cache. Note that the tracker runtime doesn't need to
@@ -185,7 +182,7 @@ HRESULT TrackerObjectManager::BeginReferenceTracking(_In_ RuntimeCallContext* cx
 
 HRESULT TrackerObjectManager::EndReferenceTracking()
 {
-    if (s_HasTrackingStarted != TRUE
+    if (s_HasTrackingStarted != true
         || !ShouldWalkExternalObjects())
         return S_FALSE;
 
@@ -201,7 +198,7 @@ HRESULT TrackerObjectManager::EndReferenceTracking()
     _ASSERTE(SUCCEEDED(hr));
 
     InteropLibImports::SetGlobalPeggingState(true);
-    s_HasTrackingStarted = FALSE;
+    s_HasTrackingStarted = false;
 
     return hr;
 }

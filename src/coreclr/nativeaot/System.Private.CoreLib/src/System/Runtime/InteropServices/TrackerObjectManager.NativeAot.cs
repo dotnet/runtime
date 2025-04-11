@@ -95,17 +95,17 @@ namespace System.Runtime.InteropServices
             return s_referenceCache.AddDependentHandle(target, foundReference);
         }
 
-        private static partial bool HasReferenceTrackerManager
+        private static bool HasReferenceTrackerManager
             => s_trackerManager != IntPtr.Zero;
 
-        private static partial bool TryRegisterReferenceTrackerManager(IntPtr referenceTrackerManager)
+        private static bool TryRegisterReferenceTrackerManager(IntPtr referenceTrackerManager)
         {
             return Interlocked.CompareExchange(ref s_trackerManager, referenceTrackerManager, IntPtr.Zero) == IntPtr.Zero;
         }
 
-        internal static partial bool IsGlobalPeggingEnabled => s_isGlobalPeggingOn;
+        internal static bool IsGlobalPeggingEnabled => s_isGlobalPeggingOn;
 
-        static partial void RegisterGCCallbacks()
+        private static void RegisterGCCallbacks()
         {
             unsafe
             {

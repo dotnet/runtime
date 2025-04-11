@@ -35,8 +35,8 @@ namespace InteropLib
             }
 
         protected:
-            Volatile<InteropLib::OBJECTHANDLE> target;
-            LONGLONG _refCount;
+            Volatile<InteropLib::OBJECTHANDLE> _target;
+            int64_t _refCount;
 
             Volatile<InteropLib::Com::CreateComInterfaceFlagsEx> _flags;
             int32_t _userDefinedCount;

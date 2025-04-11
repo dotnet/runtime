@@ -242,10 +242,10 @@
     <Compile Include="src\System\RuntimeType.BoxCache.cs" />
     <Compile Include="src\System\RuntimeType.CreateUninitializedCache.CoreCLR.cs" />
     <Compile Include="src\System\RuntimeType.GenericCache.cs" />
-    <Compile Include="src\System\Runtime\InteropServices\TrackerObjectManager.CoreCLR.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\TrackerObjectManager.CoreCLR.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">

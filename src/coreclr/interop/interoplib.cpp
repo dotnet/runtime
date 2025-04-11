@@ -64,12 +64,12 @@ namespace InteropLib
 
         bool HasReferenceTrackerManager() noexcept
         {
-            return TrackerObjectManager::HasReferenceTrackerManager() == S_OK;
+            return TrackerObjectManager::HasReferenceTrackerManager();
         }
 
         bool TryRegisterReferenceTrackerManager(_In_ void* manager) noexcept
         {
-            return TrackerObjectManager::TryRegisterReferenceTrackerManager((IReferenceTrackerManager*)manager) == S_OK;
+            return TrackerObjectManager::TryRegisterReferenceTrackerManager((IReferenceTrackerManager*)manager);
         }
 
         bool IsRooted(InteropLib::ABI::ManagedObjectWrapperLayout* mow) noexcept

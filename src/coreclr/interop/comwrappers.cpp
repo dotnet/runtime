@@ -501,7 +501,7 @@ ULONG ManagedObjectWrapper::ReleaseFromReferenceTracker()
     // must destroy the wrapper.
     if (refCount == DestroySentinel)
     {
-        InteropLib::OBJECTHANDLE handle = InterlockedExchangePointer(&target, nullptr);
+        InteropLib::OBJECTHANDLE handle = InterlockedExchangePointer(&_target, nullptr);
         if (handle != nullptr)
         {
             InteropLibImports::DestroyHandle(handle);
@@ -537,7 +537,7 @@ HRESULT ManagedObjectWrapper::QueryInterface(
         // Check if the managed object has implemented ICustomQueryInterface
         if (!IsSet(CreateComInterfaceFlagsEx::LacksICustomQueryInterface))
         {
-            TryInvokeICustomQueryInterfaceResult result = InteropLibImports::TryInvokeICustomQueryInterface(target, riid, ppvObject);
+            TryInvokeICustomQueryInterfaceResult result = InteropLibImports::TryInvokeICustomQueryInterface(GetTarget(), riid, ppvObject);
             switch (result)
             {
                 case TryInvokeICustomQueryInterfaceResult::Handled:
@@ -601,5 +601,5 @@ ULONG ManagedObjectWrapper::Release(void)
 
 InteropLib::OBJECTHANDLE ManagedObjectWrapper::GetTarget() const
 {
-    return target;
+    return _target;
 }

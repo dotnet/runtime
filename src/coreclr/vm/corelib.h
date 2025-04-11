@@ -443,8 +443,8 @@ DEFINE_FIELD_U(_trackerObject, ReferenceTrackerNativeObjectWrapperObject, _track
 DEFINE_FIELD_U(_contextToken, ReferenceTrackerNativeObjectWrapperObject, _contextToken)
 DEFINE_FIELD_U(_trackerObjectDisconnected, ReferenceTrackerNativeObjectWrapperObject, _trackerObjectDisconnected)
 DEFINE_CLASS_U(Interop, GCHandleSet+Entry, GCHandleSetEntryObject)
-DEFINE_FIELD_U(m_next, GCHandleSetEntryObject, m_next)
-DEFINE_FIELD_U(m_value, GCHandleSetEntryObject, m_handle)
+DEFINE_FIELD_U(_next, GCHandleSetEntryObject, _next)
+DEFINE_FIELD_U(_value, GCHandleSetEntryObject, _value)
 DEFINE_CLASS_U(Interop, GCHandleSet, NoClass)
 DEFINE_FIELD_U(_buckets, GCHandleSetObject, _buckets)
 #endif //FEATURE_COMWRAPPERS

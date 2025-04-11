@@ -154,6 +154,7 @@ namespace System.Runtime.InteropServices
             if (*guid == ComWrappers.IID_IReferenceTrackerHost || *guid == ComWrappers.IID_IUnknown)
             {
                 *ppObject = pThis;
+                Marshal.AddRef(pThis);
                 return HResults.S_OK;
             }
             else

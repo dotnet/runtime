@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
     {
         internal sealed unsafe partial class ManagedObjectWrapperHolder
         {
-            static partial void RegisterIsRootedCallback()
+            private static void RegisterIsRootedCallback()
             {
                 delegate* unmanaged<IntPtr, bool> callback = &IsRootedCallback;
                 if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, MethodTable.Of<ManagedObjectWrapperHolder>()))
@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices
                 return holder->_wrapper->IsRooted;
             }
 
-            private static partial IntPtr AllocateRefCountedHandle(ManagedObjectWrapperHolder holder)
+            private static IntPtr AllocateRefCountedHandle(ManagedObjectWrapperHolder holder)
             {
                 return RuntimeImports.RhHandleAllocRefCounted(holder);
             }
@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        public static unsafe partial void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        public static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
         {
             fpQueryInterface = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IUnknown_QueryInterface;
             fpAddRef = RuntimeImports.RhGetIUnknownAddRef(); // Implemented in C/C++ to avoid GC transitions
@@ -106,22 +106,10 @@ namespace System.Runtime.InteropServices
             return wrapper->Unpeg();
         }
 
-        private static partial IntPtr CreateDefaultIReferenceTrackerTargetVftbl()
+        private static unsafe IntPtr CreateDefaultIReferenceTrackerTargetVftbl()
         {
-            unsafe
-            {
-                IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 7 * sizeof(IntPtr));
-                vftbl[0] = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IReferenceTrackerTarget_QueryInterface;
-                GetIUnknownImpl(out _, out vftbl[1], out vftbl[2]);
-                vftbl[3] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_AddRefFromReferenceTracker;
-                vftbl[4] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_ReleaseFromReferenceTracker;
-                vftbl[5] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_Peg;
-                vftbl[6] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_Unpeg;
-                return (IntPtr)vftbl;
-            }
+            return (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in VtableImplementations.IReferenceTrackerTarget));
         }
-
-
 
         [UnmanagedCallersOnly]
         internal static unsafe int ITaggedImpl_IsCurrentVersion(IntPtr pThis, IntPtr version)
@@ -131,11 +119,67 @@ namespace System.Runtime.InteropServices
                 : HResults.E_FAIL;
         }
 
-        private static partial IntPtr GetTaggedImplCurrentVersion()
+        private static IntPtr GetTaggedImplCurrentVersion()
         {
             unsafe
             {
                 return (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion;
+            }
+        }
+
+        private static class VtableImplementations
+        {
+            public unsafe struct IUnknownVftbl
+            {
+                public delegate* unmanaged<IntPtr, Guid*, IntPtr*, int> QueryInterface;
+                public delegate* unmanaged<IntPtr, int> AddRef;
+                public delegate* unmanaged<IntPtr, uint> Release;
+            }
+
+            public unsafe struct IReferenceTrackerTargetVftbl
+            {
+                public IUnknownVftbl IUnknownVftbl;
+                public delegate* unmanaged<IntPtr, uint> AddRefFromReferenceTracker;
+                public delegate* unmanaged<IntPtr, uint> ReleaseFromReferenceTracker;
+                public delegate* unmanaged<IntPtr, uint> Peg;
+                public delegate* unmanaged<IntPtr, uint> Unpeg;
+            }
+
+            public unsafe struct ITaggedImplVftbl
+            {
+                public IUnknownVftbl IUnknownVftbl;
+                public delegate* unmanaged<IntPtr, IntPtr, int> IsCurrentVersion;
+            }
+
+            [FixedAddressValueType]
+            public static readonly IUnknownVftbl IUnknown;
+
+            [FixedAddressValueType]
+            public static readonly IReferenceTrackerTargetVftbl IReferenceTrackerTarget;
+
+            [FixedAddressValueType]
+            public static readonly ITaggedImplVftbl ITaggedImpl;
+
+            static unsafe VtableImplementations()
+            {
+                // Use the "pre-inited vtable" pattern to ensure that ILC can pre-compile these vtables.
+                GetIUnknownImpl(
+                    fpQueryInterface: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref IUnknown))->QueryInterface,
+                    fpAddRef: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref IUnknown))->AddRef,
+                    fpRelease: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref IUnknown))->Release);
+
+                IReferenceTrackerTarget.IUnknownVftbl.QueryInterface = (delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&IReferenceTrackerTarget_QueryInterface;
+                GetIUnknownImpl(
+                    fpQueryInterface: out _,
+                    fpAddRef: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref IReferenceTrackerTarget.IUnknownVftbl))->AddRef,
+                    fpRelease: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref IReferenceTrackerTarget.IUnknownVftbl))->Release);
+                IReferenceTrackerTarget.AddRefFromReferenceTracker = (delegate* unmanaged<IntPtr, uint>)&IReferenceTrackerTarget_AddRefFromReferenceTracker;
+                IReferenceTrackerTarget.ReleaseFromReferenceTracker = (delegate* unmanaged<IntPtr, uint>)&IReferenceTrackerTarget_ReleaseFromReferenceTracker;
+                IReferenceTrackerTarget.Peg = (delegate* unmanaged<IntPtr, uint>)&IReferenceTrackerTarget_Peg;
+                IReferenceTrackerTarget.Unpeg = (delegate* unmanaged<IntPtr, uint>)&IReferenceTrackerTarget_Unpeg;
+
+                *(IUnknownVftbl*)Unsafe.AsPointer(ref ITaggedImpl) = IUnknown;
+                ITaggedImpl.IsCurrentVersion = (delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion;
             }
         }
     }

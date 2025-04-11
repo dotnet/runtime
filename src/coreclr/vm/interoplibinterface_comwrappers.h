@@ -141,8 +141,8 @@ class GCHandleSetEntryObject final : public Object
 {
     friend class CoreLibBinder;
     public:
-    HANDLESETENTRYREF m_next;
-    OBJECTHANDLE m_handle;
+    HANDLESETENTRYREF _next;
+    OBJECTHANDLE _value;
 };
 
 class GCHandleSetObject final : public Object

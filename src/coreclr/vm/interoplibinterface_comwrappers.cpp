@@ -56,17 +56,13 @@ extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
         _Out_ void** fpAddRef,
         _Out_ void** fpRelease)
 {
-    QCALL_CONTRACT;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     _ASSERTE(fpQueryInterface != NULL);
     _ASSERTE(fpAddRef != NULL);
     _ASSERTE(fpRelease != NULL);
 
-    BEGIN_QCALL;
-
     InteropLib::Com::GetIUnknownImpl(fpQueryInterface, fpAddRef, fpRelease);
-
-    END_QCALL;
 }
 
 void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
@@ -186,28 +182,14 @@ extern "C" void const* QCALLTYPE ComWrappers_GetIReferenceTrackerTargetVftbl()
 
     void const* vftbl = NULL;
 
-    BEGIN_QCALL;
-
-    vftbl = InteropLib::Com::GetIReferenceTrackerTargetVftbl();
-
-    END_QCALL;
-
-    return vftbl;
+    return InteropLib::Com::GetIReferenceTrackerTargetVftbl();
 }
 
 extern "C" void const* QCALLTYPE ComWrappers_GetTaggedImpl()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    void const* fpTaggedIsCurrentVersion = NULL;
-
-    BEGIN_QCALL;
-
-    fpTaggedIsCurrentVersion = InteropLib::Com::GetTaggedCurrentVersionImpl();
-
-    END_QCALL;
-
-    return fpTaggedIsCurrentVersion;
+    return InteropLib::Com::GetTaggedCurrentVersionImpl();
 }
 
 extern "C" void QCALLTYPE ComWrappers_RegisterManagedObjectWrapperForDiagnostics(
@@ -255,36 +237,20 @@ extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_HasReferenceTrackerManager()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    CLR_BOOL hasManager = false;
-
-    BEGIN_QCALL;
-
-    hasManager = InteropLib::Com::HasReferenceTrackerManager();
-
-    END_QCALL;
-
-    return hasManager;
+    return InteropLib::Com::HasReferenceTrackerManager();
 }
 
 extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_TryRegisterReferenceTrackerManager(_In_ void* manager)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    CLR_BOOL success = false;
-
-    BEGIN_QCALL;
-
-    success = InteropLib::Com::TryRegisterReferenceTrackerManager(manager);
-
-    END_QCALL;
-
-    return success;
+    return InteropLib::Com::TryRegisterReferenceTrackerManager(manager);
 }
 
 OBJECTHANDLE GCHandleSetObject::Iterator::Current() const
 {
     LIMITED_METHOD_CONTRACT;
-    return _currentEntry->m_handle;
+    return _currentEntry->_value;
 }
 
 bool GCHandleSetObject::Iterator::MoveNext()
@@ -302,7 +268,7 @@ bool GCHandleSetObject::Iterator::MoveNext()
 
     if (_currentEntry != NULL)
     {
-        _currentEntry = _currentEntry->m_next;
+        _currentEntry = _currentEntry->_next;
     }
 
     if (_currentEntry == NULL)
@@ -700,15 +666,7 @@ extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_IsGlobalPeggingEnabled()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    CLR_BOOL isEnabled = false;
-
-    BEGIN_QCALL;
-
-    isEnabled = InteropLibImports::GetGlobalPeggingState();
-
-    END_QCALL;
-
-    return isEnabled;
+    return InteropLibImports::GetGlobalPeggingState();
 }
 
 #endif // FEATURE_COMWRAPPERS
