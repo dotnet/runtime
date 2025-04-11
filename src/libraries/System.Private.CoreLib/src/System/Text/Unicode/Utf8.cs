@@ -9,7 +9,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Text.Unicode
 {
-#if SYSTEM_PRIVATE_CORELIB
+#if SYSTEM_PRIVATE_CORELIB || MICROSOFT_BCL_MEMORY
+    /// <summary>
+    /// Provides methods for transcoding between UTF-8 and UTF-16.
+    /// </summary>
     public
 #else
     internal
@@ -216,6 +219,7 @@ namespace System.Text.Unicode
             }
         }
 
+#if NET
         internal static unsafe OperationStatus ToUtf16PreservingReplacement(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
             // NOTE: Changes to this method should be kept in sync with ToUtf16 above.
@@ -807,6 +811,7 @@ namespace System.Text.Unicode
                 return false;
             }
         }
+#endif
 
         /// <summary>
         /// Validates that the value is well-formed UTF-8.
