@@ -74,7 +74,14 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 		exit (1);
 }
 
+#if SIZEOF_VOID_P == 4
 typedef uint32_t target_mword;
+typedef int32_t d_handle;
+#else
+typedef uint64_t target_mword;
+typedef int64_t d_handle;
+#endif
+
 typedef target_mword SgenDescriptor;
 typedef SgenDescriptor MonoGCDescriptor;
 MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
@@ -367,10 +374,10 @@ mono_wasm_set_main_args (int argc, char* argv[])
 	mono_runtime_set_main_args (argc, argv);
 }
 
-EMSCRIPTEN_KEEPALIVE int
+EMSCRIPTEN_KEEPALIVE d_handle
 mono_wasm_strdup (const char *s)
 {
-	return (int)strdup (s);
+	return (d_handle)strdup (s);
 }
 
 EMSCRIPTEN_KEEPALIVE void
