@@ -246,6 +246,7 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 
 // Calls
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodToken)
+OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodToken)
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodToken)
 OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodToken)
 
