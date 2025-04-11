@@ -8,10 +8,16 @@ namespace System.Buffers
 {
     public ref partial struct SequenceReader<T> where T : unmanaged, IEquatable<T>
     {
-        private SequencePosition _currentPosition;
-        private SequencePosition _nextPosition;
-        private bool _moreData;
+        // keep all fields explicit to track (and pack) space
+
+        // deconstruct position for packing purposes
+        private object? _currentPositionObject;
+        private int _currentPositionInteger, _currentSpanIndex;
+
         private readonly long _length;
+        private long _consumedAtStartOfCurrentSpan;
+        private readonly ReadOnlySequence<T> _sequence;
+        private ReadOnlySpan<T> _currentSpan;
 
         /// <summary>
         /// Create a <see cref="SequenceReader{T}"/> over the given <see cref="ReadOnlySequence{T}"/>.
@@ -19,32 +25,41 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public SequenceReader(ReadOnlySequence<T> sequence)
         {
-            CurrentSpanIndex = 0;
-            Consumed = 0;
-            Sequence = sequence;
-            _currentPosition = sequence.Start;
-            _length = -1;
+            _sequence = sequence;
 
-            sequence.GetFirstSpan(out ReadOnlySpan<T> first, out _nextPosition);
-            CurrentSpan = first;
-            _moreData = first.Length > 0;
+            SequencePosition position = sequence.Start;
+            _currentPositionObject = position.GetObject();
+            _currentPositionInteger = position.GetInteger();
+            _currentSpan = sequence.FirstSpan;
+            _currentSpanIndex = 0;
+            _consumedAtStartOfCurrentSpan = 0;
 
-            if (!_moreData && !sequence.IsSingleSegment)
+            if (sequence.IsSingleSegment)
             {
-                _moreData = true;
-                GetNextSpan();
+                _length = _currentSpan.Length;
             }
+            else
+            {
+                _length = -1; // computed on-demand
+                if (_currentSpan.IsEmpty)
+                {
+                    // edge-case; multi-segment with zero-length as first
+                    TryGetNextSpan();
+                }
+            }
+
+            AssertValidPosition();
         }
 
         /// <summary>
         /// True when there is no more data in the <see cref="Sequence"/>.
         /// </summary>
-        public readonly bool End => !_moreData;
+        public readonly bool End => _currentSpanIndex == _currentSpan.Length; // because of eager fetch, only ever true at EOF
 
         /// <summary>
         /// The underlying <see cref="ReadOnlySequence{T}"/> for the reader.
         /// </summary>
-        public ReadOnlySequence<T> Sequence { get; }
+        public readonly ReadOnlySequence<T> Sequence => _sequence;
 
         /// <summary>
         /// Gets the unread portion of the <see cref="Sequence"/>.
@@ -52,23 +67,22 @@ namespace System.Buffers
         /// <value>
         /// The unread portion of the <see cref="Sequence"/>.
         /// </value>
-        public readonly ReadOnlySequence<T> UnreadSequence => Sequence.Slice(Position);
+        public readonly ReadOnlySequence<T> UnreadSequence => _sequence.Slice(Position);
 
         /// <summary>
         /// The current position in the <see cref="Sequence"/>.
         /// </summary>
-        public readonly SequencePosition Position
-            => Sequence.GetPosition(CurrentSpanIndex, _currentPosition);
+        public readonly SequencePosition Position => new(_currentPositionObject, _currentPositionInteger + _currentSpanIndex); // since index in same segment, this is valid
 
         /// <summary>
         /// The current segment in the <see cref="Sequence"/> as a span.
         /// </summary>
-        public ReadOnlySpan<T> CurrentSpan { get; private set; }
+        public readonly ReadOnlySpan<T> CurrentSpan => _currentSpan;
 
         /// <summary>
         /// The index in the <see cref="CurrentSpan"/>.
         /// </summary>
-        public int CurrentSpanIndex { get; private set; }
+        public readonly int CurrentSpanIndex => _currentSpanIndex;
 
         /// <summary>
         /// The unread portion of the <see cref="CurrentSpan"/>.
@@ -76,13 +90,13 @@ namespace System.Buffers
         public readonly ReadOnlySpan<T> UnreadSpan
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => CurrentSpan.Slice(CurrentSpanIndex);
+            get => _currentSpan.Slice(_currentSpanIndex);
         }
 
         /// <summary>
         /// The total number of <typeparamref name="T"/>'s processed by the reader.
         /// </summary>
-        public long Consumed { get; private set; }
+        public readonly long Consumed => _consumedAtStartOfCurrentSpan + _currentSpanIndex;
 
         /// <summary>
         /// Remaining <typeparamref name="T"/>'s in the reader's <see cref="Sequence"/>.
@@ -99,7 +113,7 @@ namespace System.Buffers
                 if (_length < 0)
                 {
                     // Cast-away readonly to initialize lazy field
-                    Unsafe.AsRef(in _length) = Sequence.Length;
+                    Unsafe.AsRef(in _length) = _sequence.Length;
                 }
                 return _length;
             }
@@ -113,16 +127,20 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool TryPeek(out T value)
         {
-            if (_moreData)
+            AssertValidPosition();
+
+            // hoisting into locals for the compare allows us to avoid a bounds check
+            int i = _currentSpanIndex;
+            ReadOnlySpan<T> currentSpan = _currentSpan;
+
+            if ((uint)i < (uint)currentSpan.Length)
             {
-                value = CurrentSpan[CurrentSpanIndex];
+                value = currentSpan[i];
                 return true;
             }
-            else
-            {
-                value = default;
-                return false;
-            }
+
+            value = default;
+            return false;
         }
 
         /// <summary>
@@ -133,11 +151,12 @@ namespace System.Buffers
         /// <returns><c>true</c> if the reader is not at its end and the peek operation succeeded; <c>false</c> if at the end of the reader.</returns>
         public readonly bool TryPeek(long offset, out T value)
         {
+            AssertValidPosition();
             if (offset < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException_OffsetOutOfRange();
 
             // If we've got data and offset is not out of bounds
-            if (!_moreData || Remaining <= offset)
+            if (_currentSpanIndex == _currentSpan.Length || Remaining <= offset)
             {
                 value = default;
                 return false;
@@ -145,40 +164,36 @@ namespace System.Buffers
 
             // Sum CurrentSpanIndex + offset could overflow as is but the value of offset should be very large
             // because we check Remaining <= offset above so to overflow we should have a ReadOnlySequence close to 8 exabytes
-            Debug.Assert(CurrentSpanIndex + offset >= 0);
+            Debug.Assert(_currentSpanIndex + offset >= 0);
 
             // If offset doesn't fall inside current segment move to next until we find correct one
-            if ((CurrentSpanIndex + offset) <= CurrentSpan.Length - 1)
+            if ((_currentSpanIndex + offset) <= _currentSpan.Length - 1)
             {
                 Debug.Assert(offset <= int.MaxValue);
 
-                value = CurrentSpan[CurrentSpanIndex + (int)offset];
+                value = _currentSpan[_currentSpanIndex + (int)offset];
                 return true;
             }
             else
             {
-                long remainingOffset = offset - (CurrentSpan.Length - CurrentSpanIndex);
-                SequencePosition nextPosition = _nextPosition;
-                ReadOnlyMemory<T> currentMemory;
+                long remainingOffset = offset - (_currentSpan.Length - _currentSpanIndex);
 
-                while (Sequence.TryGet(ref nextPosition, out currentMemory, advance: true))
+                object? segment = _currentPositionObject;
+
+                ReadOnlySpan<T> currentSpan = default;
+                while (TryGetNextBuffer(in _sequence, ref segment, ref currentSpan) == TryGetNextBufferResult.SuccessHaveData)
                 {
-                    // Skip empty segment
-                    if (currentMemory.Length > 0)
+                    if (remainingOffset >= currentSpan.Length)
                     {
-                        if (remainingOffset >= currentMemory.Length)
-                        {
-                            // Subtract current non consumed data
-                            remainingOffset -= currentMemory.Length;
-                        }
-                        else
-                        {
-                            break;
-                        }
+                        // Subtract current non consumed data
+                        remainingOffset -= currentSpan.Length;
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
-
-                value = currentMemory.Span[(int)remainingOffset];
+                value = currentSpan[(int)remainingOffset];
                 return true;
             }
         }
@@ -191,22 +206,25 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryRead(out T value)
         {
-            if (End)
+            AssertValidPosition();
+
+            // hoisting into locals for the compare allows us to avoid a bounds check
+            int i = _currentSpanIndex;
+            ReadOnlySpan<T> currentSpan = _currentSpan;
+
+            if ((uint)i < (uint)currentSpan.Length)
             {
-                value = default;
-                return false;
+                value = currentSpan[i];
+
+                if ((_currentSpanIndex = i + 1) == currentSpan.Length)
+                {
+                    TryGetNextSpan(); // move ahead eagerly
+                }
+                AssertValidPosition();
+                return true;
             }
-
-            value = CurrentSpan[CurrentSpanIndex];
-            CurrentSpanIndex++;
-            Consumed++;
-
-            if (CurrentSpanIndex >= CurrentSpan.Length)
-            {
-                GetNextSpan();
-            }
-
-            return true;
+            value = default;
+            return false;
         }
 
         /// <summary>
@@ -228,17 +246,15 @@ namespace System.Buffers
                 return;
             }
 
-            Consumed -= count;
-
-            if (CurrentSpanIndex >= count)
+            if (_currentSpanIndex >= count)
             {
-                CurrentSpanIndex -= (int)count;
-                _moreData = true;
+                _currentSpanIndex -= (int)count;
+                AssertValidPosition();
             }
             else
             {
                 // Current segment doesn't have enough data, scan backward through segments
-                RetreatToPreviousSpan(Consumed);
+                RetreatToPreviousSpan(Consumed - count);
             }
         }
 
@@ -251,60 +267,93 @@ namespace System.Buffers
 
         private void ResetReader()
         {
-            CurrentSpanIndex = 0;
-            Consumed = 0;
-            _currentPosition = Sequence.Start;
-            _nextPosition = _currentPosition;
+            // preserve the length - it can be relatively expensive to calculate on demand
+            long length = _length;
 
-            if (Sequence.TryGet(ref _nextPosition, out ReadOnlyMemory<T> memory, advance: true))
-            {
-                _moreData = true;
+            // reset all state
+            this = new(_sequence);
 
-                if (memory.Length == 0)
-                {
-                    CurrentSpan = default;
-                    // No data in the first span, move to one with data
-                    GetNextSpan();
-                }
-                else
-                {
-                    CurrentSpan = memory.Span;
-                }
-            }
-            else
-            {
-                // No data in any spans and at end of sequence
-                _moreData = false;
-                CurrentSpan = default;
-            }
+            // reinstate the length
+            Unsafe.AsRef(in _length) = length;
         }
 
         /// <summary>
         /// Get the next segment with available data, if any.
         /// </summary>
-        private void GetNextSpan()
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private bool TryGetNextSpan()
         {
-            if (!Sequence.IsSingleSegment)
+            int lastLength = _currentSpan.Length;
+            switch (TryGetNextBuffer(in _sequence, ref _currentPositionObject, ref _currentSpan))
             {
-                SequencePosition previousNextPosition = _nextPosition;
-                while (Sequence.TryGet(ref _nextPosition, out ReadOnlyMemory<T> memory, advance: true))
+                case TryGetNextBufferResult.SuccessHaveData:
+                    _currentPositionInteger = _currentSpanIndex = 0;
+                    _consumedAtStartOfCurrentSpan += lastLength; // track consumed length
+                    AssertValidPosition();
+                    return true;
+                case TryGetNextBufferResult.FailureAllRemainingSegmentsEmpty:
+                    // means we advanced, so we still need to reset some things
+                    _currentPositionInteger = _currentSpanIndex = 0;
+                    _consumedAtStartOfCurrentSpan += lastLength; // track consumed length
+                    break;
+                default: // no more segments
+                    // make sure we position at the end of the last (current) segment,
+                    // even if we didn't change segment
+                    _currentSpanIndex = lastLength;
+                    break;
+            }
+            AssertValidPosition();
+            return false;
+        }
+
+        [Conditional("DEBUG")]
+        private readonly void AssertValidPosition()
+        {
+            Debug.Assert(_currentSpanIndex >= 0 && _currentSpanIndex <= _currentSpan.Length, "span index out of range");
+            if (_currentSpanIndex == _currentSpan.Length) // should only be at-length for EOF
+            {
+                ReadOnlySpan<T> span = default;
+                object? segment = _currentPositionObject;
+                Debug.Assert(TryGetNextBuffer(in _sequence, ref segment, ref span) == TryGetNextBufferResult.FailureNoMoreSegments, "failed to eagerly read-ahead");
+            }
+        }
+
+        private enum TryGetNextBufferResult
+        {
+            SuccessHaveData = 0,
+            FailureNoMoreSegments = 1,
+            FailureAllRemainingSegmentsEmpty = 2,
+        }
+
+        private static TryGetNextBufferResult TryGetNextBuffer(in ReadOnlySequence<T> sequence, ref object? @object, ref ReadOnlySpan<T> buffer)
+        {
+            SequencePosition end = sequence.End;
+            object? endObject = end.GetObject();
+            TryGetNextBufferResult result = TryGetNextBufferResult.FailureNoMoreSegments;
+            ReadOnlySequenceSegment<T>? segment = @object as ReadOnlySequenceSegment<T>;
+            if (segment is not null)
+            {
+                while (!ReferenceEquals(segment, endObject) && (@object = segment = segment!.Next) is not null)
                 {
-                    _currentPosition = previousNextPosition;
-                    if (memory.Length > 0)
+                    buffer = segment!.Memory.Span;
+
+                    if (ReferenceEquals(segment, endObject))
                     {
-                        CurrentSpan = memory.Span;
-                        CurrentSpanIndex = 0;
-                        return;
+                        // the last segment ends early
+                        buffer = buffer.Slice(0, end.GetInteger());
                     }
-                    else
+
+                    if (!buffer.IsEmpty) // skip empty segments
                     {
-                        CurrentSpan = default;
-                        CurrentSpanIndex = 0;
-                        previousNextPosition = _nextPosition;
+                        result = TryGetNextBufferResult.SuccessHaveData;
+                        break;
                     }
+
+                    // tell the caller that we *had* more segments (and have advanced), even if not useful
+                    result = TryGetNextBufferResult.FailureAllRemainingSegmentsEmpty;
                 }
             }
-            _moreData = false;
+            return result;
         }
 
         /// <summary>
@@ -313,17 +362,19 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Advance(long count)
         {
+            AssertValidPosition();
             const long TooBigOrNegative = unchecked((long)0xFFFFFFFF80000000);
-            if ((count & TooBigOrNegative) == 0 && CurrentSpan.Length - CurrentSpanIndex > (int)count)
+            if ((count & TooBigOrNegative) == 0 & _currentSpan.Length - _currentSpanIndex > (int)count)
             {
-                CurrentSpanIndex += (int)count;
-                Consumed += count;
+                // ^^^ note & (rather than &&) is intentional; both sides can be safely evaluated
+                _currentSpanIndex += (int)count;
             }
             else
             {
                 // Can't satisfy from the current span
                 AdvanceToNextSpan(count);
             }
+            AssertValidPosition();
         }
 
         /// <summary>
@@ -332,57 +383,44 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AdvanceCurrentSpan(long count)
         {
-            Debug.Assert(count >= 0);
+            // worst case here is we end at the exact end of the current span
+            Debug.Assert(count >= 0 && _currentSpanIndex + count <= _currentSpan.Length);
 
-            Consumed += count;
-            CurrentSpanIndex += (int)count;
-            if (CurrentSpanIndex >= CurrentSpan.Length)
-                GetNextSpan();
+            _currentSpanIndex += (int)count;
+            if (_currentSpanIndex == _currentSpan.Length)
+            {
+                TryGetNextSpan();
+            }
+            AssertValidPosition();
         }
 
-        /// <summary>
-        /// Only call this helper if you know that you are advancing in the current span
-        /// with valid count and there is no need to fetch the next one.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void AdvanceWithinSpan(long count)
-        {
-            Debug.Assert(count >= 0);
-
-            Consumed += count;
-            CurrentSpanIndex += (int)count;
-
-            Debug.Assert(CurrentSpanIndex < CurrentSpan.Length);
-        }
-
+        [MethodImpl(MethodImplOptions.NoInlining)] // avoid inlining this too much from Advance
         private void AdvanceToNextSpan(long count)
         {
+            AssertValidPosition();
             if (count < 0)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
             }
 
-            Consumed += count;
-            while (_moreData)
+            while (true)
             {
-                int remaining = CurrentSpan.Length - CurrentSpanIndex;
+                int remaining = _currentSpan.Length - _currentSpanIndex;
 
                 if (remaining > count)
                 {
-                    CurrentSpanIndex += (int)count;
+                    _currentSpanIndex += (int)count;
                     count = 0;
                     break;
                 }
 
-                // As there may not be any further segments we need to
-                // push the current index to the end of the span.
-                CurrentSpanIndex += remaining;
                 count -= remaining;
                 Debug.Assert(count >= 0);
 
-                GetNextSpan();
-
-                if (count == 0)
+                // always want to move to next span here, even
+                // if we've consumed everything we want (to enforce
+                // eager fetch)
+                if (!TryGetNextSpan() || count == 0)
                 {
                     break;
                 }
@@ -391,9 +429,9 @@ namespace System.Buffers
             if (count != 0)
             {
                 // Not enough data left- adjust for where we actually ended and throw
-                Consumed -= count;
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
             }
+            AssertValidPosition();
         }
 
         /// <summary>
@@ -430,24 +468,20 @@ namespace System.Buffers
             if (Remaining < destination.Length)
                 return false;
 
-            ReadOnlySpan<T> firstSpan = UnreadSpan;
-            Debug.Assert(firstSpan.Length < destination.Length);
-            firstSpan.CopyTo(destination);
-            int copied = firstSpan.Length;
+            ReadOnlySpan<T> currentSpan = UnreadSpan;
+            Debug.Assert(currentSpan.Length < destination.Length);
+            currentSpan.CopyTo(destination);
+            int copied = currentSpan.Length;
 
-            SequencePosition next = _nextPosition;
-            while (Sequence.TryGet(ref next, out ReadOnlyMemory<T> nextSegment, true))
+            object? segment = _currentPositionObject;
+            while (TryGetNextBuffer(in _sequence, ref segment, ref currentSpan) == TryGetNextBufferResult.SuccessHaveData)
             {
-                if (nextSegment.Length > 0)
+                int toCopy = Math.Min(currentSpan.Length, destination.Length - copied);
+                currentSpan.Slice(0, toCopy).CopyTo(destination.Slice(copied));
+                copied += toCopy;
+                if (copied >= destination.Length)
                 {
-                    ReadOnlySpan<T> nextSpan = nextSegment.Span;
-                    int toCopy = Math.Min(nextSpan.Length, destination.Length - copied);
-                    nextSpan.Slice(0, toCopy).CopyTo(destination.Slice(copied));
-                    copied += toCopy;
-                    if (copied >= destination.Length)
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
 
