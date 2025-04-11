@@ -269,6 +269,22 @@ INST(ctzw,          "ctzw",           0,   0x6010101b)
 INST(cpop,          "cpop",           0,   0x60201013)
 INST(cpopw,         "cpopw",          0,   0x6020101b)
 
+// Zba (RV64 + RV32)
+
+//// R_R_R
+INST(sh1add,        "sh1add",         0,   0x20002033)
+INST(sh2add,        "sh2add",         0,   0x20004033)
+INST(sh3add,        "sh3add",         0,   0x20006033)
+
+// Zba (RV64)
+
+//// R_R_R
+INST(add_uw,        "add.uw",         0,   0x0800003b)
+INST(sh1add_uw,     "sh1add_uw",      0,   0x2000203b)
+INST(sh2add_uw,     "sh2add_uw",      0,   0x2000403b)
+INST(sh3add_uw,     "sh3add_uw",      0,   0x2000603b)
+INST(slli_uw,       "slli_uw",        0,   0x0800101b)
+
 // clang-format on
 /*****************************************************************************/
 #undef INST

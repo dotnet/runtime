@@ -273,6 +273,29 @@ GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------
+//  LIR specific arithmetic nodes:
+//-----------------------------------------------------------------------------
+
+#ifdef TARGET_RISCV64
+// Maps to riscv64 sh1add instruction. Computes result = op2 + (op1 << 1).
+GTNODE(SH1ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh1add.uw instruction. Computes result = op2 + zext(op1[31..0] << 1).
+GTNODE(SH1ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh2add instruction. Computes result = op2 + (op1 << 2).
+GTNODE(SH2ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh2add.uw instruction. Computes result = op2 + zext(op1[31..0] << 2).
+GTNODE(SH2ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh3add instruction. Computes result = op2 + (op1 << 3).
+GTNODE(SH3ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh3add.uw instruction. Computes result = op2 + zext(op1[31..0] << 3).
+GTNODE(SH3ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 add.uw instruction. Computes result = op2 + zext(op1[31..0]).
+GTNODE(ADD_UW           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 slli.uw instruction. Computes result = zext(op1[31..0] << imm).
+GTNODE(SLLI_UW          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+#endif
+
+//-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:
 //-----------------------------------------------------------------------------
 
