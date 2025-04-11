@@ -85,6 +85,60 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
+        public static void Parse_TryGetPropertyValueWithIndex()
+        {
+            JsonObject jObject = JsonNode.Parse(JsonNodeTests.ExpectedDomJson).AsObject();
+
+            JsonNode? node;
+            int index;
+
+            Assert.True(jObject.TryGetPropertyValue("MyString", out node, out index));
+            Assert.Equal("Hello!", node.GetValue<string>());
+            Assert.Equal(0, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyNull", out node, out index));
+            Assert.Null(node);
+            Assert.Equal(1, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyBoolean", out node, out index));
+            Assert.False(node.GetValue<bool>());
+            Assert.Equal(2, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyArray", out node, out index));
+            Assert.IsType<JsonArray>(node);
+            Assert.Equal(3, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyInt", out node, out index));
+            Assert.Equal(43, node.GetValue<int>());
+            Assert.Equal(4, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyDateTime", out node, out index));
+            Assert.Equal("2020-07-08T00:00:00", node.GetValue<string>());
+            Assert.Equal(5, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyGuid", out node, out index));
+            Assert.Equal("ed957609-cdfe-412f-88c1-02daca1b4f51", node.AsValue().GetValue<Guid>().ToString());
+            Assert.Equal(6, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyObject", out node, out index));
+            Assert.IsType<JsonObject>(node);
+            Assert.Equal(7, index);
+        }
+
+        [Fact]
+        public static void Parse_TryGetPropertyValueFail()
+        {
+            JsonObject jObject = JsonNode.Parse(JsonNodeTests.ExpectedDomJson).AsObject();
+
+            JsonNode? node;
+            int index;
+
+            Assert.False(jObject.TryGetPropertyValue("NonExistentKey", out node, out index));
+            Assert.Null(node);
+            Assert.Equal(-1, index);
+        }
+
+        [Fact]
         public static void Parse_TryGetValue()
         {
             Assert.True(JsonNode.Parse("\"Hello\"").AsValue().TryGetValue(out string? _));
