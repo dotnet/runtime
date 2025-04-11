@@ -4421,10 +4421,6 @@ IS_VALUETYPE:
                     }
                 }
 
-                // Set the field offset
-                DWORD rva;
-                IfFailThrow(pInternalImport->GetFieldRVA(pFD->GetMemberDef(), &rva));
-
                 // The PE should be loaded by now.
                 _ASSERT(GetModule()->GetPEAssembly()->IsLoaded());
 
@@ -4432,14 +4428,18 @@ IS_VALUETYPE:
                 // This is a special case for EnC. The RVA field is not actually in the image, but
                 // is instead registered in a dynamic map. We need to set the RVA to a special
                 // value so when the address is looked up, it will be found in the dynamic map.
-                if (GetModule()->IsEditAndContinueEnabled())
+                if (GetModule()->GetDynamicRvaField(pFD->GetMemberDef()) != NULL)
                 {
-                    if (GetModule()->GetDynamicRvaField(pFD->GetMemberDef()) != NULL)
-                        rva = FIELD_OFFSET_DYNAMIC_RVA;
+                    pFD->SetDynamicRVA();
                 }
+                else
 #endif // FEATURE_METADATA_UPDATER
-
-                pFD->SetOffsetRVA(rva);
+                {
+                    // Set the field offset
+                    DWORD rva;
+                    IfFailThrow(pInternalImport->GetFieldRVA(pFD->GetMemberDef(), &rva));
+                    pFD->SetOffsetRVA(rva);
+                }
             }
             else if (fIsThreadStatic)
             {

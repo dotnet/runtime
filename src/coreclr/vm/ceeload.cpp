@@ -868,7 +868,7 @@ void Module::InitializeDynamicILCrst()
 // Add a (token, address) pair to the table of IL blobs for reflection/dynamics
 // Arguments:
 //     Input:
-//         token        method token
+//         token        method token or field token (See SetDynamicRvaField)
 //         blobAddress  address of the start of the IL blob address, including the header
 //     Output: not explicit, but if the pair was not already in the table it will be added.
 //             Does not add duplicate tokens to the table.

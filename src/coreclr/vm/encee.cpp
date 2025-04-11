@@ -209,18 +209,30 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     FieldDesc* pFieldDesc;
     while (pIMDInternalImportENC->EnumNext(&enumENC, &token))
     {
-        STRESS_LOG1(LF_ENC, LL_INFO100, "EACM::AEAC: updated token 0x%08x\n", token);
+        STRESS_LOG1(LF_ENC, LL_INFO10000, "EACM::AEAC: Next token 0x%08x\n", token);
 
         switch (TypeFromToken(token))
         {
             case mdtMethodDef:
 
                 // MethodDef token - update/add a method
-                LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found method 0x%08x\n", token));
 
                 ULONG dwMethodRVA;
-                DWORD dwMethodFlags;
-                IfFailRet(pMDImport->GetMethodImplProps(token, &dwMethodRVA, &dwMethodFlags));
+                DWORD dwMethodImplFlags;
+                IfFailRet(pMDImport->GetMethodImplProps(token, &dwMethodRVA, &dwMethodImplFlags));
+
+#ifdef LOGGING
+                if (LoggingEnabled())
+                {
+                    LPCSTR szMethodName;
+                    IfFailRet(pMDImport->GetNameOfMethodDef(token, &szMethodName));
+
+                    DWORD dwMethodFlags;
+                    IfFailRet(pMDImport->GetMethodDefProps(token, &dwMethodFlags));
+
+                    LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found method '%s' tok:0x%08x, RVA:%u, MethodAttrs:0x%08x, MethodImplAttrs:0x%08x\n", szMethodName, token, dwMethodRVA, dwMethodFlags, dwMethodImplFlags));
+                }
+#endif // LOGGING
 
                 if (dwMethodRVA >= cbDeltaIL)
                 {
@@ -248,7 +260,19 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
             case mdtFieldDef:
 
                 // FieldDef token - add a new field
-                LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found field 0x%08x\n", token));
+
+#ifdef LOGGING
+                if (LoggingEnabled())
+                {
+                    LPCSTR szFieldName;
+                    IfFailRet(pMDImport->GetNameOfFieldDef(token, &szFieldName));
+
+                    DWORD dwFieldFlags;
+                    IfFailRet(pMDImport->GetFieldDefProps(token, &dwFieldFlags));
+
+                    LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found field '%s' tok:0x%08x, FieldAttrs:0x%08x\n", szFieldName, token, dwFieldFlags));
+                }
+#endif // LOGGING
 
                 pFieldDesc = LookupFieldDef(token);
                 if (pFieldDesc)
@@ -401,7 +425,7 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
     HRESULT hr = GetMDImport()->GetParentToken(token, &parentTypeDef);
     if (FAILED(hr))
     {
-        LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AM can't find parent token for method token %08x\n", token));
+        LOG((LF_ENC, LL_INFO100, "**Error** EACM::AM can't find parent token for method token %08x\n", token));
         return E_FAIL;
     }
 
@@ -411,7 +435,7 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
     {
         // Class isn't loaded yet, don't have to modify any existing EE data structures beyond the metadata.
         // Just notify debugger and return.
-        LOG((LF_ENC, LL_INFO100, "EnCModule::AM class %08x not loaded (method %08x), our work is done\n", parentTypeDef, token));
+        LOG((LF_ENC, LL_INFO100, "EACM::AM class %08x not loaded (method %08x), our work is done\n", parentTypeDef, token));
         if (CORDebuggerAttached())
         {
             hr = g_pDebugInterface->UpdateNotYetLoadedFunction(token, this, m_applyChangesCount);
@@ -547,7 +571,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     }
     CONTRACTL_END;
 
-    LOG((LF_ENC, LL_INFO100, "EnCModule::JitUpdatedFunction for %s::%s\n",
+    LOG((LF_ENC, LL_INFO100, "EACM::JitUpdatedFunction for %s::%s\n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
     PCODE jittedCode = (PCODE)NULL;
@@ -584,13 +608,13 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     EX_TRY {
         if (pMD->IsPointingToNativeCode())
         {
-            LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction %p already JITed\n", pMD));
+            LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction %p already JITed\n", pMD));
         }
         else
         {
             GCX_PREEMP();
             pMD->DoPrestub(NULL);
-            LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction JIT of %p successful\n", pMD));
+            LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction JIT of %p successful\n", pMD));
         }
         jittedCode = pMD->GetNativeCode();
     } EX_CATCH {
@@ -605,7 +629,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             SString errorMessage;
             GetExceptionMessage(GET_THROWABLE(), exceptionMessage);
             errorMessage.AppendASCII("**Error: Probable rude edit.**\n\n"
-                                "EnCModule::JITUpdatedFunction JIT failed with the following exception:\n\n");
+                                "EACM::JITUpdatedFunction JIT failed with the following exception:\n\n");
             errorMessage.Append(exceptionMessage);
             DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetUTF8());
             LOG((LF_ENC, LL_INFO100, errorMessage.GetUTF8()));
@@ -650,7 +674,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     return E_NOTIMPL;
 #else
-    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction for %s::%s at IL offset 0x%zx\n",
+    LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction for %s::%s at IL offset 0x%zx\n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, newILOffset));
 
 #ifdef _DEBUG
@@ -729,7 +753,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 
     // Ask the EECodeManager to actually fill in the context and stack for the new frame so that
     // values of locals etc. are preserved.
-    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction calling FixContextAndResume oldNativeOffset: 0x%x, newNativeOffset: 0x%x,"
+    LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction calling FixContextAndResume oldNativeOffset: 0x%x, newNativeOffset: 0x%x,"
         "oldFrameSize: 0x%x, newFrameSize: 0x%x\n",
         oldCodeInfo.GetRelOffset(), newCodeInfo.GetRelOffset(), oldFrameSize, newFrameSize));
 
@@ -740,7 +764,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
                         &newCodeInfo);
 
     // At this point we shouldn't have failed, so this is genuinely erroneous.
-    LOG((LF_ENC, LL_ERROR, "**Error** EnCModule::ResumeInUpdatedFunction returned from ResumeAtJit"));
+    LOG((LF_ENC, LL_ERROR, "**Error** EACM::ResumeInUpdatedFunction returned from ResumeAtJit"));
     _ASSERTE(!"Should not return from FixContextAndResume()");
 
     // If we fail for any reason we have already potentially trashed with new locals and we have also unwound any
@@ -846,14 +870,14 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // "gracefully" (it's all relative).
     if (FAILED(hr))
     {
-        LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::ResumeInUpdatedFunction for FixContextForEnC failed\n"));
+        LOG((LF_ENC, LL_INFO100, "**Error** EACM::ResumeInUpdatedFunction for FixContextForEnC failed\n"));
         EEPOLICY_HANDLE_FATAL_ERROR(hr);
     }
 
     // Set the new IP
     // Note that all we're really doing here is setting the IP register.  We unfortunately don't
     // share any code with the implementation of debugger SetIP, despite the similarities.
-    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction: Resume at EIP=%p\n", pNewCodeInfo->GetCodeAddress()));
+    LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction: Resume at EIP=%p\n", pNewCodeInfo->GetCodeAddress()));
 
     Thread *pCurThread = GetThread();
     pCurThread->SetFilterContext(pContext);
@@ -884,7 +908,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
     // At this point we shouldn't have failed, so this is genuinely erroneous.
-    LOG((LF_ENC, LL_ERROR, "**Error** EnCModule::ResumeInUpdatedFunction returned from ResumeAtJit"));
+    LOG((LF_ENC, LL_ERROR, "**Error** EACM::ResumeInUpdatedFunction returned from ResumeAtJit"));
     _ASSERTE(!"Should not return from ResumeAtJit()");
 }
 #endif // #ifdef FEATURE_REMAP_FUNCTION

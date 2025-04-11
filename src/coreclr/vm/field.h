@@ -160,6 +160,8 @@ public:
 
     // This is the raw offset of the field in the object. It doesn't
     // do any checks to see if the field is a real field or not.
+    // It should be only used during type loading to handle temporary offset
+    // values like FIELD_OFFSET_UNPLACED.
     DWORD GetOffsetRaw()
     {
         LIMITED_METHOD_CONTRACT;
@@ -244,19 +246,26 @@ public:
     }
 
     // Okay, we've stolen too many bits from FieldDescs.  In the RVA case, there's no
-    // reason to believe they will be limited to .  So use a sentinel for the
+    // reason to believe they will be limited to FIELD_OFFSET_MAX.  So use a sentinel for the
     // huge cases, and recover them from metadata on-demand.
     void SetOffsetRVA(DWORD dwOffset)
     {
         LIMITED_METHOD_CONTRACT;
 
-        // The FIELD_OFFSET_DYNAMIC_RVA is a special case for EnC added fields when the
-        // type they are on is not yet loaded.
         // The FIELD_OFFSET_BIG_RVA is a special case for large RVA fields that
         // don't fit into FIELD_OFFSET_MAX of the m_dwOffset field.
-        m_dwOffset = (dwOffset > FIELD_OFFSET_LAST_REAL_OFFSET && dwOffset != FIELD_OFFSET_DYNAMIC_RVA)
+        m_dwOffset = (dwOffset > FIELD_OFFSET_LAST_REAL_OFFSET)
                       ? FIELD_OFFSET_BIG_RVA
                       : dwOffset;
+    }
+
+    void SetDynamicRVA()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        // The FIELD_OFFSET_DYNAMIC_RVA is a special case for EnC added fields when the
+        // type they are on is not yet loaded.
+        m_dwOffset = FIELD_OFFSET_DYNAMIC_RVA;
     }
 
     DWORD   IsStatic() const
