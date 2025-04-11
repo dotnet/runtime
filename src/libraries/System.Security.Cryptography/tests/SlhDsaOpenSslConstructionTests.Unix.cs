@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
+    [ConditionalClass(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
     public class SlhDsaOpenSslConstructionTests : SlhDsaConstructionTestsBase
     {
         [Fact]

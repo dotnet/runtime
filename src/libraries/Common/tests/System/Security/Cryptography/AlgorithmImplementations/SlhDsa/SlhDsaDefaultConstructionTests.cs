@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertSlhDsaIsOnlyPublicAncestor(() => SlhDsa.GenerateKey(algorithm));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         [MemberData(nameof(NistKeyGenTestVectorsData))]
         public void SlhDsaIsOnlyPublicAncestor_Import(SlhDsaTestData.SlhDsaKeyGenTestVector vector)
         {

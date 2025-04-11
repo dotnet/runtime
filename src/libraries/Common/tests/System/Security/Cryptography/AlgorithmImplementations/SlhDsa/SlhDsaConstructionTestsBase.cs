@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Equal(algorithm, slhDsa.Algorithm);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         [MemberData(nameof(NistKeyGenTestVectorsData))]
         public void AlgorithmMatches_Import(SlhDsaTestData.SlhDsaKeyGenTestVector vector)
         {
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         [MemberData(nameof(NistKeyGenTestVectorsData))]
         public void NistKeyGenerationTest(SlhDsaTestData.SlhDsaKeyGenTestVector vector)
         {
