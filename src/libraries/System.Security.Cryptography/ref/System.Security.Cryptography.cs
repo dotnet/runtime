@@ -1852,6 +1852,24 @@ namespace System.Security.Cryptography
         public int SignatureSizeInBytes { get { throw null; } }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+    public sealed partial class MLDsaOpenSsl : System.Security.Cryptography.MLDsa
+    {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public MLDsaOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) : base (default(System.Security.Cryptography.MLDsaAlgorithm)) { }
+        protected override void Dispose(bool disposing) { }
+        public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { throw null; }
+        protected override void ExportMLDsaPrivateSeedCore(System.Span<byte> destination) { }
+        protected override void ExportMLDsaPublicKeyCore(System.Span<byte> destination) { }
+        protected override void ExportMLDsaSecretKeyCore(System.Span<byte> destination) { }
+        protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
+        protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature) { throw null; }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
     public abstract partial class MLKem : System.IDisposable
     {
         protected MLKem(System.Security.Cryptography.MLKemAlgorithm algorithm) { }
