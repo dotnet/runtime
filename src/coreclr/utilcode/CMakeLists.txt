@@ -27,6 +27,11 @@ set(UTILCODE_COMMON_SOURCES
   guidfromname.cpp
   memorypool.cpp
   loaderheap.cpp
+  interleavedloaderheap.cpp
+  loaderheap_shared.cpp
+  explicitcontrolloaderheap.cpp
+  allocmemtracker.cpp
+  rangelist.cpp
   outstring.cpp
   ilformatter.cpp
   opinfo.cpp
