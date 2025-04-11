@@ -596,8 +596,9 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            GenTree* const tree   = *use;
-            unsigned const lclNum = tree->AsLclVarCommon()->GetLclNum();
+            GenTree* const   tree   = *use;
+            unsigned const   lclNum = tree->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(lclNum);
 
             // If this local already escapes, no need to look further.
             //
@@ -613,7 +614,16 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                 lclEscapes = false;
                 m_allocator->CheckForGuardedAllocationOrCopy(m_block, m_stmt, use, lclNum);
             }
-            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_ADDR) && m_allocator->IsTrackedLocal(lclNum))
+            else if (tree->OperIs(GT_LCL_VAR) && m_allocator->IsTrackedLocal(lclNum))
+            {
+                assert(tree == m_ancestors.Top());
+                if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum, m_block))
+                {
+                    lclEscapes = false;
+                }
+            }
+            else if (tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() == TYP_STRUCT) &&
+                     m_allocator->IsTrackedLocal(lclNum))
             {
                 assert(tree == m_ancestors.Top());
                 if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum, m_block))
@@ -1586,7 +1596,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
     bool       canLclVarEscapeViaParentStack = true;
     bool       isCopy                        = true;
     bool const isEnumeratorLocal             = lclDsc->lvIsEnumerator;
-    bool       isLocalAddr                   = parentStack->Top()->OperIs(GT_LCL_ADDR);
+    bool       isAddress                     = parentStack->Top()->OperIs(GT_LCL_ADDR);
 
     while (keepChecking)
     {
@@ -1610,16 +1620,17 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
         {
             case GT_STORE_LCL_VAR:
             {
-                if (isLocalAddr)
+                // If the store value is a local address, anything assigned to that local escapes
+                //
+                if (isAddress)
                 {
-                    JITDUMP("... assigned &local\n");
                     break;
                 }
 
                 const unsigned int dstLclNum = parent->AsLclVar()->GetLclNum();
 
-                // If we're not tracking stores to this local, the value
-                // does not escape.
+                // If we're not tracking stores to the dest local, the value does not escape.
+                //
                 if (!IsTrackedLocal(dstLclNum))
                 {
                     canLclVarEscapeViaParentStack = false;
@@ -1713,20 +1724,15 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 GenTree* const addr = parent->AsIndir()->Addr();
                 if (tree == addr)
                 {
-                    // Address tree doesn't escape.
-                    //
                     JITDUMP("... store address\n");
                     canLclVarEscapeViaParentStack = false;
+                    break;
+                }
 
-                    if (isLocalAddr && !addr->OperIs(GT_FIELD_ADDR))
-                    {
-                        // We are indirectly storing to a tracked local.
-                        // For now, assume we don't know what value is stored.
-                        //
-                        JITDUMP("... store &local\n");
-                        AddConnGraphEdge(lclNum, m_unknownSourceLocalNum);
-                    }
-
+                // If the value being stored is a local address, anything assigned to that local escapes
+                //
+                if (isAddress)
+                {
                     break;
                 }
 
@@ -1734,14 +1740,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 //
                 if (parent->OperIs(GT_STOREIND))
                 {
-                    // Are we storing the address of a local?
-                    //
-                    if (isLocalAddr)
-                    {
-                        JITDUMP("... &local store value\n");
-                        break;
-                    }
-
                     // Are we storing to a local field?
                     //
                     if (addr->OperIs(GT_FIELD_ADDR))
@@ -1777,47 +1775,32 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 //
                 if (!IsTrackedType(parent->TypeGet()))
                 {
-                    JITDUMP("... indir result not gc\n");
-                    canLclVarEscapeViaParentStack = false;
-                    break;
-                }
-
-                // Is the indir address based on a local address?
-                //
-                if (!isLocalAddr)
-                {
-                    JITDUMP("... indir addr not derived from &local\n");
                     canLclVarEscapeViaParentStack = false;
                     break;
                 }
 
                 GenTree* const addr = parent->AsIndir()->Addr();
 
-                // For loads from structs we may be tracking the underlying fields.
-                //
-                // We don't handle TYP_REF locals (yet), and allowing that requires separating out the object from
-                // its fields in our tracking.
-                //
-                // We treat TYP_BYREF like TYP_STRUCT, though possibly this needs more scrutiny, as byrefs may alias.
+                // For loads from local structs we may be tracking the underlying fields.
+
                 //
                 // We can assume that the local being read is lclNum, since we have walked up to this node from a leaf
                 // local.
                 //
                 // We only track through the first indir.
                 //
-                // If we're directly loading through a local address, treat as an assigment.
-                //
-                if (m_trackFields && isLocalAddr && addr->OperIs(GT_FIELD_ADDR) && (lclDsc->TypeGet() != TYP_REF))
+                if (m_trackFields && isAddress && addr->OperIs(GT_FIELD_ADDR) && (lclDsc->TypeGet() != TYP_REF))
                 {
                     JITDUMP("... load local.field\n");
                     ++parentIndex;
+                    isAddress    = false;
                     keepChecking = true;
-                    isLocalAddr  = false;
                     break;
                 }
 
-                // Unknown address tree involving a local addr, assume the worst.
+                // Address doesn't refer to any location we track
                 //
+                canLclVarEscapeViaParentStack = false;
                 break;
             }
 
@@ -1885,7 +1868,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 //    tree            - Possibly-stack-pointing tree
 //    parentStack     - Parent stack of the possibly-stack-pointing tree
 //    newType         - New type of the possibly-stack-pointing tree
-//    isStruct        - true if inspiring local is a retyped struct
+//    retypeFields    - Inspiring local is a retyped local struct; retype fields.
 //
 // Notes:
 //                      If newType is TYP_I_IMPL, the tree is definitely pointing to the stack (or is null);
@@ -1896,7 +1879,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
                                           ArrayStack<GenTree*>* parentStack,
                                           var_types             newType,
-                                          bool                  isStruct)
+                                          bool                  retypeFields)
 {
     assert(newType == TYP_BYREF || newType == TYP_I_IMPL);
     assert(parentStack != nullptr);
@@ -2059,21 +2042,16 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
                         // It's either null or points to inside a stack-allocated object.
                         parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
                     }
-
-                    // If we have an indirect store to a retyped local, retype the store.
-                    //
-                    if (tree->OperIs(GT_LCL_ADDR) && (parent->TypeGet() != newType))
-                    {
-                        parent->ChangeType(newType);
-                    }
                 }
                 else
                 {
                     assert(tree == parent->AsIndir()->Data());
+                    GenTree* const addr = parent->AsIndir()->Addr();
 
                     // If we are storing to a GC struct field, we may need to retype the store
                     //
-                    if (parent->OperIs(GT_STOREIND) && isStruct && (varTypeIsGC(parent->TypeGet())))
+                    if (retypeFields && parent->OperIs(GT_STOREIND) && (addr->OperIs(GT_FIELD_ADDR)) &&
+                        (varTypeIsGC(parent->TypeGet())))
                     {
                         parent->ChangeType(newType);
                     }
@@ -2085,13 +2063,12 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
             {
                 // If we are loading from a GC struct field, we may need to retype the load
                 //
-                if (isStruct && (varTypeIsGC(parent->TypeGet())))
+                if (retypeFields && (tree->OperIs(GT_FIELD_ADDR)) && (varTypeIsGC(parent->TypeGet())))
                 {
                     parent->ChangeType(newType);
                     ++parentIndex;
-                    // We are no longer referring to the original local
-                    isStruct     = false;
                     keepChecking = true;
+                    retypeFields = false;
                 }
                 break;
             }
@@ -2150,8 +2127,9 @@ void ObjectAllocator::RewriteUses()
                 return Compiler::fgWalkResult::WALK_CONTINUE;
             }
 
-            const unsigned int lclNum    = tree->AsLclVarCommon()->GetLclNum();
-            LclVarDsc*         lclVarDsc = m_compiler->lvaGetDesc(lclNum);
+            const unsigned int lclNum       = tree->AsLclVarCommon()->GetLclNum();
+            LclVarDsc*         lclVarDsc    = m_compiler->lvaGetDesc(lclNum);
+            bool               retypeFields = false;
 
             // Revise IR for local that were retyped or are mapped to stack locals
             //
@@ -2162,7 +2140,6 @@ void ObjectAllocator::RewriteUses()
 
             unsigned int newLclNum = BAD_VAR_NUM;
             var_types    newType   = lclVarDsc->TypeGet();
-            bool         isStruct  = false;
 
             if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
             {
@@ -2178,14 +2155,14 @@ void ObjectAllocator::RewriteUses()
             {
                 ClassLayout* const layout = lclVarDsc->GetLayout();
                 newType                   = layout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
-                isStruct                  = true;
+                retypeFields              = true;
             }
             else
             {
                 tree->ChangeType(newType);
             }
 
-            m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType, isStruct);
+            m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType, retypeFields);
 
             return Compiler::fgWalkResult::WALK_CONTINUE;
         }

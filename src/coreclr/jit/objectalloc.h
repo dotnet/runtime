@@ -200,7 +200,7 @@ private:
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
-    void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, bool isStruct);
+    void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, bool retypeFields);
     ObjectAllocationType AllocationKind(GenTree* tree);
 
     // Conditionally escaping allocation support
