@@ -1539,11 +1539,17 @@ CORINFO_CLASS_HANDLE InterpCompiler::ResolveClassToken(uint32_t token)
 void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
+    bool isVirtual = (*m_ip == CEE_CALLVIRT);
 
     CORINFO_METHOD_HANDLE targetMethod = ResolveMethodToken(token);
 
     CORINFO_SIG_INFO targetSignature;
     m_compHnd->getMethodSig(targetMethod, &targetSignature);
+
+    uint32_t mflags = m_compHnd->getMethodAttribs(targetMethod);
+
+    if (isVirtual && (!(mflags & CORINFO_FLG_VIRTUAL) || (mflags & CORINFO_FLG_FINAL)))
+        isVirtual = false;
 
     if (EmitCallIntrinsics(targetMethod, targetSignature))
     {
@@ -1588,10 +1594,18 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
     }
 
     // Emit call instruction
-    AddIns(INTOP_CALL);
+    if (isVirtual)
+    {
+        AddIns(INTOP_CALLVIRT);
+        m_pLastNewIns->data[0] = GetDataItemIndex(targetMethod);
+    }
+    else
+    {
+        AddIns(INTOP_CALL);
+        m_pLastNewIns->data[0] = GetMethodDataItemIndex(targetMethod);
+    }
     m_pLastNewIns->SetDVar(dVar);
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
-    m_pLastNewIns->data[0] = GetMethodDataItemIndex(targetMethod);
 
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
     m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
@@ -2630,6 +2644,7 @@ retry_emit:
                 EmitUnaryArithmeticOp(INTOP_NOT_I4);
                 m_ip++;
                 break;
+            case CEE_CALLVIRT:
             case CEE_CALL:
                 EmitCall(constrainedClass, readonly, tailcall);
                 constrainedClass = NULL;
