@@ -3821,6 +3821,7 @@ void emitter::emitDispInsName(
                     switch (funct6)
                     {
                         case 0b011000:
+                        {
                             static const char* names[] = {"clz", "ctz", "cpop", nullptr, "sext.b", "sext.h"};
                             // shift amount is treated as additional funct opcode
                             if (shamt >= ARRAY_SIZE(names) || shamt == 3)
@@ -3830,7 +3831,7 @@ void emitter::emitDispInsName(
                             printLength  = printf("%s", names[shamt]);
                             hasImmediate = false;
                             break;
-
+                        }
                         case 0b000000:
                             printLength = printf("slli");
                             imm12       = shamt;
