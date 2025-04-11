@@ -11,8 +11,6 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        private static partial IntPtr GetExtraHandle(SafeEvpPKeyHandle handle);
-
         // Must be kept in sync with PalKemId in native shim.
         internal enum PalKemAlgorithmId
         {
