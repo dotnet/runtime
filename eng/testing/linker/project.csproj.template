@@ -32,6 +32,8 @@
     <!-- Implicitly force 'UseNativeAotForComponents' for AOT tests -->
     <PublishAot>{PublishAot}</PublishAot>
     <UseNativeAotForComponents Condition="'$(PublishAot)' == 'true'">true</UseNativeAotForComponents>
+    <!-- We set up the paths for the local NaiveAOT pack manually, so don't use the automatic setup -->
+    <UseLocalNativeAotPack>false</UseLocalNativeAotPack>
 
     <!-- wasm specific -->
     <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>

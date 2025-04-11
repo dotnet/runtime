@@ -156,6 +156,7 @@ cmakeargs=''
 extraargs=''
 crossBuild=0
 portableBuild=1
+bootstrap=0
 
 source $scriptroot/common/native/init-os-and-arch.sh
 
@@ -508,6 +509,16 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+      -use-bootstrap)
+      arguments="$arguments /p:UseBootstrap=true"
+      shift 1
+      ;;
+
+      -bootstrap)
+      bootstrap=1
+      shift 1
+      ;;
+
       -fsanitize)
       if [ -z ${2+x} ]; then
         echo "No value for -fsanitize is supplied. See help (--help) for supported values." 1>&2
@@ -570,4 +581,19 @@ export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 cmakeargs="${cmakeargs// /%20}"
 arguments="$arguments /p:TargetArchitecture=$arch /p:BuildArchitecture=$hostArch"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
+
+if [[ "$bootstrap" == "1" ]]; then
+  # Strip build actions other than -restore and -build from the arguments for the bootstrap build.
+  bootstrapArguments="${arguments//-sign/}"
+  bootstrapArguments="${bootstrapArguments//-publish/}"
+  bootstrapArguments="${bootstrapArguments//-pack/}"
+  bootstrapArguments="${bootstrapArguments//-test/}"
+  "$scriptroot/common/build.sh" $bootstrapArguments /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/bootstrap.binlog
+
+  # Remove artifacts from the bootstrap build so the product build is a "clean" build.
+  echo "Cleaning up artifacts from bootstrap build..."
+  rm -r "$scriptroot/../artifacts/obj" "$scriptroot/../artifacts/bin"
+  arguments="$arguments /p:UseBootstrap=true"
+fi
+
 "$scriptroot/common/build.sh" $arguments

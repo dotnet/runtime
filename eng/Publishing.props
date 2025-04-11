@@ -83,7 +83,7 @@
     but we do produce them in both the VMR and the runtime official build.
   -->
   <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
-    <ShouldGenerateProductVersionFiles Condition="'$(PackageRID)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
+    <ShouldGenerateProductVersionFiles Condition="'$(OutputRID)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
     <ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ShouldGenerateProductVersionFiles>
   </PropertyGroup>
 
