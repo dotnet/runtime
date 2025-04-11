@@ -3469,7 +3469,7 @@ BYTE* emitter::emitOutputInstr_OptsI(BYTE* dst, instrDesc* id, instruction* last
         }
         else
         {
-            assert(false && "Remainding instructions must be addi / addiw / slli / srli");
+            assert(false && "Remaining instructions must be addi / addiw / slli / srli");
         }
     }
 
@@ -5505,7 +5505,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     // Some instructions like jumps or loads may have not-yet-known simple auxilliary instructions (lui, addi, slli,
     // etc) for building immediates, assume cost of one each.
-    // instrDescLoadImm consits of OpImm, OpImm32, and Lui instructions.
+    // instrDescLoadImm consists of OpImm, OpImm32, and Lui instructions.
     float immediateBuildingCost = ((codeSize / sizeof(code_t)) - 1) * PERFSCORE_LATENCY_1C;
 
     instruction ins = id->idIns();
