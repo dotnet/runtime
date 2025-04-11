@@ -30,14 +30,14 @@ By default, the dependency manifest contains information about the application's
     <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(ToolsetTargetFramework)'))">
+    <PackageReference Include="System.Text.Encodings.Web" Version="$(SystemTextEncodingsWebToolsetVersion)" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersToolsetVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
