@@ -89,6 +89,8 @@
   <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
     <Artifact Include="@(BlobArtifact)" />
 
+    <!-- this is built in the SDK repo now -->
+    <!--
     <Artifact Include="$(ArtifactsDir)VSSetup\**\*.zip"
               Condition="Exists('$(ArtifactsDir)VSSetup')"
               Kind="Blob"
@@ -96,6 +98,7 @@
               IsVSSetup="true"
               IsShipping="true"
               SubBlobFolder="workloads/" />
+    -->
   </ItemGroup>
 
   <!--
