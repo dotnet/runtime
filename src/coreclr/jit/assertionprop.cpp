@@ -5683,9 +5683,9 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
                 dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
                 dsc.op2.u1.iconVal = 0;
                 dsc.op2.SetIconFlag(GTF_EMPTY);
-                if (vnStore->IsVNCheckedBound(opVN))
+                if (vnStore->IsVNNeverNegative(opVN))
                 {
-                    // Create "arrBnd >= value" assertion
+                    // Create "X >= value" assertion (both operands are never negative)
                     dsc.op1.kind = O1K_CONSTANT_LOOP_BND;
                     dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
                     assert(vnStore->IsVNConstantBound(dsc.op1.vn));
