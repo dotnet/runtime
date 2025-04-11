@@ -100,7 +100,7 @@ namespace
             throw HResultException{ E_UNEXPECTED }; // This should never happen in Windows 7+
 
         json_parser_t json;
-        if (!json.parse_raw_data(reinterpret_cast<char*>(data), size, _X("<embedded .clsidmap>")))
+        if (!json.parse_fully_trusted_raw_data(reinterpret_cast<char*>(data), size, _X("<embedded .clsidmap>")))
         {
             trace::error(_X("Embedded .clsidmap format is invalid"));
             throw HResultException{ StatusCode::InvalidConfigFile };
@@ -178,7 +178,7 @@ namespace
             return {};
 
         json_parser_t json;
-        if (!json.parse_file(map_file_name))
+        if (!json.parse_fully_trusted_file(map_file_name))
         {
             trace::error(_X("File .clsidmap format is invalid"));
             throw HResultException{ StatusCode::InvalidConfigFile };
