@@ -433,6 +433,11 @@ namespace System.Text.Unicode
                     return AppendCustomFormatter(value, format: null);
                 }
 
+                if (value is null)
+                {
+                    return true;
+                }
+
                 // Special-case enums to avoid boxing them.
                 if (typeof(T).IsEnum)
                 {
@@ -468,7 +473,7 @@ namespace System.Text.Unicode
                 else
                 {
                     // Fall back to a normal ToString and append that.
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return AppendFormatted(s.AsSpan());
@@ -484,6 +489,11 @@ namespace System.Text.Unicode
                 if (_hasCustomFormatter)
                 {
                     return AppendCustomFormatter(value, format);
+                }
+
+                if (value is null)
+                {
+                    return true;
                 }
 
                 // Special-case enums to avoid boxing them.
@@ -521,7 +531,7 @@ namespace System.Text.Unicode
                 else
                 {
                     // Fall back to a normal ToString and append that.
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return AppendFormatted(s.AsSpan());
