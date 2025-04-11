@@ -243,7 +243,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public readonly Guid ToGuid()
             {
-                return Unsafe.As<GuidResult, Guid>(ref Unsafe.AsRef(in this));
+                return Unsafe.ReadUnaligned<Guid>(ref Unsafe.As<GuidResult, byte>(ref Unsafe.AsRef(in this)));
             }
 
             public void ReverseAbcEndianness()
@@ -1425,7 +1425,7 @@ namespace System
                 (byte)'8', (byte)'9', (byte)'a', (byte)'b',
                 (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
-            Vector128<byte> srcVec = Unsafe.As<Guid, Vector128<byte>>(ref value);
+            Vector128<byte> srcVec = Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref value));
             (Vector128<byte> hexLow, Vector128<byte> hexHigh) =
                 HexConverter.AsciiToHexVector128(srcVec, hexMap);
 
