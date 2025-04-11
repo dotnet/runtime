@@ -91,7 +91,7 @@ namespace System.Diagnostics
         /// "traceparent" of the identifiers which are formatted as W3C trace parent, "Request-Id" of the identifiers which are formatted as a hierarchical identifier.
         /// The returned propagator can inject the baggage key-value pair list with header name "Correlation-Context" and it can extract the baggage values mapped to header names "Correlation-Context" and "baggage".
         /// </remarks>
-        public static DistributedContextPropagator CreateDefaultPropagator() => LegacyPropagator.Instance;
+        public static DistributedContextPropagator CreateDefaultPropagator() => W3CPropagator.Instance;
 
         /// <summary>
         /// Returns a propagator which attempts to act transparently, emitting the same data on outbound network requests that was received on the in-bound request.
