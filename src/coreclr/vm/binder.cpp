@@ -899,7 +899,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
                 // when managed type is well known
                 if (!(strlen(expectedType) == len && SString::_strnicmp(expectedType, pUnmanagedArg, (COUNT_T)len) == 0))
                 {
-                    printf("CheckExtended: The managed and unmanaged fcall signatures do not match, Method: %s:%s. Argument: %d Expecting: %s Actual: %s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, argIndex, expectedType, pUnManagedType);
+                    minipal_log_print_error("CheckExtended: The managed and unmanaged fcall signatures do not match, Method: %s:%s. Argument: %d Expecting: %s Actual: %s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, argIndex, expectedType, pUnManagedType);
                 }
             }
             else
@@ -929,7 +929,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
                 }
                 if (bSigError)
                 {
-                    printf("CheckExtended: The managed and unmanaged fcall signatures do not match, Method: %s:%s. Argument: %d Expecting: (CorElementType)%d actual: %s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, argIndex, argType, pUnManagedType);
+                    minipal_log_print_error("CheckExtended: The managed and unmanaged fcall signatures do not match, Method: %s:%s. Argument: %d Expecting: (CorElementType)%d actual: %s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, argIndex, argType, pUnManagedType);
                 }
             }
             pUnmanagedArg = (pUnmanagedArgEnd != NULL) ? (pUnmanagedArgEnd+1) : NULL;
@@ -944,14 +944,14 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
         {
             if (!((pUnmanagedArg != NULL) && strcmp(pUnmanagedArg, "...") == 0))
             {
-                printf("CheckExtended: Expecting varargs in unmanaged fcall signature, Method: %s:%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName);
+                minipal_log_print_error("CheckExtended: Expecting varargs in unmanaged fcall signature, Method: %s:%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName);
             }
         }
         else
         {
             if (!(pUnmanagedArg == NULL))
             {
-                printf("CheckExtended: Unexpected end of unmanaged fcall signature, Method: %s:%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName);
+                minipal_log_print_error("CheckExtended: Unexpected end of unmanaged fcall signature, Method: %s:%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName);
             }
         }
     }
@@ -1043,7 +1043,7 @@ void CoreLibBinder::CheckExtended()
 
         if (fError)
         {
-            printf("CheckExtended: VM expects type to exist:  %s.%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID));
+            minipal_log_print_error("CheckExtended: VM expects type to exist:  %s.%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID));
         }
     }
 
@@ -1066,7 +1066,7 @@ void CoreLibBinder::CheckExtended()
 
         if (fError)
         {
-            printf("CheckExtended: VM expects method to exist:  %s.%s::%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID), CoreLibBinder::GetMethodName(mID));
+            minipal_log_print_error("CheckExtended: VM expects method to exist:  %s.%s::%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID), CoreLibBinder::GetMethodName(mID));
         }
     }
 
@@ -1089,7 +1089,7 @@ void CoreLibBinder::CheckExtended()
 
         if (fError)
         {
-            printf("CheckExtended: VM expects field to exist:  %s.%s::%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID), CoreLibBinder::GetFieldName(fID));
+            minipal_log_print_error("CheckExtended: VM expects field to exist:  %s.%s::%s\n", CoreLibBinder::GetClassNameSpace(cID), CoreLibBinder::GetClassName(cID), CoreLibBinder::GetFieldName(fID));
         }
     }
 
@@ -1142,7 +1142,7 @@ void CoreLibBinder::CheckExtended()
             {
                 pszClassName = pszNameSpace = "Invalid TypeDef record";
             }
-            printf("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
+            minipal_log_print_error("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
         }
         EX_END_CATCH(SwallowAllExceptions)
 
@@ -1182,7 +1182,7 @@ void CoreLibBinder::CheckExtended()
                 {
                     pszName = "Invalid method name";
                 }
-                printf("CheckExtended: Unable to find qcall implementation: %s.%s::%s (EntryPoint name: %s)\n", pszNameSpace, pszClassName, pszName, pNMD->GetEntrypointName());
+                minipal_log_print_error("CheckExtended: Unable to find qcall implementation: %s.%s::%s (EntryPoint name: %s)\n", pszNameSpace, pszClassName, pszName, pNMD->GetEntrypointName());
             }
             continue;
         }
@@ -1204,7 +1204,7 @@ void CoreLibBinder::CheckExtended()
             {
                 pszName = "Invalid method name";
             }
-            printf("CheckExtended: Unable to find internalcall implementation: %s.%s::%s\n", pszNameSpace, pszClassName, pszName);
+            minipal_log_print_error("CheckExtended: Unable to find internalcall implementation: %s.%s::%s\n", pszNameSpace, pszClassName, pszName);
         }
 
         if (id != 0)
@@ -1232,7 +1232,7 @@ void CoreLibBinder::CheckExtended()
 #define ASMCONSTANTS_RUNTIME_ASSERT(cond) _ASSERTE(cond)
 #include "asmconstants.h"
 
-    printf("CheckExtended: completed without exception.\n");
+    minipal_log_print_info("CheckExtended: completed without exception.\n");
 
 ErrExit:
     _ASSERTE(SUCCEEDED(hr));

@@ -1195,7 +1195,8 @@ private:
     void setIntervalAsSplit(Interval* interval);
     void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
-    void             processKills(RefPosition* killRefPosition);
+    void processKills(RefPosition* killRefPosition);
+    template <bool isLow>
     FORCEINLINE void freeKilledRegs(RefPosition*     killRefPosition,
                                     SingleTypeRegSet killedRegs,
                                     RefPosition*     nextKill,
@@ -1822,9 +1823,28 @@ private:
     }
     SingleTypeRegSet getMatchingConstants(SingleTypeRegSet mask, Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskTP    fixedRegs;
+    SingleTypeRegSet fixedRegsLow;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    SingleTypeRegSet fixedRegsHigh;
+#endif
     LsraLocation nextFixedRef[REG_COUNT];
-    void         updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+    template <bool isLow>
+    void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+    void updateNextFixedRefDispatch(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
+    {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        if (regRecord->regNum < 64)
+        {
+            updateNextFixedRef<true>(regRecord, nextRefPosition, nextKill);
+        }
+        else
+        {
+            updateNextFixedRef<false>(regRecord, nextRefPosition, nextKill);
+        }
+#else
+        updateNextFixedRef<true>(regRecord, nextRefPosition, nextKill);
+#endif
+    }
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
     {
         LsraLocation loc = nextFixedRef[regNum];

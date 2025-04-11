@@ -20,21 +20,22 @@ internal class TestPlaceholderTarget : Target
     private readonly Target.IDataCache _dataCache;
     private readonly Dictionary<DataType, Target.TypeInfo> _typeInfoCache;
     private readonly (string Name, ulong Value)[] _globals;
+    private readonly (string Name, string Value)[] _globalStrings;
 
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
 
     private readonly ReadFromTargetDelegate _dataReader;
 
-    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
-        Platform = Target.CorDebugPlatform.CORDB_PLATFORM_MAC_AMD64;
         _contractRegistry = new Mock<ContractRegistry>().Object;
         _dataCache = new DefaultDataCache(this);
         _typeInfoCache = types ?? [];
         _dataReader = reader;
         _globals = globals ?? [];
+        _globalStrings = globalStrings ?? [];
     }
 
     internal void SetContracts(ContractRegistry contracts)
@@ -44,11 +45,24 @@ internal class TestPlaceholderTarget : Target
 
     public override int PointerSize { get; }
     public override bool IsLittleEndian { get; }
-    public override CorDebugPlatform Platform { get; }
 
     public override bool IsAlignedToPointerSize(TargetPointer pointer)
     {
         return (pointer.Value & (ulong)(PointerSize - 1)) == 0;
+    }
+
+    public override bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value)
+    {
+        value = null;
+        foreach (var global in _globals)
+        {
+            if (global.Name == name)
+            {
+                value = new TargetPointer(global.Value);
+                return true;
+            }
+        }
+        return false;
     }
 
     public override TargetPointer ReadGlobalPointer(string name)
@@ -93,6 +107,20 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override TargetNUInt ReadNUInt(ulong address) => DefaultReadNUInt(address);
+
+    public override bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value)
+    {
+        value = default;
+        foreach (var global in _globals)
+        {
+            if (global.Name == name)
+            {
+                value = T.CreateChecked(global.Value);
+                return true;
+            }
+        }
+        return false;
+    }
     public override T ReadGlobal<T>(string name)
     {
         foreach (var global in _globals)
@@ -102,6 +130,33 @@ internal class TestPlaceholderTarget : Target
         }
 
         throw new NotImplementedException();
+    }
+
+    public override string ReadGlobalString(string name)
+    {
+        if (TryReadGlobalString(name, out string? value))
+        {
+            return value;
+        }
+
+        throw new NotImplementedException();
+    }
+
+    public override bool TryReadGlobalString(string name, [NotNullWhen(true)] out string? value)
+    {
+        value = null;
+
+        // first check global strings
+        foreach (var global in _globalStrings)
+        {
+            if (global.Name == name)
+            {
+                value = global.Value;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public override T Read<T>(ulong address) => DefaultRead<T>(address);

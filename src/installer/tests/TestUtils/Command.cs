@@ -232,11 +232,12 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
 
             ReportExecEnd(exitCode, expectedToFail);
-
+            int pid = Process.Id;
             Process.Dispose();
 
             return new CommandResult(
                 Process.StartInfo,
+                pid,
                 exitCode,
                 _stdOutCapture?.GetStringBuilder()?.ToString(),
                 _stdErrCapture?.GetStringBuilder()?.ToString());

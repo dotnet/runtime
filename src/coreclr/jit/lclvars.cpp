@@ -3068,15 +3068,6 @@ void Compiler::lvaSortByRefCount()
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
         }
-#if defined(JIT32_GCENCODER)
-        if (UsesFunclets() && lvaIsOriginalThisArg(lclNum) &&
-            (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
-        {
-            // For x86/Linux, we need to track "this".
-            // However we cannot have it in tracked variables, so we set "this" pointer always untracked
-            varDsc->lvTracked = 0;
-        }
-#endif
 
         // No benefit in tracking the PSPSym (if any)
         //

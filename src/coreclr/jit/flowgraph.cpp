@@ -1286,7 +1286,6 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
         if (ptr != NULL)
         {
-            setMethodHasFrozenObjects();
             tree = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
         }
         else
