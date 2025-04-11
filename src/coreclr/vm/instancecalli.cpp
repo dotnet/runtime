@@ -13,15 +13,13 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     _ASSERTE(GetRVA() == 0);
 
     // Intrinsic must be a static method.
-    if (!IsStatic())
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+    _ASSERTE(IsStatic());
 
     MetaSig declarationSig(this);
     UINT argCount = declarationSig.NumFixedArgs();
 
     // Intrinsic must have at least the "this" argument and the IntPtr function pointer argument.
-    if (argCount < 2)
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+    _ASSERTE(argCount >= 2);
 
     SigTypeContext genericContext;
     ILStubLinker sl(
@@ -37,10 +35,7 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     declarationSig.SkipArg(); // Skip "this".
 
     CorElementType fnType = declarationSig.NextArg();
-    if (fnType != ELEMENT_TYPE_FNPTR)
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-    }
+    _ASSERTE(fnType == ELEMENT_TYPE_FNPTR);
 
     SigPointer spToken = declarationSig.GetArgProps();
     spToken.GetByte(NULL); 

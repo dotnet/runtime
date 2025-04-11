@@ -313,7 +313,7 @@ namespace System.Reflection.Tests
         {
             yield return new object[] { "Bool", TestClass.BoolValue };
             yield return new object[] { "Byte", TestClass.ByteValue };
-            yield return new object[] { "ByteEnum", TestClass.ByteValue };
+            yield return new object[] { "ByteEnum", TestClass.ByteEnumValue };
             yield return new object[] { "Char", TestClass.CharValue };
             yield return new object[] { "DateTimeOffset", TestClass.DateTimeOffsetValue };
             yield return new object[] { "DateTime", TestClass.DateTimeValue };
@@ -321,23 +321,23 @@ namespace System.Reflection.Tests
             yield return new object[] { "Double", TestClass.DoubleValue };
             yield return new object[] { "Guid", TestClass.GuidValue };
             yield return new object[] { "Int16", TestClass.Int16Value };
-            yield return new object[] { "Int16Enum", TestClass.Int16Value };
+            yield return new object[] { "Int16Enum", TestClass.Int16EnumValue };
             yield return new object[] { "Int32", TestClass.Int32Value };
-            yield return new object[] { "Int32Enum", TestClass.Int32Value };
+            yield return new object[] { "Int32Enum", TestClass.Int32EnumValue };
             yield return new object[] { "Int64", TestClass.Int64Value };
-            yield return new object[] { "Int64Enum", TestClass.Int64Value };
+            yield return new object[] { "Int64Enum", TestClass.Int64EnumValue };
             yield return new object[] { "NInt", TestClass.NIntValue };
             yield return new object[] { "NUInt", TestClass.NUIntValue };
             yield return new object[] { "Object", TestClass.ObjectValue };
             yield return new object[] { "SByte", TestClass.SByteValue };
-            yield return new object[] { "SByteEnum", TestClass.SByteValue };
+            yield return new object[] { "SByteEnum", TestClass.SByteEnumValue };
             yield return new object[] { "Single", TestClass.SingleValue };
             yield return new object[] { "UInt16", TestClass.UInt16Value };
-            yield return new object[] { "UInt16Enum", TestClass.UInt16Value };
+            yield return new object[] { "UInt16Enum", TestClass.UInt16EnumValue };
             yield return new object[] { "UInt32", TestClass.UInt32Value };
-            yield return new object[] { "UInt32Enum", TestClass.UInt32Value };
+            yield return new object[] { "UInt32Enum", TestClass.UInt32EnumValue };
             yield return new object[] { "UInt64", TestClass.UInt64Value };
-            yield return new object[] { "UInt64Enum", TestClass.UInt64Value };
+            yield return new object[] { "UInt64Enum", TestClass.UInt64EnumValue };
         }
 
         [Theory]
@@ -346,7 +346,7 @@ namespace System.Reflection.Tests
         {
             TestClass testClass = new();
             MethodInfo setter = typeof(TestClass).GetProperty(typeName).GetSetMethod();
-            setter.Invoke(testClass, new object[] { testClass, value });
+            setter.Invoke(testClass, new object[] { value });
             MethodInfo getter = typeof(TestClass).GetProperty(typeName).GetGetMethod();
             object ret = getter.Invoke(testClass, null);
             Assert.Equal(value, ret);
@@ -431,6 +431,7 @@ namespace System.Reflection.Tests
         {
             public const bool BoolValue = true;
             public const byte ByteValue = Byte.MaxValue;
+            public const ByteEnumType ByteEnumValue = (ByteEnumType)Byte.MaxValue;
             public const char CharValue = 'S';
             public static readonly DateTimeOffset DateTimeOffsetValue = DateTimeOffset.MaxValue;
             public static readonly DateTime DateTimeValue = DateTime.MaxValue;
@@ -438,16 +439,23 @@ namespace System.Reflection.Tests
             public const double DoubleValue = 42d;
             public static readonly Guid GuidValue = new Guid("18B2A161-48B6-4D6C-AF0E-E618C73C5777");
             public const short Int16Value = Int16.MaxValue;
+            public const Int16EnumType Int16EnumValue = (Int16EnumType)Int16.MaxValue;
             public const int Int32Value =  Int32.MaxValue;
+            public const Int32EnumType Int32EnumValue = (Int32EnumType)Int32.MaxValue;
             public const long Int64Value = Int64.MaxValue;
+            public const Int64EnumType Int64EnumValue = (Int64EnumType)Int64.MaxValue;
             public const nint NIntValue = 42;
             public const nuint NUIntValue = 42;
             public static readonly object ObjectValue = new object();
             public const sbyte SByteValue = SByte.MaxValue;
+            public const SByteEnumType SByteEnumValue = (SByteEnumType)SByte.MaxValue;
             public const float SingleValue = 42f;
             public const ushort UInt16Value = UInt16.MaxValue;
-            public const uint UInt32Value = UInt16.MaxValue;
+            public const UInt16EnumType UInt16EnumValue = (UInt16EnumType)UInt16.MaxValue;
+            public const uint UInt32Value = UInt32.MaxValue;
+            public const UInt32EnumType UInt32EnumValue = (UInt32EnumType)UInt32.MaxValue;
             public const ulong UInt64Value = UInt64.MaxValue;
+            public const UInt64EnumType UInt64EnumValue = (UInt64EnumType)UInt64.MaxValue;
 
             public string MethodCalled;
 

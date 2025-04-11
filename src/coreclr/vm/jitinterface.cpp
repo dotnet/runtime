@@ -7555,7 +7555,7 @@ static void getMethodInfoHelper(
             {
                 fILIntrinsic = getILIntrinsicImplementationForActivator(ftn, methInfo, &localSig);
             }
-            else if (CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__INVOKE_HELPERS))
+            else if (CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__INSTANCE_CALLI_HELPER))
             {
                 ftn->GenerateFunctionPointerCall(&cxt.TransientResolver, &cxt.Header);
 
