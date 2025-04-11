@@ -20569,7 +20569,24 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         }
     }
 #elif defined(TARGET_ARM64)
-    return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
+    NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+    switch (id)
+    {
+        case NI_Sve_And:
+        case NI_Sve_BitwiseClear:
+        case NI_Sve_Xor:
+        case NI_Sve_Or:
+            // Mask variant is not RMW, but the vector variant is.
+            if (varTypeIsMask(this))
+            {
+                assert(AsHWIntrinsic()->GetOperandCount() == 3);
+                return false;
+            }
+            break;
+        default:
+            break;
+    }
+    return HWIntrinsicInfo::HasRMWSemantics(id);
 #else
     return false;
 #endif
