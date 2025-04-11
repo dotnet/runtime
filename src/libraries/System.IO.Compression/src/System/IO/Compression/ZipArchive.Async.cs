@@ -12,7 +12,6 @@ namespace System.IO.Compression;
 
 public partial class ZipArchive : IDisposable, IAsyncDisposable
 {
-
     /// <summary>
     /// Asynchronously initializes and returns a new instance of <see cref="ZipArchive"/> on the given stream in the specified mode, specifying whether to leave the stream open, with an optional encoding and an optional cancellation token.
     /// </summary>
@@ -153,24 +152,6 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                 _isDisposed = true;
             }
         }
-    }
-
-    internal async Task AcquireArchiveStreamAsync(ZipArchiveEntry entry, CancellationToken cancellationToken)
-    {
-        // if a previous entry had held the stream but never wrote anything, we write their local header for them
-        if (_archiveStreamOwner != null)
-        {
-            if (!_archiveStreamOwner.EverOpenedForWrite)
-            {
-                await _archiveStreamOwner.WriteAndFinishLocalEntryAsync(forceWrite: true, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                throw new IOException(SR.CreateModeCreateEntryWhileOpen);
-            }
-        }
-
-        _archiveStreamOwner = entry;
     }
 
     private async Task CloseStreamsAsync()
