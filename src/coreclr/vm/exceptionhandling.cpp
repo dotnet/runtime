@@ -4035,7 +4035,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
         {
             EH_LOG((LL_INFO100, "SfiNext (pass=%d): no more managed frames found on stack", pTopExInfo->m_passNumber));
             retVal = SWA_FAILED;
-            break;
+            goto Exit;
         }
 
         if (!pThis->m_crawl.IsFrameless())
@@ -4081,6 +4081,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
                             pThis->SkipTo(&pPrevExInfo->m_frameIter);
                             pThis->ResetNextExInfoForSP(pThis->m_crawl.GetRegisterSet()->SP);
                             _ASSERTE_MSG(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD, "Collided unwind should have reached a frameless method");
+                            break;
                         }
                     }
                 }
@@ -4108,15 +4109,17 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
                 }
             }
 
-            if (pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD)
-            {
-                retVal = pThis->Next();
-            }
+            retVal = pThis->Next();
         }
     }
     while (retVal != SWA_FAILED && (pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD));
 
     _ASSERTE(retVal == SWA_FAILED || invalidRevPInvoke || pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
+
+    if (retVal == SWA_FAILED)
+    {
+        EH_LOG((LL_INFO100, "SfiNext (pass=%d): failed to get next frame", pTopExInfo->m_passNumber));
+    }
 
     if (!isCollided)
     {
