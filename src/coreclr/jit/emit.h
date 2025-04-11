@@ -446,6 +446,41 @@ enum idAddrUnionTag
     iaut_SHIFT = 2
 };
 
+enum EmitCallType
+{
+    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method (call addr with RIP-relative encoding)
+    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method (call [addr]/call [rip+addr])
+    EC_INDIR_R,          // Indirect call via register (call rax)
+    EC_INDIR_ARD,        // Indirect call via an addressing mode (call [rax+rdx*8+disp])
+
+    EC_COUNT
+};
+
+struct EmitCallParams
+{
+    EmitCallType          callType = EC_COUNT;
+    CORINFO_METHOD_HANDLE methHnd  = NO_METHOD_HANDLE;
+#ifdef DEBUG
+    // Used to report call sites to the EE
+    CORINFO_SIG_INFO* sigInfo = nullptr;
+#endif
+    void*    addr    = nullptr;
+    ssize_t  argSize = 0;
+    emitAttr retSize = EA_UNKNOWN;
+    // For multi-reg args with GC returns in the second arg
+    emitAttr  secondRetSize = EA_UNKNOWN;
+    BitVec    ptrVars       = BitVecOps::UninitVal();
+    regMaskTP gcrefRegs     = RBM_NONE;
+    regMaskTP byrefRegs     = RBM_NONE;
+    DebugInfo debugInfo;
+    regNumber ireg        = REG_NA;
+    regNumber xreg        = REG_NA;
+    unsigned  xmul        = 0;
+    ssize_t   disp        = 0;
+    bool      isJump      = false;
+    bool      noSafePoint = false;
+};
+
 class emitter
 {
     friend class emitLocation;
@@ -2615,6 +2650,8 @@ private:
     bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
     bool emitDoesInsModifyFlags(instruction ins);
 #endif // TARGET_XARCH
+
+    void emitIns_Call(const EmitCallParams& params);
 
     /************************************************************************/
     /*      The logic that creates and keeps track of instruction groups    */

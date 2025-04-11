@@ -314,30 +314,6 @@ void emitIns_ARR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg
 void emitIns_R_ARX(
     instruction ins, emitAttr attr, regNumber ireg, regNumber reg, regNumber rg2, unsigned mul, int disp);
 
-enum EmitCallType
-{
-    EC_FUNC_TOKEN, // Direct call to a helper/static/nonvirtual/global method
-    EC_INDIR_R,    // Indirect call via register
-    EC_COUNT
-};
-
-void emitIns_Call(EmitCallType          callType,
-                  CORINFO_METHOD_HANDLE methHnd,                   // used for pretty printing
-                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*            addr,
-                  int              argSize,
-                  emitAttr         retSize,
-                  VARSET_VALARG_TP ptrVars,
-                  regMaskTP        gcrefRegs,
-                  regMaskTP        byrefRegs,
-                  const DebugInfo& di          = DebugInfo(),
-                  regNumber        ireg        = REG_NA,
-                  regNumber        xreg        = REG_NA,
-                  unsigned         xmul        = 0,
-                  ssize_t          disp        = 0,
-                  bool             isJump      = false,
-                  bool             noSafePoint = false);
-
 /*****************************************************************************
  *
  *  Given an instrDesc, return true if it's a conditional jump.
