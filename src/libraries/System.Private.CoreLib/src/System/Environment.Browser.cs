@@ -34,5 +34,15 @@ namespace System
         /// </summary>
         /// <returns>Path of the executable that started the currently executing process</returns>
         private static string? GetProcessPath() => null;
+
+#if !MONO
+        private static string[] GetCommandLineArgsNative()
+        {
+            // This is only used for delegate created from native host
+            // Consider to use /proc/self/cmdline to get command line
+            return Array.Empty<string>();
+        }
+#endif
+
     }
 }
