@@ -4114,7 +4114,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
     }
     while (retVal != SWA_FAILED && (pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD));
 
-    _ASSERTE(retVal == SWA_FAILED || invalidRevPInvoke || pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
+    _ASSERTE(retVal == SWA_FAILED || pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
 
     if (retVal == SWA_FAILED)
     {
