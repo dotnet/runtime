@@ -439,7 +439,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var subResult = PackedSimd.Subtract(v1, v2);
             var mulResult = PackedSimd.Multiply(v1, v2);
 
-            Assert.Equal(Pla), addResult);
+            Assert.Equal(PlackeSimd.Splat((nint)3), addResult);
             Assert.Equal(PackedSimd.Splat((nint)(-1)), subResult);
             Assert.Equal(PackedSimd.Splat((nint)2), mulResult);
         }
