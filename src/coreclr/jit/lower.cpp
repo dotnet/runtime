@@ -550,13 +550,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return nextNode;
             }
 
-            nextNode = LowerCast(node);
-            if (nextNode != nullptr)
-            {
-                return nextNode;
-            }
+            LowerCast(node);
+            break;
         }
-        break;
 
         case GT_BITCAST:
         {
