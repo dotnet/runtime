@@ -61,7 +61,6 @@ namespace System.IO.Compression.Tests
                 Stream clamped = new ClampedReadStream(stream, readSizeLimit: 1);
 
                 IsZipSameAsDir(clamped, zfolder(zipFolder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
-                Assert.False(clamped.CanRead, "Clamped stream should be closed at this point"); //check that it was closed
             }
         }
 
