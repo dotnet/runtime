@@ -31,6 +31,7 @@ namespace System.Net
         private byte[] _bytes;
         private int _activeStart;
         private int _availableStart;
+        private bool _disposed;
 
         // Invariants:
         // 0 <= _activeStart <= _availableStart <= bytes.Length
@@ -59,6 +60,7 @@ namespace System.Net
 
         public void Dispose()
         {
+            _disposed = true;
             _activeStart = 0;
             _availableStart = 0;
 
@@ -114,6 +116,10 @@ namespace System.Net
 
         public void Commit(int byteCount)
         {
+            if (_bytes == null)
+            {
+                throw new ObjectDisposedException(nameof(ArrayBuffer));
+            }
             Debug.Assert(byteCount <= AvailableLength);
             _availableStart += byteCount;
         }

@@ -548,7 +548,7 @@ namespace System
 
             }
 
-            return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+            return (IsOpenSslSupported && OpenSslVersion < new Version(1, 0, 2));
         }
 
         private static bool OpenSslGetTlsSupport(SslProtocols protocol)
@@ -570,7 +570,7 @@ namespace System
         private static bool GetTls10Support()
         {
             // on macOS and Android TLS 1.0 is supported.
-            if (IsApplePlatform || IsAndroid)
+            if (IsAndroid)
             {
                 return true;
             }
@@ -581,7 +581,7 @@ namespace System
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
 
-            return OpenSslGetTlsSupport(SslProtocols.Tls);
+            return IsOpenSslSupported && OpenSslGetTlsSupport(SslProtocols.Tls);
         }
 
         private static bool GetTls11Support()
@@ -597,13 +597,13 @@ namespace System
                 // It is enabled on other versions unless explicitly disabled.
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
-            // on macOS and Android TLS 1.1 is supported.
-            else if (IsApplePlatform || IsAndroid)
+            // on Android TLS 1.1 is supported.
+            else if (IsAndroid)
             {
                 return true;
             }
 
-            return OpenSslGetTlsSupport(SslProtocols.Tls11);
+            return IsOpenSslSupported && OpenSslGetTlsSupport(SslProtocols.Tls11);
         }
 #pragma warning restore SYSLIB0039
 
