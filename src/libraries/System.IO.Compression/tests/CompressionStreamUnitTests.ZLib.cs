@@ -24,7 +24,7 @@ namespace System.IO.Compression
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StreamCorruption_IsDetected()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(async () =>
             {
                 AppContext.SetSwitch("System.IO.Compression.UseStrictValidation", true);
 
@@ -52,9 +52,9 @@ namespace System.IO.Compression
                     {
                         using (Stream decompressor = CreateStream(decompressedStream, CompressionMode.Decompress))
                         {
-                            Assert.Throws<InvalidDataException>(() =>
+                            await Assert.ThrowsAsync<InvalidDataException>(async () =>
                             {
-                                while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0);
+                                while (await ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length, async: false) != 0);
                             });
                         }
                     }
@@ -117,11 +117,11 @@ namespace System.IO.Compression
                                         break;
 
                                     case TestScenario.Read:
-                                        while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { };
+                                        while (await ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length, async: false) != 0) { };
                                         break;
 
                                     case TestScenario.ReadAsync:
-                                        while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { };
+                                        while (await ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length, async: true) != 0) { };
                                         break;
 
                                     case TestScenario.ReadByte:

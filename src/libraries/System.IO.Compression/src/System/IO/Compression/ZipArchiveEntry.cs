@@ -385,68 +385,62 @@ namespace System.IO.Compression
 
         internal bool EverOpenedForWrite => _everOpenedForWrite;
 
-        internal long OffsetOfCompressedData
+        internal long GetOffsetOfCompressedData()
         {
-            get
+            if (_storedOffsetOfCompressedData == null)
             {
-                if (_storedOffsetOfCompressedData == null)
-                {
-                    _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                    // by calling this, we are using local header _storedEntryNameBytes.Length and extraFieldLength
-                    // to find start of data, but still using central directory size information
-                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
-                        throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
-                    _storedOffsetOfCompressedData = _archive.ArchiveStream.Position;
-                }
-                return _storedOffsetOfCompressedData.Value;
+                _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
+                // by calling this, we are using local header _storedEntryNameBytes.Length and extraFieldLength
+                // to find start of data, but still using central directory size information
+                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
+                    throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+                _storedOffsetOfCompressedData = _archive.ArchiveStream.Position;
             }
+            return _storedOffsetOfCompressedData.Value;
         }
 
-        private MemoryStream UncompressedData
+        private MemoryStream GetUncompressedData()
         {
-            get
+            if (_storedUncompressedData == null)
             {
-                if (_storedUncompressedData == null)
+                // this means we have never opened it before
+
+                // if _uncompressedSize > int.MaxValue, it's still okay, because MemoryStream will just
+                // grow as data is copied into it
+                _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
+
+                if (_originallyInArchive)
                 {
-                    // this means we have never opened it before
-
-                    // if _uncompressedSize > int.MaxValue, it's still okay, because MemoryStream will just
-                    // grow as data is copied into it
-                    _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
-
-                    if (_originallyInArchive)
+                    using (Stream decompressor = OpenInReadMode(false))
                     {
-                        using (Stream decompressor = OpenInReadMode(false))
+                        try
                         {
-                            try
-                            {
-                                decompressor.CopyTo(_storedUncompressedData);
-                            }
-                            catch (InvalidDataException)
-                            {
-                                // this is the case where the archive say the entry is deflate, but deflateStream
-                                // throws an InvalidDataException. This property should only be getting accessed in
-                                // Update mode, so we want to make sure _storedUncompressedData stays null so
-                                // that later when we dispose the archive, this entry loads the compressedBytes, and
-                                // copies them straight over
-                                _storedUncompressedData.Dispose();
-                                _storedUncompressedData = null;
-                                _currentlyOpenForWrite = false;
-                                _everOpenedForWrite = false;
-                                throw;
-                            }
+                            decompressor.CopyTo(_storedUncompressedData);
                         }
-                    }
-
-                    // if they start modifying it and the compression method is not "store", we should make sure it will get deflated
-                    if (CompressionMethod != CompressionMethodValues.Stored)
-                    {
-                        CompressionMethod = CompressionMethodValues.Deflate;
+                        catch (InvalidDataException)
+                        {
+                            // this is the case where the archive say the entry is deflate, but deflateStream
+                            // throws an InvalidDataException. This property should only be getting accessed in
+                            // Update mode, so we want to make sure _storedUncompressedData stays null so
+                            // that later when we dispose the archive, this entry loads the compressedBytes, and
+                            // copies them straight over
+                            _storedUncompressedData.Dispose();
+                            _storedUncompressedData = null;
+                            _currentlyOpenForWrite = false;
+                            _everOpenedForWrite = false;
+                            throw;
+                        }
                     }
                 }
 
-                return _storedUncompressedData;
+                // if they start modifying it and the compression method is not "store", we should make sure it will get deflated
+                if (CompressionMethod != CompressionMethodValues.Stored)
+                {
+                    CompressionMethod = CompressionMethodValues.Deflate;
+                }
             }
+
+            return _storedUncompressedData;
         }
 
         private CompressionMethodValues CompressionMethod
@@ -650,7 +644,7 @@ namespace System.IO.Compression
                 }
                 _compressedBytes[_compressedBytes.Length - 1] = new byte[_compressedSize % MaxSingleBufferSize];
 
-                _archive.ArchiveStream.Seek(OffsetOfCompressedData, SeekOrigin.Begin);
+                _archive.ArchiveStream.Seek(GetOffsetOfCompressedData(), SeekOrigin.Begin);
 
                 for (int i = 0; i < _compressedBytes.Length - 1; i++)
                 {
@@ -746,7 +740,7 @@ namespace System.IO.Compression
             if (checkOpenable)
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
 
-            Stream compressedStream = new SubReadStream(_archive.ArchiveStream, OffsetOfCompressedData, _compressedSize);
+            Stream compressedStream = new SubReadStream(_archive.ArchiveStream, GetOffsetOfCompressedData(), _compressedSize);
             return GetDataDecompressor(compressedStream);
         }
 
@@ -783,8 +777,9 @@ namespace System.IO.Compression
             Changes |= ZipArchive.ChangeState.StoredData;
             _currentlyOpenForWrite = true;
             // always put it at the beginning for them
-            UncompressedData.Seek(0, SeekOrigin.Begin);
-            return new WrappedStream(UncompressedData, this, thisRef =>
+            Stream uncompressedData = GetUncompressedData();
+            uncompressedData.Seek(0, SeekOrigin.Begin);
+            return new WrappedStream(uncompressedData, this, thisRef =>
             {
                 // once they close, we know uncompressed length, but still not compressed length
                 // so we don't fill in any size information
@@ -836,7 +831,7 @@ namespace System.IO.Compression
                     return false;
                 }
                 // when this property gets called, some duplicated work
-                if (OffsetOfCompressedData + _compressedSize > _archive.ArchiveStream.Length)
+                if (GetOffsetOfCompressedData() + _compressedSize > _archive.ArchiveStream.Length)
                 {
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
@@ -1429,7 +1424,7 @@ namespace System.IO.Compression
                     {
                         _everWritten = true;
                         // write local header, we are good to go
-                        _usedZip64inLH = _entry.WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
+                        _usedZip64inLH = await _entry.WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, cancellationToken).ConfigureAwait(false);
                     }
 
                     await _crcSizeStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
@@ -1479,6 +1474,34 @@ namespace System.IO.Compression
                 }
 
                 base.Dispose(disposing);
+            }
+
+            public override async ValueTask DisposeAsync()
+            {
+                if (!_isDisposed)
+                {
+                    await _crcSizeStream.DisposeAsync().ConfigureAwait(false); // now we have size/crc info
+
+                    if (!_everWritten)
+                    {
+                        // write local header, no data, so we use stored
+                        await _entry.WriteLocalFileHeaderAsync(isEmptyFile: true, forceWrite: true, cancellationToken: default).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        // go back and finish writing
+                        if (_entry._archive.ArchiveStream.CanSeek)
+                            // finish writing local header if we have seek capabilities
+                            await _entry.WriteCrcAndSizesInLocalHeaderAsync(_usedZip64inLH, cancellationToken: default).ConfigureAwait(false);
+                        else
+                            // write out data descriptor if we don't have seek capabilities
+                            await _entry.WriteDataDescriptorAsync(cancellationToken: default).ConfigureAwait(false);
+                    }
+                    _canWrite = false;
+                    _isDisposed = true;
+                }
+
+                await base.DisposeAsync().ConfigureAwait(false);
             }
         }
 
