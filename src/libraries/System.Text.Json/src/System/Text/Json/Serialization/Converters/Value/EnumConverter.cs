@@ -113,14 +113,14 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.Number when (_converterOptions & EnumConverterOptions.AllowNumbers) != 0:
                     switch (s_enumTypeCode)
                     {
-                        case TypeCode.Int32 when reader.TryGetInt32(out int int32): return Unsafe.As<int, T>(ref int32);
-                        case TypeCode.UInt32 when reader.TryGetUInt32(out uint uint32): return Unsafe.As<uint, T>(ref uint32);
-                        case TypeCode.Int64 when reader.TryGetInt64(out long int64): return Unsafe.As<long, T>(ref int64);
-                        case TypeCode.UInt64 when reader.TryGetUInt64(out ulong uint64): return Unsafe.As<ulong, T>(ref uint64);
-                        case TypeCode.Byte when reader.TryGetByte(out byte ubyte8): return Unsafe.As<byte, T>(ref ubyte8);
-                        case TypeCode.SByte when reader.TryGetSByte(out sbyte byte8): return Unsafe.As<sbyte, T>(ref byte8);
-                        case TypeCode.Int16 when reader.TryGetInt16(out short int16): return Unsafe.As<short, T>(ref int16);
-                        case TypeCode.UInt16 when reader.TryGetUInt16(out ushort uint16): return Unsafe.As<ushort, T>(ref uint16);
+                        case TypeCode.Int32 when reader.TryGetInt32(out int int32): return (T)(object)int32;
+                        case TypeCode.UInt32 when reader.TryGetUInt32(out uint uint32): return (T)(object)uint32;
+                        case TypeCode.Int64 when reader.TryGetInt64(out long int64): return (T)(object)int64;
+                        case TypeCode.UInt64 when reader.TryGetUInt64(out ulong uint64): return (T)(object)uint64;
+                        case TypeCode.Byte when reader.TryGetByte(out byte ubyte8): return (T)(object)ubyte8;
+                        case TypeCode.SByte when reader.TryGetSByte(out sbyte byte8): return (T)(object)byte8;
+                        case TypeCode.Int16 when reader.TryGetInt16(out short int16): return (T)(object)int16;
+                        case TypeCode.UInt16 when reader.TryGetUInt16(out ushort uint16): return (T)(object)uint16;
                     }
                     break;
             }
@@ -350,51 +350,43 @@ namespace System.Text.Json.Serialization.Converters
 
         private static ulong ConvertToUInt64(T value)
         {
-            switch (s_enumTypeCode)
+            return s_enumTypeCode switch
             {
-                case TypeCode.Int32 or TypeCode.UInt32: return Unsafe.As<T, uint>(ref value);
-                case TypeCode.Int64 or TypeCode.UInt64: return Unsafe.As<T, ulong>(ref value);
-                case TypeCode.Int16 or TypeCode.UInt16: return Unsafe.As<T, ushort>(ref value);
-                default:
-                    Debug.Assert(s_enumTypeCode is TypeCode.SByte or TypeCode.Byte);
-                    return Unsafe.As<T, byte>(ref value);
+                TypeCode.Int32 => (ulong)(int)(object)value,
+                TypeCode.UInt32 => (uint)(object)value,
+                TypeCode.Int64 => (ulong)(long)(object)value,
+                TypeCode.UInt64 => (ulong)(object)value,
+                TypeCode.Int16 => (ulong)(short)(object)value,
+                TypeCode.UInt16 => (ushort)(object)value,
+                TypeCode.SByte => (ulong)(sbyte)(object)value,
+                _ => (byte)(object)value
             };
         }
 
         private static long ConvertToInt64(T value)
         {
             Debug.Assert(s_isSignedEnum);
-            switch (s_enumTypeCode)
+            return s_enumTypeCode switch
             {
-                case TypeCode.Int32: return Unsafe.As<T, int>(ref value);
-                case TypeCode.Int64: return Unsafe.As<T, long>(ref value);
-                case TypeCode.Int16: return Unsafe.As<T, short>(ref value);
-                default:
-                    Debug.Assert(s_enumTypeCode is TypeCode.SByte);
-                    return Unsafe.As<T, sbyte>(ref value);
+                TypeCode.Int32 => (int)(object)value,
+                TypeCode.Int64 => (long)(object)value,
+                TypeCode.Int16 => (short)(object)value,
+                _ => (sbyte)(object)value,
             };
         }
 
         private static T ConvertFromUInt64(ulong value)
         {
-            switch (s_enumTypeCode)
+            return s_enumTypeCode switch
             {
-                case TypeCode.Int32 or TypeCode.UInt32:
-                    uint uintValue = (uint)value;
-                    return Unsafe.As<uint, T>(ref uintValue);
-
-                case TypeCode.Int64 or TypeCode.UInt64:
-                    ulong ulongValue = value;
-                    return Unsafe.As<ulong, T>(ref ulongValue);
-
-                case TypeCode.Int16 or TypeCode.UInt16:
-                    ushort ushortValue = (ushort)value;
-                    return Unsafe.As<ushort, T>(ref ushortValue);
-
-                default:
-                    Debug.Assert(s_enumTypeCode is TypeCode.SByte or TypeCode.Byte);
-                    byte byteValue = (byte)value;
-                    return Unsafe.As<byte, T>(ref byteValue);
+                TypeCode.Int32 => (T)(object)(int)value,
+                TypeCode.UInt32 => (T)(object)(uint)value,
+                TypeCode.Int64 => (T)(object)(long)value,
+                TypeCode.UInt64 => (T)(object)value,
+                TypeCode.Int16 => (T)(object)(short)value,
+                TypeCode.UInt16 => (T)(object)(ushort)value,
+                TypeCode.SByte => (T)(object)(sbyte)value,
+                _ => (T)(object)(byte)value
             };
         }
 
