@@ -62,7 +62,6 @@ namespace HttpStress
                     if (!Version.TryParse(result.Tokens.Single().Value, out Version? parsed))
                     {
                         result.AddError($"'{result.Tokens[0].Value}' is not a valid Version");
-                        return default;
                     }
 
                     return parsed;
