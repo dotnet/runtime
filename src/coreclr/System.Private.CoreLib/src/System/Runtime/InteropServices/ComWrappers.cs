@@ -3,6 +3,8 @@
 
 using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace System.Runtime.InteropServices
 {
@@ -23,9 +25,21 @@ namespace System.Runtime.InteropServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]
         private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
-        static unsafe partial void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapper* wrapper)
+        private static readonly ConditionalWeakTable<object, List<ManagedObjectWrapperHolder>> s_allManagedObjectWrapperTable = [];
+
+        static unsafe partial void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
         {
-            RegisterManagedObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack.Create(ref instance), wrapper);
+            // Record the relationship between the managed object and this wrapper.
+            // This will ensure that we keep all ManagedObjectWrapperHolders alive as long as the managed object is alive,
+            // even if the ComWrappers instance dies.
+            // We must do this as the runtime's recording of the relationship between the managed object and the wrapper
+            // lives as long as the object is alive, and we record the raw pointer to the wrapper.
+            List<ManagedObjectWrapperHolder> allWrappersForThisInstance = s_allManagedObjectWrapperTable.GetOrCreateValue(instance);
+            lock (allWrappersForThisInstance)
+            {
+                allWrappersForThisInstance.Add(wrapper);
+            }
+            RegisterManagedObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack.Create(ref instance), wrapper.Wrapper);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_RegisterManagedObjectWrapperForDiagnostics")]

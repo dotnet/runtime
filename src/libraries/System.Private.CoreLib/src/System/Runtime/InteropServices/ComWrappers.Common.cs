@@ -733,13 +733,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        // Custom type instead of a value tuple to avoid rooting 'ITuple' and other value tuple stuff
-        private struct GetOrCreateComInterfaceForObjectParameters
-        {
-            public ComWrappers? This;
-            public CreateComInterfaceFlags Flags;
-        }
-
         /// <summary>
         /// Create a COM representation of the supplied object that can be passed to a non-managed environment.
         /// </summary>
@@ -755,18 +748,18 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(instance);
 
-            ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, items) =>
+            ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, state) =>
             {
-                ManagedObjectWrapper* value = items.This!.CreateManagedObjectWrapper(c, items.Flags);
+                ManagedObjectWrapper* value = state.This!.CreateManagedObjectWrapper(c, state.flags);
                 return new ManagedObjectWrapperHolder(value, c);
-            }, new GetOrCreateComInterfaceForObjectParameters { This = this, Flags = flags });
+            }, new { This = this, flags });
 
             managedObjectWrapper.AddRef();
-            RegisterManagedObjectWrapperForDiagnostics(instance, managedObjectWrapper.Wrapper);
+            RegisterManagedObjectWrapperForDiagnostics(instance, managedObjectWrapper);
             return managedObjectWrapper.ComIp;
         }
 
-        static unsafe partial void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapper* wrapper);
+        static unsafe partial void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper);
 
         private static nuint AlignUp(nuint value, nuint alignment)
         {
