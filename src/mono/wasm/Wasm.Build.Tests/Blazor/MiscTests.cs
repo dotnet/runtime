@@ -108,10 +108,10 @@ public class MiscTests : BlazorWasmTestBase
 
     
     [Fact]
-    public async Task TestWriteImportMapToHtml()
+    public async Task TestOverrideHtmlAssetPlaceholders()
     {
         var config = Configuration.Release;
-        string extraProperties = "<WriteImportMapToHtml>true</WriteImportMapToHtml>";
+        string extraProperties = "<OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>";
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_import_map_html", extraProperties: extraProperties);
         UpdateFile(Path.Combine("wwwroot", "index.html"), new Dictionary<string, string> {
             { """<base href="/" />""", """<script type="importmap"></script> <base href="/" />""" }

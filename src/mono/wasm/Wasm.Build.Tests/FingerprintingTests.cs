@@ -21,11 +21,11 @@ public class FingerprintingTests : WasmTemplateTestsBase
     }
 
     [Fact]
-    public async Task TestWriteImportMapToHtmlWithFingerprinting()
+    public async Task TestOverrideHtmlAssetPlaceholdersWithFingerprinting()
     {
         var config = Configuration.Release;
-        string extraProperties = "<WriteImportMapToHtml>true</WriteImportMapToHtml>";
-        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "WriteImportMapToHtml", extraProperties: extraProperties);
+        string extraProperties = "<OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>";
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "OverrideHtmlAssetPlaceholders", extraProperties: extraProperties);
         UpdateFile(Path.Combine("wwwroot", "index.html"), new Dictionary<string, string> {
             { """<script type='module' src="./main.js"></script>""", """<script type="importmap"></script> <script type='module' src="./main.js"></script>""" }
         });
