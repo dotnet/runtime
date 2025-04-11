@@ -12,36 +12,55 @@
 #define SWITCH_MIN_TESTS    3
 
 //-----------------------------------------------------------------------------
-//  optSwitchRecognition: Optimize range check for `x == cns1 || x == cns2 || x == cns3 ...`
-//      pattern and convert it to Switch block (jump table) which is then *might* be converted
+//  optRecognizeAndOptimizeSwitchJumps: Optimize range check for `x == cns1 || x == cns2 || x == cns3 ...`
+//      pattern and convert it to a BBJ_SWITCH block (jump table), which then *might* be converted
 //      to a bitmap test via TryLowerSwitchToBitTest.
+//      If we have PGO data, try peeling switches with dominant cases.
 //      TODO: recognize general jump table patterns.
 //
 //  Return Value:
-//      MODIFIED_EVERYTHING if the optimization was applied.
+//      MODIFIED_EVERYTHING if any switches were newly identified and/or optimized, false otherwise
 //
-PhaseStatus Compiler::optSwitchRecognition()
+PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
 {
+    bool modified = false;
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+    {
+        if (block->isRunRarely())
+        {
+            continue;
+        }
+
 // Limit to XARCH, ARM is already doing a great job with such comparisons using
 // a series of ccmp instruction (see ifConvert phase).
 #ifdef TARGET_XARCH
-    bool modified = false;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
-    {
         // block->KindIs(BBJ_COND) check is for better throughput.
-        if (block->KindIs(BBJ_COND) && !block->isRunRarely() && optSwitchDetectAndConvert(block))
+        if (block->KindIs(BBJ_COND) && optSwitchDetectAndConvert(block))
         {
             JITDUMP("Converted block " FMT_BB " to switch\n", block->bbNum)
             modified = true;
+
+            // Converted switches won't have dominant cases, so we can skip the switch peeling check.
+            assert(!block->GetSwitchTargets()->bbsHasDominantCase);
+        }
+        else
+#endif
+
+            if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->bbsHasDominantCase)
+        {
+            fgPeelSwitch(block);
+            modified = true;
+
+            // Switch peeling will convert this block into a check for the dominant case,
+            // and insert the updated switch block after, which doesn't have a dominant case.
+            // Skip over the switch block in the loop iteration.
+            assert(block->Next()->KindIs(BBJ_SWITCH));
+            block = block->Next();
         }
     }
 
-    if (modified)
-    {
-        return PhaseStatus::MODIFIED_EVERYTHING;
-    }
-#endif
-    return PhaseStatus::MODIFIED_NOTHING;
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------------
@@ -138,11 +157,14 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
 //
 // Arguments:
 //    firstBlock - A block to start the search from
+//    testingForConversion - Test if its likely a switch conversion will happen.
+//    Used to prevent a pessimization when optimizing for conditional chaining.
+//    Done in this function to prevent maintaining the check in two places.
 //
 // Return Value:
 //    True if the conversion was successful, false otherwise
 //
-bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
+bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion)
 {
     assert(firstBlock->KindIs(BBJ_COND));
 
@@ -187,7 +209,8 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
             {
                 // Only the first conditional block can have multiple statements.
                 // Stop searching and process what we already have.
-                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                return !testingForConversion &&
+                       optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
             }
 
             // Inspect secondary blocks
@@ -197,25 +220,29 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
                 if (currTrueTarget != trueTarget)
                 {
                     // This blocks jumps to a different target, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (!GenTree::Compare(currVariableNode, variableNode->gtEffectiveVal()))
                 {
                     // A different variable node is used, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (currBb->GetUniquePred(this) != prevBlock)
                 {
                     // Multiple preds in a secondary block, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (!BasicBlock::sameEHRegion(prevBlock, currBb))
                 {
                     // Current block is in a different EH region, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 // Ok we can work with that, add the test value to the list
@@ -225,21 +252,27 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
                 if (testValueIndex == SWITCH_MAX_DISTANCE)
                 {
                     // Too many suitable tests found - stop and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (isReversed)
                 {
                     // We only support reversed test (GT_NE) for the last block.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
+
+                if (testingForConversion)
+                    return true;
 
                 prevBlock = currBb;
             }
             else
             {
                 // Current block is not a suitable test, stop searching and process what we already have.
-                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                return !testingForConversion &&
+                       optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
             }
         }
     }

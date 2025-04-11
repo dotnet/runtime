@@ -545,13 +545,13 @@ mono_generic_param_name (MonoGenericParam *p)
 static inline MonoGenericContainer *
 mono_type_get_generic_param_owner (MonoType *t)
 {
-	return mono_generic_param_owner (t->data.generic_param);
+	return mono_generic_param_owner (m_type_data_get_generic_param (t));
 }
 
 static inline guint16
 mono_type_get_generic_param_num (MonoType *t)
 {
-	return mono_generic_param_num (t->data.generic_param);
+	return mono_generic_param_num (m_type_data_get_generic_param (t));
 }
 
 /*
@@ -952,25 +952,20 @@ mono_class_get_##shortname##_class (void)	\
 
 // GENERATE_TRY_GET_CLASS_WITH_CACHE attempts mono_class_load_from_name approximately
 // only once. i.e. if it fails, it will return null and not retry.
-// In a race it might try a few times, but not indefinitely.
-//
-// FIXME This maybe has excessive volatile/barriers.
-//
 #define GENERATE_TRY_GET_CLASS_WITH_CACHE(shortname,name_space,name) \
 MonoClass*	\
 mono_class_try_get_##shortname##_class (void)	\
 {	\
-	static volatile MonoClass *tmp_class;	\
-	static volatile gboolean inited;	\
-	MonoClass *klass = (MonoClass *)tmp_class;	\
-	mono_memory_barrier ();	\
-	if (!inited) {	\
-		klass = mono_class_try_load_from_name (mono_class_generate_get_corlib_impl (), name_space, name);	\
-		tmp_class = klass;	\
-		mono_memory_barrier ();	\
-		inited = TRUE;	\
+	static MonoClass *cached_class;	\
+	static gboolean cached_class_inited;	\
+	gboolean tmp_inited;	\
+	mono_atomic_load_acquire(tmp_inited, gboolean, &cached_class_inited);	\
+	if (G_LIKELY(tmp_inited)) {	\
+		return (MonoClass*)cached_class;	\
 	}	\
-	return klass;	\
+	cached_class = mono_class_try_load_from_name (mono_class_generate_get_corlib_impl (), name_space, name);	\
+	mono_atomic_store_release(&cached_class_inited, TRUE); \
+	return (MonoClass*)cached_class;	\
 }
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (safehandle)

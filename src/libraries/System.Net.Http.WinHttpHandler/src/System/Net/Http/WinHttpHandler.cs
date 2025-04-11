@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
@@ -41,18 +43,20 @@ namespace System.Net.Http
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersion30 = new Version(3, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
+        internal static bool CertificateCachingAppContextSwitchEnabled { get; } = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool enabled) && enabled;
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
         private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue("gzip");
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue("deflate");
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(CheckTls13Support);
+        private static readonly TimeSpan s_cleanCachedCertificateTimeout = TimeSpan.FromMilliseconds((int?)AppDomain.CurrentDomain.GetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval") ?? 60_000);
+        private static readonly long s_staleTimeout = (long)(s_cleanCachedCertificateTimeout.TotalSeconds * Stopwatch.Frequency / 1000);
 
         [ThreadStatic]
         private static StringBuilder? t_requestHeadersBuilder;
 
         private readonly object _lockObject = new object();
         private bool _doManualDecompressionCheck;
-        private WinInetProxyHelper? _proxyHelper;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
@@ -90,12 +94,47 @@ namespace System.Net.Http
         private int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
         private IDictionary<string, object>? _properties; // Only create dictionary when required.
         private volatile bool _operationStarted;
-        private volatile bool _disposed;
+        private volatile int _disposed;
         private SafeWinHttpHandle? _sessionHandle;
         private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
+        private readonly Timer? _certificateCleanupTimer;
+        private bool _isTimerRunning;
+        private readonly ConcurrentDictionary<CachedCertificateKey, CachedCertificateValue> _cachedCertificates = new();
 
         public WinHttpHandler()
         {
+            if (CertificateCachingAppContextSwitchEnabled)
+            {
+                WeakReference<WinHttpHandler> thisRef = new(this);
+                bool restoreFlow = false;
+                try
+                {
+                    if (!ExecutionContext.IsFlowSuppressed())
+                    {
+                        ExecutionContext.SuppressFlow();
+                        restoreFlow = true;
+                    }
+
+                    _certificateCleanupTimer = new Timer(
+                    static s =>
+                    {
+                        if (((WeakReference<WinHttpHandler>)s!).TryGetTarget(out WinHttpHandler? thisRef))
+                        {
+                            thisRef.ClearStaleCertificates();
+                        }
+                    },
+                    thisRef,
+                    Timeout.Infinite,
+                    Timeout.Infinite);
+                }
+                finally
+                {
+                    if (restoreFlow)
+                    {
+                        ExecutionContext.RestoreFlow();
+                    }
+                }
+            }
         }
 
         #region Properties
@@ -539,13 +578,12 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
             {
-                _disposed = true;
-
-                if (disposing && _sessionHandle != null)
+                if (disposing)
                 {
-                    SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
+                    _sessionHandle?.Dispose();
+                    _certificateCleanupTimer?.Dispose();
                 }
             }
 
@@ -816,29 +854,7 @@ namespace System.Net.Http
                             Interop.WinHttp.WINHTTP_NO_PROXY_NAME,
                             Interop.WinHttp.WINHTTP_NO_PROXY_BYPASS,
                             (int)Interop.WinHttp.WINHTTP_FLAG_ASYNC);
-
-                        if (sessionHandle.IsInvalid)
-                        {
-                            int lastError = Marshal.GetLastWin32Error();
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
-
-                            if (lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER)
-                            {
-                                ThrowOnInvalidHandle(sessionHandle, nameof(Interop.WinHttp.WinHttpOpen));
-                            }
-
-                            // We must be running on a platform earlier than Win8.1/Win2K12R2 which doesn't support
-                            // WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY.  So, we'll need to read the Wininet style proxy
-                            // settings ourself using our WinInetProxyHelper object.
-                            _proxyHelper = new WinInetProxyHelper();
-                            sessionHandle = Interop.WinHttp.WinHttpOpen(
-                                IntPtr.Zero,
-                                _proxyHelper.ManualSettingsOnly ? Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY : Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY,
-                                _proxyHelper.ManualSettingsOnly ? _proxyHelper.Proxy : Interop.WinHttp.WINHTTP_NO_PROXY_NAME,
-                                _proxyHelper.ManualSettingsOnly ? _proxyHelper.ProxyBypass : Interop.WinHttp.WINHTTP_NO_PROXY_BYPASS,
-                                (int)Interop.WinHttp.WINHTTP_FLAG_ASYNC);
-                            ThrowOnInvalidHandle(sessionHandle, nameof(Interop.WinHttp.WinHttpOpen));
-                        }
+                        ThrowOnInvalidHandle(sessionHandle, nameof(Interop.WinHttp.WinHttpOpen));
 
                         uint optionAssuredNonBlockingTrue = 1; // TRUE
 
@@ -1033,7 +1049,7 @@ namespace System.Net.Http
             }
             finally
             {
-                SafeWinHttpHandle.DisposeAndClearHandle(ref connectHandle);
+                connectHandle?.Dispose();
 
                 try
                 {
@@ -1178,40 +1194,43 @@ namespace System.Net.Http
         {
             const SslProtocols Tls13 = (SslProtocols)12288; // enum is missing in .NET Standard
             uint optionData = 0;
-            SslProtocols sslProtocols =
-                (_sslProtocols == SslProtocols.None) ? SecurityProtocol.DefaultSecurityProtocols : _sslProtocols;
+
+            if (_sslProtocols == SslProtocols.None)
+            {
+                return;
+            }
 
 #pragma warning disable 0618 // SSL2/SSL3 are deprecated
-            if ((sslProtocols & SslProtocols.Ssl2) != 0)
+            if ((_sslProtocols & SslProtocols.Ssl2) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL2;
             }
 
-            if ((sslProtocols & SslProtocols.Ssl3) != 0)
+            if ((_sslProtocols & SslProtocols.Ssl3) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL3;
             }
 #pragma warning restore 0618
 
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
-            if ((sslProtocols & SslProtocols.Tls) != 0)
+            if ((_sslProtocols & SslProtocols.Tls) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1;
             }
 
-            if ((sslProtocols & SslProtocols.Tls11) != 0)
+            if ((_sslProtocols & SslProtocols.Tls11) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1;
             }
 #pragma warning restore SYSLIB0039
 
-            if ((sslProtocols & SslProtocols.Tls12) != 0)
+            if ((_sslProtocols & SslProtocols.Tls12) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
             }
 
             // Set this only if supported by WinHttp version.
-            if (s_supportsTls13.Value && (sslProtocols & Tls13) != 0)
+            if (s_supportsTls13.Value && (_sslProtocols & Tls13) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
             }
@@ -1281,17 +1300,15 @@ namespace System.Net.Http
             SetRequestHandleHttp2Options(state.RequestHandle, state.RequestMessage.Version);
         }
 
-        private void SetRequestHandleProxyOptions(WinHttpRequestState state)
+        private static void SetRequestHandleProxyOptions(WinHttpRequestState state)
         {
             Debug.Assert(state.RequestMessage != null);
             Debug.Assert(state.RequestMessage.RequestUri != null);
             Debug.Assert(state.RequestHandle != null);
 
-            // We've already set the proxy on the session handle if we're using no proxy or default proxy settings.
-            // We only need to change it on the request handle if we have a specific IWebProxy or need to manually
-            // implement Wininet-style auto proxy detection.
-            if (state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy ||
-                state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseWinInetProxy)
+            // We've already set the proxy on the session handle if we're using no proxy or default/auto proxy settings.
+            // We only need to change it on the request handle if we have a specific custom IWebProxy.
+            if (state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy)
             {
                 Interop.WinHttp.WINHTTP_PROXY_INFO proxyInfo = default;
                 bool updateProxySettings = false;
@@ -1301,7 +1318,6 @@ namespace System.Net.Http
                 {
                     if (state.Proxy != null)
                     {
-                        Debug.Assert(state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy);
                         updateProxySettings = true;
 
                         Uri? proxyUri = state.Proxy.IsBypassed(uri) ? null : state.Proxy.GetProxy(uri);
@@ -1314,13 +1330,6 @@ namespace System.Net.Http
                             proxyInfo.AccessType = Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY;
                             string proxyString = proxyUri.Scheme + "://" + proxyUri.Authority;
                             proxyInfo.Proxy = Marshal.StringToHGlobalUni(proxyString);
-                        }
-                    }
-                    else if (_proxyHelper != null && _proxyHelper.AutoSettingsUsed)
-                    {
-                        if (_proxyHelper.GetProxyForUrl(_sessionHandle, uri, out proxyInfo))
-                        {
-                            updateProxySettings = true;
                         }
                     }
 
@@ -1620,7 +1629,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
+            if (_disposed == 1)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
@@ -1651,7 +1660,8 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_ALL_COMPLETIONS |
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_HANDLES |
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_REDIRECT |
-                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SEND_REQUEST;
+                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SEND_REQUEST |
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTED_TO_SERVER;
 
             IntPtr oldCallback = Interop.WinHttp.WinHttpSetStatusCallback(
                 requestHandle,
@@ -1736,6 +1746,91 @@ namespace System.Net.Http
             }
 
             return state.LifecycleAwaitable;
+        }
+
+        internal bool GetCertificateFromCache(CachedCertificateKey key, [NotNullWhen(true)] out byte[]? rawCertificateBytes)
+        {
+            if (_cachedCertificates.TryGetValue(key, out CachedCertificateValue? cachedValue))
+            {
+                cachedValue.LastUsedTime = Stopwatch.GetTimestamp();
+                rawCertificateBytes = cachedValue.RawCertificateData;
+                return true;
+            }
+
+            rawCertificateBytes = null;
+            return false;
+        }
+
+        internal void AddCertificateToCache(CachedCertificateKey key, byte[] rawCertificateData)
+        {
+            if (_cachedCertificates.TryAdd(key, new CachedCertificateValue(rawCertificateData, Stopwatch.GetTimestamp())))
+            {
+                EnsureCleanupTimerRunning();
+            }
+        }
+
+        internal bool TryRemoveCertificateFromCache(CachedCertificateKey key)
+        {
+            bool result = _cachedCertificates.TryRemove(key, out _);
+            if (result)
+            {
+                StopCleanupTimerIfEmpty();
+            }
+            return result;
+        }
+
+        private void ChangeCleanerTimer(TimeSpan timeout)
+        {
+            Debug.Assert(Monitor.IsEntered(_lockObject));
+            Debug.Assert(_certificateCleanupTimer != null);
+            if (_certificateCleanupTimer!.Change(timeout, Timeout.InfiniteTimeSpan))
+            {
+                _isTimerRunning = timeout != Timeout.InfiniteTimeSpan;
+            }
+        }
+
+        private void ClearStaleCertificates()
+        {
+            foreach (KeyValuePair<CachedCertificateKey, CachedCertificateValue> kvPair in _cachedCertificates)
+            {
+                if (IsStale(kvPair.Value.LastUsedTime))
+                {
+                    _cachedCertificates.TryRemove(kvPair.Key, out _);
+                }
+            }
+
+            lock (_lockObject)
+            {
+                ChangeCleanerTimer(_cachedCertificates.IsEmpty ? Timeout.InfiniteTimeSpan : s_cleanCachedCertificateTimeout);
+            }
+
+            static bool IsStale(long lastUsedTime)
+            {
+                long now = Stopwatch.GetTimestamp();
+                return (now - lastUsedTime) > s_staleTimeout;
+            }
+        }
+
+        private void EnsureCleanupTimerRunning()
+        {
+            lock (_lockObject)
+            {
+                if (!_cachedCertificates.IsEmpty && !_isTimerRunning)
+                {
+                    ChangeCleanerTimer(s_cleanCachedCertificateTimeout);
+                }
+            }
+        }
+
+        private void StopCleanupTimerIfEmpty()
+        {
+            lock (_lockObject)
+            {
+                if (_cachedCertificates.IsEmpty && _isTimerRunning)
+                {
+                    ChangeCleanerTimer(Timeout.InfiniteTimeSpan);
+                }
+            }
         }
     }
 }

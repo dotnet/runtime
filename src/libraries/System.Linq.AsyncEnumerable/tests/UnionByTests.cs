@@ -23,6 +23,23 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => AsyncEnumerable.UnionBy(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>(), (Func<string, CancellationToken, ValueTask<int>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            IAsyncEnumerable<int> empty = AsyncEnumerable.Empty<int>();
+            IAsyncEnumerable<int> nonEmpty = CreateSource(1, 2, 3);
+
+            Assert.Same(empty, empty.UnionBy(empty, i => i));
+            Assert.NotSame(empty, empty.UnionBy(nonEmpty, i => i));
+            Assert.NotSame(empty, nonEmpty.UnionBy(empty, i => i));
+            Assert.NotSame(empty, nonEmpty.UnionBy(nonEmpty, i => i));
+
+            Assert.Same(empty, empty.UnionBy(empty, async (i, ct) => i));
+            Assert.NotSame(empty, empty.UnionBy(nonEmpty, async (i, ct) => i));
+            Assert.NotSame(empty, nonEmpty.UnionBy(empty, async (i, ct) => i));
+            Assert.NotSame(empty, nonEmpty.UnionBy(nonEmpty, async (i, ct) => i));
+        }
+
         [Theory]
         [InlineData(new int[0], new int[0])]
         [InlineData(new int[0], new int[] { 42 })]

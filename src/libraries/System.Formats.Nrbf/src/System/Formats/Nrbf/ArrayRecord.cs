@@ -25,9 +25,9 @@ public abstract class ArrayRecord : SerializationRecord
     }
 
     /// <summary>
-    /// When overridden in a derived class, gets a buffer of integers that represent the number of elements in every dimension.
+    /// When overridden in a derived class, gets a buffer of integers that represent the number of elements in each dimension.
     /// </summary>
-    /// <value>A buffer of integers that represent the number of elements in every dimension.</value>
+    /// <value>A buffer of integers that represent the number of elements in each dimension.</value>
     public abstract ReadOnlySpan<int> Lengths { get; }
 
     /// <summary>
@@ -64,6 +64,10 @@ public abstract class ArrayRecord : SerializationRecord
     /// </param>
     /// <returns>An array filled with the data provided in the serialized records.</returns>
     /// <exception cref="InvalidOperationException"><paramref name="expectedArrayType" /> does not match the data from the payload.</exception>
+    /// <remarks>
+    /// Before calling this method, check the total length of the array by using the <see cref="Lengths"/> property.
+    /// An attacker could have sent a small payload that requires allocation of a very large array, which could cause <see cref="OutOfMemoryException"/> and denial of service.
+    /// </remarks>
     [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
     public Array GetArray(Type expectedArrayType, bool allowNulls = true)
     {

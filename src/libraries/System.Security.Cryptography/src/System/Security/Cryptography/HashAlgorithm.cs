@@ -20,12 +20,12 @@ namespace System.Security.Cryptography
 
         [Obsolete(Obsoletions.DefaultCryptoAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultCryptoAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static HashAlgorithm Create() =>
-            CryptoConfigForwarder.CreateDefaultHashAlgorithm();
+            throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
         [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static HashAlgorithm? Create(string hashName) =>
-            CryptoConfigForwarder.CreateFromName<HashAlgorithm>(hashName);
+            CryptoConfig.CreateFromName<HashAlgorithm>(hashName);
 
         public virtual int HashSize => HashSizeValue;
 

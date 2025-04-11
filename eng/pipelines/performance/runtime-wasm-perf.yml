@@ -1,0 +1,43 @@
+# This is a wrapper yml for `perf-wasm-jobs`, which has all the perf related
+# wasm jobs. This file is essentially so we can point the pipeline in azdo
+# UI to this, and thus avoid any scheduled triggers
+
+trigger: none
+
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/performance/*
+    - eng/testing/performance/*
+    - eng/testing/BrowserVersions.props
+
+resources:
+  repositories:
+    - repository: performance
+      type: github
+      name: dotnet/performance
+      endpoint: public
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+      - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
+        parameters:
+          runtimeRepoAlias: self
+          performanceRepoAlias: performance
+          runProfile: 'v8'
+          jobParameters:
+            onlySanityCheck: true
+          #downloadSpecificBuild:
+            #buildId: '1878694'
+            #pipeline: 'perf-wasm'
+            #branchName: 'refs/pull/72119/head'

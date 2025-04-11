@@ -145,13 +145,13 @@ to get that version. Otherwise, use "unknown-jit-ee-version".
 
 host_os_help = "OS (windows, osx, linux). Default: current OS."
 
-arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
+arch_help = "Architecture (x64, x86, arm, arm64, loongarch64, riscv64). Default: current architecture."
 
 target_os_help = "Target OS, for use with cross-compilation JIT (windows, osx, linux). Default: current OS."
 
-target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64). Passed as asm diffs target to SuperPMI. Default: current architecture."
+target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64, loongarch64, riscv64). Passed as asm diffs target to SuperPMI. Default: current architecture."
 
-mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64). Default: target architecture."
+mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64, loongarch64, riscv64). Default: target architecture."
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
 
@@ -314,6 +314,7 @@ collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="P
 collect_parser.add_argument("--disable_r2r", action="store_true", help="Sets DOTNET_ReadyToRun=0 when doing collection to cause ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
 collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
 collect_parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
+collect_parser.add_argument("--jitoptrepeat_all", action="store_true", help="Sets DOTNET_JitOptRepeat=* when doing collections.")
 collect_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
 
 # Allow for continuing a collection in progress
@@ -863,6 +864,9 @@ class SuperPMICollect:
                 dotnet_env["TieredPGO"] = "1"
             else:
                 dotnet_env["TieredCompilation"] = "0"
+
+            if self.coreclr_args.jitoptrepeat_all:
+                dotnet_env["JitOptRepeat"] = "*"
 
             if self.coreclr_args.disable_r2r:
                 dotnet_env["ReadyToRun"] = "0"
@@ -1614,15 +1618,27 @@ def report_replay_asserts(asserts, output_mch_file):
 
     if asserts:
         logging.info("============================== Assertions:")
+        assertion_num = 0
+        assertion_count = len(asserts.items())
         for assertion_key, assertion_value in asserts.items():
-            logging.info("%s", assertion_key)
+            assertion_num += 1
+            assertion_instance_count = len(assertion_value)
+            logging.info("=== Assertion #%s/%s (count: %s): %s", assertion_num, assertion_count, assertion_instance_count, assertion_key)
             # Sort the values by increasing il size
             sorted_instances = sorted(assertion_value, key=lambda d: d['il'])
+            instance_num = 0
+            # Arbitrary maximum number of instances to show to avoid too much output. Note that all the assertions are in the log file,
+            # just not summarized.
+            instance_max = 25
             for instance in sorted_instances:
                 if output_mch_file:
                     logging.info("  %s # %s : IL size %s", instance['mch_file'], instance['mc_num'], instance['il'])
                 else:
                     logging.info("  # %s : IL size %s", instance['mc_num'], instance['il'])
+                instance_num += 1
+                if instance_num >= instance_max:
+                    logging.info("  ... omitting %s instances", assertion_instance_count - instance_num)
+                    break
 
 
 ################################################################################
@@ -4357,8 +4373,8 @@ def process_base_jit_path_arg(coreclr_args):
             baseline_hash = coreclr_args.base_git_hash
 
         if coreclr_args.base_git_hash is None:
-            # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*" ]
+            # Enumerate the last 20 changes, starting with the baseline, that included JIT and JIT-EE GUID changes.
+            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*", "src/coreclr/inc/jiteeversionguid.h" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()
@@ -4562,6 +4578,9 @@ def setup_args(args):
         logger.addHandler(file_handler)
         logging.critical("================ Logging to %s", log_file)
 
+    # Log the original command-line
+    logging.debug("Command line: %s", " ".join(sys.argv))
+
     # Finish verifying the arguments
 
     def setup_jit_ee_version_arg(jit_ee_version):
@@ -4609,6 +4628,15 @@ def setup_args(args):
                             lambda mch_arch: check_mch_arch(coreclr_args, mch_arch),
                             lambda mch_arch: "Unknown mch_arch {}\nSupported architectures: {}".format(mch_arch, (", ".join(coreclr_args.valid_arches))),
                             modify_arg=lambda mch_arch: mch_arch if mch_arch is not None else coreclr_args.target_arch) # Default to `target_arch`
+
+        # For LoongArch64, RiscV64, assume we are doing altjit cross-compilation and set mch_arch to 'arch', and target_os to Linux.
+        if coreclr_args.target_arch == "loongarch64" or coreclr_args.target_arch == "riscv64":
+            if coreclr_args.target_os == coreclr_args.host_os and coreclr_args.target_os != "linux":
+                logging.warning("Overriding 'target_os' to 'linux'")
+                coreclr_args.target_os = "linux"
+            if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
+                logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
+                coreclr_args.mch_arch = coreclr_args.arch
 
     def verify_superpmi_common_args():
 
@@ -4910,6 +4938,11 @@ def setup_args(args):
                             "tiered_pgo",
                             lambda unused: True,
                             "Unable to set tiered_pgo")
+
+        coreclr_args.verify(args,
+                            "jitoptrepeat_all",
+                            lambda unused: True,
+                            "Unable to set jitoptrepeat_all")
 
         coreclr_args.verify(args,
                             "pmi_path",
@@ -5517,7 +5550,6 @@ def main(args):
 ################################################################################
 # __main__
 ################################################################################
-
 
 if __name__ == "__main__":
     args = parser.parse_args()

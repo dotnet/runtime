@@ -13,13 +13,21 @@ namespace System.Reflection.Metadata.Tests
     public class TypeNameTests
     {
         [Theory]
-        [InlineData("  System.Int32", "System.Int32", "Int32")]
-        [InlineData("  MyNamespace.MyType+NestedType", "MyNamespace.MyType+NestedType", "NestedType")]
-        public void SpacesAtTheBeginningAreOK(string input, string expectedFullName, string expectedName)
+        [InlineData("  System.Int32", "System.Int32", "System", "Int32")]
+        [InlineData("  MyNamespace.MyType+NestedType", "MyNamespace.MyType+NestedType", null, "NestedType")]
+        public void SpacesAtTheBeginningAreOK(string input, string expectedFullName, string? expectedNamespace, string expectedName)
         {
             TypeName parsed = TypeName.Parse(input.AsSpan());
 
             Assert.Equal(expectedName, parsed.Name);
+            if (expectedNamespace is null)
+            {
+                Assert.Throws<InvalidOperationException>(() => parsed.Namespace);
+            }
+            else
+            {
+                Assert.Equal(expectedNamespace, parsed.Namespace);
+            }
             Assert.Equal(expectedFullName, parsed.FullName);
             Assert.Equal(expectedFullName, parsed.AssemblyQualifiedName);
         }
@@ -32,6 +40,7 @@ namespace System.Reflection.Metadata.Tests
             TypeName parsed = TypeName.Parse(".NoNamespace".AsSpan());
 
             Assert.Equal("NoNamespace", parsed.Name);
+            Assert.Empty(parsed.Namespace);
             Assert.Equal(".NoNamespace", parsed.FullName);
             Assert.Equal(".NoNamespace", parsed.AssemblyQualifiedName);
         }
@@ -88,6 +97,44 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
+        [InlineData("Type+InnerType", (string[])["Type", "InnerType"])]
+        [InlineData("Type+InnerType+InnermostType", (string[])["Type", "InnerType", "InnermostType"])]
+        [InlineData("NotNested\\+Name", (string[])["NotNested\\+Name"])]
+        [InlineData("NameEndingInBackSlash\\\\+NestedName", (string[])["NameEndingInBackSlash\\\\", "NestedName"])]
+        public void NestedName(string input, string[] expectedNames)
+        {
+            TypeName parsed = TypeName.Parse(input.AsSpan());
+            int i = expectedNames.Length - 1;
+            while (true)
+            {
+                Assert.Equal(expectedNames[i], parsed.Name);
+                // Caling FullName trims the _fullName value of the instance to just this type's full name.
+                // Test calling Name again to ensure it's still correct.
+                _ = parsed.FullName;
+                Assert.Equal(expectedNames[i], parsed.Name);
+                if (!parsed.IsNested)
+                {
+                    break;
+                }
+                parsed = parsed.DeclaringType;
+                i--;
+            }
+            Assert.Equal(0, i);
+            Assert.Equal(0, i);
+        }
+
+        [Theory]
+        [InlineData("Int32", "Int32")]
+        [InlineData("System.Int32", "System.Int32")]
+        [InlineData("System.Int32[]", "System.Int32[]")]
+        [InlineData("System.Int32\\[\\]", "System.Int32[]")]
+        [InlineData("System.Int32\\", "System.Int32\\")]
+        [InlineData("System.Int32\\\\[]", "System.Int32\\[]")]
+        [InlineData("System\\.Int32", "System.Int32")]
+        public void Unescape(string input, string expectedUnescaped)
+            => Assert.Equal(expectedUnescaped, TypeName.Unescape(input));
+
+        [Theory]
         [InlineData("Namespace.Kość", "Namespace.Kość")]
         public void UnicodeCharactersAreAllowedByDefault(string input, string expectedFullName)
             => Assert.Equal(expectedFullName, TypeName.Parse(input.AsSpan()).FullName);
@@ -136,7 +183,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(expectedNodeCount, parsed.GetNodeCount());
             validate(parsed);
 
-            // Specified MaxNodes is less than the actual node count 
+            // Specified MaxNodes is less than the actual node count
             TypeNameParseOptions less = new()
             {
                 MaxNodes = expectedNodeCount - 1
@@ -698,6 +745,14 @@ namespace System.Reflection.Metadata.Tests
             while (true)
             {
                 Assert.Equal(parsed.Name, made.Name);
+                if (parsed.IsNested)
+                {
+                    Assert.Throws<InvalidOperationException>(() => made.Namespace);
+                }
+                else
+                {
+                    Assert.Equal(parsed.Namespace, made.Namespace);
+                }
                 Assert.Equal(parsed.FullName, made.FullName);
                 Assert.Equal(assemblyName, made.AssemblyName);
                 Assert.NotEqual(parsed.AssemblyQualifiedName, made.AssemblyQualifiedName);
@@ -792,6 +847,14 @@ namespace System.Reflection.Metadata.Tests
                 Type genericType = type.GetGenericTypeDefinition();
                 TypeName genericTypeName = parsed.GetGenericTypeDefinition();
                 Assert.Equal(genericType.Name, genericTypeName.Name);
+                if (genericType.IsNested)
+                {
+                    Assert.Throws<InvalidOperationException>(() => genericTypeName.Namespace);
+                }
+                else
+                {
+                    Assert.Equal(genericType.Namespace ?? "", genericTypeName.Namespace);
+                }
                 Assert.Equal(genericType.FullName, genericTypeName.FullName);
                 Assert.Equal(genericType.AssemblyQualifiedName, genericTypeName.AssemblyQualifiedName);
             }
@@ -900,7 +963,7 @@ namespace System.Reflection.Metadata.Tests
                 {
                     return Make(GetType(typeName.GetGenericTypeDefinition(), throwOnError, ignoreCase));
                 }
-                else if(typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+                else if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
                 {
                     return Make(GetType(typeName.GetElementType(), throwOnError, ignoreCase));
                 }
@@ -965,6 +1028,14 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.Equal(type.AssemblyQualifiedName, typeName.AssemblyQualifiedName);
             Assert.Equal(type.FullName, typeName.FullName);
+            if (GetSimpleAncestor(typeName).IsNested)
+            {
+                Assert.Throws<InvalidOperationException>(() => typeName.Namespace);
+            }
+            else
+            {
+                Assert.Equal(type.Namespace ?? "", typeName.Namespace);
+            }
             Assert.Equal(type.Name, typeName.Name);
 
 #if NET
@@ -975,6 +1046,15 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(type.IsByRef, typeName.IsByRef);
             Assert.Equal(type.IsConstructedGenericType, typeName.IsConstructedGenericType);
             Assert.Equal(type.IsNested, typeName.IsNested);
+
+            static TypeName GetSimpleAncestor(TypeName typeName)
+            {
+                while (!typeName.IsSimple)
+                {
+                    typeName = typeName.IsConstructedGenericType ? typeName.GetGenericTypeDefinition() : typeName.GetElementType();
+                }
+                return typeName;
+            }
         }
 
         public class NestedNonGeneric_0

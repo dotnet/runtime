@@ -27,13 +27,15 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source, Func<TSource, bool> predicate,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
                     if (!predicate(element))
                     {
@@ -62,16 +64,18 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
                 Func<TSource, CancellationToken, ValueTask<bool>> predicate,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    if (!await predicate(element, cancellationToken).ConfigureAwait(false))
+                    if (!await predicate(element, cancellationToken))
                     {
                         break;
                     }
@@ -101,7 +105,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -109,7 +115,7 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 int index = -1;
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
                     if (!predicate(element, checked(++index)))
                     {
@@ -141,7 +147,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -149,9 +157,9 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 int index = -1;
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    if (!await predicate(element, checked(++index), cancellationToken).ConfigureAwait(false))
+                    if (!await predicate(element, checked(++index), cancellationToken))
                     {
                         break;
                     }

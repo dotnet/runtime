@@ -289,7 +289,7 @@ public class LibraryBuilderTask : AppBuilderTask
         {
             string dataSymbol = "NULL";
             string dataLenSymbol = "0";
-            StringBuilder externBundledResourcesSymbols = new ("#if defined(BUNDLED_RESOURCES)\nextern void mono_register_resources_bundle (void);");
+            StringBuilder externBundledResourcesSymbols = new("#if defined(BUNDLED_RESOURCES)\nextern void mono_register_resources_bundle (void);");
             if (BundledRuntimeConfig?.ItemSpec != null)
             {
                 dataSymbol = BundledRuntimeConfig.GetMetadata("DataSymbol");
@@ -344,7 +344,7 @@ public class LibraryBuilderTask : AppBuilderTask
         buildOptions.CompilerArguments.Add("-D HOST_ANDROID=1");
         buildOptions.CompilerArguments.Add("-fPIC");
         buildOptions.CompilerArguments.Add(IsSharedLibrary ? $"-shared -o {libraryName}" : $"-o {libraryName}");
-        buildOptions.IncludePaths.Add(MonoRuntimeHeaders);
+        buildOptions.IncludePaths.AddRange(MonoRuntimeHeaders);
         buildOptions.LinkerArguments.Add($"--soname={libraryName}");
 
         // Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
@@ -386,7 +386,7 @@ public class LibraryBuilderTask : AppBuilderTask
         buildOptions.CompilerArguments.Add(IsSharedLibrary ? $"-dynamiclib -o {libraryName}" : $"-o {libraryName}");
         buildOptions.CompilerArguments.Add("-D HOST_APPLE_MOBILE=1");
         buildOptions.CompilerArguments.Add("-D FORCE_AOT=1");
-        buildOptions.IncludePaths.Add(MonoRuntimeHeaders);
+        buildOptions.IncludePaths.AddRange(MonoRuntimeHeaders);
         buildOptions.NativeLibraryPaths.AddRange(libs);
         buildOptions.Sources.AddRange(sources);
         buildOptions.Sources.Add("preloaded-assemblies.c");

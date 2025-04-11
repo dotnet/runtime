@@ -61,12 +61,7 @@ parameters:
         eng/testing/BrowserVersions.props
     ]
     _perf_pipeline_specific_only: [
-        eng/pipelines/runtime-wasm-perf.yml
-        eng/pipelines/coreclr/perf*.yml
-        eng/pipelines/coreclr/templates/perf-job.yml
-        eng/pipelines/coreclr/templates/*-perf-*
-        eng/pipelines/coreclr/templates/run-perf*
-        eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        eng/pipelines/performance/*
         eng/testing/performance/*
     ]
 

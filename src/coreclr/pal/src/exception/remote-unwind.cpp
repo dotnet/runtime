@@ -1844,7 +1844,6 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, (SIZE_T**)&contextPointers->Fp);
 #elif defined(TARGET_LOONGARCH64)
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, (SIZE_T **)&contextPointers->Ra);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R2, (SIZE_T **)&contextPointers->Tp);
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, (SIZE_T **)&contextPointers->Fp);
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, (SIZE_T **)&contextPointers->S0);
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, (SIZE_T **)&contextPointers->S1);
@@ -1963,7 +1962,6 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_LOONGARCH64_R1, (unw_word_t *) &winContext->Ra);
-    unw_get_reg(cursor, UNW_LOONGARCH64_R2, (unw_word_t *) &winContext->Tp);
     unw_get_reg(cursor, UNW_LOONGARCH64_R22, (unw_word_t *) &winContext->Fp);
     unw_get_reg(cursor, UNW_LOONGARCH64_R23, (unw_word_t *) &winContext->S0);
     unw_get_reg(cursor, UNW_LOONGARCH64_R24, (unw_word_t *) &winContext->S1);
@@ -1974,7 +1972,7 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_LOONGARCH64_R29, (unw_word_t *) &winContext->S6);
     unw_get_reg(cursor, UNW_LOONGARCH64_R30, (unw_word_t *) &winContext->S7);
     unw_get_reg(cursor, UNW_LOONGARCH64_R31, (unw_word_t *) &winContext->S8);
-    TRACE("sp %p pc %p fp %p tp %p ra %p\n", winContext->Sp, winContext->Pc, winContext->Fp, winContext->Tp, winContext->Ra);
+    TRACE("sp %p pc %p fp %p ra %p\n", winContext->Sp, winContext->Pc, winContext->Fp, winContext->Ra);
 #elif defined(TARGET_S390X)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R15);
@@ -2118,7 +2116,6 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_AARCH64_PC:   *valp = (unw_word_t)winContext->Pc; break;
 #elif defined(TARGET_LOONGARCH64)
     case UNW_LOONGARCH64_R1:    *valp = (unw_word_t)winContext->Ra; break;
-    case UNW_LOONGARCH64_R2:    *valp = (unw_word_t)winContext->Tp; break;
     case UNW_LOONGARCH64_R3:    *valp = (unw_word_t)winContext->Sp; break;
     case UNW_LOONGARCH64_R22:   *valp = (unw_word_t)winContext->Fp; break;
     case UNW_LOONGARCH64_R23:   *valp = (unw_word_t)winContext->S0; break;

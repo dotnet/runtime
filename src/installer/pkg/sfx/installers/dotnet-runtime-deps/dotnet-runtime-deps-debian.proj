@@ -1,15 +1,13 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <BuildDebPackage Condition="'$(TargetArchitecture)' == 'x64'">true</BuildDebPackage>
+    <BuildDebPackage>true</BuildDebPackage>
     <BuildRpmPackage>false</BuildRpmPackage>
   </PropertyGroup>
 
   <ItemGroup>
-    <LinuxPackageDependency Include="libc6;libgcc1;libgssapi-krb5-2;libstdc++6;zlib1g"/>
-    <LinuxPackageDependency Include="libssl1.0.0 | libssl1.0.2 | libssl1.1 | libssl3" />
-    <KnownLibIcuVersion Include="74;72;71;70;69;68;67;66;65;63;60;57;55;52" />
-    <LibIcuPackageDependency Include="libicu" Dependencies="libicu | @(KnownLibIcuVersion -> 'libicu%(Identity)', ' | ')" />
-    <LinuxPackageDependency
-      Include="@(LibIcuPackageDependency->Metadata('Dependencies'))" />
+    <LinuxPackageDependency Include="libc6;libgcc1;libgssapi-krb5-2;libstdc++6"/>
+    <LinuxPackageDependency Include="libssl3" />
+    <KnownLibIcuVersion Include="72" />
+    <LinuxPackageDependency Include="@(KnownLibIcuVersion -> 'libicu%(Identity)', ' | ')" />
  </ItemGroup>
 </Project>

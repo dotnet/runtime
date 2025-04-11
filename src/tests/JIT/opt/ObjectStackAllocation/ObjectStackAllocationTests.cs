@@ -156,7 +156,11 @@ namespace ObjectStackAllocation
             // Stack allocation of boxed structs is now enabled
             CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
 
+            // Fixed-sized stack array cases
             CallTestAndVerifyAllocation(AllocateArrayWithNonGCElements, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayWithGCElements, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayT<int>, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayT<string>, 84, expectedAllocationKind);
 
             // The remaining tests currently never allocate on the stack
             if (expectedAllocationKind == AllocationKind.Stack) {
@@ -170,6 +174,7 @@ namespace ObjectStackAllocation
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, expectedAllocationKind);
 
             CallTestAndVerifyAllocation(AllocateArrayWithNonGCElementsEscape, 42, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayWithGCElementsEscape, 42, expectedAllocationKind);
 
             // This test calls CORINFO_HELP_OVERFLOW
             CallTestAndVerifyAllocation(AllocateArrayWithNonGCElementsOutOfRangeLeft, 0, expectedAllocationKind, true);
@@ -376,12 +381,44 @@ namespace ObjectStackAllocation
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithGCElements()
+        {
+            string[] array = new string[42];
+            array[24] = "42";
+            GC.Collect();
+            return array[24].Length * 21 + array.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayT<T>()
+        {
+            T[] array = new T[42];
+            T t = array[24];
+            GC.Collect();
+
+            // Todo -- validate array type (currently causes escape for shared)
+            // Todo -- store to array (currently causes escape for shared)
+
+            Consume(t);
+            return array.Length + 42;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static int AllocateArrayWithNonGCElementsEscape()
         {
             int[] array = new int[42];
             Use(ref array[24]);
             GC.Collect();
             return array[24];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateArrayWithGCElementsEscape()
+        {
+            string[] array = new string[42];
+            Use(ref array[24]);
+            GC.Collect();
+            return array[24].Length * 21;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -422,6 +459,12 @@ namespace ObjectStackAllocation
         static void Use(ref int v)
         {
             v = 42;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Use(ref string s)
+        {
+            s = "42";
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

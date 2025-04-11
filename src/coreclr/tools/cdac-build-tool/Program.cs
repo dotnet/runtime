@@ -10,7 +10,7 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        RootCommand rootCommand = new ();
+        RootCommand rootCommand = new();
         var verboseOption = new Option<bool>("-v", "--verbose") {Recursive = true, Description = "Verbose"};
         rootCommand.Add(verboseOption);
         rootCommand.Add(new DiagramDirective());

@@ -595,6 +595,7 @@ namespace ILCompiler
                     nodeFactoryFlags.TypeValidation = Get(_command.TypeValidation);
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
+                    nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport);
 
                     builder
                         .UseMapFile(Get(_command.Map))

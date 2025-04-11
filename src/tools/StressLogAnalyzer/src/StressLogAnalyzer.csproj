@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsShipping>false</IsShipping>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CA1852;CS0649;NETCDAC0001</NoWarn>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)/src/native/managed/cdacreader/Microsoft.Diagnostics.DataContractReader/Microsoft.Diagnostics.DataContractReader.csproj" />
+    <ProjectReference Include="$(RepoRoot)/src/native/managed/cdacreader/Microsoft.Diagnostics.DataContractReader.Contracts/Microsoft.Diagnostics.DataContractReader.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+  </ItemGroup>
+</Project>

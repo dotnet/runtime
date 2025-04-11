@@ -9,7 +9,6 @@
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <SuggestedBindingRedirectsPackageFile>$(BaseIntermediateOutputPath)SuggestedBindingRedirects.targets</SuggestedBindingRedirectsPackageFile>
-    <BeforePack>$(BeforePack);GeneratePackageTargetsFile</BeforePack>
     <PackageDescription>Provides classes which read and write resources in a format that supports non-primitive objects.
 
 Commonly Used Types:
@@ -17,8 +16,6 @@ System.Resources.Extensions.DeserializingResourceReader
 System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
     <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
-    <!-- SYSLIB5005: System.Formats.Nrbf is experimental -->
-    <NoWarn>$(NoWarn);SYSLIB5005</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -97,7 +94,8 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
   <Target Name="GeneratePackageTargetsFile" 
           Inputs="$(MSBuildAllProjects)"
           Outputs="$(SuggestedBindingRedirectsPackageFile)"
-          Condition="'$(NetFrameworkMinimum)' != ''">
+          AfterTargets="CoreCompile"
+          Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'">
     <PropertyGroup>
       <SuggestedBindingRedirectsPackageFileContent><![CDATA[<Project>
   <!-- ResolveAssemblyReferences will never see the assembly reference embedded in the resources type,
@@ -114,10 +112,11 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
                       Lines="$(SuggestedBindingRedirectsPackageFileContent)"
                       Overwrite="true" />
 
-    <ItemGroup>
-      <Content Include="$(SuggestedBindingRedirectsPackageFile)"
-               PackagePath="buildTransitive\$(NetFrameworkMinimum)\$(PackageId).targets" />
-    </ItemGroup>
   </Target>
+
+  <ItemGroup Condition="'$(NetFrameworkMinimum)' != ''">
+    <None Include="$(SuggestedBindingRedirectsPackageFile)" Pack="true"
+          PackagePath="buildTransitive\$(NetFrameworkMinimum)\$(PackageId).targets" />
+  </ItemGroup>
 
 </Project>

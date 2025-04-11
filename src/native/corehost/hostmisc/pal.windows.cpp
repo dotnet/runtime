@@ -996,6 +996,12 @@ bool pal::file_exists(const string_t& path)
     return pal::fullpath(&tmp, true);
 }
 
+bool pal::is_directory(const pal::string_t& path)
+{
+    DWORD attributes = ::GetFileAttributesW(path.c_str());
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)
 {
     assert(list != nullptr);

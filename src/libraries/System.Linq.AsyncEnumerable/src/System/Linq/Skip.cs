@@ -21,8 +21,9 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return count <= 0 ?
-                source :
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                count <= 0 ? source :
                 Impl(source, count, default);
 
             static async IAsyncEnumerable<TSource> Impl(
@@ -30,25 +31,19 @@ namespace System.Linq
                 int count,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    while (count > 0 && await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        count--;
-                    }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                    if (count <= 0)
-                    {
-                        while (await e.MoveNextAsync().ConfigureAwait(false))
-                        {
-                            yield return e.Current;
-                        }
-                    }
-                }
-                finally
+                while (count > 0 && await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    count--;
+                }
+
+                if (count <= 0)
+                {
+                    while (await e.MoveNextAsync())
+                    {
+                        yield return e.Current;
+                    }
                 }
             }
         }

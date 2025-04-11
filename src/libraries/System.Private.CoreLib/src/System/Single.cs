@@ -660,15 +660,12 @@ namespace System
         public static TInteger ConvertToIntegerNative<TInteger>(float value)
             where TInteger : IBinaryInteger<TInteger>
         {
-#if !MONO
             if (typeof(TInteger).IsPrimitive)
             {
                 // We need this to be recursive so indirect calls (delegates
                 // for example) produce the same result as direct invocation
                 return ConvertToIntegerNative<TInteger>(value);
             }
-#endif
-
             return TInteger.CreateSaturating(value);
         }
 
@@ -1248,6 +1245,7 @@ namespace System
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out float result)
             where TOther : INumberBase<TOther>
         {
@@ -1397,6 +1395,7 @@ namespace System
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {

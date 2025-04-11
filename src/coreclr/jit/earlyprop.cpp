@@ -457,6 +457,9 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         nullCheckTree->SetHasOrderingSideEffect();
         nullCheckTree->gtFlags |= GTF_IND_NONFAULTING;
 
+        // The current indir is no longer non-faulting.
+        tree->gtFlags &= ~GTF_IND_NONFAULTING;
+
         if (nullCheckParent != nullptr)
         {
             nullCheckParent->gtFlags &= ~GTF_DONT_CSE;

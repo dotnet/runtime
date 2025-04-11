@@ -20,6 +20,12 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("size", () => AsyncEnumerable.Chunk(AsyncEnumerable.Empty<int>(), -1));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<int[]>(), AsyncEnumerable.Empty<int>().Chunk(1));
+        }
+
 #if NET
         [Fact]
         public async Task VariousValues_MatchesEnumerable()

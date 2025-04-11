@@ -295,7 +295,7 @@ function with_retries {
 function GetDotNetInstallScript {
   local root=$1
   local install_script="$root/dotnet-install.sh"
-  local install_script_url="https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh"
+  local install_script_url="https://builds.dotnet.microsoft.com/dotnet/scripts/$dotnetInstallScriptVersion/dotnet-install.sh"
 
   if [[ ! -a "$install_script" ]]; then
     mkdir -p "$root"
@@ -526,6 +526,12 @@ function GetDarc {
     fi
 
     "$eng_root/common/darc-init.sh" --toolpath "$darc_path" $version
+}
+
+# Returns a full path to an Arcade SDK task project file.
+function GetSdkTaskProject {
+  taskName=$1
+  echo "$(dirname $_InitializeToolset)/SdkTasks/$taskName.proj"
 }
 
 ResolvePath "${BASH_SOURCE[0]}"

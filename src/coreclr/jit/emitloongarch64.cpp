@@ -2404,7 +2404,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
-    assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
+    assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
     regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
@@ -2504,8 +2504,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
     //     if reloc:
     //             //pc + offset_38bits       # only when reloc.
-    //      pcaddu18i  t2, addr-hi20
-    //      jilr r0/1,t2,addr-lo18
+    //      pcaddu18i  t4, addr-hi20
+    //      jilr r0/1, t4, addr-lo18
     //
     //     else:
     //      lu12i_w  t2, dst_offset_lo32-hi
@@ -2634,7 +2634,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         // pc + offset_38bits
         //
         //   pcaddu18i  t4, addr-hi20
-        //   jilr r0/1,t4,addr-lo18
+        //   jilr r0/1, t4, addr-lo18
 
         emitOutput_Instr(dst, 0x1e000000 | (int)REG_DEFAULT_HELPER_CALL_TARGET);
 
@@ -2643,7 +2643,6 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         int reg2 = (int)addr & 1;
         addr     = addr ^ 1;
 
-        assert(isValidSimm38(addr - (ssize_t)dst));
         assert((addr & 3) == 0);
 
         dst += 4;
@@ -3989,9 +3988,13 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 
     printf("  ");
 
-    if (!emitComp->opts.disDiffable)
+    if (emitComp->opts.disCodeBytes && !emitComp->opts.disDiffable)
     {
         printf("%08X  ", code);
+    }
+    else
+    {
+        printf("          ");
     }
 #else
     printf("            ");
@@ -4002,7 +4005,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
     int       tmp;
 
     instruction ins = INS_invalid;
-    for (int i = 1; i < INS_count; i++)
+    for (uint32_t i = 1; i < INS_count; i++)
     {
         if ((code & emitGetInsMask(i)) == emitInsCode((instruction)i))
         {

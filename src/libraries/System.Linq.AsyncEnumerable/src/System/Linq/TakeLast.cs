@@ -18,8 +18,8 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return count <= 0 ?
-                Empty<TSource>() :
+            return
+                source.IsKnownEmpty() || count <= 0 ? Empty<TSource>() :
                 TakeRangeFromEndIterator(source, isStartIndexFromEnd: true, startIndex: count, isEndIndexFromEnd: true, endIndex: 0, default);
         }
     }

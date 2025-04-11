@@ -68,8 +68,8 @@
       Text="Add a PackageReference for '$(_hostPackageName)' to allow cross-compilation for $(_targetArchitecture)" />
 
     <!-- NativeAOT runtime pack assemblies need to be defined to avoid the default CoreCLR implementations being set as compiler inputs -->
-    <Error Condition="'@(PrivateSdkAssemblies)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
-    <Error Condition="'@(FrameworkAssemblies)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(PrivateSdkAssemblies)' == '' and '$(IlcUseNativeAOTRuntimePackLayout)' != 'true'" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(FrameworkAssemblies)' == '' and '$(IlcUseNativeAOTRuntimePackLayout)' != 'true'" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
 
     <ComputeManagedAssembliesToCompileToNative
       Assemblies="@(_ResolvedCopyLocalPublishAssets)"

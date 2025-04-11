@@ -801,7 +801,7 @@ namespace ILCompiler
 
             void CompilationThread(object objThreadId)
             {
-                while(true)
+                while (true)
                 {
                     _compilationThreadSemaphore.Wait();
                     lock(this)

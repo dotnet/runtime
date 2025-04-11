@@ -48,6 +48,10 @@
 #include <versionhelpers.h>
 #endif
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -305,7 +309,7 @@ bool Thread::DetectHandleILStubsForDebugger()
         while (pFrame != FRAME_TOP)
         {
             // Check for HMF's.  See the comment at the beginning of this function.
-            if (pFrame->GetVTablePtr() == HelperMethodFrame::GetMethodFrameVPtr())
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame)
             {
                 break;
             }
@@ -353,13 +357,23 @@ void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
+    Thread* origThread = gCurrentThreadInfo.m_pThread;
     gCurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
+        _ASSERTE(origThread == NULL);
         InitializeCurrentThreadsStaticData(t);
         EnsureTlsDestructionMonitor();
         t->InitRuntimeThreadLocals();
     }
+#ifdef TARGET_WINDOWS
+    else if (origThread != NULL)
+    {
+        // Unregister from OS notifications
+        // This can return false if a thread did not register for OS notification.
+        OsDetachThread(origThread);
+    }
+#endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
     gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
@@ -865,7 +879,7 @@ void DestroyThread(Thread *th)
 // Public function: DetachThread()
 // Marks the thread as needing to be destroyed, but doesn't destroy it yet.
 //-------------------------------------------------------------------------
-HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
+HRESULT Thread::DetachThread(BOOL inTerminationCallback)
 {
     // !!! Can not use contract here.
     // !!! Contract depends on Thread object for GC_TRIGGERS.
@@ -890,9 +904,9 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
         pErrorInfo->Release();
     }
 
-    // Revoke our IInitializeSpy registration only if we are not in DLL_THREAD_DETACH
+    // Revoke our IInitializeSpy registration only if we are not in a thread termination callback
     // (COM will do it or may have already done it automatically in that case).
-    if (!fDLLThreadDetach)
+    if (!inTerminationCallback)
     {
         RevokeApartmentSpy();
     }
@@ -1027,6 +1041,22 @@ static void SetIlsIndex(DWORD tlsIndex)
 #pragma optimize("", on)
 #endif
 
+void InitThreadManagerPerfMapData()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+#ifdef FEATURE_PERFMAP
+    if (IsWriteBarrierCopyEnabled())
+    {
+        size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
+        PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
+    }
+#endif
+}
+
 //---------------------------------------------------------------------------
 // One-time initialization. Called during Dll initialization. So
 // be careful what you do in here!
@@ -1059,6 +1089,9 @@ void InitThreadManager()
             ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
             memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
         }
+#ifdef FEATURE_PERFMAP
+        // We would log the to the perfmap here, but its not yet initialized
+#endif
 
         // Store the JIT_WriteBarrier copy location to a global variable so that helpers
         // can jump to it.
@@ -3022,52 +3055,6 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
     return(param.dwRet);
 }
 
-DWORD Thread::DoAppropriateWait(AppropriateWaitFunc func, void *args,
-                                DWORD millis, WaitMode mode,
-                                PendingSync *syncState)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    INDEBUG(BOOL alertable = (mode & WaitMode_Alertable) != 0;);
-    _ASSERTE(alertable || syncState == 0);
-
-    struct Param
-    {
-        Thread *pThis;
-        AppropriateWaitFunc func;
-        void *args;
-        DWORD millis;
-        WaitMode mode;
-        DWORD dwRet;
-    } param;
-    param.pThis = this;
-    param.func = func;
-    param.args = args;
-    param.millis = millis;
-    param.mode = mode;
-    param.dwRet = (DWORD) -1;
-
-    EE_TRY_FOR_FINALLY(Param *, pParam, &param) {
-        pParam->dwRet = pParam->pThis->DoAppropriateWaitWorker(pParam->func, pParam->args, pParam->millis, pParam->mode);
-    }
-    EE_FINALLY {
-        if (syncState) {
-            if (!GOT_EXCEPTION() && WAIT_OBJECT_0 == param.dwRet) {
-                // This thread has been removed from syncblk waiting list by the signalling thread
-                syncState->Restore(FALSE);
-            }
-            else
-                syncState->Restore(TRUE);
-        }
-
-        _ASSERTE (WAIT_IO_COMPLETION != param.dwRet);
-    }
-    EE_END_FINALLY;
-
-    return(param.dwRet);
-}
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 //--------------------------------------------------------------------
@@ -3489,101 +3476,6 @@ WaitCompleted:
     return ret;
 }
 
-
-DWORD Thread::DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
-                                      DWORD millis, WaitMode mode)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    BOOL alertable = (mode & WaitMode_Alertable)!=0;
-
-    // Before going to pre-emptive mode the thread needs to be flagged as waiting for
-    // the debugger. This used to be accomplished by the TS_Interruptible flag but that
-    // doesn't work reliably, see DevDiv Bugs 699245. Some methods call in here already in
-    // COOP mode so we set the bit before the transition. For the calls that are already
-    // in pre-emptive mode those are still buggy. This is only a partial fix.
-    BOOL isCoop = PreemptiveGCDisabled();
-    ThreadStateNCStackHolder tsNC(isCoop && alertable, TSNC_DebuggerSleepWaitJoin);
-    GCX_PREEMP();
-
-    // <TODO>
-    // @TODO cwb: we don't know whether a thread has a message pump or
-    // how to pump its messages, currently.
-    // @TODO cwb: WinCE isn't going to support Thread.Interrupt() correctly until
-    // we get alertable waits on that platform.</TODO>
-    DWORD ret;
-    if(alertable)
-    {
-        DoAppropriateWaitWorkerAlertableHelper(mode);
-    }
-
-    DWORD option;
-    if (alertable)
-    {
-        option = WAIT_ALERTABLE;
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        ApartmentState as = GetFinalApartment();
-        if ((AS_InMTA != as) && !AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
-        {
-            option |= WAIT_MSGPUMP;
-        }
-#endif  // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    }
-    else
-    {
-        option = 0;
-    }
-
-    ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
-
-    ULONGLONG dwStart = 0;
-    ULONGLONG dwEnd;
-
-retry:
-    if (millis != INFINITE)
-    {
-        dwStart = CLRGetTickCount64();
-    }
-    ret = func(args, millis, option);
-
-    if (ret == WAIT_IO_COMPLETION)
-    {
-        _ASSERTE (alertable);
-
-        if ((m_State & TS_Interrupted))
-        {
-            HandleThreadInterrupt();
-        }
-        if (millis != INFINITE)
-        {
-            dwEnd = CLRGetTickCount64();
-            if (dwEnd >= dwStart + millis)
-            {
-                ret = WAIT_TIMEOUT;
-                goto WaitCompleted;
-            }
-            else
-            {
-                millis -= (DWORD)(dwEnd - dwStart);
-            }
-        }
-        goto retry;
-    }
-
-WaitCompleted:
-    _ASSERTE(ret == WAIT_OBJECT_0 ||
-             ret == WAIT_ABANDONED ||
-             ret == WAIT_TIMEOUT ||
-             ret == WAIT_FAILED);
-
-    _ASSERTE((ret != WAIT_TIMEOUT) || (millis != INFINITE));
-
-    return ret;
-}
 
 //--------------------------------------------------------------------
 // Only one style of wait for DoSignalAndWait since we don't support this on STA Threads
@@ -5613,11 +5505,11 @@ Retry:
     {       // If count is off, try again, to account for multiple threads.
         if (iRetry < 4)
         {
-            //              printf("Retry %d.  cntReturn:%d, gReturn:%d\n", iRetry, cntReturn, g_TrapReturningThreads);
+            //              minipal_log_print_info("Retry %d.  cntReturn:%d, gReturn:%d\n", iRetry, cntReturn, g_TrapReturningThreads);
             ++iRetry;
             goto Retry;
         }
-        printf("cnt:%d, Un:%d, Back:%d, Dead:%d, cntReturn:%d, TrapReturn:%d, eeShutdown:%d, threadShutdown:%d\n",
+        minipal_log_print_info("cnt:%d, Un:%d, Back:%d, Dead:%d, cntReturn:%d, TrapReturn:%d, eeShutdown:%d, threadShutdown:%d\n",
                cnt,cntUnstart,cntBack,cntDead,cntReturn,g_TrapReturningThreads, g_fEEShutDown, Thread::IsAtProcessExit());
         LOG((LF_CORDB, LL_INFO1000,
              "SUSPEND: cnt:%d, Un:%d, Back:%d, Dead:%d, cntReturn:%d, TrapReturn:%d, eeShutdown:%d, threadShutdown:%d\n",
@@ -5627,7 +5519,7 @@ Retry:
     }
     if (iRetry > 0 && iRetry < 4)
     {
-        printf("%d retries to re-sync counted TrapReturn with global TrapReturn.\n", iRetry);
+        minipal_log_print_info("%d retries to re-sync counted TrapReturn with global TrapReturn.\n", iRetry);
     }
 #endif // g_TrapReturningThreads debug code.
 
@@ -6797,8 +6689,7 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
             {
                 SetIP(pctx, 0);
 #ifdef TARGET_X86
-                pRD->ControlPC = pctx->Eip;
-                pRD->PCTAddr = (TADDR)&(pctx->Eip);
+                SetRegdisplayPCTAddr(pRD, (TADDR)&(pctx->Eip));
 #elif defined(TARGET_AMD64)
                 // nothing more to do here, on Win64 setting the IP to 0 is enough.
 #elif defined(TARGET_ARM)
@@ -7005,13 +6896,10 @@ struct ManagedThreadCallState
 {
     ADCallBackFcnType   pTarget;
     LPVOID                       args;
-    UnhandledExceptionLocation   filterType;
 
-    ManagedThreadCallState(ADCallBackFcnType Target,LPVOID Args,
-                        UnhandledExceptionLocation   FilterType):
+    ManagedThreadCallState(ADCallBackFcnType Target,LPVOID Args):
           pTarget(Target),
-          args(Args),
-          filterType(FilterType)
+          args(Args)
     {
         LIMITED_METHOD_CONTRACT;
     };
@@ -7206,7 +7094,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
     // CatchHandlerFound (CHF) notification.
-    FrameWithCookie<DebuggerU2MCatchHandlerFrame> catchFrame;
+    DebuggerU2MCatchHandlerFrame catchFrame(false /* catchesAllExceptions */);
 
     TryParam param(pCallState);
     param.pFrame = &catchFrame;
@@ -7266,10 +7154,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     PAL_ENDTRY;
 }
 
-// Establish the base of a managed thread
-static void ManagedThreadBase_Dispatch(ADCallBackFcnType pTarget,
-                                       LPVOID args,
-                                       UnhandledExceptionLocation filterType)
+void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
 {
     CONTRACTL
     {
@@ -7279,24 +7164,8 @@ static void ManagedThreadBase_Dispatch(ADCallBackFcnType pTarget,
     }
     CONTRACTL_END;
 
-    ManagedThreadCallState CallState(pTarget, args, filterType);
+    ManagedThreadCallState CallState(pTarget, args);
     ManagedThreadBase_DispatchOuter(&CallState);
-}
-
-// And here are the various exposed entrypoints for base thread behavior
-
-// The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
-void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
-{
-    WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_Dispatch(pTarget, args, ManagedThread);
-}
-
-// The Finalizer thread establishes exception handling at its base
-void ManagedThreadBase::FinalizerBase(ADCallBackFcnType pTarget)
-{
-    WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_Dispatch(pTarget, NULL, FinalizerThread);
 }
 
 //+----------------------------------------------------------------------------
@@ -7887,27 +7756,30 @@ void Thread::InitializeSpecialUserModeApc()
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
-#if !(defined(TARGET_WINDOWS) && defined(TARGET_X86))
 #if defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
 void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
 {
+    __asan_handle_no_return();
 #if defined(TARGET_AMD64)
     if (targetSSP == 0)
     {
         targetSSP = GetSSP(ContextRecord);
     }
-    __asan_handle_no_return();
     ClrRestoreNonvolatileContextWorker(ContextRecord, targetSSP);
+#elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    // need to pop the SEH records before write over the stack
+    LPVOID oldSP = (LPVOID)GetSP(ContextRecord);
+    PopSEHRecords(oldSP);
+    ResumeAtJit(ContextRecord, oldSP);
 #else
-    __asan_handle_no_return();
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
     RtlRestoreContext(ContextRecord, NULL);
 #endif
 }
-#endif // !(TARGET_WINDOWS && TARGET_X86)
+
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

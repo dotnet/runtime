@@ -1390,7 +1390,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->HasFlag(BBF_FUNCLET_BEG));
+    assert(compiler->bbIsFuncletBeg(block));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -1781,7 +1781,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         // We furthermore allocate the "monitor acquired" bool between PSP and
         // the saved registers because this is part of the EnC header.
         // Note that OSR methods reuse the monitor bool created by tier 0.
-        saveRegsPlusPSPSize += compiler->lvaLclSize(compiler->lvaMonAcquired);
+        saveRegsPlusPSPSize += compiler->lvaLclStackHomeSize(compiler->lvaMonAcquired);
     }
 
     unsigned const saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
@@ -2253,8 +2253,18 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
                                                insFlags flags DEBUGARG(size_t targetHandle)
                                                    DEBUGARG(GenTreeFlags gtFlags))
 {
-    instGen_Set_Reg_To_Imm(size, dstReg, imm);
-    GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+    // If the imm values < 12 bits, we can use a single "add rsvd, reg2, #imm".
+    // Otherwise, use "mov rsvd, #imm", followed up "add rsvd, reg2, rsvd".
+
+    if (imm < 4096)
+    {
+        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, dstReg, baseReg, imm);
+    }
+    else
+    {
+        instGen_Set_Reg_To_Imm(size, dstReg, imm);
+        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+    }
 }
 
 //  move an immediate value into an integer register
@@ -2580,7 +2590,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
-// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, AND_NOT, OR and XOR
+// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, AND_NOT, OR, OR_NOT, XOR and XOR_NOT
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* tree)
 {
@@ -2589,7 +2599,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     var_types        targetType = tree->TypeGet();
     emitter*         emit       = GetEmitter();
 
-    assert(tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
+    assert(tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_OR_NOT, GT_XOR,
+                        GT_XOR_NOT));
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
@@ -2965,7 +2976,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
     if (lclNode->IsMultiReg())
     {
         // This is the case of storing to a multi-reg HFA local from a fixed-size SIMD type.
-        assert(varTypeIsSIMD(data) && varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
+        assert(varTypeIsSIMD(data));
         regNumber    operandReg = genConsumeReg(data);
         unsigned int regCount   = varDsc->lvFieldCnt;
         for (unsigned i = 0; i < regCount; ++i)
@@ -3621,9 +3632,10 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             }
             else
             {
-                // Check if the divisor is zero throw a DivideByZeroException
-                emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
-                genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+                genJumpToThrowHlpBlk(SCK_DIV_BY_ZERO, [&](BasicBlock* target, bool invert) {
+                    GenCondition::Code cond = invert ? GenCondition::NE : GenCondition::EQ;
+                    genCompareImmAndJump(cond, divisorReg, 0, size, target);
+                });
             }
         }
 
@@ -4276,6 +4288,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             case GT_OR:
                 ins = INS_orr;
                 break;
+            case GT_OR_NOT:
+                ins = INS_orn;
+                break;
             case GT_ROR:
                 ins = INS_ror;
                 break;
@@ -4290,6 +4305,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
                 break;
             case GT_XOR:
                 ins = INS_eor;
+                break;
+            case GT_XOR_NOT:
+                ins = INS_eon;
                 break;
 
             default:
@@ -4767,8 +4785,44 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                                 emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), shiftOp1->GetRegNum(),
                                                     shiftOp2->AsIntConCommon()->IntegralValue(),
                                                     ShiftOpToInsOpts(oper));
+                                break;
                             }
-                            break;
+                            case GT_CAST:
+                            {
+                                GenTreeCast* cast = op2->gtGetOp1()->AsCast();
+
+                                GenIntCastDesc desc(cast);
+
+                                // These casts should not lead to an overflow check.
+                                assert(desc.CheckKind() == GenIntCastDesc::CHECK_NONE);
+
+                                insOpts extOpts = INS_OPTS_NONE;
+                                switch (desc.ExtendKind())
+                                {
+                                    case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
+                                        extOpts = (desc.ExtendSrcSize() == 1) ? INS_OPTS_UXTB : INS_OPTS_UXTH;
+                                        break;
+                                    case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
+                                        extOpts = (desc.ExtendSrcSize() == 1) ? INS_OPTS_SXTB : INS_OPTS_SXTH;
+                                        break;
+                                    case GenIntCastDesc::ZERO_EXTEND_INT:
+                                        extOpts = INS_OPTS_UXTW;
+                                        break;
+                                    case GenIntCastDesc::SIGN_EXTEND_INT:
+                                        extOpts = INS_OPTS_SXTW;
+                                        break;
+                                    case GenIntCastDesc::COPY:
+                                        extOpts = INS_OPTS_NONE; // Perform cast implicitly.
+                                        break;
+                                    default:
+                                        // Other casts should not lead here as they will not pass the
+                                        // IsContainableUnaryOrBinaryOp check.
+                                        unreached();
+                                }
+
+                                emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), cast->CastOp()->GetRegNum(), extOpts);
+                                break;
+                            }
 
                             default:
                                 unreached();
@@ -4790,6 +4844,45 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                                         op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
                     break;
 
+                case GT_CAST:
+                {
+                    assert(ins == INS_cmp);
+                    assert(cmpSize >= genTypeSize(op2->CastToType()));
+                    assert(cmpSize == EA_4BYTE || cmpSize == EA_8BYTE);
+                    assert(op1->gtHasReg(compiler));
+                    assert(op2->gtGetOp1()->gtHasReg(compiler));
+
+                    GenTreeCast* cast = op2->AsCast();
+
+                    GenIntCastDesc desc(cast);
+
+                    // These casts should not lead to an overflow check.
+                    assert(desc.CheckKind() == GenIntCastDesc::CHECK_NONE);
+
+                    insOpts extOpts = INS_OPTS_NONE;
+                    switch (desc.ExtendKind())
+                    {
+                        case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
+                            extOpts = (desc.ExtendSrcSize() == 1) ? INS_OPTS_UXTB : INS_OPTS_UXTH;
+                            break;
+                        case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
+                            extOpts = (desc.ExtendSrcSize() == 1) ? INS_OPTS_SXTB : INS_OPTS_SXTH;
+                            break;
+                        case GenIntCastDesc::ZERO_EXTEND_INT:
+                            extOpts = INS_OPTS_UXTW;
+                            break;
+                        case GenIntCastDesc::SIGN_EXTEND_INT:
+                            extOpts = INS_OPTS_SXTW;
+                            break;
+                        default:
+                            // Other casts should not lead here as they will not pass the
+                            // IsContainableUnaryOrBinaryOp check.
+                            unreached();
+                    }
+
+                    emit->emitIns_R_R(INS_cmp, cmpSize, op1->GetRegNum(), cast->gtGetOp1()->GetRegNum(), extOpts);
+                    break;
+                }
                 default:
                     unreached();
             }
@@ -5061,6 +5154,44 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
     {
         inst_JMP(EJ_jmp, falseTarget);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCompareImmAndJump: Generates code for a compare-and-branch between a register and
+//                       immediate value.
+//
+// The implementation tries to use cb(n)z wherever possible. Otherwise it will
+// fall back to a default cmp/b.cc sequence.
+//
+// Arguments:
+//    cond - The condition code to test (EQ/NE).
+//    reg  - The register to compare.
+//    compareImm - The immediate value to compare against.
+//    emitAttr - The size of the comparison.
+//    target - The branch target for when the check passes.
+//
+// Return Value:
+//    None
+//
+void CodeGen::genCompareImmAndJump(
+    GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target)
+{
+    // For ARM64 we only expect equality comparisons.
+    assert((cond == GenCondition::EQ) || (cond == GenCondition::NE));
+
+    if (compareImm == 0)
+    {
+        // We can use cbz/cbnz
+        instruction ins = (cond == GenCondition::EQ) ? INS_cbz : INS_cbnz;
+        GetEmitter()->emitIns_J_R(ins, size, target, reg);
+    }
+    else
+    {
+        // Emit compare and branch pair default.
+        emitJumpKind jumpKind = (cond == GenCondition::EQ) ? EJ_eq : EJ_ne;
+        GetEmitter()->emitIns_R_I(INS_cmp, size, reg, compareImm);
+        inst_JMP(jumpKind, target);
     }
 }
 
@@ -5930,6 +6061,29 @@ insOpts CodeGen::ShiftOpToInsOpts(genTreeOps shiftOp)
             NO_WAY("expected a shift-op");
             return INS_OPTS_NONE;
     }
+}
+
+//---------------------------------------------------------------------------------
+// genGetThrowHelper: Search for the throw helper for the exception kind `codeKind`
+BasicBlock* CodeGen::genGetThrowHelper(SpecialCodeKind codeKind)
+{
+    BasicBlock* excpRaisingBlock = nullptr;
+    if (compiler->fgUseThrowHelperBlocks())
+    {
+        // For code with throw helper blocks, find and use the helper block for
+        // raising the exception. The block may be shared by other trees too.
+        Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
+        PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+        assert(add->acdUsed);
+        excpRaisingBlock = add->acdDstBlk;
+#if !FEATURE_FIXED_OUT_ARGS
+        assert(add->acdStkLvlInit || isFramePointerUsed());
+#endif // !FEATURE_FIXED_OUT_ARGS
+
+        noway_assert(excpRaisingBlock != nullptr);
+    }
+
+    return excpRaisingBlock;
 }
 
 #endif // TARGET_ARM64

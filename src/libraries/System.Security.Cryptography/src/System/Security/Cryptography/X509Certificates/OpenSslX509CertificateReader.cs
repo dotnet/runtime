@@ -311,7 +311,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public byte[] KeyAlgorithmParameters
+        public byte[]? KeyAlgorithmParameters
         {
             get
             {
@@ -608,6 +608,19 @@ namespace System.Security.Cryptography.X509Certificates
             return new ECDiffieHellmanOpenSsl(_privateKey);
         }
 
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            // TODO: Use MLDsaOpenSsl when it is available.
+            return MLDsaImplementation.FromHandle(
+                MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(KeyAlgorithm)!,
+                _privateKey);
+        }
+
         private OpenSslX509CertificateReader CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates
@@ -674,6 +687,21 @@ namespace System.Security.Cryptography.X509Certificates
                 typedKey.ImportParameters(ecParameters);
 
                 return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLDsa privateKey)
+        {
+            if (privateKey is MLDsaImplementation impl)
+            {
+                return CopyWithPrivateKey(impl.DuplicateHandle());
+            }
+
+            // TODO: Special case MLDsaOpenSsl when it is available.
+
+            using (MLDsaImplementation clone = MLDsaImplementation.DuplicatePrivateKey(privateKey))
+            {
+                return CopyWithPrivateKey(clone.DuplicateHandle());
             }
         }
 
@@ -835,6 +863,22 @@ namespace System.Security.Cryptography.X509Certificates
                 byte[]? exported = storePal.Export(contentType, password);
                 Debug.Assert(exported != null);
                 return exported;
+            }
+        }
+
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
+            }
+        }
+
+        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
             }
         }
 

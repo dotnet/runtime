@@ -50,17 +50,6 @@ class RCWCache;
 class RCWRefCache;
 #endif // FEATURE_COMWRAPPERS
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4200) // Disable zero-sized array warning
-#endif
-
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-
 // The pinned heap handle bucket class is used to contain handles allocated
 // from an array contained in the pinned heap.
 class PinnedHeapHandleBucket
@@ -1140,14 +1129,6 @@ public:
     BOOL ContainsAssembly(Assembly * assem);
 
     //****************************************************************************************
-    //
-    // Reference count. When an appdomain is first created the reference is bump
-    // to one when it is added to the list of domains (see SystemDomain). An explicit
-    // Removal from the list is necessary before it will be deleted.
-    ULONG AddRef(void);
-    ULONG Release(void) DAC_EMPTY_RET(0);
-
-    //****************************************************************************************
     LPCWSTR GetFriendlyName();
     LPCWSTR GetFriendlyNameForDebugger();
     void SetFriendlyName(LPCWSTR pwzFriendlyName);
@@ -1164,9 +1145,8 @@ public:
     // in a lazy fashion so executables do not take the perf hit unless the load other
     // assemblies
 #ifndef DACCESS_COMPILE
-    static BOOL OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating = TRUE);
-
-#endif
+    static void OnUnhandledException(OBJECTREF *pThrowable);
+#endif // !DACCESS_COMPILE
 
     // True iff a debugger is attached to the process (same as CORDebuggerAttached)
     BOOL IsDebuggerAttached (void);
@@ -1242,20 +1222,6 @@ public:
 
     // Only call this routine when you can guarantee there are no loads in progress.
     void ClearBinderContext();
-
-    void SetIgnoreUnhandledExceptions()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= IGNORE_UNHANDLED_EXCEPTIONS;
-    }
-
-    BOOL IgnoreUnhandledExceptions()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & IGNORE_UNHANDLED_EXCEPTIONS);
-    }
 
     static void ExceptionUnwind(Frame *pFrame);
 
@@ -1351,7 +1317,6 @@ public:
     PTR_LoaderHeap GetHighFrequencyHeap();
 
 private:
-    size_t EstimateSize();
     EEClassFactoryInfoHashTable* SetupClassFactHash();
 #ifdef FEATURE_COMINTEROP
     DispIDCache* SetupRefDispIDCache();
@@ -1377,8 +1342,6 @@ private:
     friend class Assembly;
 
 private:
-    BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating);
-
     enum Stage {
         STAGE_CREATING,
         STAGE_READYFORMANAGEDCODE,
@@ -1433,9 +1396,6 @@ public:
         return GetLoaderAllocator()->GetGCRefPoint();
     }
 
-    void AddMemoryPressure();
-    void RemoveMemoryPressure();
-
     PTR_Assembly GetRootAssembly()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1461,13 +1421,6 @@ public:
 private:
     PTR_CWSTR       m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
-
-    // General purpose flags.
-    DWORD           m_dwFlags;
-
-    // When an application domain is created the ref count is artificially incremented
-    // by one. For it to hit zero an explicit close must have happened.
-    LONG        m_cRef;                    // Ref count.
 
     // Map of loaded composite native images indexed by base load addresses
     CrstExplicitInit m_nativeImageLoadCrst;
@@ -1583,14 +1536,7 @@ public:
 
 public:
 
-    enum {
-        CONTEXT_INITIALIZED =               0x0001,
-        // unused =                         0x0400,
-        IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
-    };
-
     AssemblySpecBindingCache  m_AssemblyCache;
-    size_t                    m_MemoryPressure;
 
     ArrayList m_NativeDllSearchDirectories;
     bool m_ForceTrivialWaitOperations;
@@ -1668,9 +1614,6 @@ private:
 
 #endif
 };  // class AppDomain
-
-// Just a ref holder
-typedef ReleaseHolder<AppDomain> AppDomainRefHolder;
 
 typedef DPTR(class SystemDomain) PTR_SystemDomain;
 
@@ -1961,9 +1904,6 @@ private:
     InlineSString<100>  m_BaseLibrary;
 
     InlineSString<100>  m_SystemDirectory;
-
-    // <TODO>@TODO: CTS, we can keep the com modules in a single assembly or in different assemblies.
-    // We are currently using different assemblies but this is potentitially to slow...</TODO>
 
     // Global domain that every one uses
     SPTR_DECL(SystemDomain, m_pSystemDomain);

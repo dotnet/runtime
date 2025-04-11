@@ -38,6 +38,16 @@ namespace System.IO.Hashing
             Initialize(ref _state, (ulong)seed);
         }
 
+        /// <summary>Initializes a new instance of the <see cref="XxHash128"/> class using the state from another instance.</summary>
+        private XxHash128(State state) : base(HashLengthInBytes)
+        {
+            _state = state;
+        }
+
+        /// <summary>Returns a clone of the current instance, with a copy of the current instance's internal state.</summary>
+        /// <returns>A new instance that will produce the same sequence of values as the current instance.</returns>
+        public XxHash128 Clone() => new(_state);
+
         /// <summary>Computes the XXH128 hash of the provided <paramref name="source"/> data.</summary>
         /// <param name="source">The data to hash.</param>
         /// <returns>The XXH128 128-bit hash code of the provided data.</returns>

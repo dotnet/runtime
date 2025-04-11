@@ -18,9 +18,6 @@
 #define DEBUG_ASSURE_NO_RETURN_BEGIN(arg)    { char* __noReturnInThisBlock_##arg = ::new (nothrow) char[1];
 #define DEBUG_ASSURE_NO_RETURN_END(arg)      ::delete[] __noReturnInThisBlock_##arg; }
 
-#define DEBUG_OK_TO_RETURN_BEGIN(arg)        { ::delete[] __noReturnInThisBlock_##arg;
-#define DEBUG_OK_TO_RETURN_END(arg)          __noReturnInThisBlock_##arg = ::new (nothrow) char[1]; }
-
 #define DEBUG_ASSURE_SAFE_TO_RETURN TRUE
 #define return return
 
@@ -96,16 +93,15 @@ typedef __SafeToReturn __ReturnOK;
 // build.  (And, in fastchecked, there is no penalty at all.)
 //
 #ifdef _MSC_VER
-#define return if (0 && __ReturnOK::safe_to_return()) { } else return
+#define debug_instrumented_return if (0 && __ReturnOK::safe_to_return()) { } else return
 #else // _MSC_VER
-#define return for (;1;__ReturnOK::safe_to_return()) return
+#define debug_instrumented_return for (;1;__ReturnOK::safe_to_return()) return
 #endif // _MSC_VER
+
+#define return debug_instrumented_return
 
 #define DEBUG_ASSURE_NO_RETURN_BEGIN(arg) { typedef __YouCannotUseAReturnStatementHere __ReturnOK; if (0 && __ReturnOK::used()) { } else {
 #define DEBUG_ASSURE_NO_RETURN_END(arg)   } }
-
-#define DEBUG_OK_TO_RETURN_BEGIN(arg) { typedef __SafeToReturn __ReturnOK; if (0 && __ReturnOK::used()) { } else {
-#define DEBUG_OK_TO_RETURN_END(arg) } }
 
 #else // defined(_DEBUG) && !defined(JIT_BUILD) && (!defined(_MSC_FULL_VER) || _MSC_FULL_VER > 190024315)
 
@@ -113,9 +109,6 @@ typedef __SafeToReturn __ReturnOK;
 
 #define DEBUG_ASSURE_NO_RETURN_BEGIN(arg) {
 #define DEBUG_ASSURE_NO_RETURN_END(arg) }
-
-#define DEBUG_OK_TO_RETURN_BEGIN(arg) {
-#define DEBUG_OK_TO_RETURN_END(arg) }
 
 #endif // defined(_DEBUG) && !defined(JIT_BUILD) && (!defined(_MSC_FULL_VER) || _MSC_FULL_VER > 190024315)
 

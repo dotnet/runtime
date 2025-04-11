@@ -17,6 +17,12 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("second", () => AsyncEnumerable.Except(AsyncEnumerable.Empty<int>(), null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<int>().Except(CreateSource(1, 2, 3)));
+        }
+
         [Theory]
         [InlineData(new int[0], new int[0])]
         [InlineData(new int[0], new int[] { 42 })]

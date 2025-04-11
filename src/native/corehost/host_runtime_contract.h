@@ -23,6 +23,7 @@
 #define HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS "PLATFORM_RESOURCE_ROOTS"
 #define HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES "TRUSTED_PLATFORM_ASSEMBLIES"
 
+// Any callbacks set on this contract are expected to be valid for the lifetime of the process
 struct host_runtime_contract
 {
     size_t size;
@@ -39,7 +40,7 @@ struct host_runtime_contract
         void* contract_context);
 
     // Probe an app bundle for `path`. Sets its location (`offset`, `size`) in the bundle if found.
-    // Returns true if found, false otherwise.
+    // Returns true if found, false otherwise. If false, out parameter values are ignored by the runtime.
     bool(HOST_CONTRACT_CALLTYPE* bundle_probe)(
         const char* path,
         /*out*/ int64_t* offset,
@@ -51,6 +52,13 @@ struct host_runtime_contract
     const void* (HOST_CONTRACT_CALLTYPE* pinvoke_override)(
         const char* library_name,
         const char* entry_point_name);
+
+    // Probe the host for `path`. Sets pointer to data start and its size, if found.
+    // Returns true if found, false otherwise. If false, out parameter values are ignored by the runtime.
+    bool(HOST_CONTRACT_CALLTYPE* external_assembly_probe)(
+        const char* path,
+        /*out*/ void **data_start,
+        /*out*/ int64_t* size);
 };
 
 #endif // __HOST_RUNTIME_CONTRACT_H__

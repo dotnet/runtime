@@ -41,6 +41,9 @@ namespace Internal.JitInterface
         ARM64_Sha1_Arm64 = InstructionSet_ARM64.Sha1_Arm64,
         ARM64_Sha256_Arm64 = InstructionSet_ARM64.Sha256_Arm64,
         ARM64_Sve_Arm64 = InstructionSet_ARM64.Sve_Arm64,
+        RiscV64_RiscV64Base = InstructionSet_RiscV64.RiscV64Base,
+        RiscV64_Zba = InstructionSet_RiscV64.Zba,
+        RiscV64_Zbb = InstructionSet_RiscV64.Zbb,
         X64_X86Base = InstructionSet_X64.X86Base,
         X64_SSE = InstructionSet_X64.SSE,
         X64_SSE2 = InstructionSet_X64.SSE2,
@@ -221,6 +224,15 @@ namespace Internal.JitInterface
         Sve_Arm64 = 25,
     }
 
+    public enum InstructionSet_RiscV64
+    {
+        ILLEGAL = InstructionSet.ILLEGAL,
+        NONE = InstructionSet.NONE,
+        RiscV64Base = 1,
+        Zba = 2,
+        Zbb = 3,
+    }
+
     public enum InstructionSet_X64
     {
         ILLEGAL = InstructionSet.ILLEGAL,
@@ -388,6 +400,8 @@ namespace Internal.JitInterface
         private fixed ulong _flags[FlagsFieldCount];
         public IEnumerable<InstructionSet_ARM64> ARM64Flags => this.Select((x) => (InstructionSet_ARM64)x);
 
+        public IEnumerable<InstructionSet_RiscV64> RiscV64Flags => this.Select((x) => (InstructionSet_RiscV64)x);
+
         public IEnumerable<InstructionSet_X64> X64Flags => this.Select((x) => (InstructionSet_X64)x);
 
         public IEnumerable<InstructionSet_X86> X86Flags => this.Select((x) => (InstructionSet_X86)x);
@@ -497,17 +511,17 @@ namespace Internal.JitInterface
 
         public static InstructionSet ConvertToImpliedInstructionSetForVectorInstructionSets(TargetArchitecture architecture, InstructionSet input)
         {
-            switch(architecture)
+            switch (architecture)
             {
             case TargetArchitecture.ARM64:
-                switch(input)
+                switch (input)
                 {
                 case InstructionSet.ARM64_Vector64: return InstructionSet.ARM64_AdvSimd;
                 case InstructionSet.ARM64_Vector128: return InstructionSet.ARM64_AdvSimd;
                 }
                 break;
             case TargetArchitecture.X64:
-                switch(input)
+                switch (input)
                 {
                 case InstructionSet.X64_Vector128: return InstructionSet.X64_SSE;
                 case InstructionSet.X64_Vector256: return InstructionSet.X64_AVX;
@@ -515,7 +529,7 @@ namespace Internal.JitInterface
                 }
                 break;
             case TargetArchitecture.X86:
-                switch(input)
+                switch (input)
                 {
                 case InstructionSet.X86_Vector128: return InstructionSet.X86_SSE;
                 case InstructionSet.X86_Vector256: return InstructionSet.X86_AVX;
@@ -595,6 +609,13 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                    break;
+
+                case TargetArchitecture.RiscV64:
+                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zbb))
+                        resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
+                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zba))
+                        resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
                     break;
 
                 case TargetArchitecture.X64:
@@ -984,7 +1005,7 @@ namespace Internal.JitInterface
             do
             {
                 oldflags = resultflags;
-                switch(architecture)
+                switch (architecture)
                 {
 
                 case TargetArchitecture.ARM64:
@@ -1028,6 +1049,13 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT128);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                    break;
+
+                case TargetArchitecture.RiscV64:
+                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                        resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbb);
+                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                        resultflags.AddInstructionSet(InstructionSet.RiscV64_Zba);
                     break;
 
                 case TargetArchitecture.X64:
@@ -1417,6 +1445,12 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("sve", "Sve", InstructionSet.ARM64_Sve, true);
                     break;
 
+                case TargetArchitecture.RiscV64:
+                    yield return new InstructionSetInfo("base", "RiscV64Base", InstructionSet.RiscV64_RiscV64Base, true);
+                    yield return new InstructionSetInfo("zba", "Zba", InstructionSet.RiscV64_Zba, true);
+                    yield return new InstructionSetInfo("zbb", "Zbb", InstructionSet.RiscV64_Zbb, true);
+                    break;
+
                 case TargetArchitecture.X64:
                     yield return new InstructionSetInfo("base", "X86Base", InstructionSet.X64_X86Base, true);
                     yield return new InstructionSetInfo("sse", "Sse", InstructionSet.X64_SSE, true);
@@ -1543,6 +1577,9 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.ARM64_Sve_Arm64);
                     break;
 
+                case TargetArchitecture.RiscV64:
+                    break;
+
                 case TargetArchitecture.X64:
                     if (HasInstructionSet(InstructionSet.X64_X86Base))
                         AddInstructionSet(InstructionSet.X64_X86Base_X64);
@@ -1622,6 +1659,9 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.ARM64_Sha1_Arm64);
                     AddInstructionSet(InstructionSet.ARM64_Sha256_Arm64);
                     AddInstructionSet(InstructionSet.ARM64_Sve_Arm64);
+                    break;
+
+                case TargetArchitecture.RiscV64:
                     break;
 
                 case TargetArchitecture.X64:
@@ -1791,6 +1831,22 @@ namespace Internal.JitInterface
                         { return InstructionSet.ARM64_Sve_Arm64; }
                         else
                         { return InstructionSet.ARM64_Sve; }
+
+                }
+                break;
+
+                case TargetArchitecture.RiscV64:
+                switch (typeName)
+                {
+
+                    case "RiscV64Base":
+                        { return InstructionSet.RiscV64_RiscV64Base; }
+
+                    case "Zba":
+                        { return InstructionSet.RiscV64_Zba; }
+
+                    case "Zbb":
+                        { return InstructionSet.RiscV64_Zbb; }
 
                 }
                 break;
