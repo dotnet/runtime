@@ -210,7 +210,7 @@ extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT3
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
-extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode);
+extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure);
 
 extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
 
