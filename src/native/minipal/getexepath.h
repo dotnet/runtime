@@ -17,6 +17,9 @@
 #include <sys/sysctl.h>
 #elif defined(_WIN32)
 #include <windows.h>
+#elif defined(__HAIKU__)
+#include <FindDirectory.h>
+#include <StorageDefs.h>
 #elif HAVE_GETAUXVAL
 #include <sys/auxv.h>
 #endif
@@ -58,6 +61,16 @@ static inline char* minipal_getexepath(void)
     const char* path = getexecname();
     if (path == NULL)
     {
+        return NULL;
+    }
+
+    return realpath(path, NULL);
+#elif defined(__HAIKU__)
+    char path[B_PATH_NAME_LENGTH];
+    status_t status = find_path(B_APP_IMAGE_SYMBOL, B_FIND_PATH_IMAGE_PATH, NULL, path, B_PATH_NAME_LENGTH);
+    if (status != B_OK)
+    {
+        errno = status;
         return NULL;
     }
 
