@@ -451,9 +451,6 @@ public partial class ApkBuilder
             var excludedLibs = new HashSet<string> { "libmonodroid.so" };
             if (IsCoreCLR)
             {
-                // exclude standalone GC libs
-                excludedLibs.Add("libclrgc.so");
-                excludedLibs.Add("libclrgcexp.so");
                 if (StripDebugSymbols)
                 {
                     // exclude debugger support libs
