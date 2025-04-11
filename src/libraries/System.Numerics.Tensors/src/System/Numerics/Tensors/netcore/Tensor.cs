@@ -663,37 +663,8 @@ namespace System.Numerics.Tensors
         public static bool EqualsAll<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IEqualityOperators<T, T, bool>
         {
-
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-            ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(x, newSize);
-            ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(y, newSize);
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (broadcastedLeft.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
-                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[broadcastedRight.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-            {
-                if (broadcastedLeft[curIndex] != broadcastedRight[curIndex])
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, broadcastedRight.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
+            TensorOperation.ValidateCompatibility(x, y);
+            return TensorOperation.Invoke<TensorOperation.Equals<T>, T>(x, y);
         }
 
         /// <summary>
@@ -705,35 +676,7 @@ namespace System.Numerics.Tensors
         /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
         /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are equal to <paramref name="y"/>.</returns>
         public static bool EqualsAll<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IEqualityOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                if (x[curIndex] != y)
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
-        }
+            where T : IEqualityOperators<T, T, bool> => TensorOperation.Invoke<TensorOperation.Equals<T>, T>(x, y);
         #endregion
 
         #region EqualsAny
@@ -748,36 +691,12 @@ namespace System.Numerics.Tensors
         public static bool EqualsAny<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IEqualityOperators<T, T, bool>
         {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-            ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(x, newSize);
-            ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(y, newSize);
+            // The main loop early exits at the first false condition, so the TensorOperation
+            // checks x != y and returns false on first equal. This means we want to negate
+            // whatever the main loop returns as `true` means none are equal.
 
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-            {
-                if (broadcastedLeft[curIndex] == broadcastedRight[curIndex])
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, broadcastedRight.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
+            TensorOperation.ValidateCompatibility(x, y);
+            return !TensorOperation.Invoke<TensorOperation.EqualsAny<T>, T>(x, y);
         }
 
         /// <summary>
@@ -789,35 +708,7 @@ namespace System.Numerics.Tensors
         /// <param name="y">Value to compare against.</param>
         /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are equal to <paramref name="y"/>.</returns>
         public static bool EqualsAny<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IEqualityOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                if (x[curIndex] == y)
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
+            where T : IEqualityOperators<T, T, bool> => !TensorOperation.Invoke<TensorOperation.EqualsAny<T>, T>(x, y);
         #endregion
 
         #region FilteredUpdate
@@ -891,19 +782,9 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> GreaterThan<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result;
-            if (TensorShape.AreLengthsTheSame(x._shape, y._shape))
-            {
-                result = Tensor.Create<bool>(x.Lengths, false);
-            }
-            else
-            {
-                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-                result = Tensor.Create<bool>(newSize, false);
-            }
-
-            GreaterThan(x, y, result);
-            return result;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<bool> destination);
+            TensorOperation.Invoke<TensorOperation.GreaterThan<T>, T, bool>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -920,48 +801,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<bool> GreaterThan<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<bool> destination)
             where T : IComparisonOperators<T, T, bool>
         {
-            scoped ReadOnlyTensorSpan<T> left;
-            scoped ReadOnlyTensorSpan<T> right;
-            if (TensorShape.AreLengthsTheSame(x._shape, y._shape))
-            {
-                if (!TensorShape.AreLengthsTheSame(destination.Lengths, x.Lengths))
-                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-                left = x;
-                right = y;
-            }
-            else
-            {
-                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-                if (!TensorShape.AreLengthsTheSame(destination.Lengths, newSize))
-                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-                left = LazyBroadcast(x, newSize);
-                right = LazyBroadcast(y, newSize);
-            }
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (right.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray.AsSpan(0, right.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[right.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < left.FlattenedLength; i++)
-            {
-                destination[curIndex] = left[curIndex] > right[curIndex];
-                TensorShape.AdjustToNextIndex(curIndex, right.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.GreaterThan<T>, T, bool>(x, y, destination);
             return ref destination;
         }
 
@@ -977,9 +818,9 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> GreaterThan<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result = Tensor.Create<bool>(x.Lengths, false);
-            GreaterThan(x, y, result);
-            return result;
+            Tensor<bool> destination = Tensor.Create<bool>(x.Lengths, false);
+            GreaterThan(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -995,33 +836,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<bool> GreaterThan<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<bool> destination)
             where T : IComparisonOperators<T, T, bool>
         {
-            if (!TensorShape.AreLengthsTheSame(destination.Lengths, x.Lengths))
-                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                destination[curIndex] = x[curIndex] > y;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.GreaterThan<T>, T, bool>(x, y, destination);
             return ref destination;
         }
 
@@ -1035,12 +851,7 @@ namespace System.Numerics.Tensors
         /// <returns><see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="x"/> are greater than <paramref name="y"/>
         /// and false if they are not.</returns>
         public static Tensor<bool> GreaterThan<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            Tensor<bool> result = Tensor.Create<bool>(y.Lengths, false);
-            GreaterThan(x, y, result);
-            return result;
-        }
+            where T : IComparisonOperators<T, T, bool> => LessThan(y, x);
 
         /// <summary>
         /// Compares <paramref name="x"/> to see which elements are greater than <paramref name="y"/>.
@@ -1053,37 +864,89 @@ namespace System.Numerics.Tensors
         /// <returns><see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="x"/> are greater than <paramref name="y"/>
         /// and false if they are not.</returns>
         public static ref readonly TensorSpan<bool> GreaterThan<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<bool> destination)
+            where T : IComparisonOperators<T, T, bool> => ref LessThan(y, x, destination);
+        #endregion
+
+        #region GreaterThanAll
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
+        public static bool GreaterThanAll<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IComparisonOperators<T, T, bool>
         {
-            if (!TensorShape.AreLengthsTheSame(destination.Lengths, y.Lengths))
-                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                destination[curIndex] = x > y[curIndex];
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return ref destination;
+            TensorOperation.ValidateCompatibility(x, y);
+            return TensorOperation.Invoke<TensorOperation.GreaterThan<T>, T>(x, y);
         }
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
+        public static bool GreaterThanAll<T>(in ReadOnlyTensorSpan<T> x, T y)
+            where T : IComparisonOperators<T, T, bool> => TensorOperation.Invoke<TensorOperation.GreaterThan<T>, T>(x, y);
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="y"/> are greater than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="y"/> are greater than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="y"/> are greater than <paramref name="y"/>.</returns>
+        public static bool GreaterThanAll<T>(T x, in ReadOnlyTensorSpan<T> y)
+            where T : IComparisonOperators<T, T, bool> => LessThanAll(y, x);
+        #endregion
+
+        #region GreaterThanAny
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
+        public static bool GreaterThanAny<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
+            where T : IComparisonOperators<T, T, bool>
+        {
+            // The main loop early exits at the first false condition, so the TensorOperation
+            // checks !(x > y) and returns false on first equal. This means we want to negate
+            // whatever the main loop returns as `true` means none are equal.
+
+            TensorOperation.ValidateCompatibility(x, y);
+            return !TensorOperation.Invoke<TensorOperation.GreaterThanAny<T>, T>(x, y);
+        }
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
+        public static bool GreaterThanAny<T>(in ReadOnlyTensorSpan<T> x, T y)
+            where T : IComparisonOperators<T, T, bool> => !TensorOperation.Invoke<TensorOperation.GreaterThanAny<T>, T>(x, y);
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="y"/> are greater than <paramref name="x"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are greater than <paramref name="x"/>.
+        /// </summary>
+        /// <param name="y">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="x">Value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are greater than <paramref name="x"/>.</returns>
+        public static bool GreaterThanAny<T>(T x, in ReadOnlyTensorSpan<T> y)
+            where T : IComparisonOperators<T, T, bool> => LessThanAny(y, x);
         #endregion
 
         #region GreaterThanOrEqual
@@ -1100,19 +963,9 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> GreaterThanOrEqual<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result;
-            if (TensorShape.AreLengthsTheSame(x._shape, y._shape))
-            {
-                result = Tensor.Create<bool>(x.Lengths, false);
-            }
-            else
-            {
-                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-                result = Tensor.Create<bool>(newSize, false);
-            }
-
-            GreaterThanOrEqual(x, y, result);
-            return result;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<bool> destination);
+            TensorOperation.Invoke<TensorOperation.GreaterThanOrEqual<T>, T, bool>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -1129,48 +982,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<bool> GreaterThanOrEqual<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<bool> destination)
             where T : IComparisonOperators<T, T, bool>
         {
-            scoped ReadOnlyTensorSpan<T> left;
-            scoped ReadOnlyTensorSpan<T> right;
-            if (TensorShape.AreLengthsTheSame(x._shape, y._shape))
-            {
-                if (!TensorShape.AreLengthsTheSame(destination.Lengths, x.Lengths))
-                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-                left = x;
-                right = y;
-            }
-            else
-            {
-                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-                if (!TensorShape.AreLengthsTheSame(destination.Lengths, newSize))
-                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-                left = LazyBroadcast(x, newSize);
-                right = LazyBroadcast(y, newSize);
-            }
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (right.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray.AsSpan(0, right.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[right.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < left.FlattenedLength; i++)
-            {
-                destination[curIndex] = left[curIndex] >= right[curIndex];
-                TensorShape.AdjustToNextIndex(curIndex, right.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.GreaterThanOrEqual<T>, T, bool>(x, y, destination);
             return ref destination;
         }
 
@@ -1186,9 +999,9 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> GreaterThanOrEqual<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result = Tensor.Create<bool>(x.Lengths, false);
-            GreaterThanOrEqual(x, y, result);
-            return result;
+            Tensor<bool> destination = Tensor.Create<bool>(x.Lengths, false);
+            GreaterThanOrEqual(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -1204,33 +1017,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<bool> GreaterThanOrEqual<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<bool> destination)
             where T : IComparisonOperators<T, T, bool>
         {
-            if (!TensorShape.AreLengthsTheSame(destination.Lengths, x.Lengths))
-                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                destination[curIndex] = x[curIndex] >= y;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.GreaterThanOrEqual<T>, T, bool>(x, y, destination);
             return ref destination;
         }
 
@@ -1244,12 +1032,7 @@ namespace System.Numerics.Tensors
         /// <returns><see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="x"/> are greater than <paramref name="y"/>
         /// and false if they are not.</returns>
         public static Tensor<bool> GreaterThanOrEqual<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            Tensor<bool> result = Tensor.Create<bool>(y.Lengths, false);
-            GreaterThanOrEqual(x, y, result);
-            return result;
-        }
+            where T : IComparisonOperators<T, T, bool> => LessThanOrEqual(y, x);
 
         /// <summary>
         /// Compares <paramref name="x"/> to see which elements are greater than or equal to <paramref name="y"/>.
@@ -1262,407 +1045,7 @@ namespace System.Numerics.Tensors
         /// <returns><see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="x"/> are greater than <paramref name="y"/>
         /// and false if they are not.</returns>
         public static ref readonly TensorSpan<bool> GreaterThanOrEqual<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<bool> destination)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            if (!TensorShape.AreLengthsTheSame(destination.Lengths, y.Lengths))
-                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                destination[curIndex] = x >= y[curIndex];
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return ref destination;
-        }
-        #endregion
-
-        #region GreaterThanAny
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
-        public static bool GreaterThanAny<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-            ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(x, newSize);
-            ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(y, newSize);
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-            {
-                if (broadcastedLeft[curIndex] > broadcastedRight[curIndex])
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, broadcastedRight.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
-        public static bool GreaterThanAny<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                if (x[curIndex] > y)
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="y"/> are greater than <paramref name="x"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are greater than <paramref name="x"/>.
-        /// </summary>
-        /// <param name="y">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="x">Value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are greater than <paramref name="x"/>.</returns>
-        public static bool GreaterThanAny<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                if (x > y[curIndex])
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-        #endregion
-
-        #region GreaterThanOrEqualAny
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
-        public static bool GreaterThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-            ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(x, newSize);
-            ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(y, newSize);
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-            {
-                if (broadcastedLeft[curIndex] >= broadcastedRight[curIndex])
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, broadcastedRight.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
-        public static bool GreaterThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                if (x[curIndex] >= y)
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="y"/> are greater than <paramref name="x"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are greater than <paramref name="x"/>.
-        /// </summary>
-        /// <param name="y">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="x">Value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are greater than <paramref name="x"/>.</returns>
-        public static bool GreaterThanOrEqualAny<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                if (x >= y[curIndex])
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-        #endregion
-
-        #region GreaterThanAll
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
-        public static bool GreaterThanAll<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-            ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(x, newSize);
-            ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(y, newSize);
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (broadcastedLeft.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
-                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[broadcastedRight.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-            {
-                if (broadcastedLeft[curIndex] <= broadcastedRight[curIndex])
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, broadcastedRight.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
-        public static bool GreaterThanAll<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                if (x[curIndex] <= y)
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="y"/> are greater than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="y"/> are greater than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="y"/> are greater than <paramref name="y"/>.</returns>
-        public static bool GreaterThanAll<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                if (x <= y[curIndex])
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
-        }
+            where T : IComparisonOperators<T, T, bool> => ref LessThanOrEqual(y, x, destination);
         #endregion
 
         #region GreaterThanOrEqualAll
@@ -1677,37 +1060,8 @@ namespace System.Numerics.Tensors
         public static bool GreaterThanOrEqualAll<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IComparisonOperators<T, T, bool>
         {
-
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-            ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(x, newSize);
-            ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(y, newSize);
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (broadcastedLeft.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
-                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[broadcastedRight.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-            {
-                if (broadcastedLeft[curIndex] < broadcastedRight[curIndex])
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, broadcastedRight.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
+            TensorOperation.ValidateCompatibility(x, y);
+            return TensorOperation.Invoke<TensorOperation.GreaterThanOrEqual<T>, T>(x, y);
         }
 
         /// <summary>
@@ -1719,35 +1073,7 @@ namespace System.Numerics.Tensors
         /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
         /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
         public static bool GreaterThanOrEqualAll<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                if (x[curIndex] < y)
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
-        }
+            where T : IComparisonOperators<T, T, bool> => TensorOperation.Invoke<TensorOperation.GreaterThanOrEqual<T>, T>(x, y);
 
         /// <summary>
         /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="y"/> are greater than <paramref name="y"/>.
@@ -1758,35 +1084,50 @@ namespace System.Numerics.Tensors
         /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
         /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="y"/> are greater than <paramref name="y"/>.</returns>
         public static bool GreaterThanOrEqualAll<T>(T x, in ReadOnlyTensorSpan<T> y)
+            where T : IComparisonOperators<T, T, bool> => LessThanOrEqualAll(y, x);
+        #endregion
+
+        #region GreaterThanOrEqualAny
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
+        public static bool GreaterThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IComparisonOperators<T, T, bool>
         {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
+            // The main loop early exits at the first false condition, so the TensorOperation
+            // checks !(x >= y) and returns false on first equal. This means we want to negate
+            // whatever the main loop returns as `true` means none are equal.
 
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                if (x < y[curIndex])
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
+            TensorOperation.ValidateCompatibility(x, y);
+            return !TensorOperation.Invoke<TensorOperation.GreaterThanOrEqualAny<T>, T>(x, y);
         }
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
+        public static bool GreaterThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> x, T y)
+            where T : IComparisonOperators<T, T, bool> => return !TensorOperation.Invoke<TensorOperation.GreaterThanOrEqualAny<T>, T>(x, y);
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="y"/> are greater than <paramref name="x"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are greater than <paramref name="x"/>.
+        /// </summary>
+        /// <param name="y">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="x">Value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are greater than <paramref name="x"/>.</returns>
+        public static bool GreaterThanOrEqualAny<T>(T x, in ReadOnlyTensorSpan<T> y)
+            where T : IComparisonOperators<T, T, bool> => LessThanOrEqualAny(y, x);
         #endregion
 
         #region LessThan
@@ -1803,19 +1144,9 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> LessThan<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result;
-            if (TensorShape.AreLengthsTheSame(x._shape, y._shape))
-            {
-                result = Tensor.Create<bool>(x.Lengths, false);
-            }
-            else
-            {
-                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-                result = Tensor.Create<bool>(newSize, false);
-            }
-
-            LessThan(x, y, result);
-            return result;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<bool> destination);
+            TensorOperation.Invoke<TensorOperation.LessThan<T>, T, bool>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -1832,48 +1163,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<bool> LessThan<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<bool> destination)
             where T : IComparisonOperators<T, T, bool>
         {
-            scoped ReadOnlyTensorSpan<T> left;
-            scoped ReadOnlyTensorSpan<T> right;
-            if (TensorShape.AreLengthsTheSame(x._shape, y._shape))
-            {
-                if (!TensorShape.AreLengthsTheSame(destination.Lengths, x.Lengths))
-                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-                left = x;
-                right = y;
-            }
-            else
-            {
-                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-                if (!TensorShape.AreLengthsTheSame(destination.Lengths, newSize))
-                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-                left = LazyBroadcast(x, newSize);
-                right = LazyBroadcast(y, newSize);
-            }
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (right.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray.AsSpan(0, right.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[right.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < left.FlattenedLength; i++)
-            {
-                destination[curIndex] = left[curIndex] < right[curIndex];
-                TensorShape.AdjustToNextIndex(curIndex, right.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.LessThan<T>, T, bool>(x, y, destination);
             return ref destination;
         }
 
@@ -1889,9 +1180,9 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> LessThan<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result = Tensor.Create<bool>(x.Lengths, false);
-            LessThan(x, y, result);
-            return result;
+            Tensor<bool> destination = Tensor.Create<bool>(x.Lengths, false);
+            LessThan(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -1907,33 +1198,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<bool> LessThan<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<bool> destination)
             where T : IComparisonOperators<T, T, bool>
         {
-            if (!TensorShape.AreLengthsTheSame(destination.Lengths, x.Lengths))
-                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                destination[curIndex] = x[curIndex] < y;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.LessThan<T>, T, bool>(x, y, destination);
             return ref destination;
         }
 
@@ -1947,12 +1213,7 @@ namespace System.Numerics.Tensors
         /// <returns><see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="x"/> are less than <paramref name="y"/>
         /// and false if they are not.</returns>
         public static Tensor<bool> LessThan<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            Tensor<bool> result = Tensor.Create<bool>(y.Lengths, false);
-            LessThan(x, y, result);
-            return result;
-        }
+            where T : IComparisonOperators<T, T, bool> => GreaterThan(y, x);
 
         /// <summary>
         /// Compares the elements of a <see cref="Tensor{T}"/> to see which elements are less than <paramref name="y"/>.
@@ -1965,37 +1226,89 @@ namespace System.Numerics.Tensors
         /// <returns><see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="x"/> are less than <paramref name="y"/>
         /// and false if they are not.</returns>
         public static ref readonly TensorSpan<bool> LessThan<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<bool> destination)
+            where T : IComparisonOperators<T, T, bool> => ref GreaterThan(y, x, destination);
+        #endregion
+
+        #region LessThanAll
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are less than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanAll<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IComparisonOperators<T, T, bool>
         {
-            if (!TensorShape.AreLengthsTheSame(destination.Lengths, y.Lengths))
-                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                destination[curIndex] = x < y[curIndex];
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return ref destination;
+            TensorOperation.ValidateCompatibility(x, y);
+            return TensorOperation.Invoke<TensorOperation.LessThan<T>, T>(x, y);
         }
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are less than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanAll<T>(in ReadOnlyTensorSpan<T> x, T y)
+            where T : IComparisonOperators<T, T, bool> => TensorOperation.Invoke<TensorOperation.LessThan<T>, T>(x, y);
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="y"/> are less than <paramref name="x"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="y"/> are less than <paramref name="x"/>.
+        /// </summary>
+        /// <param name="y">First value to compare.</param>
+        /// <param name="x">Second value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="y"/> are less than <paramref name="x"/>.</returns>
+        public static bool LessThanAll<T>(T x, in ReadOnlyTensorSpan<T> y)
+            where T : IComparisonOperators<T, T, bool> => GreaterThanAll(y, x);
+        #endregion
+
+        #region LessThanAny
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are less than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanAny<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
+            where T : IComparisonOperators<T, T, bool>
+        {
+            // The main loop early exits at the first false condition, so the TensorOperation
+            // checks !(x < y) and returns false on first equal. This means we want to negate
+            // whatever the main loop returns as `true` means none are equal.
+
+            TensorOperation.ValidateCompatibility(x, y);
+            return !TensorOperation.Invoke<TensorOperation.LessThanAny<T>, T>(x, y);
+        }
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are less than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanAny<T>(in ReadOnlyTensorSpan<T> x, T y)
+            where T : IComparisonOperators<T, T, bool> => !TensorOperation.Invoke<TensorOperation.LessThanAny<T>, T>(x, y);
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="y"/> are less than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are less than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First value to compare.</param>
+        /// <param name="y">Second value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanAny<T>(T x, in ReadOnlyTensorSpan<T> y)
+            where T : IComparisonOperators<T, T, bool> => GreaterThanAny(y, x);
         #endregion
 
         #region LessThanOrEqual
@@ -2012,19 +1325,9 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> LessThanOrEqual<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result;
-            if (TensorShape.AreLengthsTheSame(x._shape, y._shape))
-            {
-                result = Tensor.Create<bool>(x.Lengths, false);
-            }
-            else
-            {
-                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-                result = Tensor.Create<bool>(newSize, false);
-            }
-
-            LessThanOrEqual(x, y, result);
-            return result;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<bool> destination);
+            TensorOperation.Invoke<TensorOperation.LessThanOrEqual<T>, T, bool>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2041,48 +1344,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<bool> LessThanOrEqual<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<bool> destination)
             where T : IComparisonOperators<T, T, bool>
         {
-            scoped ReadOnlyTensorSpan<T> left;
-            scoped ReadOnlyTensorSpan<T> right;
-            if (TensorShape.AreLengthsTheSame(x._shape, y._shape))
-            {
-                if (!TensorShape.AreLengthsTheSame(destination.Lengths, x.Lengths))
-                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-                left = x;
-                right = y;
-            }
-            else
-            {
-                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-                if (!TensorShape.AreLengthsTheSame(destination.Lengths, newSize))
-                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-                left = LazyBroadcast(x, newSize);
-                right = LazyBroadcast(y, newSize);
-            }
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (right.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray.AsSpan(0, right.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[right.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < left.FlattenedLength; i++)
-            {
-                destination[curIndex] = left[curIndex] <= right[curIndex];
-                TensorShape.AdjustToNextIndex(curIndex, right.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.LessThanOrEqual<T>, T, bool>(x, y, destination);
             return ref destination;
         }
 
@@ -2098,9 +1361,9 @@ namespace System.Numerics.Tensors
         public static Tensor<bool> LessThanOrEqual<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
-            Tensor<bool> result = Tensor.Create<bool>(x.Lengths, false);
-            LessThanOrEqual(x, y, result);
-            return result;
+            Tensor<bool> destination = Tensor.Create<bool>(x.Lengths, false);
+            LessThanOrEqual(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2116,33 +1379,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<bool> LessThanOrEqual<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<bool> destination)
             where T : IComparisonOperators<T, T, bool>
         {
-            if (!TensorShape.AreLengthsTheSame(destination.Lengths, x.Lengths))
-                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                destination[curIndex] = x[curIndex] <= y;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.LessThanOrEqual<T>, T, bool>(x, y, destination);
             return ref destination;
         }
 
@@ -2156,12 +1394,7 @@ namespace System.Numerics.Tensors
         /// <returns><see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="x"/> are less than <paramref name="y"/>
         /// and false if they are not.</returns>
         public static Tensor<bool> LessThanOrEqual<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            Tensor<bool> result = Tensor.Create<bool>(y.Lengths, false);
-            LessThanOrEqual(x, y, result);
-            return result;
-        }
+            where T : IComparisonOperators<T, T, bool> => GreaterThanOrEqual(y, x);
 
         /// <summary>
         /// Compares the elements of a <see cref="Tensor{T}"/> to see which elements are less than <paramref name="y"/>.
@@ -2174,408 +1407,7 @@ namespace System.Numerics.Tensors
         /// <returns><see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="x"/> are less than <paramref name="y"/>
         /// and false if they are not.</returns>
         public static ref readonly TensorSpan<bool> LessThanOrEqual<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<bool> destination)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            if (!TensorShape.AreLengthsTheSame(destination.Lengths, y.Lengths))
-                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                destination[curIndex] = x <= y[curIndex];
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return ref destination;
-        }
-        #endregion
-
-        #region LessThanAny
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are less than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
-        public static bool LessThanAny<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-            ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(x, newSize);
-            ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(y, newSize);
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-            {
-                if (broadcastedLeft[curIndex] < broadcastedRight[curIndex])
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, broadcastedRight.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are less than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
-        public static bool LessThanAny<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                if (x[curIndex] < y)
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="y"/> are less than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are less than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First value to compare.</param>
-        /// <param name="y">Second value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are less than <paramref name="y"/>.</returns>
-        public static bool LessThanAny<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                if (x < y[curIndex])
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-        #endregion
-
-        #region LessThanOrEqualAny
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are less than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
-        public static bool LessThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-            ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(x, newSize);
-            ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(y, newSize);
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-            {
-                if (broadcastedLeft[curIndex] <= broadcastedRight[curIndex])
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, broadcastedRight.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are less than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
-        public static bool LessThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                if (x[curIndex] <= y)
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="y"/> are less than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are less than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First value to compare.</param>
-        /// <param name="y">Second value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are less than <paramref name="y"/>.</returns>
-        public static bool LessThanOrEqualAny<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i <= y.FlattenedLength; i++)
-            {
-                if (x <= y[curIndex])
-                    return true;
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return false;
-        }
-        #endregion
-
-        #region LessThanAll
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are less than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
-        public static bool LessThanAll<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-            ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(x, newSize);
-            ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(y, newSize);
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-            {
-                if (broadcastedLeft[curIndex] >= broadcastedRight[curIndex])
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, broadcastedRight.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are less than <paramref name="y"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="y">Second value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
-        public static bool LessThanAll<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                if (x[curIndex] >= y)
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="y"/> are less than <paramref name="x"/>.
-        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="y"/> are less than <paramref name="x"/>.
-        /// </summary>
-        /// <param name="y">First value to compare.</param>
-        /// <param name="x">Second value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="y"/> are less than <paramref name="x"/>.</returns>
-        public static bool LessThanAll<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                if (x >= y[curIndex])
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
-        }
+            where T : IComparisonOperators<T, T, bool> => ref GreaterThanOrEqual(y, x, destination);
         #endregion
 
         #region LessThanOrEqualAll
@@ -2590,36 +1422,8 @@ namespace System.Numerics.Tensors
         public static bool LessThanOrEqualAll<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IComparisonOperators<T, T, bool>
         {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(x.Lengths, y.Lengths);
-            ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(x, newSize);
-            ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(y, newSize);
-
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-            {
-                if (broadcastedLeft[curIndex] > broadcastedRight[curIndex])
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, broadcastedRight.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
+            TensorOperation.ValidateCompatibility(x, y);
+            return TensorOperation.Invoke<TensorOperation.LessThanOrEqual<T>, T>(x, y);
         }
 
         /// <summary>
@@ -2631,35 +1435,7 @@ namespace System.Numerics.Tensors
         /// <param name="y">Second value to compare against.</param>
         /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
         public static bool LessThanOrEqualAll<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IComparisonOperators<T, T, bool>
-        {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (x.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray.AsSpan(0, x.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[x.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < x.FlattenedLength; i++)
-            {
-                if (x[curIndex] > y)
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, x.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
-        }
+            where T : IComparisonOperators<T, T, bool> => TensorOperation.Invoke<TensorOperation.LessThanOrEqual<T>, T>(x, y);
 
         /// <summary>
         /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="y"/> are less than <paramref name="x"/>.
@@ -2670,35 +1446,50 @@ namespace System.Numerics.Tensors
         /// <param name="x">Second value to compare against.</param>
         /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="y"/> are less than <paramref name="x"/>.</returns>
         public static bool LessThanOrEqualAll<T>(T x, in ReadOnlyTensorSpan<T> y)
+            where T : IComparisonOperators<T, T, bool> => GreaterThanOrEqualAll(y, x);
+        #endregion
+
+        #region LessThanOrEqualAny
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are less than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IComparisonOperators<T, T, bool>
         {
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
+            // The main loop early exits at the first false condition, so the TensorOperation
+            // checks !(x <= y) and returns false on first equal. This means we want to negate
+            // whatever the main loop returns as `true` means none are equal.
 
-            if (y.Rank > TensorShape.MaxInlineRank)
-            {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray.AsSpan(0, y.Rank);
-            }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[y.Rank];
-            }
-            curIndex.Clear();
-
-            for (int i = 0; i < y.FlattenedLength; i++)
-            {
-                if (x > y[curIndex])
-                    return false;
-                TensorShape.AdjustToNextIndex(curIndex, y.Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
-
-            return true;
+            TensorOperation.ValidateCompatibility(x, y);
+            return !TensorOperation.Invoke<TensorOperation.LessThanOrEqualAny<T>, T>(x, y);
         }
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are less than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> x, T y)
+            where T : IComparisonOperators<T, T, bool> => !TensorOperation.Invoke<TensorOperation.LessThanOrEqualAny<T>, T>(x, y);
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="y"/> are less than <paramref name="y"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are less than <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">First value to compare.</param>
+        /// <param name="y">Second value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="y"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanOrEqualAny<T>(T x, in ReadOnlyTensorSpan<T> y)
+            where T : IComparisonOperators<T, T, bool> => GreaterThanOrEqualAny(y, x);
         #endregion
 
         #region Permute

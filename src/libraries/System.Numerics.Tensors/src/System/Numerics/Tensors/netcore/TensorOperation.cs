@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -25,6 +26,65 @@ namespace System.Numerics.Tensors
             rentedBuffer.Dispose();
         }
 
+        public static bool Invoke<TOperation, TArg>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlyTensorSpan<TArg> y)
+            where TOperation : TensorOperation.IBinaryOperation_Tensor_Tensor<TArg, bool>
+        {
+            bool result = false;
+
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
+            scoped Span<nint> yIndexes = RentedBuffer.Create(y.Rank, out nint yLinearOffset, out RentedBuffer yRentedBuffer);
+
+            for (nint i = 0; i < x.FlattenedLength; i++)
+            {
+                xLinearOffset = x._shape.AdjustToNextIndex(xLinearOffset, xIndexes);
+                yLinearOffset = y._shape.AdjustToNextIndex(yLinearOffset, yIndexes);
+
+                 TOperation.Invoke(
+                    in Unsafe.Add(ref x._reference, xLinearOffset),
+                    in Unsafe.Add(ref y._reference, yLinearOffset),
+                    ref result
+                );
+
+                if (!result)
+                {
+                    break;
+                }
+            }
+
+            xRentedBuffer.Dispose();
+            yRentedBuffer.Dispose();
+
+            return result;
+        }
+
+        public static bool Invoke<TOperation, TArg>(in ReadOnlyTensorSpan<TArg> x, TArg y)
+            where TOperation : TensorOperation.IBinaryOperation_Tensor_Scalar<TArg, bool>
+        {
+            bool result = false;
+
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
+
+            for (nint i = 0; i < x.FlattenedLength; i++)
+            {
+                xLinearOffset = x._shape.AdjustToNextIndex(xLinearOffset, xIndexes);
+
+                TOperation.Invoke(
+                    in Unsafe.Add(ref x._reference, xLinearOffset),
+                    y,
+                    ref result
+                );
+
+                if (!result)
+                {
+                    return false;
+                }
+            }
+
+            xRentedBuffer.Dispose();
+
+            return result;
+        }
+
         public static void Invoke<TOperation, TArg, TResult>(in TensorSpan<TResult> destination, TArg scalar)
             where TOperation : TensorOperation.IUnaryOperation_Scalar<TArg, TResult>
         {
@@ -43,7 +103,7 @@ namespace System.Numerics.Tensors
         }
 
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, Span<TResult> destination)
-            where TOperation : TensorOperation.IUnaryOperation_Span<TArg, TResult>
+            where TOperation : TensorOperation.IUnaryOperation_Tensor<TArg, TResult>
         {
             scoped Span<nint> indexes = RentedBuffer.Create(x.Rank, out nint linearOffset, out RentedBuffer rentedBuffer);
 
@@ -60,7 +120,7 @@ namespace System.Numerics.Tensors
         }
 
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in TensorSpan<TResult> destination)
-            where TOperation : TensorOperation.IUnaryOperation_Span<TArg, TResult>
+            where TOperation : TensorOperation.IUnaryOperation_Tensor<TArg, TResult>
         {
             scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
             scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, out nint destinationLinearOffset, out RentedBuffer destinationRentedBuffer);
@@ -106,7 +166,7 @@ namespace System.Numerics.Tensors
         }
 
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, TArg y, in TensorSpan<TResult> destination)
-            where TOperation : TensorOperation.IBinaryOperation_Tensor_Tensor<TArg, TResult>
+            where TOperation : TensorOperation.IBinaryOperation_Tensor_Scalar<TArg, TResult>
         {
             scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
             scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, out nint destinationLinearOffset, out RentedBuffer destinationRentedBuffer);
@@ -128,6 +188,10 @@ namespace System.Numerics.Tensors
         }
 
         public static void ValidateCompatibility<TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in TensorSpan<TResult> destination)
+        {
+        }
+
+        public static void ValidateCompatibility<TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlyTensorSpan<TResult> y)
         {
         }
 
@@ -156,7 +220,7 @@ namespace System.Numerics.Tensors
         }
 
         public readonly struct CopyTo<T>
-            : IUnaryOperation_Span<T, T>
+            : IUnaryOperation_Tensor<T, T>
         {
             public static void Invoke(ref readonly T source, ref T destination)
             {
@@ -201,6 +265,63 @@ namespace System.Numerics.Tensors
             }
         }
 
+        public readonly struct EqualsAny<T>
+            : IBinaryOperation_Tensor_Scalar<T, bool>,
+              IBinaryOperation_Tensor_Tensor<T, bool>
+            where T : IEqualityOperators<T, T, bool>
+        {
+            // The main loop early exits at the first false condition, so we
+            // check x != y and returns false on first equal. The consumer will
+            // then negate whatever the main loop returns as `true` means none
+            // are equal.
+
+            public static void Invoke(ref readonly T left, T right, ref bool destination)
+            {
+                destination = (left != right);
+            }
+
+            public static void Invoke(ref readonly T left, ref readonly T right, ref bool destination)
+            {
+                destination = (left != right);
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, T right, Span<bool> destination)
+            {
+                Debug.Assert(destination.Length == 1);
+                bool result = false;
+
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    result = (left[i] != right);
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                destination[0] = result;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, ReadOnlySpan<T> right, Span<bool> destination)
+            {
+                Debug.Assert(destination.Length == 1);
+                bool result = false;
+
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    result = (left[i] != right[i]);
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                destination[0] = result;
+            }
+        }
+
         public readonly struct Fill<T>
             : IUnaryOperation_Scalar<T, T>
         {
@@ -212,6 +333,362 @@ namespace System.Numerics.Tensors
             public static void Invoke(Span<T> destination, T value)
             {
                 destination.Fill(value);
+            }
+        }
+
+        public readonly struct GreaterThan<T>
+            : IBinaryOperation_Tensor_Scalar<T, bool>,
+              IBinaryOperation_Tensor_Tensor<T, bool>
+            where T : IComparisonOperators<T, T, bool>
+        {
+            public static void Invoke(ref readonly T left, T right, ref bool destination)
+            {
+                destination = (left > right);
+            }
+
+            public static void Invoke(ref readonly T left, ref readonly T right, ref bool destination)
+            {
+                destination = (left > right);
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, T right, Span<bool> destination)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (left[i] > right);
+                }
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, ReadOnlySpan<T> right, Span<bool> destination)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (left[i] > right[i]);
+                }
+            }
+        }
+
+        public readonly struct GreaterThanAny<T>
+            : IBinaryOperation_Tensor_Scalar<T, bool>,
+              IBinaryOperation_Tensor_Tensor<T, bool>
+            where T : IComparisonOperators<T, T, bool>
+        {
+            // The main loop early exits at the first false condition, so we
+            // check !(x > y) and returns false on first not greater. The consumer will
+            // then negate whatever the main loop returns as `true` means none
+            // are greater.
+
+            public static void Invoke(ref readonly T left, T right, ref bool destination)
+            {
+                destination = !(left > right);
+            }
+
+            public static void Invoke(ref readonly T left, ref readonly T right, ref bool destination)
+            {
+                destination = !(left > right);
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, T right, Span<bool> destination)
+            {
+                Debug.Assert(destination.Length == 1);
+                bool result = false;
+
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    result = !(left[i] > right);
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                destination[0] = result;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, ReadOnlySpan<T> right, Span<bool> destination)
+            {
+                Debug.Assert(destination.Length == 1);
+                bool result = false;
+
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    result = !(left[i] > right[i]);
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                destination[0] = result;
+            }
+        }
+
+        public readonly struct GreaterThanOrEqual<T>
+            : IBinaryOperation_Tensor_Scalar<T, bool>,
+              IBinaryOperation_Tensor_Tensor<T, bool>
+            where T : IComparisonOperators<T, T, bool>
+        {
+            public static void Invoke(ref readonly T left, T right, ref bool destination)
+            {
+                destination = (left >= right);
+            }
+
+            public static void Invoke(ref readonly T left, ref readonly T right, ref bool destination)
+            {
+                destination = (left >= right);
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, T right, Span<bool> destination)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (left[i] >= right);
+                }
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, ReadOnlySpan<T> right, Span<bool> destination)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (left[i] >= right[i]);
+                }
+            }
+        }
+
+        public readonly struct GreaterThanOrEqualAny<T>
+            : IBinaryOperation_Tensor_Scalar<T, bool>,
+              IBinaryOperation_Tensor_Tensor<T, bool>
+            where T : IComparisonOperators<T, T, bool>
+        {
+            // The main loop early exits at the first false condition, so we
+            // check !(x >= y) and returns false on first not greater or equal.
+            // The consumer will then negate whatever the main loop returns as
+            // `true` means none are greater or equal.
+
+            public static void Invoke(ref readonly T left, T right, ref bool destination)
+            {
+                destination = !(left >= right);
+            }
+
+            public static void Invoke(ref readonly T left, ref readonly T right, ref bool destination)
+            {
+                destination = !(left >= right);
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, T right, Span<bool> destination)
+            {
+                Debug.Assert(destination.Length == 1);
+                bool result = false;
+
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    result = !(left[i] >= right);
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                destination[0] = result;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, ReadOnlySpan<T> right, Span<bool> destination)
+            {
+                Debug.Assert(destination.Length == 1);
+                bool result = false;
+
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    result = !(left[i] >= right[i]);
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                destination[0] = result;
+            }
+        }
+
+        public readonly struct LessThan<T>
+            : IBinaryOperation_Tensor_Scalar<T, bool>,
+              IBinaryOperation_Tensor_Tensor<T, bool>
+            where T : IComparisonOperators<T, T, bool>
+        {
+            public static void Invoke(ref readonly T left, T right, ref bool destination)
+            {
+                destination = (left < right);
+            }
+
+            public static void Invoke(ref readonly T left, ref readonly T right, ref bool destination)
+            {
+                destination = (left < right);
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, T right, Span<bool> destination)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (left[i] < right);
+                }
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, ReadOnlySpan<T> right, Span<bool> destination)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (left[i] < right[i]);
+                }
+            }
+        }
+
+        public readonly struct LessThanAny<T>
+            : IBinaryOperation_Tensor_Scalar<T, bool>,
+              IBinaryOperation_Tensor_Tensor<T, bool>
+            where T : IComparisonOperators<T, T, bool>
+        {
+            // The main loop early exits at the first false condition, so we
+            // check !(x < y) and returns false on first not lesser. The consumer will
+            // then negate whatever the main loop returns as `true` means none
+            // are lesser.
+
+            public static void Invoke(ref readonly T left, T right, ref bool destination)
+            {
+                destination = !(left < right);
+            }
+
+            public static void Invoke(ref readonly T left, ref readonly T right, ref bool destination)
+            {
+                destination = !(left < right);
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, T right, Span<bool> destination)
+            {
+                Debug.Assert(destination.Length == 1);
+                bool result = false;
+
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    result = !(left[i] < right);
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                destination[0] = result;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, ReadOnlySpan<T> right, Span<bool> destination)
+            {
+                Debug.Assert(destination.Length == 1);
+                bool result = false;
+
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    result = !(left[i] < right[i]);
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                destination[0] = result;
+            }
+        }
+
+        public readonly struct LessThanOrEqual<T>
+            : IBinaryOperation_Tensor_Scalar<T, bool>,
+              IBinaryOperation_Tensor_Tensor<T, bool>
+            where T : IComparisonOperators<T, T, bool>
+        {
+            public static void Invoke(ref readonly T left, T right, ref bool destination)
+            {
+                destination = (left <= right);
+            }
+
+            public static void Invoke(ref readonly T left, ref readonly T right, ref bool destination)
+            {
+                destination = (left <= right);
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, T right, Span<bool> destination)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (left[i] <= right);
+                }
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, ReadOnlySpan<T> right, Span<bool> destination)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (left[i] <= right[i]);
+                }
+            }
+        }
+
+        public readonly struct LessThanOrEqualAny<T>
+            : IBinaryOperation_Tensor_Scalar<T, bool>,
+              IBinaryOperation_Tensor_Tensor<T, bool>
+            where T : IComparisonOperators<T, T, bool>
+        {
+            // The main loop early exits at the first false condition, so we
+            // check !(x <= y) and returns false on first not lesser or equal.
+            // The consumer will then negate whatever the main loop returns as
+            // `true` means none are lesser or equal.
+
+            public static void Invoke(ref readonly T left, T right, ref bool destination)
+            {
+                destination = !(left <= right);
+            }
+
+            public static void Invoke(ref readonly T left, ref readonly T right, ref bool destination)
+            {
+                destination = !(left <= right);
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, T right, Span<bool> destination)
+            {
+                Debug.Assert(destination.Length == 1);
+                bool result = false;
+
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    result = !(left[i] <= right);
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                destination[0] = result;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> left, ReadOnlySpan<T> right, Span<bool> destination)
+            {
+                Debug.Assert(destination.Length == 1);
+                bool result = false;
+
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    result = !(left[i] <= right[i]);
+
+                    if (!result)
+                    {
+                        break;
+                    }
+                }
+
+                destination[0] = result;
             }
         }
 
@@ -239,7 +716,7 @@ namespace System.Numerics.Tensors
             static abstract void Invoke(Span<TResult> destination, T x);
         }
 
-        public interface IUnaryOperation_Span<T, TResult>
+        public interface IUnaryOperation_Tensor<T, TResult>
         {
             static abstract void Invoke(ref readonly T x, ref TResult destination);
             static abstract void Invoke(ReadOnlySpan<T> x, Span<TResult> destination);
