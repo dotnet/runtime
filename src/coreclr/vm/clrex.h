@@ -56,8 +56,13 @@ struct StackTraceElement
 
 class StackTraceInfo
 {
+    struct StackTraceArrayProtect
+    {
+        StackTraceArray m_pStackTraceArray;
+        StackTraceArray m_pStackTraceArrayNew;
+    };
     static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
-    static void EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t neededSize);
+    static void EnsureStackTraceArray(StackTraceArrayProtect *pStackTraceArrayProtected, size_t neededSize);
     static void EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize);
 public:
     static void AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);

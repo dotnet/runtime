@@ -2973,7 +2973,7 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
     Thread* pThread = GET_THREAD();
 
     {
-        GCX_COOP();
+        GCX_COOP_THREAD_EXISTS(pThread);
 
         Frame* pFrame = pThread->GetFrame();
         MarkInlinedCallFrameAsEHHelperCall(pFrame);
@@ -3454,25 +3454,24 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
 
 extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {
-    QCALL_CONTRACT;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     ExtendedEHClauseEnumerator *pExtendedEHEnum = (ExtendedEHClauseEnumerator*)pEHEnum;
     pExtendedEHEnum->pFrameIter = pFrameIter;
 
-    BEGIN_QCALL;
-    Thread* pThread = GET_THREAD();
-    Frame* pFrame = pThread->GetFrame();
-    MarkInlinedCallFrameAsEHHelperCall(pFrame);
-
     IJitManager* pJitMan = pFrameIter->m_crawl.GetJitManager();
     const METHODTOKEN& MethToken = pFrameIter->m_crawl.GetMethodToken();
-    pJitMan->JitTokenToMethodRegionInfo(MethToken, pMethodRegionInfo);
     pExtendedEHEnum->EHCount = pJitMan->InitializeEHEnumeration(MethToken, pEHEnum);
-
     EH_LOG((LL_INFO100, "Initialized EH enumeration, %d clauses found\n", pExtendedEHEnum->EHCount));    
-    END_QCALL;
 
-    return pExtendedEHEnum->EHCount != 0;
+    if (pExtendedEHEnum->EHCount == 0)
+    {
+        return FALSE;
+    }
+
+    pJitMan->JitTokenToMethodRegionInfo(MethToken, pMethodRegionInfo);
+    pFrameIter->UpdateIsRuntimeWrappedExceptions();
+    return TRUE;
 }
 
 extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
@@ -3719,7 +3718,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
     }
 }
 
-static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
+NOINLINE static void NotifyFunctionEnterHelper(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
 {
     MethodDesc *pMD = pThis->m_crawl.GetFunction();
 
@@ -3741,6 +3740,14 @@ static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExIn
     }
 
     pExInfo->m_pMDToReportFunctionLeave = pMD;
+}
+
+static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
+{
+    BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
+    // We don't need to do any notifications for the profiler if we are not tracking exceptions.
+    NotifyFunctionEnterHelper(pThis, pThread, pExInfo);
+    END_PROFILER_CALLBACK();
 }
 
 extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
@@ -3858,7 +3865,6 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
             controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
         }
         pThis->SetAdjustedControlPC(controlPC);
-        pThis->UpdateIsRuntimeWrappedExceptions();
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pExInfo);
         EH_LOG((LL_INFO100, "SfiInit (pass %d): Exception stack walking starting at IP=%p, SP=%p, method %s::%s\n",
@@ -4137,7 +4143,6 @@ Exit:;
             controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
         }
         pThis->SetAdjustedControlPC(controlPC);
-        pThis->UpdateIsRuntimeWrappedExceptions();
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pTopExInfo);
 

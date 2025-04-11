@@ -2906,7 +2906,18 @@ public:
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
 
-    PTR_CBYTE   DecodeGCHdrInfo(hdrInfo   ** infoPtr);
+    FORCEINLINE PTR_CBYTE DecodeGCHdrInfo(hdrInfo   ** infoPtr)
+    {
+        if (m_hdrInfoTable == NULL)
+        {
+            return DecodeGCHdrInfoHelper(infoPtr);
+        }
+    
+        *infoPtr = &m_hdrInfoBody;
+        return m_hdrInfoTable;
+    }
+private:
+    PTR_CBYTE   DecodeGCHdrInfoHelper(hdrInfo   ** infoPtr);
 #endif // TARGET_X86
 
 #if defined(TARGET_WASM)
