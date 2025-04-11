@@ -154,6 +154,15 @@ inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 }
 #endif
 
+#if defined(FEATURE_EH_FUNCLETS)
+enum class IsFuncletCache : uint32_t
+{
+    NotSet = 2,
+    IsFunclet = 1,
+    IsNotFunclet = 0
+};
+#endif // FEATURE_EH_FUNCLETS
+
 //-----------------------------------------------------------------------------
 // Method header which exists just before the code.
 // Every IJitManager could have its own format for the header.
@@ -287,6 +296,13 @@ public:
         SUPPORTS_DAC;
         return pRealCodeHeader->nUnwindInfos;
     }
+
+    IsFuncletCache ComputeInitialIsFuncletCacheValue(PCODE codePtr)
+    {
+        if (GetNumberOfUnwindInfos() == 1)
+            return IsFuncletCache::IsNotFunclet; // Optimize the scenario where there are not any funclets in a method
+        return IsFuncletCache::NotSet;
+    }
     void                    SetNumberOfUnwindInfos(UINT nUnwindInfos)
     {
         LIMITED_METHOD_CONTRACT;
@@ -370,6 +386,13 @@ public:
     {
         return FALSE;
     }
+
+#if defined(FEATURE_EH_FUNCLETS)
+    IsFuncletCache ComputeInitialIsFuncletCacheValue(PCODE codePtr)
+    {
+        return IsFuncletCache::NotSet; // The interpreter does not have funclets
+    }
+#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJitMan);
@@ -2895,7 +2918,19 @@ public:
 
 #ifdef FEATURE_EH_FUNCLETS
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
-    BOOL        IsFunclet()     { WRAPPER_NO_CONTRACT; return GetJitManager()->IsFunclet(this); }
+    BOOL        IsFunclet()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (m_isFuncletCache == IsFuncletCache::NotSet)
+        {
+            m_isFuncletCache = GetJitManager()->IsFunclet(this) ? IsFuncletCache::IsFunclet : IsFuncletCache::IsNotFunclet;
+        }
+
+        // At this point we know that m_isFuncletCache is either IsFunclet or IsNotFunclet, which is either 1 or 0. Just cast it to BOOL.
+        BOOL result = (BOOL)m_isFuncletCache;
+        _ASSERTE(!!GetJitManager()->IsFunclet(this) == !!result);
+        return result;
+    }
     EECodeInfo  GetMainFunctionInfo();
 #endif // FEATURE_EH_FUNCLETS
 
@@ -2928,6 +2963,7 @@ private:
     IJitManager        *m_pJM;
     DWORD               m_relOffset;
 #ifdef FEATURE_EH_FUNCLETS
+    IsFuncletCache      m_isFuncletCache;
     PTR_RUNTIME_FUNCTION m_pFunctionEntry;
 #endif // FEATURE_EH_FUNCLETS
 

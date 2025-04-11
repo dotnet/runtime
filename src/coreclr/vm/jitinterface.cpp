@@ -14748,6 +14748,7 @@ EECodeInfo::EECodeInfo()
 
 #ifdef FEATURE_EH_FUNCLETS
     m_pFunctionEntry = NULL;
+    m_isFuncletCache = IsFuncletCache::NotSet;
 #endif
 
 #ifdef TARGET_X86
@@ -14773,6 +14774,9 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     } CONTRACTL_END;
 
     m_codeAddress = codeAddress;
+#ifdef FEATURE_EH_FUNCLETS
+    m_isFuncletCache = IsFuncletCache::NotSet;
+#endif
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -14885,6 +14889,9 @@ EECodeInfo EECodeInfo::GetMainFunctionInfo()
     result.m_relOffset = 0;
     result.m_codeAddress = this->GetStartAddress();
     result.m_pFunctionEntry = NULL;
+#ifdef FEATURE_EH_FUNCLETS
+    m_isFuncletCache = IsFuncletCache::IsNotFunclet;
+#endif
 
     return result;
 }

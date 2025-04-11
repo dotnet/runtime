@@ -4294,6 +4294,7 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
 #ifdef FEATURE_EH_FUNCLETS
         // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
         pCodeInfo->m_pFunctionEntry = NULL;
+        pCodeInfo->m_isFuncletCache = pCHdr->ComputeInitialIsFuncletCacheValue(currentPC);
 #endif
     }
 
