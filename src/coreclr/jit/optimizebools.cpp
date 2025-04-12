@@ -1624,12 +1624,15 @@ bool IntBoolOpDsc::TryOptimize()
 
     GenTree*   firstLclVar  = lclVarArr.Bottom(0);
     GenTree*   secondLclVar = lclVarArr.Bottom(1);
-    GenTreeOp* intVarTree   = m_comp->gtNewOperNode(GT_OR, firstLclVar->gtType == TYP_INT && secondLclVar->gtType == TYP_INT ? TYP_INT : TYP_LONG, firstLclVar, secondLclVar);
-    intVarTree->gtPrev      = secondLclVar;
-    secondLclVar->gtNext    = intVarTree;
-    secondLclVar->gtPrev    = firstLclVar;
-    firstLclVar->gtNext     = secondLclVar;
-    firstLclVar->gtPrev     = end;
+    GenTreeOp* intVarTree =
+        m_comp->gtNewOperNode(GT_OR,
+                              firstLclVar->gtType == TYP_INT && secondLclVar->gtType == TYP_INT ? TYP_INT : TYP_LONG,
+                              firstLclVar, secondLclVar);
+    intVarTree->gtPrev   = secondLclVar;
+    secondLclVar->gtNext = intVarTree;
+    secondLclVar->gtPrev = firstLclVar;
+    firstLclVar->gtNext  = secondLclVar;
+    firstLclVar->gtPrev  = end;
 
     if (end != nullptr)
     {
@@ -1640,13 +1643,17 @@ bool IntBoolOpDsc::TryOptimize()
 
     for (int i = 2; i < lclVarArrLength; i++)
     {
-        GenTree*   ithLclVar     = lclVarArr.Bottom(i);
-        GenTreeOp* newIntVarTree = m_comp->gtNewOperNode(GT_OR, tempIntVatTree->gtType == TYP_INT && ithLclVar->gtType == TYP_INT ? TYP_INT : TYP_LONG, tempIntVatTree, ithLclVar);
-        newIntVarTree->gtPrev    = ithLclVar;
-        ithLclVar->gtNext        = newIntVarTree;
-        ithLclVar->gtPrev        = tempIntVatTree;
-        tempIntVatTree->gtNext   = ithLclVar;
-        tempIntVatTree           = newIntVarTree;
+        GenTree*   ithLclVar = lclVarArr.Bottom(i);
+        GenTreeOp* newIntVarTree =
+            m_comp->gtNewOperNode(GT_OR,
+                                  tempIntVatTree->gtType == TYP_INT && ithLclVar->gtType == TYP_INT ? TYP_INT
+                                                                                                    : TYP_LONG,
+                                  tempIntVatTree, ithLclVar);
+        newIntVarTree->gtPrev  = ithLclVar;
+        ithLclVar->gtNext      = newIntVarTree;
+        ithLclVar->gtPrev      = tempIntVatTree;
+        tempIntVatTree->gtNext = ithLclVar;
+        tempIntVatTree         = newIntVarTree;
     }
 
     size_t optimizedCst = 0;
@@ -1656,14 +1663,19 @@ bool IntBoolOpDsc::TryOptimize()
         optimizedCst  = optimizedCst | ithCts;
     }
 
-    GenTreeIntCon* optimizedCstTree = m_comp->gtNewIconNode(optimizedCst, optimizedCst <= INT_MAX && optimizedCst >= INT_MIN ? TYP_INT : TYP_LONG);
-    GenTreeOp*     optimizedTree    = m_comp->gtNewOperNode(GT_OR, tempIntVatTree->gtType == TYP_INT && optimizedCstTree->gtType == TYP_INT ? TYP_INT : TYP_LONG, tempIntVatTree, optimizedCstTree);
-    optimizedTree->gtPrev           = optimizedCstTree;
-    optimizedCstTree->gtNext        = optimizedTree;
-    optimizedCstTree->gtPrev        = tempIntVatTree;
-    tempIntVatTree->gtNext          = optimizedCstTree;
-    start->gtPrev                   = optimizedTree;
-    optimizedTree->gtNext           = start;
+    GenTreeIntCon* optimizedCstTree =
+        m_comp->gtNewIconNode(optimizedCst, optimizedCst <= INT_MAX && optimizedCst >= INT_MIN ? TYP_INT : TYP_LONG);
+    GenTreeOp* optimizedTree =
+        m_comp->gtNewOperNode(GT_OR,
+                              tempIntVatTree->gtType == TYP_INT && optimizedCstTree->gtType == TYP_INT ? TYP_INT
+                                                                                                       : TYP_LONG,
+                              tempIntVatTree, optimizedCstTree);
+    optimizedTree->gtPrev    = optimizedCstTree;
+    optimizedCstTree->gtNext = optimizedTree;
+    optimizedCstTree->gtPrev = tempIntVatTree;
+    tempIntVatTree->gtNext   = optimizedCstTree;
+    start->gtPrev            = optimizedTree;
+    optimizedTree->gtNext    = start;
 
     if (start->OperIsUnary())
     {
