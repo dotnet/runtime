@@ -48279,7 +48279,7 @@ gc_heap::verify_free_lists ()
                 if ((region->heap != this) && ((gen_num != max_generation) || (!trigger_bgc_for_rethreading_p)))
                 {
                     // The logic in change_heap_count depends on the coming BGC (or blocking gen 2) to rebuild the gen 2 free list.
-                    // In that case, before the rebuild happens, the gen2 free list is expected to contain free list items that does not belong to the right heap.
+                    // In that case, before the rebuild happens, the gen2 free list is expected to contain free list items that do not belong to the right heap.
                     dprintf (1, ("curr free item %p should be on heap %d, but actually is on heap %d: %d", free_list, this->heap_number, region->heap->heap_number));
                     FATAL_GC_ERROR();
                 }
