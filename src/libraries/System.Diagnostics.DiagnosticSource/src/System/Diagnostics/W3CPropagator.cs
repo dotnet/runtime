@@ -701,8 +701,6 @@ namespace System.Diagnostics
         {
             const string hexChars = "0123456789ABCDEF";
 
-            Debug.Assert(b <= 127);
-
             vsb.Append(Percent);
             vsb.Append(hexChars[(b >> 4) & 0x0F]);
             vsb.Append(hexChars[b & 0x0F]);
