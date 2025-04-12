@@ -441,6 +441,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMP:
         case GT_TEST:
         case GT_BT:
+#ifdef TARGET_AMD64
+        case GT_CCMP:
+#endif
             srcCount = BuildCmp(tree);
             break;
 

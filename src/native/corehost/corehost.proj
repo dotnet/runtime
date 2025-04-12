@@ -84,8 +84,8 @@
     </PropertyGroup>
 
     <!--
-      Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing
-      warning in the macOS build when dsymutil tries to strip symbols.
+      Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid
+      upgrading compiler warnings to errors in release branches.
     -->
     <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs)" Importance="High"/>
     <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
@@ -160,8 +160,8 @@
 
     <!--
       Run script that invokes Cmake to create VS files, and then calls msbuild to compile them. Use
-      IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing
-      warning in the native build.
+      IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid
+      upgrading compiler warnings to errors in release branches.
     -->
     <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs)" Importance="High"/>
     <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>

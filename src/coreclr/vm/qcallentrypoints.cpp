@@ -72,6 +72,8 @@
 
 #include "exceptionhandlingqcalls.h"
 
+#include "versionresilienthashcode.h"
+
 static const Entry s_QCall[] =
 {
     DllImportEntry(ArgIterator_Init)
@@ -266,6 +268,7 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_GetAssemblyCount)
     DllImportEntry(AssemblyNative_GetEntryAssembly)
     DllImportEntry(AssemblyNative_GetExecutingAssembly)
+    DllImportEntry(TypeMapLazyDictionary_ProcessAttributes)
 #if defined(FEATURE_MULTICOREJIT)
     DllImportEntry(MultiCoreJIT_InternalSetProfileRoot)
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
@@ -533,6 +536,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GenericHandleWorker)
     DllImportEntry(ThrowInvalidCastException)
     DllImportEntry(IsInstanceOf_NoCacheLookup)
+    DllImportEntry(VersionResilientHashCode_TypeHashCode)
 };
 
 const void* QCallResolveDllImport(const char* name)

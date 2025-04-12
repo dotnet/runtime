@@ -9,7 +9,7 @@
 
 EVP_PKEY* CryptoNative_MLDsaGenerateKey(const char* keyType, uint8_t* seed, int32_t seedLen)
 {
-#if defined(NEED_OPENSSL_3_0) && defined(HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT)
+#if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
     if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
         !API_EXISTS(EVP_PKEY_verify_message_init))
     {
@@ -84,7 +84,7 @@ int32_t CryptoNative_MLDsaSignPure(EVP_PKEY *pkey,
     assert(destination);
     assert(destinationLen >= 2420 /* ML-DSA-44 signature size */);
 
-#if defined(NEED_OPENSSL_3_0) && defined(HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT)
+#if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
     if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
         !API_EXISTS(EVP_PKEY_verify_message_init))
     {
@@ -164,7 +164,7 @@ int32_t CryptoNative_MLDsaVerifyPure(EVP_PKEY *pkey,
     assert(sigLen >= 2420 /* ML-DSA-44 signature size */);
     assert(contextLen >= 0);
 
-#if defined(NEED_OPENSSL_3_0) && defined(HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT)
+#if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
     if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
         !API_EXISTS(EVP_PKEY_verify_message_init))
     {

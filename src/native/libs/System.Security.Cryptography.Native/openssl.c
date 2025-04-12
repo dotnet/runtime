@@ -1292,7 +1292,7 @@ int32_t CryptoNative_IsSignatureAlgorithmAvailable(const char* algorithm)
 {
     int32_t ret = 0;
 
-#if defined(NEED_OPENSSL_3_0) && defined(HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT)
+#if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
     if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
         !API_EXISTS(EVP_PKEY_verify_message_init))
     {
@@ -1306,7 +1306,7 @@ int32_t CryptoNative_IsSignatureAlgorithmAvailable(const char* algorithm)
     {
         ret = 1;
         EVP_SIGNATURE_free(sigAlg);
-    } 
+    }
 #endif
 
     (void)algorithm;
