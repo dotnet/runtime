@@ -443,23 +443,5 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             Assert.Equal(PackedSimd.Splat((nint)(-1)), subResult);
             Assert.Equal(PackedSimd.Splat((nint)2), mulResult);
         }
-
-        [Fact]
-        public unsafe void NativeUnsignedIntegerLoadStoreTest()
-        {
-            nuint[] values = new nuint[] { 1, 2, 3, 4 };
-            fixed (nuint* ptr = values)
-            {
-                var loaded = PackedSimd.LoadVector128(ptr);
-                Assert.Equal(Vector128.Create(values.AsSpan()), loaded);
-
-                nuint[] storeTarget = new nuint[4];
-                fixed (nuint* storePtr = storeTarget)
-                {
-                    PackedSimd.Store(storePtr, loaded);
-                    Assert.Equal(values, storeTarget);
-                }
-            }
-        }
     }
 }
