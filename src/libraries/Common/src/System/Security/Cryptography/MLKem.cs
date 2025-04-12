@@ -761,7 +761,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
+        ///   Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
         /// </summary>
         /// <returns>
         ///   A byte array containing the X.509 SubjectPublicKeyInfo representation of the public-key portion of this key.
@@ -776,6 +776,28 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
             return ExportSubjectPublicKeyInfoCore().Encode();
+        }
+
+        /// <summary>
+        ///   Exports the public-key portion of the current key in a PEM-encoded representation of
+        ///   the X.509 SubjectPublicKeyInfo format.
+        /// </summary>
+        /// <returns>
+        ///   A string containing the PEM-encoded representation of the X.509 SubjectPublicKeyInfo
+        ///   representation of the public-key portion of this key.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public string ExportSubjectPublicKeyInfoPem()
+        {
+            ThrowIfDisposed();
+            AsnWriter writer = ExportSubjectPublicKeyInfoCore();
+            // SPKI does not contain sensitive data.
+            return EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
         }
 
         /// <summary>
@@ -831,38 +853,25 @@ namespace System.Security.Cryptography
         public byte[] ExportPkcs8PrivateKey()
         {
             ThrowIfDisposed();
+            return ExportPkcs8PrivateKeyCallback(static pkcs8 => pkcs8.ToArray());
+        }
 
-            // A PKCS#8 ML-KEM-1024 ExpandedKey has an ASN.1 overhead of 28 bytes, assuming no attributes.
-            // Make it an even 32 and that should give a good starting point for a buffer size.
-            // Decapsulation keys are always larger than the seed, so if we end up with a seed export it should
-            // fit in the initial buffer.
-            int size = Algorithm.DecapsulationKeySizeInBytes + 32;
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(size); // Released to callers, do not use CryptoPool.
-            int written;
-
-            while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
-            {
-                ClearAndReturnToPool(buffer, written);
-                size = checked(size * 2);
-                buffer = ArrayPool<byte>.Shared.Rent(size);
-            }
-
-            if (written > buffer.Length)
-            {
-                // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
-                CryptographicOperations.ZeroMemory(buffer);
-                throw new CryptographicException();
-            }
-
-            byte[] result = buffer.AsSpan(0, written).ToArray();
-            ClearAndReturnToPool(buffer, written);
-            return result;
-
-            static void ClearAndReturnToPool(byte[] buffer, int clearSize)
-            {
-                CryptographicOperations.ZeroMemory(buffer.AsSpan(0, clearSize));
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
+        /// <summary>
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 PrivateKeyInfo format.
+        /// </summary>
+        /// <returns>
+        ///   A string containing the PEM-encoded representation of the PKCS#8 PrivateKeyInfo.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public string ExportPkcs8PrivateKeyPem()
+        {
+            ThrowIfDisposed();
+            return ExportPkcs8PrivateKeyCallback(static pkcs8 => PemEncoding.WriteString(PemLabels.Pkcs8PrivateKey, pkcs8));
         }
 
         /// <summary>
@@ -888,10 +897,391 @@ namespace System.Security.Cryptography
         protected abstract bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten);
 
         /// <summary>
-        ///  Imports an ML-KEM encapsulation key from an X.509 SubjectPublicKeyInfo structure.
+        ///   Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
+        ///   using a char-based password.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the PKCS#8 EncryptedPrivateKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        /// </exception>
+        public bool TryExportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<char> password,
+            PbeParameters pbeParameters,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            ThrowIfNull(pbeParameters);
+            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
+            ThrowIfDisposed();
+
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore<char>(
+                password,
+                pbeParameters,
+                KeyFormatHelper.WriteEncryptedPkcs8);
+            return writer.TryEncode(destination, out bytesWritten);
+        }
+
+        /// <summary>
+        ///   Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
+        ///   using a char-based password.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the PKCS#8 EncryptedPrivateKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///    <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        /// </exception>
+        public bool TryExportEncryptedPkcs8PrivateKey(
+            string password,
+            PbeParameters pbeParameters,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            ThrowIfNull(password);
+            return TryExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters, destination, out bytesWritten);
+        }
+
+        /// <summary>
+        ///   Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
+        ///   using a byte-based password.
+        /// </summary>
+        /// <param name="passwordBytes">
+        ///   The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the PKCS#8 EncryptedPrivateKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        /// </exception>
+        public bool TryExportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<byte> passwordBytes,
+            PbeParameters pbeParameters,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            ThrowIfNull(pbeParameters);
+            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
+            ThrowIfDisposed();
+
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore<byte>(
+                passwordBytes,
+                pbeParameters,
+                KeyFormatHelper.WriteEncryptedPkcs8);
+            return writer.TryEncode(destination, out bytesWritten);
+        }
+
+        /// <summary>
+        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a byte-based password.
+        /// </summary>
+        /// <param name="passwordBytes">
+        ///   The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        /// </exception>
+        public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
+        {
+            ThrowIfNull(pbeParameters);
+            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
+            ThrowIfDisposed();
+
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore<byte>(
+                passwordBytes,
+                pbeParameters,
+                KeyFormatHelper.WriteEncryptedPkcs8);
+            return writer.Encode();
+        }
+
+        /// <summary>
+        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        /// </exception>
+        public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
+        {
+            ThrowIfNull(pbeParameters);
+            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
+            ThrowIfDisposed();
+
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore<char>(
+                password,
+                pbeParameters,
+                KeyFormatHelper.WriteEncryptedPkcs8);
+            return writer.Encode();
+        }
+
+        /// <summary>
+        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///    <paramref name="pbeParameters" /> or <paramref name="password" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        /// </exception>
+        public byte[] ExportEncryptedPkcs8PrivateKey(string password, PbeParameters pbeParameters)
+        {
+            ThrowIfNull(password);
+            return ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters);
+        }
+
+        /// <summary>
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
+        ///   representation of this key, using a byte-based password.
+        /// </summary>
+        /// <param name="passwordBytes">
+        ///   The bytes to use as a password when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="pbeParameters"/> specifies a KDF that requires a char-based password.</para>
+        ///   <para>-or-</para>
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        public string ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
+        {
+            ThrowIfNull(pbeParameters);
+            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
+            ThrowIfDisposed();
+
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore<byte>(
+                passwordBytes,
+                pbeParameters,
+                KeyFormatHelper.WriteEncryptedPkcs8);
+
+            // Skip clear since the data is already encrypted.
+            return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
+        }
+
+        /// <summary>
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
+        ///   representation of this key, using a char-based password.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        public string ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char> password, PbeParameters pbeParameters)
+        {
+            ThrowIfNull(pbeParameters);
+            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
+            ThrowIfDisposed();
+
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore<char>(
+                password,
+                pbeParameters,
+                KeyFormatHelper.WriteEncryptedPkcs8);
+
+            // Skip clear since the data is already encrypted.
+            return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
+        }
+
+        /// <summary>
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
+        ///   representation of this key, using a string password.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///    <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        public string ExportEncryptedPkcs8PrivateKeyPem(string password, PbeParameters pbeParameters)
+        {
+            ThrowIfNull(password);
+            return ExportEncryptedPkcs8PrivateKeyPem(password.AsSpan(), pbeParameters);
+        }
+
+        /// <summary>
+        ///   Imports an ML-KEM encapsulation key from an X.509 SubjectPublicKeyInfo structure.
         /// </summary>
         /// <param name="source">
-        ///  The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
+        ///   The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -926,7 +1316,14 @@ namespace System.Security.Cryptography
                         AsnValueReader reader = new(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
                         MLKemAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
-                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, spki.SubjectPublicKey.Span);
+                        ReadOnlySpan<byte> subjectPublicKey = spki.SubjectPublicKey.Span;
+
+                        if (subjectPublicKey.Length != algorithm.EncapsulationKeySizeInBytes)
+                        {
+                            throw new CryptographicException(SR.Argument_KemInvalidEncapsulationKeyLength);
+                        }
+
+                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, subjectPublicKey);
                     }
                 }
             }
@@ -943,10 +1340,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Imports an ML-KEM private key from a PKCS#8 PrivateKeyInfo structure.
+        ///   Imports an ML-KEM private key from a PKCS#8 PrivateKeyInfo structure.
         /// </summary>
         /// <param name="source">
-        ///  The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-BER encoding.
+        ///   The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-BER encoding.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -1088,7 +1485,56 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Imports an ML-KEM key from an RFC 7468 PEM-encoded string.
+        ///   Imports an ML-KEM private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when decrypting the key material.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="password" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The value does not represent an ML-KEM key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-KEM.
+        /// </exception>
+        public static MLKem ImportEncryptedPkcs8PrivateKey(string password, ReadOnlySpan<byte> source)
+        {
+            ThrowIfNull(password);
+            ThrowIfTrailingData(source);
+            ThrowIfNotSupported();
+
+            return KeyFormatHelper.DecryptPkcs8(
+                password,
+                source,
+                ImportPkcs8PrivateKey,
+                out _);
+        }
+
+        /// <summary>
+        ///   Imports an ML-KEM key from an RFC 7468 PEM-encoded string.
         /// </summary>
         /// <param name="source">
         ///   The text of the PEM key to import.
@@ -1288,7 +1734,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///  Releases all resources used by the <see cref="MLKem"/> class.
+        ///   Releases all resources used by the <see cref="MLKem"/> class.
         /// </summary>
         public void Dispose()
         {
@@ -1452,5 +1898,99 @@ namespace System.Security.Cryptography
             }
 #endif
         }
+
+        private AsnWriter ExportEncryptedPkcs8PrivateKeyCore<TChar>(
+            ReadOnlySpan<TChar> password,
+            PbeParameters pbeParameters,
+            WriteEncryptedPkcs8Func<TChar> encryptor)
+        {
+            // There are 28 bytes of overhead on a plain PKCS#8 export for an expanded key. Add a little extra for
+            // some extra space.
+            int initialSize = Algorithm.DecapsulationKeySizeInBytes + 32;
+            byte[] rented = CryptoPool.Rent(initialSize);
+            int written;
+
+            while (!TryExportPkcs8PrivateKey(rented, out written))
+            {
+                CryptoPool.Return(rented, 0);
+                rented = CryptoPool.Rent(rented.Length * 2);
+            }
+
+            AsnWriter tmp = new(AsnEncodingRules.BER, initialCapacity: written);
+
+            try
+            {
+                tmp.WriteEncodedValueForCrypto(rented.AsSpan(0, written));
+                return encryptor(password, tmp, pbeParameters);
+            }
+            finally
+            {
+                tmp.Reset();
+                CryptoPool.Return(rented, written);
+            }
+        }
+
+        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ExportPkcs8PrivateKeyFunc<TResult> func)
+        {
+            // A PKCS#8 ML-KEM-1024 ExpandedKey has an ASN.1 overhead of 28 bytes, assuming no attributes.
+            // Make it an even 32 and that should give a good starting point for a buffer size.
+            // Decapsulation keys are always larger than the seed, so if we end up with a seed export it should
+            // fit in the initial buffer.
+            int size = Algorithm.DecapsulationKeySizeInBytes + 32;
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(size); // Released to callers, do not use CryptoPool.
+            int written;
+
+            while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
+            {
+                ClearAndReturnToPool(buffer, written);
+                size = checked(size * 2);
+                buffer = ArrayPool<byte>.Shared.Rent(size);
+            }
+
+            if (written > buffer.Length)
+            {
+                // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
+                CryptographicOperations.ZeroMemory(buffer);
+                throw new CryptographicException();
+            }
+
+            TResult result = func(buffer.AsSpan(0, written));
+            ClearAndReturnToPool(buffer, written);
+            return result;
+
+            static void ClearAndReturnToPool(byte[] buffer, int clearSize)
+            {
+                CryptographicOperations.ZeroMemory(buffer.AsSpan(0, clearSize));
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        private static string EncodeAsnWriterToPem(string label, AsnWriter writer, bool clear = true)
+        {
+#if NET10_0_OR_GREATER
+            return writer.Encode(label, static (label, span) => PemEncoding.WriteString(label, span));
+#else
+            int length = writer.GetEncodedLength();
+            byte[] rent = CryptoPool.Rent(length);
+
+            try
+            {
+                int written = writer.Encode(rent);
+                Debug.Assert(written == length);
+                return PemEncoding.WriteString(label, rent.AsSpan(0, written));
+            }
+            finally
+            {
+                CryptoPool.Return(rent, clear ? length : 0);
+            }
+#endif
+        }
+
+        private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
+
+        private delegate AsnWriter WriteEncryptedPkcs8Func<TChar>(
+            ReadOnlySpan<TChar> password,
+            AsnWriter writer,
+            PbeParameters pbeParameters);
     }
 }

@@ -648,7 +648,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins || INS_sext_w == ins)
+    if (INS_mov == ins || INS_sext_w == ins || (INS_clz <= ins && ins <= INS_cpopw))
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -3805,18 +3805,31 @@ void emitter::emitDispInsName(
                         hasImmediate = false;
                     }
                     break;
-                case 0x1: // SLLI
+                case 0x1:
                 {
-                    static constexpr unsigned kSlliFunct6 = 0b000000;
-
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
-                    // SLLI's instruction code's upper 6 bits have to be equal to zero
-                    if (funct6 != kSlliFunct6)
+                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV64
+                    switch (funct6)
                     {
-                        return emitDispIllegalInstruction(code);
+                        case 0b011000:
+                        {
+                            static const char* names[] = {"clz", "ctz", "cpop"};
+                            // shift amount is treated as additional funct opcode
+                            if (shamt >= ARRAY_SIZE(names))
+                                return emitDispIllegalInstruction(code);
+
+                            printLength  = printf("%s", names[shamt]);
+                            hasImmediate = false;
+                            break;
+                        }
+                        case 0b000000:
+                            printLength = printf("slli");
+                            imm12       = shamt;
+                            break;
+
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
-                    printLength = printf("slli");
-                    imm12 &= 0x3f; // 6 BITS for SHAMT in RISCV64
                 }
                 break;
                 case 0x2: // SLTI
@@ -3891,19 +3904,28 @@ void emitter::emitDispInsName(
                         emitDispImmediate(imm12);
                     }
                     return;
-                case 0x1: // SLLIW
+                case 0x1:
                 {
-                    static constexpr unsigned kSlliwFunct7 = 0b0000000;
-
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
-                    // SLLIW's instruction code's upper 7 bits have to be equal to zero
-                    if (funct7 == kSlliwFunct7)
+                    unsigned shamt  = imm12 & 0x1f; // 5 BITS for SHAMT in RISCV64
+                    switch (funct7)
                     {
-                        printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
-                    }
-                    else
-                    {
-                        emitDispIllegalInstruction(code);
+                        case 0b0110000:
+                        {
+                            static const char* names[] = {"clzw ", "ctzw ", "cpopw"};
+                            // shift amount is treated as funct additional opcode bits
+                            if (shamt >= ARRAY_SIZE(names))
+                                return emitDispIllegalInstruction(code);
+
+                            printf("%s          %s, %s\n", names[shamt], rd, rs1);
+                            return;
+                        }
+                        case 0b0000000:
+                            printf("slliw          %s, %s, %d\n", rd, rs1, shamt);
+                            return;
+
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
                 }
                     return;

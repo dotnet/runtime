@@ -62,6 +62,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return Expression.Field(variantArray, "Element" + field);
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static Type GetStructType(int args)
         {
             Debug.Assert(args >= 0);
@@ -95,6 +96,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static Type CreateCustomType(int size)
         {
             TypeAttributes attrs = TypeAttributes.NotPublic | TypeAttributes.SequentialLayout;

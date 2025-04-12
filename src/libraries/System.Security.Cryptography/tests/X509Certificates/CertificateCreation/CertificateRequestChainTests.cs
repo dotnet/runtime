@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
@@ -26,6 +25,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     intermed1Key,
                     intermed2Key,
                     leafPubKey);
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void CreateChain_MLDSA()
+        {
+            using (MLDsa rootKey = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa87))
+            using (MLDsa intermed1Key = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65))
+            using (MLDsa intermed2Key = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65))
+            using (MLDsa leafKey = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44))
+            {
+                byte[] pubKey = new byte[leafKey.Algorithm.PublicKeySizeInBytes];
+                leafKey.ExportMLDsaPublicKey(pubKey);
+
+                using (MLDsa leafPubKey = MLDsa.ImportMLDsaPublicKey(leafKey.Algorithm, pubKey))
+                {
+                    CreateAndTestChain(
+                        rootKey,
+                        intermed1Key,
+                        intermed2Key,
+                        leafPubKey);
+                }
             }
         }
 
@@ -203,7 +224,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         private static CertificateRequest OpenCertRequest(
             string dn,
-            AsymmetricAlgorithm key,
+            object key,
             HashAlgorithmName hashAlgorithm)
         {
             X500DistinguishedName x500dn = new X500DistinguishedName(dn);
@@ -211,30 +232,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 RSA rsa => new CertificateRequest(x500dn, rsa, hashAlgorithm, RSASignaturePadding.Pkcs1),
                 ECDsa ecdsa => new CertificateRequest(x500dn, ecdsa, hashAlgorithm),
                 ECDiffieHellman ecdh => new CertificateRequest(x500dn, new PublicKey(ecdh), hashAlgorithm),
+                MLDsa mldsa => new CertificateRequest(x500dn, mldsa),
                 _ => throw new InvalidOperationException(
                     $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
             };
         }
 
-        private static X509SignatureGenerator OpenGenerator(AsymmetricAlgorithm key)
+        private static X509SignatureGenerator OpenGenerator(object key)
         {
-            RSA rsa = key as RSA;
-
-            if (rsa != null)
-                return X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
-
-            ECDsa ecdsa = key as ECDsa;
-
-            if (ecdsa != null)
-                return X509SignatureGenerator.CreateForECDsa(ecdsa);
-
-            throw new InvalidOperationException(
-                $"Had no handler for key of type {key?.GetType().FullName ?? "null"}");
+            return key switch
+            {
+                RSA rsa => X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
+                ECDsa ecdsa => X509SignatureGenerator.CreateForECDsa(ecdsa),
+                MLDsa mldsa => X509SignatureGenerator.CreateForMLDsa(mldsa),
+                _ => throw new InvalidOperationException(
+                    $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
+            };
         }
 
         private static CertificateRequest CreateChainRequest(
             string dn,
-            AsymmetricAlgorithm key,
+            object key,
             HashAlgorithmName hashAlgorithm,
             bool isCa,
             int? pathLen)
@@ -323,32 +341,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        private static X509Certificate2 CloneWithPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key)
+        private static X509Certificate2 CloneWithPrivateKey(X509Certificate2 cert, object key)
         {
-            RSA rsa = key as RSA;
-
-            if (rsa != null)
-                return cert.CopyWithPrivateKey(rsa);
-
-            ECDsa ecdsa = key as ECDsa;
-
-            if (ecdsa != null)
-                return cert.CopyWithPrivateKey(ecdsa);
-
-            DSA dsa = key as DSA;
-
-            if (dsa != null)
-                return cert.CopyWithPrivateKey(dsa);
-
-            throw new InvalidOperationException(
-                $"Had no handler for key of type {key?.GetType().FullName ?? "null"}");
+            return Common.CertificateAuthority.CloneWithPrivateKey(cert, key);
         }
 
         private static void CreateAndTestChain(
-            AsymmetricAlgorithm rootPrivKey,
-            AsymmetricAlgorithm intermed1PrivKey,
-            AsymmetricAlgorithm intermed2PrivKey,
-            AsymmetricAlgorithm leafPubKey)
+            object rootPrivKey,
+            object intermed1PrivKey,
+            object intermed2PrivKey,
+            object leafPubKey)
         {
             const string RootDN = "CN=Experimental Root Certificate";
             const string Intermed1DN = "CN=First Intermediate Certificate, O=Experimental";

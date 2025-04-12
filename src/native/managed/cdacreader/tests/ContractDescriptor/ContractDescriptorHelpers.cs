@@ -119,14 +119,14 @@ internal unsafe class ContractDescriptorHelpers
 
     public static string MakeGlobalsJson(IEnumerable<(string Name, ulong Value, string? Type)> globals)
     {
-        return MakeGlobalsJson(globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, g.Type)));
+        return MakeGlobalsJson(globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, (string?)null, g.Type)));
     }
 
-    public static string MakeGlobalsJson(IEnumerable<(string Name, ulong? Value, uint? IndirectIndex, string? Type)> globals)
+    public static string MakeGlobalsJson(IEnumerable<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? Type)> globals)
     {
         return string.Join(',', globals.Select(FormatGlobal));
 
-        static string FormatGlobal((string Name, ulong? Value, uint? IndirectIndex, string? Type) global)
+        static string FormatGlobal((string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? Type) global)
         {
             if (global.Value is ulong value)
             {
@@ -135,6 +135,10 @@ internal unsafe class ContractDescriptorHelpers
             else if (global.IndirectIndex is uint index)
             {
                 return $"\"{global.Name}\": {FormatIndirect(index, global.Type)}";
+            }
+            else if (global.StringValue is string stringValue)
+            {
+                return $"\"{global.Name}\": {FormatString(stringValue, global.Type)}";
             }
             else
             {
@@ -149,6 +153,10 @@ internal unsafe class ContractDescriptorHelpers
         static string FormatIndirect(uint value, string? type)
         {
             return type is null ? $"[{value}]" : $"[[{value}],\"{type}\"]";
+        }
+        static string FormatString(string value, string? type)
+        {
+            return type is null ? $"\"{value}\"" : $"[\"{value}\",\"{type}\"]";
         }
     }
 
