@@ -346,19 +346,44 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            noway_assert((tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Ceiling) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Floor) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Sqrt));
-
-            // Both operand and its result must be of the same floating point type.
             GenTree* op1 = tree->gtGetOp1();
-            assert(varTypeIsFloating(op1));
-            assert(op1->TypeGet() == tree->TypeGet());
+            GenTree* op2 = tree->gtGetOp2IfPresent();
+
+            switch (tree->AsIntrinsic()->gtIntrinsicName)
+            {
+                // Both operands and its result must be of the same floating-point type.
+                case NI_System_Math_MinNumber:
+                case NI_System_Math_MaxNumber:
+                    assert(op2 != nullptr);
+                    assert(op2->TypeIs(tree->TypeGet()));
+                    FALLTHROUGH;
+                case NI_System_Math_Abs:
+                case NI_System_Math_Sqrt:
+                    assert(op1->TypeIs(tree->TypeGet()));
+                    assert(varTypeIsFloating(tree));
+                    break;
+
+                // Operand and its result must be integers
+                case NI_PRIMITIVE_LeadingZeroCount:
+                case NI_PRIMITIVE_TrailingZeroCount:
+                case NI_PRIMITIVE_PopCount:
+                    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                    assert(op2 == nullptr);
+                    assert(varTypeIsIntegral(op1));
+                    assert(varTypeIsIntegral(tree));
+                    break;
+
+                default:
+                    NO_WAY("Unknown intrinsic");
+            }
 
             BuildUse(op1);
             srcCount = 1;
+            if (op2 != nullptr)
+            {
+                BuildUse(op2);
+                srcCount++;
+            }
             assert(dstCount == 1);
             BuildDef(tree);
         }

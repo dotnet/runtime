@@ -15331,8 +15331,14 @@ DONE:
             {
                 case IF_RWR_ARD:
                 case IF_RRW_ARD:
+                case IF_RWR_ARD_CNS:
+                case IF_RRW_ARD_CNS:
+                case IF_RWR_ARD_RRD:
+                case IF_RRW_ARD_RRD:
                 case IF_RWR_RRD_ARD:
                 case IF_RRW_RRD_ARD:
+                case IF_RWR_RRD_ARD_CNS:
+                case IF_RWR_RRD_ARD_RRD:
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
@@ -20115,6 +20121,14 @@ emitter::insFormat emitter::ExtractMemoryFormat(insFormat insFmt) const
 
     return IF_NONE;
 }
+
+#ifdef TARGET_AMD64
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+/*static*/ bool emitter::emitIns_valid_imm_for_ccmp(INT64 imm)
+{
+    return (((INT32)imm) == imm);
+}
+#endif
 
 #if defined(DEBUG) || defined(LATE_DISASM)
 

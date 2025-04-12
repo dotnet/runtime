@@ -689,7 +689,7 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     NewHolder<LoaderHeap> indcell_heap_holder(
                                new LoaderHeap(indcell_heap_reserve_size, indcell_heap_commit_size,
                                               initReservedMem, indcell_heap_reserve_size,
-                                              pIndCellRangeList, UnlockedLoaderHeap::HeapKind::Data));
+                                              pIndCellRangeList, LoaderHeapImplementationKind::Data));
 
     initReservedMem += indcell_heap_reserve_size;
 
@@ -698,7 +698,7 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     NewHolder<LoaderHeap> cache_entry_heap_holder(
                                new LoaderHeap(cache_entry_heap_reserve_size, cache_entry_heap_commit_size,
                                               initReservedMem, cache_entry_heap_reserve_size,
-                                              &cache_entry_rangeList, UnlockedLoaderHeap::HeapKind::Data));
+                                              &cache_entry_rangeList, LoaderHeapImplementationKind::Data));
 
     initReservedMem += cache_entry_heap_reserve_size;
 
@@ -1204,7 +1204,7 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
         DBG_ADDR(slot), DBG_ADDR(pHolder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateVTableCallStub", (PCODE)pHolder->stub(), pHolder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateVTableCallStub", (PCODE)pHolder->stub(), pHolder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN(pHolder);
@@ -2870,7 +2870,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
                                  DBG_ADDR(dispatchToken), DBG_ADDR(pMTExpected), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);
@@ -2931,7 +2931,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
                                  DBG_ADDR(dispatchToken), DBG_ADDR(pMTExpected), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);
@@ -3029,7 +3029,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
                                  DBG_ADDR(dispatchToken), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateResolveStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateResolveStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);
@@ -3062,7 +3062,7 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
                                  DBG_ADDR(dispatchToken), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);

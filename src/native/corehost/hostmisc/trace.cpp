@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "trace.h"
+#include "utils.h"
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <minipal/utils.h>
 
 #define TRACE_VERBOSITY_WARN 2
 #define TRACE_VERBOSITY_INFO 3
@@ -91,8 +93,23 @@ bool trace::enable()
         g_trace_file = stderr;  // Trace to stderr by default
         if (pal::getenv(_X("COREHOST_TRACEFILE"), &tracefile_str))
         {
-            FILE *tracefile = pal::file_open(tracefile_str, _X("a"));
+            if (pal::is_directory(tracefile_str))
+            {
+                pal::string_t exe_name(_X("host"));
+                if (pal::get_own_executable_path(&exe_name))
+                {
+                    exe_name = get_filename_without_ext(exe_name);
+                }
 
+                // File path: <tracefile_str>/<exe_name>.<pid>.log
+                const size_t max_uint_str_len = STRING_LENGTH("4294967295");
+                size_t len = tracefile_str.size() + exe_name.length() + max_uint_str_len + STRING_LENGTH(DIR_SEPARATOR_STR "..log");
+                std::vector<pal::char_t> buffer(len + 1);
+                pal::snwprintf(&buffer[0], len, _X("%s" DIR_SEPARATOR_STR "%s.%d.log"), tracefile_str.c_str(), exe_name.c_str(), pal::get_pid());
+                tracefile_str = buffer.data();
+            }
+
+            FILE *tracefile = pal::file_open(tracefile_str, _X("a"));
             if (tracefile)
             {
                 setvbuf(tracefile, nullptr, _IONBF, 0);

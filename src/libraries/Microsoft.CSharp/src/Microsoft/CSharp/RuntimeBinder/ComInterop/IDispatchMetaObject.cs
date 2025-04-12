@@ -9,6 +9,7 @@ using System.Linq.Expressions;
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class IDispatchMetaObject : ComFallbackMetaObject
     {
         private readonly IDispatchComObject _self;

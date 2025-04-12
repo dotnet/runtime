@@ -9,7 +9,7 @@ using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -26,6 +26,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         private const string SlowServer = "http://httpbin.org/drip?numbytes=1&duration=1&delay=40&code=200";
 
         private readonly ITestOutputHelper _output;
+
+        public static IEnumerable<object[]> HttpVersions = [[HttpVersion.Version11, Configuration.Http.SecureRemoteEchoServer], [HttpVersion20.Value, Configuration.Http.Http2RemoteEchoServer]];
 
         public WinHttpHandlerTest(ITestOutputHelper output)
         {
@@ -70,6 +72,75 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         }
 
         [OuterLoop]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(HttpVersions))]
+        public async Task SendAsync_ServerCertificateValidationCallback_CalledOnce(Version version, Uri uri)
+        {
+            await RemoteExecutor.Invoke(async (version, uri) =>
+            {
+                AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", true);
+                int callbackCount = 0;
+                var handler = new WinHttpHandler()
+                {
+                    ServerCertificateValidationCallback = (_, _, _, _) =>
+                    {
+                        Interlocked.Increment(ref callbackCount);
+                        return true;
+                    }
+                };
+                using (var client = new HttpClient(handler))
+                {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri)
+                        {
+                            Version = Version.Parse(version)
+                        });
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        _ = await response.Content.ReadAsStringAsync();
+                    }
+                    Assert.Equal(1, callbackCount);
+                }
+            }, version.ToString(), uri.ToString()).DisposeAsync();
+        }
+
+        [OuterLoop]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(HttpVersions))]
+        public async Task SendAsync_ServerCertificateValidationCallbackCertificateTimerTriggered_CalledTwice(Version version, Uri uri)
+        {
+            await RemoteExecutor.Invoke(async (version, uri) =>
+            {
+                const int certificateCacheCleanupInterval = 10;
+                AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", true);
+                AppDomain.CurrentDomain.SetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval", certificateCacheCleanupInterval);
+                int callbackCount = 0;
+                var handler = new WinHttpHandler()
+                {
+                    ServerCertificateValidationCallback = (_, _, _, _) =>
+                    {
+                        Interlocked.Increment(ref callbackCount);
+                        return true;
+                    }
+                };
+                using (var client = new HttpClient(handler))
+                {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri)
+                        {
+                            Version = Version.Parse(version)
+                        });
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        _ = await response.Content.ReadAsStringAsync();
+                        await Task.Delay(TimeSpan.FromMilliseconds(certificateCacheCleanupInterval * 3));
+                    }
+                    Assert.True(callbackCount > 1);
+                }
+            }, version.ToString(), uri.ToString()).DisposeAsync();
+        }
+
+        [OuterLoop]
         [Theory]
         [InlineData(CookieUsePolicy.UseInternalCookieStoreOnly, "cookieName1", "cookieValue1")]
         [InlineData(CookieUsePolicy.UseSpecifiedCookieContainer, "cookieName2", "cookieValue2")]
@@ -78,7 +149,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             string cookieName,
             string cookieValue)
         {
-            Uri uri = System.Net.Test.Common.Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(302, System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer, 1);
+            Uri uri = System.Net.Test.Common.Configuration.Http.RemoteHttp11Server.RedirectUriForDestinationUri(302, System.Net.Test.Common.Configuration.Http.RemoteEchoServer, 1);
             var handler = new WinHttpHandler();
             handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
             handler.CookieUsePolicy = cookieUsePolicy;
