@@ -2516,7 +2516,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     }
                     else
                     {
-                        if (tree->TypeGet() == TYP_SIMD32)
+                        if (varTypeIsSIMDVL(tree->TypeGet()))
                         {
                             simd32_t val = vecCon->gtSimd32Val;
                             if (ElementsAreSame(val.i8, 32))

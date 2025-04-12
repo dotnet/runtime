@@ -910,7 +910,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     if (canReturnInRegister && (useType == TYP_UNKNOWN) &&
         (structSize <= MAX_PASS_SINGLEREG_BYTES)
 #ifdef TARGET_ARM64
-         || (varTypeIsSIMDVL(GetHfaType(clsHnd)) && (SizeMatchesVectorTLength(structSize)))
+         || SizeMatchesVectorTLength(structSize)
 #endif
         )
     {

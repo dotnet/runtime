@@ -3877,7 +3877,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                     else
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
-                    if ((simdType == TYP_SIMD32) || (simdType == TYP_SIMD64))
+                    if (varTypeIsSIMDVL(simdType))
                     {
                         hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_Sve);
                     }

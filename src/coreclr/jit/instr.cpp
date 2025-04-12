@@ -2252,7 +2252,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #endif
     }
 #ifdef TARGET_ARM64
-    else if ((dstType == TYP_SIMD32) || (dstType == TYP_SIMD64))
+    else if (varTypeIsSIMDVL(dstType))
     {
         return INS_sve_str;
     }
