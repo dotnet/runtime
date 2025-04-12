@@ -88,8 +88,8 @@ namespace System.Diagnostics
         /// </summary>
         /// <remarks>
         /// CreateDefaultPropagator will create a propagator instance that can inject and extract the headers with field names "tracestate",
-        /// "traceparent" of the identifiers which are formatted as W3C trace parent, "Request-Id" of the identifiers which are formatted as a hierarchical identifier.
-        /// The returned propagator can inject the baggage key-value pair list with header name "Correlation-Context" and it can extract the baggage values mapped to header names "Correlation-Context" and "baggage".
+        /// "traceparent" of the identifiers which are formatted as W3C trace parent.
+        /// The returned propagator can inject the baggage key-value pair list with header name "baggage" and it can extract the baggage values mapped to header name "baggage".
         /// </remarks>
         public static DistributedContextPropagator CreateDefaultPropagator() => W3CPropagator.Instance;
 
