@@ -71,61 +71,29 @@ namespace System.Runtime.InteropServices
             return refcount;
         }
 
-        [UnmanagedCallersOnly]
-        internal static unsafe int IReferenceTrackerTarget_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
-        {
-            ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
-            return wrapper->QueryInterfaceForTracker(in *guid, out *ppObject);
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe uint IReferenceTrackerTarget_AddRefFromReferenceTracker(IntPtr pThis)
-        {
-            ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
-            return wrapper->AddRefFromReferenceTracker();
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe uint IReferenceTrackerTarget_ReleaseFromReferenceTracker(IntPtr pThis)
-        {
-            ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
-            return wrapper->ReleaseFromReferenceTracker();
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe uint IReferenceTrackerTarget_Peg(IntPtr pThis)
-        {
-            ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
-            return wrapper->Peg();
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe uint IReferenceTrackerTarget_Unpeg(IntPtr pThis)
-        {
-            ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
-            return wrapper->Unpeg();
-        }
-
-        private static unsafe IntPtr CreateDefaultIReferenceTrackerTargetVftbl()
-        {
-            return (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in VtableImplementations.IReferenceTrackerTarget));
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe int ITaggedImpl_IsCurrentVersion(IntPtr pThis, IntPtr version)
-        {
-            return version == (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion
-                ? HResults.S_OK
-                : HResults.E_FAIL;
-        }
-
         private static IntPtr GetTaggedImplCurrentVersion()
         {
             unsafe
             {
-                return (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion;
+                return (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&VtableImplementations.ITaggedImpl_IsCurrentVersion;
             }
         }
+
+        private static unsafe IntPtr CreateDefaultIUnknownVftbl()
+        {
+            return (IntPtr)Unsafe.AsPointer(in VtableImplementations.IUnknown);
+        }
+
+        private static unsafe IntPtr CreateDefaultIReferenceTrackerTargetVftbl()
+        {
+            return (IntPtr)Unsafe.AsPointer(in VtableImplementations.IReferenceTrackerTarget);
+        }
+
+        private static unsafe IntPtr CreateTaggedImplVftbl()
+        {
+            return (IntPtr)Unsafe.AsPointer(in VtableImplementations.ITaggedImpl);
+        }
+
 
         private static class VtableImplementations
         {
@@ -159,6 +127,51 @@ namespace System.Runtime.InteropServices
 
             [FixedAddressValueType]
             public static readonly ITaggedImplVftbl ITaggedImpl;
+
+
+
+            [UnmanagedCallersOnly]
+            internal static unsafe int IReferenceTrackerTarget_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
+            {
+                ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
+                return wrapper->QueryInterfaceForTracker(in *guid, out *ppObject);
+            }
+
+            [UnmanagedCallersOnly]
+            internal static unsafe uint IReferenceTrackerTarget_AddRefFromReferenceTracker(IntPtr pThis)
+            {
+                ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
+                return wrapper->AddRefFromReferenceTracker();
+            }
+
+            [UnmanagedCallersOnly]
+            internal static unsafe uint IReferenceTrackerTarget_ReleaseFromReferenceTracker(IntPtr pThis)
+            {
+                ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
+                return wrapper->ReleaseFromReferenceTracker();
+            }
+
+            [UnmanagedCallersOnly]
+            internal static unsafe uint IReferenceTrackerTarget_Peg(IntPtr pThis)
+            {
+                ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
+                return wrapper->Peg();
+            }
+
+            [UnmanagedCallersOnly]
+            internal static unsafe uint IReferenceTrackerTarget_Unpeg(IntPtr pThis)
+            {
+                ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
+                return wrapper->Unpeg();
+            }
+
+            [UnmanagedCallersOnly]
+            internal static unsafe int ITaggedImpl_IsCurrentVersion(IntPtr pThis, IntPtr version)
+            {
+                return version == (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion
+                    ? HResults.S_OK
+                    : HResults.E_FAIL;
+            }
 
             static unsafe VtableImplementations()
             {

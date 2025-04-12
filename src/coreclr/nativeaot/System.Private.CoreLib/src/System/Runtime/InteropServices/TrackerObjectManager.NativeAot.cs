@@ -12,7 +12,8 @@ namespace System.Runtime.InteropServices
 {
     internal static partial class TrackerObjectManager
     {
-        internal static readonly IntPtr s_findReferencesTargetCallback = FindReferenceTargetsCallback.CreateFindReferenceTargetsCallback();
+        [FixedAddressValueType]
+        internal static readonly unsafe IntPtr s_findReferencesTargetCallback = (IntPtr)Unsafe.AsPointer(in FindReferenceTargetsCallback.Vftbl);
 
         internal static volatile IntPtr s_trackerManager;
         internal static volatile bool s_hasTrackingStarted;
@@ -244,11 +245,26 @@ namespace System.Runtime.InteropServices
             return (IntPtr)vftbl;
         }
 
-        internal static unsafe IntPtr CreateFindReferenceTargetsCallback()
+        internal struct ReferenceTargetsVftbl
         {
-            IntPtr* wrapperMem = (IntPtr*)NativeMemory.Alloc((nuint)sizeof(IntPtr));
-            wrapperMem[0] = CreateDefaultIFindReferenceTargetsCallbackVftbl();
-            return (IntPtr)wrapperMem;
+            public delegate* unmanaged<IntPtr, Guid*, IntPtr*, int> QueryInterface;
+            public delegate* unmanaged<IntPtr, uint> AddRef;
+            public delegate* unmanaged<IntPtr, uint> Release;
+            public delegate* unmanaged<IntPtr, IntPtr, int> FoundTrackerTarget;
+        }
+
+        [FixedAddressValueType]
+        internal static readonly ReferenceTargetsVftbl Vftbl;
+
+#pragma warning disable CA1810 // Initialize reference type static fields inline
+        // We want this to be explicitly written out to ensure we match the "pre-inited vtable" pattern.
+        static FindReferenceTargetsCallback()
+#pragma warning restore CA1810 // Initialize reference type static fields inline
+        {
+            Vftbl.AddRef = &Untracked_AddRef;
+            Vftbl.Release = &Untracked_Release;
+            Vftbl.QueryInterface = &IFindReferenceTargetsCallback_QueryInterface;
+            Vftbl.FoundTrackerTarget = &IFindReferenceTargetsCallback_FoundTrackerTarget;
         }
     }
 

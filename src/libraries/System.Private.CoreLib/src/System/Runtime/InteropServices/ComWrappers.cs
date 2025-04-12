@@ -1438,21 +1438,6 @@ namespace System.Runtime.InteropServices
             return 1;
         }
 
-        private static unsafe IntPtr CreateDefaultIUnknownVftbl()
-        {
-            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 3 * sizeof(IntPtr));
-            GetIUnknownImpl(out vftbl[0], out vftbl[1], out vftbl[2]);
-            return (IntPtr)vftbl;
-        }
-
-        private static unsafe IntPtr CreateTaggedImplVftbl()
-        {
-            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 4 * sizeof(IntPtr));
-            GetIUnknownImpl(out vftbl[0], out vftbl[1], out vftbl[2]);
-            vftbl[3] = GetTaggedImplCurrentVersion();
-            return (IntPtr)vftbl;
-        }
-
         // Wrapper for IWeakReference
         private static unsafe class IWeakReference
         {

@@ -26,6 +26,21 @@ namespace System.Runtime.InteropServices
         [SuppressGCTransition]
         private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
+        private static unsafe IntPtr CreateDefaultIUnknownVftbl()
+        {
+            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 3 * sizeof(IntPtr));
+            GetIUnknownImpl(out vftbl[0], out vftbl[1], out vftbl[2]);
+            return (IntPtr)vftbl;
+        }
+
+        private static unsafe IntPtr CreateTaggedImplVftbl()
+        {
+            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 4 * sizeof(IntPtr));
+            GetIUnknownImpl(out vftbl[0], out vftbl[1], out vftbl[2]);
+            vftbl[3] = GetTaggedImplCurrentVersion();
+            return (IntPtr)vftbl;
+        }
+
         private static readonly ConditionalWeakTable<object, List<ManagedObjectWrapperHolder>> s_allManagedObjectWrapperTable = [];
 
         private static unsafe void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)

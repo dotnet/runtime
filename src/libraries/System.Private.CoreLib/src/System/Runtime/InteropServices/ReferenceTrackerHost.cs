@@ -10,7 +10,8 @@ namespace System.Runtime.InteropServices
 {
     internal static class ReferenceTrackerHost
     {
-        internal static readonly IntPtr s_globalHostServices = CreateHostServices();
+        [FixedAddressValueType]
+        internal static readonly unsafe IntPtr s_globalHostServices = (IntPtr)Unsafe.AsPointer(in HostServices.Vftbl);
 
         // Called when an IReferenceTracker instance is found.
         public static void SetReferenceTrackerHost(IntPtr trackerManager)
@@ -18,15 +19,10 @@ namespace System.Runtime.InteropServices
             IReferenceTrackerManager.SetReferenceTrackerHost(trackerManager, s_globalHostServices);
         }
 
-        private static unsafe IntPtr CreateHostServices()
-        {
-            IntPtr* wrapperMem = (IntPtr*)NativeMemory.Alloc((nuint)sizeof(IntPtr));
-            wrapperMem[0] = CreateDefaultIReferenceTrackerHostVftbl();
-            return (IntPtr)wrapperMem;
-        }
-
+#pragma warning disable IDE0060
         [UnmanagedCallersOnly]
         internal static unsafe int IReferenceTrackerHost_DisconnectUnusedReferenceSources(IntPtr pThis, uint flags)
+#pragma warning restore IDE0060
         {
             try
             {
@@ -49,8 +45,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
+#pragma warning disable IDE0060
         [UnmanagedCallersOnly]
         internal static unsafe int IReferenceTrackerHost_ReleaseDisconnectedReferenceSources(IntPtr pThis)
+#pragma warning restore IDE0060
         {
             // We'd like to call GC.WaitForPendingFinalizers() here, but this could lead to deadlock
             // if the finalizer thread is trying to get back to this thread, because we are not pumping
@@ -58,8 +56,10 @@ namespace System.Runtime.InteropServices
             return HResults.S_OK;
         }
 
+#pragma warning disable IDE0060
         [UnmanagedCallersOnly]
         internal static unsafe int IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread(IntPtr pThis)
+#pragma warning restore IDE0060
         {
             try
             {
@@ -72,31 +72,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        // Creates a proxy object (managed object wrapper) that points to the given IUnknown.
-        // The proxy represents the following:
-        //   1. Has a managed reference pointing to the external object
-        //      and therefore forms a cycle that can be resolved by GC.
-        //   2. Forwards data binding requests.
-        //
-        // For example:
-        // NoCW = Native Object Com Wrapper also known as RCW
-        //
-        // Grid <---- NoCW             Grid <-------- NoCW
-        // | ^                         |              ^
-        // | |             Becomes     |              |
-        // v |                         v              |
-        // Rectangle                  Rectangle ----->Proxy
-        //
-        // Arguments
-        //   obj        - An IUnknown* where a NoCW points to (Grid, in this case)
-        //                    Notes:
-        //                    1. We can either create a new NoCW or get back an old one from the cache.
-        //                    2. This obj could be a regular tracker runtime object for data binding.
-        //  ppNewReference  - The IReferenceTrackerTarget* for the proxy created
-        //                    The tracker runtime will call IReferenceTrackerTarget to establish a reference.
-        //
+#pragma warning disable IDE0060
         [UnmanagedCallersOnly]
         internal static unsafe int IReferenceTrackerHost_GetTrackerTarget(IntPtr pThis, IntPtr punk, IntPtr* ppNewReference)
+#pragma warning restore IDE0060
         {
             if (punk == IntPtr.Zero)
             {
@@ -120,8 +99,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
+#pragma warning disable IDE0060
         [UnmanagedCallersOnly]
         internal static unsafe int IReferenceTrackerHost_AddMemoryPressure(IntPtr pThis, long bytesAllocated)
+#pragma warning restore IDE0060
         {
             try
             {
@@ -134,8 +115,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
+#pragma warning disable IDE0060
         [UnmanagedCallersOnly]
         internal static unsafe int IReferenceTrackerHost_RemoveMemoryPressure(IntPtr pThis, long bytesAllocated)
+#pragma warning restore IDE0060
         {
             try
             {
@@ -163,19 +146,36 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal static unsafe IntPtr CreateDefaultIReferenceTrackerHostVftbl()
+        private unsafe struct IReferenceTrackerHostVftbl
         {
-            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ReferenceTrackerHost), 9 * sizeof(IntPtr));
-            vftbl[0] = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&IReferenceTrackerHost_QueryInterface;
-            vftbl[1] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.Untracked_AddRef;
-            vftbl[2] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.Untracked_Release;
-            vftbl[3] = (IntPtr)(delegate* unmanaged<IntPtr, uint, int>)&IReferenceTrackerHost_DisconnectUnusedReferenceSources;
-            vftbl[4] = (IntPtr)(delegate* unmanaged<IntPtr, int>)&IReferenceTrackerHost_ReleaseDisconnectedReferenceSources;
-            vftbl[5] = (IntPtr)(delegate* unmanaged<IntPtr, int>)&IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread;
-            vftbl[6] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, IntPtr*, int>)&IReferenceTrackerHost_GetTrackerTarget;
-            vftbl[7] = (IntPtr)(delegate* unmanaged<IntPtr, long, int>)&IReferenceTrackerHost_AddMemoryPressure;
-            vftbl[8] = (IntPtr)(delegate* unmanaged<IntPtr, long, int>)&IReferenceTrackerHost_RemoveMemoryPressure;
-            return (IntPtr)vftbl;
+            public delegate* unmanaged<IntPtr, Guid*, IntPtr*, int> QueryInterface;
+            public delegate* unmanaged<IntPtr, uint> AddRef;
+            public delegate* unmanaged<IntPtr, uint> Release;
+            public delegate* unmanaged<IntPtr, uint, int> DisconnectUnusedReferenceSources;
+            public delegate* unmanaged<IntPtr, int> ReleaseDisconnectedReferenceSources;
+            public delegate* unmanaged<IntPtr, int> NotifyEndOfReferenceTrackingOnThread;
+            public delegate* unmanaged<IntPtr, IntPtr, IntPtr*, int> GetTrackerTarget;
+            public delegate* unmanaged<IntPtr, long, int> AddMemoryPressure;
+            public delegate* unmanaged<IntPtr, long, int> RemoveMemoryPressure;
+        }
+
+        private static class HostServices
+        {
+            [FixedAddressValueType]
+            public static readonly IReferenceTrackerHostVftbl Vftbl;
+
+            static unsafe HostServices()
+            {
+                Vftbl.QueryInterface = &IReferenceTrackerHost_QueryInterface;
+                Vftbl.AddRef = &ComWrappers.Untracked_AddRef;
+                Vftbl.Release = &ComWrappers.Untracked_Release;
+                Vftbl.DisconnectUnusedReferenceSources = &IReferenceTrackerHost_DisconnectUnusedReferenceSources;
+                Vftbl.ReleaseDisconnectedReferenceSources = &IReferenceTrackerHost_ReleaseDisconnectedReferenceSources;
+                Vftbl.NotifyEndOfReferenceTrackingOnThread = &IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread;
+                Vftbl.GetTrackerTarget = &IReferenceTrackerHost_GetTrackerTarget;
+                Vftbl.AddMemoryPressure = &IReferenceTrackerHost_AddMemoryPressure;
+                Vftbl.RemoveMemoryPressure = &IReferenceTrackerHost_RemoveMemoryPressure;
+            }
         }
     }
 
