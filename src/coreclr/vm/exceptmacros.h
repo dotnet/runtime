@@ -118,10 +118,6 @@ class Frame;
 class Exception;
 struct REGDISPLAY;
 
-#ifdef FEATURE_EH_FUNCLETS
-struct ExInfo;
-#endif
-
 VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 
 #include <excepcpu.h>
