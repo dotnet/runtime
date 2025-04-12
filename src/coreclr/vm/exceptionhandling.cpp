@@ -3770,7 +3770,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
     pThread->FillRegDisplay(pRD, pStackwalkCtx);
 
     new (pThis) StackFrameIterator();
-    result = pThis->Init(pThread, pFrame, pRD, THREAD_EXECUTING_MANAGED_CODE | UNWIND_FLOATS) != FALSE;
+    result = pThis->Init(pThread, pFrame, pRD, THREAD_EXECUTING_MANAGED_CODE | UNWIND_FLOATS | NOTIFY_ON_U2M_TRANSITIONS) != FALSE;
 
     if (result && (pExInfo->m_passNumber == 1))
     {
@@ -3904,6 +3904,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
     QCALL_CONTRACT;
 
     StackWalkAction retVal = SWA_FAILED;
+    CLR_BOOL invalidRevPInvoke = FALSE;
     Thread* pThread = GET_THREAD();
     ExInfo* pTopExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
@@ -3919,32 +3920,39 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
     ExInfo* pExInfo = pThis->GetNextExInfo();
     bool isCollided = false;
 
-    MethodDesc *pMD = pThis->m_crawl.GetFunction();
+    bool doingFuncletUnwind = pThis->m_crawl.IsFunclet();
+    PCODE preUnwindControlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
 
-    // Check for reverse pinvoke (but eliminate the case when the caller is managed) or CallDescrWorkerInternal.
-    if (!ExecutionManager::IsManagedCode(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
+    retVal = pThis->Next();
+    if (retVal == SWA_FAILED)
     {
-        CLR_BOOL invalidRevPInvoke;
+        EH_LOG((LL_INFO100, "SfiNext (pass=%d): failed to get next frame", pTopExInfo->m_passNumber));
+        goto Exit;
+    }
+
+    // Check for reverse pinvoke or CallDescrWorkerInternal.
+    if (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
+    {
+        EECodeInfo codeInfo(preUnwindControlPC);
 #ifdef USE_GC_INFO_DECODER
-        GcInfoDecoder gcInfoDecoder(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+        GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
         invalidRevPInvoke = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
 #else // USE_GC_INFO_DECODER
         hdrInfo *hdrInfoBody;
-        pThis->m_crawl.GetCodeInfo()->DecodeGCHdrInfo(&hdrInfoBody);
+        codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
         invalidRevPInvoke = hdrInfoBody->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
-        bool isFilterFunclet = false;
         bool isPropagatingToExternalNativeCode = false;
 
         EH_LOG((LL_INFO100, "SfiNext: reached native frame at IP=%p, SP=%p, invalidRevPInvoke=%d\n",
-            GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext), GetSP(pThis->m_crawl.GetRegisterSet()->pCallerContext), invalidRevPInvoke));
+            GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext), GetSP(pThis->m_crawl.GetRegisterSet()->pCurrentContext), invalidRevPInvoke));
 
         if (invalidRevPInvoke)
         {
 #ifdef HOST_UNIX
             void* callbackCxt = NULL;
             Interop::ManagedToNativeExceptionCallback callback = Interop::GetPropagatingExceptionCallback(
-                pThis->m_crawl.GetCodeInfo(),
+                &codeInfo,
                 pTopExInfo->m_hThrowable,
                 &callbackCxt);
 
@@ -3961,12 +3969,12 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
         }
         else
         {
-            if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
+            if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext)))
             {
                 EH_LOG((LL_INFO100, "SfiNext: the native frame is CallDescrWorkerInternal"));
                 invalidRevPInvoke = TRUE;
             }
-            else if (pThis->m_crawl.IsFilterFunclet())
+            else if (doingFuncletUnwind && codeInfo.GetJitManager()->IsFilterFunclet(&codeInfo))
             {
                 EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet"));
                 invalidRevPInvoke = TRUE;
@@ -3977,18 +3985,8 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
             }
         }
 
-        if (fUnwoundReversePInvoke)
-        {
-            *fUnwoundReversePInvoke = invalidRevPInvoke;
-        }
-
         if (invalidRevPInvoke)
         {
-            // Unwind to the caller of the managed code
-            retVal = pThis->Next();
-            _ASSERTE(retVal != SWA_FAILED);
-            _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
-
             pFrame = pThis->m_crawl.GetFrame();
 
             // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
@@ -4020,34 +4018,23 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 #endif
                 }
             }
+
+            // Unwind to the caller of the managed code
+            retVal = pThis->Next();
+            _ASSERTE(retVal != SWA_FAILED);
+            _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
             goto Exit;
-        }
-    }
-    else
-    {
-        if (fUnwoundReversePInvoke)
-        {
-            *fUnwoundReversePInvoke = FALSE;
         }
     }
 
     do
     {
         *uExCollideClauseIdx = 0xffffffff;
-        bool doingFuncletUnwind = pThis->m_crawl.IsFunclet();
-
-        retVal = pThis->Next();
-        if (retVal == SWA_FAILED)
-        {
-            EH_LOG((LL_INFO100, "SfiNext (pass=%d): failed to get next frame", pTopExInfo->m_passNumber));
-            break;
-        }
-
         if (pThis->GetFrameState() == StackFrameIterator::SFITER_DONE)
         {
             EH_LOG((LL_INFO100, "SfiNext (pass=%d): no more managed frames found on stack", pTopExInfo->m_passNumber));
             retVal = SWA_FAILED;
-            break;
+            goto Exit;
         }
 
         if (!pThis->m_crawl.IsFrameless())
@@ -4092,34 +4079,47 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
                             pThis->SkipTo(&pPrevExInfo->m_frameIter);
                             pThis->ResetNextExInfoForSP(pThis->m_crawl.GetRegisterSet()->SP);
+                            _ASSERTE_MSG(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD, "Collided unwind should have reached a frameless method");
+                            break;
                         }
                     }
                 }
             }
-            else if (pTopExInfo->m_passNumber == 1)
+            else
             {
-                pMD = pFrame->GetFunction();
-                if (pMD != NULL)
+                if (pTopExInfo->m_passNumber == 1)
                 {
-                    GCX_COOP();
-                    StackTraceInfo::AppendElement(pTopExInfo->m_hThrowable, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
+                    MethodDesc *pMD = pFrame->GetFunction();
+                    if (pMD != NULL)
+                    {
+                        GCX_COOP();
+                        StackTraceInfo::AppendElement(pTopExInfo->m_hThrowable, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
-                    if (NotifyDebuggerOfStub(pThread, pFrame))
-                    {
-                        if (!pTopExInfo->DeliveredFirstChanceNotification())
+                        if (NotifyDebuggerOfStub(pThread, pFrame))
                         {
-                            ExceptionNotifications::DeliverFirstChanceNotification();
+                            if (!pTopExInfo->DeliveredFirstChanceNotification())
+                            {
+                                ExceptionNotifications::DeliverFirstChanceNotification();
+                            }
                         }
-                    }
 #endif // DEBUGGING_SUPPORTED
+                    }
                 }
             }
+
+            retVal = pThis->Next();
+            doingFuncletUnwind = false;
         }
     }
     while (retVal != SWA_FAILED && (pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD));
 
     _ASSERTE(retVal == SWA_FAILED || pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
+
+    if (retVal == SWA_FAILED)
+    {
+        EH_LOG((LL_INFO100, "SfiNext (pass=%d): failed to get next frame", pTopExInfo->m_passNumber));
+    }
 
     if (!isCollided)
     {
@@ -4140,6 +4140,11 @@ Exit:;
         pThis->UpdateIsRuntimeWrappedExceptions();
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pTopExInfo);
+
+        if (fUnwoundReversePInvoke)
+        {
+            *fUnwoundReversePInvoke = invalidRevPInvoke;
+        }
 
         if (pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
         {
