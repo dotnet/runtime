@@ -1522,7 +1522,7 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 
     while (b4 != nullptr)
     {
-        if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT, TYP_LONG))
+        if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT, GT_CAST) || !b4->TypeIs(TYP_INT, TYP_LONG))
         {
             if (intBoolOpDsc.ctsArray.Height() >= 2 && intBoolOpDsc.lclVarArr.Height() >= 2)
             {
@@ -1664,7 +1664,8 @@ bool IntBoolOpDsc::TryOptimize()
     }
 
     GenTreeIntCon* optimizedCstTree =
-        m_comp->gtNewIconNode(optimizedCst, optimizedCst <= INT_MAX && optimizedCst >= INT_MIN ? TYP_INT : TYP_LONG);
+        m_comp->gtNewIconNode(optimizedCst,
+                              optimizedCst <= INT32_MAX && optimizedCst >= INT32_MIN ? TYP_INT : TYP_LONG);
     GenTreeOp* optimizedTree =
         m_comp->gtNewOperNode(GT_OR,
                               tempIntVatTree->gtType == TYP_INT && optimizedCstTree->gtType == TYP_INT ? TYP_INT

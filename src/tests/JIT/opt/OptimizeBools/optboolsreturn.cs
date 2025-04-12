@@ -232,6 +232,30 @@ public class CBoolTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ByteOr10Or5(byte x, byte y)
+    {
+        return (x | 10) | (y | 5);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ByteOr15(byte x, byte y)
+    {
+        return (x | y) | 15;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ShortOr10Or5(short x, short y)
+    {
+        return (x | 10) | (y | 5);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ShortOr15(short x, short y)
+    {
+        return (x | y) | 15;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool AreBothGreatThanZero(int x, int y)
     {
         bool b = x >= 0 && y >= 0;
@@ -1162,6 +1186,30 @@ public class CBoolTest
         if (LongOr10Or5(78, 11) != LongOr15(78, 11))
         {
             Console.WriteLine("CBoolTest:LongOr10Or5(78, 11) failed");
+            return 101;
+        }
+
+        if (ByteOr10Or5(14, 23) != ByteOr15(14, 23))
+        {
+            Console.WriteLine("CBoolTest:ByteOr10Or5(14, 23) failed");
+            return 101;
+        }
+
+        if (ByteOr10Or5(78, 11) != ByteOr15(78, 11))
+        {
+            Console.WriteLine("CBoolTest:ByteOr10Or5(78, 11) failed");
+            return 101;
+        }
+
+        if (ShortOr10Or5(14, 23) != ShortOr15(14, 23))
+        {
+            Console.WriteLine("CBoolTest:ShortOr10Or5(14, 23) failed");
+            return 101;
+        }
+
+        if (ShortOr10Or5(78, 11) != ShortOr15(78, 11))
+        {
+            Console.WriteLine("CBoolTest:ShortOr10Or5(78, 11) failed");
             return 101;
         }
 
