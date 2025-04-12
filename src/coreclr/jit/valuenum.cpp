@@ -4633,7 +4633,7 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
     //
     // Note that VN actually tracks the value of embedded handle;
     // we need to pass the VM the associated the compile time handles,
-    // in case they differ (say for prejitting or AOT).
+    // in case they differ (say for AOT).
     //
     ValueNum handle0 = arg0Func.m_args[0];
     if (!IsVNHandle(handle0))
@@ -6877,120 +6877,6 @@ const char* ValueNumStore::VNRelationString(VN_RELATION_KIND vrk)
     }
 }
 #endif
-
-//------------------------------------------------------------------------
-// AreVNsEquivalent: returns true iff VNs represent the same value
-//
-// Arguments:
-//    vn1 - first value number to consider
-//    vn2 - second value number ot consider
-//
-// Notes:
-//    Normally if vn1 != vn2 then we cannot say if the two values
-//    are equivalent or different. PhiDef VNs don't represent the
-//    phi def values in this way, and can be proven equivalent even
-//    for different value numbers.
-//
-bool ValueNumStore::AreVNsEquivalent(ValueNum vn1, ValueNum vn2)
-{
-    if (vn1 == vn2)
-    {
-        return true;
-    }
-
-    VNPhiDef def1;
-    if (!GetPhiDef(vn1, &def1))
-    {
-        return false;
-    }
-
-    VNPhiDef def2;
-    if (!GetPhiDef(vn2, &def2))
-    {
-        return false;
-    }
-
-    // We have two PhiDefs. They may be equivalent, if
-    // they come from Phis in the same block.
-    //
-    const unsigned lclNum1    = def1.LclNum;
-    const unsigned ssaDefNum1 = def1.SsaDef;
-
-    LclVarDsc* const    varDsc1      = m_pComp->lvaGetDesc(lclNum1);
-    LclSsaVarDsc* const varSsaDsc1   = varDsc1->GetPerSsaData(ssaDefNum1);
-    GenTree* const      varDefTree1  = varSsaDsc1->GetDefNode();
-    BasicBlock* const   varDefBlock1 = varSsaDsc1->GetBlock();
-
-    const unsigned lclNum2    = def2.LclNum;
-    const unsigned ssaDefNum2 = def2.SsaDef;
-
-    LclVarDsc* const    varDsc2      = m_pComp->lvaGetDesc(lclNum2);
-    LclSsaVarDsc* const varSsaDsc2   = varDsc2->GetPerSsaData(ssaDefNum2);
-    GenTree* const      varDefTree2  = varSsaDsc2->GetDefNode();
-    BasicBlock* const   varDefBlock2 = varSsaDsc2->GetBlock();
-
-    if (varDefBlock1 != varDefBlock2)
-    {
-        return false;
-    }
-
-    if ((varDefTree1 == nullptr) || (varDefTree2 == nullptr))
-    {
-        return false;
-    }
-
-    // PhiDefs are from same block. Walk the phi args
-    //
-    GenTreePhi* const       treePhi1  = varDefTree1->AsLclVar()->Data()->AsPhi();
-    GenTreePhi* const       treePhi2  = varDefTree2->AsLclVar()->Data()->AsPhi();
-    GenTreePhi::UseIterator treeIter1 = treePhi1->Uses().begin();
-    GenTreePhi::UseIterator treeEnd1  = treePhi1->Uses().end();
-    GenTreePhi::UseIterator treeIter2 = treePhi2->Uses().begin();
-    GenTreePhi::UseIterator treeEnd2  = treePhi2->Uses().end();
-
-    bool phiArgsAreEquivalent = true;
-
-    // TODO-CQ: This logic could walk the SSA nums in the VNPhiDef, which
-    // accounts for unreachable predecessors.
-    for (; (treeIter1 != treeEnd1) && (treeIter2 != treeEnd2); ++treeIter1, ++treeIter2)
-    {
-        GenTreePhiArg* const treePhiArg1 = treeIter1->GetNode()->AsPhiArg();
-        GenTreePhiArg* const treePhiArg2 = treeIter2->GetNode()->AsPhiArg();
-
-        assert(treePhiArg1->gtPredBB == treePhiArg2->gtPredBB);
-
-        ValueNum treePhiArgVN1 = treePhiArg1->gtVNPair.GetConservative();
-        ValueNum treePhiArgVN2 = treePhiArg2->gtVNPair.GetConservative();
-
-        // If the PhiArg VNs differ, the phis are not equivalent.
-        // (Note we don't recurse into AreVNsEquivalent as we can't
-        // handle possible cycles in the SSA graph).
-        //
-        if (treePhiArgVN1 != treePhiArgVN2)
-        {
-            phiArgsAreEquivalent = false;
-            break;
-        }
-
-        // If we failed to find meaningful VNs, the phis are not equivalent
-        //
-        if (treePhiArgVN1 == ValueNumStore::NoVN)
-        {
-            phiArgsAreEquivalent = false;
-            break;
-        }
-    }
-
-    // If we didn't verify all phi args we have failed to prove equivalence
-    //
-    if (phiArgsAreEquivalent)
-    {
-        phiArgsAreEquivalent &= (treeIter1 == treeEnd1);
-        phiArgsAreEquivalent &= (treeIter2 == treeEnd2);
-    }
-
-    return phiArgsAreEquivalent;
-}
 
 bool ValueNumStore::IsVNRelop(ValueNum vn)
 {
@@ -9247,12 +9133,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN)
 {
     assert(arg0VN == VNNormalValue(arg0VN));
-    assert(m_pComp->IsMathIntrinsic(gtMathFN));
+    assert(m_pComp->IsMathIntrinsic(gtMathFN) RISCV64_ONLY(|| m_pComp->IsBitCountingIntrinsic(gtMathFN)));
 
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
 
-    if (IsVNConstant(arg0VN) && (!m_pComp->opts.IsReadyToRun() || m_pComp->IsTargetIntrinsic(gtMathFN)))
+    if (IsVNConstant(arg0VN) && (!m_pComp->IsAot() || m_pComp->IsTargetIntrinsic(gtMathFN)))
     {
         assert(varTypeIsFloating(TypeOfVN(arg0VN)));
 
@@ -9499,10 +9385,8 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                         unreached();
                 }
             }
-            else
+            else if (gtMathFN == NI_System_Math_Round)
             {
-                assert(gtMathFN == NI_System_Math_Round);
-
                 switch (TypeOfVN(arg0VN))
                 {
                     case TYP_DOUBLE:
@@ -9523,6 +9407,58 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                         unreached();
                 }
             }
+            else if (gtMathFN == NI_PRIMITIVE_LeadingZeroCount)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_LONG:
+                        res = BitOperations::LeadingZeroCount((uint64_t)GetConstantInt64(arg0VN));
+                        break;
+
+                    case TYP_INT:
+                        res = BitOperations::LeadingZeroCount((uint32_t)GetConstantInt32(arg0VN));
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else if (gtMathFN == NI_PRIMITIVE_TrailingZeroCount)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_LONG:
+                        res = BitOperations::TrailingZeroCount((uint64_t)GetConstantInt64(arg0VN));
+                        break;
+
+                    case TYP_INT:
+                        res = BitOperations::TrailingZeroCount((uint32_t)GetConstantInt32(arg0VN));
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else if (gtMathFN == NI_PRIMITIVE_PopCount)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_LONG:
+                        res = BitOperations::PopCount((uint64_t)GetConstantInt64(arg0VN));
+                        break;
+
+                    case TYP_INT:
+                        res = BitOperations::PopCount((uint32_t)GetConstantInt32(arg0VN));
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else
+            {
+                unreached();
+            }
 
             return VNForIntCon(res);
         }
@@ -9530,7 +9466,10 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
     else
     {
         assert((typ == TYP_DOUBLE) || (typ == TYP_FLOAT) ||
-               ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round))));
+               ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round))) ||
+               (((typ == TYP_INT) || (typ == TYP_LONG)) &&
+                ((gtMathFN == NI_PRIMITIVE_LeadingZeroCount) || (gtMathFN == NI_PRIMITIVE_TrailingZeroCount) ||
+                 (gtMathFN == NI_PRIMITIVE_PopCount))));
 
         VNFunc vnf = VNF_Boundary;
         switch (gtMathFN)
@@ -9622,6 +9561,15 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
             case NI_System_Math_Truncate:
                 vnf = VNF_Truncate;
                 break;
+            case NI_PRIMITIVE_LeadingZeroCount:
+                vnf = VNF_LeadingZeroCount;
+                break;
+            case NI_PRIMITIVE_TrailingZeroCount:
+                vnf = VNF_TrailingZeroCount;
+                break;
+            case NI_PRIMITIVE_PopCount:
+                vnf = VNF_PopCount;
+                break;
             default:
                 unreached(); // the above are the only math intrinsics at the time of this writing.
         }
@@ -9640,8 +9588,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
 
-    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) &&
-        (!m_pComp->opts.IsReadyToRun() || m_pComp->IsTargetIntrinsic(gtMathFN)))
+    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) && (!m_pComp->IsAot() || m_pComp->IsTargetIntrinsic(gtMathFN)))
     {
         if (typ == TYP_DOUBLE)
         {
@@ -9970,7 +9917,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
         ssize_t            val         = ConstantValue<ssize_t>(vn);
         const GenTreeFlags handleFlags = GetHandleFlags(vn);
         printf("Hnd const: 0x%p %s", dspPtr(val), GenTree::gtGetHandleKindString(handleFlags));
-        if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && !comp->opts.IsReadyToRun())
+        if (!comp->IsAot())
         {
             switch (handleFlags & GTF_ICON_HDL_MASK)
             {
@@ -11737,7 +11684,6 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else
             {
-                assert(doesMethodHaveFrozenObjects());
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
 
@@ -12180,10 +12126,6 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset))
             {
                 ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
-                if (vnStore->IsVNObjHandle(vn))
-                {
-                    setMethodHasFrozenObjects();
-                }
                 tree->gtVNPair.SetBoth(vn);
                 return true;
             }
@@ -12390,6 +12332,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // These do not represent values.
             case GT_NO_OP:
             case GT_NOP:
+            case GT_GCPOLL:
             case GT_JMP:   // Control flow
             case GT_LABEL: // Control flow
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -12948,7 +12891,7 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         vnStore->VNPUnpackExc(intrinsic->AsOp()->gtOp2->gtVNPair, &arg1VNP, &arg1VNPx);
     }
 
-    if (IsMathIntrinsic(intrinsic->gtIntrinsicName))
+    if (IsMathIntrinsic(intrinsic->gtIntrinsicName) || IsBitCountingIntrinsic(intrinsic->gtIntrinsicName))
     {
         // GT_INTRINSIC is a currently a subtype of binary operators. But most of
         // the math intrinsics are actually unary operations.
@@ -12980,7 +12923,6 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
             if (typeObj != nullptr)
             {
-                setMethodHasFrozenObjects();
                 ValueNum handleVN   = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
                 intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), arg0VNPx);
                 return;
@@ -13720,7 +13662,6 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
             CORINFO_OBJECT_HANDLE obj = info.compCompHnd->getRuntimeTypePointer((CORINFO_CLASS_HANDLE)clsHandle);
             if (obj != nullptr)
             {
-                setMethodHasFrozenObjects();
                 call->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)obj, GTF_ICON_OBJ_HDL));
                 return true;
             }
@@ -13941,11 +13882,11 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_NEWFAST_MAYBEFROZEN:
-            vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNew : VNF_JitNew;
+            vnf = IsAot() ? VNF_JitReadyToRunNew : VNF_JitNew;
             break;
 
         case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
-            vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNewArr : VNF_JitNewArr;
+            vnf = IsAot() ? VNF_JitReadyToRunNewArr : VNF_JitNewArr;
             break;
 
         case CORINFO_HELP_GET_GCSTATIC_BASE:
@@ -14163,7 +14104,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
                 if (typeObj != nullptr)
                 {
-                    setMethodHasFrozenObjects();
                     ValueNum typeObjVN = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
                     call->gtVNPair.SetBoth(vnStore->VNForBitCast(typeObjVN, TYP_STRUCT, genTypeSize(TYP_REF)));
                     return false;

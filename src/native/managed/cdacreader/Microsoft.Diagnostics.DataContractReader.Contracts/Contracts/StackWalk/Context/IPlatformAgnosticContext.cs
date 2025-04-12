@@ -19,21 +19,19 @@ public interface IPlatformAgnosticContext
     public abstract void FillFromBuffer(Span<byte> buffer);
     public abstract byte[] GetBytes();
     public abstract IPlatformAgnosticContext Clone();
+    public abstract bool TrySetRegister(Target target, string fieldName, TargetNUInt value);
+    public abstract bool TryReadRegister(Target target, string fieldName, out TargetNUInt value);
     public abstract void Unwind(Target target);
 
     public static IPlatformAgnosticContext GetContextForPlatform(Target target)
     {
-        switch (target.Platform)
+        IRuntimeInfo runtimeInfo = target.Contracts.RuntimeInfo;
+        return runtimeInfo.GetTargetArchitecture() switch
         {
-            case Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_AMD64:
-            case Target.CorDebugPlatform.CORDB_PLATFORM_POSIX_AMD64:
-            case Target.CorDebugPlatform.CORDB_PLATFORM_MAC_AMD64:
-                return new CotnextHolder<AMD64Context>();
-            case Target.CorDebugPlatform.CORDB_PLATFORM_POSIX_ARM64:
-            case Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_ARM64:
-                return new CotnextHolder<ARM64Context>();
-            default:
-                throw new InvalidOperationException($"Unsupported platform {target.Platform}");
-        }
+            RuntimeInfoArchitecture.X64 => new ContextHolder<AMD64Context>(),
+            RuntimeInfoArchitecture.Arm64 => new ContextHolder<ARM64Context>(),
+            RuntimeInfoArchitecture.Unknown => throw new InvalidOperationException($"Processor architecture is required for creating a platform specific context and is not provided by the target"),
+            _ => throw new InvalidOperationException($"Unsupported architecture {runtimeInfo.GetTargetArchitecture()}"),
+        };
     }
 }

@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal;
 using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.Pgo;
@@ -284,7 +285,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 PgoInstrumentedDataWithSignatureBlobVertex pgoDataVertex = new PgoInstrumentedDataWithSignatureBlobVertex(signatureBlob, 0, instrumentationDataBlob);
                 hashtableSection.Place(pgoDataVertex);
-                vertexHashtable.Append(unchecked((uint)ReadyToRunHashCode.MethodHashCode(method)), pgoDataVertex);
+                vertexHashtable.Append(unchecked((uint)VersionResilientHashCode.MethodHashCode(method)), pgoDataVertex);
             }
 
             MemoryStream hashtableContent = new MemoryStream();

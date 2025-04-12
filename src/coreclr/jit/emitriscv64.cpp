@@ -92,7 +92,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
                 return sizeof(instrDesc);
             }
 
-        case INS_OPTS_I:
         case INS_OPTS_RC:
         case INS_OPTS_RL:
         case INS_OPTS_RELOC:
@@ -138,6 +137,14 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 };
 // clang-format on
 
+emitter::MajorOpcode emitter::GetMajorOpcode(code_t code)
+{
+    assert((code & 0b11) == 0b11); // 16-bit instructions unsupported
+    code_t opcode = (code >> 2) & 0b11111;
+    assert((opcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
+    return (MajorOpcode)opcode;
+}
+
 inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
@@ -148,25 +155,28 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
         return true;
 
     code_t code = emitInsCode(ins);
-    assert((code & 0b11) == 0b11); // 16-bit instructions unsupported
-    code_t majorOpcode = (code >> 2) & 0b11111;
-    assert((majorOpcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
-    switch (majorOpcode)
+    switch (GetMajorOpcode(code))
     {
-        // Opcodes with no destination register or a floating-point destination register
-        case 0b00001: // LOAD-FP
-        case 0b01000: // STORE
-        case 0b01001: // STORE-FP
-        case 0b00011: // MISC-MEM
-        case 0b10000: // MADD
-        case 0b10001: // MSUB
-        case 0b10010: // NMSUB
-        case 0b10011: // NMADD
-        case 0b11000: // BRANCH
-        case 0b11100: // SYSTEM
+        // Opcodes with no destination register
+        case MajorOpcode::Store:
+        case MajorOpcode::StoreFp:
+        case MajorOpcode::MiscMem:
+        case MajorOpcode::Branch:
+        // Opcodes with a floating-point destination register
+        case MajorOpcode::LoadFp:
+        case MajorOpcode::MAdd:
+        case MajorOpcode::MSub:
+        case MajorOpcode::NmSub:
+        case MajorOpcode::NmAdd:
             return false;
 
-        case 0b10100: // OP-FP
+        case MajorOpcode::System:
+        {
+            code_t funct3 = (code >> 12) & 0b111;
+            return (funct3 != 0); // CSR read/writes
+        }
+
+        case MajorOpcode::OpFp:
         {
             // Lowest 2 bits of funct7 distinguish single, double, half, and quad floats; we don't care
             code_t funct7 = code >> (25 + 2);
@@ -181,13 +191,13 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
             }
         }
 
-        case 0b00010: // custom-0
-        case 0b01010: // custom-1
-        case 0b10101: // OP-V
-        case 0b10110: // custom-2/rv128
-        case 0b11110: // custom-3/rv128
-        case 0b11010: // reserved
-        case 0b11101: // reserved
+        case MajorOpcode::Custom0:
+        case MajorOpcode::Custom1:
+        case MajorOpcode::Custom2Rv128:
+        case MajorOpcode::Custom3Rv128:
+        case MajorOpcode::OpV:
+        case MajorOpcode::OpVe:
+        case MajorOpcode::Reserved:
             assert(!"unsupported major opcode");
             FALLTHROUGH;
 
@@ -237,7 +247,7 @@ bool emitter::emitInsIsLoadOrStore(instruction ins)
  *  Returns the specific encoding of the given CPU instruction.
  */
 
-inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/) const
+inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/)
 {
     code_t code = BAD_CODE;
 
@@ -638,7 +648,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins || INS_sext_w == ins)
+    if (INS_mov == ins || INS_sext_w == ins || (INS_clz <= ins && ins <= INS_cpopw))
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -678,7 +688,7 @@ void emitter::emitIns_R_R(
         if (INS_fcvt_d_w != ins && INS_fcvt_d_wu != ins) // fcvt.d.w[u] always produces an exact result
             code |= 0x7 << 12;                           // round according to frm status register
     }
-    else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
+    else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins || INS_fsqrt_s == ins || INS_fsqrt_d == ins)
     {
         assert(isFloatReg(reg1));
         assert(isFloatReg(reg2));
@@ -855,7 +865,6 @@ void emitter::emitIns_R_R_R(
             case INS_fsub_s:
             case INS_fmul_s:
             case INS_fdiv_s:
-            case INS_fsqrt_s:
             case INS_fsgnj_s:
             case INS_fsgnjn_s:
             case INS_fsgnjx_s:
@@ -870,7 +879,6 @@ void emitter::emitIns_R_R_R(
             case INS_fsub_d:
             case INS_fmul_d:
             case INS_fdiv_d:
-            case INS_fsqrt_d:
             case INS_fsgnj_d:
             case INS_fsgnjn_d:
             case INS_fsgnjx_d:
@@ -915,11 +923,15 @@ void emitter::emitIns_R_R_R(
         code |= ((reg1 & 0x1f) << 7);
         code |= ((reg2 & 0x1f) << 15);
         code |= ((reg3 & 0x1f) << 20);
-        if ((INS_fadd_s <= ins && INS_fsqrt_s >= ins) || (INS_fadd_d <= ins && INS_fsqrt_d >= ins))
+        if ((INS_fadd_s <= ins && INS_fdiv_s >= ins) || (INS_fadd_d <= ins && INS_fdiv_d >= ins))
         {
             code |= 0x7 << 12;
         }
-        else if (INS_lr_w <= ins && ins <= INS_amomaxu_d)
+        else if (ins == INS_sc_w || ins == INS_sc_d)
+        {
+            code |= 0b10 << 25; // release ordering, it ends the lr-sc loop
+        }
+        else if ((ins == INS_lr_w || ins == INS_lr_d) || (INS_amoswap_w <= ins && ins <= INS_amomaxu_d))
         {
             // For now all atomics are seq. consistent as Interlocked.* APIs don't expose acquire/release ordering
             code |= 0b11 << 25;
@@ -1000,14 +1012,18 @@ void emitter::emitIns_R_C(
 
     id->idSmallCns(offs); // usually is 0.
     id->idInsOpt(INS_OPTS_RC);
-    if (emitComp->opts.compReloc)
+
+    if (emitComp->fgIsBlockCold(emitComp->compCurBB))
     {
-        id->idSetIsDspReloc();
-        id->idCodeSize(8);
+        // Loading constant from cold section might be arbitrarily far,
+        // use emitOutputInstr_OptsRcNoPcRel
+        id->idCodeSize(24);
     }
     else
     {
-        id->idCodeSize(24);
+        // Loading constant from hot section can use auipc,
+        // use emitOutputInstr_OptsRcPcRel
+        id->idCodeSize(8);
     }
 
     if (EA_IS_GCREF(attr))
@@ -1263,6 +1279,8 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     appendToCurIG(id);
 }
 
+static inline constexpr unsigned WordMask(uint8_t bits);
+
 /*****************************************************************************
  *
  *  Emits load of 64-bit constant to register.
@@ -1270,16 +1288,6 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
  */
 void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 {
-    // In the worst case a sequence of 8 instructions will be used:
-    //   LUI + ADDIW + SLLI + ADDI + SLLI + ADDI + SLLI + ADDI
-    //
-    // First 2 instructions (LUI + ADDIW) load up to 31 bit. And followed
-    // sequence of (SLLI + ADDI) is used for loading remaining part by batches
-    // of up to 11 bits.
-    //
-    // Note that LUI, ADDI/W use sign extension so that's why we have to work
-    // with 31 and 11 bit batches there.
-
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
 
@@ -1289,53 +1297,299 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         return;
     }
 
-    // TODO-RISCV64: maybe optimized via emitDataConst(), check #86790
+    /* The following algorithm works based on the following equation:
+     * `imm = high32 + offset1` OR `imm = high32 - offset2`
+     *
+     * high32 will be loaded with `lui + addiw`, while offset
+     * will be loaded with `slli + addi` in 11-bits chunks
+     *
+     * First, determine at which position to partition imm into high32 and offset,
+     * so that it yields the least instruction.
+     * Where high32 = imm[y:x] and imm[63:y] are all zeroes or all ones.
+     *
+     * From the above equation, the value of offset1 & offset2 are:
+     * -> offset1 = imm[x-1:0]
+     * -> offset2 = ~(imm[x-1:0] - 1)
+     * The smaller offset should yield the least instruction. (is this correct?) */
 
-    UINT32 msb = BitOperations::BitScanReverse((uint64_t)imm);
-    UINT32 high31;
-    if (msb > 30)
+    // STEP 1: Determine x & y
+
+    int x;
+    int y;
+    if (((uint64_t)imm >> 63) & 0b1)
     {
-        high31 = (imm >> (msb - 30)) & 0x7FffFFff;
+        // last one position from MSB
+        y = 63 - BitOperations::LeadingZeroCount((uint64_t)~imm) + 1;
     }
     else
     {
-        high31 = imm & 0x7FffFFff;
+        // last zero position from MSB
+        y = 63 - BitOperations::LeadingZeroCount((uint64_t)imm) + 1;
+    }
+    if (imm & 0b1)
+    {
+        // first zero position from LSB
+        x = BitOperations::TrailingZeroCount((uint64_t)~imm);
+    }
+    else
+    {
+        // first one position from LSB
+        x = BitOperations::TrailingZeroCount((uint64_t)imm);
     }
 
-    // Since ADDIW use sign extension fo immediate
-    // we have to adjust higher 19 bit loaded by LUI
-    // for case when low part is bigger than 0x800.
-    INT32 high19 = ((int32_t)(high31 + 0x800)) >> 12;
+    // STEP 2: Determine whether to utilize SRLI or not.
 
-    emitIns_R_I(INS_lui, size, reg, high19);
-    if (high31 & 0xFFF)
+    /* SRLI can be utilized when the input has the following pattern:
+     *
+     * 0...01...10...x
+     * <-n-><-m->
+     *
+     * It will emit instructions to load the left shifted immidiate then
+     * followed by a single SRLI instruction.
+     *
+     * Since it adds 1 instruction, loading the new form should at least remove
+     * two instruction. Two instructions can be removed IF:
+     *  1. y - x > 31, AND
+     *  2. (b - a) < 32, OR
+     *  3. (b - a) - (y - x) >= 11
+     *
+     * Visualization aid:
+     * - Original immidiate
+     *   0...01...10...x
+     *       y       <-x
+     * - Left shifted immidiate
+     *   1...10...x0...0
+     *       b  <-a
+     * */
+
+    constexpr int absMaxInsCount  = 8;
+    constexpr int prefMaxInsCount = 5;
+    assert(prefMaxInsCount <= absMaxInsCount);
+
+    // If we generate more instructions than the prefered maximum instruction count, we'll instead use emitDataConst +
+    // emitIns_R_C combination.
+    int insCountLimit = prefMaxInsCount;
+    // If we are currently generating prolog / epilog, we are currently not inside a method block, therefore, we should
+    // not use the emitDataConst + emitIns_R_C combination.
+    if (emitComp->compGeneratingProlog || emitComp->compGeneratingEpilog)
     {
-        emitIns_R_R_I(INS_addiw, size, reg, reg, high31 & 0xFFF);
+        insCountLimit = absMaxInsCount;
     }
 
-    // And load remaining part part by batches of 11 bits size.
-    INT32 remainingShift = msb - 30;
-
-    UINT32 shiftAccumulator = 0;
-    while (remainingShift > 0)
+    bool     utilizeSRLI     = false;
+    int      srliShiftAmount = 0;
+    uint64_t originalImm     = imm;
+    bool     cond1           = (y - x) > 31;
+    if ((((uint64_t)imm >> 63) & 0b1) == 0 && cond1)
     {
-        UINT32 shift = remainingShift >= 11 ? 11 : remainingShift % 11;
-        UINT32 mask  = 0x7ff >> (11 - shift);
-        remainingShift -= shift;
-        ssize_t low11 = (imm >> remainingShift) & mask;
-        shiftAccumulator += shift;
-
-        if (low11)
+        srliShiftAmount  = BitOperations::LeadingZeroCount((uint64_t)imm);
+        uint64_t tempImm = (uint64_t)imm << srliShiftAmount;
+        int      m       = BitOperations::LeadingZeroCount(~tempImm);
+        int      b       = 64 - m;
+        int      a       = BitOperations::TrailingZeroCount(tempImm);
+        bool     cond2   = (b - a) < 32;
+        bool     cond3   = ((y - x) - (b - a)) >= 11;
+        if (cond2 || cond3)
         {
-            emitIns_R_R_I(INS_slli, size, reg, reg, shiftAccumulator);
-            shiftAccumulator = 0;
-
-            emitIns_R_R_I(INS_addi, size, reg, reg, low11);
+            imm         = tempImm;
+            y           = b;
+            x           = a;
+            utilizeSRLI = true;
+            insCountLimit -= 1;
         }
     }
-    if (shiftAccumulator)
+
+    assert(y >= x);
+    assert((1 <= y) && (y <= 63));
+    assert((1 <= x) && (x <= 63));
+
+    if (y < 32)
     {
-        emitIns_R_R_I(INS_slli, size, reg, reg, shiftAccumulator);
+        y = 31;
+        x = 0;
+    }
+    else if ((y - x) < 31)
+    {
+        y = x + 31;
+    }
+    else
+    {
+        x = y - 31;
+    }
+
+    uint32_t high32 = ((int64_t)imm >> x) & WordMask(32);
+
+    // STEP 3: Determine whether to use high32 + offset1 or high32 - offset2
+
+    /* TODO: Instead of using subtract / add mode, assume that we're always adding
+     * 12-bit chunks. However, if we encounter such 12-bit chunk with MSB == 1,
+     * add 1 to the previous chunk, and add the 12-bit chunk as is, which
+     * essentially does a subtraction. It will generate the least instruction to
+     * load offset.
+     * See the following discussion:
+     * https://github.com/dotnet/runtime/pull/113250#discussion_r1987576070 */
+
+    uint32_t offset1        = imm & WordMask((uint8_t)x);
+    uint32_t offset2        = (~(offset1 - 1)) & WordMask((uint8_t)x);
+    uint32_t offset         = offset1;
+    bool     isSubtractMode = false;
+
+    if ((high32 == 0x7FFFFFFF) && (y != 63))
+    {
+        /* Handle corner case: we cannot do subtract mode if high32 == 0x7FFFFFFF
+         * Since adding 1 to it will change the sign bit. Instead, shift x and y
+         * to the left by one. */
+        int      newX       = x + 1;
+        uint32_t newOffset1 = imm & WordMask((uint8_t)newX);
+        uint32_t newOffset2 = (~(newOffset1 - 1)) & WordMask((uint8_t)newX);
+        if (newOffset2 < offset1)
+        {
+            x              = newX;
+            high32         = ((int64_t)imm >> x) & WordMask(32);
+            offset2        = newOffset2;
+            isSubtractMode = true;
+        }
+    }
+    else if (offset2 < offset1)
+    {
+        isSubtractMode = true;
+    }
+
+    if (isSubtractMode)
+    {
+        offset = offset2;
+        high32 = (high32 + 1) & WordMask(32);
+    }
+
+    assert(absMaxInsCount >= 2);
+    int         numberOfInstructions = 0;
+    instruction ins[absMaxInsCount];
+    int32_t     values[absMaxInsCount];
+
+    // STEP 4: Generate instructions to load high32
+
+    uint32_t upper    = (high32 >> 12) & WordMask(20);
+    uint32_t lower    = high32 & WordMask(12);
+    int      lowerMsb = (lower >> 11) & 0b1;
+    if (lowerMsb == 1)
+    {
+        upper += 1;
+        upper &= WordMask(20);
+    }
+    if (upper != 0)
+    {
+        ins[numberOfInstructions]    = INS_lui;
+        values[numberOfInstructions] = ((upper >> 19) & 0b1) ? (upper + 0xFFF00000) : upper;
+        numberOfInstructions += 1;
+    }
+    if (lower != 0)
+    {
+        ins[numberOfInstructions]    = INS_addiw;
+        values[numberOfInstructions] = lower;
+        numberOfInstructions += 1;
+    }
+
+    // STEP 5: Generate instructions to load offset in 11-bits chunks
+
+    int chunkLsbPos = (x < 11) ? 0 : (x - 11);
+    int shift       = (x < 11) ? x : 11;
+    int chunkMask   = (x < 11) ? WordMask((uint8_t)x) : WordMask(11);
+    while (true)
+    {
+        uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
+
+        if (chunk != 0)
+        {
+            /* We could move our 11 bit chunk window to the right for as many as the
+             * leading zeros.*/
+            int leadingZerosOn11BitsChunk = 11 - (32 - BitOperations::LeadingZeroCount(chunk));
+            if (leadingZerosOn11BitsChunk > 0)
+            {
+                int maxAdditionalShift =
+                    (chunkLsbPos < leadingZerosOn11BitsChunk) ? chunkLsbPos : leadingZerosOn11BitsChunk;
+                chunkLsbPos -= maxAdditionalShift;
+                shift += maxAdditionalShift;
+                chunk = (offset >> chunkLsbPos) & chunkMask;
+            }
+
+            numberOfInstructions += 2;
+            if (numberOfInstructions > insCountLimit)
+            {
+                break;
+            }
+            ins[numberOfInstructions - 2]    = INS_slli;
+            values[numberOfInstructions - 2] = shift;
+            if (isSubtractMode)
+            {
+                ins[numberOfInstructions - 1]    = INS_addi;
+                values[numberOfInstructions - 1] = -(int32_t)chunk;
+            }
+            else
+            {
+                ins[numberOfInstructions - 1]    = INS_addi;
+                values[numberOfInstructions - 1] = chunk;
+            }
+            shift = 0;
+        }
+        if (chunkLsbPos == 0)
+        {
+            break;
+        }
+        shift += (chunkLsbPos < 11) ? chunkLsbPos : 11;
+        chunkMask = (chunkLsbPos < 11) ? (chunkMask >> (11 - chunkLsbPos)) : WordMask(11);
+        chunkLsbPos -= (chunkLsbPos < 11) ? chunkLsbPos : 11;
+    }
+    if (shift > 0)
+    {
+        numberOfInstructions += 1;
+        if (numberOfInstructions <= insCountLimit)
+        {
+            ins[numberOfInstructions - 1]    = INS_slli;
+            values[numberOfInstructions - 1] = shift;
+        }
+    }
+
+    // STEP 6: Determine whether to use emitDataConst or emit generated instructions
+
+    if (numberOfInstructions <= insCountLimit)
+    {
+        for (int i = 0; i < numberOfInstructions; i++)
+        {
+            if ((i == 0) && (ins[0] == INS_lui))
+            {
+                emitIns_R_I(ins[i], size, reg, values[i]);
+            }
+            else if ((i == 0) && ((ins[0] == INS_addiw) || (ins[0] == INS_addi)))
+            {
+                emitIns_R_R_I(ins[i], size, reg, REG_R0, values[i]);
+            }
+            else if (i == 0)
+            {
+                assert(false && "First instruction must be lui / addiw / addi");
+            }
+            else if ((ins[i] == INS_addi) || (ins[i] == INS_addiw) || (ins[i] == INS_slli))
+            {
+                emitIns_R_R_I(ins[i], size, reg, reg, values[i]);
+            }
+            else
+            {
+                assert(false && "Remainding instructions must be addi / addiw / slli");
+            }
+        }
+        if (utilizeSRLI)
+        {
+            emitIns_R_R_I(INS_srli, size, reg, reg, srliShiftAmount);
+        }
+    }
+    else if (size == EA_PTRSIZE)
+    {
+        assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
+        auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
+        emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr), 0);
+    }
+    else
+    {
+        assert(false && "If number of instruction exceeds MAX_NUM_OF_LOAD_IMM_INS, imm must be 8 bytes");
     }
 }
 
@@ -2230,7 +2484,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 R-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  R-Type layout:
  *  31-------25-24---20-19--15-14------12-11-----------7-6------------0
  *  | funct7   |  rs2  | rs1  |  funct3  |      rd      |   opcode    |
@@ -2254,7 +2508,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 I-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  I-Type layout:
  *  31------------20-19-----15-14------12-11-----------7-6------------0
  *  |   imm[11:0]   |   rs1   |  funct3  |      rd      |   opcode    |
@@ -2278,7 +2532,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 S-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  S-Type layout:
  *  31-------25-24---20-19--15-14------12-11-----------7-6------------0
  *  |imm[11:5] |  rs2  | rs1  |  funct3  |   imm[4:0]   |   opcode    |
@@ -2308,7 +2562,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 U-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  U-Type layout:
  *  31---------------------------------12-11-----------7-6------------0
  *  |             imm[31:12]             |      rd      |   opcode    |
@@ -2329,7 +2583,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 B-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  B-Type layout:
  *  31-------30-----25-24-20-19-15-14--12-11-------8----7----6--------0
  *  |imm[12]|imm[10:5]| rs2 | rs1 |funct3|  imm[4:1]|imm[11]| opcode  |
@@ -2365,7 +2619,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 J-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  J-Type layout:
  *  31-------30--------21----20---19----------12-11----7-6------------0
  *  |imm[20]| imm[10:1]  |imm[11]|  imm[19:12]  |  rd   |   opcode    |
@@ -2963,56 +3217,6 @@ BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruc
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id)
-{
-    ssize_t         immediate = reinterpret_cast<ssize_t>(id->idAddr()->iiaAddr);
-    const regNumber reg1      = id->idReg1();
-
-    switch (id->idCodeSize())
-    {
-        case 8:
-            return emitOutputInstr_OptsI8(dst, id, immediate, reg1);
-        case 32:
-            return emitOutputInstr_OptsI32(dst, immediate, reg1);
-        default:
-            break;
-    }
-    unreached();
-    return nullptr;
-}
-
-BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
-{
-    if (id->idReg2())
-    {
-        // special for INT64_MAX or UINT32_MAX
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, WordMask(12));
-        const unsigned shiftValue = (immediate == INT64_MAX) ? 1 : 32;
-        dst += emitOutput_ITypeInstr(dst, INS_srli, reg1, reg1, shiftValue);
-    }
-    else
-    {
-        dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(immediate));
-    }
-    return dst;
-}
-
-BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber reg1)
-{
-    const unsigned upperWord = UpperWordOfDoubleWord(immediate);
-    dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(upperWord));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(upperWord));
-    const unsigned lowerWord = LowerWordOfDoubleWord(immediate);
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 21));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 10));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 10);
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<10>(lowerWord));
-    return dst;
-}
-
 BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins)
 {
     assert(id->idAddr()->iiaIsJitDataOffset());
@@ -3030,14 +3234,14 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     *ins                 = id->idIns();
     const regNumber reg1 = id->idReg1();
 
-    if (id->idIsReloc())
+    if (id->idCodeSize() == 8)
     {
-        return emitOutputInstr_OptsRcReloc(dst, ins, offset, reg1);
+        return emitOutputInstr_OptsRcPcRel(dst, ins, offset, reg1);
     }
-    return emitOutputInstr_OptsRcNoReloc(dst, ins, offset, reg1);
+    return emitOutputInstr_OptsRcNoPcRel(dst, ins, offset, reg1);
 }
 
-BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsRcPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
     const ssize_t immediate = (emitConsBlock - dst) + offset;
     assert((immediate > 0) && ((immediate & 0x03) == 0));
@@ -3055,7 +3259,7 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsRcNoPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
     const ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) + offset;
     assertCodeLength(static_cast<size_t>(immediate), 48); // RISC-V Linux Kernel SV48
@@ -3267,11 +3471,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst = emitOutputInstr_OptsReloc(dst, id, &ins);
             sz  = sizeof(instrDesc);
             break;
-        case INS_OPTS_I:
-            dst = emitOutputInstr_OptsI(dst, id);
-            ins = INS_addi;
-            sz  = sizeof(instrDesc);
-            break;
         case INS_OPTS_RC:
             dst = emitOutputInstr_OptsRc(dst, id, &ins);
             sz  = sizeof(instrDesc);
@@ -3351,31 +3550,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (vt == TYP_REF || vt == TYP_BYREF)
                 emitGCvarDeadUpd(adr + ofs, dst2 DEBUG_ARG(varNum));
         }
-        // if (emitInsWritesToLclVarStackLocPair(id))
-        //{
-        //    unsigned ofs2 = ofs + TARGET_POINTER_SIZE;
-        //    if (id->idGCrefReg2() != GCT_NONE)
-        //    {
-        //        emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), *dp);
-        //    }
-        //    else
-        //    {
-        //        // If the type of the local is a gc ref type, update the liveness.
-        //        var_types vt;
-        //        if (varNum >= 0)
-        //        {
-        //            // "Regular" (non-spill-temp) local.
-        //            vt = var_types(emitComp->lvaTable[varNum].lvType);
-        //        }
-        //        else
-        //        {
-        //            TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
-        //            vt              = tmpDsc->tdTempType();
-        //        }
-        //        if (vt == TYP_REF || vt == TYP_BYREF)
-        //            emitGCvarDeadUpd(adr + ofs2, *dp);
-        //    }
-        //}
     }
 
 #ifdef DEBUG
@@ -3528,6 +3702,22 @@ bool emitter::emitDispBranch(
 void emitter::emitDispIllegalInstruction(code_t instructionCode)
 {
     printf("RISCV64 illegal instruction: 0x%08X\n", instructionCode);
+    assert(!"RISCV64 illegal instruction");
+}
+
+void emitter::emitDispImmediate(ssize_t imm, bool newLine /*= true*/, unsigned regBase /*= REG_ZERO*/)
+{
+    if (emitComp->opts.disDiffable && (regBase != REG_FP) && (regBase != REG_SP))
+    {
+        printf("0xD1FFAB1E");
+    }
+    else
+    {
+        printf("%li", imm);
+    }
+
+    if (newLine)
+        printf("\n");
 }
 
 //----------------------------------------------------------------------------------------
@@ -3554,10 +3744,6 @@ void emitter::emitDispInsName(
     static constexpr int kMaxInstructionLength = 14;
 
     const BYTE* insAdr = addr - writeableOffset;
-
-    unsigned int opcode = code & 0x7f;
-    assert((opcode & 0x3) == 0x3); // only 32-bit encodings supported
-
     emitDispInsAddr(insAdr);
     emitDispInsOffs(insOffset, doffs);
 
@@ -3566,9 +3752,9 @@ void emitter::emitDispInsName(
 
     printf("      ");
 
-    switch (opcode)
+    switch (GetMajorOpcode(code))
     {
-        case 0x37: // LUI
+        case MajorOpcode::Lui:
         {
             const char* rd    = RegNames[(code >> 7) & 0x1f];
             int         imm20 = (code >> 12) & 0xfffff;
@@ -3576,10 +3762,11 @@ void emitter::emitDispInsName(
             {
                 imm20 |= 0xfff00000;
             }
-            printf("lui            %s, %d\n", rd, imm20);
+            printf("lui            %s, ", rd);
+            emitDispImmediate(imm20);
             return;
         }
-        case 0x17: // AUIPC
+        case MajorOpcode::Auipc:
         {
             const char* rd    = RegNames[(code >> 7) & 0x1f];
             int         imm20 = (code >> 12) & 0xfffff;
@@ -3587,16 +3774,16 @@ void emitter::emitDispInsName(
             {
                 imm20 |= 0xfff00000;
             }
-            printf("auipc          %s, %d\n", rd, imm20);
+            printf("auipc          %s, ", rd);
+            emitDispImmediate(imm20);
             return;
         }
-        case 0x13:
+        case MajorOpcode::OpImm:
         {
             unsigned opcode2      = (code >> 12) & 0x7;
             unsigned rd           = (code >> 7) & 0x1f;
             unsigned rs1          = (code >> 15) & 0x1f;
             int      imm12        = static_cast<int>(code) >> 20;
-            bool     isHex        = false;
             bool     hasImmediate = true;
             int      printLength  = 0;
 
@@ -3618,18 +3805,31 @@ void emitter::emitDispInsName(
                         hasImmediate = false;
                     }
                     break;
-                case 0x1: // SLLI
+                case 0x1:
                 {
-                    static constexpr unsigned kSlliFunct6 = 0b000000;
-
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
-                    // SLLI's instruction code's upper 6 bits have to be equal to zero
-                    if (funct6 != kSlliFunct6)
+                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV64
+                    switch (funct6)
                     {
-                        return emitDispIllegalInstruction(code);
+                        case 0b011000:
+                        {
+                            static const char* names[] = {"clz", "ctz", "cpop"};
+                            // shift amount is treated as additional funct opcode
+                            if (shamt >= ARRAY_SIZE(names))
+                                return emitDispIllegalInstruction(code);
+
+                            printLength  = printf("%s", names[shamt]);
+                            hasImmediate = false;
+                            break;
+                        }
+                        case 0b000000:
+                            printLength = printf("slli");
+                            imm12       = shamt;
+                            break;
+
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
-                    printLength = printf("slli");
-                    imm12 &= 0x3f; // 6 BITS for SHAMT in RISCV64
                 }
                 break;
                 case 0x2: // SLTI
@@ -3640,7 +3840,6 @@ void emitter::emitDispInsName(
                     break;
                 case 0x4: // XORI
                     printLength = printf("xori");
-                    isHex       = true;
                     break;
                 case 0x5: // SRLI & SRAI
                 {
@@ -3659,13 +3858,9 @@ void emitter::emitDispInsName(
                 break;
                 case 0x6: // ORI
                     printLength = printf("ori");
-                    imm12 &= 0xfff;
-                    isHex = true;
                     break;
                 case 0x7: // ANDI
                     printLength = printf("andi");
-                    imm12 &= 0xfff;
-                    isHex = true;
                     break;
                 default:
                     return emitDispIllegalInstruction(code);
@@ -3676,22 +3871,26 @@ void emitter::emitDispInsName(
             printf("%*s %s, %s", paddingLength, "", RegNames[rd], RegNames[rs1]);
             if (hasImmediate)
             {
-                printf(isHex ? ", 0x%x" : ", %d", imm12);
+                printf(", ");
+                if (opcode2 == 0x0) // ADDI
+                {
+                    emitDispImmediate(imm12, false, rs1);
+                }
+                else
+                {
+                    printf("%d", imm12);
+                }
             }
             printf("\n");
 
             return;
         }
-        case 0x1b:
+        case MajorOpcode::OpImm32:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rd      = RegNames[(code >> 7) & 0x1f];
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            int          imm12   = (((int)code) >> 20); // & 0xfff;
-            // if (imm12 & 0x800)
-            //{
-            //    imm12 |= 0xfffff000;
-            //}
+            int          imm12   = (((int)code) >> 20);
             switch (opcode2)
             {
                 case 0x0: // ADDIW & SEXT.W
@@ -3701,22 +3900,32 @@ void emitter::emitDispInsName(
                     }
                     else
                     {
-                        printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
+                        printf("addiw          %s, %s, ", rd, rs1);
+                        emitDispImmediate(imm12);
                     }
                     return;
-                case 0x1: // SLLIW
+                case 0x1:
                 {
-                    static constexpr unsigned kSlliwFunct7 = 0b0000000;
-
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
-                    // SLLIW's instruction code's upper 7 bits have to be equal to zero
-                    if (funct7 == kSlliwFunct7)
+                    unsigned shamt  = imm12 & 0x1f; // 5 BITS for SHAMT in RISCV64
+                    switch (funct7)
                     {
-                        printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
-                    }
-                    else
-                    {
-                        emitDispIllegalInstruction(code);
+                        case 0b0110000:
+                        {
+                            static const char* names[] = {"clzw ", "ctzw ", "cpopw"};
+                            // shift amount is treated as funct additional opcode bits
+                            if (shamt >= ARRAY_SIZE(names))
+                                return emitDispIllegalInstruction(code);
+
+                            printf("%s          %s, %s\n", names[shamt], rd, rs1);
+                            return;
+                        }
+                        case 0b0000000:
+                            printf("slliw          %s, %s, %d\n", rd, rs1, shamt);
+                            return;
+
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
                 }
                     return;
@@ -3744,7 +3953,7 @@ void emitter::emitDispInsName(
                     return emitDispIllegalInstruction(code);
             }
         }
-        case 0x33:
+        case MajorOpcode::Op:
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 12) & 0x7;
@@ -3833,7 +4042,7 @@ void emitter::emitDispInsName(
                     return emitDispIllegalInstruction(code);
             }
         }
-        case 0x3b:
+        case MajorOpcode::Op32:
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 12) & 0x7;
@@ -3898,57 +4107,43 @@ void emitter::emitDispInsName(
                     return emitDispIllegalInstruction(code);
             }
         }
-        case 0x23:
+        case MajorOpcode::Store:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            const char*  rs2     = RegNames[(code >> 20) & 0x1f];
-            int          offset  = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
+            if (opcode2 >= 4)
+                return emitDispIllegalInstruction(code);
+
+            unsigned    rs1Num = (code >> 15) & 0x1f;
+            const char* rs1    = RegNames[rs1Num];
+            const char* rs2    = RegNames[(code >> 20) & 0x1f];
+            int         offset = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
 
-            switch (opcode2)
-            {
-                case 0: // SB
-                    printf("sb             %s, %d(%s)\n", rs2, offset, rs1);
-                    return;
-                case 1: // SH
-                    printf("sh             %s, %d(%s)\n", rs2, offset, rs1);
-                    return;
-                case 2: // SW
-                    printf("sw             %s, %d(%s)\n", rs2, offset, rs1);
-                    return;
-                case 3: // SD
-                    printf("sd             %s, %d(%s)\n", rs2, offset, rs1);
-                    return;
-                default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
-            }
+            char width = "bhwd"[opcode2];
+            printf("s%c             %s, ", width, rs2);
+            emitDispImmediate(offset, false, rs1Num);
+            printf("(%s)\n", rs1);
+            return;
         }
-        case 0x63: // BRANCH
+        case MajorOpcode::Branch:
         {
             unsigned opcode2 = (code >> 12) & 0x7;
             unsigned rs1     = (code >> 15) & 0x1f;
             unsigned rs2     = (code >> 20) & 0x1f;
-            // int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
-            //              (((code >> 8) & 0xf) << 1);
-            // if (offset & 0x800)
-            // {
-            //     offset |= 0xfffff000;
-            // }
             if (!emitDispBranch(opcode2, rs1, rs2, id, ig))
             {
                 emitDispIllegalInstruction(code);
             }
             return;
         }
-        case 0x03:
+        case MajorOpcode::Load:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+            unsigned     rs1Num  = (code >> 15) & 0x1f;
+            const char*  rs1     = RegNames[rs1Num];
             const char*  rd      = RegNames[(code >> 7) & 0x1f];
             int          offset  = ((code >> 20) & 0xfff);
             if (offset & 0x800)
@@ -3956,35 +4151,17 @@ void emitter::emitDispInsName(
                 offset |= 0xfffff000;
             }
 
-            switch (opcode2)
-            {
-                case 0: // LB
-                    printf("lb             %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 1: // LH
-                    printf("lh             %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 2: // LW
-                    printf("lw             %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 3: // LD
-                    printf("ld             %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 4: // LBU
-                    printf("lbu            %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 5: // LHU
-                    printf("lhu            %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 6: // LWU
-                    printf("lwu            %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
-            }
+            char width  = "bhwd"[opcode2 & 0b011];
+            char unsign = ((opcode2 & 0b100) != 0) ? 'u' : ' ';
+            if (width == 'd' && unsign == 'u')
+                return emitDispIllegalInstruction(code);
+
+            printf("l%c%c            %s, ", width, unsign, rd);
+            emitDispImmediate(offset, false, rs1Num);
+            printf("(%s)\n", rs1);
+            return;
         }
-        case 0x67:
+        case MajorOpcode::Jalr:
         {
             const unsigned rs1    = (code >> 15) & 0x1f;
             const unsigned rd     = (code >> 7) & 0x1f;
@@ -3994,13 +4171,23 @@ void emitter::emitDispInsName(
                 offset |= 0xfffff000;
             }
 
-            if ((rs1 == REG_RA) && (rd == REG_ZERO))
+            if ((offset == 0) && (rs1 == REG_RA) && (rd == REG_ZERO))
             {
                 printf("ret");
                 return;
             }
 
-            printf("jalr           %s, %d(%s)", RegNames[rd], offset, RegNames[rs1]);
+            if ((offset == 0) && ((rd == REG_RA) || (rd == REG_ZERO)))
+            {
+                const char* name = (rd == REG_RA) ? "jalr" : "jr  ";
+                printf("%s           %s", name, RegNames[rs1]);
+            }
+            else
+            {
+                printf("jalr           %s, ", RegNames[rd]);
+                emitDispImmediate(offset, false);
+                printf("(%s)", RegNames[rs1]);
+            }
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
             // Target for ret call is unclear, e.g.:
             //   jalr zero, 0(ra)
@@ -4014,7 +4201,7 @@ void emitter::emitDispInsName(
             printf("\n");
             return;
         }
-        case 0x6f:
+        case MajorOpcode::Jal:
         {
             unsigned rd = (code >> 7) & 0x1f;
             int offset  = (((code >> 31) & 0x1) << 20) | (((code >> 12) & 0xff) << 12) | (((code >> 20) & 0x1) << 11) |
@@ -4023,9 +4210,10 @@ void emitter::emitDispInsName(
             {
                 offset |= 0xfff00000;
             }
-            if (rd == REG_ZERO)
+            if ((rd == REG_ZERO) || (rd == REG_RA))
             {
-                printf("j              ");
+                const char* name = (rd == REG_RA) ? "jal" : "j  ";
+                printf("%s            ", name);
 
                 if (id->idIsBound())
                 {
@@ -4033,12 +4221,15 @@ void emitter::emitDispInsName(
                 }
                 else
                 {
-                    printf("pc%+d instructions", offset >> 2);
+                    printf("pc%+");
+                    emitDispImmediate(offset / sizeof(code_t));
+                    printf(" instructions");
                 }
             }
             else
             {
-                printf("jal            %s, %d", RegNames[rd], offset);
+                printf("jal            %s, ", RegNames[rd]);
+                emitDispImmediate(offset, false);
             }
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
             if (handle != 0)
@@ -4050,14 +4241,14 @@ void emitter::emitDispInsName(
             printf("\n");
             return;
         }
-        case 0x0f:
+        case MajorOpcode::MiscMem:
         {
             int pred = ((code) >> 24) & 0xf;
             int succ = ((code) >> 20) & 0xf;
             printf("fence          %d, %d\n", pred, succ);
             return;
         }
-        case 0x73:
+        case MajorOpcode::System:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             if (opcode2 != 0)
@@ -4108,13 +4299,17 @@ void emitter::emitDispInsName(
             {
                 printf("ebreak\n");
             }
+            else if (code == emitInsCode(INS_ecall))
+            {
+                printf("ecall\n");
+            }
             else
             {
                 NYI_RISCV64("illegal ins within emitDisInsName!");
             }
             return;
         }
-        case 0x53:
+        case MajorOpcode::OpFp:
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 20) & 0x1f;
@@ -4144,22 +4339,17 @@ void emitter::emitDispInsName(
                 case 0x2C: // FSQRT.S
                     printf("fsqrt.s        %s, %s\n", fd, fs1);
                     return;
-                case 0x10:            // FSGNJ.S & FSGNJN.S & FSGNJX.S
-                    if (opcode4 == 0) // FSGNJ.S
+                case 0x10: // FSGNJ.S & FSGNJN.S & FSGNJX.S
+                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj.s variant");
+                    if (fs1 != fs2)
                     {
-                        printf("fsgnj.s        %s, %s, %s\n", fd, fs1, fs2);
+                        const char* variants[3] = {".s ", "n.s", "x.s"};
+                        printf("fsgnj%s        %s, %s, %s\n", variants[opcode4], fd, fs1, fs2);
                     }
-                    else if (opcode4 == 1) // FSGNJN.S
+                    else // pseudos
                     {
-                        printf("fsgnjn.s       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else if (opcode4 == 2) // FSGNJX.S
-                    {
-                        printf("fsgnjx.s       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                        const char* names[3] = {"fmv.s ", "fneg.s", "fabs.s"};
+                        printf("%s         %s, %s\n", names[opcode4], fd, fs1);
                     }
                     return;
                 case 0x14:            // FMIN.S & FMAX.S
@@ -4247,7 +4437,6 @@ void emitter::emitDispInsName(
                     {
                         printf("fcvt.s.lu      %s, %s\n", fd, xs1);
                     }
-
                     else
                     {
                         NYI_RISCV64("illegal ins within emitDisInsName!");
@@ -4271,22 +4460,17 @@ void emitter::emitDispInsName(
                 case 0x2d: // FSQRT.D
                     printf("fsqrt.d        %s, %s\n", fd, fs1);
                     return;
-                case 0x11:            // FSGNJ.D & FSGNJN.D & FSGNJX.D
-                    if (opcode4 == 0) // FSGNJ.D
+                case 0x11: // FSGNJ.D & FSGNJN.D & FSGNJX.D
+                    NYI_IF(opcode4 >= 3, "RISC-V illegal fsgnj.d variant");
+                    if (fs1 != fs2)
                     {
-                        printf("fsgnj.d        %s, %s, %s\n", fd, fs1, fs2);
+                        const char* variants[3] = {".d ", "n.d", "x.d"};
+                        printf("fsgnj%s        %s, %s, %s\n", variants[opcode4], fd, fs1, fs2);
                     }
-                    else if (opcode4 == 1) // FSGNJN.D
+                    else // pseudos
                     {
-                        printf("fsgnjn.d       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else if (opcode4 == 2) // FSGNJX.D
-                    {
-                        printf("fsgnjx.d       %s, %s, %s\n", fd, fs1, fs2);
-                    }
-                    else
-                    {
-                        NYI_RISCV64("illegal ins within emitDisInsName!");
+                        const char* names[3] = {"fmv.d ", "fneg.d", "fabs.d"};
+                        printf("%s         %s, %s\n", names[opcode4], fd, fs1);
                     }
                     return;
                 case 0x15:            // FMIN.D & FMAX.D
@@ -4412,56 +4596,49 @@ void emitter::emitDispInsName(
             }
             return;
         }
-        case 0x27:
+        case MajorOpcode::StoreFp:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
+            if ((opcode2 != 2) && (opcode2 != 3))
+                return emitDispIllegalInstruction(code);
 
-            const char* rs1    = RegNames[(code >> 15) & 0x1f];
+            unsigned    rs1Num = (code >> 15) & 0x1f;
+            const char* rs1    = RegNames[rs1Num];
             const char* rs2    = RegNames[((code >> 20) & 0x1f) | 0x20];
             int         offset = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
-            if (opcode2 == 2) // FSW
-            {
-                printf("fsw            %s, %d(%s)\n", rs2, offset, rs1);
-            }
-            else if (opcode2 == 3) // FSD
-            {
-                printf("fsd            %s, %d(%s)\n", rs2, offset, rs1);
-            }
-            else
-            {
-                NYI_RISCV64("illegal ins within emitDisInsName!");
-            }
+
+            char width = "bhwd"[opcode2];
+            printf("fs%c            %s, ", width, rs2);
+            emitDispImmediate(offset, false, rs1Num);
+            printf("(%s)\n", rs1);
             return;
         }
-        case 0x7:
+        case MajorOpcode::LoadFp:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            const char*  rd      = RegNames[((code >> 7) & 0x1f) | 0x20];
-            int          offset  = ((code >> 20) & 0xfff);
+            if ((opcode2 != 2) && (opcode2 != 3))
+                return emitDispIllegalInstruction(code);
+
+            unsigned    rs1Num = (code >> 15) & 0x1f;
+            const char* rs1    = RegNames[rs1Num];
+            const char* rd     = RegNames[((code >> 7) & 0x1f) | 0x20];
+            int         offset = ((code >> 20) & 0xfff);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
-            if (opcode2 == 2) // FLW
-            {
-                printf("flw            %s, %d(%s)\n", rd, offset, rs1);
-            }
-            else if (opcode2 == 3) // FLD
-            {
-                printf("fld            %s, %d(%s)\n", rd, offset, rs1);
-            }
-            else
-            {
-                NYI_RISCV64("illegal ins within emitDisInsName!");
-            }
+
+            char width = "bhwd"[opcode2];
+            printf("fl%c            %s, ", width, rd);
+            emitDispImmediate(offset, false, rs1Num);
+            printf("(%s)\n", rs1);
             return;
         }
-        case 0x2f: // AMO - atomic memory operation
+        case MajorOpcode::Amo:
         {
             bool        hasDataReg = true;
             const char* name;
@@ -5248,7 +5425,8 @@ unsigned emitter::get_curTotalCodeSize()
 
 //----------------------------------------------------------------------------------------
 // getInsExecutionCharacteristics:
-//    Returns the current instruction execution characteristics
+//    Returns the current instruction execution characteristics based on the SiFive U74 core:
+//    https://www.starfivetech.com/uploads/u74_core_complex_manual_21G1.pdf
 //
 // Arguments:
 //    id  - The current instruction descriptor to be evaluated
@@ -5262,11 +5440,176 @@ unsigned emitter::get_curTotalCodeSize()
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
     insExecutionCharacteristics result;
-
-    // TODO-RISCV64: support this function.
-    result.insThroughput       = PERFSCORE_THROUGHPUT_ZERO;
-    result.insLatency          = PERFSCORE_LATENCY_ZERO;
+    result.insThroughput       = PERFSCORE_LATENCY_1C;
+    result.insLatency          = PERFSCORE_THROUGHPUT_1C;
     result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
+
+    unsigned codeSize = id->idCodeSize();
+    assert((codeSize >= 4) && (codeSize % sizeof(code_t) == 0));
+    // Some instructions like jumps or loads may have not-yet-known simple auxilliary instructions (lui, addi, slli,
+    // etc) for building immediates, assume cost of one each.
+    float immediateBuildingCost = ((codeSize / sizeof(code_t)) - 1) * PERFSCORE_LATENCY_1C;
+
+    instruction ins = id->idIns();
+    assert(ins != INS_invalid);
+    if (ins == INS_lea)
+    {
+        result.insLatency += immediateBuildingCost;
+        result.insThroughput += immediateBuildingCost;
+        return result;
+    }
+
+    MajorOpcode opcode = GetMajorOpcode(emitInsCode(ins));
+    switch (opcode)
+    {
+        case MajorOpcode::OpImm:
+        case MajorOpcode::OpImm32:
+        case MajorOpcode::Lui:
+        case MajorOpcode::Auipc:
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            break;
+
+        case MajorOpcode::Op:
+        case MajorOpcode::Op32:
+            if (id->idInsIs(INS_mul, INS_mulh, INS_mulhu, INS_mulhsu, INS_mulw))
+            {
+                result.insLatency = PERFSCORE_LATENCY_3C;
+            }
+            else if (id->idInsIs(INS_div, INS_divu, INS_rem, INS_remu))
+            {
+                result.insLatency = result.insThroughput = (6.0f + 68.0f) / 2;
+            }
+            else if (id->idInsIs(INS_divw, INS_divuw, INS_remw, INS_remuw))
+            {
+                result.insLatency = result.insThroughput = (6.0f + 36.0f) / 2;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            break;
+
+        case MajorOpcode::MAdd:
+        case MajorOpcode::MSub:
+        case MajorOpcode::NmAdd:
+        case MajorOpcode::NmSub:
+        case MajorOpcode::OpFp:
+            if (id->idInsIs(INS_fadd_s, INS_fsub_s, INS_fmul_s, INS_fmadd_s, INS_fmsub_s, INS_fnmadd_s, INS_fnmsub_s))
+            {
+                result.insLatency = PERFSCORE_LATENCY_5C;
+            }
+            else if (id->idInsIs(INS_fadd_d, INS_fsub_d, INS_fmul_d, INS_fmadd_d, INS_fmsub_d, INS_fnmadd_d,
+                                 INS_fnmsub_d))
+            {
+                result.insLatency = PERFSCORE_LATENCY_7C;
+            }
+            else if (id->idInsIs(INS_fdiv_s))
+            {
+                result.insLatency    = (9.0f + 36.0f) / 2;
+                result.insThroughput = (8.0f + 33.0f) / 2;
+            }
+            else if (id->idInsIs(INS_fsqrt_s))
+            {
+                result.insLatency    = (9.0f + 28.0f) / 2;
+                result.insThroughput = (8.0f + 33.0f) / 2;
+            }
+            else if (id->idInsIs(INS_fdiv_d))
+            {
+                result.insLatency    = (9.0f + 58.0f) / 2;
+                result.insThroughput = (8.0f + 58.0f) / 2;
+            }
+            else if (id->idInsIs(INS_fsqrt_d))
+            {
+                result.insLatency    = (9.0f + 57.0f) / 2;
+                result.insThroughput = (8.0f + 58.0f) / 2;
+            }
+            else if (id->idInsIs(INS_feq_s, INS_fle_s, INS_flt_s, INS_fclass_s, INS_feq_d, INS_fle_d, INS_flt_d,
+                                 INS_fclass_d, INS_fcvt_w_s, INS_fcvt_l_s, INS_fcvt_s_l, INS_fcvt_wu_s, INS_fcvt_lu_s,
+                                 INS_fcvt_s_lu, INS_fcvt_w_d, INS_fcvt_l_d, INS_fcvt_wu_d, INS_fcvt_lu_d))
+            {
+                result.insLatency = PERFSCORE_LATENCY_4C;
+            }
+            else if (id->idInsIs(INS_fcvt_d_l, INS_fcvt_d_lu, INS_fmv_d_x))
+            {
+                result.insLatency = PERFSCORE_LATENCY_6C;
+            }
+            else if (id->idInsIs(INS_fmv_x_w, INS_fmv_x_d))
+            {
+                result.insLatency = PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                result.insLatency = PERFSCORE_LATENCY_2C;
+            }
+            break;
+
+        case MajorOpcode::Amo:
+            result.insLatency = result.insThroughput = PERFSCORE_LATENCY_5C;
+            result.insMemoryAccessKind               = PERFSCORE_MEMORY_READ_WRITE;
+            break;
+
+        case MajorOpcode::Branch:
+            result.insLatency = result.insThroughput =
+                immediateBuildingCost + (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_6C) / 2;
+            break;
+
+        case MajorOpcode::Jalr:
+            result.insLatency = result.insThroughput =
+                immediateBuildingCost + (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_5C) / 2;
+            break;
+
+        case MajorOpcode::Jal:
+            result.insLatency = result.insThroughput =
+                immediateBuildingCost + (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_2C) / 2;
+            break;
+
+        case MajorOpcode::System:
+        {
+            code_t code   = id->idAddr()->iiaGetInstrEncode();
+            code_t funct3 = (code >> 12) & 0b111;
+            if (funct3 != 0)
+            {
+                bool isCsrrw      = ((funct3 & 0b11) == 0b01);
+                bool isZero       = (((code >> 15) & 0b11111) == 0); // source register or 5-bit immediate is zero
+                bool isWrite      = (isCsrrw || !isZero);
+                result.insLatency = isWrite ? PERFSCORE_LATENCY_7C : PERFSCORE_LATENCY_1C;
+            }
+            break;
+        }
+
+        case MajorOpcode::Load:
+        case MajorOpcode::Store:
+        case MajorOpcode::LoadFp:
+        case MajorOpcode::StoreFp:
+        {
+            bool isLoad = (opcode == MajorOpcode::Load || opcode == MajorOpcode::LoadFp);
+
+            result.insLatency = isLoad ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
+            if (isLoad)
+            {
+                code_t log2Size = (emitInsCode(ins) >> 12) & 0b11;
+                if (log2Size < 2) // sub-word loads
+                    result.insLatency += PERFSCORE_LATENCY_1C;
+            }
+
+            regNumber baseReg = id->idReg2();
+            if (baseReg != REG_SP || baseReg != REG_FP)
+                result.insLatency += PERFSCORE_LATENCY_1C; // assume non-stack load/stores are more likely to cache-miss
+
+            result.insThroughput += immediateBuildingCost;
+            result.insMemoryAccessKind = isLoad ? PERFSCORE_MEMORY_READ : PERFSCORE_MEMORY_WRITE;
+            break;
+        }
+
+        case MajorOpcode::MiscMem:
+            result.insLatency    = PERFSCORE_LATENCY_5C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_5C;
+            break;
+
+        default:
+            perfScoreUnhandledInstruction(id, &result);
+    }
 
     return result;
 }

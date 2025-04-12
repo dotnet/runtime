@@ -26,7 +26,7 @@ public record BuildOptions : MSBuildOptions
         string BootConfigFileName                                   = "dotnet.boot.js",
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
-        bool FeaturePerfTracing                                     = false
+        bool WasmPerfTracing                                     = false
     ) : base(
         IsPublish,
         TargetFramework ?? BuildTestBase.DefaultTargetFramework,
@@ -44,7 +44,7 @@ public record BuildOptions : MSBuildOptions
         BootConfigFileName,
         NonDefaultFrameworkDir,
         ExtraMSBuildArgs,
-        FeaturePerfTracing
+        WasmPerfTracing
     )
     {
     }

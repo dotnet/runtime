@@ -22,7 +22,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<int> Impl(
                 ConfiguredCancelableAsyncEnumerable<int> source)
@@ -48,7 +48,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<long> Impl(
                 ConfiguredCancelableAsyncEnumerable<long> source)
@@ -73,7 +73,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<float> Impl(
                 ConfiguredCancelableAsyncEnumerable<float> source)
@@ -98,7 +98,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<double> Impl(
                 ConfiguredCancelableAsyncEnumerable<double> source)
@@ -123,7 +123,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<decimal> Impl(
                 ConfiguredCancelableAsyncEnumerable<decimal> source)
@@ -149,7 +149,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<int?> Impl(
                 ConfiguredCancelableAsyncEnumerable<int?> source)
@@ -178,7 +178,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<long?> Impl(
                 ConfiguredCancelableAsyncEnumerable<long?> source)
@@ -206,7 +206,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<float?> Impl(
                 ConfiguredCancelableAsyncEnumerable<float?> source)
@@ -234,7 +234,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<double?> Impl(
                 ConfiguredCancelableAsyncEnumerable<double?> source)
@@ -262,7 +262,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<decimal?> Impl(
                 ConfiguredCancelableAsyncEnumerable<decimal?> source)
