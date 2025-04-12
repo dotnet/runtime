@@ -2629,7 +2629,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // For altjit, just use the default 16B
         // To use SVE: Set DOTNET_SimulatedVLForSve >= DOTNET_MinVectorLengthForSve
         // To use NEON: Set DOTNET_SimulatedVLForSve < DOTNET_MinVectorLengthForSve
-        compVectorTLength = 16;
+        compVectorTLength = ReinterpretHexAsDecimal(JitConfig.FakeVectorLengthForSve());
     }
 
     compUseSveForVectorT = (compVectorTLength >= compMinVectorTLengthForSve);

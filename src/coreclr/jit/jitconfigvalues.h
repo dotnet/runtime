@@ -384,6 +384,7 @@ CONFIG_INTEGER(JitStressEvexEncoding, "JitStressEvexEncoding", 0)
 RELEASE_CONFIG_INTEGER(PreferredVectorBitWidth,     "PreferredVectorBitWidth",   0) // The preferred decimal width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
 #if defined(TARGET_ARM64)
 RELEASE_CONFIG_INTEGER(MinVectorLengthForSve,     "MinVectorLengthForSve",   0x20) // The preferred decimal bytes for VL
+CONFIG_INTEGER(FakeVectorLengthForSve,     "FakeVectorLengthForSve",   0x10) // The fake decimal bytes for VL (for testing purposes)
 #endif
 
 //
