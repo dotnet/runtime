@@ -1522,7 +1522,7 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 
     while (b4 != nullptr)
     {
-        if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT))
+        if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT, TYP_LONG))
         {
             if (intBoolOpDsc.ctsArray.Height() >= 2 && intBoolOpDsc.lclVarArr.Height() >= 2)
             {
@@ -1624,7 +1624,7 @@ bool IntBoolOpDsc::TryOptimize()
 
     GenTree*   firstLclVar  = lclVarArr.Bottom(0);
     GenTree*   secondLclVar = lclVarArr.Bottom(1);
-    GenTreeOp* intVarTree   = m_comp->gtNewOperNode(GT_OR, TYP_INT, firstLclVar, secondLclVar);
+    GenTreeOp* intVarTree   = m_comp->gtNewOperNode(GT_OR, firstLclVar->gtType == TYP_INT && secondLclVar->gtType == TYP_INT ? TYP_INT : TYP_LONG, firstLclVar, secondLclVar);
     intVarTree->gtPrev      = secondLclVar;
     secondLclVar->gtNext    = intVarTree;
     secondLclVar->gtPrev    = firstLclVar;
@@ -1641,7 +1641,7 @@ bool IntBoolOpDsc::TryOptimize()
     for (int i = 2; i < lclVarArrLength; i++)
     {
         GenTree*   ithLclVar     = lclVarArr.Bottom(i);
-        GenTreeOp* newIntVarTree = m_comp->gtNewOperNode(GT_OR, TYP_INT, tempIntVatTree, ithLclVar);
+        GenTreeOp* newIntVarTree = m_comp->gtNewOperNode(GT_OR, tempIntVatTree->gtType == TYP_INT && ithLclVar->gtType == TYP_INT ? TYP_INT : TYP_LONG, tempIntVatTree, ithLclVar);
         newIntVarTree->gtPrev    = ithLclVar;
         ithLclVar->gtNext        = newIntVarTree;
         ithLclVar->gtPrev        = tempIntVatTree;
@@ -1656,8 +1656,8 @@ bool IntBoolOpDsc::TryOptimize()
         optimizedCst  = optimizedCst | ithCts;
     }
 
-    GenTreeIntCon* optimizedCstTree = m_comp->gtNewIconNode(optimizedCst, TYP_INT);
-    GenTreeOp*     optimizedTree    = m_comp->gtNewOperNode(GT_OR, TYP_INT, tempIntVatTree, optimizedCstTree);
+    GenTreeIntCon* optimizedCstTree = m_comp->gtNewIconNode(optimizedCst, optimizedCst <= INT_MAX && optimizedCst >= INT_MIN ? TYP_INT : TYP_LONG);
+    GenTreeOp*     optimizedTree    = m_comp->gtNewOperNode(GT_OR, tempIntVatTree->gtType == TYP_INT && optimizedCstTree->gtType == TYP_INT ? TYP_INT : TYP_LONG, tempIntVatTree, optimizedCstTree);
     optimizedTree->gtPrev           = optimizedCstTree;
     optimizedCstTree->gtNext        = optimizedTree;
     optimizedCstTree->gtPrev        = tempIntVatTree;
