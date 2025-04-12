@@ -4428,7 +4428,7 @@ IS_VALUETYPE:
                 // This is a special case for EnC. The RVA field is not actually in the image, but
                 // is instead registered in a dynamic map. We need to set the RVA to a special
                 // value so when the address is looked up, it will be found in the dynamic map.
-                if (GetModule()->GetDynamicRvaField(pFD->GetMemberDef()) != NULL)
+                if (GetModule()->GetDynamicRvaField(pFD->GetMemberDef()) != (TADDR)NULL)
                 {
                     pFD->SetDynamicRVA();
                 }
