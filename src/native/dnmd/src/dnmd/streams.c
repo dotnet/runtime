@@ -6,7 +6,7 @@ bool try_get_string(mdcxt_t* cxt, size_t offset, char const** str)
 
     mdstream_t* h = &cxt->strings_heap;
 
-    // II.24.2.3 - When the #String heap is present, the first entry is always the empty string (i.e., \0). 
+    // II.24.2.3 - When the #String heap is present, the first entry is always the empty string (i.e., \0).
     // II.24.2.2 -  Streams need not be there if they are empty.
     // If the offset into the heap is 0, we can treat that as a "null" index into the heap and return
     // the empty string.
@@ -292,15 +292,26 @@ bool validate_tables(mdcxt_t* cxt)
     return true;
 }
 
+bool has_pdb(mdcxt_t* cxt)
+{
+#ifdef DNMD_PORTABLE_PDB
+    assert(cxt != NULL);
+    return cxt->pdb.size != 0;
+#else
+    (void)cxt;
+    return false;
+#endif // !DNMD_PORTABLE_PDB
+}
+
 bool try_get_pdb(mdcxt_t* cxt, md_pdb_t* pdb)
 {
 #ifdef DNMD_PORTABLE_PDB
     assert(cxt != NULL && pdb != NULL);
 
-    mdstream_t* h = &cxt->pdb;
-    if (h->size == 0)
+    if (!has_pdb(cxt))
         return false;
 
+    mdstream_t* h = &cxt->pdb;
     uint8_t const* curr = h->ptr;
     size_t curr_len = h->size;
 

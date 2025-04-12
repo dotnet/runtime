@@ -227,6 +227,9 @@ typedef struct md_pdb__
     uint32_t type_system_table_rows[MDTABLE_MAX_COUNT];
 } md_pdb_t;
 
+// Check if the context has a non-empty PDB stream.
+bool has_pdb(mdcxt_t* cxt);
+
 // Interpret in the PDB data stream
 // The md_pdb_t will be fully initialized if "true" is returned.
 bool try_get_pdb(mdcxt_t* cxt, md_pdb_t* pdb);

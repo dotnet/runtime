@@ -81,6 +81,7 @@ static bool set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, 
     }
 
 #ifdef DNMD_PORTABLE_PDB
+    if (has_pdb(acxt.table->cxt))
     {
         uint32_t table_row = RidFromToken(token);
         mdtable_id_t table_id = ExtractTokenType(token);
@@ -483,7 +484,7 @@ static bool copy_cursor_column(mdcursor_t dest, mdcursor_t src, col_index_t idx)
             return false;
         break;
     case mdtc_idx_heap:
-        if (set_column_value_as_heap_offset(dest, idx, column_value))
+        if (!set_column_value_as_heap_offset(dest, idx, column_value))
             return false;
         break;
     default:
