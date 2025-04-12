@@ -508,9 +508,6 @@ emit_vector_create (TransformData *td, MonoMethodSignature *csignature, MonoClas
 static gboolean
 emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
-	if (csignature->hasthis)
-		return FALSE;
-
 #ifdef HOST_BROWSER
 	if (emit_sri_packedsimd (td, cmethod, csignature))
 		return TRUE;
@@ -729,15 +726,10 @@ emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 		return TRUE;
 #endif
 	const char *cmethod_name = strip_explicit_isimd_prefix (cmethod->name);
-	bool explicitly_implemented = cmethod_name != cmethod->name;
 
-	int id = lookup_intrins (sri_vector128_t_methods, sizeof (sri_vector128_t_methods), cmethod->name);
+	int id = lookup_intrins (sri_vector128_t_methods, sizeof (sri_vector128_t_methods), cmethod_name);
 	if (id == -1) {
-		if (explicitly_implemented) {
-			return emit_sri_vector128 (td, cmethod, csignature);
-		} else {
-			return FALSE;
-		}
+		return emit_sri_vector128 (td, cmethod, csignature);
 	}
 
 	gint16 simd_opcode = -1;
@@ -773,15 +765,10 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 		return TRUE;
 #endif
 	const char *cmethod_name = strip_explicit_isimd_prefix (cmethod->name);
-	bool explicitly_implemented = cmethod_name != cmethod->name;
 
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod_name);
 	if (id == -1) {
-		if (explicitly_implemented) {
-			return emit_sri_vector128 (td, cmethod, csignature);
-		} else {
-			return FALSE;
-		}
+		return emit_sri_vector128 (td, cmethod, csignature);
 	}
 
 	gint16 simd_opcode = -1;
@@ -999,7 +986,7 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 		arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
 	} else if (arg1->type == MONO_TYPE_PTR) {
 		arg_type = m_type_data_get_type_unchecked (arg1);
-	} else if (MONO_TYPE_IS_VECTOR_PRIMITIVE(arg1)) {
+	} else if (MONO_TYPE_IS_PRIMITIVE_SCALAR(arg1)) { // allow byref of primitive types
 		arg_type = arg1;
 	} else {
 		// g_printf ("%s arg1 type was not pointer or simd type: %s\n", name, m_class_get_name (vector_klass));
@@ -1081,9 +1068,6 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 static gboolean
 emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
-	if (csignature->hasthis)
-		return FALSE;
-
 	const char *cmethod_name = cmethod->name;
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod_name);
 	MonoClass *vector_klass;
@@ -1175,8 +1159,20 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_Load:
 			case SN_LoadUnsafe:
+				if (csignature->param_count != 1)
+					return FALSE;
 				cmethod_name = "LoadVector128";
 				break;
+			/* 
+			case SN_Store:
+			case SN_StoreUnsafe:
+				if (csignature->hasthis)
+					return FALSE;
+				if (csignature->param_count != 2)
+					return FALSE;
+				cmethod_name = "Store";
+				break;
+			*/
 			case SN_Round:
 				if (csignature->param_count != 1)
 					return FALSE;
