@@ -1929,6 +1929,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("DBL2ULNGOVF");
                     break;
 
+                case ReadyToRunHelper.Lng2Flt:
+                    builder.Append("LNG2FLT");
+                    break;
+
+                case ReadyToRunHelper.ULng2Flt:
+                    builder.Append("ULNG2FLT");
+                    break;
+
                 // Floating point ops
                 case ReadyToRunHelper.DblRem:
                     builder.Append("DBL_REM");
