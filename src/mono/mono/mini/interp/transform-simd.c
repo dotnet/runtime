@@ -1180,6 +1180,8 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_Load:
 			case SN_LoadUnsafe:
+				if (csignature->param_count != 1)
+					return FALSE;
 				cmethod_name = "LoadVector128";
 				break;
 			case SN_Round:
