@@ -14,7 +14,7 @@ using Xunit;
 
 public class Runtime_114573
 {
-    public static IRuntime s_rt;
+    public static IRuntime s_rt = new Runtime();
     public static sbyte s_1;
 
     [Fact]
