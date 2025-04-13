@@ -1710,7 +1710,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
         INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
@@ -1750,7 +1750,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->SetRepresentativeSlot(pRepresentativeMT, representativeToken.GetSlotNumber());
     pSDFrame->Push(CURRENT_THREAD);
 
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
     // For Virtual Delegates the m_siteAddr is a field of a managed object
