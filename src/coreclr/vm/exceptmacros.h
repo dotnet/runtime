@@ -277,13 +277,13 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow)     \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX     \
         PAL_SEHException exCopy;                    \
         bool hasCaughtException = false;            \
         try {
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(false)
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
         }                                           \
@@ -332,28 +332,29 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 // We use [UN]INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX to backpatch the SEH record installed
 // in CallDescrWorkerInternal from ProcessCLRException to CallDescrWorkerUnwindFrameChainHandler
-// and back. This ensures that class loading exceptions are propagated through unmanaged code
-// before being forwarded to the managed one.
+// when throwing an exception. This ensures that class loading exceptions are propagated through
+// unmanaged code before being forwarded to the managed one.
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX \
+        try \
+        {
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
+        } \
+        catch (...) \
         { \
-            PEXCEPTION_REGISTRATION_RECORD pExceptionRecord = NULL; \
             if (nativeRethrow) \
             { \
-                pExceptionRecord = GetCurrentSEHRecord(); \
+                PEXCEPTION_REGISTRATION_RECORD pExceptionRecord = GetCurrentSEHRecord(); \
+                _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
                 while (pExceptionRecord->Handler != (PEXCEPTION_ROUTINE)ProcessCLRException) \
                 { \
                     pExceptionRecord = pExceptionRecord->Next; \
                     _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
                 } \
                 pExceptionRecord->Handler = (PEXCEPTION_ROUTINE)CallDescrWorkerUnwindFrameChainHandler; \
-            }
-
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
-            if (nativeRethrow) \
-            { \
-                pExceptionRecord->Handler = (PEXCEPTION_ROUTINE)ProcessCLRException; \
             } \
+            throw; \
         }
 
 #else // TARGET_UNIX
