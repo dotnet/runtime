@@ -70,11 +70,11 @@ private:
     }
 
 private:
-    Compiler*            m_comp;
-    ArrayStack<ssize_t>  ctsArray;
-    ArrayStack<GenTree*> lclVarArr;
-    GenTree*             start;
-    GenTree*             end;
+    Compiler*                        m_comp;
+    ArrayStack<GenTreeIntConCommon*> ctsArray;
+    ArrayStack<GenTree*>             lclVarArr;
+    GenTree*                         start;
+    GenTree*                         end;
 
 public:
     static IntBoolOpDsc GetNextIntBoolOp(GenTree* b3, Compiler* comp);
@@ -1522,7 +1522,10 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
 
     while (b4 != nullptr)
     {
-        if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT, GT_CAST) || !b4->TypeIs(TYP_INT, TYP_LONG))
+        if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT, GT_CNS_LNG, GT_CAST) ||
+            (b4->OperIs(GT_CAST) &&
+             (!b4->AsCast()->CastOp()->OperIs(GT_LCL_VAR) || !b4->AsCast()->CastOp()->TypeIs(TYP_INT, TYP_LONG))) ||
+            !b4->TypeIs(TYP_INT, TYP_LONG))
         {
             if (intBoolOpDsc.ctsArray.Height() >= 2 && intBoolOpDsc.lclVarArr.Height() >= 2)
             {
@@ -1582,15 +1585,21 @@ IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
                     break;
                 }
                 case GT_CNS_INT:
+                case GT_CNS_LNG:
                 {
-                    ssize_t constant = b4->AsIntConCommon()->IconValue();
-                    intBoolOpDsc.ctsArray.Push(constant);
+                    intBoolOpDsc.ctsArray.Push(b4->AsIntConCommon());
                     orOpCount--;
                     break;
                 }
                 case GT_OR:
                     orOpCount++;
                     break;
+                case GT_CAST:
+                {
+                    intBoolOpDsc.lclVarArr.Push(b4);
+                    b4 = b4->gtPrev;
+                    break;
+                }
                 default:
                 {
                     break;
@@ -1630,13 +1639,41 @@ bool IntBoolOpDsc::TryOptimize()
                               firstLclVar, secondLclVar);
     intVarTree->gtPrev   = secondLclVar;
     secondLclVar->gtNext = intVarTree;
-    secondLclVar->gtPrev = firstLclVar;
-    firstLclVar->gtNext  = secondLclVar;
-    firstLclVar->gtPrev  = end;
+
+    if (secondLclVar->OperIs(GT_LCL_VAR))
+    {
+        secondLclVar->gtPrev = firstLclVar;
+        firstLclVar->gtNext  = secondLclVar;
+    }
+    else
+    {
+        assert(secondLclVar->OperIs(GT_CAST));
+        GenTree* secondCastLclVar = secondLclVar->AsCast()->CastOp();
+        secondLclVar->gtPrev      = secondCastLclVar;
+        secondCastLclVar->gtNext  = secondLclVar;
+        secondCastLclVar->gtPrev  = firstLclVar;
+        firstLclVar->gtNext       = secondCastLclVar;
+    }
+
+    GenTree* lastLclVarLink = nullptr;
+    if (firstLclVar->OperIs(GT_LCL_VAR))
+    {
+        firstLclVar->gtPrev = end;
+        lastLclVarLink      = firstLclVar;
+    }
+    else
+    {
+        assert(firstLclVar->OperIs(GT_CAST));
+        GenTree* firstCastLclVar = firstLclVar->AsCast()->CastOp();
+        firstLclVar->gtPrev      = firstCastLclVar;
+        firstCastLclVar->gtNext  = firstLclVar;
+        firstCastLclVar->gtPrev  = end;
+        lastLclVarLink           = firstCastLclVar;
+    }
 
     if (end != nullptr)
     {
-        end->gtNext = firstLclVar;
+        end->gtNext = lastLclVarLink;
     }
 
     GenTree* tempIntVatTree = intVarTree;
@@ -1649,24 +1686,43 @@ bool IntBoolOpDsc::TryOptimize()
                                   tempIntVatTree->gtType == TYP_INT && ithLclVar->gtType == TYP_INT ? TYP_INT
                                                                                                     : TYP_LONG,
                                   tempIntVatTree, ithLclVar);
-        newIntVarTree->gtPrev  = ithLclVar;
-        ithLclVar->gtNext      = newIntVarTree;
-        ithLclVar->gtPrev      = tempIntVatTree;
-        tempIntVatTree->gtNext = ithLclVar;
-        tempIntVatTree         = newIntVarTree;
+        newIntVarTree->gtPrev = ithLclVar;
+        ithLclVar->gtNext     = newIntVarTree;
+
+        if (ithLclVar->OperIs(GT_LCL_VAR))
+        {
+            ithLclVar->gtPrev      = tempIntVatTree;
+            tempIntVatTree->gtNext = ithLclVar;
+        }
+        else
+        {
+            assert(ithLclVar->OperIs(GT_CAST));
+            GenTree* ithCastLclVar = ithLclVar->AsCast()->CastOp();
+            ithLclVar->gtPrev      = ithCastLclVar;
+            ithCastLclVar->gtNext  = ithLclVar;
+            ithCastLclVar->gtPrev  = tempIntVatTree;
+            tempIntVatTree->gtNext = ithCastLclVar;
+        }
+
+        tempIntVatTree = newIntVarTree;
     }
 
-    size_t optimizedCst = 0;
+    size_t    optimizedCst     = 0;
+    var_types optimizedCstType = TYP_INT;
     for (int i = 0; i < ctsArrayLength; i++)
     {
-        size_t ithCts = ctsArray.Bottom(i);
-        optimizedCst  = optimizedCst | ithCts;
+        GenTreeIntConCommon* ithCts = ctsArray.Bottom(i);
+
+        if (optimizedCstType == TYP_INT && ithCts->gtType == TYP_LONG)
+        {
+            optimizedCstType = TYP_LONG;
+        }
+
+        optimizedCst = optimizedCst | ithCts->IconValue();
     }
 
-    GenTreeIntCon* optimizedCstTree =
-        m_comp->gtNewIconNode(optimizedCst,
-                              optimizedCst <= INT32_MAX && optimizedCst >= INT32_MIN ? TYP_INT : TYP_LONG);
-    GenTreeOp* optimizedTree =
+    GenTreeIntCon* optimizedCstTree = m_comp->gtNewIconNode(optimizedCst, optimizedCstType);
+    GenTreeOp*     optimizedTree =
         m_comp->gtNewOperNode(GT_OR,
                               tempIntVatTree->gtType == TYP_INT && optimizedCstTree->gtType == TYP_INT ? TYP_INT
                                                                                                        : TYP_LONG,
@@ -1753,7 +1809,15 @@ GenTree* IntBoolOpDsc::GetLclVarArrayFirst()
 {
     if (lclVarArr.Height() > 0)
     {
-        return lclVarArr.Bottom(0);
+        GenTree* firstLclVar = lclVarArr.Bottom(0);
+
+        if (firstLclVar->OperIs(GT_LCL_VAR))
+        {
+            return firstLclVar;
+        }
+
+        assert(firstLclVar->OperIs(GT_CAST));
+        return firstLclVar->AsCast()->CastOp();
     }
 
     return nullptr;
