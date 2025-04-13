@@ -720,6 +720,70 @@ BgkqhkiG9w0BAQsFAAMBAA==
         }
 
         [Fact]
+        public static void Load_NoHashAlgorithm_LateVerification()
+        {
+            CertificateRequest req = CertificateRequest.LoadSigningRequestPem(
+                TestData.BigExponentPkcs10Pem,
+                default,
+                CertificateRequestLoadOptions.SkipSignatureValidation);
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset notBefore = now.AddMonths(-1);
+            DateTimeOffset notAfter = now.AddMonths(1);
+
+            using (RSA key = RSA.Create(TestData.RsaBigExponentParams))
+            {
+                X509SignatureGenerator generator = X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1);
+
+                InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
+                    () => req.Create(
+                        req.SubjectName,
+                        generator,
+                        notBefore,
+                        notAfter,
+                        new byte[] { 3, 1, 0, 1, 3, 3, 3 }));
+
+                Assert.Contains("HashAlgorithm", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(
+                    () => req.CreateSigningRequest(generator));
+
+                Assert.Contains("HashAlgorithm", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(
+                    () => req.CreateSigningRequestPem(generator));
+
+                Assert.Contains("HashAlgorithm", ex.Message);
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void Load_NoHashAlgorithm_OKForMLDsa()
+        {
+            CertificateRequest req = CertificateRequest.LoadSigningRequestPem(
+                TestData.BigExponentPkcs10Pem,
+                default,
+                CertificateRequestLoadOptions.SkipSignatureValidation);
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset notBefore = now.AddMonths(-1);
+            DateTimeOffset notAfter = now.AddMonths(1);
+
+            using (MLDsa key = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44))
+            {
+                // Assert.NoThrow
+                using X509Certificate2 cert = req.Create(
+                    req.SubjectName,
+                    X509SignatureGenerator.CreateForMLDsa(key),
+                    notBefore,
+                    notAfter,
+                    new byte[] { 3, 1, 0, 1, 3, 3, 3 });
+
+                Assert.Equal("2.16.840.1.101.3.4.3.17", cert.SignatureAlgorithm.Value);
+            }
+        }
+
+        [Fact]
         public static void LoadCreate_MatchesCreate_RSAPkcs1()
         {
             using (RSA key = RSA.Create(2048))
@@ -762,6 +826,18 @@ BgkqhkiG9w0BAQsFAAMBAA==
                         key,
                         HashAlgorithmName.SHA256),
                     X509SignatureGenerator.CreateForECDsa(key),
+                    deterministicSignature: false);
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void LoadCreate_MatchesCreate_MLDsa()
+        {
+            using (MLDsa key = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65))
+            {
+                LoadCreate_MatchesCreate(
+                    new CertificateRequest("CN=Roundtrip, O=ML-DSA", key),
+                    X509SignatureGenerator.CreateForMLDsa(key),
                     deterministicSignature: false);
             }
         }

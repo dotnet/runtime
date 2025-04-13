@@ -1478,24 +1478,29 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 	sample_current_thread_stack_trace ();
 }
 
+#ifdef HOST_BROWSER
 MonoProfilerHandle mono_profiler_init_browser_eventpipe (void);
 void mono_profiler_fini_browser_eventpipe (void);
-
+#endif
 
 void
 ep_rt_mono_sampling_provider_component_init (void)
 {
+#ifdef HOST_BROWSER
 	// in single-threaded mode, we install instrumentation callbacks on the mono profiler, instead of stop-the-world
 	// this has negative performance impact even when the EP client is not connected!
 	// but it has to be enabled before managed code starts running, because the instrumentation needs to be in place
 	_ep_rt_mono_sampling_profiler_provider = mono_profiler_init_browser_eventpipe ();
+#endif
 }
 
 void
 ep_rt_mono_sampling_provider_component_fini (void)
 {
 	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
+#ifdef HOST_BROWSER
 	mono_profiler_fini_browser_eventpipe ();
+#endif
 }
 
 void
