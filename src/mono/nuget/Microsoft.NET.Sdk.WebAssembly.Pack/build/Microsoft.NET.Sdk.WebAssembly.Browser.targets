@@ -194,11 +194,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == ''">false</_WasmFingerprintAssets>
       <!-- true = dotnet.js will have hard fingerprint; false = dotnet.js will have soft fingerprint -->
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
-      <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(WriteImportMapToHtml)</_WasmFingerprintDotnetJs>
+      <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
       <!-- true = boot config will have hard fingerprint; false = boot config will have soft fingerprint -->
       <_WasmFingerprintBootConfig>$(WasmFingerprintBootConfig)</_WasmFingerprintBootConfig>
-      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(WriteImportMapToHtml)</_WasmFingerprintBootConfig>
+      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintBootConfig>
       <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
       <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true'">dotnet.boot.js</_WasmBootConfigFileName>

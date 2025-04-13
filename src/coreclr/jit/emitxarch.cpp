@@ -15331,8 +15331,14 @@ DONE:
             {
                 case IF_RWR_ARD:
                 case IF_RRW_ARD:
+                case IF_RWR_ARD_CNS:
+                case IF_RRW_ARD_CNS:
+                case IF_RWR_ARD_RRD:
+                case IF_RRW_ARD_RRD:
                 case IF_RWR_RRD_ARD:
                 case IF_RRW_RRD_ARD:
+                case IF_RWR_RRD_ARD_CNS:
+                case IF_RWR_RRD_ARD_RRD:
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
