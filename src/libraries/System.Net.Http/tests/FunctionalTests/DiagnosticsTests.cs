@@ -1357,7 +1357,11 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SocketsHttpHandlerPropagators_WithIdFormat_MemberData()
         {
-            foreach (var propagator in new[] { null, DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.CreateNoOutputPropagator(), DistributedContextPropagator.CreatePassThroughPropagator() })
+            // Temporary till we expose a method to retun it.
+            DistributedContextPropagator legacyPropagator = typeof(Activity).Assembly.GetType("System.Diagnostics.LegacyPropagator")
+                                                        .GetProperty("Instance", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null) as DistributedContextPropagator;
+
+            foreach (var propagator in new[] { null, DistributedContextPropagator.CreateDefaultPropagator(), legacyPropagator, DistributedContextPropagator.CreateNoOutputPropagator(), DistributedContextPropagator.CreatePassThroughPropagator() })
             {
                 foreach (ActivityIdFormat format in new[] { ActivityIdFormat.Hierarchical, ActivityIdFormat.W3C })
                 {
@@ -1393,7 +1397,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        AssertHeadersAreInjected(requestData, parent, ReferenceEquals(propagator, DistributedContextPropagator.CreatePassThroughPropagator()));
+                        AssertHeadersAreInjected(requestData, parent, ReferenceEquals(propagator, DistributedContextPropagator.CreatePassThroughPropagator()), ReferenceEquals(propagator, DistributedContextPropagator.CreateDefaultPropagator()));
                     }
                 });
         }
@@ -1608,13 +1612,13 @@ namespace System.Net.Http.Functional.Tests
             Assert.Null(GetHeaderValue(request, "Correlation-Context"));
         }
 
-        private static void AssertHeadersAreInjected(HttpRequestData request, Activity parent, bool passthrough = false)
+        private static void AssertHeadersAreInjected(HttpRequestData request, Activity parent, bool passthrough = false, bool isW3C = true)
         {
             string requestId = GetHeaderValue(request, "Request-Id");
             string traceparent = GetHeaderValue(request, "traceparent");
             string tracestate = GetHeaderValue(request, "tracestate");
 
-            if (parent.IdFormat == ActivityIdFormat.Hierarchical)
+            if (parent.IdFormat == ActivityIdFormat.Hierarchical && !isW3C)
             {
                 Assert.True(requestId != null, "Request-Id was not injected when instrumentation was enabled");
                 Assert.StartsWith(parent.Id, requestId);
@@ -1631,7 +1635,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(parent.TraceStateString, tracestate);
             }
 
-            List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, "Correlation-Context") ?? string.Empty)
+            List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, isW3C ? "baggage" : "Correlation-Context") ?? string.Empty)
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(kvp => NameValueHeaderValue.Parse(kvp))
                 .ToList();
