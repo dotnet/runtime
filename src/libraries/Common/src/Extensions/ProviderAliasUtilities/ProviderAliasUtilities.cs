@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Logging
 {
     internal static class ProviderAliasUtilities
     {
-        private const string AliasAttributeTypeFullName = "Microsoft.Extensions.Logging.ProviderAliasAttribute";
+        private static readonly string AliasAttributeTypeFullName = typeof(ProviderAliasAttribute).FullName!;
 
         internal static string? GetAlias(Type providerType)
         {
