@@ -309,7 +309,7 @@ namespace System.Net.Http.Functional.Tests
                 parentActivity.AddBaggage("correlationId", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.AddBaggage("moreBaggage", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.AddTag("tag", "tag"); // add tag to ensure it is not injected into request
-                parentActivity.TraceStateString = "Foo";
+                parentActivity.TraceStateString = "foo=1";
 
                 parentActivity.Start();
 
@@ -616,7 +616,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
                         }
-                        
+
                         using HttpClient client = new HttpClient(CreateHttpClientHandler(allowAllCertificates: true));
 
                         await client.SendAsync(bool.Parse(testAsync), CreateRequest(HttpMethod.Get, uri, version, exactVersion: true));
@@ -733,7 +733,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Version version = Version.Parse(useVersion);
 
-                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);   
+                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                 using HttpClient client = new HttpClient(handler);
 
                 Activity parentActivity = new Activity("parent").Start();
@@ -796,10 +796,10 @@ namespace System.Net.Http.Functional.Tests
                 else
                 {
                     Debug.Assert(failureType is "socket");
-                    
+
                     Assert.Equal(ActivityStatusCode.Error, conn.Status);
                     Assert.Equal(ActivityStatusCode.Error, wait.Status);
-                    
+
                     ActivityAssert.HasTag(conn, "error.type", "connection_error");
                     ActivityAssert.HasTag(wait, "error.type", "connection_error");
 
@@ -1288,7 +1288,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Activity parent = new Activity("parent");
             parent.SetIdFormat(idFormat);
-            parent.TraceStateString = "Foo";
+            parent.TraceStateString = "foo=1";
             parent.Start();
 
             await GetFactoryForVersion(UseVersion).CreateServerAsync(async (originalServer, originalUri) =>
@@ -1539,7 +1539,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }
                 return response;
-            }   
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
