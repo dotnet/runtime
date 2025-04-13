@@ -1707,7 +1707,7 @@ bool IntBoolOpDsc::TryOptimize()
         tempIntVatTree = newIntVarTree;
     }
 
-    size_t    optimizedCst     = 0;
+    INT64     optimizedCst     = 0;
     var_types optimizedCstType = TYP_INT;
     for (int i = 0; i < ctsArrayLength; i++)
     {
@@ -1718,11 +1718,13 @@ bool IntBoolOpDsc::TryOptimize()
             optimizedCstType = TYP_LONG;
         }
 
-        optimizedCst = optimizedCst | ithCts->IconValue();
+        optimizedCst = optimizedCst | ithCts->IntegralValue();
     }
 
-    GenTreeIntCon* optimizedCstTree = m_comp->gtNewIconNode(optimizedCst, optimizedCstType);
-    GenTreeOp*     optimizedTree =
+    GenTree*   optimizedCstTree = optimizedCstType == TYP_INT
+                                      ? m_comp->gtNewIconNode((ssize_t)optimizedCst, optimizedCstType)
+                                      : m_comp->gtNewLconNode(optimizedCst);
+    GenTreeOp* optimizedTree =
         m_comp->gtNewOperNode(GT_OR,
                               tempIntVatTree->gtType == TYP_INT && optimizedCstTree->gtType == TYP_INT ? TYP_INT
                                                                                                        : TYP_LONG,
