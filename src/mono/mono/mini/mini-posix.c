@@ -188,7 +188,7 @@ save_old_signal_handler (int signo, struct sigaction *old_action)
  *
  *   Call the original signal handler for the signal given by the arguments, which
  * should be the same as for a signal handler. Returns TRUE if the original handler
- * was called, false otherwise.
+ * was called, false otherwise. NOTE: sigaction.sa_handler == SIG_DFL handlers are not considered.
  */
 gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
@@ -196,6 +196,7 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	int signal = MONO_SIG_HANDLER_GET_SIGNO ();
 	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (signal);
 
+	// Ignores chaining to default signal handlers i.e. when saved_handler->sa_handler == SIG_DFL
 	if (saved_handler && saved_handler->sa_handler) {
 		if (!(saved_handler->sa_flags & SA_SIGINFO)) {
 			saved_handler->sa_handler (signal);
@@ -208,6 +209,27 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	}
 	return FALSE;
 }
+
+
+/*
+ * mono_chain_signal_to_default_sigsegv_handler:
+ *
+ *   Call the original SIGSEGV signal handler in cases when the original handler is
+ * sigaction.sa_handler == SIG_DFL. This is used to propagate the crash to the OS.
+ */
+void
+mono_chain_signal_to_default_sigsegv_handler (void)
+{
+	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (SIGSEGV);
+
+	if (saved_handler && saved_handler->sa_handler == SIG_DFL) {
+		sigaction (SIGSEGV, saved_handler, NULL);
+		raise (SIGSEGV);
+	} else {
+		g_async_safe_printf ("\nFailed to chain SIGSEGV signal to the default handler.\n");
+	}
+}
+
 
 MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 {
@@ -348,8 +370,14 @@ add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 
 	/* if there was already a handler in place for this signal, store it */
 	if (! (previous_sa.sa_flags & SA_SIGINFO) &&
-			(SIG_DFL == previous_sa.sa_handler)) {
-		/* it there is no sa_sigaction function and the sa_handler is default, we can safely ignore this */
+			(SIG_DFL == previous_sa.sa_handler) && signo != SIGSEGV) {
+		/* 
+		 * If there is no sa_sigaction function and the sa_handler is default, 
+		 * it means the currently registered handler for this signal is the default one.
+		 * For signal chaining, we need to store the default SIGSEGV handler so that the crash 
+		 * is properly propagated, while default handlers for other signals are ignored and 
+		 * are not considered.
+		 */
 	} else {
 		if (mono_do_signal_chaining)
 			save_old_signal_handler (signo, &previous_sa);

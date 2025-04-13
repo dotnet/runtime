@@ -345,45 +345,50 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
     do
     {
         DWORD cBuckets = GetLength(curBuckets);
-
-        // Compute which bucket the entry belongs in based on the hash.
-        // +2 to skip "length" and "next" slots
-        DWORD dwBucket = iHash % cBuckets + SKIP_SPECIAL_SLOTS;
-
-        // Point at the first entry in the bucket chain that stores entries with the given hash code.
-        PTR_VolatileEntry pEntry = VolatileLoadWithoutBarrier(&curBuckets[dwBucket]);
-        TADDR expectedEndSentinel = ComputeEndSentinel(BaseEndSentinel(curBuckets), dwBucket);
-
-        // Walk the bucket chain one entry at a time.
-        while (!IsEndSentinel(pEntry))
+// DAC hardening for invalid process state
+#ifdef DACCESS_COMPILE
+        if (cBuckets > 0)
+#endif
         {
-            if (pEntry->m_iHashValue == iHash)
+            // Compute which bucket the entry belongs in based on the hash.
+            // +2 to skip "length" and "next" slots
+            DWORD dwBucket = iHash % cBuckets + SKIP_SPECIAL_SLOTS;
+
+            // Point at the first entry in the bucket chain that stores entries with the given hash code.
+            PTR_VolatileEntry pEntry = VolatileLoadWithoutBarrier(&curBuckets[dwBucket]);
+            TADDR expectedEndSentinel = ComputeEndSentinel(BaseEndSentinel(curBuckets), dwBucket);
+
+            // Walk the bucket chain one entry at a time.
+            while (!IsEndSentinel(pEntry))
             {
-                // We've found our match.
+                if (pEntry->m_iHashValue == iHash)
+                {
+                    // We've found our match.
 
-                // Record our current search state into the provided context so that a subsequent call to
-                // BaseFindNextEntryByHash can pick up the search where it left off.
-                pContext->m_pEntry = dac_cast<TADDR>(pEntry);
-                pContext->m_curBuckets = curBuckets;
-                pContext->m_expectedEndSentinel = dac_cast<TADDR>(expectedEndSentinel);
+                    // Record our current search state into the provided context so that a subsequent call to
+                    // BaseFindNextEntryByHash can pick up the search where it left off.
+                    pContext->m_pEntry = dac_cast<TADDR>(pEntry);
+                    pContext->m_curBuckets = curBuckets;
+                    pContext->m_expectedEndSentinel = dac_cast<TADDR>(expectedEndSentinel);
 
-                // Return the address of the sub-classes' embedded entry structure.
-                return VALUE_FROM_VOLATILE_ENTRY(pEntry);
+                    // Return the address of the sub-classes' embedded entry structure.
+                    return VALUE_FROM_VOLATILE_ENTRY(pEntry);
+                }
+
+                // Move to the next entry in the chain.
+                pEntry = VolatileLoadWithoutBarrier(&pEntry->m_pNextEntry);
             }
 
-            // Move to the next entry in the chain.
-            pEntry = VolatileLoadWithoutBarrier(&pEntry->m_pNextEntry);
-        }
-
-        if (!AcceptableEndSentinel(pEntry, expectedEndSentinel))
-        {
-            // If we hit this logic, we've managed to hit a case where the linked list was in the process of being
-            // moved to a new set of buckets while we were walking the list, and we walked part of the list of the
-            // bucket in the old hash table (which is fine), and part of the list in the new table, which may not
-            // be the correct bucket to walk. Most notably, the situation that can cause this will cause the list in
-            // the old bucket to be missing items. Restart the lookup, as the linked list is unlikely to still be under
-            // edit a second time.
-            continue;
+            if (!AcceptableEndSentinel(pEntry, expectedEndSentinel))
+            {
+                // If we hit this logic, we've managed to hit a case where the linked list was in the process of being
+                // moved to a new set of buckets while we were walking the list, and we walked part of the list of the
+                // bucket in the old hash table (which is fine), and part of the list in the new table, which may not
+                // be the correct bucket to walk. Most notably, the situation that can cause this will cause the list in
+                // the old bucket to be missing items. Restart the lookup, as the linked list is unlikely to still be under
+                // edit a second time.
+                continue;
+            }
         }
 
         // in a rare case if resize is in progress, look in the new table as well.

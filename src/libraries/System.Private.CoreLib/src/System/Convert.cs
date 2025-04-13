@@ -3099,7 +3099,7 @@ namespace System
                 charsWritten = 0;
                 return true;
             }
-            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length * 2)
+            else if (source.Length > int.MaxValue / 2 || destination.Length < source.Length * 2)
             {
                 charsWritten = 0;
                 return false;
@@ -3176,7 +3176,7 @@ namespace System
                 charsWritten = 0;
                 return true;
             }
-            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length * 2)
+            else if (source.Length > int.MaxValue / 2 || destination.Length < source.Length * 2)
             {
                 charsWritten = 0;
                 return false;

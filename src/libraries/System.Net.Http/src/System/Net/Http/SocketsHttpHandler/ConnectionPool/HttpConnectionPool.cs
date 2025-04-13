@@ -827,7 +827,27 @@ namespace System.Net.Http
             return stream;
         }
 
-        private CancellationTokenSource GetConnectTimeoutCancellationTokenSource() => new CancellationTokenSource(Settings._connectTimeout);
+        private CancellationTokenSource GetConnectTimeoutCancellationTokenSource<T>(HttpConnectionWaiter<T> waiter)
+            where T : HttpConnectionBase?
+        {
+            var cts = new CancellationTokenSource(Settings._connectTimeout);
+
+            lock (waiter)
+            {
+                waiter.ConnectionCancellationTokenSource = cts;
+
+                // The initiating request for this connection attempt may complete concurrently at any time.
+                // If it completed before we've set the CTS, CancelIfNecessary would no-op.
+                // Check it again now that we're holding the lock and ensure we always set a timeout.
+                if (waiter.Task.IsCompleted)
+                {
+                    waiter.CancelIfNecessary(this, requestCancelled: waiter.Task.IsCanceled);
+                    waiter.ConnectionCancellationTokenSource = null;
+                }
+            }
+
+            return cts;
+        }
 
         private static Exception CreateConnectTimeoutException(OperationCanceledException oce)
         {

@@ -539,10 +539,10 @@ namespace ILCompiler.DependencyAnalysis
                                 if (!isStaticInterfaceMethod && defaultIntfMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                                 {
                                     // Canonical instance default methods need to go through a thunk that adds the right generic context
-                                    defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, defType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
+                                    defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, defType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType, out int providingInterfaceIndex);
 
                                     // The above thunk will index into interface list to find the right context. Make sure to keep all interfaces prior to this one
-                                    for (int i = 0; i < interfaceIndex; i++)
+                                    for (int i = 0; i <= providingInterfaceIndex; i++)
                                     {
                                         result.Add(new CombinedDependencyListEntry(
                                             factory.InterfaceUse(defTypeRuntimeInterfaces[i].GetTypeDefinition()),

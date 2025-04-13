@@ -19,11 +19,6 @@
     <SkipIndexCheck>true</SkipIndexCheck>
   </PropertyGroup>
 
-  <!-- CoreCLR nuget packages shouldn't be published during servicing. -->
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
-    <IsShipping>false</IsShipping>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageIndex Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" Include="$(PackageIndexFile)" />
   </ItemGroup>

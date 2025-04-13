@@ -8,11 +8,15 @@ using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
-internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
+// This library tries to minimize the number of concepts the users need to learn to use it.
+// Since SZArrays are most common, it provides an SZArrayRecord<T> abstraction.
+// Every other array (jagged, multi-dimensional etc) is represented using ArrayRecord.
+// The goal of this class is to let the users use SZArrayRecord<SerializationRecord> abstraction.
+internal sealed class SZArrayOfRecords : SZArrayRecord<SerializationRecord>
 {
     private TypeName? _typeName;
 
-    internal ArrayOfClassesRecord(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo)
+    internal SZArrayOfRecords(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo)
         : base(arrayInfo)
     {
         MemberTypeInfo = memberTypeInfo;
@@ -29,12 +33,12 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
         => _typeName ??= MemberTypeInfo.GetArrayTypeName(ArrayInfo);
 
     /// <inheritdoc/>
-    public override ClassRecord?[] GetArray(bool allowNulls = true)
-        => (ClassRecord?[])(allowNulls ? _arrayNullsAllowed ??= ToArray(true) : _arrayNullsNotAllowed ??= ToArray(false));
+    public override SerializationRecord?[] GetArray(bool allowNulls = true)
+        => (SerializationRecord?[])(allowNulls ? _arrayNullsAllowed ??= ToArray(true) : _arrayNullsNotAllowed ??= ToArray(false));
 
-    private ClassRecord?[] ToArray(bool allowNulls)
+    private SerializationRecord?[] ToArray(bool allowNulls)
     {
-        ClassRecord?[] result = new ClassRecord?[Length];
+        SerializationRecord?[] result = new SerializationRecord?[Length];
 
         int resultIndex = 0;
         foreach (SerializationRecord record in Records)
@@ -43,9 +47,9 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
                 ? referenceRecord.GetReferencedRecord()
                 : record;
 
-            if (actual is ClassRecord classRecord)
+            if (actual is not NullsRecord nullsRecord)
             {
-                result[resultIndex++] = classRecord;
+                result[resultIndex++] = actual;
             }
             else
             {
@@ -54,7 +58,7 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
                     ThrowHelper.ThrowArrayContainedNulls();
                 }
 
-                int nullCount = ((NullsRecord)actual).NullCount;
+                int nullCount = nullsRecord.NullCount;
                 Debug.Assert(nullCount > 0, "All implementations of NullsRecord are expected to return a positive value for NullCount.");
                 do
                 {
