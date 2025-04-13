@@ -4657,6 +4657,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
+        // Re-establish profile consistency, now that inlining and morph have run.
+        //
+        DoPhase(this, PHASE_REPAIR_PROFILE_POST_MORPH, &Compiler::fgRepairProfile);
+
         // Scale block weights and mark run rarely blocks.
         //
         DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
@@ -4962,9 +4966,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, &Compiler::optOptimizePreLayout);
 
-        // Run profile repair
+        // Ensure profile is consistent before starting backend phases
         //
-        DoPhase(this, PHASE_REPAIR_PROFILE, &Compiler::fgRepairProfile);
+        DoPhase(this, PHASE_REPAIR_PROFILE_PRE_LAYOUT, &Compiler::fgRepairProfile);
     }
 
 #ifdef DEBUG
@@ -9244,16 +9248,12 @@ void Compiler::PrintPerMethodLoopHoistStats()
 void Compiler::RecordStateAtEndOfInlining()
 {
 #if defined(DEBUG)
-
-    m_compCyclesAtEndOfInlining    = 0;
-    m_compTickCountAtEndOfInlining = 0;
-    bool b                         = CycleTimer::GetThreadCyclesS(&m_compCyclesAtEndOfInlining);
-    if (!b)
+    LARGE_INTEGER lpCycles;
+    BOOL          result = QueryPerformanceCounter(&lpCycles);
+    if (result == TRUE)
     {
-        return; // We don't have a thread cycle counter.
+        m_compCyclesAtEndOfInlining = (int64_t)lpCycles.QuadPart;
     }
-    m_compTickCountAtEndOfInlining = GetTickCount();
-
 #endif // defined(DEBUG)
 }
 
@@ -9264,19 +9264,24 @@ void Compiler::RecordStateAtEndOfInlining()
 void Compiler::RecordStateAtEndOfCompilation()
 {
 #if defined(DEBUG)
-
-    // Common portion
     m_compCycles = 0;
-    uint64_t compCyclesAtEnd;
-    bool     b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
-    if (!b)
+
+    LARGE_INTEGER lpCycles;
+    BOOL          result = QueryPerformanceCounter(&lpCycles);
+    if (result == TRUE)
     {
-        return; // We don't have a thread cycle counter.
+        if ((int64_t)lpCycles.QuadPart > m_compCyclesAtEndOfInlining)
+        {
+            LARGE_INTEGER lpFreq;
+            result = QueryPerformanceFrequency(&lpFreq);
+            if (result == TRUE)
+            {
+                m_compCycles = (int64_t)lpCycles.QuadPart - m_compCyclesAtEndOfInlining;
+                m_compCycles *= 1000000;
+                m_compCycles /= (int64_t)lpFreq.QuadPart;
+            }
+        }
     }
-    assert(compCyclesAtEnd >= m_compCyclesAtEndOfInlining);
-
-    m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
-
 #endif // defined(DEBUG)
 }
 

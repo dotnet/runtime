@@ -364,6 +364,12 @@ namespace System.Security.Cryptography.X509Certificates
             return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(publicKey, privateKey);
         }
 
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            // MLDsa is not supported on Apple platforms.
+            return null;
+        }
+
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
         {
             EnsureCertData();

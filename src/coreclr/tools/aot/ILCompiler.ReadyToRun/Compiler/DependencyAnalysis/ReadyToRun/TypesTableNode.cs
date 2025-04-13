@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal;
 using Internal.NativeFormat;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -45,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     TypeDefinition defType = defTypeInfo.MetadataReader.GetTypeDefinition(defTypeHandle);
                     string namespaceName = defTypeInfo.MetadataReader.GetString(defType.Namespace);
                     string typeName = defTypeInfo.MetadataReader.GetString(defType.Name);
-                    hashCode ^= ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
+                    hashCode ^= VersionResilientHashCode.NameHashCode(namespaceName, typeName);
                     if (!defType.Attributes.IsNested())
                     {
                         break;
@@ -64,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     ExportedType expType = expTypeInfo.MetadataReader.GetExportedType(expTypeHandle);
                     string namespaceName = expTypeInfo.MetadataReader.GetString(expType.Namespace);
                     string typeName = expTypeInfo.MetadataReader.GetString(expType.Name);
-                    hashCode ^= ReadyToRunHashCode.NameHashCode(namespaceName, typeName);
+                    hashCode ^= VersionResilientHashCode.NameHashCode(namespaceName, typeName);
                     if (expType.Implementation.Kind != HandleKind.ExportedType)
                     {
                         // Not a nested class

@@ -43,8 +43,12 @@
     <FileSignInfo Include="mscordaccore.dll" CertificateName="None" />
     <FileSignInfo Include="mscordbi.dll" CertificateName="None" />
 
-    <!-- On MacOS, we need to sign a number of our executables with the Mac developer cert with hardening enabled. -->
-    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;corerun;createdump" CertificateName="MacDeveloperHarden" />
+    <!-- On MacOS, we need to sign a number of our executables with the Mac developer cert with hardening enabled.
+         Avoid doing this on Linux, which has the same executable names -->
+    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;corerun;createdump;singlefilehost;crossgen2;ilasm;ilc;ildasm;llc;mono-aot-cross;opt;Mono" CertificateName="MacDeveloperHarden" />
+    <!-- Additionally, we need to notarize any .pkg files -->
+    <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg" />
+    <FileSignInfo Include="@(MacOSPkg->'%(Filename)%(Extension)')" CertificateName="MacDeveloperWithNotarization" />
 
     <!-- We don't need to code sign .js files because they are not used in Windows Script Host. -->
     <!-- WARNING: Needs to happed outside of any target -->
@@ -56,16 +60,6 @@
     <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
-  </ItemGroup>
-
-  <!--
-    Ensure that we sign the AZL3 RPM with the LinuxSignMariner key.
-    This package name has the version in it, so we need to use a wildcard to discover the right name.
-  -->
-  <ItemGroup>
-    <AzureLinuxRPM Include="$(ArtifactsPackagesDir)**/*-azl.*-*.rpm" />
-    <AzureLinuxRPM Include="$(ArtifactsPackagesDir)**/*-azl-*.rpm" />
-    <FileSignInfo Include="@(AzureLinuxRPM->'%(Filename)%(Extension)')" CertificateName="LinuxSignMariner" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true'">
@@ -95,6 +89,8 @@
   <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
     <Artifact Include="@(BlobArtifact)" />
 
+    <!-- this is built in the SDK repo now -->
+    <!--
     <Artifact Include="$(ArtifactsDir)VSSetup\**\*.zip"
               Condition="Exists('$(ArtifactsDir)VSSetup')"
               Kind="Blob"
@@ -102,6 +98,7 @@
               IsVSSetup="true"
               IsShipping="true"
               SubBlobFolder="workloads/" />
+    -->
   </ItemGroup>
 
   <!--

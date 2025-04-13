@@ -70,7 +70,7 @@ bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_sec
 void emitDispIllegalInstruction(code_t instructionCode);
 void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned regBase = REG_ZERO);
 
-emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/) const;
+static emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + offset]
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
@@ -121,8 +121,8 @@ unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigne
 
 BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
-BYTE* emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
+BYTE* emitOutputInstr_OptsRcPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
+BYTE* emitOutputInstr_OptsRcNoPcRel(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
 BYTE* emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
 BYTE* emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
@@ -133,6 +133,7 @@ BYTE* emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, ssize_t imm
 BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size);
+BYTE* emitOutputInstr_OptsI(BYTE* dst, instrDesc* id, instruction* ins);
 
 static unsigned TrimSignedToImm12(ssize_t imm12);
 static unsigned TrimSignedToImm13(ssize_t imm13);
