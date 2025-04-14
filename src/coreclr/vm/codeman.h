@@ -154,15 +154,6 @@ inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 }
 #endif
 
-#if defined(FEATURE_EH_FUNCLETS)
-enum class IsFuncletCache : uint32_t
-{
-    NotSet = 2,
-    IsFunclet = 1,
-    IsNotFunclet = 0
-};
-#endif // FEATURE_EH_FUNCLETS
-
 //-----------------------------------------------------------------------------
 // Method header which exists just before the code.
 // Every IJitManager could have its own format for the header.
@@ -297,11 +288,9 @@ public:
         return pRealCodeHeader->nUnwindInfos;
     }
 
-    IsFuncletCache ComputeInitialIsFuncletCacheValue(PCODE codePtr)
+    bool MayHaveFunclets()
     {
-        if (GetNumberOfUnwindInfos() == 1)
-            return IsFuncletCache::IsNotFunclet; // Optimize the scenario where there are not any funclets in a method
-        return IsFuncletCache::NotSet;
+        return GetNumberOfUnwindInfos() != 1;
     }
     void                    SetNumberOfUnwindInfos(UINT nUnwindInfos)
     {
@@ -388,9 +377,17 @@ public:
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    IsFuncletCache ComputeInitialIsFuncletCacheValue(PCODE codePtr)
+    bool MayHaveFunclets()
     {
-        return IsFuncletCache::NotSet; // The interpreter does not have funclets
+        LIMITED_METHOD_CONTRACT;
+        return true;
+    }
+    // Used during initialization of the EECodeInfo if MayHaveFunclets returns false.
+    // As that can't happen, the implementaiton here is meaningless.
+    PTR_RUNTIME_FUNCTION    GetUnwindInfo(UINT iUnwindInfo)
+    {
+        _ASSERTE(!"Unexpected call to GetUnwindInfoZero");
+        return NULL;
     }
 #endif
 
@@ -1773,7 +1770,7 @@ public:
 
     virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength) = 0;
 
-    virtual BOOL IsFunclet(EECodeInfo * pCodeInfo);
+    virtual BOOL LazyIsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL IsFilterFunclet(EECodeInfo * pCodeInfo);
 #endif // FEATURE_EH_FUNCLETS
 
@@ -2666,7 +2663,7 @@ public:
 
     virtual TADDR                   GetFuncletStartAddress(EECodeInfo * pCodeInfo);
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
-    virtual BOOL                    IsFunclet(EECodeInfo * pCodeInfo);
+    virtual BOOL                    LazyIsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL                    IsFilterFunclet(EECodeInfo * pCodeInfo);
 #endif // FEATURE_EH_FUNCLETS
 
@@ -2830,6 +2827,15 @@ class EECodeInfo
     friend BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
 #endif
 
+#if defined(FEATURE_EH_FUNCLETS)
+    enum class IsFuncletCache : uint32_t
+    {
+        NotSet = 2,
+        IsFunclet = 1,
+        IsNotFunclet = 0
+    };
+#endif // FEATURE_EH_FUNCLETS
+
 public:
     EECodeInfo();
 
@@ -2918,19 +2924,7 @@ public:
 
 #ifdef FEATURE_EH_FUNCLETS
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
-    BOOL        IsFunclet()
-    {
-        WRAPPER_NO_CONTRACT;
-        if (m_isFuncletCache == IsFuncletCache::NotSet)
-        {
-            m_isFuncletCache = GetJitManager()->IsFunclet(this) ? IsFuncletCache::IsFunclet : IsFuncletCache::IsNotFunclet;
-        }
-
-        // At this point we know that m_isFuncletCache is either IsFunclet or IsNotFunclet, which is either 1 or 0. Just cast it to BOOL.
-        BOOL result = (BOOL)m_isFuncletCache;
-        _ASSERTE(!!GetJitManager()->IsFunclet(this) == !!result);
-        return result;
-    }
+    BOOL        IsFunclet();
     EECodeInfo  GetMainFunctionInfo();
 #endif // FEATURE_EH_FUNCLETS
 
