@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     {
         public static bool MLKemIsNotSupported => !MLKem.IsSupported;
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [Fact]
         public static void GetMLKemPublicKey_NotMLKem()
         {
             using X509Certificate2 cert = LoadCertificateFromPem(TestData.RsaCertificate);
