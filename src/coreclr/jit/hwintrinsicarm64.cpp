@@ -3273,7 +3273,7 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigne
 //
 GenTree* Compiler::gtNewSimdAllFalseMaskNode(unsigned simdSize)
 {
-    return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateFalseMaskByte, CORINFO_TYPE_BYTE, simdSize);
+    return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateFalseMaskByte, CORINFO_TYPE_UBYTE, simdSize);
 }
 
 #endif // FEATURE_HW_INTRINSICS
