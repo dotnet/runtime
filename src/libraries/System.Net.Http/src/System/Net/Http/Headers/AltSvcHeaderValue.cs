@@ -13,7 +13,7 @@ namespace System.Net.Http.Headers
     /// </remarks>
     internal sealed class AltSvcHeaderValue
     {
-        public static string ClearString { get; } = "clear";
+        public const string ClearString = "clear";
 
         public static AltSvcHeaderValue Clear { get; } = new AltSvcHeaderValue(ClearString, host: null, port: 0, maxAge: TimeSpan.Zero, persist: false);
 
