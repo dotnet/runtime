@@ -141,6 +141,8 @@ namespace System.Runtime
         [StructLayout(LayoutKind.Explicit, Size = 0x2cc)]
 #elif TARGET_ARM64
         [StructLayout(LayoutKind.Explicit, Size = 0x390)]
+#elif TARGET_LOONGARCH64
+        [StructLayout(LayoutKind.Explicit, Size = 0x520)]
 #endif
         private struct OSCONTEXT
         {

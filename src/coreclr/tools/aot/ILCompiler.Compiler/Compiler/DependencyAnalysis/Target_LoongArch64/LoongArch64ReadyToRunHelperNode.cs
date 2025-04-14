@@ -136,8 +136,6 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             // Not tested
-                            encoder.EmitBreak();
-
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
                             encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethod"));
                         }

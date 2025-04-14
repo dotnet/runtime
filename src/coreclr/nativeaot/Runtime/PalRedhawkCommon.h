@@ -109,6 +109,8 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t  R30;
     uintptr_t  R31;
 
+    uintptr_t  __explicit_padding__;
+
     uintptr_t  SP;
     uintptr_t  IP;
 
