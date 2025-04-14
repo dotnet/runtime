@@ -1234,6 +1234,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_ConvertToInt32:
 				cmethod_name = "ConvertToInt32Saturate";
+				break;
 			case SN_ShiftLeft:
 			case SN_ShiftRightLogical:
 			case SN_ShiftRightArithmetic:
