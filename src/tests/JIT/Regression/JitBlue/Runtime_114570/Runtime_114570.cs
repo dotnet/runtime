@@ -22,7 +22,10 @@ public class Runtime_114570
     [Fact]
     public static void Problem()
     {
-        var vr17 = M8();
+        if (Bmi1.IsSupported)
+        {
+            var vr17 = M8();
+        }
     }
 
     public static Vector128<ulong> M8()
