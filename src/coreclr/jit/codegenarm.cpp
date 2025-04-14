@@ -2416,7 +2416,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         // (also assumed in genFnProlog()).
         assert((regSet.rsMaskCalleeSaved & (RBM_R12 | RBM_R13)) == 0);
         unsigned preSpillRegArgSize                = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
-        genFuncletInfo.fiFunctionCallerSPtoFPdelta = preSpillRegArgSize + 2 * REGSIZE_BYTES;
 
         regMaskTP rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
         unsigned  saveRegsCount   = genCountBits(rsMaskSaveRegs);
@@ -2443,7 +2442,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         {
             printf("\n");
             printf("Funclet prolog / epilog info\n");
-            printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunctionCallerSPtoFPdelta);
             printf("                        Save regs: ");
             dspRegMask(rsMaskSaveRegs);
             printf("\n");

@@ -460,7 +460,6 @@ protected:
     struct FuncletFrameInfoDsc
     {
         regMaskTP fiSaveRegs;                  // Set of registers saved in the funclet prolog (includes LR)
-        unsigned  fiFunctionCallerSPtoFPdelta; // Delta between caller SP and the frame pointer
         unsigned  fiSpDelta;                   // Stack pointer delta
     };
 
