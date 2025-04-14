@@ -613,7 +613,7 @@ public:
         CONTRACTL
         {
             MODE_ANY;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
             NOTHROW;
         }
         CONTRACTL_END

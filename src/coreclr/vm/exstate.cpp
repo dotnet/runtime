@@ -291,7 +291,7 @@ ExceptionFlags* ThreadExceptionState::GetFlags()
 #if !defined(DACCESS_COMPILE)
 
 #ifdef DEBUGGING_SUPPORTED
-static DebuggerExState   m_emptyDebuggerExState;
+static DebuggerExState   s_emptyDebuggerExState;
 
 DebuggerExState*    ThreadExceptionState::GetDebuggerState()
 {
@@ -303,7 +303,7 @@ DebuggerExState*    ThreadExceptionState::GetDebuggerState()
     else
     {
         _ASSERTE(!"unexpected use of GetDebuggerState() when no exception in flight");
-        return &m_emptyDebuggerExState;
+        return &s_emptyDebuggerExState;
     }
 #else // FEATURE_EH_FUNCLETS
     return &(m_currentExInfo.m_DebuggerExState);

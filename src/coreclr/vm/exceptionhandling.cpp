@@ -3677,6 +3677,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
             }
             else
             {
+                BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
                 _ASSERTE(pExInfo->m_pMDToReportFunctionLeave != NULL);
                 EEToProfilerExceptionInterfaceWrapper::ExceptionSearchCatcherFound(pMD);
                 if (pExInfo->m_pMDToReportFunctionLeave != NULL)
@@ -3684,6 +3685,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
                     EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFunctionLeave(pExInfo->m_pMDToReportFunctionLeave);
                     pExInfo->m_pMDToReportFunctionLeave = NULL;
                 }
+                END_PROFILER_CALLBACK();
 
                 // We don't need to do anything special for continuable exceptions after calling
                 // this callback.  We are going to start unwinding anyway.

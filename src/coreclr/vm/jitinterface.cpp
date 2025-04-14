@@ -14927,6 +14927,7 @@ BOOL EECodeInfo::HasFrameRegister()
 PTR_CBYTE EECodeInfo::DecodeGCHdrInfoHelper(hdrInfo ** infoPtr)
 {
     GCInfoToken gcInfoToken = GetGCInfoToken();
+    _ASSERTE(m_hdrInfoTable == NULL);
     DWORD hdrInfoSize = (DWORD)::DecodeGCHdrInfo(gcInfoToken, m_relOffset, &m_hdrInfoBody);
     _ASSERTE(hdrInfoSize != 0);
     m_hdrInfoTable = (PTR_CBYTE)gcInfoToken.Info + hdrInfoSize;
