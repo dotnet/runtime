@@ -2238,9 +2238,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         var_types op2Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
                         var_types op3Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
-                        assert((op2Type == TYP_BYTE && (op3Type == TYP_UBYTE || op3Type == TYP_BYTE)) || (op2Type == TYP_UBYTE && op3Type == TYP_UBYTE));
-                        intrinsic = (op2Type == TYP_UBYTE) ? NI_EVEX_MultiplyWideningAndAddByteByte : ((op3Type == TYP_UBYTE) ? NI_EVEX_MultiplyWideningAndAddSByteByte : NI_EVEX_MultiplyWideningAndAddSByteSByte);
-                        retNode = gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                        assert((op2Type == TYP_BYTE && (op3Type == TYP_UBYTE || op3Type == TYP_BYTE)) ||
+                               (op2Type == TYP_UBYTE && op3Type == TYP_UBYTE));
+                        intrinsic = (op2Type == TYP_UBYTE)
+                                        ? NI_EVEX_MultiplyWideningAndAddByteByte
+                                        : ((op3Type == TYP_UBYTE) ? NI_EVEX_MultiplyWideningAndAddSByteByte
+                                                                  : NI_EVEX_MultiplyWideningAndAddSByteSByte);
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
                         break;
                     }
 
@@ -2249,9 +2254,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         var_types op2Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
                         var_types op3Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
-                        assert((op2Type == TYP_BYTE && (op3Type == TYP_UBYTE || op3Type == TYP_BYTE)) || (op2Type == TYP_UBYTE && op3Type == TYP_UBYTE));
-                        intrinsic = (op2Type == TYP_UBYTE) ? NI_EVEX_MultiplyWideningAndAddByteByteSaturate : ((op3Type == TYP_UBYTE) ? NI_EVEX_MultiplyWideningAndAddSByteByteSaturate : NI_EVEX_MultiplyWideningAndAddSByteSByteSaturate);
-                        retNode = gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                        assert((op2Type == TYP_BYTE && (op3Type == TYP_UBYTE || op3Type == TYP_BYTE)) ||
+                               (op2Type == TYP_UBYTE && op3Type == TYP_UBYTE));
+                        intrinsic = (op2Type == TYP_UBYTE)
+                                        ? NI_EVEX_MultiplyWideningAndAddByteByteSaturate
+                                        : ((op3Type == TYP_UBYTE) ? NI_EVEX_MultiplyWideningAndAddSByteByteSaturate
+                                                                  : NI_EVEX_MultiplyWideningAndAddSByteSByteSaturate);
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
                         break;
                     }
 
@@ -2260,9 +2270,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         var_types op2Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
                         var_types op3Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
-                        assert((op2Type == TYP_USHORT && (op3Type == TYP_USHORT || op3Type == TYP_SHORT)) || (op2Type == TYP_SHORT && op3Type == TYP_USHORT));
-                        intrinsic = (op2Type == TYP_SHORT) ? NI_EVEX_MultiplyWideningAndAddInt16UInt16 : ((op3Type == TYP_USHORT) ? NI_EVEX_MultiplyWideningAndAddUInt16UInt16 : NI_EVEX_MultiplyWideningAndAddUInt16Int16);
-                        retNode = gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                        assert((op2Type == TYP_USHORT && (op3Type == TYP_USHORT || op3Type == TYP_SHORT)) ||
+                               (op2Type == TYP_SHORT && op3Type == TYP_USHORT));
+                        intrinsic = (op2Type == TYP_SHORT)
+                                        ? NI_EVEX_MultiplyWideningAndAddInt16UInt16
+                                        : ((op3Type == TYP_USHORT) ? NI_EVEX_MultiplyWideningAndAddUInt16UInt16
+                                                                   : NI_EVEX_MultiplyWideningAndAddUInt16Int16);
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
                         break;
                     }
 
@@ -2271,9 +2286,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         var_types op2Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
                         var_types op3Type = JitType2PreciseVarType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
-                        assert((op2Type == TYP_USHORT && (op3Type == TYP_USHORT || op3Type == TYP_SHORT)) || (op2Type == TYP_SHORT && op3Type == TYP_USHORT));
-                        intrinsic = (op2Type == TYP_SHORT) ? NI_EVEX_MultiplyWideningAndAddInt16UInt16Saturate : ((op3Type == TYP_USHORT) ? NI_EVEX_MultiplyWideningAndAddUInt16UInt16Saturate : NI_EVEX_MultiplyWideningAndAddUInt16Int16Saturate);
-                        retNode = gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                        assert((op2Type == TYP_USHORT && (op3Type == TYP_USHORT || op3Type == TYP_SHORT)) ||
+                               (op2Type == TYP_SHORT && op3Type == TYP_USHORT));
+                        intrinsic = (op2Type == TYP_SHORT)
+                                        ? NI_EVEX_MultiplyWideningAndAddInt16UInt16Saturate
+                                        : ((op3Type == TYP_USHORT) ? NI_EVEX_MultiplyWideningAndAddUInt16UInt16Saturate
+                                                                   : NI_EVEX_MultiplyWideningAndAddUInt16Int16Saturate);
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
                         break;
                     }
 

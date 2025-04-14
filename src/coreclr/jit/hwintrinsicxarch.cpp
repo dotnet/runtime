@@ -59,7 +59,7 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVXVNNIINT8:
             return InstructionSet_AVXVNNIINT8_X64;
         case InstructionSet_AVXVNNIINT16:
-                return InstructionSet_AVXVNNIINT16_X64;
+            return InstructionSet_AVXVNNIINT16_X64;
         case InstructionSet_AES:
             return InstructionSet_AES_X64;
         case InstructionSet_BMI1:
