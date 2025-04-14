@@ -36,11 +36,8 @@ namespace System
         private static string? GetProcessPath() => null;
 
 #if !MONO
-        private static string[] GetCommandLineArgsNative()
-        {
-            // This is only used for delegate created from native host
-            return Array.Empty<string>();
-        }
+        // This is only used for delegate created from native host
+        private static string[] GetCommandLineArgsNative() => [];
 #endif
 
     }
