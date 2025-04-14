@@ -371,6 +371,8 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         return E_FAIL;
     }
 
+    TADDR callerSP = oldStackBase + oldFixedStackSize;
+
 #else
     PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
 #endif
@@ -744,6 +746,9 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         memset((void*)(size_t)(pCtx->Esp), 0, newInfo->stackSize - frameHeaderSize );
 #elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
         memset((void*)newStackBase, 0, newFixedStackSize - frameHeaderSize);
+#else   // !X86, !X64, !ARM64
+        PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
+#endif
 
         // 4) Put the variables from step 3 into their new locations.
 
