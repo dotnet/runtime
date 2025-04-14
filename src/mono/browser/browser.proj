@@ -116,7 +116,7 @@
       Overwrite="true"
       Lines="@(_WasmBundleTimezonesSources, ' ')"
       WriteOnlyWhenDifferent="true" />
-    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c @$(_WasmTimezonesSourcesRsp)"
+    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c --target=wasm64 @$(_WasmTimezonesSourcesRsp)"
           WorkingDirectory="$(WasmObjDir)"
           EmSdkPath="$(EMSDK_PATH)"
           ConsoleToMsBuild="true"
@@ -376,12 +376,12 @@
           AfterTargets="Build"
           DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;GenerateTimezonesArchive;InstallNpmPackages;BuildWithRollup">
 
-    <ItemGroup>
+    <!--<ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a;
                                   $(ICULibDir)/libicudata.a" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
-    </ItemGroup>
+    </ItemGroup>-->
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
