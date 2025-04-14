@@ -1682,8 +1682,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     // If do two SP adjustments, each one must be aligned. This represents the largest possible stack size, if two
     // separate alignment slots are required.
-    unsigned const twoSpAdjustmentFuncletFrameSizeAligned =
-        saveRegsSizeAligned + outgoingArgSpaceAligned;
+    unsigned const twoSpAdjustmentFuncletFrameSizeAligned = saveRegsSizeAligned + outgoingArgSpaceAligned;
     assert((twoSpAdjustmentFuncletFrameSizeAligned % STACK_ALIGN) == 0);
 
     int SP_to_FPLR_save_delta;
@@ -1695,8 +1694,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     if ((twoSpAdjustmentFuncletFrameSizeAligned <= 512) && !useFrameType5)
     {
-        unsigned const oneSpAdjustmentFuncletFrameSize =
-            saveRegsSize + compiler->lvaOutgoingArgSpaceSize;
+        unsigned const oneSpAdjustmentFuncletFrameSize        = saveRegsSize + compiler->lvaOutgoingArgSpaceSize;
         unsigned const oneSpAdjustmentFuncletFrameSizeAligned = roundUp(oneSpAdjustmentFuncletFrameSize, STACK_ALIGN);
         assert(oneSpAdjustmentFuncletFrameSizeAligned <= twoSpAdjustmentFuncletFrameSizeAligned);
 
@@ -1751,13 +1749,13 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
                 SP_to_FPLR_save_delta -= MAX_REG_ARG * REGSIZE_BYTES;
             }
 
-            SP_to_CalleeSave_delta     = outgoingArgSpaceAligned + saveRegsAlignmentPad;
+            SP_to_CalleeSave_delta = outgoingArgSpaceAligned + saveRegsAlignmentPad;
 
             genFuncletInfo.fiFrameType = 5;
         }
         else
         {
-            SP_to_FPLR_save_delta = outgoingArgSpaceAligned;
+            SP_to_FPLR_save_delta  = outgoingArgSpaceAligned;
             SP_to_CalleeSave_delta = SP_to_FPLR_save_delta + 2 /* FP, LR */ * REGSIZE_BYTES + saveRegsAlignmentPad;
 
             genFuncletInfo.fiFrameType = 3;
@@ -1771,9 +1769,9 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     /* Now save it for future use */
 
-    genFuncletInfo.fiSaveRegs                   = rsMaskSaveRegs;
-    genFuncletInfo.fiSP_to_FPLR_save_delta      = SP_to_FPLR_save_delta;
-    genFuncletInfo.fiSP_to_CalleeSave_delta     = SP_to_CalleeSave_delta;
+    genFuncletInfo.fiSaveRegs               = rsMaskSaveRegs;
+    genFuncletInfo.fiSP_to_FPLR_save_delta  = SP_to_FPLR_save_delta;
+    genFuncletInfo.fiSP_to_CalleeSave_delta = SP_to_CalleeSave_delta;
 
 #ifdef DEBUG
     if (verbose)

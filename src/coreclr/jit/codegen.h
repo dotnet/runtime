@@ -473,12 +473,12 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes LR)
-        int fiSP_to_FPLR_save_delta;         // FP/LR register save offset from SP (positive)
-        int fiSP_to_CalleeSave_delta;        // First callee-saved register slot offset from SP (positive)
-        int fiFrameType;                     // Funclet frame types are numbered. See genFuncletProlog() for details.
-        int fiSpDelta1;                      // Stack pointer delta 1 (negative)
-        int fiSpDelta2;                      // Stack pointer delta 2 (negative)
+        regMaskTP fiSaveRegs;               // Set of callee-saved registers saved in the funclet prolog (includes LR)
+        int       fiSP_to_FPLR_save_delta;  // FP/LR register save offset from SP (positive)
+        int       fiSP_to_CalleeSave_delta; // First callee-saved register slot offset from SP (positive)
+        int       fiFrameType;              // Funclet frame types are numbered. See genFuncletProlog() for details.
+        int       fiSpDelta1;               // Stack pointer delta 1 (negative)
+        int       fiSpDelta2;               // Stack pointer delta 2 (negative)
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
@@ -490,7 +490,7 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        unsigned fiSpDelta;                        // Stack pointer delta
+        unsigned fiSpDelta; // Stack pointer delta
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
@@ -503,8 +503,8 @@ protected:
     struct FuncletFrameInfoDsc
     {
         regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
-        int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
-        int fiSpDelta;                       // Stack pointer delta (negative)
+        int       fiSP_to_CalleeSaved_delta; // CalleeSaved register save offset from SP (positive)
+        int       fiSpDelta;                 // Stack pointer delta (negative)
     };
 
     FuncletFrameInfoDsc genFuncletInfo;

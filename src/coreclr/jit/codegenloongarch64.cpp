@@ -561,8 +561,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
 
-    genFuncletInfo.fiSpDelta                    = -funcletFrameSize;
-    genFuncletInfo.fiSaveRegs                   = rsMaskSaveRegs;
+    genFuncletInfo.fiSpDelta  = -funcletFrameSize;
+    genFuncletInfo.fiSaveRegs = rsMaskSaveRegs;
 
 #ifdef DEBUG
     if (verbose)

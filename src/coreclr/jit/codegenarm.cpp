@@ -2435,8 +2435,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
         /* Now save it for future use */
 
-        genFuncletInfo.fiSaveRegs                 = rsMaskSaveRegs;
-        genFuncletInfo.fiSpDelta                  = spDelta;
+        genFuncletInfo.fiSaveRegs = rsMaskSaveRegs;
+        genFuncletInfo.fiSpDelta  = spDelta;
 
 #ifdef DEBUG
         if (verbose)
