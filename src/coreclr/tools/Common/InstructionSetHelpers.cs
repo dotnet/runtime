@@ -198,6 +198,7 @@ namespace System.CommandLine
 
                 // If AVX was enabled, we can opportunistically enable instruction sets which use the VEX encodings
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
+                Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
@@ -208,11 +209,10 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
 
-                    // Since we have added AVX2 to the optimistic set, the Vector<T> ISA chosen for the optimistic
-                    // set can be up to VectorT256. We want to avoid a situation where VectorT128 was chosen for the
-                    // supported set (based on AVX only) and the opportunistic set includes a different size.
+                    // If AVX2 is not in the supported set, we need to restrict the optimistic Vector<T> size, because
+                    // 256-bit Vector<T> cannot be fully accelerated based on AVX2 being in the optimistic set only.
 
-                    if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_VectorT128))
+                    if (!supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX2))
                     {
                         maxVectorTBitWidth = 128;
                     }
