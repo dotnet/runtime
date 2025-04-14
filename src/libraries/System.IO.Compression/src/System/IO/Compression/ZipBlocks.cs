@@ -555,14 +555,9 @@ namespace System.IO.Compression
         // will not throw end of stream exception
         public static bool TrySkipBlock(Stream stream)
         {
-            Span<byte> blockBytes = stackalloc byte[4];
+            Span<byte> blockBytes = stackalloc byte[FieldLengths.Signature];
             long currPosition = stream.Position;
             int bytesRead;
-
-            // blockBytes is used twice: once to hold the signature bytes, once to hold the filename length
-            // and extra field length (since these two fields are sequential in the header)
-            Debug.Assert(blockBytes.Length == FieldLengths.Signature);
-            Debug.Assert(blockBytes.Length == FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength);
 
             bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             if (bytesRead != FieldLengths.Signature || !blockBytes.SequenceEqual(SignatureConstantBytes))
@@ -578,6 +573,9 @@ namespace System.IO.Compression
             // Already read the signature, so make the filename length field location relative to that
             stream.Seek(FieldLocations.FilenameLength - FieldLengths.Signature, SeekOrigin.Current);
 
+            // Reuse blockBytes to read the filename length and the extra field length - these two consecutive
+            // fields fit inside blockBytes.
+            Debug.Assert(blockBytes.Length == FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength);
             bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             if (bytesRead != FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength)
             {
