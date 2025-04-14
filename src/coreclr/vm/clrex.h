@@ -1173,5 +1173,4 @@ class CLRLastThrownObjectException : public CLRException
 bool IsHRESULTForExceptionKind(HRESULT hr, RuntimeExceptionKind kind);
 
 #endif // _CLREX_H_
-``` 
 
