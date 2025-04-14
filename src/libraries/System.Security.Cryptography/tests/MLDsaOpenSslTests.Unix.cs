@@ -39,6 +39,12 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void MLDsaOpenSsl_Ctor_InvalidHandle()
+        {
+            AssertExtensions.Throws<ArgumentException>(static () => new MLDsaOpenSsl(new SafeEvpPKeyHandle()));
+        }
+
+        [Fact]
         public void MLDsaOpenSsl_WrongAlgorithm()
         {
             using RSAOpenSsl rsa = new RSAOpenSsl();
@@ -60,8 +66,8 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.FalseExpression(secondKey.IsInvalid);
             }
 
-            AssertExtensions.TrueExpression(secondKey.IsInvalid, nameof(secondKey.IsInvalid));
-            AssertExtensions.FalseExpression(key.IsInvalid, nameof(key.IsInvalid));
+            AssertExtensions.TrueExpression(secondKey.IsInvalid);
+            AssertExtensions.FalseExpression(key.IsInvalid);
 
             VerifyInstanceIsUsable(mldsa);
         }

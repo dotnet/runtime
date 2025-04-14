@@ -27,6 +27,8 @@ namespace System.Security.Cryptography.Tests
         public byte[] Message => MessageHex.HexToByteArray();
         public byte[] Context => ContextHex.HexToByteArray();
         public byte[] Signature => SignatureHex.HexToByteArray();
+
+        public override string ToString() => $"Nist Test Case {NistTestCaseId} ({Algorithm}, ShouldPass: {ShouldPass})";
     }
 
     public static partial class MLDsaTestsData

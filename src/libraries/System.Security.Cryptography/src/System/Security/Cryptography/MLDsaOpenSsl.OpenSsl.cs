@@ -19,6 +19,12 @@ namespace System.Security.Cryptography
         private static partial MLDsaAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle)
         {
             ArgumentNullException.ThrowIfNull(pkeyHandle);
+
+            if (pkeyHandle.IsInvalid)
+            {
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
+            }
+
             upRefHandle = pkeyHandle.DuplicateHandle();
 
             try
