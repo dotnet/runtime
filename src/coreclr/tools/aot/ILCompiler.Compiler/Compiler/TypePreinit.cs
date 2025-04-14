@@ -629,7 +629,7 @@ namespace ILCompiler
                             {
                                 if (owningType.IsValueType)
                                 {
-                                    instance = NewUninitializedLocationValue(owningType);
+                                    instance = NewUninitializedLocationValue(owningType, fieldThatOwnsMemory: null);
                                     if (!instance.TryCreateByRef(out ctorParameters[0]))
                                     {
                                         return Status.Fail(methodIL.OwningMethod, opcode, "Can't make `this`");
