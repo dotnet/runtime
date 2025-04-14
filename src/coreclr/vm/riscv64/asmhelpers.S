@@ -736,12 +736,14 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     // On entry:
     //
     // a0 = throwable
-    // a1 = SP of the caller of the method/funclet containing the filter
+    // a1 = FP of main function
     // a2 = PC to invoke
     // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
     // Save the SP of this function
     sd  fp, 0(a3)
+    // Restore frame pointer
+    mov fp, a1
     // Invoke the filter funclet
     jalr a2
 

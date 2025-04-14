@@ -507,4 +507,122 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     jmp METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
+;;
+;; Prologue of all funclet calling helpers (CallXXXXFunclet)
+;;
+FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
+        PUSH_CALLEE_SAVED_REGISTERS
+
+        arguments_scratch_area_size = 20h
+        xmm_save_area_size = 10 * 10h ;; xmm6..xmm15 save area
+        stack_alloc_size = arguments_scratch_area_size + localsCount * 8 + alignStack * 8 + xmm_save_area_size
+        rsp_offsetof_arguments = stack_alloc_size + 8*8h + 8h
+        rsp_offsetof_locals = arguments_scratch_area_size + xmm_save_area_size
+
+        alloc_stack     stack_alloc_size
+
+        save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
+        save_xmm128_postrsp xmm7,  (arguments_scratch_area_size + 1 * 10h)
+        save_xmm128_postrsp xmm8,  (arguments_scratch_area_size + 2 * 10h)
+        save_xmm128_postrsp xmm9,  (arguments_scratch_area_size + 3 * 10h)
+        save_xmm128_postrsp xmm10, (arguments_scratch_area_size + 4 * 10h)
+        save_xmm128_postrsp xmm11, (arguments_scratch_area_size + 5 * 10h)
+        save_xmm128_postrsp xmm12, (arguments_scratch_area_size + 6 * 10h)
+        save_xmm128_postrsp xmm13, (arguments_scratch_area_size + 7 * 10h)
+        save_xmm128_postrsp xmm14, (arguments_scratch_area_size + 8 * 10h)
+        save_xmm128_postrsp xmm15, (arguments_scratch_area_size + 9 * 10h)
+
+        END_PROLOGUE
+endm
+
+;;
+;; Epilogue of all funclet calling helpers (CallXXXXFunclet)
+;;
+FUNCLET_CALL_EPILOGUE macro
+        movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
+        movdqa  xmm7,  [rsp + arguments_scratch_area_size + 1 * 10h]
+        movdqa  xmm8,  [rsp + arguments_scratch_area_size + 2 * 10h]
+        movdqa  xmm9,  [rsp + arguments_scratch_area_size + 3 * 10h]
+        movdqa  xmm10, [rsp + arguments_scratch_area_size + 4 * 10h]
+        movdqa  xmm11, [rsp + arguments_scratch_area_size + 5 * 10h]
+        movdqa  xmm12, [rsp + arguments_scratch_area_size + 6 * 10h]
+        movdqa  xmm13, [rsp + arguments_scratch_area_size + 7 * 10h]
+        movdqa  xmm14, [rsp + arguments_scratch_area_size + 8 * 10h]
+        movdqa  xmm15, [rsp + arguments_scratch_area_size + 9 * 10h]
+
+        add     rsp, stack_alloc_size
+
+        POP_CALLEE_SAVED_REGISTERS
+endm
+
+; This helper enables us to call into a funclet after restoring Fp register
+NESTED_ENTRY CallEHFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = PC to invoke
+        ; R8 = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        FUNCLET_CALL_PROLOGUE 0, 1
+
+        ; Restore RBX, RBP, RSI, RDI, R12, R13, R14, R15 from CONTEXT
+        mov     rbx, [r8 + 0]
+        mov     rbp, [r8 + 16]
+        mov     rsi, [r8 + 24]
+        mov     rdi, [r8 + 32]
+        mov     r12, [r8 + 72]
+        mov     r13, [r8 + 80]
+        mov     r14, [r8 + 88]
+        mov     r15, [r8 + 96]
+
+        ; Restore XMM registers from CONTEXT
+        movdqa  xmm6, [r8 + 272 + 0*10h]
+        movdqa  xmm7, [r8 + 272 + 1*10h]
+        movdqa  xmm8, [r8 + 272 + 2*10h]
+        movdqa  xmm9, [r8 + 272 + 3*10h]
+        movdqa  xmm10, [r8 + 272 + 4*10h]
+        movdqa  xmm11, [r8 + 272 + 5*10h]
+        movdqa  xmm12, [r8 + 272 + 6*10h]
+        movdqa  xmm13, [r8 + 272 + 7*10h]
+        movdqa  xmm14, [r8 + 272 + 8*10h]
+        movdqa  xmm15, [r8 + 272 + 9*10h]
+
+        ; Save the SP of this function.
+        mov     [r9], sp
+
+        ; Invoke the funclet
+        call    rdx
+
+        FUNCLET_CALL_EPILOGUE
+
+        ret
+NESTED_END CallEHFunclet, _TEXT
+
+; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
+; frame pointer for accessing the locals in the parent method.
+NESTED_ENTRY CallEHFilterFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = RBP of main function
+        ; R8 = PC to invoke
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        FUNCLET_CALL_PROLOGUE 0, 1
+
+        ; Save the SP of this function
+        mov     [r9], sp
+
+        ; Invoke the filter funclet
+        mov     rbp, rdx
+        call    r8
+
+        FUNCLET_CALL_EPILOGUE
+
+        ret
+NESTED_END CallEHFilterFunclet, _TEXT
+
         end
