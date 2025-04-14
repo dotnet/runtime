@@ -4,10 +4,6 @@
 #ifndef _BITPOSITION_H_
 #define _BITPOSITION_H_
 
-#ifndef _ASSERTE
-#define _ASSERTE(x) _ASSERTE(x)
-#endif
-
 //------------------------------------------------------------------------
 // BitPosition: Return the position of the single bit that is set in 'value'.
 //
