@@ -88,7 +88,7 @@ typedef DPTR(ThreadLocalData) PTR_ThreadLocalData;
 #ifndef DACCESS_COMPILE
 extern
 #ifdef _MSC_VER
- __declspec(selectany)
+__declspec(selectany)
 #endif // _MSC_VER
 thread_local ThreadLocalData t_ThreadStatics;
 #endif // DACCESS_COMPILE
