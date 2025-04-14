@@ -263,6 +263,9 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
+    <Project Path="tests/UnloadableTestTypes/UnloadableTestTypes.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
   </Folder>
   <Folder Name="/tools/" />
   <Folder Name="/tools/gen/">
