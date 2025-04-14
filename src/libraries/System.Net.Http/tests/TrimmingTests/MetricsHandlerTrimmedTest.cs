@@ -28,6 +28,30 @@ class Program
             return -1;
         }
 
+        Type socketsHttpHandlerMetrics = GetHttpType("System.Net.Http.Metrics.SocketsHttpHandlerMetrics");
+
+        // SocketsHttpHandlerMetrics should have been trimmed
+        if (socketsHttpHandlerMetrics is not null)
+        {
+            return -2;
+        }
+
+        Type connectionMetrics = GetHttpType("System.Net.Http.Metrics.ConnectionMetrics");
+
+        // ConnectionMetrics should have been trimmed
+        if (connectionMetrics is not null)
+        {
+            return -3;
+        }
+
+        Type sharedMeter = GetHttpType("System.Net.Http.Metrics.SharedMeter");
+
+        // SharedMeter should have been trimmed
+        if (sharedMeter is not null)
+        {
+            return -4;
+        }
+
         return 100;
     }
 
