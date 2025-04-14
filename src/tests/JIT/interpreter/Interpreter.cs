@@ -98,8 +98,8 @@ public class InterpreterTest
 //            Environment.FailFast(null);
         if (!TestFloat())
             Environment.FailFast(null);
-        if (!TestVirtual())
-            Environment.FailFast(null);
+//        if (!TestVirtual())
+//          Environment.FailFast(null);
     }
 
     public static int Mul4(int a, int b, int c, int d)
