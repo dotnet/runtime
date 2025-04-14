@@ -584,10 +584,10 @@ arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 
 if [[ "$bootstrap" == "1" ]]; then
   # Strip build actions other than -restore and -build from the arguments for the bootstrap build.
-    bootstrapArguments="$arguments"
-    for flag in --sign --publish --pack --test -sign -publish -pack -test; do
-      bootstrapArguments="${bootstrapArguments//$flag/}"
-    done
+  bootstrapArguments="$arguments"
+  for flag in --sign --publish --pack --test -sign -publish -pack -test; do
+    bootstrapArguments="${bootstrapArguments//$flag/}"
+  done
   "$scriptroot/common/build.sh" $bootstrapArguments /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/bootstrap.binlog
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
