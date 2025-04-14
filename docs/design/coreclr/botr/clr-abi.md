@@ -352,7 +352,7 @@ Some definitions:
 
 When an exception occurs, the VM is invoked to do some processing. If the exception is within a "try" region, it eventually calls a corresponding handler (which also includes calling filters). The exception location within a function might be where a "throw" instruction executes, the point of a processor exception like null pointer dereference or divide by zero, or the point of a call where the callee threw an exception but did not catch it.
 
-All non-volative registers are restored to their values at the exception point.
+All non-volatile registers are restored to their values at the exception point.
 
 ### Registers on return from a funclet
 
