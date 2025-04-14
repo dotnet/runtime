@@ -5141,9 +5141,9 @@ void DacDbiInterfaceImpl::Hijack(
     CORDB_ADDRESS esp = GetSP(&ctx);
 
     //
-    // Find out where the OS exception dispatcher has pushed the EXCEPTION_RECORD and CONTEXT. The ExInfo and
-    // ExceptionTracker have pointers to these data structures, but when we get the unhandled exception
-    // notification, the OS exception dispatcher is no longer on the stack, so these pointers are no longer
+    // Find out where the OS exception dispatcher has pushed the EXCEPTION_RECORD and CONTEXT. The ExInfo
+    // has pointers to these data structures, but when we get the unhandled exception notification,
+    // the OS exception dispatcher is no longer on the stack, so these pointers are no longer
     // valid.  We need to either update these pointers in the ExInfo/ExcepionTracker, or reuse the stack
     // space used by the OS exception dispatcher.  We are using the latter approach here.
     //
@@ -5158,8 +5158,8 @@ void DacDbiInterfaceImpl::Hijack(
         // The managed exception may not be related to the unhandled exception for which we are trying to
         // hijack.  An example would be when a thread hits a managed exception, VS tries to do func eval on
         // the thread, but the func eval causes an unhandled exception (e.g. AV in mscorwks.dll).  In this
-        // case, the pointers stored on the ExInfo/ExceptionTracker are closer to the root than the current
-        // SP of the thread.  The check below makes sure we don't reuse the pointers in this case.
+        // case, the pointers stored on the ExInfo are closer to the root than the current SP of the thread.
+        // The check below makes sure we don't reuse the pointers in this case.
         if (espOSContext < esp)
         {
             SafeWriteStructOrThrow(espOSContext, &ctx);
