@@ -53,6 +53,7 @@ internal class Program
         TestSharedCode.Run();
         TestSpan.Run();
         TestReadOnlySpan.Run();
+        TestRvaDataReads.Run();
         TestStaticInterfaceMethod.Run();
         TestConstrainedCall.Run();
         TestTypeHandles.Run();
@@ -1233,6 +1234,51 @@ class TestReadOnlySpan
         Assert.AreEqual(4, MoreOperations.IntsLength);
         Assert.AreEqual(12, MoreOperations.StringLength);
         Assert.AreEqual('H', MoreOperations.FirstChar);
+    }
+}
+
+class TestRvaDataReads
+{
+    static class GuidProvider
+    {
+        public static ref readonly Guid TheGuid1
+        {
+            get
+            {
+                ReadOnlySpan<byte> data = [0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89, 0x9A, 0xAB, 0xBC, 0xCD, 0xDE, 0xEF, 0xF0, 0x00];
+                return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
+            }
+        }
+
+        public static ref readonly Guid TheGuid2
+        {
+            get
+            {
+                ReadOnlySpan<byte> data = [0xDE, 0xEF, 0xF0, 0x00, 0x9A, 0xAB, 0xBC, 0xCD, 0x56, 0x67, 0x78, 0x89, 0x12, 0x23, 0x34, 0x45];
+                return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
+            }
+        }
+    }
+
+    struct TwoGuids
+    {
+        public Guid Guid1, Guid2;
+    }
+
+    static class GuidReader
+    {
+        public static TwoGuids Value = new TwoGuids()
+        {
+            Guid1 = GuidProvider.TheGuid1,
+            Guid2 = GuidProvider.TheGuid2,
+        };
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(GuidReader));
+        Assert.AreEqual(new Guid("45342312-6756-8978-9aab-bccddeeff000"), GuidReader.Value.Guid1);
+        Assert.AreEqual(new Guid("00f0efde-ab9a-cdbc-5667-788912233445"), GuidReader.Value.Guid2);
     }
 }
 

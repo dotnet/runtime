@@ -753,7 +753,12 @@ namespace System.Security.Cryptography
                         AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
 
-                        MLDsaAlgorithm algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(spki.Algorithm.Algorithm);
+                        MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(spki.Algorithm.Algorithm);
+
+                        if (algorithm is null)
+                        {
+                            throw Helpers.CreateAlgorithmUnknownException(spki.Algorithm.Algorithm);
+                        }
 
                         if (spki.Algorithm.Parameters.HasValue)
                         {
@@ -803,7 +808,12 @@ namespace System.Security.Cryptography
                         AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
                         PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn pki);
 
-                        MLDsaAlgorithm algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(pki.PrivateKeyAlgorithm.Algorithm);
+                        MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(pki.PrivateKeyAlgorithm.Algorithm);
+
+                        if (algorithm is null)
+                        {
+                            throw Helpers.CreateAlgorithmUnknownException(pki.PrivateKeyAlgorithm.Algorithm);
+                        }
 
                         if (pki.PrivateKeyAlgorithm.Parameters.HasValue)
                         {

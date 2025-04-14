@@ -673,6 +673,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\ILoaderPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\IStorePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\IX509Pal.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\MLDsaX509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenFlags.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Pkcs10CertificationRequestInfo.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Pkcs12ExportPbeParameters.cs" />
