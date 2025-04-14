@@ -2214,6 +2214,18 @@ protected:
     };
 #endif
 
+#ifdef TARGET_RISCV64
+    struct instrDescLoadImm : instrDescCns
+    {
+        instrDescLoadImm() = delete;
+
+        static const int absMaxInsCount = 8;
+
+        instruction ins[absMaxInsCount];
+        int32_t     values[absMaxInsCount];
+    };
+#endif // TARGET_RISCV64
+
     struct instrDescCGCA : instrDesc // call with ...
     {
         instrDescCGCA() = delete;
@@ -3157,6 +3169,10 @@ private:
     instrDesc* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
 #endif // !TARGET_ARM64
 
+#ifdef TARGET_RISCV64
+    instrDesc* emitNewInstrLoadImm(emitAttr attr, cnsval_ssize_t cns);
+#endif // TARGET_RISCV64
+
     static const BYTE emitFmtToOps[];
 
 #ifdef DEBUG
@@ -3988,6 +4004,18 @@ inline emitter::instrDesc* emitter::emitNewInstrReloc(emitAttr attr, BYTE* addr)
 }
 
 #endif // TARGET_ARM
+
+#ifdef TARGET_RISCV64
+
+inline emitter::instrDesc* emitter::emitNewInstrLoadImm(emitAttr attr, cnsval_ssize_t cns)
+{
+    instrDescLoadImm* id = static_cast<instrDescLoadImm*>(emitAllocAnyInstr(sizeof(instrDescLoadImm), attr));
+    id->idInsOpt(INS_OPTS_I);
+    id->idcCnsVal = cns;
+    return id;
+}
+
+#endif // TARGET_RISCV64
 
 #ifdef TARGET_XARCH
 
