@@ -16,6 +16,10 @@
 #include "dbginterface.h"
 #include <minipal/time.h>
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif
+
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -3786,7 +3790,7 @@ ThrowControlForThread(
     exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
     exceptionRecord.ExceptionFlags = 0;
 
-    OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
+    OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     DispatchManagedException(throwable, pfef->GetExceptionContext());
 #else // FEATURE_EH_FUNCLETS

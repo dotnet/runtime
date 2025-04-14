@@ -6050,7 +6050,7 @@ AdjustContextForJITHelpers(
         // instruction where the call will return.
         //
         // On ARM, just like we perform ControlPC adjustment
-        // during exception dispatch (refer to ExceptionTracker::InitializeCrawlFrame),
+        // during exception dispatch (refer to ExInfo::InitializeCrawlFrame),
         // we will need to perform the corresponding adjustment of IP
         // we got from unwind above, so as to indicate that the AV
         // happened "before" the call to the writebarrier and not at
@@ -8371,13 +8371,8 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
 // The caller can also specify the starting EHTracker to walk the list from.
 // If not specified, this will default to the current exception tracker active
 // on the thread.
-#if defined(FEATURE_EH_FUNCLETS)
-PTR_ExceptionTrackerBase GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
-                                                          PTR_ExceptionTrackerBase pStartingEHTracker)
-#else
 PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
                                                 PTR_ExInfo pStartingEHTracker)
-#endif
 {
     CONTRACTL
     {
@@ -8392,11 +8387,7 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
     CONTRACTL_END;
 
     // Get the reference to the current exception tracker
-#if defined(FEATURE_EH_FUNCLETS)
-    PTR_ExceptionTrackerBase pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#else
     PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#endif
 
     BOOL fFoundTracker = FALSE;
 
@@ -8468,13 +8459,8 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
     {
         // Find the reference to the exception tracker corresponding to the preallocated exception,
         // starting the search from the current exception tracker (2nd arg of NULL specifies that).
- #if defined(FEATURE_EH_FUNCLETS)
-        PTR_ExceptionTrackerBase pEHTracker = NULL;
-        PTR_ExceptionTrackerBase pPreviousEHTracker = NULL;
-#else
         PTR_ExInfo pEHTracker = NULL;
         PTR_ExInfo pPreviousEHTracker = NULL;
-#endif
 
         if (fStartSearchFromPreviousTracker)
         {

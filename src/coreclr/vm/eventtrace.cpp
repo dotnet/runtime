@@ -31,6 +31,7 @@
 #include "finalizerthread.h"
 #include "clrversion.h"
 #include "typestring.h"
+#include "exinfo.h"
 
 #define Win32EventWrite EventWrite
 
@@ -2836,11 +2837,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         gc.innerExceptionObj = ((EXCEPTIONREF)gc.exceptionObj)->GetInnerException();
 
         ThreadExceptionState *pExState = pThread->GetExceptionState();
-#ifndef FEATURE_EH_FUNCLETS
         PTR_ExInfo pExInfo = NULL;
-#else
-        PTR_ExceptionTrackerBase pExInfo = NULL;
-#endif //!FEATURE_EH_FUNCLETS
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);

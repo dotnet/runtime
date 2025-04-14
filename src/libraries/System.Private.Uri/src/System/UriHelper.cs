@@ -365,7 +365,7 @@ namespace System
         {
             if ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.CopyOnly)
             {
-                dest.Append(pStr + start, end - start);
+                dest.Append(new ReadOnlySpan<char>(pStr + start, end - start));
                 return;
             }
 

@@ -1215,29 +1215,7 @@ _ThePreStub@0 proc public
 
     push        esi
 
-ifdef FEATURE_EH_FUNCLETS
-    cmp         [esi + 24], CallDescrWorkerInternalReturnAddress
-    jne         NoSEHReplace
-
-    ; If we were called from CallDescrWorkerInternal then swap the last
-    ; SEH registration for _CallDescrWorkerUnwindFrameChainHandler to ensure
-    ; that class loading exceptions are propagated through unmanaged code
-    ; before being forwarded to the managed one.
-    mov         edi, fs:[0]
-    ; mov         esi, [edi]
-    ; mov         fs:[0], esi
-    mov         [edi + 4], _CallDescrWorkerUnwindFrameChainHandler
     call        _PreStubWorker@8
-    mov         [edi + 4], _ProcessCLRException
-    ; mov         fs:[0], edi
-    jmp         AfterPreStubWorker
-
-NoSEHReplace:
-endif ; FEATURE_EH_FUNCLETS
-
-    call        _PreStubWorker@8
-
-AfterPreStubWorker:
 
     ; eax now contains replacement stub. PreStubWorker will never return
     ; NULL (it throws an exception if stub creation fails.)

@@ -1316,7 +1316,14 @@ namespace System.Security.Cryptography
                         AsnValueReader reader = new(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
                         MLKemAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
-                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, spki.SubjectPublicKey.Span);
+                        ReadOnlySpan<byte> subjectPublicKey = spki.SubjectPublicKey.Span;
+
+                        if (subjectPublicKey.Length != algorithm.EncapsulationKeySizeInBytes)
+                        {
+                            throw new CryptographicException(SR.Argument_KemInvalidEncapsulationKeyLength);
+                        }
+
+                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, subjectPublicKey);
                     }
                 }
             }
