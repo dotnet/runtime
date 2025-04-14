@@ -9,9 +9,10 @@
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
 
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-    <IgnoreForCI Condition="'$(OS)' != 'Windows_NT'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">true</IgnoreForCI>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT' or '$(ContinuousIntegrationBuild)' != 'true'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
     <ProjectReference Include="ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
   </ItemGroup>
 
