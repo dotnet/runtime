@@ -3529,6 +3529,8 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.MLDsa? GetMLDsaPrivateKey() { throw null; }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
         public System.Security.Cryptography.MLDsa? GetMLDsaPublicKey() { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+        public System.Security.Cryptography.MLKem? GetMLKemPublicKey() { throw null; }
         public string GetNameInfo(System.Security.Cryptography.X509Certificates.X509NameType nameType, bool forIssuer) { throw null; }
         [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void Import(byte[] rawData) { }

@@ -780,6 +780,30 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
+        ///   Gets the <see cref="MLKem"/> public key from this certificate.
+        /// </summary>
+        /// <returns>
+        ///   The public key, or <see langword="null"/> if this certificate does not have an ML-KEM public key.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The certificate has an ML-KEM public key, but the platform does not support ML-KEM.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The public key was invalid, or otherwise could not be imported.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public MLKem? GetMLKemPublicKey()
+        {
+            if (MLKemAlgorithm.FromOid(GetKeyAlgorithm()) is null)
+                return null;
+
+            Debug.Assert(!OperatingSystem.IsBrowser());
+            MLKem? publicKey = PublicKey.GetMLKemPublicKey();
+            Debug.Assert(publicKey is not null); // The precondition check should ensure this is not null.
+            return publicKey;
+        }
+
+        /// <summary>
         ///   Gets the <see cref="MLDsa"/> public key from this certificate.
         /// </summary>
         /// <returns>
