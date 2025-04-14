@@ -272,6 +272,8 @@ namespace ILLink.Shared.TrimAnalysis
 							&& valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.All)
 							returnMemberTypes = DynamicallyAccessedMemberTypes.All;
 
+						// We model this as if each individual element of the returned array was returned from the GetInterfaces method call.
+						// It makes diagnostics fall out nicer because we now know where the Type comes from and where to assign blame, should the requirements not match
 						AddReturnValue (new ArrayOfAnnotatedSystemTypeValue(_annotations.GetMethodReturnValue (calledMethod, isNewObj: false, returnMemberTypes)));
 					}
 				}
