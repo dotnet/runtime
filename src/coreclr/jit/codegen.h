@@ -490,7 +490,6 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        unsigned fiFunction_InitialSP_to_FP_delta; // Delta between Initial-SP and the frame pointer
         unsigned fiSpDelta;                        // Stack pointer delta
     };
 
