@@ -3957,16 +3957,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         gcInfoEncoderWithLog->SetPrologSize(prologSize);
     }
 
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-#ifdef TARGET_AMD64
-        // The PSPSym is relative to InitialSP on X64 and CallerSP on other platforms.
-        gcInfoEncoderWithLog->SetPSPSymStackSlot(compiler->lvaGetInitialSPRelativeOffset(compiler->lvaPSPSym));
-#else  // !TARGET_AMD64
-        gcInfoEncoderWithLog->SetPSPSymStackSlot(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
-#endif // !TARGET_AMD64
-    }
-
 #ifdef TARGET_AMD64
     if (compiler->ehAnyFunclets())
     {

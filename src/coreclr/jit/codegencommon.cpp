@@ -5172,18 +5172,6 @@ void CodeGen::genFnProlog()
     }
 #endif // DEBUG
 
-#if defined(DEBUG)
-
-    // We cannot force 0-initialization of the PSPSym
-    // as it will overwrite the real value
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->lvaPSPSym);
-        assert(!varDsc->lvMustInit);
-    }
-
-#endif // DEBUG
-
     /*-------------------------------------------------------------------------
      *
      *  Record the stack frame ranges that will cover all of the tracked
@@ -5673,13 +5661,9 @@ void CodeGen::genFnProlog()
 
     genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
 
-    if (compiler->UsesFunclets())
-    {
-        genSetPSPSym(initReg, &initRegZeroed);
-    }
-    else
-    {
 #if defined(FEATURE_EH_WINDOWS_X86)
+    if (!compiler->UsesFunclets())
+    {
         // when compInitMem is true the genZeroInitFrame will zero out the shadow SP slots
         if (compiler->ehNeedsShadowSPslots() && !compiler->info.compInitMem)
         {
@@ -5699,8 +5683,8 @@ void CodeGen::genFnProlog()
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, initReg, compiler->lvaShadowSPslotsVar,
                                       firstSlotOffs);
         }
-#endif // FEATURE_EH_WINDOWS_X86
     }
+#endif // FEATURE_EH_WINDOWS_X86
 
     genReportGenericContextArg(initReg, &initRegZeroed);
 
