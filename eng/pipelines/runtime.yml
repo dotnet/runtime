@@ -125,7 +125,7 @@ extends:
           - browser_wasm
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s mono.emsdk+clr.runtime -rc Release -c Release -lc $(_BuildConfig)
+            buildArgs: -s clr.runtime -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -818,16 +818,6 @@ extends:
       #
       # WebAssembly legs
       #
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          scenarios:
-            - WasmTestOnChrome
-            - WasmTestOnFirefox
-
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:

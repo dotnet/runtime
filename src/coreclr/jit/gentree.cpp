@@ -5416,6 +5416,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Tan:
                         case NI_System_Math_Tanh:
                         case NI_System_Math_Truncate:
+                        case NI_PRIMITIVE_LeadingZeroCount:
+                        case NI_PRIMITIVE_TrailingZeroCount:
+                        case NI_PRIMITIVE_PopCount:
                         {
                             // Giving intrinsics a large fixed execution cost is because we'd like to CSE
                             // them, even if they are implemented by calls. This is different from modeling

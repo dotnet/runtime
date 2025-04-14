@@ -1043,7 +1043,7 @@ namespace System.Tests
             try
             {
                 // Unsafe.AsPointer is safe since it's pinned by the gc handle
-                Assert.Equal((IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in rChar)), gcHandle.AddrOfPinnedObject());
+                Assert.Equal((IntPtr)Unsafe.AsPointer(in rChar), gcHandle.AddrOfPinnedObject());
             }
             finally
             {

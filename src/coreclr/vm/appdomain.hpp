@@ -1145,9 +1145,8 @@ public:
     // in a lazy fashion so executables do not take the perf hit unless the load other
     // assemblies
 #ifndef DACCESS_COMPILE
-    static BOOL OnUnhandledException(OBJECTREF *pThrowable);
-
-#endif
+    static void OnUnhandledException(OBJECTREF *pThrowable);
+#endif // !DACCESS_COMPILE
 
     // True iff a debugger is attached to the process (same as CORDebuggerAttached)
     BOOL IsDebuggerAttached (void);
@@ -1343,8 +1342,6 @@ private:
     friend class Assembly;
 
 private:
-    BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable);
-
     enum Stage {
         STAGE_CREATING,
         STAGE_READYFORMANAGEDCODE,

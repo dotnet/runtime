@@ -7668,6 +7668,37 @@ static void getMethodInfoHelper(
         &methInfo->locals);
 } // getMethodInfoHelper
 
+
+void CEEInfo::getTransientMethodInfo(MethodDesc* pMD, CORINFO_METHOD_INFO* methInfo)
+{
+    MethodInfoHelperContext cxt{ pMD };
+
+    // We will either find or create transient method details.
+    _ASSERTE(!cxt.HasTransientMethodDetails());
+
+    // IL methods with no RVA indicate there is no implementation defined in metadata.
+    // Check if we previously generated details/implementation for this method.
+    TransientMethodDetails* detailsMaybe = NULL;
+    if (FindTransientMethodDetails(pMD, &detailsMaybe))
+        cxt.UpdateWith(*detailsMaybe);
+
+    getMethodInfoHelper(cxt, methInfo);
+
+    // If we have transient method details we need to handle
+    // the lifetime of the details.
+    if (cxt.HasTransientMethodDetails())
+    {
+        // If we didn't find transient details, but we have them
+        // after getting method info, store them for cleanup.
+        if (detailsMaybe == NULL)
+            AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
+
+        // Reset the context because ownership has either been
+        // transferred or was found in this instance.
+        cxt.UpdateWith({});
+    }
+}
+
 //---------------------------------------------------------------------------------------
 //
 bool
@@ -7704,31 +7735,7 @@ CEEInfo::getMethodInfo(
     }
     else if (ftn->IsIL() && ftn->GetRVA() == 0)
     {
-        // We will either find or create transient method details.
-        _ASSERTE(!cxt.HasTransientMethodDetails());
-
-        // IL methods with no RVA indicate there is no implementation defined in metadata.
-        // Check if we previously generated details/implementation for this method.
-        TransientMethodDetails* detailsMaybe = NULL;
-        if (FindTransientMethodDetails(ftn, &detailsMaybe))
-            cxt.UpdateWith(*detailsMaybe);
-
-        getMethodInfoHelper(cxt, methInfo);
-
-        // If we have transient method details we need to handle
-        // the lifetime of the details.
-        if (cxt.HasTransientMethodDetails())
-        {
-            // If we didn't find transient details, but we have them
-            // after getting method info, store them for cleanup.
-            if (detailsMaybe == NULL)
-                AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
-
-            // Reset the context because ownership has either been
-            // transferred or was found in this instance.
-            cxt.UpdateWith({});
-        }
-
+        getTransientMethodInfo(ftn, methInfo);
         result = true;
     }
 
@@ -7890,7 +7897,48 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         }
     }
 
+    // If the root level caller and callee modules do not have the same runtime
+    // wrapped exception behavior, and the callee has EH, we cannot inline.
+    _ASSERTE(!pCallee->IsDynamicMethod());
+    {
+        Module* pCalleeModule = pCallee->GetModule();
+        Module* pRootModule = pOrigCaller->GetModule();
+
+        if (pRootModule->IsRuntimeWrapExceptions() != pCalleeModule->IsRuntimeWrapExceptions())
+        {
+            if (pCallee->HasILHeader())
+            {
+                COR_ILMETHOD_DECODER header(pCallee->GetILHeader(), pCallee->GetMDImport(), NULL);
+                if (header.EHCount() > 0)
+                {
+                    result = INLINE_FAIL;
+                    szFailReason = "Inlinee and root method have different wrapped exception behavior";
+                    goto exit;
+                }
+            }
+            else if (pCallee->IsIL() && pCallee->GetRVA() == 0)
+            {
+                CORINFO_METHOD_INFO methodInfo;
+                getTransientMethodInfo(pCallee, &methodInfo);
+
+                if (methodInfo.EHcount > 0)
+                {
+                    result = INLINE_FAIL;
+                    szFailReason = "Inlinee and root method have different wrapped exception behavior";
+                    goto exit;
+                }
+            }
+        }
+    }
+
 #ifdef PROFILING_SUPPORTED
+    if (pOrigCallerModule->IsInliningDisabledByProfiler())
+    {
+        result = INLINE_FAIL;
+        szFailReason = "Inlining is disabled in the compiled method's module by a profiler";
+        goto exit;
+    }
+
     if (CORProfilerPresent())
     {
         // #rejit
@@ -7902,15 +7950,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         {
             result = INLINE_FAIL;
             szFailReason = "ReJIT request disabled inlining from caller";
-            goto exit;
-        }
-
-        // If the profiler has set a mask preventing inlining, always return
-        // false to the jit.
-        if (CORProfilerDisableInlining())
-        {
-            result = INLINE_FAIL;
-            szFailReason = "Profiler disabled inlining globally";
             goto exit;
         }
 
@@ -9569,7 +9608,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 
     case ELEMENT_TYPE_PTR:
         // Load the type eagerly under debugger to make the eval work
-        if (CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
+        if (pModule->AreJITOptimizationsDisabled())
         {
             // NOTE: in some IJW cases, when the type pointed at is unmanaged,
             // the GetTypeHandle may fail, because there is no TypeDef for such type.
@@ -10682,8 +10721,8 @@ bool CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
 
 /*********************************************************************/
 
-void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
-                               void **            ppIndirection)  /* OUT */
+void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
+                                   void **            ppIndirection)  /* OUT */
 {
     CONTRACTL {
         THROWS;
@@ -10808,7 +10847,7 @@ exit: ;
     return result;
 }
 
-PCODE CEEJitInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
+PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
 {
     CONTRACTL {
         THROWS;
@@ -11912,9 +11951,9 @@ void CEEInfo::JitProcessShutdownWork()
 }
 
 /*********************************************************************/
-InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
-                                                  mdToken metaTok,
-                                                  void **ppValue)
+InfoAccessType CEECodeGenInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
+                                                      mdToken metaTok,
+                                                      void **ppValue)
 {
     CONTRACTL {
         THROWS;
@@ -11955,7 +11994,7 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
 }
 
 /*********************************************************************/
-InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
+InfoAccessType CEECodeGenInfo::emptyStringLiteral(void ** ppValue)
 {
     CONTRACTL {
         THROWS;
@@ -12185,8 +12224,8 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
 }
 
 /*********************************************************************/
-CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
-                                                            bool* pIsSpeculative)
+CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
+                                                                bool* pIsSpeculative)
 {
     CONTRACTL {
         THROWS;
@@ -12275,8 +12314,8 @@ static void *GetClassSync(MethodTable *pMT)
 }
 
 /*********************************************************************/
-void* CEEJitInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
-                                void **ppIndirection)
+void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
+                                    void **ppIndirection)
 {
     CONTRACTL {
         THROWS;
@@ -12898,7 +12937,7 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
 #endif // DEBUGGING_SUPPORTED
 
-    if (CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
+    if (pModule->AreJITOptimizationsDisabled())
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
     }
@@ -13412,7 +13451,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         fHeartbeat = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitHeartbeat);
 
     if (fHeartbeat)
-        printf(".");
+        minipal_log_print_info(".");
 #endif // _DEBUG
 
     timer.Stop();
@@ -13518,7 +13557,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             result = FALSE;
 
             DefineFullyQualifiedNameForClass();
-            printf("Type %s: expected size 0x%08x, actual size 0x%08x\n",
+            minipal_log_print_error("Type %s: expected size 0x%08x, actual size 0x%08x\n",
                 GetFullyQualifiedNameForClass(pMT), dwExpectedSize, dwActualSize);
         }
         else
@@ -13541,7 +13580,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 result = FALSE;
 
                 DefineFullyQualifiedNameForClass();
-                printf("Type %s: expected HFA type %08x, actual %08x\n",
+                minipal_log_print_error("Type %s: expected HFA type %08x, actual %08x\n",
                     GetFullyQualifiedNameForClass(pMT), dwExpectedHFAType, dwActualHFAType);
             }
             else
@@ -13559,7 +13598,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 result = FALSE;
 
                 DefineFullyQualifiedNameForClass();
-                printf("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n",
+                minipal_log_print_error("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n",
                     GetFullyQualifiedNameForClass(pMT));
             }
             else
@@ -13588,7 +13627,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 result = FALSE;
 
                 DefineFullyQualifiedNameForClass();
-                printf("Type %s: expected alignment 0x%08x, actual 0x%08x\n",
+                minipal_log_print_error("Type %s: expected alignment 0x%08x, actual 0x%08x\n",
                     GetFullyQualifiedNameForClass(pMT), dwExpectedAlignment, dwActualAlignment);
             }
             else
@@ -13610,7 +13649,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                     result = FALSE;
 
                     DefineFullyQualifiedNameForClass();
-                    printf("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n",
+                    minipal_log_print_error("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n",
                         GetFullyQualifiedNameForClass(pMT));
                 }
                 else
@@ -13635,7 +13674,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                     result = FALSE;
 
                     DefineFullyQualifiedNameForClass();
-                    printf("Type %s: GC refmap content doesn't match\n",
+                    minipal_log_print_error("Type %s: GC refmap content doesn't match\n",
                         GetFullyQualifiedNameForClass(pMT));
                 }
                 else
@@ -13939,7 +13978,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             CorInfoHelpFunc corInfoHelpFunc = MapReadyToRunHelper((ReadyToRunHelper)helperNum);
             if (corInfoHelpFunc != CORINFO_HELP_UNDEF)
             {
-                result = (size_t)CEEJitInfo::getHelperFtnStatic(corInfoHelpFunc);
+                result = (size_t)CEECodeGenInfo::getHelperFtnStatic(corInfoHelpFunc);
             }
             else
             {
@@ -14710,6 +14749,10 @@ EECodeInfo::EECodeInfo()
 #ifdef FEATURE_EH_FUNCLETS
     m_pFunctionEntry = NULL;
 #endif
+
+#ifdef TARGET_X86
+    m_hdrInfoTable = NULL;
+#endif
 }
 
 void EECodeInfo::Init(PCODE codeAddress)
@@ -14730,6 +14773,10 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     } CONTRACTL_END;
 
     m_codeAddress = codeAddress;
+
+#ifdef TARGET_X86
+    m_hdrInfoTable = NULL;
+#endif
 
     RangeSection * pRS = ExecutionManager::FindCodeRange(codeAddress, scanFlag);
     if (pRS == NULL)
@@ -14875,6 +14922,23 @@ BOOL EECodeInfo::HasFrameRegister()
 
 #endif // defined(FEATURE_EH_FUNCLETS)
 
+#if defined(TARGET_X86)
+
+PTR_CBYTE EECodeInfo::DecodeGCHdrInfo(hdrInfo ** infoPtr)
+{
+    if (m_hdrInfoTable == NULL)
+    {
+        GCInfoToken gcInfoToken = GetGCInfoToken();
+        DWORD hdrInfoSize = (DWORD)::DecodeGCHdrInfo(gcInfoToken, m_relOffset, &m_hdrInfoBody);
+        _ASSERTE(hdrInfoSize != 0);
+        m_hdrInfoTable = (PTR_CBYTE)gcInfoToken.Info + hdrInfoSize;
+    }
+
+    *infoPtr = &m_hdrInfoBody;
+    return m_hdrInfoTable;
+}
+
+#endif // TARGET_X86
 
 #if defined(TARGET_AMD64)
 // ----------------------------------------------------------------------------
