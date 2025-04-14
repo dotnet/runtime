@@ -53,6 +53,7 @@ internal class Program
         TestSharedCode.Run();
         TestSpan.Run();
         TestReadOnlySpan.Run();
+        TestRvaDataReads.Run();
         TestStaticInterfaceMethod.Run();
         TestConstrainedCall.Run();
         TestTypeHandles.Run();
@@ -1235,6 +1236,51 @@ class TestReadOnlySpan
     }
 }
 
+class TestRvaDataReads
+{
+    static class GuidProvider
+    {
+        public static ref readonly Guid TheGuid1
+        {
+            get
+            {
+                ReadOnlySpan<byte> data = [0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89, 0x9A, 0xAB, 0xBC, 0xCD, 0xDE, 0xEF, 0xF0, 0x00];
+                return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
+            }
+        }
+
+        public static ref readonly Guid TheGuid2
+        {
+            get
+            {
+                ReadOnlySpan<byte> data = [0xDE, 0xEF, 0xF0, 0x00, 0x9A, 0xAB, 0xBC, 0xCD, 0x56, 0x67, 0x78, 0x89, 0x12, 0x23, 0x34, 0x45];
+                return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
+            }
+        }
+    }
+
+    struct TwoGuids
+    {
+        public Guid Guid1, Guid2;
+    }
+
+    static class GuidReader
+    {
+        public static TwoGuids Value = new TwoGuids()
+        {
+            Guid1 = GuidProvider.TheGuid1,
+            Guid2 = GuidProvider.TheGuid2,
+        };
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(GuidReader));
+        Assert.AreEqual(new Guid("45342312-6756-8978-9aab-bccddeeff000"), GuidReader.Value.Guid1);
+        Assert.AreEqual(new Guid("00f0efde-ab9a-cdbc-5667-788912233445"), GuidReader.Value.Guid2);
+    }
+}
+
 class TestStaticInterfaceMethod
 {
     interface IFoo
@@ -2006,6 +2052,12 @@ static class Assert
     {
         if (!HasCctor(type))
             throw new Exception($"{type} is not lazy initialized. At line {line}.");
+    }
+
+    public static void AreEqual(Guid v1, Guid v2, [CallerLineNumber] int line = 0)
+    {
+        if (v1 != v2)
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
     public static unsafe void AreEqual(void* v1, void* v2, [CallerLineNumber] int line = 0)
