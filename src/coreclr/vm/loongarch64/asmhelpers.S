@@ -886,7 +886,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     // Save the SP of this function
     st.d  $fp, $a3, 0
     // Restore frame pointer
-    mov   $fp, $a1
+    move  $fp, $a1
     // Invoke the filter funclet
     jirl  $ra, $a2, 0
 

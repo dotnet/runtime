@@ -743,7 +743,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     // Save the SP of this function
     sd  fp, 0(a3)
     // Restore frame pointer
-    mov fp, a1
+    mv  fp, a1
     // Invoke the filter funclet
     jalr a2
 
