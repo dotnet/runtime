@@ -316,24 +316,24 @@ dump_processor_state (SgenBridgeProcessor *p)
 {
 	int i;
 
-	g_message ("------\n");
-	g_message ("SCCS %d\n", p->num_sccs);
+	printf ("------\n");
+	printf ("SCCS %d\n", p->num_sccs);
 	for (i = 0; i < p->num_sccs; ++i) {
 		int j;
 		MonoGCBridgeSCC *scc = p->api_sccs [i];
-		g_message ("\tSCC %d:", i);
+		printf ("\tSCC %d:", i);
 		for (j = 0; j < scc->num_objs; ++j) {
 			MonoObject *obj = scc->objs [j];
-			g_message (" %p(%s)", obj, m_class_get_name (SGEN_LOAD_VTABLE (obj)->klass));
+			printf (" %p(%s)", obj, SGEN_LOAD_VTABLE (obj)->klass->name);
 		}
-		g_message ("\n");
+		printf ("\n");
 	}
 
-	g_message ("XREFS %d\n", p->num_xrefs);
+	printf ("XREFS %d\n", p->num_xrefs);
 	for (i = 0; i < p->num_xrefs; ++i)
-		g_message ("\t%d -> %d\n", p->api_xrefs [i].src_scc_index, p->api_xrefs [i].dst_scc_index);
+		printf ("\t%d -> %d\n", p->api_xrefs [i].src_scc_index, p->api_xrefs [i].dst_scc_index);
 
-	g_message ("-------\n");
+	printf ("-------\n");
 }
 */
 
@@ -352,7 +352,7 @@ sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcess
 	if (a->num_sccs != b->num_sccs)
 		g_error ("SCCS count expected %d but got %d", a->num_sccs, b->num_sccs);
 	if (a->num_xrefs != b->num_xrefs)
-		g_error ("XREFS count expected %d but got %d", a->num_xrefs, b->num_xrefs);
+		g_error ("SCCS count expected %d but got %d", a->num_xrefs, b->num_xrefs);
 
 	/*
 	 * First we build a hash of each object in `a` to its respective SCC index within
