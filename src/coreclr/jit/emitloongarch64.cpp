@@ -2641,7 +2641,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
 
         int reg2 = (int)addr & 1;
-        addr     = addr ^ 1;
+        addr -= reg2;
 
         assert((addr & 3) == 0);
 
