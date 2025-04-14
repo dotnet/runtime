@@ -261,7 +261,8 @@ public partial class ApkBuilder
             else if (StaticLinkedRuntime && IsCoreCLR)
             {
                 runtimeLib = Path.Combine(AppDir, "libcoreclr_static.a");
-            }else if (IsCoreCLR)
+            }
+            else if (IsCoreCLR)
             {
                 runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
             }
