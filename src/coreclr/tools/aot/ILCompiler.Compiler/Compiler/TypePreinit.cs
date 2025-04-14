@@ -2483,7 +2483,8 @@ namespace ILCompiler
                     || type.HasInstantiation
                     || type is not MetadataType mdType
                     || !mdType.IsSequentialLayout
-                    || mdType.GetClassLayout() is not { PackingSize: 0, Size: 0 })
+                    || mdType.GetClassLayout() is not { PackingSize: 0, Size: 0 }
+                    || mdType.IsInlineArray)
                 {
                     return false;
                 }
@@ -2537,19 +2538,17 @@ namespace ILCompiler
 
             public override bool TryCreateByRef(out Value value)
             {
-                value = new ComInterfaceEntrySlotReference(_entryType, _targetFields, _guidBytes, 0);
+                value = new ComInterfaceEntrySlotReference(this, 0);
                 return true;
             }
 
             private sealed class ComInterfaceEntrySlotReference : ByRefValueBase, IHasInstanceFields
             {
-                private readonly MetadataType _entryType;
-                private readonly FieldDesc[] _targetFields;
-                private readonly byte[][] _guidBytes;
+                private readonly ComInterfaceEntryArrayValue _parent;
                 private readonly int _index;
 
-                public ComInterfaceEntrySlotReference(MetadataType entryType, FieldDesc[] targetFields, byte[][] guidBytes, int index)
-                    => (_entryType, _targetFields, _guidBytes, _index) = (entryType, targetFields, guidBytes, index);
+                public ComInterfaceEntrySlotReference(ComInterfaceEntryArrayValue parent, int index)
+                    => (_parent, _index) = (parent, index);
 
                 public override bool TryCompareEquality(Value value, out bool result)
                 {
@@ -2570,21 +2569,21 @@ namespace ILCompiler
 
                 bool IHasInstanceFields.TrySetField(FieldDesc field, Value value)
                 {
-                    if (field.OwningType != _entryType)
+                    if (field.OwningType != _parent._entryType)
                         return false;
 
                     if (field.Name == "IID"
                         && value is ValueTypeValue guidValue
-                        && guidValue.Size == _guidBytes[_index].Length)
+                        && guidValue.Size == _parent._guidBytes[_index].Length)
                     {
-                        Array.Copy(guidValue.InstanceBytes, _guidBytes[_index], _guidBytes[_index].Length);
+                        Array.Copy(guidValue.InstanceBytes, _parent._guidBytes[_index], _parent._guidBytes[_index].Length);
                         return true;
                     }
                     else if (field.Name == "Vtable"
                         && value is ByRefValueBase byrefValue
-                        && byrefValue.MemoryOwner != null)
+                        && byrefValue.BackingField != null)
                     {
-                        _targetFields[_index] = byrefValue.MemoryOwner;
+                        _parent._targetFields[_index] = byrefValue.BackingField;
                         return true;
                     }
 
@@ -2600,20 +2599,20 @@ namespace ILCompiler
 
                 ByRefValueBase IHasInstanceFields.GetFieldAddress(FieldDesc field)
                 {
-                    if (field.OwningType == _entryType)
+                    if (field.OwningType == _parent._entryType)
                     {
                         // Get address of IID or Vtable field on ComInterfaceEntry this ref points to.
                         // Not actually invalid, but we don't need this.
                         ThrowHelper.ThrowInvalidProgramException();
                     }
-                    else if (field.FieldType == _entryType
+                    else if (field.FieldType == _parent._entryType
                         && _index == 0
-                        && field.Offset.AsInt % _entryType.InstanceFieldSize.AsInt == 0
-                        && field.Offset.AsInt < _entryType.InstanceFieldSize.AsInt * _targetFields.Length)
+                        && field.Offset.AsInt % _parent._entryType.InstanceFieldSize.AsInt == 0
+                        && field.Offset.AsInt < _parent._entryType.InstanceFieldSize.AsInt * _parent._targetFields.Length)
                     {
                         // Get address of a field within an array of ComInterfaceEntry.
-                        int index = field.Offset.AsInt / _entryType.InstanceFieldSize.AsInt;
-                        return new ComInterfaceEntrySlotReference(_entryType, _targetFields, _guidBytes, index);
+                        int index = field.Offset.AsInt / _parent._entryType.InstanceFieldSize.AsInt;
+                        return new ComInterfaceEntrySlotReference(_parent, index);
                     }
 
                     ThrowHelper.ThrowInvalidProgramException();
@@ -2651,7 +2650,8 @@ namespace ILCompiler
                     || type.HasInstantiation
                     || type is not MetadataType mdType
                     || !mdType.IsSequentialLayout
-                    || mdType.GetClassLayout() is not { PackingSize: 0, Size: 0 })
+                    || mdType.GetClassLayout() is not { PackingSize: 0, Size: 0 }
+                    || mdType.IsInlineArray)
                 {
                     return false;
                 }
@@ -2696,7 +2696,7 @@ namespace ILCompiler
 
             public override bool TryCreateByRef(out Value value)
             {
-                value = new VTableLikeSlotReferenceValue(_methods, index: 0, _type.Context.Target.PointerSize, _fieldThatOwnsMemory);
+                value = new VTableLikeSlotReferenceValue(this, index: 0);
                 return true;
             }
 
@@ -2719,15 +2719,13 @@ namespace ILCompiler
 
             private sealed class VTableLikeSlotReferenceValue : ByRefValueBase, IHasInstanceFields
             {
-                private readonly MethodDesc[] _methods;
+                private readonly VTableLikeStructValue _parent;
                 private readonly int _index;
-                private readonly int _pointerSize;
-                private readonly FieldDesc _fieldThatOwnsMemory;
 
-                public override FieldDesc MemoryOwner => _index == 0 ? _fieldThatOwnsMemory : null;
+                public override FieldDesc BackingField => _index == 0 ? _parent._fieldThatOwnsMemory : null;
 
-                public VTableLikeSlotReferenceValue(MethodDesc[] methods, int index, int pointerSize, FieldDesc fieldThatOwnsMemory)
-                    => (_methods, _index, _pointerSize, _fieldThatOwnsMemory) = (methods, index, pointerSize, fieldThatOwnsMemory);
+                public VTableLikeSlotReferenceValue(VTableLikeStructValue parent, int index)
+                    => (_parent, _index) = (parent, index);
 
                 public override bool TryCompareEquality(Value value, out bool result)
                 {
@@ -2750,13 +2748,13 @@ namespace ILCompiler
                 {
                     if (value is MethodPointerValue methodPointer)
                     {
-                        _methods[_index] = methodPointer.PointedToMethod;
+                        _parent._methods[_index] = methodPointer.PointedToMethod;
                         return true;
                     }
                     else if (value is VTableLikeStructValue otherStruct
-                        && _methods.Length - _index >= otherStruct._methods.Length)
+                        && _parent._methods.Length - _index >= otherStruct._methods.Length)
                     {
-                        Array.Copy(otherStruct._methods, 0, _methods, _index, otherStruct._methods.Length);
+                        Array.Copy(otherStruct._methods, 0, _parent._methods, _index, otherStruct._methods.Length);
                         return true;
                     }
 
@@ -2767,14 +2765,14 @@ namespace ILCompiler
                 {
                     if (!VTableLikeStructValue.IsCompatible(type)
                         || type is not MetadataType mdType
-                        || mdType.InstanceFieldSize.AsInt > (_methods.Length - _index) * _pointerSize)
+                        || mdType.InstanceFieldSize.AsInt > (_parent._methods.Length - _index) * _parent._type.Context.Target.PointerSize)
                     {
                         value = null;
                         return false;
                     }
 
                     MethodDesc[] slots = new MethodDesc[GetFieldCount(mdType)];
-                    Array.Copy(_methods, _index, slots, 0, slots.Length);
+                    Array.Copy(_parent._methods, _index, slots, 0, slots.Length);
                     value = new VTableLikeStructValue(mdType, slots, fieldThatOwnsMemory: null);
                     return true;
                 }
@@ -2787,10 +2785,10 @@ namespace ILCompiler
                     if (!VTableLikeStructValue.IsCompatible(field.OwningType))
                         ThrowHelper.ThrowInvalidProgramException();
 
-                    Debug.Assert(field.Offset.AsInt % _pointerSize == 0 && field.FieldType.IsFunctionPointer);
+                    Debug.Assert(field.Offset.AsInt % _parent._type.Context.Target.PointerSize == 0 && field.FieldType.IsFunctionPointer);
 
-                    int index = (field.Offset.AsInt / _pointerSize) + _index;
-                    if (index >= _methods.Length)
+                    int index = (field.Offset.AsInt / _parent._type.Context.Target.PointerSize) + _index;
+                    if (index >= _parent._methods.Length)
                         ThrowHelper.ThrowInvalidProgramException();
 
                     return index;
@@ -2801,36 +2799,36 @@ namespace ILCompiler
                     if (value is not MethodPointerValue methodPtr)
                         return false;
 
-                    _methods[GetFieldIndex(field)] = methodPtr.PointedToMethod;
+                    _parent._methods[GetFieldIndex(field)] = methodPtr.PointedToMethod;
                     return true;
                 }
 
                 Value IHasInstanceFields.GetField(FieldDesc field)
                 {
-                    MethodDesc method = _methods[GetFieldIndex(field)];
+                    MethodDesc method = _parent._methods[GetFieldIndex(field)];
 
                     if (method is not null)
                         return new MethodPointerValue(method);
                     else
-                        return _pointerSize == 8 ? ValueTypeValue.FromInt64(0) : ValueTypeValue.FromInt32(0);
+                        return _parent._type.Context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(0) : ValueTypeValue.FromInt32(0);
                 }
 
                 ByRefValueBase IHasInstanceFields.GetFieldAddress(FieldDesc field)
                 {
-                    return new VTableLikeSlotReferenceValue(_methods, GetFieldIndex(field), _pointerSize, _fieldThatOwnsMemory);
+                    return new VTableLikeSlotReferenceValue(_parent, GetFieldIndex(field));
                 }
 
                 public override bool TryInitialize(int size)
                 {
-                    if (size % _pointerSize != 0)
+                    if (size % _parent._type.Context.Target.PointerSize != 0)
                         return false;
 
-                    int numSlots = size / _pointerSize;
-                    if (_index + numSlots > _methods.Length)
+                    int numSlots = size / _parent._type.Context.Target.PointerSize;
+                    if (_index + numSlots > _parent._methods.Length)
                         return false;
 
                     for (int i = _index; i < numSlots; i++)
-                        _methods[i] = null;
+                        _parent._methods[i] = null;
 
                     return true;
                 }
@@ -3104,7 +3102,7 @@ namespace ILCompiler
             }
             public virtual bool TryInitialize(int size) => false;
 
-            public virtual FieldDesc MemoryOwner => null;
+            public virtual FieldDesc BackingField => null;
         }
 
         private sealed class ByRefValue : ByRefValueBase, IHasInstanceFields
