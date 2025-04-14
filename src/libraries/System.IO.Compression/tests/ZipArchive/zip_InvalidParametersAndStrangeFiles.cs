@@ -1008,27 +1008,31 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        // This is combinatorial.
-        // "version to extract" is 0 and 20. The valid value (20) proves that updating a ZipArchive with trailing extra
-        // field data won't touch existing entries. The invalid value (0) forces ZipArchive to write the corrected header
-        // (preserving the trailing data.)
-        // "extra field data length" is 3, 4, 7, 8 and 15. This accounts for various interpretations of trailing field data.
-        // * 3: zero valid extra fields, trailing data
-        // * 4: one valid extra field (type = 0, length = 0) and no trailing data
-        // * 7: same as above, with trailing data
-        // * 8: multiple valid extra fields, all with type = 0, length = 0. No trailing data
-        // * 15: same as above, with trailing data
+        public static IEnumerable<object[]> ZipArchive_InvalidExtraFieldData_Data()
+        {
+            // Parameter 1 is the version to extract. Parameter 2 is the total number of "extra data" bytes.
+
+            // "version to extract" is 0 and 20. The valid value (20) proves that updating a ZipArchive with
+            // trailing extra field data won't touch existing entries. The invalid value (0) forces ZipArchive
+            // to write the corrected header (preserving the trailing data.)
+            foreach (byte validVersionToExtract in new byte[] { 0, 20 })
+            {
+                // "extra field data length" is 3, 4, 7, 8 and 15. This accounts for various interpretations of
+                // trailing field data.
+                // * 3: zero valid extra fields, trailing data
+                // * 4: one valid extra field (type = 0, length = 0) and no trailing data
+                // * 7: same as above, with trailing data
+                // * 8: multiple valid extra fields, all with type = 0, length = 0. No trailing data
+                // * 15: same as above, with trailing data
+                foreach (ushort extraFieldDataLength in new ushort[] { 3, 4, 7, 8, 15 })
+                {
+                    yield return new object[] { validVersionToExtract, extraFieldDataLength };
+                }
+            }
+        }
+
         [Theory]
-        [InlineData(0, 3)]
-        [InlineData(20, 3)]
-        [InlineData(0, 4)]
-        [InlineData(20, 4)]
-        [InlineData(0, 7)]
-        [InlineData(20, 7)]
-        [InlineData(0, 8)]
-        [InlineData(20, 8)]
-        [InlineData(0, 15)]
-        [InlineData(20, 15)]
+        [MemberData(nameof(ZipArchive_InvalidExtraFieldData_Data))]
         public void ZipArchive_InvalidExtraFieldData(byte validVersionToExtract, ushort extraFieldDataLength)
         {
             byte[] invalidExtraFieldData = GenerateInvalidExtraFieldData(validVersionToExtract, extraFieldDataLength,
