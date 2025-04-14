@@ -64,6 +64,7 @@
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">
     <ProjectExclusions Include="$(MonoProjectRoot)sample/wasm/**/*.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)src/tests/FunctionalTests/WebAssembly/Browser/HotReload/WebAssembly.Browser.HotReload.Test.csproj" />
   </ItemGroup>
 
   <!-- Samples that require a multi-threaded runtime -->
