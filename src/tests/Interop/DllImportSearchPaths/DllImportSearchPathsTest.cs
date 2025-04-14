@@ -19,6 +19,18 @@ public class DllImportSearchPathsTest
         Assert.Throws<DllNotFoundException>(() => NativeLibraryPInvoke.Sum(1, 2));
     }
 
+    [Fact]
+    public static void AssemblyDirectory_InMemory_NotFound()
+    {
+        byte[] bytes = File.ReadAllBytes(Path.Combine(Subdirectory, $"{nameof(DllImportSearchPathsTest)}.dll"));
+        Assembly assembly = Assembly.Load(bytes);
+        var type = assembly.GetType(nameof(NativeLibraryPInvoke));
+        var method = type.GetMethod(nameof(NativeLibraryPInvoke.Sum));
+
+        Exception ex = Assert.Throws<TargetInvocationException>(() =>method.Invoke(null, new object[] { 1, 2 }));
+        Assert.Equal(typeof(DllNotFoundException), ex.InnerException.GetType());
+    }
+
     public static bool CanLoadAssemblyInSubdirectory =>
         !TestLibrary.Utilities.IsNativeAot &&
         !TestLibrary.PlatformDetection.IsMonoFULLAOT &&
