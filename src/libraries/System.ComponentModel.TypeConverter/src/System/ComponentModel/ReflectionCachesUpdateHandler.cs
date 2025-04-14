@@ -23,14 +23,14 @@ namespace System.ComponentModel
             {
                 foreach (Type type in types)
                 {
-                    TypeDescriptor.Refresh(type);
+                    TypeDescriptor.ClearCache(type);
                 }
             }
             else
             {
                 foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
-                    TypeDescriptor.Refresh(assembly);
+                    TypeDescriptor.ClearCache(assembly);
                 }
             }
         }

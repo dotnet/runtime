@@ -2346,7 +2346,7 @@ namespace System.ComponentModel
                                 if (provider.IsPopulated(type))
                                 {
                                     found = true;
-                                    provider.Refresh(type);
+                                    provider.Remove(type);
                                 }
                             }
                         }
@@ -2430,7 +2430,7 @@ namespace System.ComponentModel
                             if (provider.IsPopulated(type))
                             {
                                 found = true;
-                                provider.Refresh(type);
+                                provider.Remove(type);
                             }
                         }
                     }
@@ -2493,7 +2493,7 @@ namespace System.ComponentModel
 
                             foreach (Type populatedType in populatedTypes)
                             {
-                                provider.Refresh(populatedType);
+                                provider.Remove(populatedType);
                                 refreshedTypes ??= new Hashtable();
                                 refreshedTypes[populatedType] = populatedType;
                             }
@@ -2527,6 +2527,32 @@ namespace System.ComponentModel
             foreach (Module mod in assembly.GetModules())
             {
                 Refresh(mod);
+            }
+        }
+
+        internal static void ClearCache(Type type)
+        {
+            Refresh(type);
+            s_defaultProviderInitialized.TryRemove(type, out _);
+        }
+
+        internal static void ClearCache(Assembly assembly)
+        {
+            foreach (Module module in assembly.GetModules())
+            {
+                // Invalidate the provider for the types in the module.
+                Refresh(module);
+
+                // And the default providers.
+                IEnumerator<KeyValuePair<Type, object?>> e = s_defaultProviderInitialized.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    Type type = e.Current.Key;
+                    if (type.Module.Equals(module))
+                    {
+                        s_defaultProviderInitialized.TryRemove(type, out _);
+                    }
+                }
             }
         }
 
