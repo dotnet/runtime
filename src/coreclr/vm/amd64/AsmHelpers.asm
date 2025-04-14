@@ -590,7 +590,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         movdqa  xmm15, [r8 + 272 + 9*10h]
 
         ; Save the SP of this function.
-        mov     [r9], sp
+        mov     [r9], rsp
 
         ; Invoke the funclet
         call    rdx
@@ -614,7 +614,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         FUNCLET_CALL_PROLOGUE 0, 1
 
         ; Save the SP of this function
-        mov     [r9], sp
+        mov     [r9], rsp
 
         ; Invoke the filter funclet
         mov     rbp, rdx

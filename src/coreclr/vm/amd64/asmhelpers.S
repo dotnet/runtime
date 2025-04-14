@@ -417,7 +417,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         mov     r15, [rdx + 96]
 
         // Save the SP of this function.
-        mov     [r9], sp
+        mov     [r9], rsp
 
         // Invoke the funclet
         call    rsi
