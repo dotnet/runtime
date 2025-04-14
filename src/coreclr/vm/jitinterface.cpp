@@ -14890,7 +14890,7 @@ EECodeInfo EECodeInfo::GetMainFunctionInfo()
     result.m_codeAddress = this->GetStartAddress();
     result.m_pFunctionEntry = NULL;
 #ifdef FEATURE_EH_FUNCLETS
-    m_isFuncletCache = IsFuncletCache::IsNotFunclet;
+    result.m_isFuncletCache = IsFuncletCache::IsNotFunclet;
 #endif
 
     return result;
