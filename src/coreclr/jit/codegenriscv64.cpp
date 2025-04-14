@@ -534,8 +534,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert((rsMaskSaveRegs & RBM_FP) != 0);
 
     /* Now save it for future use */
-    genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta();
-
     int funcletFrameSize = compiler->lvaOutgoingArgSpaceSize;
 
     genFuncletInfo.fiSP_to_CalleeSaved_delta = funcletFrameSize;
@@ -562,7 +560,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("                        Save regs: ");
         dspRegMask(genFuncletInfo.fiSaveRegs);
         printf("\n");
-        printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunction_CallerSP_to_FP_delta);
         printf("  SP to CalleeSaved location delta: %d\n", genFuncletInfo.fiSP_to_CalleeSaved_delta);
         printf("                       SP delta: %d\n", genFuncletInfo.fiSpDelta);
     }

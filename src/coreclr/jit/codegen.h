@@ -474,8 +474,6 @@ protected:
     struct FuncletFrameInfoDsc
     {
         regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes LR)
-        int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
-                                             // (negative)
         int fiSP_to_FPLR_save_delta;         // FP/LR register save offset from SP (positive)
         int fiSP_to_CalleeSave_delta;        // First callee-saved register slot offset from SP (positive)
         int fiFrameType;                     // Funclet frame types are numbered. See genFuncletProlog() for details.
@@ -506,8 +504,6 @@ protected:
     struct FuncletFrameInfoDsc
     {
         regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
-        int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
-                                             // (negative)
         int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
         int fiSpDelta;                       // Stack pointer delta (negative)
     };
