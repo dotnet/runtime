@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
                     FindReferenceTargetsCallback.s_currentRootObjectHandle = nativeObjectWrapper.ProxyHandle;
-                    if (IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, s_findReferencesTargetCallback) != HResults.S_OK)
+                    if (IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, (IntPtr)Unsafe.AsPointer(in s_findReferencesTargetCallback)) != HResults.S_OK)
                     {
                         walkFailed = true;
                         FindReferenceTargetsCallback.s_currentRootObjectHandle = default;

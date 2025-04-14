@@ -79,21 +79,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private static unsafe IntPtr CreateDefaultIUnknownVftbl()
-        {
-            return (IntPtr)Unsafe.AsPointer(in VtableImplementations.IUnknown);
-        }
-
-        private static unsafe IntPtr CreateDefaultIReferenceTrackerTargetVftbl()
-        {
-            return (IntPtr)Unsafe.AsPointer(in VtableImplementations.IReferenceTrackerTarget);
-        }
-
-        private static unsafe IntPtr CreateTaggedImplVftbl()
-        {
-            return (IntPtr)Unsafe.AsPointer(in VtableImplementations.ITaggedImpl);
-        }
-
+        internal static unsafe IntPtr DefaultIUnknownVftblPtr => (IntPtr)Unsafe.AsPointer(in VtableImplementations.IUnknown);
+        internal static unsafe IntPtr TaggedImplVftblPtr => (IntPtr)Unsafe.AsPointer(in VtableImplementations.ITaggedImpl);
+        internal static unsafe IntPtr DefaultIReferenceTrackerTargetVftblPtr => (IntPtr)Unsafe.AsPointer(in VtableImplementations.IReferenceTrackerTarget);
 
         private static class VtableImplementations
         {

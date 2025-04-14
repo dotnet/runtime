@@ -26,6 +26,10 @@ namespace System.Runtime.InteropServices
         [SuppressGCTransition]
         private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
+        internal static IntPtr DefaultIUnknownVftblPtr { get; } = CreateDefaultIUnknownVftbl();
+        internal static IntPtr TaggedImplVftblPtr { get; } = CreateTaggedImplVftbl();
+        internal static IntPtr DefaultIReferenceTrackerTargetVftblPtr { get; } = CreateDefaultIReferenceTrackerTargetVftbl();
+
         private static unsafe IntPtr CreateDefaultIUnknownVftbl()
         {
             IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 3 * sizeof(IntPtr));

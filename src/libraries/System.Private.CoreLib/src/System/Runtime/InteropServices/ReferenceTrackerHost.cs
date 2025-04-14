@@ -11,12 +11,12 @@ namespace System.Runtime.InteropServices
     internal static class ReferenceTrackerHost
     {
         [FixedAddressValueType]
-        internal static readonly unsafe IntPtr s_globalHostServices = (IntPtr)Unsafe.AsPointer(in HostServices.Vftbl);
+        private static readonly unsafe IntPtr s_globalHostServices = (IntPtr)Unsafe.AsPointer(in HostServices.Vftbl);
 
         // Called when an IReferenceTracker instance is found.
-        public static void SetReferenceTrackerHost(IntPtr trackerManager)
+        public static unsafe void SetReferenceTrackerHost(IntPtr trackerManager)
         {
-            IReferenceTrackerManager.SetReferenceTrackerHost(trackerManager, s_globalHostServices);
+            IReferenceTrackerManager.SetReferenceTrackerHost(trackerManager, (IntPtr)Unsafe.AsPointer(in s_globalHostServices));
         }
 
 #pragma warning disable IDE0060
