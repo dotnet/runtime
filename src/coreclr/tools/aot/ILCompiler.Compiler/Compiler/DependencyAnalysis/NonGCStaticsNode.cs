@@ -41,6 +41,10 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (_preinitializationManager.IsPreinitialized(_type))
             {
+                // Unix linkers don't like relocs to readonly data section
+                if (!factory.Target.IsWindows)
+                    return ObjectNodeSection.DataSection;
+
                 ReadOnlyFieldPolicy readOnlyPolicy = _preinitializationManager.ReadOnlyFieldPolicy;
 
                 bool allFieldsReadOnly = true;
@@ -55,8 +59,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 // If all fields are read only, we can place this into a read only section
-                if (allFieldsReadOnly
-                    && factory.Target.IsWindows /* Unix linkers don't like relocs to readonly data section */)
+                if (allFieldsReadOnly)
                     return ObjectNodeSection.ReadOnlyDataSection;
                 else
                     return ObjectNodeSection.DataSection;
