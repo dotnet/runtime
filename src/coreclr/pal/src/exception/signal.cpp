@@ -655,6 +655,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                     if (stackOverflowThreadId == THREADSilentGetCurrentThreadId())
                     {
                         (void)!write(STDERR_FILENO, StackOverflowOnTheSameThreadMessage, sizeof(StackOverflowOnTheSameThreadMessage) - 1);
+                        PROCAbort(code, siginfo);
                     }
 
                     while (true)
