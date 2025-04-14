@@ -191,7 +191,7 @@ NoNeedToClear:
 #endif // TARGET_X86
 }
 
-FORCEINLINE static SOleTlsData *TryGetOleTlsData()
+FORCEINLINE static SOleTlsData* TryGetOleTlsData()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -199,13 +199,13 @@ FORCEINLINE static SOleTlsData *TryGetOleTlsData()
     // This saves 1 memory instruction over NtCurretTeb()->ReservedForOle because
     // NtCurrentTeb() reads _TEB.NtTib.Self which is the same as what FS:0 already
     // points to.
-    return (SOleTlsData *)(ULONG_PTR)__readfsdword(offsetof(TEB, ReservedForOle));
+    return (SOleTlsData*)(ULONG_PTR)__readfsdword(offsetof(TEB, ReservedForOle));
 #else // TARGET_X86
-    return (SOleTlsData *)ClrTeb::GetOleReservedPtr();
+    return (SOleTlsData*)ClrTeb::GetOleReservedPtr();
 #endif // TARGET_X86
 }
 
-static SOleTlsData *GetOrCreateOleTlsData()
+static SOleTlsData* GetOrCreateOleTlsData()
 {
     CONTRACTL
     {
@@ -215,9 +215,9 @@ static SOleTlsData *GetOrCreateOleTlsData()
     }
     CONTRACT_END;
 
-    SOleTlsData *pOleTlsData = TryGetOleTlsData();
+    SOleTlsData* pOleTlsData = TryGetOleTlsData();
     if (pOleTlsData == NULL)
-        pOleTlsData = (SOleTlsData *)SetupOleContext();
+        pOleTlsData = (SOleTlsData*)SetupOleContext();
 
     return pOleTlsData;
 }
@@ -234,12 +234,13 @@ FORCEINLINE static void* GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallI
     return tgt;
 }
 
-FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* pOleTlsData, RCW* pRCW, CLRToCOMCallInfo* pComInfo)
+FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* pOleTlsData, RCW* pRCW, CLRToCOMCallInfo* pComInfo, void** ppTarget)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pOleTlsData != NULL);
     _ASSERTE(pRCW != NULL);
     _ASSERTE(pComInfo != NULL);
+    _ASSERTE(ppTarget != NULL);
 
     // test for free-threaded after testing for context match to optimize for apartment-bound objects
     if (pOleTlsData->pCurrentCtx == pRCW->GetWrapperCtxCookie() || pRCW->IsFreeThreaded())
@@ -250,7 +251,14 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
             {
                 IUnknown* pUnk = pRCW->m_aInterfaceEntries[i].m_pUnknown;
                 if (pUnk != NULL)
-                    return (IUnknown*)GetCOMIPFromRCW_GetTarget(pUnk, pComInfo);
+                {
+                    void* targetMaybe = GetCOMIPFromRCW_GetTarget(pUnk, pComInfo);
+                    if (targetMaybe != NULL)
+                    {
+                        *ppTarget = targetMaybe;
+                        return pUnk;
+                    }
+                }
             }
         }
     }
@@ -266,12 +274,14 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
 #include <optsmallperfcritical.h>
 
 // This helper can handle any CLR->COM call.
-FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget)
+FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void** ppTarget)
 {
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(pMD->IsCLRToCOMCall() || pMD->IsEEImpl());
+        PRECONDITION(pSrcUNSAFE != NULL);
+        PRECONDITION(pMD != NULL && (pMD->IsCLRToCOMCall() || pMD->IsEEImpl()));
+        PRECONDITION(ppTarget != NULL);
     }
     CONTRACTL_END;
 
@@ -286,7 +296,7 @@ FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
         // This is the "fast path" for compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
         SOleTlsData* pOleTlsData = TryGetOleTlsData();
         if (pOleTlsData != NULL)
-            return GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo);
+            return GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
     }
     return NULL;
 }
@@ -317,7 +327,7 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
     RCW* pRCW = objRef->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
-        IUnknown* pUnk = GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo);
+        IUnknown* pUnk = GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
         if (pUnk != NULL)
             return pUnk;
     }
