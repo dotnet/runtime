@@ -22,6 +22,10 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class DiagnosticsTest : DiagnosticsTestBase
     {
+        // Temporary till we expose a method to retun it.
+        private static DistributedContextPropagator s_legacyPropagator = typeof(Activity).Assembly.GetType("System.Diagnostics.LegacyPropagator")
+                                                    .GetProperty("Instance", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null) as DistributedContextPropagator;
+
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
         private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
 
@@ -823,8 +827,12 @@ namespace System.Net.Http.Functional.Tests
 
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+                // To test the Hierarchical propagation format, we need to set the legacy propagator.
+                DistributedContextPropagator.Current = s_legacyPropagator;
+
                 Activity parentActivity = new Activity("parent");
                 parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
+
                 parentActivity.AddBaggage("bad/key", "value");
                 parentActivity.AddBaggage("goodkey", "bad/value");
                 parentActivity.AddBaggage("key", "value");
@@ -1326,7 +1334,9 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        Assert.NotEqual(GetHeaderValue(firstRequestData, "Request-Id"), GetHeaderValue(secondRequestData, "Request-Id"));
+                        // Hierarchical format is not supported with the default W3C propgator. Only Legacy propagator support it.
+                        Assert.Null(GetHeaderValue(firstRequestData, "traceparent"));
+                        Assert.Null(GetHeaderValue(firstRequestData, "tracestate"));
                     }
                 });
             });
@@ -1357,11 +1367,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SocketsHttpHandlerPropagators_WithIdFormat_MemberData()
         {
-            // Temporary till we expose a method to retun it.
-            DistributedContextPropagator legacyPropagator = typeof(Activity).Assembly.GetType("System.Diagnostics.LegacyPropagator")
-                                                        .GetProperty("Instance", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null) as DistributedContextPropagator;
-
-            foreach (var propagator in new[] { null, DistributedContextPropagator.CreateDefaultPropagator(), legacyPropagator, DistributedContextPropagator.CreateNoOutputPropagator(), DistributedContextPropagator.CreatePassThroughPropagator() })
+            foreach (var propagator in new[] { null, DistributedContextPropagator.CreateDefaultPropagator(), s_legacyPropagator, DistributedContextPropagator.CreateNoOutputPropagator(), DistributedContextPropagator.CreatePassThroughPropagator() })
             {
                 foreach (ActivityIdFormat format in new[] { ActivityIdFormat.Hierarchical, ActivityIdFormat.W3C })
                 {
@@ -1625,6 +1631,18 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(passthrough, parent.Id == requestId);
                 Assert.Null(traceparent);
                 Assert.Null(tracestate);
+
+                List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, "Correlation-Context") ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(kvp => NameValueHeaderValue.Parse(kvp))
+                    .ToList();
+
+                List<KeyValuePair<string, string>> baggage = parent.Baggage.ToList();
+                Assert.Equal(baggage.Count, correlationContext.Count);
+                foreach (var kvp in baggage)
+                {
+                    Assert.Contains(new NameValueHeaderValue(kvp.Key, kvp.Value), correlationContext);
+                }
             }
             else if (parent.IdFormat == ActivityIdFormat.W3C)
             {
@@ -1633,18 +1651,18 @@ namespace System.Net.Http.Functional.Tests
                 Assert.StartsWith($"00-{parent.TraceId.ToHexString()}-", traceparent);
                 Assert.Equal(passthrough, parent.Id == traceparent);
                 Assert.Equal(parent.TraceStateString, tracestate);
-            }
 
-            List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, isW3C ? "baggage" : "Correlation-Context") ?? string.Empty)
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(kvp => NameValueHeaderValue.Parse(kvp))
-                .ToList();
+                List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, "baggage") ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(kvp => NameValueHeaderValue.Parse(kvp))
+                    .ToList();
 
-            List<KeyValuePair<string, string>> baggage = parent.Baggage.ToList();
-            Assert.Equal(baggage.Count, correlationContext.Count);
-            foreach (var kvp in baggage)
-            {
-                Assert.Contains(new NameValueHeaderValue(kvp.Key, kvp.Value), correlationContext);
+                List<KeyValuePair<string, string>> baggage = parent.Baggage.ToList();
+                Assert.Equal(baggage.Count, correlationContext.Count);
+                foreach (var kvp in baggage)
+                {
+                    Assert.Contains(new NameValueHeaderValue(kvp.Key, kvp.Value), correlationContext);
+                }
             }
         }
 
