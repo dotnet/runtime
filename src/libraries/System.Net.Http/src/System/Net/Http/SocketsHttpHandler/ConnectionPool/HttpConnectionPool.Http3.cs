@@ -663,43 +663,54 @@ namespace System.Net.Http
 
                 if (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue))
                 {
-                    var value = (AltSvcHeaderValue?)parsedValue;
+                    Debug.Assert(parsedValue is not null);
+
+                    var value = (AltSvcHeaderValue)parsedValue;
 
                     // 'clear' should be the only value present.
-                    if (value == AltSvcHeaderValue.Clear)
+                    if (ReferenceEquals(AltSvcHeaderValue.Clear, value))
                     {
                         lock (SyncObj)
                         {
+                            // Clear invalidates all Alt-Svc including the current response ones.
+                            // https://httpwg.org/specs/rfc7838.html#alt-svc
                             ExpireAltSvcAuthority();
                             Debug.Assert(_authorityExpireTimer != null || _disposed);
                             _authorityExpireTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-                            break;
+                            return;
                         }
                     }
 
-                    if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
+                    // Do not process the Alt-Svc header if we've already found a valid h3 authority before, but continue looking for potential "clear".
+                    if (nextAuthority is not null || value.AlpnProtocolName != "h3")
                     {
-                        var authority = new HttpAuthority(value.Host ?? _originAuthority.IdnHost, value.Port);
-                        if (IsAltSvcBlocked(authority, out _))
-                        {
-                            // Skip authorities in our blocklist.
-                            continue;
-                        }
-
-                        TimeSpan authorityMaxAge = value.MaxAge;
-
-                        if (responseAge != null)
-                        {
-                            authorityMaxAge -= responseAge.GetValueOrDefault();
-                        }
-
-                        if (authorityMaxAge > TimeSpan.Zero)
-                        {
-                            nextAuthority = authority;
-                            nextAuthorityMaxAge = authorityMaxAge;
-                            nextAuthorityPersist = value.Persist;
-                        }
+                        continue;
                     }
+
+                    var authority = new HttpAuthority(value.Host ?? _originAuthority.IdnHost, value.Port);
+                    if (IsAltSvcBlocked(authority, out _))
+                    {
+                        // Skip authorities in our blocklist.
+                        continue;
+                    }
+
+                    TimeSpan authorityMaxAge = value.MaxAge;
+
+                    if (responseAge != null)
+                    {
+                        authorityMaxAge -= responseAge.GetValueOrDefault();
+                    }
+
+                    // It's already out of date, skip it.
+                    if (authorityMaxAge <= TimeSpan.Zero)
+                    {
+                        continue;
+                    }
+
+                    // We found an h3 authority that is not blocked and has not aged out.
+                    nextAuthority = authority;
+                    nextAuthorityMaxAge = authorityMaxAge;
+                    nextAuthorityPersist = value.Persist;
                 }
             }
 
