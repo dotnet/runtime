@@ -27,10 +27,11 @@ EXTERN_C UINT32 _tls_index;
 #endif
 
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
+__declspec(selectany)
 #else
-EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
+EXTERN_C
 #endif
+thread_local ThreadLocalInfo gCurrentThreadInfo;
 
 inline Thread* GetThreadNULLOk()
 {

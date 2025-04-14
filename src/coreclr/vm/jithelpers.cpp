@@ -331,10 +331,9 @@ HCIMPLEND
 // the most optimal TLS access pattern for the platform when inlining the
 // GetThreadLocalStaticBaseIfExistsAndInitialized function
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
-#else
-__thread ThreadLocalData t_ThreadStatics;
+__declspec(selectany)
 #endif // _MSC_VER
+thread_local ThreadLocalData t_ThreadStatics;
 
 extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic)
 {
@@ -1337,7 +1336,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 #ifdef FEATURE_EH_FUNCLETS
 
     Thread *pThread = GetThread();
-    
+
     SoftwareExceptionFrame exceptionFrame;
 #ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
@@ -2934,7 +2933,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else    
+#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif
@@ -2972,7 +2971,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else    
+#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif

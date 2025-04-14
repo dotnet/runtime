@@ -352,8 +352,8 @@ bool Thread::DetectHandleILStubsForDebugger()
 }
 
 #ifndef _MSC_VER
-__thread ThreadLocalInfo gCurrentThreadInfo;
-#endif
+thread_local ThreadLocalInfo gCurrentThreadInfo;
+#endif // _MSC_VER
 
 #ifndef DACCESS_COMPILE
 
