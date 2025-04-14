@@ -387,7 +387,7 @@ void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *
     }
 }
 
-void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, SigPointer* pSigPtrTokenEnd, BYTE additionalCallConv)
+void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE additionalCallConv)
 {
     CONTRACTL
     {
@@ -396,10 +396,9 @@ void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, SigP
     }
     CONTRACTL_END
 
-    BYTE element;
-    IfFailThrowBF(GetByte(&element), BFA_BAD_COMPLUS_SIG, pSigModule);
-    pSigBuilder->AppendByte(element | additionalCallConv);
-    pSigBuilder->AppendBlob((const PVOID)m_ptr, pSigPtrTokenEnd->m_ptr - m_ptr);
+    // The copy is done without advancing m_ptr.
+    pSigBuilder->AppendByte(*m_ptr | additionalCallConv);
+    pSigBuilder->AppendBlob((const PVOID)(m_ptr + 1), m_dwLen - 1);
 }
 #endif // DACCESS_COMPILE
 

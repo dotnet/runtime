@@ -8,7 +8,7 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     STANDARD_VM_CONTRACT;
     _ASSERTE(resolver != NULL);
     _ASSERTE(methodILDecoder != NULL);
-    _ASSERTE(*resolver == NULL && *methodILDecoder != NULL);
+    _ASSERTE(*resolver == NULL && *methodILDecoder == NULL);
     _ASSERTE(IsIL());
     _ASSERTE(GetRVA() != 0);
 
@@ -34,16 +34,13 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     // Copy the existing signature to add HASTHIS and EXPLICITTHIS.
     CorElementType fnType = declarationSig.NextArg();
     _ASSERTE(fnType == ELEMENT_TYPE_FNPTR);
-    SigPointer spToken = declarationSig.GetArgProps();
-    spToken.GetByte(nullptr); // Skip the element type (ELEMENT_TYPE_FNPTR)
-    declarationSig.SkipArg();
-    SigPointer sigPtrTokenEnd = declarationSig.GetArgProps();
-
+    SigPointer sp = declarationSig.GetArgProps();
+    sp.GetByte(nullptr); // Skip the element type (ELEMENT_TYPE_FNPTR)
     SigBuilder sigBuilder;
-    spToken.CopySignature(GetModule(), &sigBuilder, &sigPtrTokenEnd, IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS);
+    sp.CopySignature(GetModule(), &sigBuilder, IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS);
 
     // Create a token for the new signature.
-    uint32_t sigLen;
+    DWORD sigLen;
     PCCOR_SIGNATURE pSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature((DWORD*)&sigLen);
     mdToken fcnPtrToken = pCode->GetSigToken(pSig, sigLen);
 
@@ -53,7 +50,7 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
 
     // Load the function pointer and call it.
     pCode->EmitLDARG(0);
-    pCode->EmitCALLI(fcnPtrToken, argCount - 2, declarationSig.IsReturnTypeVoid() ? 0 : 1);
+    pCode->EmitCALLI(fcnPtrToken, argCount - 1, declarationSig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     // Generate all IL associated data for JIT
