@@ -82,6 +82,9 @@ namespace System.Security.Cryptography.Tests
                 MLKemTestData.EncryptedPrivateKeyPassword, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
 
             Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(), MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
+
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
                 MLKemTestData.EncryptedPrivateKeyPasswordBytes, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
         }
 

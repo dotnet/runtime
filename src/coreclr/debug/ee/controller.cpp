@@ -5938,7 +5938,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
 #ifdef TARGET_X86
     LOG((LF_CORDB,LL_INFO1000, "GetJitInfo for pc = 0x%x (addr of "
         "that value:0x%x)\n", (const BYTE*)(GetControlPC(&info->m_activeFrame.registers)),
-        info->m_activeFrame.registers.PCTAddr));
+        GetRegdisplayPCTAddr(&info->m_activeFrame.registers)));
 #endif
 
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and
@@ -9216,7 +9216,7 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
     }
 
     // On WIN64, by the time we get here the DebuggerExState is gone already.
-    // ExceptionTrackers are cleaned up before we resume execution for a handled exception.
+    // ExInfos are cleaned up before we resume execution for a handled exception.
 #if !defined(FEATURE_EH_FUNCLETS)
     thread->GetExceptionState()->GetDebuggerState()->SetDebuggerInterceptContext(NULL);
 #endif // !FEATURE_EH_FUNCLETS
