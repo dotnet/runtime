@@ -2036,10 +2036,10 @@ static inline TADDR GetFrameRestoreBase(PCONTEXT pContextRecord)
     return pContextRecord->Rbp;
 #elif defined(TARGET_X86)
     return pContextRecord->Ebp;
-#elif defined(TARGET_ARM64)
-    return pContextRecord->X29;
 #elif defined(TARGET_ARM)
     return pContextRecord->R11;
+#elif defined(TARGET_ARM64)
+    return pContextRecord->Fp;
 #elif defined(TARGET_LOONGARCH64)
     return pContextRecord->Fp;
 #elif defined(TARGET_RISCV64)
