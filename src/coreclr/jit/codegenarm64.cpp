@@ -2817,6 +2817,17 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         emit->emitIns_Add_Add_Tls_Reloc(attr, targetReg, op1->GetRegNum(), op2->AsIntCon()->IconValue());
         return;
     }
+    else if (oper == GT_ADD && op1->isContained() && op1->OperIsHWIntrinsic(NI_Sve_GetActiveElementCount))
+    {
+        const GenTreeHWIntrinsic* elementCountNode      = op1->AsHWIntrinsic();
+        GenTree*                  elementCountChildNode = elementCountNode->Op(1);
+
+        regNumber reg1 = op2->GetRegNum();
+        regNumber reg2 = elementCountChildNode->GetRegNum();
+
+        emit->emitInsSve_R_R(INS_sve_incp, EA_8BYTE, reg1, reg2, INS_OPTS_SCALABLE_B);
+        return;
+    }
 
     instruction ins = genGetInsForOper(tree->OperGet(), targetType);
 

@@ -20440,7 +20440,8 @@ bool GenTree::isContainableHWIntrinsic() const
         }
     }
 #elif defined(TARGET_ARM64)
-    return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
+    return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect ||
+            AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_GetActiveElementCount);
 #else
     return false;
 #endif // TARGET_XARCH

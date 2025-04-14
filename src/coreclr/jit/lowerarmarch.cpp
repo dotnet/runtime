@@ -3738,6 +3738,31 @@ bool Lowering::TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntr
     return canContain;
 }
 
+bool Lowering::TryContainingGetActiveElementCount(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_ADD));
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+    if (!op1->OperIsHWIntrinsic(NI_Sve_GetActiveElementCount))
+    {
+        return false;
+    }
+
+    assert(op1->canBeContained());
+
+    const GenTreeHWIntrinsic* elementCountNode = op1->AsHWIntrinsic();
+    GenTree*                  mask1            = elementCountNode->Op(1)->AsHWIntrinsic()->Op(2);
+    GenTree*                  mask2            = elementCountNode->Op(2)->AsHWIntrinsic()->Op(2);
+    if (mask1->GetVN(VNK_Liberal) != mask2->GetVN(VNK_Liberal))
+    {
+        return false;
+    }
+
+    MakeSrcContained(node, op1);
+    return true;
+}
+
 #endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
