@@ -130,6 +130,11 @@ if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TA
     set(NATIVE_SOURCES ${NATIVE_SOURCES} entrypoints.c)
 endif()
 
+if (CMAKE_USE_MEMORY64)
+    message("MRH_LOGGING: Building native libs with MEMORY64 enabled")
+    add_compile_options(--target=wasm64)    
+endif()
+
 add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}

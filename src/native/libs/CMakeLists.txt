@@ -122,11 +122,11 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     if (MONO_WASM_MT)
         add_definitions(-DMONO_WASM_MT)
     endif()
-    if (MEMORY64)
-    
+    if (MEMORY64)    
         message(STATUS "MRH_LOGGING: setting MEMORY64 in CMakeLists.txt")
         add_definitions(-DMEMORY64)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMEMORY64")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --target=wasm64")
         add_compile_options(-DMEMORY64=1)
     endif()
 
