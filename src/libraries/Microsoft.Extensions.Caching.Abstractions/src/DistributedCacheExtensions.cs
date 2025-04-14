@@ -13,6 +13,8 @@ namespace Microsoft.Extensions.Caching.Distributed
     /// </summary>
     public static class DistributedCacheExtensions
     {
+        private static readonly DistributedCacheEntryOptions DefaultOptions = new DistributedCacheEntryOptions().Freeze();
+
         /// <summary>
         /// Sets a sequence of bytes in the specified cache with the specified key.
         /// </summary>
@@ -25,7 +27,7 @@ namespace Microsoft.Extensions.Caching.Distributed
             ThrowHelper.ThrowIfNull(key);
             ThrowHelper.ThrowIfNull(value);
 
-            cache.Set(key, value, new DistributedCacheEntryOptions());
+            cache.Set(key, value, DefaultOptions);
         }
 
         /// <summary>
@@ -42,7 +44,7 @@ namespace Microsoft.Extensions.Caching.Distributed
             ThrowHelper.ThrowIfNull(key);
             ThrowHelper.ThrowIfNull(value);
 
-            return cache.SetAsync(key, value, new DistributedCacheEntryOptions(), token);
+            return cache.SetAsync(key, value, DefaultOptions, token);
         }
 
         /// <summary>
@@ -54,7 +56,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static void SetString(this IDistributedCache cache, string key, string value)
         {
-            cache.SetString(key, value, new DistributedCacheEntryOptions());
+            cache.SetString(key, value, DefaultOptions);
         }
 
         /// <summary>
@@ -84,7 +86,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <exception cref="System.ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static Task SetStringAsync(this IDistributedCache cache, string key, string value, CancellationToken token = default(CancellationToken))
         {
-            return cache.SetStringAsync(key, value, new DistributedCacheEntryOptions(), token);
+            return cache.SetStringAsync(key, value, DefaultOptions, token);
         }
 
         /// <summary>
