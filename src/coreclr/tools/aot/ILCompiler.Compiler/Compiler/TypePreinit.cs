@@ -417,7 +417,7 @@ namespace ILCompiler
                                     return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported RVA static");
                                 }
 
-                                fieldValue = new ValueTypeValue(ecmaField, this);
+                                fieldValue = new ValueTypeValue(GetFieldRvaData(ecmaField));
                             }
                             else if (field.OwningType == _type)
                             {
@@ -1858,11 +1858,11 @@ namespace ILCompiler
             }
             else if (TryGetSpanElementType(locationType, isReadOnlySpan: true, out MetadataType readOnlySpanElementType))
             {
-                return new ReadOnlySpanValue(readOnlySpanElementType, Array.Empty<byte>(), 0, 0);
+                return new SpanValue(readOnlySpanElementType, Array.Empty<byte>(), 0, 0);
             }
             else if (TryGetSpanElementType(locationType, isReadOnlySpan: false, out MetadataType spanElementType))
             {
-                return new ReadOnlySpanValue(spanElementType, Array.Empty<byte>(), 0, 0);
+                return new SpanValue(spanElementType, Array.Empty<byte>(), 0, 0);
             }
             else if (VTableLikeStructValue.IsCompatible(locationType))
             {
@@ -1908,7 +1908,7 @@ namespace ILCompiler
                         byte[] rvaData = Internal.TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(createSpanEcmaField);
                         if (rvaData.Length % elementSize != 0)
                             return false;
-                        retVal = new ReadOnlySpanValue(elementType, rvaData, 0, rvaData.Length);
+                        retVal = new SpanValue(elementType, rvaData, 0, rvaData.Length);
                         return true;
                     }
                     return false;
@@ -2318,13 +2318,7 @@ namespace ILCompiler
                 InstanceBytes = new byte[type.GetElementSize().AsInt];
             }
 
-            public ValueTypeValue(EcmaField field, TypePreinit parent)
-            {
-                Debug.Assert(field.HasRva);
-                InstanceBytes = parent.GetFieldRvaData(field);
-            }
-
-            private ValueTypeValue(byte[] bytes)
+            public ValueTypeValue(byte[] bytes)
             {
                 InstanceBytes = bytes;
             }
@@ -2724,14 +2718,14 @@ namespace ILCompiler
             }
         }
 
-        private sealed class ReadOnlySpanValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        private sealed class SpanValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             private readonly MetadataType _elementType;
             private byte[] _bytes;
             private int _index;
             private int _length;
 
-            public ReadOnlySpanValue(MetadataType elementType, byte[] bytes, int index, int length)
+            public SpanValue(MetadataType elementType, byte[] bytes, int index, int length)
             {
                 Debug.Assert(index <= bytes.Length);
                 Debug.Assert(length <= bytes.Length - index);
@@ -2762,20 +2756,20 @@ namespace ILCompiler
 
             public override Value Clone()
             {
-                return new ReadOnlySpanValue(_elementType, _bytes, _index, _length);
+                return new SpanValue(_elementType, _bytes, _index, _length);
             }
 
             public override bool TryCreateByRef(out Value value)
             {
-                value = new ReadOnlySpanReferenceValue(this);
+                value = new SpanReferenceValue(this);
                 return true;
             }
 
-            private sealed class ReadOnlySpanReferenceValue : ByRefValueBase, IHasInstanceFields
+            private sealed class SpanReferenceValue : ByRefValueBase, IHasInstanceFields
             {
-                private readonly ReadOnlySpanValue _value;
+                private readonly SpanValue _value;
 
-                public ReadOnlySpanReferenceValue(ReadOnlySpanValue value)
+                public SpanReferenceValue(SpanValue value)
                 {
                     _value = value;
                 }
