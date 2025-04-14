@@ -400,7 +400,16 @@ static const char*
 safe_name_bridge (GCObject *obj)
 {
 	GCVTable vt = SGEN_LOAD_VTABLE (obj);
-	return m_class_get_name (vt->klass);
+	return vt->klass->name;
+}
+
+static ScanData*
+find_or_create_data (GCObject *obj)
+{
+	ScanData *entry = find_data (obj);
+	if (!entry)
+		entry = create_data (obj);
+	return entry;
 }
 #endif
 
@@ -557,15 +566,10 @@ find_in_cache (int *insert_index)
 
 // Populate other_colors for a give color (other_colors represent the xrefs for this color)
 static void
-add_other_colors (ColorData *color, DynPtrArray *other_colors, gboolean check_visited)
+add_other_colors (ColorData *color, DynPtrArray *other_colors)
 {
 	for (int i = 0; i < dyn_array_ptr_size (other_colors); ++i) {
 		ColorData *points_to = (ColorData *)dyn_array_ptr_get (other_colors, i);
-		if (check_visited) {
-			if (points_to->visited)
-				continue;
-			points_to->visited = TRUE;
-		}
 		dyn_array_ptr_add (&color->other_colors, points_to);
 		// Inform targets
 		points_to->incoming_colors = MIN (points_to->incoming_colors + 1, INCOMING_COLORS_MAX);
@@ -589,7 +593,7 @@ new_color (gboolean has_bridges)
 	cd = alloc_color_data ();
 	cd->api_index = -1;
 
-	add_other_colors (cd, &color_merge_array, FALSE);
+	add_other_colors (cd, &color_merge_array);
 
 	/* if cacheSlot >= 0, it means we prepared a given slot to receive the new color */
 	if (cacheSlot >= 0)
@@ -696,11 +700,11 @@ compute_low_index (ScanData *data, GCObject *obj)
 	obj = bridge_object_forward (obj);
 	other = find_data (obj);
 
+#if DUMP_GRAPH
+	printf ("\tcompute low %p ->%p (%s) %p (%d / %d, color %p)\n", data->obj, obj, safe_name_bridge (obj), other, other ? other->index : -2, other ? other->low_index : -2, other->color);
+#endif
 	if (!other)
 		return;
-#if DUMP_GRAPH
-	printf ("\tcompute low %p ->%p (%s) %p (%d / %d, color %p)\n", data->obj, obj, safe_name_bridge (obj), other, other ? other->index : -2, other->low_index, other->color);
-#endif
 
 	g_assert (other->state != INITIAL);
 
@@ -773,16 +777,10 @@ create_scc (ScanData *data)
 	gboolean found = FALSE;
 	gboolean found_bridge = FALSE;
 	ColorData *color_data = NULL;
-	gboolean can_reduce_color = TRUE;
 
 	for (i = dyn_array_ptr_size (&loop_stack) - 1; i >= 0; --i) {
 		ScanData *other = (ScanData *)dyn_array_ptr_get (&loop_stack, i);
 		found_bridge |= other->is_bridge;
-		if (dyn_array_ptr_size (&other->xrefs) > 0) {
-			// This scc will have more xrefs than the ones from the color_merge_array,
-			// we will need to create a new color to store this information.
-			can_reduce_color = FALSE;
-		}
 		if (found_bridge || other == data)
 			break;
 	}
@@ -790,15 +788,13 @@ create_scc (ScanData *data)
 	if (found_bridge) {
 		color_data = new_color (TRUE);
 		++num_colors_with_bridges;
-	} else if (can_reduce_color) {
-		color_data = reduce_color ();
 	} else {
-		color_data = new_color (FALSE);
+		color_data = reduce_color ();
 	}
 #if DUMP_GRAPH
 	printf ("|SCC %p rooted in %s (%p) has bridge %d\n", color_data, safe_name_bridge (data->obj), data->obj, found_bridge);
 	printf ("\tloop stack: ");
-	for (i = 0; i < dyn_array_ptr_size (&loop_stack); ++i) {
+	for (int i = 0; i < dyn_array_ptr_size (&loop_stack); ++i) {
 		ScanData *other = dyn_array_ptr_get (&loop_stack, i);
 		printf ("(%d/%d)", other->index, other->low_index);
 	}
@@ -828,19 +824,10 @@ create_scc (ScanData *data)
 			dyn_array_ptr_add (&color_data->bridges, other->obj);
 		}
 
-		if (dyn_array_ptr_size (&other->xrefs) > 0) {
-			g_assert (color_data != NULL);
-			g_assert (can_reduce_color == FALSE);
-			// We need to eliminate duplicates early otherwise the heaviness property
-			// can change in gather_xrefs and it breaks down the loop that reports the
-			// xrefs to the client.
-			//
-			// We reuse the visited flag to mark the objects that are already part of
-			// the color_data array. The array was created above with the new_color call
-			// and xrefs were populated from color_merge_array, which is already
-			// deduplicated and every entry is marked as visited.
-			add_other_colors (color_data, &other->xrefs, TRUE);
-		}
+		// Maybe we should make sure we are not adding duplicates here. It is not really a problem
+		// since we will get rid of duplicates before submitting the SCCs to the client in gather_xrefs
+		if (color_data)
+			add_other_colors (color_data, &other->xrefs);
 		dyn_array_ptr_uninit (&other->xrefs);
 
 		if (other == data) {
@@ -850,22 +837,11 @@ create_scc (ScanData *data)
 	}
 	g_assert (found);
 
-	// Clear the visited flag on nodes that were added with add_other_colors in the loop above
-	if (!can_reduce_color) {
-		for (i = dyn_array_ptr_size (&color_merge_array); i < dyn_array_ptr_size (&color_data->other_colors); i++) {
-			ColorData *cd = (ColorData *)dyn_array_ptr_get (&color_data->other_colors, i);
-			g_assert (cd->visited);
-			cd->visited = FALSE;
-		}
-	}
-
 #if DUMP_GRAPH
-    if (color_data) {
-        printf ("\tpoints-to-colors: ");
-        for (i = 0; i < dyn_array_ptr_size (&color_data->other_colors); i++)
-            printf ("%p ", dyn_array_ptr_get (&color_data->other_colors, i));
-        printf ("\n");
-    }
+	printf ("\tpoints-to-colors: ");
+	for (int i = 0; i < dyn_array_ptr_size (&color_data->other_colors); i++)
+		printf ("%p ", dyn_array_ptr_get (&color_data->other_colors, i));
+	printf ("\n");
 #endif
 }
 
@@ -990,11 +966,8 @@ dump_color_table (const char *why, gboolean do_index)
 				printf (" bridges: ");
 				for (j = 0; j < dyn_array_ptr_size (&cd->bridges); ++j) {
 					GCObject *obj = dyn_array_ptr_get (&cd->bridges, j);
-					ScanData *data = find_data (obj);
-					if (!data)
-						printf ("%p ", obj);
-					else
-						printf ("%p(%d) ", obj, data->index);
+					ScanData *data = find_or_create_data (obj);
+					printf ("%d ", data->index);
 				}
 			}
 			printf ("\n");
@@ -1054,7 +1027,7 @@ processing_stw_step (void)
 #if defined (DUMP_GRAPH)
 	printf ("----summary----\n");
 	printf ("bridges:\n");
-	for (i = 0; i < bridge_count; ++i) {
+	for (int i = 0; i < bridge_count; ++i) {
 		ScanData *sd = find_data (dyn_array_ptr_get (&registered_bridges, i));
 		printf ("\t%s (%p) index %d color %p\n", safe_name_bridge (sd->obj), sd->obj, sd->index, sd->color);
 	}
@@ -1168,7 +1141,6 @@ processing_build_callback_data (int generation)
 			gather_xrefs (cd);
 			reset_xrefs (cd);
 			dyn_array_ptr_set_all (&cd->other_colors, &color_merge_array);
-			g_assert (color_visible_to_client (cd));
 			xref_count += dyn_array_ptr_size (&cd->other_colors);
 		}
 	}
