@@ -35,8 +35,8 @@
 inline UINT32 CeilOfLog2(size_t x)
 {
     // it is ok to use bsr or clz unconditionally
-#ifdef GCINFO_ASSERT
-    GCINFO_ASSERT(x > 0);
+#ifdef _GCINFO_ASSERTE
+    _GCINFO_ASSERTE(x > 0);
 #else
     _ASSERTE(x > 0);
 #endif

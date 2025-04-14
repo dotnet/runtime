@@ -7,10 +7,18 @@
  *
  */
 
+// Interpreter-FIXME: we get an existing implementation of ASSERTE via PCH that isn't usable
+//  from inside the interpreter, so we need to replace it with our own.
+#undef _ASSERTE
+#define _ASSERTE(x) _GCINFO_ASSERTE(x)
+
 #include <stdint.h>
 
 #include "gcinfohelpers.h"
 #include "gcinfoencoder.h"
+
+#undef _ASSERTE
+#define _ASSERTE(x) _GCINFO_ASSERTE(x)
 
 using namespace GcInfoEncoderExt;
 
@@ -178,7 +186,7 @@ public:
 
     inline bool operator==(const BitArray &other) const
     {
-        GCINFO_ASSERT(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
+        _ASSERTE(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
         ChunkType* dest = m_pData;
         ChunkType* src = other.m_pData;
         return 0 == memcmp(dest, src, (m_pEndData - m_pData) * sizeof(ChunkType));
@@ -195,7 +203,7 @@ public:
 
     inline BitArray& operator=(const BitArray &other)
     {
-        GCINFO_ASSERT(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
+        _ASSERTE(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
         ChunkType* dest = m_pData;
         ChunkType* src = other.m_pData;
         while(dest < m_pEndData)
@@ -206,7 +214,7 @@ public:
 
     inline BitArray& operator|=(const BitArray &other)
     {
-        GCINFO_ASSERT(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
+        _ASSERTE(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
         ChunkType* dest = m_pData;
         ChunkType* src = other.m_pData;
         while(dest < m_pEndData)
@@ -446,7 +454,7 @@ template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncode
         m_LifetimeTransitions( pJitAllocator )
 {
     // HACK: Initialize this first so it can be used by GCINFOENCODER_ASSERT
-    GCINFO_ASSERT( pCorJitInfo != NULL );
+    _ASSERTE( pCorJitInfo != NULL );
     m_pCorJitInfo = pCorJitInfo;
 
     GCINFOENCODER_ASSERT( pMethodInfo != NULL );
@@ -799,13 +807,13 @@ struct CompareSlotDescAndIdBySlotDesc
         // Then sort them by slot
         if( pFirst->IsRegister() )
         {
-            GCINFO_ASSERT( pSecond->IsRegister() );
+            _ASSERTE( pSecond->IsRegister() );
             if( pFirst->Slot.RegisterNumber != pSecond->Slot.RegisterNumber )
                 return pFirst->Slot.RegisterNumber < pSecond->Slot.RegisterNumber;
         }
         else
         {
-            GCINFO_ASSERT( !pSecond->IsRegister() );
+            _ASSERTE( !pSecond->IsRegister() );
             if( pFirst->Slot.Stack.SpOffset != pSecond->Slot.Stack.SpOffset )
                 return pFirst->Slot.Stack.SpOffset < pSecond->Slot.Stack.SpOffset;
 
@@ -815,7 +823,7 @@ struct CompareSlotDescAndIdBySlotDesc
         }
 
         // If we get here, the slots are identical
-        GCINFO_ASSERT(!"Duplicate slots definitions found in GC information!");
+        _ASSERTE(!"Duplicate slots definitions found in GC information!");
         return false;
     }
 };
@@ -846,7 +854,7 @@ struct CompareLifetimeTransitionsBySlot
         UINT32 secondOffset = second.CodeOffset;
 
         // Interpreter-FIXME: GcInfoEncoding::
-        // GCINFO_ASSERT(GetNormCodeOffsetChunk(firstOffset) == GetNormCodeOffsetChunk(secondOffset));
+        // _ASSERTE(GetNormCodeOffsetChunk(firstOffset) == GetNormCodeOffsetChunk(secondOffset));
 
         // Sort them by slot
         if( first.SlotId != second.SlotId)
@@ -861,7 +869,7 @@ struct CompareLifetimeTransitionsBySlot
         }
         else
         {
-            GCINFO_ASSERT(( firstOffset > secondOffset ) && "Redundant transitions found in GC info!");
+            _ASSERTE(( firstOffset > secondOffset ) && "Redundant transitions found in GC info!");
             return false;
         }
     }
@@ -880,12 +888,12 @@ BitStreamWriter::MemoryBlock* BitStreamWriter::MemoryBlockList::AppendNew(IAlloc
 
     if (m_tail != nullptr)
     {
-        GCINFO_ASSERT(m_head != nullptr);
+        _ASSERTE(m_head != nullptr);
         m_tail->m_next = memBlock;
     }
     else
     {
-        GCINFO_ASSERT(m_head == nullptr);
+        _ASSERTE(m_head == nullptr);
         m_head = memBlock;
     }
 
@@ -2474,7 +2482,7 @@ BitStreamWriter::BitStreamWriter( IAllocator* pAllocator )
 //
 void BitStreamWriter::Write( size_t data, UINT32 count )
 {
-    GCINFO_ASSERT(count <= BITS_PER_SIZE_T);
+    _ASSERTE(count <= BITS_PER_SIZE_T);
 
     if(count)
     {
@@ -2485,13 +2493,13 @@ void BitStreamWriter::Write( size_t data, UINT32 count )
         {
             if( m_FreeBitsInCurrentSlot > 0 )
             {
-                GCINFO_ASSERT(m_FreeBitsInCurrentSlot < BITS_PER_SIZE_T);
+                _ASSERTE(m_FreeBitsInCurrentSlot < BITS_PER_SIZE_T);
                 WriteInCurrentSlot( data, m_FreeBitsInCurrentSlot );
                 count -= m_FreeBitsInCurrentSlot;
                 data >>= m_FreeBitsInCurrentSlot;
             }
 
-            GCINFO_ASSERT( count > 0 );
+            _ASSERTE( count > 0 );
 
             // Initialize the next slot
             if( ++m_pCurrentSlot >= m_OutOfBlockSlot )
@@ -2540,7 +2548,7 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
     source = (BYTE*) pMemBlock->Contents;
     // The number of bytes to copy in the last block
     c = (int) ((BYTE*) ( m_pCurrentSlot + 1 ) - source - m_FreeBitsInCurrentSlot/8);
-    GCINFO_ASSERT( c >= 0 );
+    _ASSERTE( c >= 0 );
     // @TODO: use memcpy instead
     for( i = 0; i < c; i++ )
     {
@@ -2552,7 +2560,7 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
 inline void BitStreamWriter::AllocMemoryBlock()
 {
     // Interpreter-FIXME: Causes linker error in interpreter because IS_ALIGNED calls _ASSERTE
-    // GCINFO_ASSERT( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
+    // _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
     MemoryBlock* pMemBlock = m_MemoryBlocks.AppendNew(m_pAllocator, m_MemoryBlockSize);
 
     m_pCurrentSlot = pMemBlock->Contents;
@@ -2572,8 +2580,8 @@ void BitStreamWriter::Dispose()
 int BitStreamWriter::SizeofVarLengthUnsigned( size_t n, UINT32 base)
 {
     // If a value gets so big we are probably doing something wrong
-    GCINFO_ASSERT(((INT32)(UINT32)n) >= 0);
-    GCINFO_ASSERT((base > 0) && (base < BITS_PER_SIZE_T));
+    _ASSERTE(((INT32)(UINT32)n) >= 0);
+    _ASSERTE((base > 0) && (base < BITS_PER_SIZE_T));
     size_t numEncodings = size_t{ 1 } << base;
     int bitsUsed;
     for(bitsUsed = base+1; ; bitsUsed += base+1)
@@ -2593,8 +2601,8 @@ int BitStreamWriter::SizeofVarLengthUnsigned( size_t n, UINT32 base)
 int BitStreamWriter::EncodeVarLengthUnsigned( size_t n, UINT32 base)
 {
     // If a value gets so big we are probably doing something wrong
-    GCINFO_ASSERT(((INT32)(UINT32)n) >= 0);
-    GCINFO_ASSERT((base > 0) && (base < BITS_PER_SIZE_T));
+    _ASSERTE(((INT32)(UINT32)n) >= 0);
+    _ASSERTE((base > 0) && (base < BITS_PER_SIZE_T));
     size_t numEncodings = size_t{ 1 } << base;
     int bitsUsed;
     for(bitsUsed = base+1; ; bitsUsed += base+1)
@@ -2616,7 +2624,7 @@ int BitStreamWriter::EncodeVarLengthUnsigned( size_t n, UINT32 base)
 
 int BitStreamWriter::EncodeVarLengthSigned( SSIZE_T n, UINT32 base )
 {
-    GCINFO_ASSERT((base > 0) && (base < BITS_PER_SIZE_T));
+    _ASSERTE((base > 0) && (base < BITS_PER_SIZE_T));
     size_t numEncodings = size_t{ 1 } << base;
     for(int bitsUsed = base+1; ; bitsUsed += base+1)
     {

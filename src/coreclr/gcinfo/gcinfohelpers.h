@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #ifndef _GCINFOHELPERS_H_
 #define _GCINFOHELPERS_H_
 
@@ -5,19 +8,22 @@
 // NOTE: This needs to actually do something with expr or crossgen will crash in safemath.h
 //  because safemath verifies that you've actually performed overflow checks and there's a load-bearing assert somewhere in GcInfoEncoder
 // It is not possible to use libc assert here without linker errors.
-static bool __gcinfo_assert_hack_global = false;
+static bool ___ASSERTE_hack_global = false;
 #ifdef _MSC_VER
-#define GCINFO_ASSERT(expr) if (!(__gcinfo_assert_hack_global = (expr))) { \
+#define _GCINFO_ASSERTE(expr) if (!(___ASSERTE_hack_global = (expr))) { \
     __debugbreak(); \
 }
 #else // _MSC_VER
-#define GCINFO_ASSERT(expr) if (!(__gcinfo_assert_hack_global = (expr))) { \
+#define _GCINFO_ASSERTE(expr) if (!(___ASSERTE_hack_global = (expr))) { \
     __builtin_trap(); \
 }
 #endif // _MSC_VER
 #else // _DEBUG
-#define GCINFO_ASSERT(expr) (void)0
+#define _GCINFO_ASSERTE(expr) (void)0
 #endif // _DEBUG
+
+#undef _ASSERTE_SAFEMATH
+#define _ASSERTE_SAFEMATH(expr) _GCINFO_ASSERTE(expr)
 
 // If you want GcInfoEncoder logging to work, replace this macro with an appropriate definition.
 // This previously relied on our common logging infrastructure, but that caused linker failures in the interpreter.
@@ -41,8 +47,5 @@ static bool __gcinfo_assert_hack_global = false;
 #define LL_ERROR        2
 #define LL_FATALERROR   1
 #define LL_ALWAYS   	0		// impossible to turn off (log level never negative)
-
-// Needed by bitposition.h
-#define _BITPOSITION_ASSERTE(x) GCINFO_ASSERT(x)
 
 #endif // _GCINFOHELPERS_H_

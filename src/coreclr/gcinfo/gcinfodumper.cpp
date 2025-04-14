@@ -392,7 +392,7 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
             }
 #endif
             {
-                GCINFO_ASSERT(iReg < nCONTEXTRegisters);
+                _ASSERTE(iReg < nCONTEXTRegisters);
 #ifdef TARGET_ARM
                 pReg = *(SIZE_T**)(pContext + rgRegisters[iReg].cbContextOffset);
                 if (iEncodedReg == 12)
@@ -869,7 +869,7 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
 #endif
         if(safePointDecoder.IsSafePoint(safePointOffset))
         {
-            GCINFO_ASSERT(!fNewInterruptible);
+            _ASSERTE(!fNewInterruptible);
             if (pfnSafePointFunc(safePointOffset, pvData))
                 break;
 
@@ -885,7 +885,7 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
                                                     | DECODE_NO_VALIDATION),
                                offset);
 
-        GCINFO_ASSERT(!m_pRecords);
+        _ASSERTE(!m_pRecords);
 
         if(!fNewInterruptible && (flags == ActiveStackFrame))
         {
