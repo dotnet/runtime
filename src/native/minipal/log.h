@@ -15,6 +15,7 @@ extern "C"
 
 typedef enum
 {
+    minipal_log_flags_binary = 1 << 0,
     minipal_log_flags_fatal = 1 << 1,
     minipal_log_flags_error = 1 << 2,
     minipal_log_flags_warning = 1 << 3,
@@ -22,6 +23,11 @@ typedef enum
     minipal_log_flags_debug = 1 << 5,
     minipal_log_flags_verbose = 1 << 6
 } minipal_log_flags;
+
+#define minipal_log_flags_append(flags, flag) (flags = (minipal_log_flags)(flags | flag))
+#define minipal_log_flags_remove(flags, flag) (flags = (minipal_log_flags)(flags & ~flag))
+#define minipal_log_flags_get_level(flags) ((minipal_log_flags)(flags & ~(minipal_log_flags_binary)))
+#define minipal_log_flags_is_binary(flags) ((flags) & minipal_log_flags_binary)
 
 #define minipal_log_print_fatal(...) minipal_log_print(minipal_log_flags_fatal, __VA_ARGS__)
 #define minipal_log_print_error(...) minipal_log_print(minipal_log_flags_error, __VA_ARGS__)

@@ -120,7 +120,7 @@ LPVOID CQuickHeap::Alloc(UINT sz)
 // Output functions that avoid the crt's.
 //----------------------------------------------------------------------------
 
-void PrintToStdErrA(const char *pszString)
+void PrintToStdErrA(const char *pszString, BOOL binaryOutputMode)
 {
     CONTRACTL
     {
@@ -130,10 +130,16 @@ void PrintToStdErrA(const char *pszString)
     }
     CONTRACTL_END
 
-    minipal_log_write_error(pszString);
+    minipal_log_flags flags = minipal_log_flags_error;
+    if (binaryOutputMode)
+    {
+        minipal_log_flags_append(flags, minipal_log_flags_binary);
+    }
+
+    minipal_log_write(flags, pszString);
 }
 
-void PrintToStdErrW(const WCHAR *pwzString)
+void PrintToStdErrW(const WCHAR *pwzString, BOOL binaryOutputMode)
 {
     CONTRACTL
     {
@@ -145,7 +151,7 @@ void PrintToStdErrW(const WCHAR *pwzString)
 
     MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
 
-    PrintToStdErrA(pStr);
+    PrintToStdErrA(pStr, binaryOutputMode);
 }
 //----------------------------------------------------------------------------
 
