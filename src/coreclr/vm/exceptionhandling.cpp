@@ -3854,7 +3854,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
         // the catch handler.
         // For hardware exceptions and thread abort exceptions propagated from ThrowControlForThread,
         // the SSP is already known. For other cases, find it by scanning the shadow stack.
-        if ((pExInfo->m_passNumber == 2) && (pThis->m_crawl.GetRegisterSet()->SSP == 0) && pThis->m_crawl.GetCodeInfo()->GetCodeManager() != ExecutionManager::GetInterpreterCodeManager())
+        if ((pExInfo->m_passNumber == 2) && (pThis->m_crawl.GetRegisterSet()->SSP == 0))
         {
             pThis->m_crawl.GetCodeInfo()->GetCodeManager()->UpdateSSP(pThis->m_crawl.GetRegisterSet());
         }

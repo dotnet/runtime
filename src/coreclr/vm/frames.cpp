@@ -2153,6 +2153,24 @@ void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     SyncRegDisplayToCurrentContext(pRD);
     TransitionFrame::UpdateRegDisplay_Impl(pRD, updateFloats);
 }
+
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::ExceptionUnwind_Impl()
+{
+    WRAPPER_NO_CONTRACT;
+    InterpThreadContext *pThreadContext = InterpGetThreadContext();
+    InterpMethodContextFrame *pInterpMethodContextFrame = m_pTopInterpMethodContextFrame;
+    // Find the bottom-most InterpMethodContextFrame belonging to the current InterpreterFrame and
+    // reset the stack pointer in the InterpThreadContext to it. This effectively unwinds
+    // the interpreter stack.
+    while (pInterpMethodContextFrame->pParent != NULL)
+    {
+        pInterpMethodContextFrame = pInterpMethodContextFrame->pParent;
+    }
+    pThreadContext->pStackPointer = pInterpMethodContextFrame->pStack;
+}
+#endif // !DACCESS_COMPILE
+
 #endif // FEATURE_INTERPRETER
 
 #ifndef DACCESS_COMPILE

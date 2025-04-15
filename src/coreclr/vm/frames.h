@@ -2905,6 +2905,9 @@ public:
 #endif // DACCESS_COMPILE
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
+#ifndef DACCESS_COMPILE
+    void ExceptionUnwind_Impl();
+#endif
 
     PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
 
