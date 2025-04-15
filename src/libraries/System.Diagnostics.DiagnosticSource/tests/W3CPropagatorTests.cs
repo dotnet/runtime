@@ -177,6 +177,32 @@ namespace System.Diagnostics.Tests
             Assert.Equal("W3CTest", a.OperationName);
         }
 
+        [Fact]
+        public void TestExtractingBaggageWithCorrelationContextHeader()
+        {
+            IEnumerable<KeyValuePair<string, string?>>? extractedBaggage = s_w3cPropagator.ExtractBaggage(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+            {
+                Assert.Null(carrier);
+                fieldValue = null;
+                fieldValues = null;
+
+                if (fieldName == PropagatorTests.Baggage)
+                {
+                    return;
+                }
+
+                if (fieldName == PropagatorTests.CorrelationContext)
+                {
+                    fieldValue = "key1=value1,key2=value2,key3=value3";
+                    return;
+                }
+
+                Assert.Fail($"Encountered wrong header name '{fieldName}' in W3C baggage propagatoration");
+            });
+
+            Assert.Equal(new[] { new KeyValuePair<string, string?>("key1", "value1"), new KeyValuePair<string, string?>("key2", "value2"), new KeyValuePair<string, string?>("key3", "value3") }, extractedBaggage);
+        }
+
         //
         // Tests ported from https://github.com/w3c/baggage/blob/main/test/test_baggage.py
         //
