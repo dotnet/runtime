@@ -13669,7 +13669,6 @@ namespace System.Runtime.CompilerServices
         PreserveSig = 128,
         AggressiveInlining = 256,
         AggressiveOptimization = 512,
-        Async = 1024,
         InternalCall = 4096,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
@@ -13826,16 +13825,6 @@ namespace System.Runtime.CompilerServices
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
         public delegate void TryCode(object? userData);
-        public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { }
-        public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { }
-        public static void Await(System.Threading.Tasks.Task task) { throw null; }
-        public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw null; }
-        public static void Await(System.Threading.Tasks.ValueTask task) { throw null; }
-        public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw null; }
-        public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { throw null; }
-        public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { throw null; }
-        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw null; }
-        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw null; }
     }
     public sealed partial class RuntimeWrappedException : System.Exception
     {
