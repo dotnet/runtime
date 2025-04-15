@@ -466,7 +466,7 @@ struct EmitCallParams
 #endif
     void*    addr    = nullptr;
     ssize_t  argSize = 0;
-    emitAttr retSize = EA_UNKNOWN;
+    emitAttr retSize = EA_PTRSIZE;
     // For multi-reg args with GC returns in the second arg
     emitAttr  secondRetSize = EA_UNKNOWN;
     BitVec    ptrVars       = BitVecOps::UninitVal();
