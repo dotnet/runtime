@@ -29,6 +29,18 @@ public class DllImportSearchPathsTest
         !OperatingSystem.IsWasi();
 
     [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
+    public static void AssemblyDirectory_InMemory_NotFound()
+    {
+        byte[] bytes = File.ReadAllBytes(Path.Combine(Subdirectory, $"{nameof(DllImportSearchPathsTest)}.dll"));
+        Assembly assembly = Assembly.Load(bytes);
+        var type = assembly.GetType(nameof(NativeLibraryPInvoke));
+        var method = type.GetMethod(nameof(NativeLibraryPInvoke.Sum));
+
+        Exception ex = Assert.Throws<TargetInvocationException>(() =>method.Invoke(null, new object[] { 1, 2 }));
+        Assert.Equal(typeof(DllNotFoundException), ex.InnerException.GetType());
+    }
+
+    [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
     public static void AssemblyDirectory_Found()
     {
         // Library should be found in the assembly directory

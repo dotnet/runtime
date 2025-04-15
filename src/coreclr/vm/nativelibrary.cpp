@@ -473,8 +473,10 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        NATIVE_LIBRARY_HANDLE hmod = NULL;
+        if (pAssembly->GetPEAssembly()->GetPath().IsEmpty())
+            return NULL;
 
+        NATIVE_LIBRARY_HANDLE hmod = NULL;
         SString path{ pAssembly->GetPEAssembly()->GetPath() };
         _ASSERTE(!Path::IsRelative(path));
 

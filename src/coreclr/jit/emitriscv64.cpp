@@ -97,6 +97,8 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         case INS_OPTS_RELOC:
         case INS_OPTS_NONE:
             return sizeof(instrDesc);
+        case INS_OPTS_I:
+            return sizeof(instrDescLoadImm);
         default:
             NO_WAY("unexpected instruction descriptor format");
             break;
@@ -1362,7 +1364,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
      *       b  <-a
      * */
 
-    constexpr int absMaxInsCount  = 8;
+    constexpr int absMaxInsCount  = instrDescLoadImm::absMaxInsCount;
     constexpr int prefMaxInsCount = 5;
     assert(prefMaxInsCount <= absMaxInsCount);
 
@@ -1553,33 +1555,21 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     if (numberOfInstructions <= insCountLimit)
     {
-        for (int i = 0; i < numberOfInstructions; i++)
-        {
-            if ((i == 0) && (ins[0] == INS_lui))
-            {
-                emitIns_R_I(ins[i], size, reg, values[i]);
-            }
-            else if ((i == 0) && ((ins[0] == INS_addiw) || (ins[0] == INS_addi)))
-            {
-                emitIns_R_R_I(ins[i], size, reg, REG_R0, values[i]);
-            }
-            else if (i == 0)
-            {
-                assert(false && "First instruction must be lui / addiw / addi");
-            }
-            else if ((ins[i] == INS_addi) || (ins[i] == INS_addiw) || (ins[i] == INS_slli))
-            {
-                emitIns_R_R_I(ins[i], size, reg, reg, values[i]);
-            }
-            else
-            {
-                assert(false && "Remainding instructions must be addi / addiw / slli");
-            }
-        }
+        instrDescLoadImm* id = static_cast<instrDescLoadImm*>(emitNewInstrLoadImm(size, originalImm));
+        id->idReg1(reg);
+        memcpy(id->ins, ins, sizeof(instruction) * numberOfInstructions);
+        memcpy(id->values, values, sizeof(int32_t) * numberOfInstructions);
         if (utilizeSRLI)
         {
-            emitIns_R_R_I(INS_srli, size, reg, reg, srliShiftAmount);
+            numberOfInstructions += 1;
+            assert(numberOfInstructions < absMaxInsCount);
+            id->ins[numberOfInstructions - 1]    = INS_srli;
+            id->values[numberOfInstructions - 1] = srliShiftAmount;
         }
+        id->idCodeSize(numberOfInstructions * 4);
+        id->idIns(id->ins[numberOfInstructions - 1]);
+
+        appendToCurIG(id);
     }
     else if (size == EA_PTRSIZE)
     {
@@ -3444,6 +3434,50 @@ BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* i
     return dst;
 }
 
+BYTE* emitter::emitOutputInstr_OptsI(BYTE* dst, instrDesc* id, instruction* lastIns)
+{
+    assert(id->idInsOpt() == INS_OPTS_I);
+
+    instrDescLoadImm* idli   = static_cast<instrDescLoadImm*>(id);
+    instruction*      ins    = idli->ins;
+    int32_t*          values = idli->values;
+    regNumber         reg    = idli->idReg1();
+
+    assert((reg != REG_NA) && (reg != REG_R0));
+
+    int numberOfInstructions = idli->idCodeSize() / sizeof(code_t);
+    for (int i = 0; i < numberOfInstructions; i++)
+    {
+        if ((i == 0) && (ins[0] == INS_lui))
+        {
+            assert(isValidSimm20(values[i]));
+            dst += emitOutput_UTypeInstr(dst, ins[i], reg, values[i] & 0xfffff);
+        }
+        else if ((i == 0) && ((ins[0] == INS_addiw) || (ins[0] == INS_addi)))
+        {
+            assert(isValidSimm12(values[i]) || ((ins[i] == INS_addiw) && isValidUimm12(values[i])));
+            dst += emitOutput_ITypeInstr(dst, ins[i], reg, REG_R0, values[i] & 0xfff);
+        }
+        else if (i == 0)
+        {
+            assert(false && "First instruction must be lui / addiw / addi");
+        }
+        else if ((ins[i] == INS_addi) || (ins[i] == INS_addiw) || (ins[i] == INS_slli) || (ins[i] == INS_srli))
+        {
+            assert(isValidSimm12(values[i]) || ((ins[i] == INS_addiw) && isValidUimm12(values[i])));
+            dst += emitOutput_ITypeInstr(dst, ins[i], reg, reg, values[i] & 0xfff);
+        }
+        else
+        {
+            assert(false && "Remaining instructions must be addi / addiw / slli / srli");
+        }
+    }
+
+    *lastIns = ins[numberOfInstructions - 1];
+
+    return dst;
+}
+
 /*****************************************************************************
  *
  *  Append the machine code corresponding to the given instruction descriptor
@@ -3496,6 +3530,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst  = emitOutputInstr_OptsC(dst, id, ig, &sz);
             dst2 = dst;
             ins  = INS_nop;
+            break;
+        case INS_OPTS_I:
+            dst = emitOutputInstr_OptsI(dst, id, &ins);
+            sz  = sizeof(instrDescLoadImm);
             break;
         default: // case INS_OPTS_NONE:
             dst += emitOutput_Instr(dst, id->idAddr()->iiaGetInstrEncode());
@@ -3752,6 +3790,8 @@ void emitter::emitDispInsName(
 
     printf("      ");
 
+    bool willPrintLoadImmValue = (id->idInsOpt() == INS_OPTS_I) && !emitComp->opts.disDiffable;
+
     switch (GetMajorOpcode(code))
     {
         case MajorOpcode::Lui:
@@ -3763,7 +3803,7 @@ void emitter::emitDispInsName(
                 imm20 |= 0xfff00000;
             }
             printf("lui            %s, ", rd);
-            emitDispImmediate(imm20);
+            emitDispImmediate(imm20, !willPrintLoadImmValue);
             return;
         }
         case MajorOpcode::Auipc:
@@ -3881,7 +3921,10 @@ void emitter::emitDispInsName(
                     printf("%d", imm12);
                 }
             }
-            printf("\n");
+            if (!willPrintLoadImmValue)
+            {
+                printf("\n");
+            }
 
             return;
         }
@@ -3901,7 +3944,7 @@ void emitter::emitDispInsName(
                     else
                     {
                         printf("addiw          %s, %s, ", rd, rs1);
-                        emitDispImmediate(imm12);
+                        emitDispImmediate(imm12, !willPrintLoadImmValue);
                     }
                     return;
                 case 0x1:
@@ -4749,6 +4792,8 @@ void emitter::emitDispIns(
 
     emitDispInsInstrNum(id);
 
+    bool willPrintLoadImmValue = (id->idInsOpt() == INS_OPTS_I) && !emitComp->opts.disDiffable;
+
     const BYTE* instr = pCode + writeableOffset;
     unsigned    instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
@@ -4764,6 +4809,17 @@ void emitter::emitDispIns(
         }
 #endif
         emitDispInsName(instruction, instr, doffs, offset, id, ig);
+
+        if (willPrintLoadImmValue && ((i + instrSize) < sz))
+        {
+            printf("\n");
+        }
+    }
+
+    if (willPrintLoadImmValue)
+    {
+        instrDescLoadImm* liid = static_cast<instrDescLoadImm*>(id);
+        printf("\t\t;; load imm: hex=0x%016lX dec=%ld\n", liid->idcCnsVal, liid->idcCnsVal);
     }
 }
 
@@ -5446,13 +5502,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     unsigned codeSize = id->idCodeSize();
     assert((codeSize >= 4) && (codeSize % sizeof(code_t) == 0));
+
     // Some instructions like jumps or loads may have not-yet-known simple auxilliary instructions (lui, addi, slli,
     // etc) for building immediates, assume cost of one each.
+    // instrDescLoadImm consists of OpImm, OpImm32, and Lui instructions.
     float immediateBuildingCost = ((codeSize / sizeof(code_t)) - 1) * PERFSCORE_LATENCY_1C;
 
     instruction ins = id->idIns();
     assert(ins != INS_invalid);
-    if (ins == INS_lea)
+    if ((ins == INS_lea) || (id->idInsOpt() == INS_OPTS_I))
     {
         result.insLatency += immediateBuildingCost;
         result.insThroughput += immediateBuildingCost;

@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.IO.Compression.Tests.Utilities;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
@@ -41,6 +42,25 @@ namespace System.IO.Compression.Tests
                 Stream wrapped = new WrappedStream(stream, true, false, false, null);
                 IsZipSameAsDir(wrapped, zfolder(zipFolder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
                 Assert.False(wrapped.CanRead, "Wrapped stream should be closed at this point"); //check that it was closed
+            }
+        }
+
+        [Theory]
+        [InlineData("normal.zip", "normal")]
+        [InlineData("fake64.zip", "small")]
+        [InlineData("empty.zip", "empty")]
+        [InlineData("appended.zip", "small")]
+        [InlineData("prepended.zip", "small")]
+        [InlineData("emptydir.zip", "emptydir")]
+        [InlineData("small.zip", "small")]
+        [InlineData("unicode.zip", "unicode")]
+        public static async Task TestPartialReads(string zipFile, string zipFolder)
+        {
+            using (var stream = await StreamHelpers.CreateTempCopyStream(zfile(zipFile)))
+            {
+                Stream clamped = new ClampedReadStream(stream, readSizeLimit: 1);
+
+                IsZipSameAsDir(clamped, zfolder(zipFolder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
             }
         }
 

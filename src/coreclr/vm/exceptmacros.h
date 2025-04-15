@@ -118,10 +118,6 @@ class Frame;
 class Exception;
 struct REGDISPLAY;
 
-#ifdef FEATURE_EH_FUNCLETS
-struct ExInfo;
-#endif
-
 VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 
 #include <excepcpu.h>
@@ -320,6 +316,41 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             }                                                                                       \
             CrashDumpAndTerminateProcess(1);                                                        \
             UNREACHABLE();                                                                          \
+        }
+
+#elif defined(TARGET_X86) && defined(TARGET_WINDOWS) && defined(FEATURE_EH_FUNCLETS)
+
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+
+#define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
+#define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
+
+// We use [UN]INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX to backpatch the SEH record installed
+// in CallDescrWorkerInternal from ProcessCLRException to CallDescrWorkerUnwindFrameChainHandler
+// when throwing an exception. This ensures that class loading exceptions are propagated through
+// unmanaged code before being forwarded to the managed one.
+
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX \
+        try \
+        {
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
+        } \
+        catch (...) \
+        { \
+            if (nativeRethrow) \
+            { \
+                PEXCEPTION_REGISTRATION_RECORD pExceptionRecord = GetCurrentSEHRecord(); \
+                _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
+                while (pExceptionRecord->Handler != (PEXCEPTION_ROUTINE)ProcessCLRException) \
+                { \
+                    pExceptionRecord = pExceptionRecord->Next; \
+                    _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
+                } \
+                pExceptionRecord->Handler = (PEXCEPTION_ROUTINE)CallDescrWorkerUnwindFrameChainHandler; \
+            } \
+            throw; \
         }
 
 #else // TARGET_UNIX

@@ -13605,7 +13605,7 @@ void gc_heap::distribute_free_regions()
             dprintf(REGIONS_LOG, ("distributing the %zd %s regions, removing %zd regions",
                 total_budget_in_region_units[kind],
                 free_region_kind_name[kind],
-                balance));
+                balance_to_decommit));
 
             if (balance_to_decommit > 0)
             {
@@ -48276,8 +48276,10 @@ gc_heap::verify_free_lists ()
 
 #if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
                 heap_segment* region = region_of (free_list);
-                if (region->heap != this)
+                if ((region->heap != this) && ((gen_num != max_generation) || (!trigger_bgc_for_rethreading_p)))
                 {
+                    // The logic in change_heap_count depends on the coming BGC (or blocking gen 2) to rebuild the gen 2 free list.
+                    // In that case, before the rebuild happens, the gen2 free list is expected to contain free list items that do not belong to the right heap.
                     dprintf (1, ("curr free item %p should be on heap %d, but actually is on heap %d: %d", free_list, this->heap_number, region->heap->heap_number));
                     FATAL_GC_ERROR();
                 }
