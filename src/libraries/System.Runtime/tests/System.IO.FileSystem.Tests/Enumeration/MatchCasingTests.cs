@@ -11,6 +11,12 @@ namespace System.IO.Tests.Enumeration
         protected abstract string[] GetPaths(string directory, string pattern, EnumerationOptions options);
 
         [Fact]
+        public void EnumerationOptionsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => GetPaths(GetTestFilePath(), "file*", null));
+        }
+
+        [Fact]
         public void MatchCase()
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
