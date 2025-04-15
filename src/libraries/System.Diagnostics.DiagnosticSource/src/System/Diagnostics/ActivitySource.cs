@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -13,6 +15,9 @@ namespace System.Diagnostics
         private static readonly SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();
         private static readonly SynchronizedList<ActivityListener> s_allListeners = new SynchronizedList<ActivityListener>();
         private SynchronizedList<ActivityListener>? _listeners;
+
+        [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
+        internal static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -47,6 +52,10 @@ namespace System.Diagnostics
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
             TelemetrySchemaUrl = telemetrySchemaUrl;
+            if (!IsSupported)
+            {
+                return;
+            }
 
             // Sorting the tags to make sure the tags are always in the same order.
             // Sorting can help in comparing the tags used for any scenario.
@@ -71,8 +80,10 @@ namespace System.Diagnostics
                     }
                 }
             }, this);
-
-            GC.KeepAlive(DiagnosticSourceEventSource.Log);
+            if (Meter.IsEventSourceSupported)
+            {
+                GC.KeepAlive(DiagnosticSourceEventSource.Log);
+            }
         }
 
         /// <summary>
@@ -103,6 +114,10 @@ namespace System.Diagnostics
         /// </summary>
         public bool HasListeners()
         {
+            if (!IsSupported)
+            {
+                return false;
+            }
             SynchronizedList<ActivityListener>? listeners = _listeners;
             return listeners != null && listeners.Count > 0;
         }
@@ -203,6 +218,10 @@ namespace System.Diagnostics
         private Activity? CreateActivity(string name, ActivityKind kind, ActivityContext context, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags,
                                             IEnumerable<ActivityLink>? links, DateTimeOffset startTime, bool startIt = true, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
         {
+            if (!IsSupported)
+            {
+                return null;
+            }
             // _listeners can get assigned to null in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners == null || listeners.Count == 0)
@@ -336,8 +355,11 @@ namespace System.Diagnostics
         /// </summary>
         public void Dispose()
         {
-            _listeners = null;
-            s_activeSources.Remove(this);
+            if (IsSupported)
+            {
+                _listeners = null;
+                s_activeSources.Remove(this);
+            }
         }
 
         /// <summary>
@@ -351,7 +373,7 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(listener));
             }
 
-            if (s_allListeners.AddIfNotExist(listener))
+            if (IsSupported && s_allListeners.AddIfNotExist(listener))
             {
                 s_activeSources.EnumWithAction((source, obj) => {
                     var shouldListenTo = ((ActivityListener)obj).ShouldListenTo;
@@ -367,6 +389,10 @@ namespace System.Diagnostics
 
         internal void AddListener(ActivityListener listener)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
             if (_listeners == null)
             {
                 Interlocked.CompareExchange(ref _listeners, new SynchronizedList<ActivityListener>(), null);
@@ -377,12 +403,20 @@ namespace System.Diagnostics
 
         internal static void DetachListener(ActivityListener listener)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
             s_allListeners.Remove(listener);
             s_activeSources.EnumWithAction((source, obj) => source._listeners?.Remove((ActivityListener) obj), listener);
         }
 
         internal void NotifyActivityStart(Activity activity)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
             Debug.Assert(activity != null);
 
             // _listeners can get assigned to null in Dispose.
@@ -395,6 +429,10 @@ namespace System.Diagnostics
 
         internal void NotifyActivityStop(Activity activity)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
             Debug.Assert(activity != null);
 
             // _listeners can get assigned to null in Dispose.
@@ -407,6 +445,10 @@ namespace System.Diagnostics
 
         internal void NotifyActivityAddException(Activity activity, Exception exception, ref TagList tags)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
             Debug.Assert(activity != null);
 
             // _listeners can get assigned to null in Dispose.

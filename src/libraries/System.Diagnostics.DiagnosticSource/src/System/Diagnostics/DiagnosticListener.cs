@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -144,7 +145,10 @@ namespace System.Diagnostics
 
             // Touch DiagnosticSourceEventSource.Logger so we ensure that the
             // DiagnosticSourceEventSource has been constructed (and thus is responsive to ETW requests to be enabled).
-            GC.KeepAlive(DiagnosticSourceEventSource.Log);
+            if (Meter.IsEventSourceSupported)
+            {
+                GC.KeepAlive(DiagnosticSourceEventSource.Log);
+            }
         }
 
         /// <summary>

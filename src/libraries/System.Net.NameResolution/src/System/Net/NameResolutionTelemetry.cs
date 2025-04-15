@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
 using System.Threading;
@@ -158,18 +159,33 @@ namespace System.Net
     /// </summary>
     internal readonly struct NameResolutionActivity
     {
+        [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
+        private static bool IsActivitySourceSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
+
         private const string ActivitySourceName = "Experimental.System.Net.NameResolution";
         private const string ActivityName = ActivitySourceName + ".DnsLookup";
-        private static readonly ActivitySource s_activitySource = new ActivitySource(ActivitySourceName);
+        private static readonly ActivitySource? s_activitySource;
 
         // _startingTimestamp == 0 means NameResolutionTelemetry and NameResolutionMetrics are both disabled.
         private readonly long _startingTimestamp;
         private readonly Activity? _activity;
 
+        static NameResolutionActivity()
+        {
+            if (IsActivitySourceSupported)
+            {
+                s_activitySource = new ActivitySource(ActivitySourceName);
+            }
+            else
+            {
+                s_activitySource = null;
+            }
+        }
+
         public NameResolutionActivity(object hostNameOrAddress, long startingTimestamp)
         {
             _startingTimestamp = startingTimestamp;
-            _activity = s_activitySource.StartActivity(ActivityName);
+            _activity = IsActivitySourceSupported ? s_activitySource!.StartActivity(ActivityName) : null;
             if (_activity is not null)
             {
                 string host = NameResolutionTelemetry.GetHostnameFromStateObject(hostNameOrAddress);
@@ -181,12 +197,12 @@ namespace System.Net
             }
         }
 
-        public static bool IsTracingEnabled() => s_activitySource.HasListeners();
+        public static bool IsTracingEnabled() => IsActivitySourceSupported && s_activitySource!.HasListeners();
 
         // Returns true if either NameResolutionTelemetry or NameResolutionMetrics is enabled.
         public bool Stop(object? answer, Exception? exception, out TimeSpan duration)
         {
-            if (_activity is not null)
+            if (IsActivitySourceSupported && _activity is not null)
             {
                 if (_activity.IsAllDataRequested)
                 {

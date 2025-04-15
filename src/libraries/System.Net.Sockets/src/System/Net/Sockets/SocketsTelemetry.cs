@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Threading;
 
@@ -10,11 +11,26 @@ namespace System.Net.Sockets
     [EventSource(Name = "System.Net.Sockets")]
     internal sealed class SocketsTelemetry : EventSource
     {
+        [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
+        private static bool IsActivitySourceSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
+
         private const string ActivitySourceName = "Experimental.System.Net.Sockets";
         private const string ConnectActivityName = ActivitySourceName + ".Connect";
-        private static readonly ActivitySource s_connectActivitySource = new ActivitySource(ActivitySourceName);
+        private static readonly ActivitySource? s_connectActivitySource;
 
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
+
+        static SocketsTelemetry()
+        {
+            if (IsActivitySourceSupported)
+            {
+                s_connectActivitySource = new ActivitySource(ActivitySourceName);
+            }
+            else
+            {
+                s_connectActivitySource = null;
+            }
+        }
 
         private PollingCounter? _currentOutgoingConnectAttemptsCounter;
         private PollingCounter? _outgoingConnectionsEstablishedCounter;
@@ -91,7 +107,7 @@ namespace System.Net.Sockets
             }
 
             Activity? activity = null;
-            if (s_connectActivitySource.HasListeners())
+            if (IsActivitySourceSupported && s_connectActivitySource!.HasListeners())
             {
                 Activity? activityToReset = keepActivityCurrent ? Activity.Current : null;
                 activity = s_connectActivitySource.StartActivity(ConnectActivityName);
