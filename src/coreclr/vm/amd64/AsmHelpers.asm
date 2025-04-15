@@ -627,6 +627,9 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         ; Save the SP of this function
         mov     [r9], rsp
 
+        ; Restore RBP to match main funtion RBP
+        mov     rbp, rdx
+
         ; Move throwable into the second parameter
         mov     rdx, rcx
 
@@ -636,7 +639,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         mov     [rsp], rcx
 
         ; Invoke the filter funclet
-        mov     rbp, rdx
         call    r8
 
         FUNCLET_CALL_EPILOGUE

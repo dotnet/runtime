@@ -447,6 +447,9 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
         FUNCLET_CALL_PROLOGUE 1, 0
 
+        // Restore RBP to match main funtion RBP
+        mov     rbp, rsi
+
         // Save establisher frame pointer into our stack frame
         mov     [rsp], r8
 
@@ -454,7 +457,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         mov     [rcx], rsp
 
         // Invoke the filter funclet
-        mov     rbp, rsi
         mov     rsi, rdi
         mov     rdi, r8      // rdi = InitialSP (older R2R ABI)
         call    rdx

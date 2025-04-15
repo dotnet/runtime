@@ -1683,6 +1683,9 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
     {
         if (pCodeInfo->IsFunclet())
         {
+            // TODO: Should we check the return address to see if it's CallEHFunclet,
+            // CallEHFilterFunclet
+
             SIZE_T offsetOfEstablisherFrameInFuncletSP;
 #if defined(TARGET_AMD64)
             offsetOfEstablisherFrameInFuncletSP = 0;
