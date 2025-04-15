@@ -156,6 +156,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ConvertToSingle,
 	SN_Divide,
 	SN_Equals,
+	SN_ExtractMostSignificantBits,
 	SN_Floor,
 	SN_GreaterThan,
 	SN_GreaterThanOrEqual,
@@ -1161,6 +1162,9 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_Equals:
 				cmethod_name = "CompareEqual";
+				break;
+			case SN_ExtractMostSignificantBits:
+				cmethod_name = "Bitmask";
 				break;
 			case SN_BitwiseAnd:
 			case SN_op_BitwiseAnd:

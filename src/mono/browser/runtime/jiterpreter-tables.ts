@@ -443,6 +443,11 @@ export const bitmaskTable: { [intrinsic: number]: WasmSimdOpcode } = {
     [SimdIntrinsic2.V128_I2_EXTRACT_MSB]: WasmSimdOpcode.i16x8_bitmask,
     [SimdIntrinsic2.V128_I4_EXTRACT_MSB]: WasmSimdOpcode.i32x4_bitmask,
     [SimdIntrinsic2.V128_I8_EXTRACT_MSB]: WasmSimdOpcode.i64x2_bitmask,
+
+    [SimdIntrinsic2.BitmaskD1]: WasmSimdOpcode.i8x16_bitmask,
+    [SimdIntrinsic2.BitmaskD2]: WasmSimdOpcode.i16x8_bitmask,
+    [SimdIntrinsic2.BitmaskD4]: WasmSimdOpcode.i32x4_bitmask,
+    [SimdIntrinsic2.BitmaskD8]: WasmSimdOpcode.i64x2_bitmask,
 };
 
 export const createScalarTable: { [intrinsic: number]: [WasmOpcode, WasmSimdOpcode] } = {
