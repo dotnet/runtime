@@ -9814,7 +9814,8 @@ ValueNum ValueNumStore::EvalMathFuncBinary(
                     // the above are the only binary math intrinsics at the time of this writing.
                     unreached();
             }
-            return (typ == TYP_LONG) || (typ == TYP_ULONG) ? VNForLongCon(result) : VNForIntCon(result);
+            return (typ == TYP_LONG) || (typ == TYP_ULONG) ? VNForLongCon(result)
+                                                           : VNForIntCon(static_cast<INT32>(result));
 #else  // !TARGET_RISCV64
             unreached();
 #endif // !TARGET_RISCV64
