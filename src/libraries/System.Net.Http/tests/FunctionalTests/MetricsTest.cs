@@ -1112,7 +1112,7 @@ namespace System.Net.Http.Functional.Tests
                     });
 
                 }, options: new GenericLoopbackOptions() { UseSsl = true });
-            }, options: new GenericLoopbackOptions() { UseSsl = false });
+            }, options: new GenericLoopbackOptions() { UseSsl = false});
         }
 
         [Fact]
