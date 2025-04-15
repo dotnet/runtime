@@ -566,7 +566,7 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
 
     return savedFpLr && establishedFp ? 0 : 1;
 
-#else // TARGET_ARM
+#elif defined(TARGET_ARM)
 
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
     ASSERT(pNativeMethodInfo != NULL);
@@ -640,6 +640,9 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
     }
 
     return 0;
+
+#else
+#error Unsupported architecture
 #endif
 }
 #endif
