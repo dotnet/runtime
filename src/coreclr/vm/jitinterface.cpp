@@ -14748,6 +14748,7 @@ EECodeInfo::EECodeInfo()
 
 #ifdef FEATURE_EH_FUNCLETS
     m_pFunctionEntry = NULL;
+    m_isFuncletCache = IsFuncletCache::NotSet;
 #endif
 
 #ifdef TARGET_X86
@@ -14773,6 +14774,9 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     } CONTRACTL_END;
 
     m_codeAddress = codeAddress;
+#ifdef FEATURE_EH_FUNCLETS
+    m_isFuncletCache = IsFuncletCache::NotSet;
+#endif
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -14885,6 +14889,9 @@ EECodeInfo EECodeInfo::GetMainFunctionInfo()
     result.m_relOffset = 0;
     result.m_codeAddress = this->GetStartAddress();
     result.m_pFunctionEntry = NULL;
+#ifdef FEATURE_EH_FUNCLETS
+    result.m_isFuncletCache = IsFuncletCache::IsNotFunclet;
+#endif
 
     return result;
 }
@@ -14897,6 +14904,20 @@ PTR_RUNTIME_FUNCTION EECodeInfo::GetFunctionEntry()
     if (m_pFunctionEntry == NULL)
         m_pFunctionEntry = m_pJM->LazyGetFunctionEntry(this);
     return m_pFunctionEntry;
+}
+
+BOOL EECodeInfo::IsFunclet()
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_isFuncletCache == IsFuncletCache::NotSet)
+    {
+        m_isFuncletCache = GetJitManager()->LazyIsFunclet(this) ? IsFuncletCache::IsFunclet : IsFuncletCache::IsNotFunclet;
+    }
+
+    // At this point we know that m_isFuncletCache is either IsFunclet or IsNotFunclet, which is either 1 or 0. Just cast it to BOOL.
+    BOOL result = (BOOL)m_isFuncletCache;
+    _ASSERTE(!!GetJitManager()->LazyIsFunclet(this) == !!result);
+    return result;
 }
 
 #if defined(TARGET_AMD64)
