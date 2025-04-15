@@ -3119,6 +3119,25 @@ retry_emit:
                         m_ip += 5;
                         break;
                     }
+                    case CEE_LOCALLOC:
+                        CHECK_STACK(1);
+#if SIZEOF_VOID_P == 8
+                        if (m_pStackPointer[-1].type == StackTypeI8)
+                            EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_8);
+#endif
+                        AddIns(INTOP_LOCALLOC);
+                        m_pStackPointer--;
+                        if (m_pStackPointer != m_pStackBase)
+                        {
+                            m_hasInvalidCode = true;
+                            goto exit_bad_code;
+                        }
+
+                        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                        PushStackType(StackTypeByRef, NULL);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_ip++;
+                        break;
                     default:
                         assert(0);
                         break;

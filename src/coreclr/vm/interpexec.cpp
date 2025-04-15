@@ -43,6 +43,20 @@ static void InterpBreakpoint()
 // TODO once we have basic EH support
 #define NULL_CHECK(o)
 
+void* frame_data_allocator_alloc(InterpThreadContext *pThreadContext, int8_t** stack, int size) {
+    void* res = NULL;
+    if (*stack + size <= (int8_t*)pThreadContext->pStackEnd) {
+        res = *stack;
+        *stack += size;
+    } else {
+        // Handle stack overflow or allocate additional memory
+        // Add fragment to the stack or throw an error
+        assert(0 && "Stack overflow in frame_data_allocator_alloc");
+    }
+
+    return res;
+}
+
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
 {
     const int32_t *ip;
@@ -1074,6 +1088,24 @@ CALL_INTERP_SLOT:
                 memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
                 ip += 3;
                 break;
+            case INTOP_LOCALLOC:
+            {
+                int32_t len = LOCAL_VAR(ip[2], int32_t);
+                void* mem;
+
+                if (len > 0) {
+                    mem = frame_data_allocator_alloc(pThreadContext, &stack, len);
+
+                    // if (pMethod->initLocals) {
+                    //     memset(mem, 0, len);
+                    // }
+                } else {
+                    mem = NULL;
+                }
+                LOCAL_VAR(ip[1], void*) = mem;
+                ip += 3;
+                break;
+            }
             case INTOP_FAILFAST:
                 assert(0);
                 break;
