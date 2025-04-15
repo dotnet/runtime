@@ -20,7 +20,7 @@ namespace System.Diagnostics
         private const char Percent = '%';
         private const char Replacement = '\uFFFD'; // �
 
-        public override IReadOnlyCollection<string> Fields { get; } = new ReadOnlyCollection<string>(new[] { TraceParent, TraceState, Baggage });
+        public override IReadOnlyCollection<string> Fields { get; } = new ReadOnlyCollection<string>(new[] { TraceParent, TraceState, Baggage, CorrelationContext });
 
         public override void Inject(Activity? activity, object? carrier, PropagatorSetterCallback? setter)
         {
@@ -71,6 +71,10 @@ namespace System.Diagnostics
             }
 
             getter(carrier, Baggage, out string? theBaggage, out _);
+            if (theBaggage is null)
+            {
+                getter(carrier, CorrelationContext, out theBaggage, out _);
+            }
 
             TryExtractBaggage(theBaggage, out IEnumerable<KeyValuePair<string, string?>>? baggage);
 
@@ -156,7 +160,7 @@ namespace System.Diagnostics
 
                 if (IsInvalidTraceStateKey(Trim(entry.Slice(0, equalIndex))) || IsInvalidTraceStateValue(TrimSpaceOnly(entry.Slice(equalIndex + 1))))
                 {
-                    break; // entry exceeds max length or invalid key/value, skip current entry
+                    break; // entry exceeds max length or invalid key/value, skip the whole trace state entries.
                 }
 
                 processed += delta;

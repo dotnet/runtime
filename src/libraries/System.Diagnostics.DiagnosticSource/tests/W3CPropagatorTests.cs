@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(s_w3cPropagator);
             Assert.Equal(s_w3cPropagator, DistributedContextPropagator.CreateDefaultPropagator());
             Assert.Equal(s_w3cPropagator, DistributedContextPropagator.Current);
-            Assert.Equal([ PropagatorTests.TraceParent, PropagatorTests.TraceState, PropagatorTests.Baggage ], s_w3cPropagator.Fields);
+            Assert.Equal(new[] { PropagatorTests.TraceParent, PropagatorTests.TraceState, PropagatorTests.Baggage, PropagatorTests.CorrelationContext }, s_w3cPropagator.Fields);
         }
 
         public static IEnumerable<object[]> W3CTestData()
@@ -70,6 +70,15 @@ namespace System.Diagnostics.Tests
                                                         new KeyValuePair<string, string>("b}17", "v17"),  // '}' is not allowed
                                                     },
                                         null, null };
+
+            // Mixed valid and invalid baggage entries
+            yield return new object[] { null, null, new[]
+                                                    {
+                                                        new KeyValuePair<string, string>("b 1", "v1"), // invalid key, entry should be ignored
+                                                        new KeyValuePair<string, string>("b2", "v2")   // valid entry should be encoded/decoded
+                                                    },
+                                                    "b2 = v2",
+                                                    new[] { new KeyValuePair<string, string>("b2", "v2") } };
 
             // Baggage Value containing non % escaped characters
             // baggage-octet =  %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E (Exclusing '%')
@@ -153,7 +162,7 @@ namespace System.Diagnostics.Tests
                 fieldValue = null;
                 fieldValues = null;
 
-                if (fieldName == PropagatorTests.Baggage)
+                if (fieldName == PropagatorTests.Baggage || fieldName == PropagatorTests.CorrelationContext)
                 {
                     fieldValue = expectedBaggageString;
                     return;
