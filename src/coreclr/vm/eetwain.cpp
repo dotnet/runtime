@@ -1684,6 +1684,17 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
     INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
     if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
     {
+        // For funclets we need to recover the establisher frame from
+        // the main function.
+        //
+        // Finally funclets can be called directly from the managed code
+        // in non-exceptional path. In that case the we don't need to do
+        // any adjustment.
+        //
+        // For calls made through CallEHFunclet and CallEHFilterFunclet
+        // we recover the establisher frame address from the frame of the
+        // helper call.
+        //
         // Presumably profiler callbacks are not generated for funclets
         // so we can use returnAddress == 0 and skip this.
         if (returnAddress != 0 &&
