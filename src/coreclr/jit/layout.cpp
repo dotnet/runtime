@@ -462,21 +462,17 @@ void ClassLayoutBuilder::CopyNameFrom(ClassLayout* layout, const char* prefix)
 
     if (prefix != nullptr)
     {
-        char* newName      = nullptr;
-        char* newShortName = nullptr;
+        const char* newName      = nullptr;
+        const char* newShortName = nullptr;
 
         if (layoutName != nullptr)
         {
-            size_t len = strlen(prefix) + strlen(layoutName) + 1;
-            newName    = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
-            sprintf_s(newName, len, "%s%s", prefix, layoutShortName);
+            newName = m_compiler->printfAlloc("%s%s", prefix, layoutName);
         }
 
         if (layoutShortName != nullptr)
         {
-            size_t len   = strlen(prefix) + strlen(layoutName) + 1;
-            newShortName = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
-            sprintf_s(newShortName, len, "%s%s", prefix, layoutShortName);
+            newShortName = m_compiler->printfAlloc("%s%s", prefix, layoutShortName);
         }
 
         SetName(newName, newShortName);
@@ -708,8 +704,8 @@ const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
 // AreCompatible: check if 2 layouts are the same for copying.
 //
 // Arguments:
-//    layout1 - the first layout (copy destination)
-//    layout2 - the second layout (copy source)
+//    layout1 - the first layout
+//    layout2 - the second layout
 //
 // Return value:
 //    true if compatible, false otherwise.
@@ -773,8 +769,6 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
         return true;
     }
 
-    assert(clsHnd1 != NO_CLASS_HANDLE);
-    assert(clsHnd2 != NO_CLASS_HANDLE);
     assert(layout1->HasGCPtr() && layout2->HasGCPtr());
 
     if (layout1->GetGCPtrCount() != layout2->GetGCPtrCount())
@@ -815,16 +809,13 @@ bool ClassLayout::CanAssignFrom(const ClassLayout* layout)
         return true;
     }
 
-    // Do the normal compatibility check first, when possible to do so.
+    // Do the normal compatibility check first
     //
-    if ((IsCustomLayout() == layout->IsCustomLayout()) || (!HasGCPtr() && !layout->HasGCPtr()))
-    {
-        const bool areCompatible = AreCompatible(this, layout);
+    const bool areCompatible = AreCompatible(this, layout);
 
-        if (areCompatible)
-        {
-            return true;
-        }
+    if (areCompatible)
+    {
+        return true;
     }
 
     // Must be same size
