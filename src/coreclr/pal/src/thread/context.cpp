@@ -887,7 +887,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 
                     dest = FPREG_Xstate_Egpr(native, &size);
                     _ASSERT(size == (sizeof(DWORD64) * 16));
-                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->Egpr16, sizeof(DWORD64) * 16);
+                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
                 }
 #endif //  !TARGET_OSX
             }
@@ -1243,7 +1243,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             {
                 src = FPREG_Xstate_Egpr(native, &size);
                 _ASSERT(size == (sizeof(DWORD64) * 16));
-                memcpy_s(&lpContext->Egpr16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
+                memcpy_s(&lpContext->R16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
 
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_APX;
             }
