@@ -8,7 +8,7 @@ JIT_WriteBarrier(Object **dst, Object *ref)
     Set *dst = ref
 
     // Shadow Heap update
-    ifdef WRITE_BARRIER_CHECK:
+    ifdef WRITE_BARRIER_CHECK: // Only set in DEBUG mode
         if g_GCShadow != 0:
             long *shadow_dst = g_GCShadow + (dst - g_lowest_address)
             // Check shadow heap location is within shadow heap
@@ -89,8 +89,13 @@ JIT_CheckedWriteBarrier(Object **dst, Object *ref)
     return JIT_WriteBarrier(dst, ref)
 ````
 
-
-
 ## WritebarrierManager
 
-On AMD64 and Arm64, there several different implementations of the write barrier function. Each implementation assumes different state and so can skip certain checks. The actual write barrier that is called is a copy of one of these implementations. The WritebarrierManager keeps track of which implementation is currently being used. As internal state changes, the WritebarrierManager updates the copy to the correct implementation. In practice, most of the internal state is fixed on startup, with only changes to/from use of write watch barriers changing during runtime.
+On AMD64 and Arm64, there several different implementations of the write barrier function. Each version is a subset of the `JIT_WriteBarrier` above, assuming different state, meaning most `if` checks can be skipped. The actual write barrier that is called is a copy of one of these implementations.
+
+The WritebarrierManager keeps track of which implementation is currently being used. As internal state changes, the WritebarrierManager updates the copy to the correct implementation. In practice, most of the internal state is fixed on startup, with only changes to/from use of write watch barriers changing during runtime.
+
+`WRITE_BARRIER_CHECK` is only set in `DEBUG` mode. On Arm64 `WRITE_BARRIER_CHECK` checks exist at the top of each version of the function when `DEBUG` mode is enabled. On `Amd64` these checks do not exist. Instead, a special `JIT_WriteBarrier_Debug` version of the function exists, which contains most of the functionality of `JIT_WriteBarrier` pseudo code and is used exclusively when `DEBUG` mode is enabled.
+
+On Arm64, g_region_use_bitwise_write_barrier is only set if LSE atomics are present on the hardware, as only LSE provides an single instruction to atomically update a byte via a bitwise OR.
+
