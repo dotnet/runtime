@@ -3697,7 +3697,7 @@ function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
         return true;
     }
 
-    if (simple >= 0 && !bitmask) {
+    if (simple >= 0) {
         if (simdLoadTable.has(index)) {
             // Indirect load, so v1 is T** and res is Vector128*
             builder.local("pLocals");
