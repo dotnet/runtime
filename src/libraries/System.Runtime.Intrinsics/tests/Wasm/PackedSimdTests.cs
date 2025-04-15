@@ -589,5 +589,27 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
 
             Assert.Equal(Vector128.Create((ushort)65535, (ushort)65535, (ushort)0, (ushort)0, (ushort)100, (ushort)200, (ushort)300, (ushort)400), result);
         }
+
+        [Fact]
+        public unsafe void BitmaskTest()
+        {
+            var v1 = Vector128.Create((byte)0b00000001, (byte)0b00000010, (byte)0b00000100, (byte)0b00001000,
+                                       (byte)0b00010000, (byte)0b00100000, (byte)0b01000000, (byte)0b10000000,
+                                       (byte)0b00000001, (byte)0b00000010, (byte)0b00000100, (byte)0b00001000,
+                                    (byte)0b00010000, (byte)0b10100000, (byte)0b01000000, (byte)0b10000000);
+
+            var v2 = Vector128.Create((ushort)0b1100001001100001, (ushort)0b0000000000000010, (ushort)0b0000000000000100, (ushort)0b0000000000001000,
+                                       (ushort)0b0000000000010000, (ushort)0b0000000000100000, (ushort)0b0000000001000000, (ushort)0b0000000010000000);
+
+            var v3 = Vector128.Create(0b10000000000000000000000000000001, 0b00000000000111111000000000000010,
+                                   0b00000000000000000000000000000100, 0b10000000000000000000000000001000);
+
+            var bitmask1 = PackedSimd.Bitmask(v1);
+            var bitmask2 = PackedSimd.Bitmask(v2);
+            var bitmask3 = PackedSimd.Bitmask(v3);
+            Assert.Equal(0b1010000010000000, bitmask1);
+            Assert.Equal(0b1, bitmask2);
+            Assert.Equal(0b1001, bitmask3);
+        }
     }
 }
