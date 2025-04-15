@@ -99,7 +99,7 @@ namespace System.Net.Http
 
         public void MarkConnectionAsClosed()
         {
-            _connectionMetrics?.ConnectionClosed(durationMs: Environment.TickCount64 - _creationTickCount);
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled) _connectionMetrics?.ConnectionClosed(durationMs: Environment.TickCount64 - _creationTickCount);
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -116,13 +116,13 @@ namespace System.Net.Http
         public void MarkConnectionAsIdle()
         {
             _idleSinceTickCount = Environment.TickCount64;
-            _connectionMetrics?.IdleStateChanged(idle: true);
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled) _connectionMetrics?.IdleStateChanged(idle: true);
         }
 
         public void MarkConnectionAsNotIdle()
         {
             _idleSinceTickCount = null;
-            _connectionMetrics?.IdleStateChanged(idle: false);
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled) _connectionMetrics?.IdleStateChanged(idle: false);
         }
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>
