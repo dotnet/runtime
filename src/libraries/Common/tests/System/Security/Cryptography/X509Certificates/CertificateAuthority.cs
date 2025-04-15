@@ -8,6 +8,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
+// PQC types are used throughout, but only when the caller requests them.
+#pragma warning disable SYSLIB5006
+
 namespace System.Security.Cryptography.X509Certificates.Tests.Common
 {
     // This class represents only a portion of what is required to be a proper Certificate Authority.
@@ -994,6 +997,7 @@ SingleResponse ::= SEQUENCE {
             {
                 RSA rsa => cert.CopyWithPrivateKey(rsa),
                 ECDsa ecdsa => cert.CopyWithPrivateKey(ecdsa),
+                MLDsa mldsa => cert.CopyWithPrivateKey(mldsa),
                 DSA dsa => cert.CopyWithPrivateKey(dsa),
                 _ => throw new InvalidOperationException(
                     $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
@@ -1007,6 +1011,9 @@ SingleResponse ::= SEQUENCE {
 
             internal static KeyFactory ECDsa { get; } =
                 new(() => Cryptography.ECDsa.Create(ECCurve.NamedCurves.nistP384));
+
+            internal static KeyFactory MLDsa { get; } =
+                new(() => Cryptography.MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65));
 
             private Func<IDisposable> _factory;
 
@@ -1047,6 +1054,7 @@ SingleResponse ::= SEQUENCE {
                 _key =
                     cert.GetRSAPrivateKey() ??
                     cert.GetECDsaPrivateKey() ??
+                    cert.GetMLDsaPrivateKey() ??
                     (IDisposable)cert.GetDSAPrivateKey() ??
                     throw new NotSupportedException();
             }
@@ -1067,6 +1075,7 @@ SingleResponse ::= SEQUENCE {
                 {
                     RSA rsa => new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                     ECDsa ecdsa => new CertificateRequest(subject, ecdsa, HashAlgorithmName.SHA256),
+                    MLDsa mldsa => new CertificateRequest(subject, mldsa),
                     _ => throw new NotSupportedException(),
                 };
             }
@@ -1077,6 +1086,7 @@ SingleResponse ::= SEQUENCE {
                 {
                     RSA rsa => X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
                     ECDsa ecdsa => X509SignatureGenerator.CreateForECDsa(ecdsa),
+                    MLDsa mldsa => X509SignatureGenerator.CreateForMLDsa(mldsa),
                     _ => throw new NotSupportedException(),
                 };
             }
