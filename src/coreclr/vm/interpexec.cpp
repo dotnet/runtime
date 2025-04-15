@@ -49,8 +49,7 @@ void* frame_data_allocator_alloc(InterpThreadContext *pThreadContext, int8_t** s
         res = *stack;
         *stack += size;
     } else {
-        // Handle stack overflow or allocate additional memory
-        // Add fragment to the stack or throw an error
+        // Add stack fragments
         assert(0 && "Stack overflow in frame_data_allocator_alloc");
     }
 
