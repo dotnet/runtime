@@ -22,17 +22,8 @@ namespace System.Net.Test.Common
             public static readonly Uri RemoteEchoHeadersServer = new Uri("ws://" + Host + "/" + EchoHeadersHandler);
             public static readonly Uri SecureRemoteEchoHeadersServer = new Uri("wss://" + SecureHost + "/" + EchoHeadersHandler);
 
-            public static object[][] EchoServers => new object[][] {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                // new object[] { RemoteEchoServer },
-                new object[] { SecureRemoteEchoServer },
-            };
-
-            public static object[][] EchoHeadersServers => new object[][] {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                // new object[] { RemoteEchoHeadersServer },
-                new object[] { SecureRemoteEchoHeadersServer },
-            };
+            public static readonly object[][] EchoServers = { new object[] { RemoteEchoServer }, new object[] { SecureRemoteEchoServer } };
+            public static readonly object[][] EchoHeadersServers = { new object[] { RemoteEchoHeadersServer }, new object[] { SecureRemoteEchoHeadersServer } };
         }
     }
 }

@@ -55,7 +55,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             string cookieName,
             string cookieValue)
         {
-            Uri uri = System.Net.Test.Common.Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(302, System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer, 1);
+            Uri uri = System.Net.Test.Common.Configuration.Http.RemoteHttp11Server.RedirectUriForDestinationUri(302, System.Net.Test.Common.Configuration.Http.RemoteEchoServer, 1);
             var handler = new WinHttpHandler();
             handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
             handler.CookieUsePolicy = cookieUsePolicy;

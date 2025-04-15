@@ -1801,7 +1801,7 @@ private:
     //
     BasicBlock* FindEntry(BasicBlock* head, BasicBlock* top, BasicBlock* bottom)
     {
-        if (head->bbJumpKind == BBJ_ALWAYS)
+        if ((head->bbJumpKind == BBJ_ALWAYS) && !head->isBBCallAlwaysPairTail())
         {
             if (head->bbJumpDest->bbNum <= bottom->bbNum && head->bbJumpDest->bbNum >= top->bbNum)
             {
