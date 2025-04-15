@@ -1103,7 +1103,7 @@ TADDR IJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
     return funcletStartAddress;
 }
 
-BOOL IJitManager::IsFunclet(EECodeInfo * pCodeInfo)
+BOOL IJitManager::LazyIsFunclet(EECodeInfo * pCodeInfo)
 {
     CONTRACTL {
         NOTHROW;
@@ -4292,7 +4292,17 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
 
 #ifdef FEATURE_EH_FUNCLETS
         // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
-        pCodeInfo->m_pFunctionEntry = NULL;
+        if (pCHdr->MayHaveFunclets())
+        {
+            // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
+            pCodeInfo->m_pFunctionEntry = NULL;
+            pCodeInfo->m_isFuncletCache = EECodeInfo::IsFuncletCache::NotSet;
+        }
+        else
+        {
+            pCodeInfo->m_pFunctionEntry = pCHdr->GetUnwindInfo(0);
+            pCodeInfo->m_isFuncletCache = EECodeInfo::IsFuncletCache::IsNotFunclet;
+        }
 #endif
     }
 
@@ -6507,7 +6517,7 @@ DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToke
     return nFunclets;
 }
 
-BOOL ReadyToRunJitManager::IsFunclet(EECodeInfo* pCodeInfo)
+BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
 {
     CONTRACTL {
         NOTHROW;

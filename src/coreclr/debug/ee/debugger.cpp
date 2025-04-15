@@ -8255,7 +8255,7 @@ void Debugger::ManagedExceptionUnwindBegin(Thread *pThread)
  *
  * This function is called by the VM to release any debugger specific information for an
  * exception object.  It is called when the VM releases its internal exception stuff, i.e.
- * ExInfo on X86 and ExceptionTracker on WIN64.
+ * ExInfo.
  *
  *
  * Parameters:

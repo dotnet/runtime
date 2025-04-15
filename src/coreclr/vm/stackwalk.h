@@ -29,6 +29,9 @@ class ICodeManager;
 class IJitManager;
 struct EE_ILEXCEPTION;
 class AppDomain;
+#ifdef FEATURE_EH_FUNCLETS
+struct ExInfo;
+#endif
 
 // This define controls handling of faults in managed code.  If it is defined,
 //  the exception is handled (retried, actually), with a FaultingExceptionFrame
@@ -440,7 +443,7 @@ private:
     friend class EECodeManager;
     friend class StackFrameIterator;
 #ifdef FEATURE_EH_FUNCLETS
-    friend class ExceptionTracker;
+    friend struct ExInfo;
     friend void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 #endif // FEATURE_EH_FUNCLETS
 

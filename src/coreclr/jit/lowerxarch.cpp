@@ -4150,7 +4150,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     // The most likely case is that op1 is a cast from int/long to the base type:
                     // *  CAST      int <- short <- int/long
                     // If the base type is signed, that cast will be sign-extending, but we need zero extension,
-                    // so we can simply retype the cast to the unsigned type of the same size.
+                    // so we may be able to simply retype the cast to the unsigned type of the same size.
+                    // This is valid only if the cast is not checking overflow and is not containing a load.
                     //
                     // It's also possible we have a memory load of the base type:
                     // *  IND       short
@@ -4163,7 +4164,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                     var_types unsignedType = varTypeToUnsigned(simdBaseType);
 
-                    if (op1->OperIs(GT_CAST) && !op1->gtOverflow() &&
+                    if (op1->OperIs(GT_CAST) && !op1->gtOverflow() && !op1->AsCast()->CastOp()->isContained() &&
                         (genTypeSize(op1->CastToType()) == genTypeSize(simdBaseType)))
                     {
                         op1->AsCast()->gtCastType = unsignedType;
