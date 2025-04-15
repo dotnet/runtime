@@ -1185,6 +1185,22 @@ foreach(ZLIB_INSTALL_LIBRARY ${ZLIB_INSTALL_LIBRARIES})
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 endforeach()
 
+function(dump_cmake_variables)
+    get_cmake_property(_variableNames VARIABLES)
+    list (SORT _variableNames)
+    foreach (_variableName ${_variableNames})        
+            message(STATUS "${_variableName}=${${_variableName}}")        
+    endforeach()
+endfunction()
+
+if (EMSCRIPTEN AND "${CMAKE_C_FLAGS}" MATCHES "MEMORY64")
+    message("MRH_LOGGING: Building native ZLIB-NG with MEMORY64")    
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --target=wasm64")
+else()
+    message("MRH_LOGGING: ZLIB-NG unable to set wasm64")
+    dump_cmake_variables()
+endif()
+
 if(WIN32)
     # Shared library
     if(NOT DEFINED BUILD_SHARED_LIBS OR BUILD_SHARED_LIBS)
