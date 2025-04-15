@@ -424,9 +424,10 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         mov     [rcx], rsp
 
         // Invoke the funclet
+        mov     rax, rsi
         mov     rsi, rdi
         mov     rdi, r8      // rdi = InitialSP (older R2R ABI)
-        call    rsi
+        call    rax
 
         FUNCLET_CALL_EPILOGUE
 
