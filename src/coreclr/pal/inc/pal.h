@@ -1466,6 +1466,26 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         M128A Ymm15H;
     };
 
+    struct
+    {
+        DWORD64 R16;
+        DWORD64 R17;
+        DWORD64 R18;
+        DWORD64 R19;
+        DWORD64 R20;
+        DWORD64 R21;
+        DWORD64 R22;
+        DWORD64 R23;
+        DWORD64 R24;
+        DWORD64 R25;
+        DWORD64 R26;
+        DWORD64 R27;
+        DWORD64 R28;
+        DWORD64 R29;
+        DWORD64 R30;
+        DWORD64 R31;
+    };
+
     // XSTATE_AVX512_KMASK
     struct {
         DWORD64 KMask0;
@@ -1516,26 +1536,6 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         M512 Zmm29;
         M512 Zmm30;
         M512 Zmm31;
-    };
-
-    struct
-    {
-        DWORD64 Egpr16;
-        DWORD64 Egpr17;
-        DWORD64 Egpr18;
-        DWORD64 Egpr19;
-        DWORD64 Egpr20;
-        DWORD64 Egpr21;
-        DWORD64 Egpr22;
-        DWORD64 Egpr23;
-        DWORD64 Egpr24;
-        DWORD64 Egpr25;
-        DWORD64 Egpr26;
-        DWORD64 Egpr27;
-        DWORD64 Egpr28;
-        DWORD64 Egpr29;
-        DWORD64 Egpr30;
-        DWORD64 Egpr31;
     };
 
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
