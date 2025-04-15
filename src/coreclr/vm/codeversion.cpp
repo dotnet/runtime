@@ -85,6 +85,12 @@ PCODE NativeCodeVersionNode::GetNativeCode() const
     return m_pNativeCode;
 }
 
+PTR_PCODE NativeCodeVersionNode::GetNativeCodeSlot() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return dac_cast<PTR_PCODE>(&m_pNativeCode);
+}
+
 ReJITID NativeCodeVersionNode::GetILVersionId() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -163,7 +169,7 @@ void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationT
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-PatchpointInfo* NativeCodeVersionNode::GetOSRInfo(unsigned * ilOffset) const
+PatchpointInfo* NativeCodeVersionNode::GetOSRInfo(unsigned * ilOffset)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     *ilOffset = m_ilOffset;
@@ -218,6 +224,19 @@ PCODE NativeCodeVersion::GetNativeCode() const
     else
     {
         return GetMethodDesc()->GetNativeCode();
+    }
+}
+
+PTR_PCODE NativeCodeVersion::GetNativeCodeSlot() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        return AsNode()->GetNativeCodeSlot();
+    }
+    else
+    {
+        return GetMethodDesc()->GetAddrOfSlot();
     }
 }
 

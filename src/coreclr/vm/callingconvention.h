@@ -2148,6 +2148,18 @@ public:
         return m_pSig->IsVarArg() || m_pSig->IsTreatAsVarArg();
     }
 
+    BOOL IsAsyncCall()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pSig->IsAsyncCall();
+    }
+
+    BOOL HasAsyncContinuation()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pSig->HasAsyncContinuation();
+    }
+
     DWORD NumFixedArgs()
     {
         LIMITED_METHOD_CONTRACT;

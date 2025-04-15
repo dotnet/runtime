@@ -986,6 +986,8 @@ void ComCallMethodDesc::InitNativeInfo()
 
             MethodTable * pMT = pMD->GetMethodTable();
             IMDInternalImport * pInternalImport = pMT->GetMDImport();
+            if (pMD->IsAsyncMethod())
+                ThrowHR(COR_E_NOTSUPPORTED);
 
             mdMethodDef md = pMD->GetMemberDef();
 

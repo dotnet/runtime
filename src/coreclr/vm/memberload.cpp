@@ -781,6 +781,7 @@ MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
         allowInstParam,
         /* forceRemotableMethod */ FALSE,
         /* allowCreate */ TRUE,
+        AsyncVariantLookup::MatchingAsyncVariant,
         /* level */ owningTypeLoadLevel);
 } // MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec
 

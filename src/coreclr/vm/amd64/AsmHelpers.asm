@@ -203,10 +203,11 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
         push                rax ; make room for the real return address (Rip)
         push                rdx
         PUSH_CALLEE_SAVED_REGISTERS
+        push_vol_reg        rcx
         push_vol_reg        rax
         mov                 rcx, rsp
 
-        alloc_stack         38h ; make extra room for xmm0, argument home slots and align the SP
+        alloc_stack         30h ; make extra room for xmm0 and argument home slots
         save_xmm128_postrsp xmm0, 20h
 
 
@@ -216,8 +217,9 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
 
         movdqa              xmm0, [rsp + 20h]
 
-        add                 rsp, 38h
+        add                 rsp, 30h
         pop                 rax
+        pop                 rcx
         POP_CALLEE_SAVED_REGISTERS
         pop                 rdx
         ret                 ; return to the correct place, adjusted by our caller
@@ -463,11 +465,11 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT
 NESTED_END JIT_Patchpoint, _TEXT
 
 ; first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
         mov rdx, rcx
         xor rcx, rcx
         jmp JIT_Patchpoint
-LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_END JIT_PatchpointForced, _TEXT
 
 endif ; FEATURE_TIERED_COMPILATION
 
