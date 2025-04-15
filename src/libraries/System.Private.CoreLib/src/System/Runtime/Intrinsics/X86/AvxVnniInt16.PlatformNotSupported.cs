@@ -68,14 +68,14 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>Provides access to the x86 AVX10.2/512 hardware instructions for AVX-VNNI-INT16 via intrinsics.</summary>
         [Intrinsic]
-        public new abstract class V512
+        public abstract class V512
         {
             internal V512() { }
 
             /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
             /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
             /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
-            public static new bool IsSupported { [Intrinsic] get { return false; } }
+            public static bool IsSupported { [Intrinsic] get { return false; } }
 
             // VPDPWSUD zmm1{k1}{z}, zmm2, zmm3/m512/m32bcst
             public static Vector512<int> MultiplyWideningAndAdd(Vector512<int> addend, Vector512<short> left, Vector512<ushort> right)  { throw new PlatformNotSupportedException(); }
