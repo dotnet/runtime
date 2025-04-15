@@ -107,6 +107,12 @@ namespace System
         static abstract int Precision { get; }
         static abstract int MaxScale { get; }
         static abstract int BufferLength { get; }
+        static abstract int MaxExponent { get; }
+        static abstract int MinExponent { get; }
+        static abstract TValue PositiveInfinity { get; }
+        static abstract TValue NegativeInfinity { get; }
+        static abstract TValue Zero { get; }
+        static abstract TSignificand NumberToSignificand(ref Number.NumberBuffer number);
         static abstract unsafe byte* ToDecChars(byte* p, TSignificand significand);
         Number.DecimalIeee754<TSignificand> Unpack();
     }
@@ -1254,6 +1260,30 @@ namespace System
             }
 
             return number.IsNegative ? -result : result;
+        }
+
+        internal static TValue NumberToDecimalIeee754<TDecimal, TSignificand, TValue>(ref NumberBuffer number)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TSignificand, TValue>
+            where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            number.CheckConsistency();
+            TValue result;
+
+            if ((number.DigitsCount == 0) || (number.Scale < TDecimal.MinExponent))
+            {
+                result = TDecimal.Zero;
+            }
+            else if (number.Scale > TDecimal.MaxExponent)
+            {
+                result = number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+            else
+            {
+                result = TDecimal.Zero;
+            }
+
+            return result;
         }
     }
 }
