@@ -1715,7 +1715,6 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
             // funclet's EECodeInfo because they have different stack sizes!
             baseStackSlot += pCodeInfo->GetMainFunctionInfo().GetFixedStackSize();
 #endif // TARGET_AMD64
-#endif // DACCESS_COMPILE
         }
         TADDR taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
         TADDR taExactGenericsToken = *PTR_TADDR(taSlot);
