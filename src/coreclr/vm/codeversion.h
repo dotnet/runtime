@@ -61,6 +61,7 @@ public:
     NativeCodeVersionId GetVersionId() const;
     BOOL IsDefaultVersion() const;
     PCODE GetNativeCode() const;
+    PTR_PCODE GetNativeCodeSlot() const;
 
 #ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion GetILCodeVersion() const;
@@ -268,6 +269,7 @@ public:
     PTR_MethodDesc GetMethodDesc() const; // Can be called without any locks
     NativeCodeVersionId GetVersionId() const; // Can be called without any locks
     PCODE GetNativeCode() const; // Can be called without any locks, but result may be stale if it wasn't already set
+    PTR_PCODE GetNativeCodeSlot() const;
     ReJITID GetILVersionId() const; // Can be called without any locks
     ILCodeVersion GetILCodeVersion() const;// Can be called without any locks
     BOOL IsActiveChildVersion() const;
@@ -289,7 +291,7 @@ public:
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    PatchpointInfo * GetOSRInfo(unsigned * ilOffset) const;
+    PatchpointInfo * GetOSRInfo(unsigned * ilOffset);
 #endif
 
 private:
