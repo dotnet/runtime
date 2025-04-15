@@ -18,6 +18,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 return null;
             }
+
             return reader.GetBytesFromBase64();
         }
 
@@ -35,6 +36,12 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out byte[]? value)
         {
+            if (!reader._hasPartialStringValue && state.Current.ObjectState == StackFrameObjectState.None)
+            {
+                value = reader.GetBytesFromBase64();
+                return true;
+            }
+
             if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
             {
                 // This is the first segment so it can't be the only/last segment since we are on the slow read path.

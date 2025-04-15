@@ -160,8 +160,7 @@ namespace System.Text.Json.Serialization
                 return true;
             }
 
-            if (ConverterStrategy == ConverterStrategy.SimpleValue ||
-                ConverterStrategy == ConverterStrategy.SegmentableValue && !state.IsContinuation && !reader._hasPartialStringValue)
+            if (ConverterStrategy == ConverterStrategy.SimpleValue)
             {
                 // A value converter should never be within a continuation.
                 Debug.Assert(!state.IsContinuation);
@@ -265,7 +264,7 @@ namespace System.Text.Json.Serialization
                     state.Current.OriginalTokenType,
                     state.Current.OriginalDepth,
                     bytesConsumed: 0,
-                    isValueConverter: ConverterStrategy == ConverterStrategy.SegmentableValue,
+                    isValueConverter: false,
                     ref reader);
 
                 // No need to clear state.Current.* since a stack pop will occur.
@@ -510,7 +509,7 @@ namespace System.Text.Json.Serialization
 
         internal void VerifyRead(JsonTokenType tokenType, int depth, long bytesConsumed, bool isValueConverter, ref Utf8JsonReader reader)
         {
-            Debug.Assert(isValueConverter == JsonSerializer.IsValueConverterStrategy(ConverterStrategy));
+            Debug.Assert(isValueConverter == (ConverterStrategy == ConverterStrategy.SimpleValue));
 
             switch (tokenType)
             {
@@ -546,7 +545,7 @@ namespace System.Text.Json.Serialization
                     if (isValueConverter)
                     {
                         // A value converter should not make any reads.
-                        if (reader.BytesConsumed != bytesConsumed && ConverterStrategy != ConverterStrategy.SegmentableValue)
+                        if (reader.BytesConsumed != bytesConsumed)
                         {
                             ThrowHelper.ThrowJsonException_SerializationConverterRead(this);
                         }
@@ -555,7 +554,7 @@ namespace System.Text.Json.Serialization
                     {
                         // A non-value converter (object or collection) should always have Start and End tokens
                         // unless it is polymorphic or supports null value reads.
-                        if (!CanBePolymorphic && !(HandleNullOnRead && tokenType == JsonTokenType.Null))
+                        if (!CanBePolymorphic && !(HandleNullOnRead && tokenType == JsonTokenType.Null) && tokenType != JsonTokenType.String)
                         {
                             ThrowHelper.ThrowJsonException_SerializationConverterRead(this);
                         }
