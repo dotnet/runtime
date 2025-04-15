@@ -19,7 +19,7 @@ namespace System.Net.Http
 
         public ValueTask<T> WaitForConnectionAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
         {
-            var withTelemetry = HttpTelemetry.Log.IsEnabled()
+            bool withTelemetry = HttpTelemetry.Log.IsEnabled()
                                 || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && pool.Settings._metrics!.RequestsQueueDuration.Enabled)
                                 || (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && Activity.Current?.Source == DiagnosticsHandler.s_activitySource);
             return withTelemetry
