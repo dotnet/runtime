@@ -13,5 +13,7 @@ const legacyEntrypoint = createEmscripten;
 
 verifyEnvironment();
 
+(dotnet.withConfig as Function)(/*! dotnetBootConfig */);
+
 export { dotnet, exit };
 export default legacyEntrypoint;
