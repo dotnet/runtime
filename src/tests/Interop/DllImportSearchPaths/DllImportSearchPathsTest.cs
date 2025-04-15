@@ -69,7 +69,26 @@ public class DllImportSearchPathsTest
             Environment.CurrentDirectory = Subdirectory;
 
             // Library should not be found in the assembly directory, but should fall back to the default OS search which includes CWD on Windows
-            int sum = NativeLibraryPInvoke.Sum(1, 2);
+            int sum = NativeLibraryPInvoke.Sum_Copy(1, 2);
+            Assert.Equal(3, sum);
+        }
+        finally
+        {
+            Environment.CurrentDirectory = currentDirectory;
+        }
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public static void DefaultFlags_Found()
+    {
+        string currentDirectory = Environment.CurrentDirectory;
+        try
+        {
+            Environment.CurrentDirectory = Subdirectory;
+
+            // Library should not be found in the assembly directory, but should fall back to the default OS search which includes CWD on Windows
+            int sum = NativeLibraryPInvoke.Sum_DefaultFlags(1, 2);
             Assert.Equal(3, sum);
         }
         finally
@@ -95,14 +114,28 @@ public class DllImportSearchPathsTest
 
 public class NativeLibraryPInvoke
 {
+    internal const string CopyName = $"{NativeLibraryToLoad.Name}-copy";
+    internal const string DefaultFlagsName = $"{NativeLibraryToLoad.Name}-default-flags";
+
     public static int Sum(int a, int b)
-    {
-        return NativeSum(a, b);
-    }
+        => NativeSum(a, b);
+
+    public static int Sum_Copy(int a, int b)
+        => NativeSum_Copy(a, b);
+
+    public static int Sum_DefaultFlags(int a, int b)
+        => NativeSum_DefaultFlags(a, b);
 
     [DllImport(NativeLibraryToLoad.Name)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
     static extern int NativeSum(int arg1, int arg2);
+
+    [DllImport(CopyName, EntryPoint = nameof(NativeSum))]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+    static extern int NativeSum_Copy(int arg1, int arg2);
+
+    [DllImport(DefaultFlagsName, EntryPoint = nameof(NativeSum))]
+    static extern int NativeSum_DefaultFlags(int arg1, int arg2);
 }
 
 public class NativeLibraryPInvokeAot
