@@ -395,7 +395,7 @@ namespace System.IO.Compression
             int bytesRead;
 
             zip64EOCDLocator = new();
-            bytesRead = stream.Read(blockContents);
+            bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
 
             if (bytesRead < TotalSize)
             {
@@ -455,7 +455,7 @@ namespace System.IO.Compression
             int bytesRead;
 
             zip64EOCDRecord = new();
-            bytesRead = stream.Read(blockContents);
+            bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
 
             if (bytesRead < BlockConstantSectionSize)
             {
@@ -555,10 +555,11 @@ namespace System.IO.Compression
         // will not throw end of stream exception
         public static bool TrySkipBlock(Stream stream)
         {
-            Span<byte> blockBytes = stackalloc byte[4];
+            Span<byte> blockBytes = stackalloc byte[FieldLengths.Signature];
             long currPosition = stream.Position;
-            int bytesRead = stream.Read(blockBytes);
+            int bytesRead;
 
+            bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             if (bytesRead != FieldLengths.Signature || !blockBytes.SequenceEqual(SignatureConstantBytes))
             {
                 return false;
@@ -572,7 +573,10 @@ namespace System.IO.Compression
             // Already read the signature, so make the filename length field location relative to that
             stream.Seek(FieldLocations.FilenameLength - FieldLengths.Signature, SeekOrigin.Current);
 
-            bytesRead = stream.Read(blockBytes);
+            // Reuse blockBytes to read the filename length and the extra field length - these two consecutive
+            // fields fit inside blockBytes.
+            Debug.Assert(blockBytes.Length == FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength);
+            bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             if (bytesRead != FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength)
             {
                 return false;
@@ -691,7 +695,9 @@ namespace System.IO.Compression
                     Span<byte> collatedHeader = dynamicHeaderSize <= StackAllocationThreshold ? stackalloc byte[StackAllocationThreshold].Slice(0, dynamicHeaderSize) : arrayPoolBuffer.AsSpan(0, dynamicHeaderSize);
 
                     buffer[FieldLocations.DynamicData..].CopyTo(collatedHeader);
-                    int realBytesRead = furtherReads.Read(collatedHeader[remainingBufferLength..]);
+
+                    Debug.Assert(bytesToRead == collatedHeader[remainingBufferLength..].Length);
+                    int realBytesRead = furtherReads.ReadAtLeast(collatedHeader[remainingBufferLength..], bytesToRead, throwOnEndOfStream: false);
 
                     if (realBytesRead != bytesToRead)
                     {
@@ -814,7 +820,7 @@ namespace System.IO.Compression
             int bytesRead;
 
             eocdBlock = new();
-            bytesRead = stream.Read(blockContents);
+            bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
 
             if (bytesRead < TotalSize)
             {
