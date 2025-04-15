@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -117,12 +118,15 @@ public class NativeLibraryPInvoke
     internal const string CopyName = $"{NativeLibraryToLoad.Name}-copy";
     internal const string DefaultFlagsName = $"{NativeLibraryToLoad.Name}-default-flags";
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Sum(int a, int b)
         => NativeSum(a, b);
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Sum_Copy(int a, int b)
         => NativeSum_Copy(a, b);
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Sum_DefaultFlags(int a, int b)
         => NativeSum_DefaultFlags(a, b);
 
@@ -140,10 +144,9 @@ public class NativeLibraryPInvoke
 
 public class NativeLibraryPInvokeAot
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Sum(int a, int b)
-    {
-        return NativeSum(a, b);
-    }
+        => NativeSum(a, b);
 
     // For NativeAOT, validate the case where the native library is next to the AOT application.
     // The passing of DllImportSearchPath.System32 is done to ensure on Windows the runtime won't fallback
@@ -155,10 +158,9 @@ public class NativeLibraryPInvokeAot
 
 public class NativeLibraryWithDependency
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Sum(int a, int b)
-    {
-        return CallDependencySum(a, b);
-    }
+        => CallDependencySum(a, b);
 
     // For LoadLibrary on Windows, search flags, like that represented by System32, are incompatible with
     // looking at a specific path (per AssemblyDirectory), so we specify both flags to validate that we do
