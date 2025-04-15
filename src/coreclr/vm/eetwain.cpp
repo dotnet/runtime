@@ -1660,12 +1660,17 @@ PTR_VOID EECodeManager::GetExactGenericsToken(PREGDISPLAY     pContext,
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return EECodeManager::GetExactGenericsToken(GetCallerSp(pContext), pCodeInfo);
+    pCodeInfo->GetCodeManager()->EnsureCallerContextIsValid(pContext, NULL);
+
+    return EECodeManager::GetExactGenericsToken(GetSP(pContext->pCallerContext),
+                                                pCodeInfo,
+                                                GetIP(pContext->pCallerContext));
 }
 
 //static
 PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
-                                              EECodeInfo *    pCodeInfo)
+                                              EECodeInfo *    pCodeInfo,
+                                              UINT_PTR        returnAddress /* = 0 */)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -1679,11 +1684,12 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
     INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
     if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
     {
-        if (pCodeInfo->IsFunclet())
+        // Presumably profiler callbacks are not generated for funclets
+        // so we can use returnAddress == 0 and skip this.
+        if (returnAddress != 0 &&
+            pCodeInfo->IsFunclet() &&
+            !ExecutionManager::IsManagedCode(returnAddress))
         {
-            // TODO: Should we check the return address to see if it's CallEHFunclet,
-            // CallEHFilterFunclet
-
             SIZE_T offsetOfEstablisherFrameInFuncletSP;
 #if defined(TARGET_AMD64)
             offsetOfEstablisherFrameInFuncletSP = 0;

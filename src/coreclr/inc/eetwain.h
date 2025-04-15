@@ -484,7 +484,8 @@ PTR_VOID GetExactGenericsToken(PREGDISPLAY     pContext,
 
 static
 PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
-                               EECodeInfo *    pCodeInfo);
+                               EECodeInfo *    pCodeInfo,
+                               UINT_PTR        returnAddress = 0);
 
 
 #endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
