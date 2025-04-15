@@ -396,9 +396,10 @@ void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE
     }
     CONTRACTL_END
 
-    // The copy is done without advancing m_ptr.
+    SigPointer spEnd(*this);
+    IfFailThrowBF(spEnd.SkipSignature(), BFA_BAD_COMPLUS_SIG, pSigModule);
     pSigBuilder->AppendByte(*m_ptr | additionalCallConv);
-    pSigBuilder->AppendBlob((const PVOID)(m_ptr + 1), m_dwLen - 1);
+    pSigBuilder->AppendBlob((const PVOID)(m_ptr + 1), spEnd.m_ptr - (m_ptr + 1));
 }
 #endif // DACCESS_COMPILE
 

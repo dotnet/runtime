@@ -31,11 +31,14 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
 
     ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // Copy the existing signature to add HASTHIS and EXPLICITTHIS.
-    CorElementType fnType = declarationSig.NextArg();
-    _ASSERTE(fnType == ELEMENT_TYPE_FNPTR);
+    // Copy the first arg which has the function pointer signature in order to add HASTHIS and EXPLICITTHIS.
+    declarationSig.SkipArg();
     SigPointer sp = declarationSig.GetArgProps();
-    sp.GetByte(nullptr); // Skip the element type (ELEMENT_TYPE_FNPTR)
+
+    CorElementType eType;
+    sp.GetElemType(&eType);
+    _ASSERTE(eType == ELEMENT_TYPE_FNPTR);
+
     SigBuilder sigBuilder;
     sp.CopySignature(GetModule(), &sigBuilder, IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS);
 
