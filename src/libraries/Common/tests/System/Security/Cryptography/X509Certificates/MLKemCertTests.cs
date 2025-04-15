@@ -7,12 +7,12 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class MLKemCertTests
     {
         public static bool MLKemIsNotSupported => !MLKem.IsSupported;
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
         public static void GetMLKemPublicKey_NotMLKem()
         {
             using X509Certificate2 cert = LoadCertificateFromPem(TestData.RsaCertificate);
