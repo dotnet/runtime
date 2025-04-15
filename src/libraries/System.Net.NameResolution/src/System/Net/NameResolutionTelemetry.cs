@@ -160,7 +160,8 @@ namespace System.Net
     internal readonly struct NameResolutionActivity
     {
         [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
-        private static bool IsActivitySourceSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
+        private static bool IsActivitySourceSupported { get; } = InitializeIsActivitySourceSupported();
+        private static bool InitializeIsActivitySourceSupported() => AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
 
         private const string ActivitySourceName = "Experimental.System.Net.NameResolution";
         private const string ActivityName = ActivitySourceName + ".DnsLookup";
@@ -189,7 +190,7 @@ namespace System.Net
         {
             _startingTimestamp = startingTimestamp;
             _activity = IsActivitySourceSupported ? s_activitySource!.StartActivity(ActivityName) : null;
-            if (_activity is not null)
+            if (IsActivitySourceSupported && _activity is not null)
             {
                 string host = NameResolutionTelemetry.GetHostnameFromStateObject(hostNameOrAddress);
                 _activity.DisplayName = hostNameOrAddress is IPAddress ? $"DNS reverse lookup {host}" : $"DNS lookup {host}";

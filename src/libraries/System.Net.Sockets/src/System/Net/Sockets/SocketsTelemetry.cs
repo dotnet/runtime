@@ -12,7 +12,8 @@ namespace System.Net.Sockets
     internal sealed class SocketsTelemetry : EventSource
     {
         [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
-        private static bool IsActivitySourceSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
+        private static bool IsActivitySourceSupported { get; } = InitializeIsActivitySourceSupported();
+        private static bool InitializeIsActivitySourceSupported() => AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
 
         private const string ActivitySourceName = "Experimental.System.Net.Sockets";
         private const string ConnectActivityName = ActivitySourceName + ".Connect";
@@ -120,7 +121,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (activity is not null)
+            if (IsActivitySourceSupported && activity is not null)
             {
                 if (endPoint is IPEndPoint ipEndPoint)
                 {
@@ -165,7 +166,7 @@ namespace System.Net.Sockets
             long newCount = Interlocked.Decrement(ref _currentOutgoingConnectAttempts);
             Debug.Assert(newCount >= 0);
 
-            if (activity is not null)
+            if (IsActivitySourceSupported && activity is not null)
             {
                 if (error != SocketError.Success)
                 {

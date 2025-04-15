@@ -23,7 +23,8 @@ namespace System.Net.Http
         private readonly HeaderDescriptor[]? _propagatorFields;
 
         [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
-        private static bool IsActivitySourceSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
+        private static bool IsActivitySourceSupported { get; } = InitializeIsActivitySourceSupported();
+        private static bool InitializeIsActivitySourceSupported() => AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
 
 #pragma warning disable CA1810 // remove the explicit static constructor
         static DiagnosticsHandler()
@@ -125,7 +126,7 @@ namespace System.Net.Http
             Guid loggingRequestId = Guid.Empty;
             Activity? activity = StartActivity(request);
 
-            if (activity is not null)
+            if (IsActivitySourceSupported && activity is not null)
             {
                 // https://github.com/open-telemetry/semantic-conventions/blob/release/v1.23.x/docs/http/http-spans.md#name
                 activity.DisplayName = HttpMethod.GetKnownMethod(request.Method.Method)?.Method ?? "HTTP";
@@ -167,7 +168,7 @@ namespace System.Net.Http
                         timestamp));
             }
 
-            if (activity is not null)
+            if (IsActivitySourceSupported && activity is not null)
             {
                 InjectHeaders(activity, request);
             }
@@ -206,7 +207,7 @@ namespace System.Net.Http
             finally
             {
                 // Always stop activity if it was started.
-                if (activity is not null)
+                if (IsActivitySourceSupported && activity is not null)
                 {
                     activity.SetEndTime(DateTime.UtcNow);
 

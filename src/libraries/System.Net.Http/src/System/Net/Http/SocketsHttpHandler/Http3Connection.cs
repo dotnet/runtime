@@ -318,7 +318,7 @@ namespace System.Net.Http
                 }
 
                 Debug.Assert(waitForConnectionActivity?.IsStopped != false);
-                if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
+                if (ConnectionSetupDistributedTracing.IsActivitySourceSupported && ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
                 Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);

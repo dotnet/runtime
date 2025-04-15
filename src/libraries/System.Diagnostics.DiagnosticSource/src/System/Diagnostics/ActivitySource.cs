@@ -17,7 +17,8 @@ namespace System.Diagnostics
         private SynchronizedList<ActivityListener>? _listeners;
 
         [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
-        internal static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
+        internal static bool IsSupported { get; } = InitializeIsActivitySourceSupported();
+        private static bool InitializeIsActivitySourceSupported() => AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
 
         /// <summary>
         /// Construct an ActivitySource object with the input name

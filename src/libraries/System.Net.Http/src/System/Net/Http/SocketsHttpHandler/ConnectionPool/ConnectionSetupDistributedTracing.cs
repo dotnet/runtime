@@ -12,7 +12,8 @@ namespace System.Net.Http
     internal static class ConnectionSetupDistributedTracing
     {
         [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
-        private static bool IsActivitySourceSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
+        internal static bool IsActivitySourceSupported { get; } = InitializeIsActivitySourceSupported();
+        private static bool InitializeIsActivitySourceSupported() => AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
 
         private static readonly ActivitySource? s_connectionsActivitySource;
 
@@ -41,7 +42,7 @@ namespace System.Net.Http
                 activity = s_connectionsActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ConnectionSetupActivityName);
             }
 
-            if (activity is not null)
+            if (IsActivitySourceSupported && activity is not null)
             {
                 activity.DisplayName = $"HTTP connection_setup {authority.HostValue}:{authority.Port}";
                 if (activity.IsAllDataRequested)
@@ -94,7 +95,7 @@ namespace System.Net.Http
             {
                 activity = s_connectionsActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.WaitForConnectionActivityName);
             }
-            if (activity is not null)
+            if (IsActivitySourceSupported && activity is not null)
             {
                 activity.DisplayName = $"HTTP wait_for_connection {authority.HostValue}:{authority.Port}";
             }

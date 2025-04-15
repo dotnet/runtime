@@ -13,7 +13,8 @@ namespace System.Net.Security
     internal sealed class NetSecurityTelemetry : EventSource
     {
         [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
-        private static bool IsActivitySourceSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
+        private static bool IsActivitySourceSupported { get; } = InitializeIsActivitySourceSupported();
+        private static bool InitializeIsActivitySourceSupported() => AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
 
         private const string ActivitySourceName = "Experimental.System.Net.Security";
         private const string ActivityName = ActivitySourceName + ".TlsHandshake";
@@ -333,7 +334,7 @@ namespace System.Net.Security
         public static Activity? StartActivity(SslStream stream)
         {
             using Activity? activity = IsActivitySourceSupported ? s_activitySource!.StartActivity(ActivityName) : null;
-            if (activity is not null)
+            if (IsActivitySourceSupported && activity is not null)
             {
                 activity.DisplayName = stream.IsServer ? "TLS server handshake" : $"TLS client handshake {stream.TargetHostName}";
                 if (activity.IsAllDataRequested && !stream.IsServer)
