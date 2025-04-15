@@ -19,7 +19,16 @@ public class DllImportSearchPathsTest
         Assert.Throws<DllNotFoundException>(() => NativeLibraryPInvoke.Sum(1, 2));
     }
 
-    [Fact]
+    public static bool CanLoadAssemblyInSubdirectory =>
+        !TestLibrary.Utilities.IsNativeAot &&
+        !TestLibrary.PlatformDetection.IsMonoFULLAOT &&
+        !OperatingSystem.IsAndroid() &&
+        !OperatingSystem.IsIOS() &&
+        !OperatingSystem.IsTvOS() &&
+        !OperatingSystem.IsBrowser() &&
+        !OperatingSystem.IsWasi();
+
+    [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
     public static void AssemblyDirectory_InMemory_NotFound()
     {
         byte[] bytes = File.ReadAllBytes(Path.Combine(Subdirectory, $"{nameof(DllImportSearchPathsTest)}.dll"));
@@ -30,15 +39,6 @@ public class DllImportSearchPathsTest
         Exception ex = Assert.Throws<TargetInvocationException>(() =>method.Invoke(null, new object[] { 1, 2 }));
         Assert.Equal(typeof(DllNotFoundException), ex.InnerException.GetType());
     }
-
-    public static bool CanLoadAssemblyInSubdirectory =>
-        !TestLibrary.Utilities.IsNativeAot &&
-        !TestLibrary.PlatformDetection.IsMonoFULLAOT &&
-        !OperatingSystem.IsAndroid() &&
-        !OperatingSystem.IsIOS() &&
-        !OperatingSystem.IsTvOS() &&
-        !OperatingSystem.IsBrowser() &&
-        !OperatingSystem.IsWasi();
 
     [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
     public static void AssemblyDirectory_Found()
