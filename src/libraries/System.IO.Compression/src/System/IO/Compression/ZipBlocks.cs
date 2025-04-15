@@ -48,7 +48,6 @@ namespace System.IO.Compression
 
             field._tag = BinaryPrimitives.ReadUInt16LittleEndian(bytes[FieldLocations.Tag..]);
             field._size = BinaryPrimitives.ReadUInt16LittleEndian(bytes[FieldLocations.Size..]);
-            bytesConsumed += SizeOfHeader;
 
             // not enough byte to read the data
             if ((bytes.Length - SizeOfHeader) < field._size)
@@ -57,11 +56,11 @@ namespace System.IO.Compression
             }
 
             field._data = bytes.Slice(FieldLocations.DynamicData, field._size).ToArray();
-            bytesConsumed += field._size;
+            bytesConsumed = field.Size + SizeOfHeader;
             return true;
         }
 
-        public static List<ZipGenericExtraField> ParseExtraField(ReadOnlySpan<byte> extraFieldData)
+        public static List<ZipGenericExtraField> ParseExtraField(ReadOnlySpan<byte> extraFieldData, out ReadOnlySpan<byte> trailingExtraFieldData)
         {
             List<ZipGenericExtraField> extraFields = new List<ZipGenericExtraField>();
             int totalBytesConsumed = 0;
@@ -71,25 +70,43 @@ namespace System.IO.Compression
                 totalBytesConsumed += currBytesConsumed;
                 extraFields.Add(field);
             }
+            // It's possible for some ZIP files to contain extra data which isn't a well-formed extra field. zipalign does this, padding the extra data
+            // field with zeroes to align the start of the file data to an X-byte boundary. We need to preserve this data so that the recorded "extra data length"
+            // fields in the central directory and local file headers are valid.
+            // We need to account for this because zipalign is part of the build process for Android applications, and failing to do this will result in
+            // .NET for Android generating corrupted .apk files and failing to build.
+            trailingExtraFieldData = extraFieldData[totalBytesConsumed..];
 
             return extraFields;
         }
 
-        public static int TotalSize(List<ZipGenericExtraField> fields)
+        public static int TotalSize(List<ZipGenericExtraField>? fields, int trailingDataLength)
         {
-            int size = 0;
-            foreach (ZipGenericExtraField field in fields)
+            int size = trailingDataLength;
+
+            if (fields != null)
             {
-                size += field.Size + SizeOfHeader; //size is only size of data
+                foreach (ZipGenericExtraField field in fields)
+                {
+                    size += field.Size + SizeOfHeader; //size is only size of data
+                }
             }
             return size;
         }
 
-        public static void WriteAllBlocks(List<ZipGenericExtraField> fields, Stream stream)
+        public static void WriteAllBlocks(List<ZipGenericExtraField>? fields, ReadOnlySpan<byte> trailingExtraFieldData, Stream stream)
         {
-            foreach (ZipGenericExtraField field in fields)
+            if (fields != null)
             {
-                field.WriteBlock(stream);
+                foreach (ZipGenericExtraField field in fields)
+                {
+                    field.WriteBlock(stream);
+                }
+            }
+
+            if (!trailingExtraFieldData.IsEmpty)
+            {
+                stream.Write(trailingExtraFieldData);
             }
         }
     }
@@ -514,7 +531,7 @@ namespace System.IO.Compression
         public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x03, 0x04];
         public const int SizeOfLocalHeader = 30;
 
-        public static List<ZipGenericExtraField> GetExtraFields(Stream stream)
+        public static List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
         {
             // assumes that TrySkipBlock has already been called, so we don't have to validate twice
 
@@ -538,8 +555,9 @@ namespace System.IO.Compression
                 stream.Seek(filenameLength, SeekOrigin.Current);
                 stream.ReadExactly(extraFieldBuffer);
 
-                result = ZipGenericExtraField.ParseExtraField(extraFieldBuffer);
+                result = ZipGenericExtraField.ParseExtraField(extraFieldBuffer, out ReadOnlySpan<byte> trailingDataSpan);
                 Zip64ExtraField.RemoveZip64Blocks(result);
+                trailingData = trailingDataSpan.ToArray();
 
                 return result;
             }
@@ -627,6 +645,7 @@ namespace System.IO.Compression
         public byte[] Filename = [];
         public byte[] FileComment = [];
         public List<ZipGenericExtraField>? ExtraFields;
+        public byte[]? TrailingExtraFieldData;
 
         // if saveExtraFieldsAndComments is false, FileComment and ExtraFields will be null
         // in either case, the zip64 extra field info will be incorporated into other fields
@@ -718,14 +737,16 @@ namespace System.IO.Compression
                 zip64 = new();
                 if (saveExtraFieldsAndComments)
                 {
-                    header.ExtraFields = ZipGenericExtraField.ParseExtraField(zipExtraFields);
+                    header.ExtraFields = ZipGenericExtraField.ParseExtraField(zipExtraFields, out ReadOnlySpan<byte> trailingDataSpan);
                     zip64 = Zip64ExtraField.GetAndRemoveZip64Block(header.ExtraFields,
                                 uncompressedSizeInZip64, compressedSizeInZip64,
                                 relativeOffsetInZip64, diskNumberStartInZip64);
+                    header.TrailingExtraFieldData = trailingDataSpan.ToArray();
                 }
                 else
                 {
                     header.ExtraFields = null;
+                    header.TrailingExtraFieldData = null;
                     zip64 = Zip64ExtraField.GetJustZip64Block(zipExtraFields,
                                 uncompressedSizeInZip64, compressedSizeInZip64,
                                 relativeOffsetInZip64, diskNumberStartInZip64);
