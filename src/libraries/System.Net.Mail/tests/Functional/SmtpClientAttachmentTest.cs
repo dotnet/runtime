@@ -17,7 +17,7 @@ namespace System.Net.Mail.Tests
         {
         }
 
-        private class ThrowingStream() : Stream
+        private class ThrowingStream : Stream
         {
 
             public override bool CanRead => throw new NotImplementedException();
