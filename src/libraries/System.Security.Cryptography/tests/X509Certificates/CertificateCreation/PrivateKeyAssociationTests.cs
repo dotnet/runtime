@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -747,6 +748,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         Assert.True(pub.VerifyData(data, signature));
                     });
                 }
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLKem()
+        {
+            using (X509Certificate2 pubOnly = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
+            using (MLKem privKey = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem512PrivateKeySeed))
+            using (X509Certificate2 wrongAlg = X509CertificateLoader.LoadCertificate(TestData.CertWithEnhancedKeyUsage))
+            {
+                CheckCopyWithPrivateKey(
+                    pubOnly,
+                    wrongAlg,
+                    privKey,
+                    [
+                        () => MLKem.GenerateKey(MLKemAlgorithm.MLKem512),
+                        () => MLKem.GenerateKey(MLKemAlgorithm.MLKem768),
+                        () => MLKem.GenerateKey(MLKemAlgorithm.MLKem1024),
+                    ],
+                    (cert, key) => cert.CopyWithPrivateKey(key),
+                    cert => cert.GetMLKemPublicKey(),
+                    cert => cert.GetMLKemPrivateKey(),
+                    (priv, pub) =>
+                    {
+                        byte[] ciphertext = pub.Encapsulate(out byte[] pubSharedSecret);
+                        byte[] privSharedSecret = priv.Decapsulate(ciphertext);
+                        AssertExtensions.SequenceEqual(pubSharedSecret, privSharedSecret);
+                    });
             }
         }
 
