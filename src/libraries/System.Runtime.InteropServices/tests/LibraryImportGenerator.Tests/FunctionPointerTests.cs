@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
@@ -35,6 +36,11 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class FunctionPointerTests
     {
+        public FunctionPointerTests(ITestOutputHelper output)
+        {
+            PrintTopHelper.PrintOutputOfTopCommand(output);
+        }
+
         private static bool wasCalled;
 
         [Fact]

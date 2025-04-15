@@ -9,6 +9,7 @@ using NativeExports;
 using SharedTypes;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
@@ -119,6 +120,11 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class CustomMarshallingTests
     {
+        public CustomMarshallingTests(ITestOutputHelper output)
+        {
+            PrintTopHelper.PrintOutputOfTopCommand(output);
+        }
+
         [Fact]
         public void NonBlittableStructWithFree()
         {

@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using SharedTypes;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
@@ -184,6 +185,11 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class ArrayTests
     {
+        public ArrayTests(ITestOutputHelper output)
+        {
+            PrintTopHelper.PrintOutputOfTopCommand(output);
+        }
+
         private int[] GetIntArray() => new[] { 1, 5, 79, 165, 32, 3 };
 
         [Fact]

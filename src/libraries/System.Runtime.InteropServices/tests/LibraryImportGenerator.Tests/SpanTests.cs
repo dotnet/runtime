@@ -11,6 +11,7 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
@@ -48,6 +49,11 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class SpanTests
     {
+        public SpanTests(ITestOutputHelper output)
+        {
+            PrintTopHelper.PrintOutputOfTopCommand(output);
+        }
+
         [Fact]
         public void BlittableElementSpanMarshalledToNativeAsExpected()
         {

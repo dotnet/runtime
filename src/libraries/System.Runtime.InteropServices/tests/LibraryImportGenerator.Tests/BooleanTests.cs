@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
@@ -71,6 +72,11 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class BooleanTests
     {
+        public BooleanTests(ITestOutputHelper output)
+        {
+            PrintTopHelper.PrintOutputOfTopCommand(output);
+        }
+
         // See definition of Windows' VARIANT_BOOL
         const ushort VARIANT_TRUE = unchecked((ushort)-1);
         const ushort VARIANT_FALSE = 0;

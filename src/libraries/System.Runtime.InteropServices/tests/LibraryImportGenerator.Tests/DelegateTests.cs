@@ -4,6 +4,7 @@
 using System.Runtime.InteropServices;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
@@ -22,6 +23,11 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class DelegateTests
     {
+        public DelegateTests(ITestOutputHelper output)
+        {
+            PrintTopHelper.PrintOutputOfTopCommand(output);
+        }
+
         [Fact]
         public void DelegateIsKeptAliveDuringCall()
         {

@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
@@ -49,6 +50,11 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class SafeHandleTests
     {
+        public SafeHandleTests(ITestOutputHelper output)
+        {
+            PrintTopHelper.PrintOutputOfTopCommand(output);
+        }
+
         [Fact]
         public void ReturnValue_CreatesSafeHandle()
         {

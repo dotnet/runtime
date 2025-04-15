@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using SharedTypes;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
@@ -109,6 +110,11 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class CollectionMarshallingFails
     {
+        public CollectionMarshallingFails(ITestOutputHelper output)
+        {
+            PrintTopHelper.PrintOutputOfTopCommand(output);
+        }
+
         [Fact]
         public void UTFStringConversionFailures()
         {

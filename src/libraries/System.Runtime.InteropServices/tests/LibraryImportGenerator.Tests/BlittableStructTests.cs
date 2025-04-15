@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using SharedTypes;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
@@ -45,7 +46,7 @@ namespace LibraryImportGenerator.IntegrationTests
     {
         [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "blittablestructs_return_instance")]
         public static partial IntFields DoubleIntFields(this IntFields result);
-        
+
         [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_refreturn")]
         public static partial void DoubleIntFieldsOutReturn(
             this IntFields input,
@@ -54,6 +55,11 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class BlittableStructTests
     {
+        public BlittableStructTests(ITestOutputHelper output)
+        {
+            PrintTopHelper.PrintOutputOfTopCommand(output);
+        }
+
         [Fact]
         public void ValidateIntFields()
         {
