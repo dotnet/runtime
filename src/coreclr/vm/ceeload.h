@@ -1669,6 +1669,7 @@ template<>
 struct cdac_data<Module>
 {
     static constexpr size_t Assembly = offsetof(Module, m_pAssembly);
+    static constexpr size_t PEAssembly = offsetof(Module, m_pPEAssembly);
     static constexpr size_t Base = offsetof(Module, m_baseAddress);
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
@@ -1676,6 +1677,7 @@ struct cdac_data<Module>
     static constexpr size_t Path = offsetof(Module, m_path);
     static constexpr size_t FileName = offsetof(Module, m_fileName);
     static constexpr size_t ReadyToRunInfo = offsetof(Module, m_pReadyToRunInfo);
+    static constexpr size_t GrowableSymbolStream = offsetof(Module, m_pIStreamSym);
 
     // Lookup map pointers
     static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);
