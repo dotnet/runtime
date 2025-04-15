@@ -3,6 +3,6 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
   <PropertyGroup>
     <NoWarn>$(NoWarn);SYSLIB5003</NoWarn>
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm64' or '$(TargetOS)' == 'osx'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm64' or '$(TargetOS)' == 'osx' or '$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 </Project>
