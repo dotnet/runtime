@@ -58,27 +58,58 @@ internal sealed class Module : IData<Module>
 
     private TargetPointer _metadataStart = TargetPointer.Null;
     private ulong _metadataSize;
-    public TargetPointer GetLoadedMetadata(out ulong size)
+    public TargetPointer GetLoadedMetadata(bool isMapped, out ulong size)
     {
         if (Base != TargetPointer.Null && _metadataStart == TargetPointer.Null && _metadataSize == 0)
         {
             int peSignatureOffset = _target.Read<int>(Base + PEFormat.DosStub.PESignatureOffset);
             ulong headerOffset = Base + (ulong)peSignatureOffset;
             ushort magic = _target.Read<ushort>(headerOffset + PEFormat.PEHeader.MagicOffset);
-            ulong clrHeaderOffset = magic == (ushort)PEMagic.PE32
-                ? PEFormat.PEHeader.CLRRuntimeHeader32Offset
-                : PEFormat.PEHeader.CLRRuntimeHeader32PlusOffset;
+            bool is64Bit = magic == (ushort)PEMagic.PE32Plus;
+            ulong clrHeaderOffset = is64Bit
+                ? PEFormat.PEHeader.CLRRuntimeHeader32PlusOffset
+                : PEFormat.PEHeader.CLRRuntimeHeader32Offset;
             int corHeaderRva = _target.Read<int>(headerOffset + clrHeaderOffset);
+            ulong corHeaderOffset = isMapped ? (ulong)corHeaderRva : RVAToOffset((ulong)corHeaderRva, headerOffset, is64Bit);
 
             // Read RVA and size of the metadata
-            ulong metadataDirectoryAddress = Base + (ulong)corHeaderRva + PEFormat.CorHeader.MetadataOffset;
-            _metadataStart = Base + (ulong)_target.Read<int>(metadataDirectoryAddress);
+            ulong metadataDirectoryAddress = Base + corHeaderOffset + PEFormat.CorHeader.MetadataOffset;
+            ulong metadataRVA = (ulong)_target.Read<int>(metadataDirectoryAddress);
+            ulong offset = isMapped ? metadataRVA : RVAToOffset(metadataRVA, headerOffset, is64Bit);
+            _metadataStart = Base + offset;
             _metadataSize = (ulong)_target.Read<int>(metadataDirectoryAddress + sizeof(int));
         }
 
         size = _metadataSize;
         return _metadataStart;
     }
+
+    private ulong RVAToOffset(ulong rva, ulong headerOffset, bool is64Bit)
+    {
+        uint numberOfSections = _target.Read<uint>(headerOffset + PEFormat.CoffHeader.NumberOSectionsOffset);
+        uint sectionAlignment = _target.Read<uint>(headerOffset + PEFormat.PEHeader.SectionAlignmentOffset);
+        ulong sectionsStartOffset = headerOffset + (is64Bit ? PEFormat.PEHeader.SectionHeader32PlusOffset : PEFormat.PEHeader.SectionHeader32Offset);
+        for (uint i = 0; i < numberOfSections; i++)
+        {
+            ulong sectionHeaderOffset = sectionsStartOffset + (i * PEFormat.SectionHeader.Size);
+            PEFormat.SectionHeader sectionHeader = new(_target, sectionHeaderOffset);
+            if (rva < sectionHeader.VirtualAddress + AlignUp(sectionHeader.VirtualSize, sectionAlignment))
+            {
+                if (rva < sectionHeader.VirtualAddress)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return rva - sectionHeader.VirtualAddress + sectionHeader.PointerToRawData;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    private static ulong AlignUp(ulong value, ulong alignment) => (value + alignment - 1) & ~(alignment - 1);
 
     // https://learn.microsoft.com/windows/win32/debug/pe-format
     private static class PEFormat
@@ -91,12 +122,28 @@ internal sealed class Module : IData<Module>
             public const int PESignatureOffset = 0x3c;
         }
 
+        public static class CoffHeader
+        {
+            public const ulong NumberOSectionsOffset = PESignatureSize + 2;
+        }
+
         public static class PEHeader
         {
             private const ulong OptionalHeaderOffset = PESignatureSize + CoffHeaderSize;
             public const ulong MagicOffset = OptionalHeaderOffset;
+            public const ulong SectionAlignmentOffset = OptionalHeaderOffset + 32;
             public const ulong CLRRuntimeHeader32Offset = OptionalHeaderOffset + 208;
             public const ulong CLRRuntimeHeader32PlusOffset = OptionalHeaderOffset + 224;
+            public const ulong SectionHeader32Offset = OptionalHeaderOffset + 224;
+            public const ulong SectionHeader32PlusOffset = OptionalHeaderOffset + 240;
+        }
+
+        public class SectionHeader(Target target, TargetPointer address)
+        {
+            public const int Size = 40;
+            public uint VirtualSize { get; init; } = target.Read<uint>(address + 8);
+            public uint VirtualAddress { get; init; } = target.Read<uint>(address + 12);
+            public uint PointerToRawData { get; init; } = target.Read<uint>(address + 20);
         }
 
         // See ECMA-335 II.25.3.3 CLI Header

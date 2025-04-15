@@ -16,9 +16,16 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 
     public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     {
+        ILoader loader = target.Contracts.Loader;
         Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
 
-        TargetPointer baseAddress = module.GetLoadedMetadata(out ulong size);
+        if (!loader.TryGetLoadedImageContents(handle, out _, out _, out uint imageFlags))
+        {
+            throw new InvalidOperationException("Module is not loaded.");
+        }
+
+        bool isMapped = (imageFlags & 0x1) != 0; // FLAG_MAPPED = 0x1
+        TargetPointer baseAddress = module.GetLoadedMetadata(isMapped, out ulong size);
 
         return new TargetSpan(baseAddress, size);
     }
