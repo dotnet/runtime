@@ -230,6 +230,9 @@ private:
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 
+    ClassLayout* GetNonGCLayout(ClassLayout* existingLayout);
+    ClassLayout* GetByrefLayout(ClassLayout* existingLayout);
+
 #ifdef DEBUG
     void DumpIndex(unsigned bvIndex);
 #endif

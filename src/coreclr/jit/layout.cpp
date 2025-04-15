@@ -420,33 +420,6 @@ ClassLayout* Compiler::typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsig
     return typGetCustomLayout(b);
 }
 
-ClassLayout* Compiler::typGetNonGCLayout(ClassLayout* layout)
-{
-    assert(layout->HasGCPtr());
-    ClassLayoutBuilder b(this, layout->GetSize());
-    b.CopyPaddingFrom(0, layout);
-
-#ifdef DEBUG
-    b.CopyNameFrom(layout, "[nongc] ");
-#endif
-
-    return typGetCustomLayout(b);
-}
-
-ClassLayout* Compiler::typGetByrefLayout(ClassLayout* layout)
-{
-    assert(layout->HasGCPtr());
-    ClassLayoutBuilder b(this, layout->GetSize());
-    b.CopyPaddingFrom(0, layout);
-    b.CopyGCInfoFromMakeByref(0, layout);
-
-#ifdef DEBUG
-    b.CopyNameFrom(layout, "[byref] ");
-#endif
-
-    return typGetCustomLayout(b);
-}
-
 #ifdef DEBUG
 //------------------------------------------------------------------------
 // CopyNameFrom: Copy layout names, with optional prefix.
@@ -1074,34 +1047,6 @@ void ClassLayoutBuilder::CopyGCInfoFrom(unsigned offset, ClassLayout* layout)
         for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
         {
             SetGCPtr(startSlot + slot, layout->GetGCPtr(slot));
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// CopyInfoGCFromMakeByref: Copy GC pointers from another layout,and change
-//   all gc references to be TYP_BYREF (TYPE_GC_BYREF)
-//
-// Arguments:
-//   offset      - Offset in this builder to start copy information into.
-//   layout      - Layout to get information from.
-//
-void ClassLayoutBuilder::CopyGCInfoFromMakeByref(unsigned offset, ClassLayout* layout)
-{
-    assert(offset + layout->GetSize() <= m_size);
-
-    if (layout->GetGCPtrCount() > 0)
-    {
-        assert(offset % TARGET_POINTER_SIZE == 0);
-        unsigned startSlot = offset / TARGET_POINTER_SIZE;
-        for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
-        {
-            CorInfoGCType gcType = layout->GetGCPtr(slot);
-            if (gcType == TYPE_GC_REF)
-            {
-                gcType = TYPE_GC_BYREF;
-            }
-            SetGCPtr(startSlot + slot, gcType);
         }
     }
 }

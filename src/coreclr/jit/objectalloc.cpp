@@ -2317,7 +2317,7 @@ void ObjectAllocator::RewriteUses()
             if (newType == TYP_I_IMPL)
             {
                 // New layout with no gc refs + padding
-                newLayout = comp->typGetNonGCLayout(layout);
+                newLayout = GetNonGCLayout(layout);
                 JITDUMP("Changing layout of struct V%02u to block\n", lclNum);
                 lclVarDsc->ChangeLayout(newLayout);
             }
@@ -2325,7 +2325,7 @@ void ObjectAllocator::RewriteUses()
             {
                 // New layout with all gc refs as byrefs + padding
                 // (todo, perhaps: see if old layout was already all byrefs)
-                newLayout = comp->typGetByrefLayout(layout);
+                newLayout = GetByrefLayout(layout);
                 JITDUMP("Changing layout of struct V%02u to byref\n", lclNum);
                 lclVarDsc->ChangeLayout(newLayout);
             }
@@ -4076,4 +4076,51 @@ void ObjectAllocator::CloneAndSpecialize()
     }
 
     assert(numberOfClonedRegions == m_regionsToClone);
+}
+
+//------------------------------------------------------------------------------
+// GetNonGCLayout: get a layout with the same size and padding as an existing
+//   layout, but with no GC fields.
+//
+ClassLayout* ObjectAllocator::GetNonGCLayout(ClassLayout* layout)
+{
+    assert(layout->HasGCPtr());
+    ClassLayoutBuilder b(comp, layout->GetSize());
+    b.CopyPaddingFrom(0, layout);
+
+#ifdef DEBUG
+    b.CopyNameFrom(layout, "[nongc] ");
+#endif
+
+    return comp->typGetCustomLayout(b);
+}
+
+//------------------------------------------------------------------------------
+// GetByrefLayout: get a layout with the same size and padding as an existing
+//   layout, but with all GC fields retyped to byref.
+//
+ClassLayout* ObjectAllocator::GetByrefLayout(ClassLayout* layout)
+{
+    assert(layout->HasGCPtr());
+    ClassLayoutBuilder b(comp, layout->GetSize());
+    b.CopyPaddingFrom(0, layout);
+
+    if (layout->GetGCPtrCount() > 0)
+    {
+        for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
+        {
+            var_types gcType = layout->GetGCPtrType(slot);
+            if (gcType == TYP_REF)
+            {
+                gcType = TYP_BYREF;
+            }
+            b.SetGCPtrType(slot, gcType);
+        }
+    }
+
+#ifdef DEBUG
+    b.CopyNameFrom(layout, "[byref] ");
+#endif
+
+    return comp->typGetCustomLayout(b);
 }
