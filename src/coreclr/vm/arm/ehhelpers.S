@@ -107,9 +107,13 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
         // R1 = PC to invoke
         // R2 = address of R4 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
         // R3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        // [SP] = establisher frame (CallerSP)
         //
         // Save the SP of this function
         str sp, [r3]
+        // Save the establisher frame into our frame
+        ldr r3, [sp, 40]
+        str r3, [sp]
         // apply the non-volatiles corresponding to the CrawlFrame
         ldm r2!, {r4-r6}
         add r2, r2, #4
@@ -128,6 +132,7 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 
         PROLOG_PUSH  "{r7, lr}"
         PROLOG_STACK_SAVE r7
+        alloc_stack  8
 
         // On entry:
         //
@@ -135,14 +140,19 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
         // R1 = FP of main method
         // R2 = PC to invoke
         // R3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        // [SP] = establisher frame (CallerSP)
         //
         // Save the SP of this function
         str sp, [r3]
         // Restore frame pointer
         mov r11, r1
+        // Set r1 to CallerSP (older R2R ABI) and save it into our frame
+        ldr r1, [sp, 16]
+        sdr r1, [sp]
         // Invoke the filter funclet
         blx r2
 
+        free_stack   8
         EPILOG_POP   "{r7, pc}"
 
         NESTED_END CallEHFilterFunclet, _TEXT

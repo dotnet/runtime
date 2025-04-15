@@ -1683,13 +1683,28 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
     {
         if (pCodeInfo->IsFunclet())
         {
-#if DACCESS_COMPILE
-            // TODO: ?
-            return NULL;
+            SIZE_T offsetOfEstablisherFrameInFuncletSP;
+#if defined(TARGET_AMD64)
+            offsetOfEstablisherFrameInFuncletSP = 0;
+#elif defined(TARGET_X86)
+            // CallEHFunclet frame size + return address + 16 (5th parameter)
+#ifdef UNIX_X86_ABI
+            offsetOfEstablisherFrameInFuncletSP = 48;
 #else
+            offsetOfEstablisherFrameInFuncletSP = 36;
+#endif
+#elif defined(TARGET_ARM64) || defined(TARGET_RISC64) || defined(TARGET_LOONGARCH64)
+            // Stored past FP/LR pair
+            offsetOfEstablisherFrameInFuncletSP = 16;
+#elif defined(TARGET_ARM)
+            offsetOfEstablisherFrameInFuncletSP = 0;
+#else
+            PORTABILITY_ASSERT("offsetOfEstablisherFrameInFuncletSP");
+#endif
+
             // Recover the establisher frame (InitialSP/CallerSP) from the funclet
             // caller.
-            baseStackSlot += g_OffsetOfEstablisherFrameInFuncletSP;
+            baseStackSlot += offsetOfEstablisherFrameInFuncletSP;
             baseStackSlot = *(SIZE_T*)baseStackSlot;
 #ifdef TARGET_AMD64
             // On AMD64 the PSPSym stores the "Initial SP": the stack pointer at the end of

@@ -10936,15 +10936,17 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *
  *  Funclets have the following incoming arguments:
  *
- *      catch/filter-handler: rcx = the exception object that was caught (see GT_CATCH_ARG)
- *      filter:               rcx  = the exception object to filter (see GT_CATCH_ARG)
- *      finally/fault:        none
+ *      catch/filter-handler: rcx/rdi = unused, rdx/rsi = the exception object that was caught (see GT_CATCH_ARG)
+ *      filter:               rcx/rdi = unused, rdx/rsi = the exception object to filter (see GT_CATCH_ARG)
+ *      finally/fault:        rcx/rdi = unused
  *
  *  Funclets set the following registers on exit:
  *
  *      catch/filter-handler: rax = the address at which execution should resume (see BBJ_EHCATCHRET)
  *      filter:               rax = non-zero if the handler should handle the exception, zero otherwise (see GT_RETFILT)
  *      finally/fault:        none
+ *
+ *  First parameter (rcx/rdi) is a placeholder for establisher frame which is no longer used.
  *
  *  The AMD64 funclet prolog sequence is:
  *

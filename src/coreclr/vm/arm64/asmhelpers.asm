@@ -744,9 +744,6 @@ COMToCLRDispatchHelper_RegSetup
         EPILOG_RESTORE_REG_PAIR   fp, lr, #112!
         EPILOG_RETURN
 
-        PATCH_LABEL g_OffsetOfEstablisherFrameInFuncletSP
-        DCQ 16 ; Offset of establisher frame inside our frame
-
         NESTED_END CallEHFunclet
 
         ; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
@@ -770,6 +767,7 @@ COMToCLRDispatchHelper_RegSetup
         ; Restore frame pointer
         mov fp, x1
         ; Invoke the filter funclet
+        mov x1, x4 ; x1 = CallerSP (older R2R ABI)
         blr x2
 
         EPILOG_RESTORE_REG_PAIR   fp, lr,   #32!

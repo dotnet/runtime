@@ -52,9 +52,6 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     ESP_EPILOG_POP ebp
     ESP_EPILOG_END
 
-PATCH_LABEL g_OffsetOfEstablisherFrameInFuncletSP
-    .word   32 + 16 // our frame size + 5th argument
-
     ret     16
 
 NESTED_END CallEHFunclet, _TEXT

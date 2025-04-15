@@ -55,9 +55,6 @@ _CallEHFunclet@16 proc public
 
     ret     16
 
-PATCH_LABEL g_OffsetOfEstablisherFrameInFuncletSP
-    dd      36 ; 4 saved regs + return address + 5th parameter
-
 _CallEHFunclet@16 endp
 
 ; DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR CallerSP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);

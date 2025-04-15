@@ -424,15 +424,13 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         mov     [rcx], rsp
 
         // Invoke the funclet
+        mov     rsi, rdi
+        mov     rdi, r8      // rdi = InitialSP (older R2R ABI)
         call    rsi
 
         FUNCLET_CALL_EPILOGUE
 
         ret
-
-PATCH_LABEL g_OffsetOfEstablisherFrameInFuncletSP
-        .quad   0
-
 NESTED_END CallEHFunclet, _TEXT
 
 // This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
@@ -457,6 +455,8 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
         // Invoke the filter funclet
         mov     rbp, rsi
+        mov     rsi, rdi
+        mov     rdi, r8      // rdi = InitialSP (older R2R ABI)
         call    rdx
 
         FUNCLET_CALL_EPILOGUE

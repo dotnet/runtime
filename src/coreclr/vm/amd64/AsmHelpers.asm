@@ -563,7 +563,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         ; RDX = PC to invoke
         ; R8 = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-        ; [RSP+40] = establisher frame address (Initial SP)
+        ; [RSP+40] = establisher frame address (InitialSP)
         ;
 
         FUNCLET_CALL_PROLOGUE 0, 1
@@ -590,19 +590,24 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         movdqa  xmm14, [r8 + 272 + 8*10h]
         movdqa  xmm15, [r8 + 272 + 9*10h]
 
+        ; Swap input parameters to avoid trashing them
+        mov     rax, rdx
+        mov     rdx, rcx
+
+        ; Save establisher frame pointer into the argument scratch area of the funclet
+        ; and put it in rcx parameter (older R2R ABI)
+        mov     rcx, [rsp + arguments_scratch_area_size + 8 + 8 * 8h + stack_alloc_size]
+        mov     [rsp], rcx
+
         ; Save the SP of this function.
         mov     [r9], rsp
 
         ; Invoke the funclet
-        call    rdx
+        call    rax
 
         FUNCLET_CALL_EPILOGUE
 
         ret
-
-PATCH_LABEL g_OffsetOfEstablisherFrameInFuncletSP
-        dq arguments_scratch_area_size + 8 + 8 * 8h + stack_alloc_size
-
 NESTED_END CallEHFunclet, _TEXT
 
 ; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
@@ -614,13 +619,21 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         ; RDX = RBP of main function
         ; R8 = PC to invoke
         ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-        ; [RSP+40] = establisher frame address (Initial SP)
+        ; [RSP+40] = establisher frame address (InitialSP)
         ;
 
         FUNCLET_CALL_PROLOGUE 0, 1
 
         ; Save the SP of this function
         mov     [r9], rsp
+
+        ; Move throwable into the second parameter
+        mov     rdx, rcx
+
+        ; Save establisher frame pointer into the argument scratch area of the funclet
+        ; and put it in rcx parameter (older R2R ABI)
+        mov     rcx, [rsp + arguments_scratch_area_size + 8 + 8 * 8h + stack_alloc_size]
+        mov     [rsp], rcx
 
         ; Invoke the filter funclet
         mov     rbp, rdx

@@ -405,9 +405,6 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   112
     EPILOG_RETURN
 
-    PATCH_LABEL g_OffsetOfEstablisherFrameInFuncletSP
-    .quad 16 ; Offset of establisher frame inside our frame
-
 NESTED_END CallEHFunclet, _TEXT
 
 // This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
@@ -431,6 +428,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     // Restore frame pointer
     mov fp, x1
     // Invoke the filter funclet
+    mov x1, x4 // x1 = CallerSP (older R2R ABI)
     blr x2
 
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   32
