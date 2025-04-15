@@ -18,7 +18,7 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     MetaSig declarationSig(this);
     UINT argCount = declarationSig.NumFixedArgs();
 
-    // Intrinsic must have at least the "this" argument and the IntPtr function pointer argument.
+    // Intrinsic must have at least the function pointer and the "this" argument.
     _ASSERTE(argCount >= 2);
 
     SigTypeContext genericContext;
@@ -31,12 +31,14 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
 
     ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // Copy the first arg which has the function pointer signature in order to add HASTHIS and EXPLICITTHIS.
+    // Copy the first arg which has the function pointer signature into a SigBuilder to add HASTHIS and EXPLICITTHIS
+    // and to get a token for the new signature.
+    // The signature follows details defined in ECMA-335 - II.23.2.1
     declarationSig.SkipArg();
     SigPointer sp = declarationSig.GetArgProps();
 
     CorElementType eType;
-    sp.GetElemType(&eType);
+    sp.GetElemType(&eType); // Skip past the element type to get at the signature.
     _ASSERTE(eType == ELEMENT_TYPE_FNPTR);
 
     SigBuilder sigBuilder;
@@ -56,7 +58,7 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     pCode->EmitCALLI(fcnPtrToken, argCount - 1, declarationSig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
-    // Generate all IL associated data for JIT
+    // Generate all IL associated data for JIT.
     NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
     ilResolver->SetStubMethodDesc(this);
 
@@ -72,7 +74,7 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
         sl.GenerateCode(pbBuffer, cbCode);
         sl.GetLocalSig(pbLocalSig, cbSig);
 
-        // Store the token lookup map
+        // Store the token lookup map.
         ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
         ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
 
