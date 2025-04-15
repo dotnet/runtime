@@ -212,6 +212,8 @@ protected:
 public:
     void genSpillVar(GenTree* tree);
 
+    void genEmitCallWithCurrentGC(EmitCallParams& callParams);
+
 protected:
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTarget = REG_NA);
 

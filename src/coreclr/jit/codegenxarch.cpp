@@ -6340,10 +6340,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
     }
 
-    params.ptrVars   = gcInfo.gcVarPtrSetCur;
-    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-    params.byrefRegs = gcInfo.gcRegByrefSetCur;
-
     params.isJump = call->IsFastTailCall();
 
     // We need to propagate the IL offset information to the call instruction, so we can emit
@@ -6397,7 +6393,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
             params.callType = EC_INDIR_ARD;
             params.ireg     = REG_VIRTUAL_STUB_TARGET;
-            GetEmitter()->emitIns_Call(params);
+            genEmitCallWithCurrentGC(params);
         }
         else
 #endif
@@ -6416,7 +6412,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
                 params.callType = EC_FUNC_TOKEN_INDIR;
                 params.addr     = (void*)target->AsIndir()->Base()->AsIntConCommon()->IconValue();
-                GetEmitter()->emitIns_Call(params);
+                genEmitCallWithCurrentGC(params);
             }
             else
             {
@@ -6441,8 +6437,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 params.xreg     = xReg;
                 params.xmul     = indir->Scale();
                 params.disp     = indir->Offset();
-
-                GetEmitter()->emitIns_Call(params);
+                genEmitCallWithCurrentGC(params);
             }
         }
         else
@@ -6462,7 +6457,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
                 params.callType = EC_INDIR_R;
                 params.ireg     = target->GetRegNum();
-                GetEmitter()->emitIns_Call(params);
+                genEmitCallWithCurrentGC(params);
             }
             else
             {
@@ -6477,7 +6472,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 params.methHnd     = (CORINFO_METHOD_HANDLE)1;
                 params.addr        = (void*)tlsGetAddr->AsIntCon()->gtIconVal;
                 params.noSafePoint = true;
-                GetEmitter()->emitIns_Call(params);
+                genEmitCallWithCurrentGC(params);
             }
         }
     }
@@ -6493,19 +6488,16 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         regNumber indirCellReg = getCallIndirectionCellReg(call);
         if (indirCellReg != REG_NA)
         {
-            params.callType  = EC_INDIR_ARD;
-            params.ptrVars   = gcInfo.gcVarPtrSetCur;
-            params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-            params.byrefRegs = gcInfo.gcRegByrefSetCur;
-            params.ireg      = indirCellReg;
-            GetEmitter()->emitIns_Call(params);
+            params.callType = EC_INDIR_ARD;
+            params.ireg     = indirCellReg;
+            genEmitCallWithCurrentGC(params);
         }
 #ifdef FEATURE_READYTORUN
         else if (call->gtEntryPoint.addr != nullptr)
         {
             params.callType = (call->gtEntryPoint.accessType == IAT_VALUE) ? EC_FUNC_TOKEN : EC_FUNC_TOKEN_INDIR;
             params.addr     = (void*)call->gtEntryPoint.addr;
-            GetEmitter()->emitIns_Call(params);
+            genEmitCallWithCurrentGC(params);
         }
 #endif
         else
@@ -6536,7 +6528,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
             params.callType = EC_FUNC_TOKEN;
             params.addr     = addr;
-            GetEmitter()->emitIns_Call(params);
+            genEmitCallWithCurrentGC(params);
         }
     }
 }
@@ -8900,14 +8892,11 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         }
     }
 
-    params.methHnd   = compiler->eeFindHelper(helper);
-    params.argSize   = argSize;
-    params.retSize   = retSize;
-    params.ptrVars   = gcInfo.gcVarPtrSetCur;
-    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-    params.byrefRegs = gcInfo.gcRegByrefSetCur;
+    params.methHnd = compiler->eeFindHelper(helper);
+    params.argSize = argSize;
+    params.retSize = retSize;
 
-    GetEmitter()->emitIns_Call(params);
+    genEmitCallWithCurrentGC(params);
     regSet.verifyRegistersUsed(killMask);
 }
 
@@ -10821,11 +10810,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 params.addr     = addrInfo.addr;
             }
 
-            params.ptrVars   = gcInfo.gcVarPtrSetCur;
-            params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-            params.byrefRegs = gcInfo.gcRegByrefSetCur;
-            params.isJump    = true;
-            GetEmitter()->emitIns_Call(params);
+            params.isJump = true;
+            genEmitCallWithCurrentGC(params);
         }
 #if FEATURE_FASTTAILCALL
         else

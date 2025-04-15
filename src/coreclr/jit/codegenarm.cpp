@@ -1621,12 +1621,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     EmitCallParams params;
 
-    params.methHnd   = compiler->eeFindHelper(helper);
-    params.argSize   = argSize;
-    params.retSize   = retSize;
-    params.ptrVars   = gcInfo.gcVarPtrSetCur;
-    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-    params.byrefRegs = gcInfo.gcRegByrefSetCur;
+    params.methHnd = compiler->eeFindHelper(helper);
+    params.argSize = argSize;
+    params.retSize = retSize;
 
     if (!addr || !validImmForBL((ssize_t)addr))
     {
@@ -1650,12 +1647,12 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
         params.callType = EC_INDIR_R;
         params.ireg     = callTargetReg;
-        GetEmitter()->emitIns_Call(params);
+        genEmitCallWithCurrentGC(params);
     }
     else
     {
         params.callType = EC_FUNC_TOKEN;
-        GetEmitter()->emitIns_Call(params);
+        genEmitCallWithCurrentGC(params);
     }
 
     regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);

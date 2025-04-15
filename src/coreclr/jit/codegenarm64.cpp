@@ -5360,14 +5360,11 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         params.ireg     = callTargetReg;
     }
 
-    params.methHnd   = compiler->eeFindHelper(helper);
-    params.argSize   = argSize;
-    params.retSize   = retSize;
-    params.ptrVars   = gcInfo.gcVarPtrSetCur;
-    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-    params.byrefRegs = gcInfo.gcRegByrefSetCur;
+    params.methHnd = compiler->eeFindHelper(helper);
+    params.argSize = argSize;
+    params.retSize = retSize;
 
-    GetEmitter()->emitIns_Call(params);
+    genEmitCallWithCurrentGC(params);
 
     regSet.verifyRegistersUsed(killSet);
 }

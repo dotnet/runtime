@@ -3489,10 +3489,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     assert(params.secondRetSize != EA_BYREF);
 #endif
 
-    params.ptrVars   = gcInfo.gcVarPtrSetCur;
-    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-    params.byrefRegs = gcInfo.gcRegByrefSetCur;
-
     params.isJump = call->IsFastTailCall();
 
     // We need to propagate the debug information to the call instruction, so we can emit
@@ -3603,7 +3599,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         params.callType = EC_INDIR_R;
         params.ireg     = target->GetRegNum();
 
-        GetEmitter()->emitIns_Call(params);
+        genEmitCallWithCurrentGC(params);
 
 #ifdef TARGET_ARM64
         if (isTlsHandleTarget)
@@ -3661,7 +3657,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
             params.callType = EC_INDIR_R;
             params.ireg     = targetAddrReg;
-            GetEmitter()->emitIns_Call(params);
+            genEmitCallWithCurrentGC(params);
         }
         else
         {
@@ -3701,13 +3697,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)params.addr);
                 params.callType = EC_INDIR_R;
                 params.ireg     = tmpReg;
-                GetEmitter()->emitIns_Call(params);
+                genEmitCallWithCurrentGC(params);
             }
             else
 #endif // TARGET_ARM
             {
                 params.callType = EC_FUNC_TOKEN;
-                GetEmitter()->emitIns_Call(params);
+                genEmitCallWithCurrentGC(params);
             }
         }
     }
@@ -5351,12 +5347,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             // the same descriptor with some minor adjustments.
             //
 
-            params.ptrVars   = gcInfo.gcVarPtrSetCur;
-            params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-            params.byrefRegs = gcInfo.gcRegByrefSetCur;
-            params.isJump    = true;
-
-            GetEmitter()->emitIns_Call(params);
+            params.isJump = true;
+            genEmitCallWithCurrentGC(params);
         }
 #if FEATURE_FASTTAILCALL
         else

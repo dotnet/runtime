@@ -817,12 +817,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
             genPopCalleeSavedRegisters(true);
 
-            params.ptrVars   = gcInfo.gcVarPtrSetCur;
-            params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-            params.byrefRegs = gcInfo.gcRegByrefSetCur;
-            params.isJump    = true;
+            params.isJump = true;
 
-            GetEmitter()->emitIns_Call(params);
+            genEmitCallWithCurrentGC(params);
         }
 #if FEATURE_FASTTAILCALL
         else
@@ -2877,12 +2874,9 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 
     // TODO-LOONGARCH64: can optimize further !!!
     // TODO-LOONGARCH64: Why does this not use genEmitHelperCall?
-    params.methHnd   = compiler->eeFindHelper(CORINFO_HELP_STOP_FOR_GC);
-    params.ptrVars   = gcInfo.gcVarPtrSetCur;
-    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-    params.byrefRegs = gcInfo.gcRegByrefSetCur;
+    params.methHnd = compiler->eeFindHelper(CORINFO_HELP_STOP_FOR_GC);
 
-    GetEmitter()->emitIns_Call(params);
+    genEmitCallWithCurrentGC(params);
 
     regMaskTP killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
     regSet.verifyRegistersUsed(killMask);
@@ -3966,14 +3960,11 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         params.ireg     = callTargetReg;
     }
 
-    params.methHnd   = compiler->eeFindHelper(helper);
-    params.argSize   = argSize;
-    params.retSize   = retSize;
-    params.ptrVars   = gcInfo.gcVarPtrSetCur;
-    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-    params.byrefRegs = gcInfo.gcRegByrefSetCur;
+    params.methHnd = compiler->eeFindHelper(helper);
+    params.argSize = argSize;
+    params.retSize = retSize;
 
-    GetEmitter()->emitIns_Call(params);
+    genEmitCallWithCurrentGC(params);
 
     regSet.verifyRegistersUsed(killSet);
 }
@@ -6026,10 +6017,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
-    params.ptrVars   = gcInfo.gcVarPtrSetCur;
-    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-    params.byrefRegs = gcInfo.gcRegByrefSetCur;
-
     params.isJump = call->IsFastTailCall();
 
     // We need to propagate the debug information to the call instruction, so we can emit
@@ -6102,7 +6089,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         params.callType = EC_INDIR_R;
         params.ireg     = target->GetRegNum();
 
-        GetEmitter()->emitIns_Call(params);
+        genEmitCallWithCurrentGC(params);
     }
     else
     {
@@ -6142,7 +6129,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
             params.callType = EC_INDIR_R;
             params.ireg     = targetAddrReg;
-            GetEmitter()->emitIns_Call(params);
+            genEmitCallWithCurrentGC(params);
         }
         else
         {
@@ -6175,7 +6162,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(params.addr != nullptr);
 
             params.callType = EC_FUNC_TOKEN;
-            GetEmitter()->emitIns_Call(params);
+            genEmitCallWithCurrentGC(params);
         }
     }
 }
@@ -6933,13 +6920,10 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 
         BasicBlock* skipLabel = genCreateTempLabel();
 
-        params.methHnd   = compiler->eeFindHelper(compiler->acdHelper(codeKind));
-        params.ptrVars   = gcInfo.gcVarPtrSetCur;
-        params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-        params.byrefRegs = gcInfo.gcRegByrefSetCur;
+        params.methHnd = compiler->eeFindHelper(compiler->acdHelper(codeKind));
 
         // TODO-LOONGARCH64: Why is this not using genEmitHelperCall?
-        emit->emitIns_Call(params);
+        genEmitCallWithCurrentGC(params);
 
         regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
         regSet.verifyRegistersUsed(killMask);
