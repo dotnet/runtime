@@ -4,7 +4,6 @@
 
   <PropertyGroup>
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
-    <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <!-- only use for files that are not configuration dependent -->
     <NativeGeneratedFilesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', 'generated'))</NativeGeneratedFilesDir>
@@ -385,7 +384,7 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
 
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags) -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>

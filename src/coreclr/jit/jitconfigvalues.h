@@ -116,9 +116,10 @@ CONFIG_INTEGER(JitHashBreak, "JitHashBreak", -1)        // Same as JitBreak, but
 CONFIG_INTEGER(JitHashHalt, "JitHashHalt", -1)          // Same as JitHalt, but for a method hash
 CONFIG_INTEGER(JitInlineAdditionalMultiplier, "JitInlineAdditionalMultiplier", 0)
 CONFIG_INTEGER(JitInlinePrintStats, "JitInlinePrintStats", 0)
-CONFIG_INTEGER(JitInlineSize, "JITInlineSize", DEFAULT_MAX_INLINE_SIZE)
-CONFIG_INTEGER(JitInlineDepth, "JITInlineDepth", DEFAULT_MAX_INLINE_DEPTH)
-CONFIG_INTEGER(JitForceInlineDepth, "JITForceInlineDepth", DEFAULT_MAX_FORCE_INLINE_DEPTH)
+CONFIG_INTEGER(JitInlineSize, "JitInlineSize", DEFAULT_MAX_INLINE_SIZE)
+CONFIG_INTEGER(JitInlineDepth, "JitInlineDepth", DEFAULT_MAX_INLINE_DEPTH)
+RELEASE_CONFIG_INTEGER(JitInlineBudget, "JitInlineBudget", DEFAULT_INLINE_BUDGET)
+CONFIG_INTEGER(JitForceInlineDepth, "JitForceInlineDepth", DEFAULT_MAX_FORCE_INLINE_DEPTH)
 RELEASE_CONFIG_INTEGER(JitInlineMethodsWithEH, "JitInlineMethodsWithEH", 1)
 CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
 
@@ -446,6 +447,7 @@ RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",         
 RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",   1) // Allows embedded broadcasts to be disabled
 RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       "EnableEmbeddedMasking",     1) // Allows embedded masking to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",              0) // Allows APX NDD feature to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxConditionalChaining, "EnableApxConditionalChaining",        0) // Allows APX conditional compare chaining
 
 // clang-format on
 
@@ -678,6 +680,8 @@ RELEASE_CONFIG_INTEGER(JitObjectStackAllocationConditionalEscape, "JitObjectStac
 CONFIG_STRING(JitObjectStackAllocationConditionalEscapeRange, "JitObjectStackAllocationConditionalEscapeRange")
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationArray, "JitObjectStackAllocationArray", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationSize, "JitObjectStackAllocationSize", 528)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationTrackFields, "JitObjectStackAllocationTrackFields", 1)
+CONFIG_STRING(JitObjectStackAllocationTrackFieldsRange, "JitObjectStackAllocationTrackFieldsRange")
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 

@@ -139,6 +139,20 @@
       <Link>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml.cs">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml.cs</Link>
+      <DependentUpon>System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml.cs">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml.cs</Link>
+      <DependentUpon>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\OtherNameAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml</Link>
     </AsnXml>
@@ -386,6 +400,8 @@
             Link="Common\System\Security\Cryptography\MLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemAlgorithm.cs"
             Link="Common\System\Security\Cryptography\MLKemAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemPkcs8.cs"
+            Link="Common\System\Security\Cryptography\MLKemPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
              Link="Common\System\Security\Cryptography\Oids.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.Shared.cs"
@@ -398,6 +414,8 @@
              Link="Common\System\Security\Cryptography\PbeParameters.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
              Link="Common\System\Security\Cryptography\PemLabels.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemKeyHelpers.Factory.cs"
+             Link="Common\System\Security\Cryptography\PemKeyHelpers.Factory.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
              Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.cs"
@@ -568,6 +586,7 @@
     <Compile Include="System\Security\Cryptography\MaskGenerationMethod.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\MD5CryptoServiceProvider.cs" />
+    <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\MLKemOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\Oid.cs" />
     <Compile Include="System\Security\Cryptography\OidCollection.cs" />
@@ -655,6 +674,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\ILoaderPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\IStorePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\IX509Pal.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\MLDsaX509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenFlags.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Pkcs10CertificationRequestInfo.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Pkcs12ExportPbeParameters.cs" />
@@ -802,6 +822,7 @@
     <Compile Include="System\Security\Cryptography\HMACHashProvider.Browser.Managed.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Browser.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
+    <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\MLKemOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
@@ -876,8 +897,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kdf.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.ExtraHandle.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Kem.ExtraHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.ExtraHandle.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.ExtraHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.KdfAlgs.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.KdfAlgs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.KemAlgs.cs"
@@ -1017,6 +1038,7 @@
     <Compile Include="System\Security\Cryptography\LiteHash.Unix.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaImplementation.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\MLKemImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\MLKemOpenSsl.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.OpenSsl.cs" />
@@ -1186,6 +1208,7 @@
     <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Unix.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
+    <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\MLKemOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
@@ -1324,6 +1347,7 @@
     <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Apple.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
+    <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\MLKemOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.NotSupported.cs" />
@@ -1928,6 +1952,7 @@
     <Compile Include="System\Security\Cryptography\ICngSymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\KeyPropertyName.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\MLKemOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.Windows.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />

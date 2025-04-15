@@ -125,7 +125,7 @@ BOOL ShouldOurUEFDisplayUI(PEXCEPTION_POINTERS pExceptionInfo)
     return IsComPlusException(pExceptionInfo->ExceptionRecord) || ExecutionManager::IsManagedCode(GetIP(pExceptionInfo->ContextRecord));
 }
 
-BOOL NotifyAppDomainsOfUnhandledException(
+void NotifyAppDomainsOfUnhandledException(
     PEXCEPTION_POINTERS pExceptionPointers,
     OBJECTREF   *pThrowableIn,
     BOOL        useLastThrownObject);
@@ -2494,7 +2494,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
-VOID DECLSPEC_NORETURN PropagateExceptionThroughNativeFrames(Object *exceptionObj)
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
 {
     CONTRACTL
     {
@@ -4538,8 +4538,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
         LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: Calling DefaultCatchHandler\n"));
 
         // Call our default catch handler to do the managed unhandled exception work.
-        DefaultCatchHandler(pParam->pExceptionInfo, NULL, useLastThrownObject,
-            FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/, TRUE /* sendWindowsEventLog */);
+        DefaultCatchHandler(pParam->pExceptionInfo, NULL, useLastThrownObject, TRUE /* sendWindowsEventLog */);
 
 lDone: ;
     }
@@ -4839,8 +4838,6 @@ void STDMETHODCALLTYPE
 DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                     OBJECTREF *pThrowableIn,
                     BOOL useLastThrownObject,
-                    BOOL isThreadBaseFilter,
-                    BOOL sendAppDomainEvents,
                     BOOL sendWindowsEventLog)
 {
     CONTRACTL
@@ -4945,16 +4942,6 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     //BOOL IsStackOverflow = (throwable->GetMethodTable() == g_pStackOverflowExceptionClass);
     BOOL IsOutOfMemory = (throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass);
 
-    // Notify the AppDomain that we have taken an unhandled exception.  Can't notify of stack overflow -- guard
-    // page is not yet reset.
-    BOOL SentEvent = FALSE;
-
-    // Send up the unhandled exception appdomain event.
-    if (sendAppDomainEvents)
-    {
-        SentEvent = NotifyAppDomainsOfUnhandledException(pExceptionPointers, &throwable, useLastThrownObject);
-    }
-
     const int buf_size = 128;
     WCHAR buf[buf_size] = {0};
 
@@ -4985,7 +4972,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                         PrintToStdErrA("Stack overflow.\n");
                     }
                 }
-                else if (SentEvent || IsAsyncThreadException(&throwable))
+                else if (IsAsyncThreadException(&throwable))
                 {
                     // We don't print anything on async exceptions, like ThreadAbort.
                     dump = FALSE;
@@ -5049,7 +5036,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 //******************************************************************************
 // NotifyAppDomainsOfUnhandledException -- common processing for otherwise uncaught exceptions.
 //******************************************************************************
-BOOL NotifyAppDomainsOfUnhandledException(
+void NotifyAppDomainsOfUnhandledException(
     PEXCEPTION_POINTERS pExceptionPointers,
     OBJECTREF   *pThrowableIn,
     BOOL        useLastThrownObject)
@@ -5068,8 +5055,6 @@ BOOL NotifyAppDomainsOfUnhandledException(
     _ASSERTE(!fBreakOnNotify);
 #endif
 
-    BOOL SentEvent = FALSE;
-
     LOG((LF_EH, LL_INFO10, "In NotifyAppDomainsOfUnhandledException\n"));
 
     Thread *pThread = GetThreadNULLOk();
@@ -5078,7 +5063,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
     if (!pThread)
     {
         _ASSERTE(g_fEEShutDown);
-        return FALSE;
+        return;
     }
 
     ThreadPreventAsyncHolder prevAsync;
@@ -5103,7 +5088,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
     // If we've got no managed object, then we can't send an event, so we just return.
     if (throwable == NULL)
     {
-        return FALSE;
+        return;
     }
 
 #ifdef _DEBUG
@@ -5149,7 +5134,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
 
         // This guy will never throw, but it will need a spot to store
         // any nested exceptions it might find.
-        SentEvent = AppDomain::OnUnhandledException(&throwable);
+        AppDomain::OnUnhandledException(&throwable);
 
         UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
@@ -5183,124 +5168,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
     }
 #endif
 
-    return SentEvent;
-
 } // NotifyAppDomainsOfUnhandledException()
-
-
-//******************************************************************************
-//
-//  ThreadBaseExceptionFilter_Worker
-//
-//    The return from the function can be EXCEPTION_CONTINUE_SEARCH to let an
-//     exception go unhandled.  This is the default behaviour (starting in v2.0),
-//     but can be overridden by hosts or by config file.
-//    When the behaviour is overridden, the return will be EXCEPTION_EXECUTE_HANDLER
-//     to swallow the exception.
-//    Note that some exceptions are always swallowed: ThreadAbort, and AppDomainUnload.
-//
-//  Parameters:
-//    pExceptionInfo    EXCEPTION_POINTERS for current exception
-//    _location         A constant as an INT_PTR.  Tells the context from whence called.
-//    swallowing        Are we swallowing unhandled exceptions based on policy?
-//
-//  Returns:
-//    EXCEPTION_CONTINUE_SEARCH     Generally returns this to let the exception go unhandled.
-//    EXCEPTION_EXECUTE_HANDLER     May return this to swallow the exception.
-//
-static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
-                                             PVOID pvParam,
-                                             BOOL swallowing)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_EH, LL_INFO100, "ThreadBaseExceptionFilter_Worker: Enter\n"));
-
-    ThreadBaseExceptionFilterParam *pParam = (ThreadBaseExceptionFilterParam *) pvParam;
-    UnhandledExceptionLocation location = pParam->location;
-
-    Thread* pThread = GetThread();
-
-#ifdef _DEBUG
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException) &&
-        !(swallowing && ExceptionIsAlwaysSwallowed(pExceptionInfo)) &&
-        !(location == ClassInitUnhandledException && pThread->IsRudeAbortInitiated()))
-        _ASSERTE(!"BreakOnUnCaughtException");
-#endif
-
-    BOOL doDefault =  ((location != ClassInitUnhandledException) &&
-                       (pExceptionInfo->ExceptionRecord->ExceptionCode != STATUS_BREAKPOINT) &&
-                       (pExceptionInfo->ExceptionRecord->ExceptionCode != STATUS_SINGLE_STEP));
-
-    if (swallowing)
-    {
-        // No, don't swallow unhandled exceptions...
-        // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
-        if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
-        {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
-            return EXCEPTION_EXECUTE_HANDLER;
-        }
-
-        #ifdef _DEBUG
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException))
-            _ASSERTE(!"BreakOnUnCaughtException");
-        #endif
-
-        // ...so, continue search. i.e. let the exception go unhandled.
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
-#ifdef DEBUGGING_SUPPORTED
-    // If there's a debugger (and not doing a thread abort), give the debugger a shot at the exception.
-    // If the debugger is going to try to continue the exception, it will return ContinueException (which
-    // we see here as EXCEPTION_CONTINUE_EXECUTION).
-    if (!pThread->IsAbortRequested())
-    {
-        // TODO: do we really need this check? I don't think we do
-        if(CORDebuggerAttached())
-        {
-            if (NotifyDebuggerLastChance(pThread, pExceptionInfo, FALSE) == EXCEPTION_CONTINUE_EXECUTION)
-            {
-                LOG((LF_EH, LL_INFO100, "ThreadBaseExceptionFilter_Worker: EXCEPTION_CONTINUE_EXECUTION\n"));
-                return EXCEPTION_CONTINUE_EXECUTION;
-            }
-        }
-    }
-#endif // DEBUGGING_SUPPORTED
-
-    // Do default handling, but ignore breakpoint exceptions and class init exceptions
-    if (doDefault)
-    {
-        LOG((LF_EH, LL_INFO100, "ThreadBaseExceptionFilter_Worker: Calling DefaultCatchHandler\n"));
-
-        BOOL useLastThrownObject = UpdateCurrentThrowable(pExceptionInfo->ExceptionRecord);
-
-        DefaultCatchHandler(pExceptionInfo,
-                            NULL,
-                            useLastThrownObject,
-                            FALSE,
-                            location == ManagedThread || location == ThreadPoolThread || location == FinalizerThread);
-    }
-
-    // Return EXCEPTION_EXECUTE_HANDLER to swallow the exception.
-    return (swallowing
-            ? EXCEPTION_EXECUTE_HANDLER
-            : EXCEPTION_CONTINUE_SEARCH);
-} // LONG ThreadBaseExceptionFilter_Worker()
-
-
-//    This is the filter for new managed threads, for threadpool threads, and for
-//     running finalizer methods.
-LONG ThreadBaseExceptionSwallowingFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam)
-{
-    return ThreadBaseExceptionFilter_Worker(pExceptionInfo, pvParam, /*swallowing=*/true);
-}
 
 //    This is the filter that we install when transitioning an AppDomain at the base of a managed
 //     thread.  Nothing interesting will get swallowed after us.  So we never decide to continue
@@ -5309,10 +5177,12 @@ LONG ThreadBaseExceptionSwallowingFilter(PEXCEPTION_POINTERS pExceptionInfo, PVO
 //     relevant information.
 LONG ThreadBaseExceptionAppDomainFilter(EXCEPTION_POINTERS *pExceptionInfo, PVOID pvParam)
 {
-    LONG ret = ThreadBaseExceptionSwallowingFilter(pExceptionInfo, pvParam);
-
-    if (ret != EXCEPTION_CONTINUE_SEARCH)
-        return ret;
+    // No, don't swallow unhandled exceptions...
+    // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
+    if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
+    {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
 
     // Consider the exception to be unhandled
     return InternalUnhandledExceptionFilter_Worker(pExceptionInfo);
@@ -6180,7 +6050,7 @@ AdjustContextForJITHelpers(
         // instruction where the call will return.
         //
         // On ARM, just like we perform ControlPC adjustment
-        // during exception dispatch (refer to ExceptionTracker::InitializeCrawlFrame),
+        // during exception dispatch (refer to ExInfo::InitializeCrawlFrame),
         // we will need to perform the corresponding adjustment of IP
         // we got from unwind above, so as to indicate that the AV
         // happened "before" the call to the writebarrier and not at
@@ -6245,7 +6115,7 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
+void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -6278,34 +6148,6 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     CALL_MANAGED_METHOD_NORET(args)
 
     GCPROTECT_END();
-}
-
-void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Ok.  Now we have a brand new fault in jitted code.
-    FaultingExceptionFrame fef;
-    FaultingExceptionFrame *frame = &fef;
-    frame->InitAndLink(pContext);
-
-    HandleManagedFaultFilterParam param;
-    param.fFilterExecuted = FALSE;
-    param.pOriginalExceptionRecord = pExceptionRecord;
-
-    PAL_TRY(HandleManagedFaultFilterParam *, pParam, &param)
-    {
-        GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-
-        EXCEPTION_RECORD *pRecord = pParam->pOriginalExceptionRecord;
-
-        RaiseException(pRecord->ExceptionCode, 0,
-            pRecord->NumberParameters, pRecord->ExceptionInformation);
-    }
-    PAL_EXCEPT_FILTER(HandleManagedFaultFilter)
-    {
-    }
-    PAL_ENDTRY
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -6542,10 +6384,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         // Not an Out-of-memory situation, so no need for a forbid fault region here
         //
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled)
-        {
-            EEPolicy::HandleStackOverflow();
-        }
+        EEPolicy::HandleStackOverflow();
 #endif // FEATURE_EH_FUNCLETS
         return VEH_CONTINUE_SEARCH;
     }
@@ -7240,14 +7079,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 //
                 // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
                 //
-                if (g_isNewExceptionHandlingEnabled)
-                {
-                    HandleManagedFaultNew(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
-                else
-                {
-                    HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
+                HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
 #endif // FEATURE_EH_FUNCLETS
@@ -7457,7 +7289,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     Exception::Delete(pException);
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && !nativeRethrow)
+    if (!nativeRethrow)
     {
         Thread *pThread = GetThread();
         ThreadExceptionState* pExState = pThread->GetExceptionState();
@@ -8539,13 +8371,8 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
 // The caller can also specify the starting EHTracker to walk the list from.
 // If not specified, this will default to the current exception tracker active
 // on the thread.
-#if defined(FEATURE_EH_FUNCLETS)
-PTR_ExceptionTrackerBase GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
-                                                          PTR_ExceptionTrackerBase pStartingEHTracker)
-#else
 PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
                                                 PTR_ExInfo pStartingEHTracker)
-#endif
 {
     CONTRACTL
     {
@@ -8560,11 +8387,7 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
     CONTRACTL_END;
 
     // Get the reference to the current exception tracker
-#if defined(FEATURE_EH_FUNCLETS)
-    PTR_ExceptionTrackerBase pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#else
     PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#endif
 
     BOOL fFoundTracker = FALSE;
 
@@ -8636,13 +8459,8 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
     {
         // Find the reference to the exception tracker corresponding to the preallocated exception,
         // starting the search from the current exception tracker (2nd arg of NULL specifies that).
- #if defined(FEATURE_EH_FUNCLETS)
-        PTR_ExceptionTrackerBase pEHTracker = NULL;
-        PTR_ExceptionTrackerBase pPreviousEHTracker = NULL;
-#else
         PTR_ExInfo pEHTracker = NULL;
         PTR_ExInfo pPreviousEHTracker = NULL;
-#endif
 
         if (fStartSearchFromPreviousTracker)
         {
@@ -10609,9 +10427,6 @@ StackWalkAction TAResetStateCallback(CrawlFrame* pCf, void* data)
 // Note: This function should be invoked ONLY during unwind.
 #ifndef FEATURE_EH_FUNCLETS
 void ResetThreadAbortState(PTR_Thread pThread, void *pEstablisherFrame)
-#else
-void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCurrentStackFrame)
-#endif
 {
     CONTRACTL
     {
@@ -10619,77 +10434,19 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pThread != NULL);
-#ifndef FEATURE_EH_FUNCLETS
         PRECONDITION(pEstablisherFrame != NULL);
-#else
-        PRECONDITION(pCf != NULL);
-        PRECONDITION(!sfCurrentStackFrame.IsNull());
-#endif
     }
     CONTRACTL_END;
 
     if (pThread->IsAbortRequested())
     {
-#ifndef FEATURE_EH_FUNCLETS
         if (GetNextCOMPlusSEHRecord(static_cast<EXCEPTION_REGISTRATION_RECORD *>(pEstablisherFrame)) == EXCEPTION_CHAIN_END)
         {
             _ASSERTE(!"Topmost handler and abort requested.");
         }
-#else // !FEATURE_EH_FUNCLETS
-        // Get the active exception tracker
-        PTR_ExceptionTracker pCurEHTracker = (PTR_ExceptionTracker)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-        _ASSERTE(pCurEHTracker != NULL);
-
-        // We will check if thread abort state needs to be reset only for the case of exception caught in
-        // native code. This will happen when:
-        //
-        // 1) an unwind is triggered and
-        // 2) current frame is the topmost frame we saw in the first pass and
-        // 3) a thread abort is requested and
-        // 4) we dont have address of the exception handler to be invoked.
-        //
-        // (1), (2) and (4) above are checked for in ExceptionTracker::ProcessOSExceptionNotification from where we call this
-        // function.
-
-        // Current frame should be the topmost frame we saw in the first pass
-        _ASSERTE(pCurEHTracker->GetTopmostStackFrameFromFirstPass() == sfCurrentStackFrame);
-
-        // If the exception has been caught in native code, then alongwith not having address of the handler to be
-        // invoked, we also wont have the IL clause for the catch block and resume stack frame will be NULL as well.
-        _ASSERTE((pCurEHTracker->GetCatchToCallPC() == 0) &&
-            (pCurEHTracker->GetCatchHandlerExceptionClauseToken() == NULL) &&
-                 (pCurEHTracker->GetResumeStackFrame().IsNull()));
-
-        // Walk the frame chain to see if there is any more managed code on the stack. If not, then this is the last managed frame
-        // on the stack and we can reset the thread abort state.
-        //
-        // Get the frame from which to start the stack walk from
-        Frame*  pFrame = pCurEHTracker->GetLimitFrame();
-
-        // At this point, we are at the topmost frame we saw during the first pass
-        // before the unwind began. Walk the stack using the specified crawlframe and the topmost
-        // explicit frame to determine if we have more managed code up the stack. If none is found,
-        // we can reset the thread abort state.
-
-        // Setup the data structure to be passed to the callback
-        TAResetStateCallbackData dataCallback;
-        dataCallback.fDoWeHaveMoreManagedCodeOnStack = FALSE;
-
-        // At this point, the StackFrame in CrawlFrame should represent the current frame we have been called for.
-        // _ASSERTE(sfCurrentStackFrame == StackFrame::FromRegDisplay(pCf->GetRegisterSet()));
-
-        // Reference to the StackFrame beyond which we are looking for managed code.
-        dataCallback.sfSeedCrawlFrame = sfCurrentStackFrame;
-
-        pThread->StackWalkFramesEx(pCf->GetRegisterSet(), TAResetStateCallback, &dataCallback, QUICKUNWIND, pFrame);
-
-        if (!dataCallback.fDoWeHaveMoreManagedCodeOnStack)
-        {
-            _ASSERTE(!"There is no more managed code on the stack, and thread abort is requested.");
-        }
-#endif // !FEATURE_EH_FUNCLETS
     }
 }
+#endif // !FEATURE_EH_FUNCLETS
 #endif // !DACCESS_COMPILE
 
 
@@ -11547,6 +11304,30 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 }
 
 #ifndef DACCESS_COMPILE
+#ifdef TARGET_X86
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
+    m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
+    m_ContextPointers.Ecx = &m_Context.Ecx;
+    m_ContextPointers.Edx = &m_Context.Edx;
+
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg; \
+    m_ContextPointers.reg = &m_Context.reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    m_Context.Esp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Eip = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#endif // TARGET_X86
+
 //
 // Init a new frame
 //
@@ -11554,6 +11335,9 @@ void SoftwareExceptionFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
 
+    // On x86 we initialize the context state from transition block in
+    // UpdateContextFromTransitionBlock method.
+#ifndef TARGET_X86
 #define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -11576,6 +11360,7 @@ void SoftwareExceptionFrame::Init()
     _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
 
     m_ReturnAddress = ::GetIP(&m_Context);
+#endif // !TARGET_X86
 }
 
 //
