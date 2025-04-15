@@ -95,22 +95,6 @@ RhpInterfaceDispatchSlow proc
         jmp         _RhpUniversalTransition_DebugStepTailCall@0
 RhpInterfaceDispatchSlow endp
 
-;; Stub dispatch routine for dispatch to a vtable slot
-_RhpVTableOffsetDispatch@0 proc public
-        ;; eax currently contains the indirection cell address. We need to update it to point to the vtable offset (which is in the m_pCache field)
-        mov     eax, [eax + OFFSETOF__InterfaceDispatchCell__m_pCache]
-
-        ;; add the vtable offset to the MethodTable pointer
-        add     eax, [ecx]
-
-        ;; Load the target address of the vtable into eax
-        mov     eax, [eax]
-
-        ;; tail-jump to the target
-        jmp     eax
-_RhpVTableOffsetDispatch@0 endp
-
-
 ;; Initial dispatch on an interface when we don't have a cache yet.
 FASTCALL_FUNC RhpInitialDynamicInterfaceDispatch, 0
 ALTERNATE_ENTRY _RhpInitialInterfaceDispatch

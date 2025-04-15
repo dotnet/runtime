@@ -520,24 +520,18 @@ namespace System.IO.Compression
                 // read the central directory
                 while (continueReadingCentralDirectory)
                 {
-                    int currBytesRead = _archiveStream.Read(fileBufferSpan);
+                    // the buffer read must always be large enough to fit the constant section size of at least one header
+                    int currBytesRead = _archiveStream.ReadAtLeast(fileBufferSpan, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false);
                     ReadOnlySpan<byte> sizedFileBuffer = fileBufferSpan.Slice(0, currBytesRead);
 
-                    // the buffer read must always be large enough to fit the constant section size of at least one header
-                    continueReadingCentralDirectory = continueReadingCentralDirectory
-                        && sizedFileBuffer.Length >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
+                    continueReadingCentralDirectory = sizedFileBuffer.Length >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
 
-                    while (continueReadingCentralDirectory
-                        && currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize < sizedFileBuffer.Length)
+                    while (currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize <= sizedFileBuffer.Length)
                     {
-                        ZipCentralDirectoryFileHeader currentHeader = default;
-
-                        continueReadingCentralDirectory = continueReadingCentralDirectory &&
-                            ZipCentralDirectoryFileHeader.TryReadBlock(sizedFileBuffer.Slice(currPosition), _archiveStream,
-                            saveExtraFieldsAndComments, out bytesConsumed, out currentHeader);
-
-                        if (!continueReadingCentralDirectory)
+                        if (!ZipCentralDirectoryFileHeader.TryReadBlock(sizedFileBuffer.Slice(currPosition), _archiveStream,
+                            saveExtraFieldsAndComments, out bytesConsumed, out ZipCentralDirectoryFileHeader? currentHeader))
                         {
+                            continueReadingCentralDirectory = false;
                             break;
                         }
 
@@ -662,8 +656,7 @@ namespace System.IO.Compression
                         Zip64EndOfCentralDirectoryLocator.FieldLengths.Signature))
                 {
                     // use locator to get to Zip64-EOCD
-                    Zip64EndOfCentralDirectoryLocator locator;
-                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveStream, out locator);
+                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveStream, out Zip64EndOfCentralDirectoryLocator locator);
                     Debug.Assert(zip64eocdLocatorProper); // we just found this using the signature finder, so it should be okay
 
                     if (locator.OffsetOfZip64EOCD > long.MaxValue)
@@ -740,13 +733,17 @@ namespace System.IO.Compression
                         if (entry.OffsetOfLocalHeader >= startingOffset)
                         {
                             // If the pending data to write is fixed-length metadata in the header, there's no need to load the compressed file bits.
+                            // We always need to load the local file header's metadata though - at this point, this entry will be written out and we
+                            // want to make sure that we preserve that metadata.
                             if ((entry.Changes & (ChangeState.DynamicLengthMetadata | ChangeState.StoredData)) != 0)
                             {
                                 completeRewriteStartingOffset = Math.Min(completeRewriteStartingOffset, entry.OffsetOfLocalHeader);
                             }
+
+                            entry.LoadLocalHeaderExtraFieldIfNeeded();
                             if (entry.OffsetOfLocalHeader >= completeRewriteStartingOffset)
                             {
-                                entry.LoadLocalHeaderExtraFieldAndCompressedBytesIfNeeded();
+                                entry.LoadCompressedBytesIfNeeded();
                             }
 
                             entriesToWrite.Add(entry);

@@ -163,6 +163,7 @@ namespace System
         public static bool IsFirefox => IsEnvironmentVariableTrue("IsFirefox");
         public static bool IsChromium => IsEnvironmentVariableTrue("IsChromium");
         public static bool IsNotNodeJS => !IsNodeJS;
+        public static bool IsNotNodeJSOrFirefox => !IsNodeJS && !IsFirefox;
         public static bool IsNodeJSOnWindows => GetNodeJSPlatform() == "win32";
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;

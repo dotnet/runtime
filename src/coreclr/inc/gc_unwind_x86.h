@@ -351,7 +351,7 @@ struct hdrInfo
     bool                isSpeculativeStackWalk; // is the stackwalk seeded by an untrusted source (e.g., sampling profiler)?
 
     // These always includes EBP for EBP-frames and double-aligned-frames
-    RegMask             savedRegMask:8; // which callee-saved regs are saved on stack
+    RegMask             savedRegMask;   // which callee-saved regs are saved on stack
 
     // Count of the callee-saved registers, excluding the frame pointer.
     // This does not include EBP for EBP-frames and double-aligned-frames.
@@ -396,6 +396,8 @@ bool UnwindStackFrameX86(PREGDISPLAY     pContext,
                          IN_EH_FUNCLETS_COMMA(PTR_CBYTE       funcletStart)
                          IN_EH_FUNCLETS_COMMA(bool            isFunclet)
                          bool            updateAllRegs);
+
+unsigned int DecodeGCHdrInfoMethodSize(GCInfoToken gcInfoToken);
 
 size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
                        unsigned    curOffset,

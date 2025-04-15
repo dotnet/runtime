@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.X509Certificates
         string LegacySubject { get; }
         byte[] Thumbprint { get; }
         string KeyAlgorithm { get; }
-        byte[] KeyAlgorithmParameters { get; }
+        byte[]? KeyAlgorithmParameters { get; }
         byte[] PublicKeyValue { get; }
         byte[] SerialNumber { get; }
         string SignatureAlgorithm { get; }

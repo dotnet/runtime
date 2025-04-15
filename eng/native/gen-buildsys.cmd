@@ -100,7 +100,7 @@ if /i "%__Os%" == "android" (
     if "%__Arch%" == "arm64" (
         set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_ABI=arm64-v8a"
     )
-    if "%__Arch%" == "x64" (
+    if "%__Arch%" == "arm" (
         set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_ABI=armeabi-v7a"
     )
 

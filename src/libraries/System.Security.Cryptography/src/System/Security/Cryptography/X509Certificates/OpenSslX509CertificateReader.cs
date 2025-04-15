@@ -311,7 +311,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public byte[] KeyAlgorithmParameters
+        public byte[]? KeyAlgorithmParameters
         {
             get
             {
@@ -608,6 +608,16 @@ namespace System.Security.Cryptography.X509Certificates
             return new ECDiffieHellmanOpenSsl(_privateKey);
         }
 
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new MLDsaOpenSsl(_privateKey);
+        }
+
         private OpenSslX509CertificateReader CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates
@@ -674,6 +684,24 @@ namespace System.Security.Cryptography.X509Certificates
                 typedKey.ImportParameters(ecParameters);
 
                 return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLDsa privateKey)
+        {
+            if (privateKey is MLDsaImplementation impl)
+            {
+                return CopyWithPrivateKey(impl.DuplicateHandle());
+            }
+
+            if (privateKey is MLDsaOpenSsl implOpenSsl)
+            {
+                return CopyWithPrivateKey(implOpenSsl.DuplicateKeyHandle());
+            }
+
+            using (MLDsaImplementation clone = MLDsaImplementation.DuplicatePrivateKey(privateKey))
+            {
+                return CopyWithPrivateKey(clone.DuplicateHandle());
             }
         }
 

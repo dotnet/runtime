@@ -4,24 +4,24 @@
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Compression
 {
     // All blocks.TryReadBlock do a check to see if signature is correct. Generic extra field is slightly different
     // all of the TryReadBlocks will throw if there are not enough bytes in the stream
-
-    internal partial struct ZipGenericExtraField
+    internal sealed partial class ZipGenericExtraField
     {
         private const int SizeOfHeader = FieldLengths.Tag + FieldLengths.Size;
 
         private ushort _tag;
         private ushort _size;
-        private byte[] _data;
+        private byte[]? _data;
 
         public ushort Tag => _tag;
         // returns size of data, not of the entire block
         public ushort Size => _size;
-        public byte[] Data => _data;
+        public byte[] Data => _data ??= [];
 
         public void WriteBlock(Stream stream)
         {
@@ -37,7 +37,7 @@ namespace System.IO.Compression
         // assumes that bytes starts at the beginning of an extra field subfield
         public static bool TryReadBlock(ReadOnlySpan<byte> bytes, out int bytesConsumed, out ZipGenericExtraField field)
         {
-            field = default;
+            field = new();
             bytesConsumed = 0;
 
             // not enough bytes to read tag + size
@@ -48,7 +48,6 @@ namespace System.IO.Compression
 
             field._tag = BinaryPrimitives.ReadUInt16LittleEndian(bytes[FieldLocations.Tag..]);
             field._size = BinaryPrimitives.ReadUInt16LittleEndian(bytes[FieldLocations.Size..]);
-            bytesConsumed += SizeOfHeader;
 
             // not enough byte to read the data
             if ((bytes.Length - SizeOfHeader) < field._size)
@@ -57,11 +56,11 @@ namespace System.IO.Compression
             }
 
             field._data = bytes.Slice(FieldLocations.DynamicData, field._size).ToArray();
-            bytesConsumed += field._size;
+            bytesConsumed = field.Size + SizeOfHeader;
             return true;
         }
 
-        public static List<ZipGenericExtraField> ParseExtraField(ReadOnlySpan<byte> extraFieldData)
+        public static List<ZipGenericExtraField> ParseExtraField(ReadOnlySpan<byte> extraFieldData, out ReadOnlySpan<byte> trailingExtraFieldData)
         {
             List<ZipGenericExtraField> extraFields = new List<ZipGenericExtraField>();
             int totalBytesConsumed = 0;
@@ -71,30 +70,48 @@ namespace System.IO.Compression
                 totalBytesConsumed += currBytesConsumed;
                 extraFields.Add(field);
             }
+            // It's possible for some ZIP files to contain extra data which isn't a well-formed extra field. zipalign does this, padding the extra data
+            // field with zeroes to align the start of the file data to an X-byte boundary. We need to preserve this data so that the recorded "extra data length"
+            // fields in the central directory and local file headers are valid.
+            // We need to account for this because zipalign is part of the build process for Android applications, and failing to do this will result in
+            // .NET for Android generating corrupted .apk files and failing to build.
+            trailingExtraFieldData = extraFieldData[totalBytesConsumed..];
 
             return extraFields;
         }
 
-        public static int TotalSize(List<ZipGenericExtraField> fields)
+        public static int TotalSize(List<ZipGenericExtraField>? fields, int trailingDataLength)
         {
-            int size = 0;
-            foreach (ZipGenericExtraField field in fields)
+            int size = trailingDataLength;
+
+            if (fields != null)
             {
-                size += field.Size + SizeOfHeader; //size is only size of data
+                foreach (ZipGenericExtraField field in fields)
+                {
+                    size += field.Size + SizeOfHeader; //size is only size of data
+                }
             }
             return size;
         }
 
-        public static void WriteAllBlocks(List<ZipGenericExtraField> fields, Stream stream)
+        public static void WriteAllBlocks(List<ZipGenericExtraField>? fields, ReadOnlySpan<byte> trailingExtraFieldData, Stream stream)
         {
-            foreach (ZipGenericExtraField field in fields)
+            if (fields != null)
             {
-                field.WriteBlock(stream);
+                foreach (ZipGenericExtraField field in fields)
+                {
+                    field.WriteBlock(stream);
+                }
+            }
+
+            if (!trailingExtraFieldData.IsEmpty)
+            {
+                stream.Write(trailingExtraFieldData);
             }
         }
     }
 
-    internal partial struct Zip64ExtraField
+    internal sealed partial class Zip64ExtraField
     {
         // Size is size of the record not including the tag or size fields
         // If the extra field is going in the local header, it cannot include only
@@ -180,12 +197,13 @@ namespace System.IO.Compression
                 }
             }
 
-            zip64Field = default;
-
-            zip64Field._compressedSize = null;
-            zip64Field._uncompressedSize = null;
-            zip64Field._localHeaderOffset = null;
-            zip64Field._startDiskNumber = null;
+            zip64Field = new()
+            {
+                _compressedSize = null,
+                _uncompressedSize = null,
+                _localHeaderOffset = null,
+                _startDiskNumber = null,
+            };
 
             return zip64Field;
         }
@@ -196,12 +214,13 @@ namespace System.IO.Compression
             out Zip64ExtraField zip64Block)
         {
             const int MaximumExtraFieldLength = FieldLengths.UncompressedSize + FieldLengths.CompressedSize + FieldLengths.LocalHeaderOffset + FieldLengths.StartDiskNumber;
-            zip64Block = default;
-
-            zip64Block._compressedSize = null;
-            zip64Block._uncompressedSize = null;
-            zip64Block._localHeaderOffset = null;
-            zip64Block._startDiskNumber = null;
+            zip64Block = new()
+            {
+                _compressedSize = null,
+                _uncompressedSize = null,
+                _localHeaderOffset = null,
+                _startDiskNumber = null,
+            };
 
             if (extraField.Tag != TagConstant)
             {
@@ -302,12 +321,13 @@ namespace System.IO.Compression
             bool readUncompressedSize, bool readCompressedSize,
             bool readLocalHeaderOffset, bool readStartDiskNumber)
         {
-            Zip64ExtraField zip64Field = default;
-
-            zip64Field._compressedSize = null;
-            zip64Field._uncompressedSize = null;
-            zip64Field._localHeaderOffset = null;
-            zip64Field._startDiskNumber = null;
+            Zip64ExtraField zip64Field = new()
+            {
+                _compressedSize = null,
+                _uncompressedSize = null,
+                _localHeaderOffset = null,
+                _startDiskNumber = null,
+            };
 
             bool zip64FieldFound = false;
 
@@ -373,7 +393,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal partial struct Zip64EndOfCentralDirectoryLocator
+    internal sealed partial class Zip64EndOfCentralDirectoryLocator
     {
         // The Zip File Format Specification references 0x07064B50, this is a big endian representation.
         // ZIP files store values in little endian, so this is reversed.
@@ -391,8 +411,8 @@ namespace System.IO.Compression
             Span<byte> blockContents = stackalloc byte[TotalSize];
             int bytesRead;
 
-            zip64EOCDLocator = default;
-            bytesRead = stream.Read(blockContents);
+            zip64EOCDLocator = new();
+            bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
 
             if (bytesRead < TotalSize)
             {
@@ -426,7 +446,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal partial struct Zip64EndOfCentralDirectoryRecord
+    internal sealed partial class Zip64EndOfCentralDirectoryRecord
     {
         // The Zip File Format Specification references 0x06064B50, this is a big endian representation.
         // ZIP files store values in little endian, so this is reversed.
@@ -451,8 +471,8 @@ namespace System.IO.Compression
             Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
             int bytesRead;
 
-            zip64EOCDRecord = default;
-            bytesRead = stream.Read(blockContents);
+            zip64EOCDRecord = new();
+            bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
 
             if (bytesRead < BlockConstantSectionSize)
             {
@@ -511,7 +531,7 @@ namespace System.IO.Compression
         public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x03, 0x04];
         public const int SizeOfLocalHeader = 30;
 
-        public static List<ZipGenericExtraField> GetExtraFields(Stream stream)
+        public static List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
         {
             // assumes that TrySkipBlock has already been called, so we don't have to validate twice
 
@@ -535,8 +555,9 @@ namespace System.IO.Compression
                 stream.Seek(filenameLength, SeekOrigin.Current);
                 stream.ReadExactly(extraFieldBuffer);
 
-                result = ZipGenericExtraField.ParseExtraField(extraFieldBuffer);
+                result = ZipGenericExtraField.ParseExtraField(extraFieldBuffer, out ReadOnlySpan<byte> trailingDataSpan);
                 Zip64ExtraField.RemoveZip64Blocks(result);
+                trailingData = trailingDataSpan.ToArray();
 
                 return result;
             }
@@ -552,10 +573,11 @@ namespace System.IO.Compression
         // will not throw end of stream exception
         public static bool TrySkipBlock(Stream stream)
         {
-            Span<byte> blockBytes = stackalloc byte[4];
+            Span<byte> blockBytes = stackalloc byte[FieldLengths.Signature];
             long currPosition = stream.Position;
-            int bytesRead = stream.Read(blockBytes);
+            int bytesRead;
 
+            bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             if (bytesRead != FieldLengths.Signature || !blockBytes.SequenceEqual(SignatureConstantBytes))
             {
                 return false;
@@ -569,7 +591,10 @@ namespace System.IO.Compression
             // Already read the signature, so make the filename length field location relative to that
             stream.Seek(FieldLocations.FilenameLength - FieldLengths.Signature, SeekOrigin.Current);
 
-            bytesRead = stream.Read(blockBytes);
+            // Reuse blockBytes to read the filename length and the extra field length - these two consecutive
+            // fields fit inside blockBytes.
+            Debug.Assert(blockBytes.Length == FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength);
+            bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             if (bytesRead != FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength)
             {
                 return false;
@@ -591,7 +616,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal partial struct ZipCentralDirectoryFileHeader
+    internal sealed partial class ZipCentralDirectoryFileHeader
     {
         // The Zip File Format Specification references 0x02014B50, this is a big endian representation.
         // ZIP files store values in little endian, so this is reversed.
@@ -617,17 +642,19 @@ namespace System.IO.Compression
         public uint ExternalFileAttributes;
         public long RelativeOffsetOfLocalHeader;
 
-        public byte[] Filename;
-        public byte[] FileComment;
+        public byte[] Filename = [];
+        public byte[] FileComment = [];
         public List<ZipGenericExtraField>? ExtraFields;
+        public byte[]? TrailingExtraFieldData;
 
         // if saveExtraFieldsAndComments is false, FileComment and ExtraFields will be null
         // in either case, the zip64 extra field info will be incorporated into other fields
-        public static bool TryReadBlock(ReadOnlySpan<byte> buffer, Stream furtherReads, bool saveExtraFieldsAndComments, out int bytesRead, out ZipCentralDirectoryFileHeader header)
+        public static bool TryReadBlock(ReadOnlySpan<byte> buffer, Stream furtherReads, bool saveExtraFieldsAndComments, out int bytesRead, [NotNullWhen(returnValue: true)] out ZipCentralDirectoryFileHeader? header)
         {
+            header = null;
+
             const int StackAllocationThreshold = 512;
 
-            header = default;
             bytesRead = 0;
 
             // the buffer will always be large enough for at least the constant section to be verified
@@ -638,26 +665,25 @@ namespace System.IO.Compression
                 return false;
             }
 
-            header.VersionMadeBySpecification = buffer[FieldLocations.VersionMadeBySpecification];
-            header.VersionMadeByCompatibility = buffer[FieldLocations.VersionMadeByCompatibility];
-            header.VersionNeededToExtract = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.VersionNeededToExtract..]);
-            header.GeneralPurposeBitFlag = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.GeneralPurposeBitFlags..]);
-            header.CompressionMethod = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.CompressionMethod..]);
-            header.LastModified = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.LastModified..]);
-            header.Crc32 = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.Crc32..]);
+            header = new()
+            {
+                VersionMadeBySpecification = buffer[FieldLocations.VersionMadeBySpecification],
+                VersionMadeByCompatibility = buffer[FieldLocations.VersionMadeByCompatibility],
+                VersionNeededToExtract = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.VersionNeededToExtract..]),
+                GeneralPurposeBitFlag = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.GeneralPurposeBitFlags..]),
+                CompressionMethod = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.CompressionMethod..]),
+                LastModified = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.LastModified..]),
+                Crc32 = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.Crc32..]),
+                FilenameLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.FilenameLength..]),
+                ExtraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.ExtraFieldLength..]),
+                FileCommentLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.FileCommentLength..]),
+                InternalFileAttributes = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.InternalFileAttributes..]),
+                ExternalFileAttributes = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.ExternalFileAttributes..])
+            };
 
             uint compressedSizeSmall = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.CompressedSize..]);
             uint uncompressedSizeSmall = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.UncompressedSize..]);
-
-            header.FilenameLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.FilenameLength..]);
-            header.ExtraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.ExtraFieldLength..]);
-            header.FileCommentLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.FileCommentLength..]);
-
             ushort diskNumberStartSmall = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.DiskNumberStart..]);
-
-            header.InternalFileAttributes = BinaryPrimitives.ReadUInt16LittleEndian(buffer[FieldLocations.InternalFileAttributes..]);
-            header.ExternalFileAttributes = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.ExternalFileAttributes..]);
-
             uint relativeOffsetOfLocalHeaderSmall = BinaryPrimitives.ReadUInt32LittleEndian(buffer[FieldLocations.RelativeOffsetOfLocalHeader..]);
 
             // Assemble the dynamic header in a separate buffer. We can't guarantee that it's all in the input buffer,
@@ -688,7 +714,9 @@ namespace System.IO.Compression
                     Span<byte> collatedHeader = dynamicHeaderSize <= StackAllocationThreshold ? stackalloc byte[StackAllocationThreshold].Slice(0, dynamicHeaderSize) : arrayPoolBuffer.AsSpan(0, dynamicHeaderSize);
 
                     buffer[FieldLocations.DynamicData..].CopyTo(collatedHeader);
-                    int realBytesRead = furtherReads.Read(collatedHeader[remainingBufferLength..]);
+
+                    Debug.Assert(bytesToRead == collatedHeader[remainingBufferLength..].Length);
+                    int realBytesRead = furtherReads.ReadAtLeast(collatedHeader[remainingBufferLength..], bytesToRead, throwOnEndOfStream: false);
 
                     if (realBytesRead != bytesToRead)
                     {
@@ -706,17 +734,19 @@ namespace System.IO.Compression
 
                 ReadOnlySpan<byte> zipExtraFields = dynamicHeader.Slice(header.FilenameLength, header.ExtraFieldLength);
 
-                zip64 = default;
+                zip64 = new();
                 if (saveExtraFieldsAndComments)
                 {
-                    header.ExtraFields = ZipGenericExtraField.ParseExtraField(zipExtraFields);
+                    header.ExtraFields = ZipGenericExtraField.ParseExtraField(zipExtraFields, out ReadOnlySpan<byte> trailingDataSpan);
                     zip64 = Zip64ExtraField.GetAndRemoveZip64Block(header.ExtraFields,
                                 uncompressedSizeInZip64, compressedSizeInZip64,
                                 relativeOffsetInZip64, diskNumberStartInZip64);
+                    header.TrailingExtraFieldData = trailingDataSpan.ToArray();
                 }
                 else
                 {
                     header.ExtraFields = null;
+                    header.TrailingExtraFieldData = null;
                     zip64 = Zip64ExtraField.GetJustZip64Block(zipExtraFields,
                                 uncompressedSizeInZip64, compressedSizeInZip64,
                                 relativeOffsetInZip64, diskNumberStartInZip64);
@@ -743,7 +773,7 @@ namespace System.IO.Compression
         }
     }
 
-    internal partial struct ZipEndOfCentralDirectoryBlock
+    internal sealed partial class ZipEndOfCentralDirectoryBlock
     {
         // The Zip File Format Specification references 0x06054B50, this is a big endian representation.
         // ZIP files store values in little endian, so this is reversed.
@@ -766,7 +796,8 @@ namespace System.IO.Compression
         public ushort NumberOfEntriesInTheCentralDirectory;
         public uint SizeOfCentralDirectory;
         public uint OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
-        public byte[] ArchiveComment;
+        private byte[]? _archiveComment;
+        public byte[] ArchiveComment => _archiveComment ??= [];
 
         public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
@@ -809,8 +840,8 @@ namespace System.IO.Compression
             Span<byte> blockContents = stackalloc byte[TotalSize];
             int bytesRead;
 
-            eocdBlock = default;
-            bytesRead = stream.Read(blockContents);
+            eocdBlock = new();
+            bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
 
             if (bytesRead < TotalSize)
             {
@@ -840,12 +871,12 @@ namespace System.IO.Compression
 
             if (commentLength == 0)
             {
-                eocdBlock.ArchiveComment = Array.Empty<byte>();
+                eocdBlock._archiveComment = [];
             }
             else
             {
-                eocdBlock.ArchiveComment = new byte[commentLength];
-                stream.ReadExactly(eocdBlock.ArchiveComment);
+                eocdBlock._archiveComment = new byte[commentLength];
+                stream.ReadExactly(eocdBlock._archiveComment);
             }
 
             return true;

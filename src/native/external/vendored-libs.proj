@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <PropertyGroup>
     <SystemLibs>lib1+lib2+lib3</SystemLibs>
-    <!-- Replace '+' with ';' to create a semicolon-delimited list we can use to make items -->
-    <SystemLibList>$([System.String]::Copy('$(UseSystemLibs)').Replace('+',';'))</SystemLibList>
+    <!--
+      Replace '+' with ';' to create a semicolon-delimited list we can use to make items.
+      Also replace '-' with ';' so we can get the items we're interested in being split are split.
+    -->
+    <SystemLibList>$([System.String]::Copy('$(UseSystemLibs)').Replace('+',';').Replace('-',';'))</SystemLibList>
   </PropertyGroup>
 
   <ItemGroup>
     <SystemLib Include="$(SystemLibList)" />
+    <!-- lttng is only "opt-out" in UseSystemLibs and is used to specify a feature switch in DotNetBuild.props. -->
+    <SystemLib Remove="lttng" />
     <!--
       Some platforms are opted-out from using the in-tree zlib-ng by default:
       - Android and iOS-like platforms: concerns about extra binary size

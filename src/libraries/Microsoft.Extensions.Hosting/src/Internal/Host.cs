@@ -338,6 +338,10 @@ namespace Microsoft.Extensions.Hosting.Internal
                         {
                             exceptions.AddRange(task.Exception.InnerExceptions); // Log exception from async method.
                         }
+                        else if (task.IsCanceled)
+                        {
+                            exceptions.Add(new TaskCanceledException(task));
+                        }
                     }
                     else
                     {

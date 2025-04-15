@@ -19,13 +19,14 @@ internal sealed class Module : IData<Module>
 
         Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
         Assembly = target.ReadPointer(address + (ulong)type.Fields[nameof(Assembly)].Offset);
+        PEAssembly = target.ReadPointer(address + (ulong)type.Fields[nameof(PEAssembly)].Offset);
         Base = target.ReadPointer(address + (ulong)type.Fields[nameof(Base)].Offset);
         LoaderAllocator = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderAllocator)].Offset);
-        ThunkHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(ThunkHeap)].Offset);
         DynamicMetadata = target.ReadPointer(address + (ulong)type.Fields[nameof(DynamicMetadata)].Offset);
         Path = target.ReadPointer(address + (ulong)type.Fields[nameof(Path)].Offset);
         FileName = target.ReadPointer(address + (ulong)type.Fields[nameof(FileName)].Offset);
         ReadyToRunInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(ReadyToRunInfo)].Offset);
+        GrowableSymbolStream = target.ReadPointer(address + (ulong)type.Fields[nameof(GrowableSymbolStream)].Offset);
 
         FieldDefToDescMap = address + (ulong)type.Fields[nameof(FieldDefToDescMap)].Offset;
         ManifestModuleReferencesMap = address + (ulong)type.Fields[nameof(ManifestModuleReferencesMap)].Offset;
@@ -37,14 +38,15 @@ internal sealed class Module : IData<Module>
     }
 
     public TargetPointer Assembly { get; init; }
+    public TargetPointer PEAssembly { get; init; }
     public uint Flags { get; init; }
     public TargetPointer Base { get; init; }
     public TargetPointer LoaderAllocator { get; init; }
-    public TargetPointer ThunkHeap { get; init; }
     public TargetPointer DynamicMetadata { get; init; }
     public TargetPointer Path { get; init; }
     public TargetPointer FileName { get; init; }
     public TargetPointer ReadyToRunInfo { get; init; }
+    public TargetPointer GrowableSymbolStream { get; init; }
 
     public TargetPointer FieldDefToDescMap { get; init; }
     public TargetPointer ManifestModuleReferencesMap { get; init; }

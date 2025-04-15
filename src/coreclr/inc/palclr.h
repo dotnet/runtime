@@ -48,8 +48,6 @@
 #endif // !_MSC_VER
 #endif // !NOINLINE
 
-#define ANALYZER_NORETURN
-
 #ifdef _MSC_VER
 #define EMPTY_BASES_DECL __declspec(empty_bases)
 #else
