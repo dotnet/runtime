@@ -690,10 +690,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             var serviceType = serviceIdentifier.ServiceType;
 
-            if (serviceType is null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
+            ArgumentNullException.ThrowIfNull(serviceType);
 
             // Querying for an open generic should return false (they aren't resolvable)
             if (serviceType.IsGenericTypeDefinition)

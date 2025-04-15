@@ -13,8 +13,6 @@ System.Net.Http.Json.JsonContent</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
-             Link="Common\System\ThrowHelper.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.AsyncEnumerable.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.cs" />
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.AsyncEnumerable.cs" />
