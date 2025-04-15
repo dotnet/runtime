@@ -1248,6 +1248,12 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_SquareRoot:
 				cmethod_name = "Sqrt";
 				break;
+			case SN_Store:
+			case SN_StoreUnsafe:
+				if (csignature->param_count != 2)
+					return FALSE;
+				cmethod_name = "Store";
+				break;
 			case SN_Add:
 			case SN_AndNot:
 			case SN_Subtract:
