@@ -31,6 +31,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     {
         public Matcher() { }
         public Matcher(System.StringComparison comparisonType) { }
+        public Matcher(System.StringComparison comparisonType = System.StringComparison.OrdinalIgnoreCase, bool preserveFilterOrder = false) { }
         public virtual Microsoft.Extensions.FileSystemGlobbing.Matcher AddExclude(string pattern) { throw null; }
         public virtual Microsoft.Extensions.FileSystemGlobbing.Matcher AddInclude(string pattern) { throw null; }
         public virtual Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult Execute(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase directoryInfo) { throw null; }
