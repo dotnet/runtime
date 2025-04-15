@@ -173,6 +173,8 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
+	SN_Store,
+	SN_StoreUnsafe,
 	SN_Subtract,
 	SN_Sqrt,
 	SN_SquareRoot,
