@@ -9586,7 +9586,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
 ValueNum ValueNumStore::EvalMathFuncBinary(
     var_types typ, GenTreeFlags flags, NamedIntrinsic gtMathFN, ValueNum arg0VN, ValueNum arg1VN)
 {
-    assert(varTypeIsArithmetic(typ) RISCV64_ONLY(|| varTypeIsIntegral(typ)));
+    assert(varTypeIsArithmetic(typ));
     assert(arg0VN == VNNormalValue(arg0VN));
     assert(arg1VN == VNNormalValue(arg1VN));
     assert(m_pComp->IsMathIntrinsic(gtMathFN));
