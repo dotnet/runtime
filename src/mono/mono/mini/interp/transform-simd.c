@@ -364,6 +364,7 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			else if (atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
+			else if (atype == MONO_TYPE_U8) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_URIGHT_SHIFT;
 			break;
 		case SN_op_Subtraction:
 			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
