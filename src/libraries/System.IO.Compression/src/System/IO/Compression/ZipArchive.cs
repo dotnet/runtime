@@ -520,10 +520,10 @@ namespace System.IO.Compression
                 // read the central directory
                 while (continueReadingCentralDirectory)
                 {
-                    int currBytesRead = _archiveStream.Read(fileBufferSpan);
+                    // the buffer read must always be large enough to fit the constant section size of at least one header
+                    int currBytesRead = _archiveStream.ReadAtLeast(fileBufferSpan, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false);
                     ReadOnlySpan<byte> sizedFileBuffer = fileBufferSpan.Slice(0, currBytesRead);
 
-                    // the buffer read must always be large enough to fit the constant section size of at least one header
                     continueReadingCentralDirectory = sizedFileBuffer.Length >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
 
                     while (currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize <= sizedFileBuffer.Length)
