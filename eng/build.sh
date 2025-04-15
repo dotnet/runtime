@@ -592,7 +592,9 @@ if [[ "$bootstrap" == "1" ]]; then
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   echo "Cleaning up artifacts from bootstrap build..."
-  rm -r "$scriptroot/../artifacts/obj" "$scriptroot/../artifacts/bin"
+  rm -r "$scriptroot/../artifacts/bin"
+  # Remove all directories in obj except for the source-built-upstream-cache directory to avoid breaking SourceBuild.
+  find "$scriptroot/../artifacts/obj" -mindepth 1 -maxdepth 1 ! -name 'source-built-upstream-cache' -exec rm -rf {} +
   arguments="$arguments /p:UseBootstrap=true"
 fi
 
