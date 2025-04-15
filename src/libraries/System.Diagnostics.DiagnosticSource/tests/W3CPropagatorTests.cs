@@ -51,8 +51,8 @@ namespace System.Diagnostics.Tests
             // Invalid baggage key.
             yield return new object[] { null, null, new[]
                                                     {
-                                                        new KeyValuePair<string, string>("b 1", "v1"),    // '=' is not allowed
-                                                        new KeyValuePair<string, string>("b=2", "v2"),    // Space is not allowed
+                                                        new KeyValuePair<string, string>("b 1", "v1"),    // Space is not allowed
+                                                        new KeyValuePair<string, string>("b=2", "v2"),    // '=' is not allowed
                                                         new KeyValuePair<string, string>("b\t3", "v3"),   // Tab is not allowed
                                                         new KeyValuePair<string, string>("b(4", "v4"),    // '(' is not allowed
                                                         new KeyValuePair<string, string>("b:5", "v5"),    // ':' is not allowed
