@@ -97,7 +97,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/110578")]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
