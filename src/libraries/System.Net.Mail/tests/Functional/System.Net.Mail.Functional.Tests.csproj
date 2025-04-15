@@ -40,10 +40,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
+    <Compile Include="SmtpClientAttachmentTest.cs" />
+    <Compile Include="SmtpClientAuthTest.cs" />
     <Compile Include="SmtpClientTest.cs" />
+    <Compile Include="SmtpClientConnectionTest.cs" />
     <Compile Include="SmtpClientSendMailTest.cs" />
     <Compile Include="SmtpClientSpecifiedPickupDirectoryTest.cs" />
-    <Compile Include="SmtpClientAuthTest.cs" />
     <Compile Include="SmtpClientTlsTest.cs" />
     <Compile Include="SmtpClientCredentialsTest.cs" />
     <Compile Include="LoggingTest.cs" />

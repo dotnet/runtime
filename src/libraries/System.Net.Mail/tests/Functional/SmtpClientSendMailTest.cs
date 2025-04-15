@@ -1,13 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.NetworkInformation;
-using System.Net.Security;
-using System.Security.Authentication;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Net.Mail.Tests;
-using System.IO;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,14 +19,14 @@ namespace System.Net.Mail.Tests
         [Fact]
         public async Task Message_Null()
         {
-            await SendMail<ArgumentNullException>(null);
+            await SendMail<ArgumentNullException>(null, asyncDirectException: true);
         }
 
         [Fact]
         public async Task Network_Host_Whitespace()
         {
             Smtp.Host = " \r\n ";
-            await SendMail<InvalidOperationException>(new MailMessage("mono@novell.com", "everyone@novell.com", "introduction", "hello"));
+            await SendMail<InvalidOperationException>(new MailMessage("mono@novell.com", "everyone@novell.com", "introduction", "hello"), asyncDirectException: true);
         }
 
         [Fact]
@@ -53,10 +47,10 @@ namespace System.Net.Mail.Tests
             Smtp.Credentials = new NetworkCredential("foo", "bar");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", body);
 
-            await SendMail(msg).WaitAsync(TimeSpan.FromSeconds(30));
+            await SendMail(msg);
 
             Assert.Equal("<foo@example.com>", Server.MailFrom);
-            Assert.Equal("<bar@example.com>", Server.MailTo);
+            Assert.Equal("<bar@example.com>", Assert.Single(Server.MailTo));
             Assert.Equal("hello", Server.Message.Subject);
             Assert.Equal(body ?? "", Server.Message.Body);
             Assert.Equal(GetClientDomain(), Server.ClientDomain);
@@ -141,7 +135,7 @@ namespace System.Net.Mail.Tests
                 await SendMail(msg);
 
                 Assert.Equal("<foo@example.com>", Server.MailFrom);
-                Assert.Equal("<bar@example.com>", Server.MailTo);
+                Assert.Equal("<bar@example.com>", Assert.Single(Server.MailTo));
                 Assert.Equal("hello", Server.Message.Subject);
                 Assert.Equal("howdydoo", Server.Message.Body);
                 Assert.Equal(GetClientDomain(), Server.ClientDomain);
@@ -169,6 +163,151 @@ namespace System.Net.Mail.Tests
                 yield return new object[] { address, "foo@example.com" };
                 yield return new object[] { "foo@example.com", address };
             }
+        }
+
+        [Fact]
+        public async Task MultipleRecipients_Success()
+        {
+            using var msg = new MailMessage()
+            {
+                From = new MailAddress("foo@example.com"),
+                To = {
+                    new MailAddress("bar@example.com"),
+                    new MailAddress("baz@example.com")
+                },
+                CC = {
+                    new MailAddress("cc1@example.com"),
+                    new MailAddress("cc2@example.com"),
+                },
+                Subject = "subject",
+                Body = "body"
+            };
+            await SendMail(msg);
+
+            Assert.Equal("<foo@example.com>", Server.MailFrom);
+            Assert.Equal(["<bar@example.com>", "<baz@example.com>", "<cc1@example.com>", "<cc2@example.com>"], Server.MailTo);
+            Assert.Equal("subject", Server.Message.Subject);
+            Assert.Equal("body", Server.Message.Body);
+            Assert.Equal("bar@example.com, baz@example.com", Server.Message.To);
+            Assert.Equal("cc1@example.com, cc2@example.com", Server.Message.Cc);
+        }
+
+        [Fact]
+        public async Task MultipleRecipients_Failure_One()
+        {
+            Server.OnCommandReceived = (command, argument) =>
+            {
+                if (string.Equals("RCPT TO", command, StringComparison.OrdinalIgnoreCase) && argument.Contains("bar"))
+                {
+                    return "550 unknown recipient";
+                }
+
+                return null;
+            };
+
+            using var msg = new MailMessage()
+            {
+                From = new MailAddress("foo@example.com"),
+                To = {
+                    new MailAddress("bar@example.com"),
+                    new MailAddress("baz@example.com")
+                },
+                CC = {
+                    new MailAddress("cc1@example.com"),
+                    new MailAddress("cc2@example.com"),
+                },
+                Subject = "subject",
+                Body = "body"
+            };
+
+            var ex = await SendMail<SmtpFailedRecipientException>(msg, unwrapException: false);
+            Assert.Equal("<bar@example.com>", ex.FailedRecipient);
+
+            // still expect the message to be sent since other recipients were available
+            Assert.Equal("body", Server.Message.Body);
+            Assert.Equal("bar@example.com, baz@example.com", Server.Message.To);
+            Assert.Equal("cc1@example.com, cc2@example.com", Server.Message.Cc);
+        }
+
+        [Fact]
+        public async Task MultipleRecipients_Failure_Many()
+        {
+            Server.OnCommandReceived = (command, argument) =>
+            {
+                if (string.Equals("RCPT TO", command, StringComparison.OrdinalIgnoreCase) && !argument.Contains("bar"))
+                {
+                    return "550 unknown recipient";
+                }
+
+                return null;
+            };
+
+            using var msg = new MailMessage()
+            {
+                From = new MailAddress("foo@example.com"),
+                To = {
+                    new MailAddress("bar@example.com"),
+                    new MailAddress("baz@example.com")
+                },
+                CC = {
+                    new MailAddress("cc1@example.com"),
+                    new MailAddress("cc2@example.com"),
+                },
+                Subject = "subject",
+                Body = "body"
+            };
+
+            var ex = await SendMail<SmtpFailedRecipientsException>(msg, unwrapException: false);
+            Assert.Collection(ex.InnerExceptions,
+                e => { Assert.Equal("<baz@example.com>", e.FailedRecipient); },
+                e => { Assert.Equal("<cc1@example.com>", e.FailedRecipient); },
+                e => { Assert.Equal("<cc2@example.com>", e.FailedRecipient); }
+            );
+
+            // still expect the message to be sent since other recipients were available
+            Assert.Equal("body", Server.Message.Body);
+            Assert.Equal("bar@example.com, baz@example.com", Server.Message.To);
+            Assert.Equal("cc1@example.com, cc2@example.com", Server.Message.Cc);
+        }
+
+        [Fact]
+        public async Task MultipleRecipients_Failure_All()
+        {
+            Server.OnCommandReceived = (command, argument) =>
+            {
+                if (string.Equals("RCPT TO", command, StringComparison.OrdinalIgnoreCase))
+                {
+                    return "550 unknown recipient";
+                }
+
+                return null;
+            };
+
+            using var msg = new MailMessage()
+            {
+                From = new MailAddress("foo@example.com"),
+                To = {
+                    new MailAddress("bar@example.com"),
+                    new MailAddress("baz@example.com")
+                },
+                CC = {
+                    new MailAddress("cc1@example.com"),
+                    new MailAddress("cc2@example.com"),
+                },
+                Subject = "subject",
+                Body = "body"
+            };
+
+            var ex = await SendMail<SmtpFailedRecipientsException>(msg, unwrapException: false);
+            Assert.Collection(ex.InnerExceptions,
+                e => { Assert.Equal("<bar@example.com>", e.FailedRecipient); },
+                e => { Assert.Equal("<baz@example.com>", e.FailedRecipient); },
+                e => { Assert.Equal("<cc1@example.com>", e.FailedRecipient); },
+                e => { Assert.Equal("<cc2@example.com>", e.FailedRecipient); }
+            );
+
+            // No recipients succeeded, nothing to send
+            Assert.Null(Server.Message);
         }
     }
 

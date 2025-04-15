@@ -57,7 +57,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public async Task EnableSslServerSupports_UsesTls()
+        public async Task EnableSsl_ServerSupports_UsesTls()
         {
             _serverCertValidationCallback = (cert, chain, errors) =>
             {
@@ -72,6 +72,27 @@ namespace System.Net.Mail.Tests
             Assert.True(Server.IsEncrypted, "TLS was not negotiated.");
             Assert.Equal(Smtp.Host, Server.TlsHostName);
         }
+
+        [Theory]
+        [InlineData("500 T'was just a jest.")]
+        [InlineData("300 I don't know what I am doing.")]
+        [InlineData("I don't know what I am doing.")]
+        public async Task EnableSsl_ServerError(string reply)
+        {
+            Smtp.EnableSsl = true;
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+
+            Server.OnCommandReceived = (command, parameter) =>
+            {
+                if (string.Equals(command, "STARTTLS", StringComparison.OrdinalIgnoreCase))
+                    return reply;
+
+                return null;
+            };
+
+            await SendMail<SmtpException>(msg);
+        }
+
 
         [Fact]
         public async Task EnableSsl_NoServerSupport_NoTls()

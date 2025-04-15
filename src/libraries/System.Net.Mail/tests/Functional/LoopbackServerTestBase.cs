@@ -7,8 +7,10 @@ using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Net.Mail.Tests;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 using Xunit.Abstractions;
 
 namespace System.Net.Mail.Tests
@@ -62,7 +64,7 @@ namespace System.Net.Mail.Tests
             Server = new LoopbackSmtpServer(Output);
         }
 
-        private Task<Exception?> SendMailInternal(MailMessage msg)
+        private Task<Exception?> SendMailInternal(MailMessage msg, CancellationToken cancellationToken, bool? asyncExpectDirectException)
         {
             switch (T.SendMethod)
             {
@@ -101,28 +103,45 @@ namespace System.Net.Mail.Tests
                     try
                     {
                         Smtp.SendAsync(msg, tcs);
+
+                        if (asyncExpectDirectException == true)
+                        {
+                            Assert.Fail($"No exception thrown");
+                        }
+
                         return tcs.Task;
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is not XunitException)
                     {
                         Smtp.SendCompleted -= handler;
+
+                        if (asyncExpectDirectException == false)
+                        {
+                            Assert.Fail($"Expected exception via callback, got direct: {ex}");
+                        }
+
                         return Task.FromResult(ex);
                     }
 
                 case SendMethod.SendMailAsync:
                     try
                     {
-                        return Smtp.SendMailAsync(msg).ContinueWith(t =>
+                        Task task = Smtp.SendMailAsync(msg, cancellationToken);
+
+                        if (asyncExpectDirectException == true)
                         {
-                            if (t.IsFaulted)
-                            {
-                                return t.Exception?.InnerException;
-                            }
-                            return null;
-                        });
+                            Assert.Fail($"No exception thrown");
+                        }
+
+                        return task.ContinueWith(t => t.Exception?.InnerException);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is not XunitException)
                     {
+                        if (asyncExpectDirectException == false)
+                        {
+                            Assert.Fail($"Expected stored exception, got direct: {ex}");
+                        }
+
                         return Task.FromResult(ex);
                     }
 
@@ -131,17 +150,17 @@ namespace System.Net.Mail.Tests
             }
         }
 
-        protected async Task SendMail(MailMessage msg)
+        protected async Task SendMail(MailMessage msg, CancellationToken cancellationToken = default)
         {
-            Exception? ex = await SendMailInternal(msg);
+            Exception? ex = await SendMailInternal(msg, cancellationToken, null);
             Assert.Null(ex);
         }
 
-        protected async Task<TException> SendMail<TException>(MailMessage msg) where TException : Exception
+        protected async Task<TException> SendMail<TException>(MailMessage msg, CancellationToken cancellationToken = default, bool unwrapException = true, bool asyncDirectException = false) where TException : Exception
         {
-            Exception? ex = await SendMailInternal(msg);
+            Exception? ex = await SendMailInternal(msg, cancellationToken, asyncDirectException);
 
-            if (T.SendMethod != SendMethod.Send && typeof(TException) != typeof(SmtpException))
+            if (unwrapException && T.SendMethod != SendMethod.Send && typeof(TException) != typeof(SmtpException))
             {
                 ex = Assert.IsType<SmtpException>(ex).InnerException;
             }

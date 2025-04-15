@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Mail;
+using System.Net.Mime;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
@@ -40,13 +41,13 @@ namespace System.Net.Mail.Tests
 
         public Action<Socket> OnConnected;
         public Action<string> OnHelloReceived;
-        public Action<string, string> OnCommandReceived;
+        public Func<string, string, string?> OnCommandReceived;
         public Action<string> OnUnknownCommand;
         public Action<Socket> OnQuitReceived;
 
         public string ClientDomain { get; private set; }
         public string MailFrom { get; private set; }
-        public string MailTo { get; private set; }
+        public List<string> MailTo { get; private set; } = new List<string>();
         public string UsernamePassword { get; private set; }
         public string Username { get; private set; }
         public string Password { get; private set; }
@@ -87,6 +88,18 @@ namespace System.Net.Mail.Tests
             var buffer = new byte[1024].AsMemory();
             Stream stream = new NetworkStream(socket);
 
+            string lastTag = string.Empty;
+            void LogMessage(string tag, string message)
+            {
+                StringReader reader = new(message);
+                while (reader.ReadLine() is string line)
+                {
+                    tag = tag == lastTag ? "      " : tag;
+                    _output?.WriteLine($"{tag}> {line}");
+                    lastTag = tag;
+                }
+            }
+
             async ValueTask<string> ReceiveMessageAsync(bool isBody = false)
             {
                 var terminator = isBody ? s_bodyTerminator : s_messageTerminator;
@@ -104,7 +117,7 @@ namespace System.Net.Mail.Tests
 
                 MessagesReceived++;
                 string message = Encoding.UTF8.GetString(buffer.Span.Slice(0, received - suffix));
-                _output?.WriteLine($"Client> {message}");
+                LogMessage("Client", Encoding.UTF8.GetString(buffer.Span.Slice(0, received)));
                 return message;
             }
 
@@ -114,7 +127,7 @@ namespace System.Net.Mail.Tests
                 bytes.Span[^2] = (byte)'\r';
                 bytes.Span[^1] = (byte)'\n';
 
-                _output?.WriteLine($"Server> {text}");
+                LogMessage("Server", text + "\r\n");
                 await stream.WriteAsync(bytes);
                 await stream.FlushAsync();
             }
@@ -133,16 +146,22 @@ namespace System.Net.Mail.Tests
                     if (message.ToLower().StartsWith("helo ") || message.ToLower().StartsWith("ehlo "))
                     {
                         ClientDomain = message.Substring(5).ToLower();
-                        OnCommandReceived?.Invoke(message.Substring(0, 4), ClientDomain);
+
+                        if (OnCommandReceived?.Invoke(message.Substring(0, 4), ClientDomain) is string reply)
+                        {
+                            await SendMessageAsync(reply);
+                            continue;
+                        }
+
                         OnHelloReceived?.Invoke(ClientDomain);
 
                         await SendMessageAsync("250-localhost, mock server here");
                         if (SupportSmtpUTF8) await SendMessageAsync("250-SMTPUTF8");
                         if (SslOptions != null && stream is not SslStream) await SendMessageAsync("250-STARTTLS");
                         await SendMessageAsync(
-                            "250 AUTH PLAIN LOGIN" +
-                            (AdvertiseNtlmAuthSupport ? " NTLM" : "") +
-                            (AdvertiseGssapiAuthSupport ? " GSSAPI" : ""));
+                                                "250 AUTH PLAIN LOGIN" +
+                                                (AdvertiseNtlmAuthSupport ? " NTLM" : "") +
+                                                (AdvertiseGssapiAuthSupport ? " GSSAPI" : ""));
 
                         continue;
                     }
@@ -151,7 +170,11 @@ namespace System.Net.Mail.Tests
                     string command = colonIndex == -1 ? message : message.Substring(0, colonIndex);
                     string argument = command.Length == message.Length ? string.Empty : message.Substring(colonIndex + 1).Trim();
 
-                    OnCommandReceived?.Invoke(command, argument);
+                    if (OnCommandReceived?.Invoke(command, argument) is string response)
+                    {
+                        await SendMessageAsync(response);
+                        continue;
+                    }
 
                     if (command.StartsWith("AUTH", StringComparison.OrdinalIgnoreCase))
                     {
@@ -243,11 +266,13 @@ namespace System.Net.Mail.Tests
 
                         case "MAIL FROM":
                             MailFrom = argument;
+                            MailTo.Clear();
+                            Message = null;
                             await SendMessageAsync("250 Ok");
                             break;
 
                         case "RCPT TO":
-                            MailTo = argument;
+                            MailTo.Add(argument);
                             await SendMessageAsync("250 Ok");
                             break;
 
@@ -294,52 +319,180 @@ namespace System.Net.Mail.Tests
             }
         }
 
-
         public class ParsedMailMessage
         {
             public readonly IReadOnlyDictionary<string, string> Headers;
             public readonly string Body;
+            public readonly string RawBody;
+            public readonly List<ParsedAttachment> Attachments;
 
             private string GetHeader(string name) => Headers.TryGetValue(name, out string value) ? value : "NOT-PRESENT";
             public string From => GetHeader("From");
             public string To => GetHeader("To");
+            public string Cc => GetHeader("Cc");
             public string Subject => GetHeader("Subject");
 
-            private ParsedMailMessage(Dictionary<string, string> headers, string body)
+            private ContentType _contentType;
+            public ContentType ContentType => _contentType ??= new ContentType(GetHeader("Content-Type"));
+
+            private ParsedMailMessage(Dictionary<string, string> headers, string body, string rawBody, List<ParsedAttachment> attachments)
             {
                 Headers = headers;
                 Body = body;
+                RawBody = rawBody;
+                Attachments = attachments;
+            }
+
+            private static (Dictionary<string, string> headers, string content) ParseContent(ReadOnlySpan<char> data)
+            {
+                Dictionary<string, string> headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                List<ParsedAttachment> attachments = new List<ParsedAttachment>();
+
+                string body = null;
+
+                // Parse headers with support for folded lines
+                string currentHeaderName = null;
+                StringBuilder currentHeaderValue = null;
+
+                while (!data.IsEmpty)
+                {
+                    int endOfLine = data.IndexOf('\n');
+                    Debug.Assert(endOfLine != -1, "Expected valid \r\n terminated lines");
+                    var line = data.Slice(0, endOfLine).TrimEnd('\r');
+
+                    if (line.IsEmpty)
+                    {
+                        // End of headers section - add the last header if there is one
+                        if (currentHeaderName != null && currentHeaderValue != null)
+                        {
+                            headers.Add(currentHeaderName, currentHeaderValue.ToString().Trim());
+                        }
+
+                        body = data.Slice(endOfLine + 1).TrimEnd(stackalloc char[] { '\r', '\n' }).ToString();
+                        break;
+                    }
+                    else if ((line[0] == ' ' || line[0] == '\t') && currentHeaderName != null)
+                    {
+                        // This is a folded line, append it to the current header value
+                        currentHeaderValue.Append(' ').Append(line.ToString().TrimStart());
+                    }
+                    else // new header
+                    {
+                        // If we have a header being built, add it now
+                        if (currentHeaderName != null && currentHeaderValue != null)
+                        {
+                            headers.Add(currentHeaderName, currentHeaderValue.ToString().Trim());
+                        }
+
+                        // Start a new header
+                        int colon = line.IndexOf(':');
+                        Debug.Assert(colon != -1, "Expected a valid header");
+                        currentHeaderName = line.Slice(0, colon).Trim().ToString();
+                        currentHeaderValue = new StringBuilder(line.Slice(colon + 1).ToString());
+                    }
+
+                    data = data.Slice(endOfLine + 1);
+                }
+
+                return (headers, body);
             }
 
             public static ParsedMailMessage Parse(string data)
             {
-                Dictionary<string, string> headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                List<ParsedAttachment> attachments = new List<ParsedAttachment>();
+                string rawBody;
+                (Dictionary<string, string> headers, string body) = ParseContent(data);
+                rawBody = body;
 
-                ReadOnlySpan<char> dataSpan = data;
-                string body = null;
-
-                while (!dataSpan.IsEmpty)
+                // Check if this is a multipart message
+                string contentType = headers.TryGetValue("Content-Type", out string ct) ? ct : string.Empty;
+                if (contentType.StartsWith("multipart/", StringComparison.OrdinalIgnoreCase))
                 {
-                    int endOfLine = dataSpan.IndexOf('\n');
-                    Debug.Assert(endOfLine != -1, "Expected valid \r\n terminated lines");
-                    var line = dataSpan.Slice(0, endOfLine).TrimEnd('\r');
-
-                    if (line.IsEmpty)
+                    // Extract the boundary
+                    string boundary = ExtractBoundary(contentType);
+                    if (!string.IsNullOrEmpty(boundary))
                     {
-                        body = dataSpan.Slice(endOfLine + 1).TrimEnd(stackalloc char[] { '\r', '\n' }).ToString();
-                        break;
-                    }
-                    else
-                    {
-                        int colon = line.IndexOf(':');
-                        Debug.Assert(colon != -1, "Expected a valid header");
-                        headers.Add(line.Slice(0, colon).Trim().ToString(), line.Slice(colon + 1).Trim().ToString());
-                        dataSpan = dataSpan.Slice(endOfLine + 1);
+                        // Parse multipart body
+                        (attachments, body) = ParseMultipartBody(body, boundary);
                     }
                 }
 
-                return new ParsedMailMessage(headers, body);
+                return new ParsedMailMessage(headers, body, rawBody, attachments);
             }
+
+            private static string ExtractBoundary(string contentType)
+            {
+                int boundaryIndex = contentType.IndexOf("boundary=", StringComparison.OrdinalIgnoreCase);
+                if (boundaryIndex < 0)
+                    return null;
+
+                string boundaryPart = contentType.Substring(boundaryIndex + 9);
+                if (boundaryPart.StartsWith("\""))
+                {
+                    int endQuote = boundaryPart.IndexOf("\"", 1);
+                    if (endQuote > 0)
+                        return boundaryPart.Substring(1, endQuote - 1);
+                }
+                else
+                {
+                    int endBoundary = boundaryPart.IndexOfAny(new[] { ';', ' ' });
+                    return endBoundary > 0 ? boundaryPart.Substring(0, endBoundary) : boundaryPart;
+                }
+
+                return null;
+            }
+
+            private static (List<ParsedAttachment> attachments, string textBody) ParseMultipartBody(string body, string boundary)
+            {
+                string textBody = null;
+                List<ParsedAttachment> attachments = new List<ParsedAttachment>();
+
+                string[] parts = body.Split(new[] { "--" + boundary }, StringSplitOptions.None);
+
+                Debug.Assert(string.IsNullOrWhiteSpace(parts[0]), "Expected empty first part");
+                Debug.Assert(parts[^1] == "--", "Expected empty last part");
+                for (int i = 1; i < parts.Length - 1; i++)
+                {
+                    string part = parts[i];
+
+                    Debug.Assert(part.StartsWith("\r\n"));
+
+                    (Dictionary<string, string> headers, string content) = ParseContent(part[2..]);
+
+                    ContentType contentType = new ContentType(headers["Content-Type"]);
+
+                    // Check if this part is an attachment
+                    if (headers.TryGetValue("Content-Disposition", out string disposition) &&
+                        disposition.StartsWith("attachment", StringComparison.OrdinalIgnoreCase))
+                    {
+                        attachments.Add(new ParsedAttachment
+                        {
+                            ContentType = contentType,
+                            RawContent = content,
+                            Headers = headers
+                        });
+                    }
+
+                    // Check if this is a text part
+                    else if (contentType.MediaType.StartsWith("text/", StringComparison.OrdinalIgnoreCase) &&
+                             textBody == null)
+                    {
+                        textBody = content;
+                    }
+                }
+
+                return (attachments, textBody ?? "");
+            }
+        }
+
+        public class ParsedAttachment
+        {
+            public ContentType ContentType { get; set; }
+            public string RawContent { get; set; }
+            public IDictionary<string, string> Headers { get; set; }
+
+            private string GetHeader(string name) => Headers.TryGetValue(name, out string value) ? value : "NOT-PRESENT";
+            public string ContentTransferEncoding => GetHeader("Content-Transfer-Encoding");
         }
     }
 }

@@ -245,7 +245,7 @@ namespace System.Net.Mail.Tests
             client.Send(msg);
 
             Assert.Equal("<foo@example.com>", server.MailFrom);
-            Assert.Equal("<bar@example.com>", server.MailTo);
+            Assert.Equal("<bar@example.com>", Assert.Single(server.MailTo));
             Assert.Equal("hello", server.Message.Subject);
             Assert.Equal("howdydoo", server.Message.Body);
             Assert.Equal(GetClientDomain(), server.ClientDomain);
@@ -324,7 +324,7 @@ namespace System.Net.Mail.Tests
             await Task.Run(() => client.SendMailAsync(message)).WaitAsync(TestHelper.PassingTestTimeout);
 
             Assert.Equal("<foo@internet.com>", server.MailFrom);
-            Assert.Equal("<bar@internet.com>", server.MailTo);
+            Assert.Equal("<bar@internet.com>", Assert.Single(server.MailTo));
             Assert.Equal("Foo", server.Message.Subject);
             Assert.Equal("Bar", server.Message.Body);
             Assert.Equal(GetClientDomain(), server.ClientDomain);

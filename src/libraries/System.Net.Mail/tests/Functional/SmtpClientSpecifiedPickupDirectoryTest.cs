@@ -86,7 +86,7 @@ namespace System.Net.Mail.Tests
         {
             Smtp.DeliveryMethod = SmtpDeliveryMethod.SpecifiedPickupDirectory;
             Smtp.PickupDirectoryLocation = location;
-            await SendMail<SmtpException>(new MailMessage("mono@novell.com", "everyone@novell.com", "introduction", "hello"));
+            await SendMail<SmtpException>(new MailMessage("mono@novell.com", "everyone@novell.com", "introduction", "hello"), asyncDirectException: true);
         }
     }
 
