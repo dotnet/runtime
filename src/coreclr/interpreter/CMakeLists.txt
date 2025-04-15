@@ -52,4 +52,7 @@ target_link_libraries(clrinterpreter
 
 set_property(TARGET clrinterpreter APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
+# Exclude interpreter from the 'all' target of its ancestors if the feature is disabled
+set_property(TARGET clrinterpreter PROPERTY EXCLUDE_FROM_ALL $<NOT:${FEATURE_INTERPRETER}>)
+
 install_clr(TARGETS clrinterpreter DESTINATIONS . COMPONENT runtime)
