@@ -120,11 +120,6 @@ using namespace GcInfoEncoderExt;
                 (Flags & GC_SLOT_INTERIOR) ? " interior" : "",      \
                 (Flags & GC_SLOT_UNTRACKED) ? " untracked" : ""
 
-#define GCINFOENCODER_ASSERT(expr) \
-    if (!(expr)) { \
-        m_pCorJitInfo->doAssert(__FILE__, __LINE__, #expr); \
-    }
-
 class BitArray
 {
     friend class BitArrayIterator;
@@ -453,13 +448,24 @@ template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncode
         m_InterruptibleRanges( pJitAllocator ),
         m_LifetimeTransitions( pJitAllocator )
 {
-    // HACK: Initialize this first so it can be used by GCINFOENCODER_ASSERT
+    // HACK: Initialize this first so it can be used by _ASSERTE
     _ASSERTE( pCorJitInfo != NULL );
     m_pCorJitInfo = pCorJitInfo;
 
-    GCINFOENCODER_ASSERT( pMethodInfo != NULL );
-    GCINFOENCODER_ASSERT( pJitAllocator != NULL );
-    GCINFOENCODER_ASSERT( pNoMem != NULL );
+#define GCINFOENCODER_ASSERT(expr) \
+    if (!(expr)) { \
+        /* doAssert returns true if we're meant to trigger a debugger break */ \
+        if (m_pCorJitInfo->doAssert(__FILE__, __LINE__, #expr)) \
+            /* use GCINFO_ASSERTE to trigger a debug break */ \
+            _GCINFO_ASSERTE(false); \
+    }
+
+#undef _ASSERTE
+#define _ASSERTE(x) GCINFOENCODER_ASSERT(x)
+
+    _ASSERTE( pMethodInfo != NULL );
+    _ASSERTE( pJitAllocator != NULL );
+    _ASSERTE( pNoMem != NULL );
 
     m_pMethodInfo = pMethodInfo;
     m_pAllocator = pJitAllocator;
@@ -477,7 +483,7 @@ template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncode
 
     m_GSCookieStackSlot = NO_GS_COOKIE;
     m_GSCookieValidRangeStart = 0;
-    GCINFOENCODER_ASSERT(sizeof(m_GSCookieValidRangeEnd) == sizeof(UINT32));
+    _ASSERTE(sizeof(m_GSCookieValidRangeEnd) == sizeof(UINT32));
     m_GSCookieValidRangeEnd = (UINT32) (-1); // == UINT32.MaxValue
     m_PSPSymStackSlot = NO_PSP_SYM;
     m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
@@ -517,13 +523,13 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::DefineCa
 #ifdef _DEBUG
     for(UINT32 i=0; i<numCallSites; i++)
     {
-        GCINFOENCODER_ASSERT(pCallSiteSizes[i] > 0);
-        GCINFOENCODER_ASSERT(GcInfoEncoding::DENORMALIZE_CODE_OFFSET(GcInfoEncoding::NORMALIZE_CODE_OFFSET(pCallSites[i])) == pCallSites[i]);
+        _ASSERTE(pCallSiteSizes[i] > 0);
+        _ASSERTE(GcInfoEncoding::DENORMALIZE_CODE_OFFSET(GcInfoEncoding::NORMALIZE_CODE_OFFSET(pCallSites[i])) == pCallSites[i]);
         if(i > 0)
         {
             UINT32 prevEnd = pCallSites[i-1] + pCallSiteSizes[i-1];
             UINT32 curStart = pCallSites[i];
-            GCINFOENCODER_ASSERT(curStart >= prevEnd);
+            _ASSERTE(curStart >= prevEnd);
         }
     }
 #endif
@@ -536,16 +542,16 @@ template <typename GcInfoEncoding> GcSlotId TGcInfoEncoder<GcInfoEncoding>::GetR
     // We just create duplicates for now.
 
 #ifdef _DEBUG
-    GCINFOENCODER_ASSERT( !m_IsSlotTableFrozen );
+    _ASSERTE( !m_IsSlotTableFrozen );
 #endif
 
     if( m_NumSlots == m_SlotTableSize )
     {
         GrowSlotTable();
     }
-    GCINFOENCODER_ASSERT( m_NumSlots < m_SlotTableSize );
+    _ASSERTE( m_NumSlots < m_SlotTableSize );
 
-    GCINFOENCODER_ASSERT( (flags & (GC_SLOT_IS_REGISTER | GC_SLOT_IS_DELETED | GC_SLOT_UNTRACKED)) == 0 );
+    _ASSERTE( (flags & (GC_SLOT_IS_REGISTER | GC_SLOT_IS_DELETED | GC_SLOT_UNTRACKED)) == 0 );
     m_SlotTable[ m_NumSlots ].Slot.RegisterNumber = regNum;
     m_SlotTable[ m_NumSlots ].Flags = (GcSlotFlags) (flags | GC_SLOT_IS_REGISTER);
 
@@ -561,24 +567,24 @@ template <typename GcInfoEncoding> GcSlotId TGcInfoEncoder<GcInfoEncoding>::GetS
     // We just create duplicates for now.
 
 #ifdef _DEBUG
-    GCINFOENCODER_ASSERT( !m_IsSlotTableFrozen );
+    _ASSERTE( !m_IsSlotTableFrozen );
 #endif
 
     if( m_NumSlots == m_SlotTableSize )
     {
         GrowSlotTable();
     }
-    GCINFOENCODER_ASSERT( m_NumSlots < m_SlotTableSize );
+    _ASSERTE( m_NumSlots < m_SlotTableSize );
 
     // Not valid to reference anything below the current stack pointer
-    GCINFOENCODER_ASSERT(GC_SP_REL != spBase || spOffset >= 0);
+    _ASSERTE(GC_SP_REL != spBase || spOffset >= 0);
 
-    GCINFOENCODER_ASSERT( (flags & (GC_SLOT_IS_REGISTER | GC_SLOT_IS_DELETED)) == 0 );
+    _ASSERTE( (flags & (GC_SLOT_IS_REGISTER | GC_SLOT_IS_DELETED)) == 0 );
 
     if (!(TargetOS::IsApplePlatform && TargetArchitecture::IsArm64))
     {
         // the spOffset for the stack slot is required to be pointer size aligned
-        GCINFOENCODER_ASSERT((spOffset % TARGET_POINTER_SIZE) == 0);
+        _ASSERTE((spOffset % TARGET_POINTER_SIZE) == 0);
     }
 
     m_SlotTable[ m_NumSlots ].Slot.Stack.SpOffset = spOffset;
@@ -611,7 +617,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::WriteSlo
         if(!m_SlotTable[i].IsDeleted())
             writer.Write(vector.ReadBit(i) ? 1 : 0, 1);
         else
-            GCINFOENCODER_ASSERT(vector.ReadBit(i) == 0);
+            _ASSERTE(vector.ReadBit(i) == 0);
     }
 }
 
@@ -623,7 +629,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::DefineIn
     UINT32 normStopOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(stopInstructionOffset);
 
     // Ranges must not overlap and must be passed sorted by increasing offset
-    GCINFOENCODER_ASSERT(
+    _ASSERTE(
         m_pLastInterruptibleRange == NULL ||
         normStartOffset >= m_pLastInterruptibleRange->NormStopOffset
         );
@@ -661,7 +667,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSlotS
                             GcSlotState slotState
                             )
 {
-    GCINFOENCODER_ASSERT( (m_SlotTable[ slotId ].Flags & GC_SLOT_UNTRACKED) == 0 );
+    _ASSERTE( (m_SlotTable[ slotId ].Flags & GC_SLOT_UNTRACKED) == 0 );
 
     LifetimeTransition transition;
 
@@ -683,16 +689,16 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetIsVar
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetCodeLength( UINT32 length )
 {
-    GCINFOENCODER_ASSERT( length > 0 );
-    GCINFOENCODER_ASSERT( m_CodeLength == 0 || m_CodeLength == length );
+    _ASSERTE( length > 0 );
+    _ASSERTE( m_CodeLength == 0 || m_CodeLength == length );
     m_CodeLength = length;
 }
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetPrologSize( UINT32 prologSize )
 {
-    GCINFOENCODER_ASSERT(prologSize != 0);
-    GCINFOENCODER_ASSERT(m_GSCookieValidRangeStart == 0 || m_GSCookieValidRangeStart == prologSize);
-    GCINFOENCODER_ASSERT(m_GSCookieValidRangeEnd == (UINT32)(-1) || m_GSCookieValidRangeEnd == prologSize+1);
+    _ASSERTE(prologSize != 0);
+    _ASSERTE(m_GSCookieValidRangeStart == 0 || m_GSCookieValidRangeStart == prologSize);
+    _ASSERTE(m_GSCookieValidRangeEnd == (UINT32)(-1) || m_GSCookieValidRangeEnd == prologSize+1);
 
     m_GSCookieValidRangeStart = prologSize;
     // satisfy asserts that assume m_GSCookieValidRangeStart != 0 ==> m_GSCookieValidRangeStart < m_GSCookieValidRangeEnd
@@ -701,9 +707,9 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetProlo
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetGSCookieStackSlot( INT32 spOffsetGSCookie, UINT32 validRangeStart, UINT32 validRangeEnd )
 {
-    GCINFOENCODER_ASSERT( spOffsetGSCookie != NO_GS_COOKIE );
-    GCINFOENCODER_ASSERT( m_GSCookieStackSlot == NO_GS_COOKIE || m_GSCookieStackSlot == spOffsetGSCookie );
-    GCINFOENCODER_ASSERT( validRangeStart < validRangeEnd );
+    _ASSERTE( spOffsetGSCookie != NO_GS_COOKIE );
+    _ASSERTE( m_GSCookieStackSlot == NO_GS_COOKIE || m_GSCookieStackSlot == spOffsetGSCookie );
+    _ASSERTE( validRangeStart < validRangeEnd );
 
     m_GSCookieStackSlot       = spOffsetGSCookie;
     m_GSCookieValidRangeStart = validRangeStart;
@@ -712,16 +718,16 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetGSCoo
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetPSPSymStackSlot( INT32 spOffsetPSPSym )
 {
-    GCINFOENCODER_ASSERT( spOffsetPSPSym != NO_PSP_SYM );
-    GCINFOENCODER_ASSERT( m_PSPSymStackSlot == NO_PSP_SYM || m_PSPSymStackSlot == spOffsetPSPSym );
+    _ASSERTE( spOffsetPSPSym != NO_PSP_SYM );
+    _ASSERTE( m_PSPSymStackSlot == NO_PSP_SYM || m_PSPSymStackSlot == spOffsetPSPSym );
 
     m_PSPSymStackSlot              = spOffsetPSPSym;
 }
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetGenericsInstContextStackSlot( INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type)
 {
-    GCINFOENCODER_ASSERT( spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT);
-    GCINFOENCODER_ASSERT( m_GenericsInstContextStackSlot == NO_GENERICS_INST_CONTEXT || m_GenericsInstContextStackSlot == spOffsetGenericsContext );
+    _ASSERTE( spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT);
+    _ASSERTE( m_GenericsInstContextStackSlot == NO_GENERICS_INST_CONTEXT || m_GenericsInstContextStackSlot == spOffsetGenericsContext );
 
     m_GenericsInstContextStackSlot = spOffsetGenericsContext;
     m_contextParamType = type;
@@ -729,9 +735,9 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetGener
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetStackBaseRegister( UINT32 regNum )
 {
-    GCINFOENCODER_ASSERT( regNum != NO_STACK_BASE_REGISTER );
-    GCINFOENCODER_ASSERT(GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER(GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(regNum)) == regNum);
-    GCINFOENCODER_ASSERT( m_StackBaseRegister == NO_STACK_BASE_REGISTER || m_StackBaseRegister == regNum );
+    _ASSERTE( regNum != NO_STACK_BASE_REGISTER );
+    _ASSERTE(GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER(GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(regNum)) == regNum);
+    _ASSERTE( m_StackBaseRegister == NO_STACK_BASE_REGISTER || m_StackBaseRegister == regNum );
 #if defined(TARGET_LOONGARCH64)
     assert(regNum == 3 || 22 == regNum);
 #elif defined(TARGET_RISCV64)
@@ -742,8 +748,8 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetStack
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSizeOfEditAndContinuePreservedArea( UINT32 slots )
 {
-    GCINFOENCODER_ASSERT( slots != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA );
-    GCINFOENCODER_ASSERT( m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA );
+    _ASSERTE( slots != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA );
+    _ASSERTE( m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA );
     m_SizeOfEditAndContinuePreservedArea = slots;
 }
 
@@ -769,8 +775,8 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetHasTa
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSizeOfStackOutgoingAndScratchArea( UINT32 size )
 {
-    GCINFOENCODER_ASSERT( size != (UINT32)-1 );
-    GCINFOENCODER_ASSERT( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 || m_SizeOfStackOutgoingAndScratchArea == size );
+    _ASSERTE( size != (UINT32)-1 );
+    _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 || m_SizeOfStackOutgoingAndScratchArea == size );
     m_SizeOfStackOutgoingAndScratchArea = size;
 }
 #endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
@@ -779,6 +785,11 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetRever
 {
     m_ReversePInvokeFrameSlot = spOffset;
 }
+
+
+#undef _ASSERTE
+#define _ASSERTE(x) _GCINFO_ASSERTE(x)
+
 
 struct GcSlotDescAndId
 {
@@ -915,6 +926,10 @@ void BitStreamWriter::MemoryBlockList::Dispose(IAllocator* allocator)
 }
 
 
+#undef _ASSERTE
+#define _ASSERTE(x) GCINFOENCODER_ASSERT(x)
+
+
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::FinalizeSlotIds()
 {
 #ifdef _DEBUG
@@ -925,9 +940,9 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Finalize
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 {
 #ifdef _DEBUG
-    GCINFOENCODER_ASSERT(m_IsSlotTableFrozen || m_NumSlots == 0);
+    _ASSERTE(m_IsSlotTableFrozen || m_NumSlots == 0);
 
-    GCINFOENCODER_ASSERT((1 << GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2) == GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK);
+    _ASSERTE((1 << GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2) == GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK);
 
     char methodName[256];
     m_pCorJitInfo->printMethodName(m_pMethodInfo->ftn, methodName, sizeof(methodName));
@@ -996,38 +1011,38 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE(m_Info1, (hasReversePInvokeFrame ? 1 : 0), 1, FlagsSize);
     }
 
-    GCINFOENCODER_ASSERT( m_CodeLength > 0 );
-    GCINFOENCODER_ASSERT(GcInfoEncoding::DENORMALIZE_CODE_LENGTH(GcInfoEncoding::NORMALIZE_CODE_LENGTH(m_CodeLength)) == m_CodeLength);
+    _ASSERTE( m_CodeLength > 0 );
+    _ASSERTE(GcInfoEncoding::DENORMALIZE_CODE_LENGTH(GcInfoEncoding::NORMALIZE_CODE_LENGTH(m_CodeLength)) == m_CodeLength);
     GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_CODE_LENGTH(m_CodeLength), GcInfoEncoding::CODE_LENGTH_ENCBASE, CodeLengthSize);
 
     if(hasGSCookie)
     {
-        GCINFOENCODER_ASSERT(!slimHeader);
+        _ASSERTE(!slimHeader);
         // Save the valid code range, to be used for determining when GS cookie validation
         // should be performed
         // Encode an intersection of valid offsets
         UINT32 intersectionStart = m_GSCookieValidRangeStart;
         UINT32 intersectionEnd = m_GSCookieValidRangeEnd;
 
-        GCINFOENCODER_ASSERT(intersectionStart > 0 && intersectionStart < m_CodeLength);
-        GCINFOENCODER_ASSERT(intersectionEnd > 0 && intersectionEnd <= m_CodeLength);
-        GCINFOENCODER_ASSERT(intersectionStart <= intersectionEnd);
+        _ASSERTE(intersectionStart > 0 && intersectionStart < m_CodeLength);
+        _ASSERTE(intersectionEnd > 0 && intersectionEnd <= m_CodeLength);
+        _ASSERTE(intersectionStart <= intersectionEnd);
         UINT32 normPrologSize = GcInfoEncoding::NORMALIZE_CODE_OFFSET(intersectionStart);
         UINT32 normEpilogSize = GcInfoEncoding::NORMALIZE_CODE_OFFSET(m_CodeLength) - GcInfoEncoding::NORMALIZE_CODE_OFFSET(intersectionEnd);
-        GCINFOENCODER_ASSERT(normPrologSize > 0 && normPrologSize < m_CodeLength);
-        GCINFOENCODER_ASSERT(normEpilogSize < m_CodeLength);
+        _ASSERTE(normPrologSize > 0 && normPrologSize < m_CodeLength);
+        _ASSERTE(normEpilogSize < m_CodeLength);
 
         GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, GcInfoEncoding::NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
         GCINFO_WRITE_VARL_U(m_Info1, normEpilogSize, GcInfoEncoding::NORM_EPILOG_SIZE_ENCBASE, ProEpilogSize);
     }
     else if (hasContextParamType)
     {
-        GCINFOENCODER_ASSERT(!slimHeader);
+        _ASSERTE(!slimHeader);
         // Save the prolog size, to be used for determining when it is not safe
         // to report generics param context and the security object
-        GCINFOENCODER_ASSERT(m_GSCookieValidRangeStart > 0 && m_GSCookieValidRangeStart < m_CodeLength);
+        _ASSERTE(m_GSCookieValidRangeStart > 0 && m_GSCookieValidRangeStart < m_CodeLength);
         UINT32 normPrologSize = GcInfoEncoding::NORMALIZE_CODE_OFFSET(m_GSCookieValidRangeStart);
-        GCINFOENCODER_ASSERT(normPrologSize > 0 && normPrologSize < m_CodeLength);
+        _ASSERTE(normPrologSize > 0 && normPrologSize < m_CodeLength);
 
         GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, GcInfoEncoding::NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
     }
@@ -1035,7 +1050,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     // Encode the offset to the GS cookie.
     if(hasGSCookie)
     {
-        GCINFOENCODER_ASSERT(!slimHeader);
+        _ASSERTE(!slimHeader);
 #ifdef _DEBUG
         GCINFO_LOG( LL_INFO1000, "GS cookie at " FMT_STK "\n",
              DBG_STK(m_GSCookieStackSlot)
@@ -1050,7 +1065,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before stack allocations on X64.
     if(m_PSPSymStackSlot != NO_PSP_SYM)
     {
-        GCINFOENCODER_ASSERT(!slimHeader);
+        _ASSERTE(!slimHeader);
 #ifdef _DEBUG
         GCINFO_LOG( LL_INFO1000, "Parent PSP at " FMT_STK "\n", DBG_STK(m_PSPSymStackSlot));
 #endif
@@ -1060,7 +1075,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     // Encode the offset to the generics type context.
     if(m_GenericsInstContextStackSlot != NO_GENERICS_INST_CONTEXT)
     {
-        GCINFOENCODER_ASSERT(!slimHeader);
+        _ASSERTE(!slimHeader);
 #ifdef _DEBUG
         GCINFO_LOG( LL_INFO1000, "Generics instantiation context at " FMT_STK "\n",
              DBG_STK(m_GenericsInstContextStackSlot)
@@ -1089,14 +1104,14 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
     if (hasReversePInvokeFrame)
     {
-        GCINFOENCODER_ASSERT(!slimHeader);
+        _ASSERTE(!slimHeader);
         GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_ReversePInvokeFrameSlot), GcInfoEncoding::REVERSE_PINVOKE_FRAME_ENCBASE, ReversePInvokeFrameSize);
     }
 
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     if (!slimHeader)
     {
-        GCINFOENCODER_ASSERT( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
+        _ASSERTE( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
         GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_SIZE_OF_STACK_AREA(m_SizeOfStackOutgoingAndScratchArea), GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE, FixedAreaSize);
     }
 #endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
@@ -1116,13 +1131,13 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     couldBeLive.ClearAll();
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    GCINFOENCODER_ASSERT(m_NumCallSites == 0 || m_pCallSites != NULL);
+    _ASSERTE(m_NumCallSites == 0 || m_pCallSites != NULL);
 
     ///////////////////////////////////////////////////////////////////////
     // Normalize call sites
     ///////////////////////////////////////////////////////////////////////
 
-    GCINFOENCODER_ASSERT(m_NumCallSites == 0 || numInterruptibleRanges == 0);
+    _ASSERTE(m_NumCallSites == 0 || numInterruptibleRanges == 0);
 
     UINT32 numCallSites = 0;
     for(UINT32 callSiteIndex = 0; callSiteIndex < m_NumCallSites; callSiteIndex++)
@@ -1130,7 +1145,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         UINT32 callSite = m_pCallSites[callSiteIndex];
         callSite += m_pCallSiteSizes[callSiteIndex];
 
-        GCINFOENCODER_ASSERT(GcInfoEncoding::DENORMALIZE_CODE_OFFSET(GcInfoEncoding::NORMALIZE_CODE_OFFSET(callSite)) == callSite);
+        _ASSERTE(GcInfoEncoding::DENORMALIZE_CODE_OFFSET(GcInfoEncoding::NORMALIZE_CODE_OFFSET(callSite)) == callSite);
         UINT32 normOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(callSite);
         m_pCallSites[numCallSites++] = normOffset;
     }
@@ -1141,7 +1156,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
     if (slimHeader)
     {
-        GCINFOENCODER_ASSERT(numInterruptibleRanges == 0);
+        _ASSERTE(numInterruptibleRanges == 0);
     }
     else
     {
@@ -1161,7 +1176,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     {
         UINT32 normOffset = m_pCallSites[callSiteIndex];
 
-        GCINFOENCODER_ASSERT(normOffset < (UINT32)1 << (numBitsPerOffset+1));
+        _ASSERTE(normOffset < (UINT32)1 << (numBitsPerOffset+1));
         GCINFO_WRITE(m_Info1, normOffset, numBitsPerOffset, CallSitePosSize);
     }
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
@@ -1182,7 +1197,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
             size_t normStartDelta = normStartOffset - lastStopOffset;
             size_t normStopDelta = normStopOffset - normStartOffset;
-            GCINFOENCODER_ASSERT(normStopDelta > 0);
+            _ASSERTE(normStopDelta > 0);
 
             lastStopOffset = normStopOffset;
 
@@ -1223,7 +1238,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         if(pPrev->CodeOffset < m_CodeLength)
             break;
 
-        GCINFOENCODER_ASSERT(pPrev->CodeOffset == m_CodeLength && !pPrev->BecomesLive);
+        _ASSERTE(pPrev->CodeOffset == m_CodeLength && !pPrev->BecomesLive);
         pEndTransitions = pPrev;
     }
 
@@ -1277,7 +1292,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         // Do a pass to normalize transition offsets
         for(pCurrent = pTransitions; pCurrent < pEndTransitions; pCurrent++)
         {
-            GCINFOENCODER_ASSERT(pCurrent->CodeOffset <= m_CodeLength);
+            _ASSERTE(pCurrent->CodeOffset <= m_CodeLength);
             pCurrent->CodeOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(pCurrent->CodeOffset);
         }
     }
@@ -1291,7 +1306,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     if(m_NumCallSites)
     {
-        GCINFOENCODER_ASSERT(m_pCallSites != NULL);
+        _ASSERTE(m_pCallSites != NULL);
         liveState.ClearAll();
 
         UINT32 callSiteIndex = 0;
@@ -1312,7 +1327,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             {
                 UINT32 slotIndex = pCurrent->SlotId;
                 BYTE becomesLive = pCurrent->BecomesLive;
-                GCINFOENCODER_ASSERT((liveState.ReadBit(slotIndex) && !becomesLive)
+                _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
                         || (!liveState.ReadBit(slotIndex) && becomesLive));
 
                 liveState.WriteBit(slotIndex, becomesLive);
@@ -1341,7 +1356,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             {
                 UINT32 slotIndex = (UINT32) (pFirstAfterStart->SlotId);
                 BYTE becomesLive = pFirstAfterStart->BecomesLive;
-                GCINFOENCODER_ASSERT((liveState.ReadBit(slotIndex) && !becomesLive)
+                _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
                         || (!liveState.ReadBit(slotIndex) && becomesLive));
                 liveState.WriteBit(slotIndex, becomesLive);
 
@@ -1359,7 +1374,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             {
                 UINT32 slotIndex = (UINT32) (pCurrent->SlotId);
                 BYTE becomesLive = pCurrent->BecomesLive;
-                GCINFOENCODER_ASSERT((liveState.ReadBit(slotIndex) && !becomesLive)
+                _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
                         || (!liveState.ReadBit(slotIndex) && becomesLive));
                 liveState.WriteBit(slotIndex, becomesLive);
                 couldBeLive.SetBit(slotIndex);
@@ -1484,11 +1499,11 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GcSlotDesc *pSlotDesc;
         do
         {
-            GCINFOENCODER_ASSERT(currentSlot < m_NumSlots);
+            _ASSERTE(currentSlot < m_NumSlots);
             pSlotDesc = &m_SlotTable[currentSlot++];
         }
         while(pSlotDesc->IsDeleted());
-        GCINFOENCODER_ASSERT(pSlotDesc->IsRegister());
+        _ASSERTE(pSlotDesc->IsRegister());
 
         // Encode slot identification
         UINT32 currentNormRegNum = pSlotDesc->Slot.RegisterNumber;
@@ -1502,11 +1517,11 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
             do
             {
-                GCINFOENCODER_ASSERT(currentSlot < m_NumSlots);
+                _ASSERTE(currentSlot < m_NumSlots);
                 pSlotDesc = &m_SlotTable[currentSlot++];
             }
             while(pSlotDesc->IsDeleted());
-            GCINFOENCODER_ASSERT(pSlotDesc->IsRegister());
+            _ASSERTE(pSlotDesc->IsRegister());
 
             currentNormRegNum = pSlotDesc->Slot.RegisterNumber;
 
@@ -1517,7 +1532,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             }
             else
             {
-                GCINFOENCODER_ASSERT(pSlotDesc->Flags == GC_SLOT_IS_REGISTER);
+                _ASSERTE(pSlotDesc->Flags == GC_SLOT_IS_REGISTER);
                 GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum - lastNormRegNum - 1, GcInfoEncoding::REGISTER_DELTA_ENCBASE, RegSlotSize);
             }
         }
@@ -1528,15 +1543,15 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GcSlotDesc *pSlotDesc;
         do
         {
-            GCINFOENCODER_ASSERT(currentSlot < m_NumSlots);
+            _ASSERTE(currentSlot < m_NumSlots);
             pSlotDesc = &m_SlotTable[currentSlot++];
         }
         while(pSlotDesc->IsDeleted());
-        GCINFOENCODER_ASSERT(!pSlotDesc->IsRegister());
-        GCINFOENCODER_ASSERT(!pSlotDesc->IsUntracked());
+        _ASSERTE(!pSlotDesc->IsRegister());
+        _ASSERTE(!pSlotDesc->IsUntracked());
 
         // Encode slot identification
-        GCINFOENCODER_ASSERT((pSlotDesc->Slot.Stack.Base & ~3) == 0);
+        _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
         GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, StackSlotSize);
         INT32 currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
         GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, StackSlotSize);
@@ -1550,16 +1565,16 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
             do
             {
-                GCINFOENCODER_ASSERT(currentSlot < m_NumSlots);
+                _ASSERTE(currentSlot < m_NumSlots);
                 pSlotDesc = &m_SlotTable[currentSlot++];
             }
             while(pSlotDesc->IsDeleted());
-            GCINFOENCODER_ASSERT(!pSlotDesc->IsRegister());
-            GCINFOENCODER_ASSERT(!pSlotDesc->IsUntracked());
+            _ASSERTE(!pSlotDesc->IsRegister());
+            _ASSERTE(!pSlotDesc->IsUntracked());
 
             currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
 
-            GCINFOENCODER_ASSERT((pSlotDesc->Slot.Stack.Base & ~3) == 0);
+            _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
             GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, StackSlotSize);
 
             if(lastFlags != GC_SLOT_BASE)
@@ -1569,7 +1584,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             }
             else
             {
-                GCINFOENCODER_ASSERT(pSlotDesc->Flags == GC_SLOT_BASE);
+                _ASSERTE(pSlotDesc->Flags == GC_SLOT_BASE);
                 GCINFO_WRITE_VARL_U(m_Info1, currentNormStackSlot - lastNormStackSlot, GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE, StackSlotSize);
             }
         }
@@ -1580,15 +1595,15 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GcSlotDesc *pSlotDesc;
         do
         {
-            GCINFOENCODER_ASSERT(currentSlot < m_NumSlots);
+            _ASSERTE(currentSlot < m_NumSlots);
             pSlotDesc = &m_SlotTable[currentSlot++];
         }
         while(pSlotDesc->IsDeleted());
-        GCINFOENCODER_ASSERT(!pSlotDesc->IsRegister());
-        GCINFOENCODER_ASSERT(pSlotDesc->IsUntracked());
+        _ASSERTE(!pSlotDesc->IsRegister());
+        _ASSERTE(pSlotDesc->IsUntracked());
 
         // Encode slot identification
-        GCINFOENCODER_ASSERT((pSlotDesc->Slot.Stack.Base & ~3) == 0);
+        _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
         GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, UntrackedSlotSize);
         INT32 currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
         GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, UntrackedSlotSize);
@@ -1602,16 +1617,16 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
             do
             {
-                GCINFOENCODER_ASSERT(currentSlot < m_NumSlots);
+                _ASSERTE(currentSlot < m_NumSlots);
                 pSlotDesc = &m_SlotTable[currentSlot++];
             }
             while(pSlotDesc->IsDeleted());
-            GCINFOENCODER_ASSERT(!pSlotDesc->IsRegister());
-            GCINFOENCODER_ASSERT(pSlotDesc->IsUntracked());
+            _ASSERTE(!pSlotDesc->IsRegister());
+            _ASSERTE(pSlotDesc->IsUntracked());
 
             currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
 
-            GCINFOENCODER_ASSERT((pSlotDesc->Slot.Stack.Base & ~3) == 0);
+            _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
             GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, UntrackedSlotSize);
 
             if(lastFlags != GC_SLOT_UNTRACKED)
@@ -1621,7 +1636,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             }
             else
             {
-                GCINFOENCODER_ASSERT(pSlotDesc->Flags == GC_SLOT_UNTRACKED);
+                _ASSERTE(pSlotDesc->Flags == GC_SLOT_UNTRACKED);
                 GCINFO_WRITE_VARL_U(m_Info1, currentNormStackSlot - lastNormStackSlot, GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE, UntrackedSlotSize);
             }
         }
@@ -1636,7 +1651,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     if(m_NumCallSites)
     {
 
-        GCINFOENCODER_ASSERT(m_pCallSites != NULL);
+        _ASSERTE(m_pCallSites != NULL);
 
         liveState.ClearAll();
 
@@ -1674,7 +1689,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
                 {
                     UINT32 slotIndex = pCurrent->SlotId;
                     BYTE becomesLive = pCurrent->BecomesLive;
-                    GCINFOENCODER_ASSERT((liveState.ReadBit(slotIndex) && !becomesLive)
+                    _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
                             || (!liveState.ReadBit(slotIndex) && becomesLive));
                     liveState.WriteBit(slotIndex, becomesLive);
                     pCurrent++;
@@ -1741,12 +1756,12 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             // Now encode the live sets and record the real offset
             for (LiveStateHashTable::KeyIterator iter = hashMap.Begin(), end = hashMap.End(); !iter.Equal(end); iter.Next())
             {
-                GCINFOENCODER_ASSERT(FitsIn<UINT32>(m_Info2.GetBitCount()));
+                _ASSERTE(FitsIn<UINT32>(m_Info2.GetBitCount()));
                 iter.SetValue((UINT32)m_Info2.GetBitCount());
                 GCINFO_WRITE_VAR_VECTOR(m_Info2, *iter.Get(), GcInfoEncoding::LIVESTATE_RLE_SKIP_ENCBASE, GcInfoEncoding::LIVESTATE_RLE_RUN_ENCBASE, CallSiteStateSize);
             }
 
-            GCINFOENCODER_ASSERT(sizeofSets == m_Info2.GetBitCount());
+            _ASSERTE(sizeofSets == m_Info2.GetBitCount());
 
             for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
@@ -1757,7 +1772,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
                     // Find the match and emit it
                     UINT32 liveStateOffset = 0;
                     bool found = hashMap.Lookup(&liveState, &liveStateOffset);
-                    GCINFOENCODER_ASSERT(found);
+                    _ASSERTE(found);
                     (void)found;
                     GCINFO_WRITE(m_Info1, liveStateOffset, numBitsPerPointer, CallSiteStateSize);
 
@@ -1771,7 +1786,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
                 {
                     UINT32 slotIndex = pCurrent->SlotId;
                     BYTE becomesLive = pCurrent->BecomesLive;
-                    GCINFOENCODER_ASSERT((liveState.ReadBit(slotIndex) && !becomesLive)
+                    _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
                             || (!liveState.ReadBit(slotIndex) && becomesLive));
                     liveState.WriteBit(slotIndex, becomesLive);
                     pCurrent++;
@@ -1782,7 +1797,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             {
                 UINT32 liveStateOffset = 0;
                 bool found = hashMap.Lookup(&liveState, &liveStateOffset);
-                GCINFOENCODER_ASSERT(found);
+                _ASSERTE(found);
                 (void)found;
                 for( ; callSiteIndex < m_NumCallSites; callSiteIndex++)
                 {
@@ -1811,7 +1826,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
                 {
                     UINT32 slotIndex = pCurrent->SlotId;
                     BYTE becomesLive = pCurrent->BecomesLive;
-                    GCINFOENCODER_ASSERT((liveState.ReadBit(slotIndex) && !becomesLive)
+                    _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
                             || (!liveState.ReadBit(slotIndex) && becomesLive));
                     liveState.WriteBit(slotIndex, becomesLive);
                     pCurrent++;
@@ -1856,7 +1871,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             InterruptibleRange *pRange = &pRanges[i];
             totalInterruptibleLength += pRange->NormStopOffset - pRange->NormStartOffset;
         }
-        GCINFOENCODER_ASSERT(totalInterruptibleLength <= GcInfoEncoding::NORMALIZE_CODE_OFFSET(m_CodeLength));
+        _ASSERTE(totalInterruptibleLength <= GcInfoEncoding::NORMALIZE_CODE_OFFSET(m_CodeLength));
 
         liveState.ClearAll();
         // Re-use couldBeLive
@@ -1869,7 +1884,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
         for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
         {
-            GCINFOENCODER_ASSERT(!m_SlotTable[pCurrent->SlotId].IsDeleted());
+            _ASSERTE(!m_SlotTable[pCurrent->SlotId].IsDeleted());
 
             // Find the first transition at offset > of the start of the current range
             LifetimeTransition *pFirstAfterStart = pCurrent;
@@ -1877,7 +1892,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             {
                 UINT32 slotIndex = (UINT32) (pFirstAfterStart->SlotId);
                 BYTE becomesLive = pFirstAfterStart->BecomesLive;
-                GCINFOENCODER_ASSERT((liveState.ReadBit(slotIndex) && !becomesLive)
+                _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
                         || (!liveState.ReadBit(slotIndex) && becomesLive));
                 liveState.WriteBit(slotIndex, becomesLive);
 
@@ -1893,16 +1908,16 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
                 if(isLive != liveStateAtPrevRange.ReadBit(slotIndex))
                 {
                     pFirstPreserved--;
-                    GCINFOENCODER_ASSERT(pFirstPreserved >= pCurrent);
+                    _ASSERTE(pFirstPreserved >= pCurrent);
                     pFirstPreserved->CodeOffset = cumInterruptibleLength;
                     pFirstPreserved->SlotId = slotIndex;
                     pFirstPreserved->BecomesLive = (isLive) ? 1 : 0;
-                    GCINFOENCODER_ASSERT(!pFirstPreserved->IsDeleted);
+                    _ASSERTE(!pFirstPreserved->IsDeleted);
                 }
             }
 
             // Mark all the other transitions since last range as deleted
-            GCINFOENCODER_ASSERT(pCurrent <= pFirstPreserved);
+            _ASSERTE(pCurrent <= pFirstPreserved);
             while(pCurrent < pFirstPreserved)
             {
                 (pCurrent++)->IsDeleted = TRUE;
@@ -1921,7 +1936,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
                 UINT32 slotIndex = (UINT32) (pCurrent->SlotId);
                 BYTE becomesLive = pCurrent->BecomesLive;
-                GCINFOENCODER_ASSERT((liveState.ReadBit(slotIndex) && !becomesLive)
+                _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
                         || (!liveState.ReadBit(slotIndex) && becomesLive));
                 liveState.WriteBit(slotIndex, becomesLive);
             }
@@ -1965,7 +1980,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         // Initialize chunk pointers
         //
         UINT32 numChunks = (totalInterruptibleLength + GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK;
-        GCINFOENCODER_ASSERT(numChunks > 0);
+        _ASSERTE(numChunks > 0);
 
         size_t* pChunkPointers = (size_t*) m_pAllocator->Alloc(numChunks*sizeof(size_t));
         ZeroMemory(pChunkPointers, numChunks*sizeof(size_t));
@@ -1982,17 +1997,17 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
         for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
         {
-            GCINFOENCODER_ASSERT(pCurrent->CodeOffset < m_CodeLength);
+            _ASSERTE(pCurrent->CodeOffset < m_CodeLength);
 
             UINT32 currentChunk = GetNormCodeOffsetChunk(pCurrent->CodeOffset);
-            GCINFOENCODER_ASSERT(currentChunk < numChunks);
+            _ASSERTE(currentChunk < numChunks);
             UINT32 numTransitionsInCurrentChunk = 1;
 
             for(;;)
             {
                 UINT32 slotIndex = (UINT32) (pCurrent->SlotId);
                 BYTE becomesLive = pCurrent->BecomesLive;
-                GCINFOENCODER_ASSERT((liveState.ReadBit(slotIndex) && !becomesLive)
+                _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
                         || (!liveState.ReadBit(slotIndex) && becomesLive));
                 liveState.WriteBit(slotIndex, becomesLive);
                 couldBeLive.SetBit(slotIndex);
@@ -2008,7 +2023,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             // Time to encode the chunk
             //-----------------------------------------------------
 
-            GCINFOENCODER_ASSERT(numTransitionsInCurrentChunk > 0);
+            _ASSERTE(numTransitionsInCurrentChunk > 0);
 
             // Sort the transitions in this chunk by slot
             jitstd::sort(
@@ -2036,8 +2051,8 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             {
                 i = *iter;
                 {
-                    GCINFOENCODER_ASSERT(!m_SlotTable[i].IsDeleted());
-                    GCINFOENCODER_ASSERT(!m_SlotTable[i].IsUntracked());
+                    _ASSERTE(!m_SlotTable[i].IsDeleted());
+                    _ASSERTE(!m_SlotTable[i].IsUntracked());
                     GCINFO_WRITE(   m_Info2,
                                     liveState.ReadBit(i) ? 1 : 0,
                                     1,
@@ -2066,7 +2081,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
                     if(slotId != i)
                         break;
 
-                    GCINFOENCODER_ASSERT(couldBeLive.ReadBit(slotId));
+                    _ASSERTE(couldBeLive.ReadBit(slotId));
 
                     GCINFO_LOG( LL_INFO100000,
                          "\tTransition " LOG_GCSLOTDESC_FMT " going %s at offset %04x.\n",
@@ -2081,7 +2096,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
                     // Don't encode transitions at offset 0 as they are useless
                     if(normCodeOffsetDelta)
                     {
-                        GCINFOENCODER_ASSERT(normCodeOffsetDelta < GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK);
+                        _ASSERTE(normCodeOffsetDelta < GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK);
 
                         GCINFO_WRITE(m_Info2, 1, 1, ChunkTransitionSize);
                         GCINFO_WRITE(m_Info2, normCodeOffsetDelta, GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2, ChunkTransitionSize);
@@ -2098,7 +2113,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
                 GCINFO_WRITE(m_Info2, 0, 1, ChunkTransitionSize);
 
             }
-            GCINFOENCODER_ASSERT(pT == pCurrent);
+            _ASSERTE(pT == pCurrent);
 
             couldBeLive = liveState;
         }
@@ -2251,7 +2266,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SizeofSl
             }
         }
 
-        GCINFOENCODER_ASSERT(i >= rleStart);
+        _ASSERTE(i >= rleStart);
         sizeofRLE += BitStreamWriter::SizeofVarLengthUnsigned(i - rleStart, fPrev ? baseRun : baseSkip);
         sizeofRLENeg += BitStreamWriter::SizeofVarLengthUnsigned(i - rleStart, fPrev ? baseSkip : baseRun);
     }
@@ -2356,12 +2371,12 @@ template <typename GcInfoEncoding> UINT32 TGcInfoEncoder<GcInfoEncoding>::WriteS
             }
         }
 
-        GCINFOENCODER_ASSERT(i >= rleStart);
+        _ASSERTE(i >= rleStart);
         writer.EncodeVarLengthUnsigned(i - rleStart, fPrev ? baseRun : baseSkip);
     }
 
 #ifdef _DEBUG
-    GCINFOENCODER_ASSERT(result + initial == writer.GetBitCount());
+    _ASSERTE(result + initial == writer.GetBitCount());
 #endif // _DEBUG
 
     return result;
@@ -2433,7 +2448,7 @@ template <typename GcInfoEncoding> BYTE* TGcInfoEncoder<GcInfoEncoding>::Emit()
     BYTE* destBuffer = (BYTE *)eeAllocGCInfo(cbGcInfoSize);
     // Allocator will throw an exception on failure.
     // NOTE: the returned pointer may not be aligned during ngen.
-    GCINFOENCODER_ASSERT( destBuffer );
+    _ASSERTE( destBuffer );
 
     BYTE* ptr = destBuffer;
 
@@ -2462,6 +2477,11 @@ template <typename GcInfoEncoding> size_t TGcInfoEncoder<GcInfoEncoding>::GetEnc
 {
     return m_BlockSize;
 }
+
+
+#undef _ASSERTE
+#define _ASSERTE(x) _GCINFO_ASSERTE(x)
+
 
 BitStreamWriter::BitStreamWriter( IAllocator* pAllocator )
 {
