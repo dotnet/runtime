@@ -252,6 +252,8 @@ set(interp_stub_sources
     interp-stubs.c)
 set(jiterp_sources 
     interp/jiterpreter.c)
+set(jiterp_stub_sources
+    interp/jiterpreter_stubs.c)
 
 if(NOT DISABLE_INTERPRETER)
   if(HOST_WASM)    
@@ -261,7 +263,10 @@ if(NOT DISABLE_INTERPRETER)
   endif()  
   if(NOT DISABLE_JITERPRETER)
     list(APPEND mini_interp_sources ${jiterp_sources})
+  else()
+    list(APPEND mini_interp_sources ${jiterp_stub_sources})
   endif()
+  
 else()
 set(mini_interp_sources ${interp_stub_sources})
 endif()
