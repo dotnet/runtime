@@ -960,12 +960,6 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
                 return false;
             }
 
-            if (comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd) == NO_CLASS_HANDLE)
-            {
-                *reason = "[no boxed type available]";
-                return false;
-            }
-
             classSize = comp->info.compCompHnd->getClassSize(clsHnd);
         }
         else
@@ -1061,6 +1055,7 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
     return allocType;
 }
 
+//------------------------------------------------------------------------
 // MorphAllocObjNodes: Morph each GT_ALLOCOBJ node either into an
 //                     allocation helper call or stack allocation.
 //
@@ -1203,13 +1198,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     //------------------------------------------------------------------------
 
                     CORINFO_CLASS_HANDLE clsHnd       = data->AsAllocObj()->gtAllocObjClsHnd;
-                    CORINFO_CLASS_HANDLE stackClsHnd  = clsHnd;
                     const bool           isValueClass = comp->info.compCompHnd->isValueClass(clsHnd);
 
                     if (isValueClass)
                     {
                         comp->Metrics.NewBoxedValueClassHelperCalls++;
-                        stackClsHnd = comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd);
                     }
                     else
                     {
@@ -1221,28 +1214,30 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         // reason set by the call
                         canStack = false;
                     }
-                    else if (stackClsHnd == NO_CLASS_HANDLE)
-                    {
-                        assert(isValueClass);
-                        onHeapReason = "[no class handle for this boxed value class]";
-                        canStack     = false;
-                    }
                     else
                     {
                         JITDUMP("Allocating V%02u on the stack\n", lclNum);
                         canStack = true;
-                        const unsigned int stackLclNum =
-                            MorphAllocObjNodeIntoStackAlloc(data->AsAllocObj(), stackClsHnd, isValueClass, block, stmt);
-                        m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
+
+                        ClassLayout* layout = nullptr;
 
                         if (isValueClass)
                         {
+                            CORINFO_CLASS_HANDLE boxedClsHnd = comp->info.compCompHnd->getTypeForBox(clsHnd);
+                            assert(boxedClsHnd != NO_CLASS_HANDLE);
+                            ClassLayout* structLayout = comp->typGetObjLayout(boxedClsHnd);
+                            layout                    = GetBoxedLayout(structLayout);
                             comp->Metrics.StackAllocatedBoxedValueClasses++;
                         }
                         else
                         {
+                            layout = comp->typGetObjLayout(clsHnd);
                             comp->Metrics.StackAllocatedRefClasses++;
                         }
+
+                        const unsigned int stackLclNum =
+                            MorphAllocObjNodeIntoStackAlloc(data->AsAllocObj(), layout, block, stmt);
+                        m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
 
                         bashCall = true;
                     }
@@ -1449,8 +1444,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
 //                                  allocation.
 // Arguments:
 //    allocObj     - GT_ALLOCOBJ that will be replaced by a stack allocation
-//    clsHnd       - class representing the stack allocated object
-//    isValueClass - we are stack allocating a boxed value class
+//    layout       - layout for the stack allocated objectd
 //    block        - a basic block where allocObj is
 //    stmt         - a statement where allocObj is
 //
@@ -1460,24 +1454,29 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
 // Notes:
 //    This function can insert additional statements before stmt.
 //
-unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
-    GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt)
+unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj,
+                                                              ClassLayout*     layout,
+                                                              BasicBlock*      block,
+                                                              Statement*       stmt)
 {
     assert(allocObj != nullptr);
     assert(m_AnalysisDone);
-    assert(clsHnd != NO_CLASS_HANDLE);
+
+#ifdef DEBUG
+    const char* lclName = comp->printfAlloc("stack allocated %.110s", layout->GetShortClassName());
+#endif
 
     const bool         shortLifetime = false;
-    const unsigned int lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG(
-        isValueClass ? "stack allocated boxed value class temp" : "stack allocated ref class temp"));
+    const unsigned int lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG(lclName));
+    comp->lvaSetStruct(lclNum, layout, /* unsafeValueClsCheck */ false);
 
-    comp->lvaSetStruct(lclNum, clsHnd, /* unsafeValueClsCheck */ false);
-
-    // Initialize the object memory if necessary.
-    bool             bbInALoop     = block->HasFlag(BBF_BACKWARD_JUMP);
-    bool             bbIsReturn    = block->KindIs(BBJ_RETURN);
     LclVarDsc* const lclDsc        = comp->lvaGetDesc(lclNum);
     lclDsc->lvStackAllocatedObject = true;
+
+    // Initialize the object memory if necessary.
+    bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+    bool bbIsReturn = block->KindIs(BBJ_RETURN);
+
     if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {
         //------------------------------------------------------------------------
@@ -4079,8 +4078,35 @@ void ObjectAllocator::CloneAndSpecialize()
 }
 
 //------------------------------------------------------------------------------
+// GetBoxedLayout: get a layout for a boxed version of a struct
+//
+// Arguments:
+//   layout - layout of the struct
+//
+// Notes:
+//   For Nullable<T>, layout class should be T
+//
+ClassLayout* ObjectAllocator::GetBoxedLayout(ClassLayout* layout)
+{
+    assert(layout->IsValueClass());
+
+    ClassLayoutBuilder b(comp, TARGET_POINTER_SIZE + layout->GetSize());
+    b.CopyPaddingFrom(TARGET_POINTER_SIZE, layout);
+    b.CopyGCInfoFrom(TARGET_POINTER_SIZE, layout);
+
+#ifdef DEBUG
+    b.CopyNameFrom(layout, "[boxed] ");
+#endif
+
+    return comp->typGetCustomLayout(b);
+}
+
+//------------------------------------------------------------------------------
 // GetNonGCLayout: get a layout with the same size and padding as an existing
 //   layout, but with no GC fields.
+//
+// Arguments:
+//   layout - existing layout to use as template
 //
 ClassLayout* ObjectAllocator::GetNonGCLayout(ClassLayout* layout)
 {
@@ -4098,6 +4124,9 @@ ClassLayout* ObjectAllocator::GetNonGCLayout(ClassLayout* layout)
 //------------------------------------------------------------------------------
 // GetByrefLayout: get a layout with the same size and padding as an existing
 //   layout, but with all GC fields retyped to byref.
+//
+// Arguments:
+//   layout - existing layout to use as template
 //
 ClassLayout* ObjectAllocator::GetByrefLayout(ClassLayout* layout)
 {

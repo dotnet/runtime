@@ -440,12 +440,12 @@ void ClassLayoutBuilder::CopyNameFrom(ClassLayout* layout, const char* prefix)
 
         if (layoutName != nullptr)
         {
-            newName = m_compiler->printfAlloc("%s%s", prefix, layoutName);
+            newName = m_compiler->printfAlloc("%s%.100s", prefix, layoutName);
         }
 
         if (layoutShortName != nullptr)
         {
-            newShortName = m_compiler->printfAlloc("%s%s", prefix, layoutShortName);
+            newShortName = m_compiler->printfAlloc("%s%.100s", prefix, layoutShortName);
         }
 
         SetName(newName, newShortName);
