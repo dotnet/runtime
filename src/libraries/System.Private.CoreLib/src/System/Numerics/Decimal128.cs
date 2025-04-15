@@ -15,9 +15,7 @@ namespace System.Numerics
           IComparable<Decimal128>,
           IEquatable<Decimal128>,
           ISpanParsable<Decimal128>,
-          IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>,
-          IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>,
-          IDecimalIeee754TryParseInfo<Decimal128, Int128>
+          IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>
     {
 #if BIGENDIAN
         internal readonly ulong _upper;
@@ -36,11 +34,17 @@ namespace System.Numerics
         private static readonly UInt128 NegativeInfinityValue = new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
         private static readonly UInt128 ZeroValue = new UInt128(0, 0);
 
+        internal Decimal128(UInt128 value)
+        {
+            _upper = value.Upper;
+            _lower = value.Lower;
+        }
+
         public Decimal128(Int128 significand, int exponent)
         {
-            UInt128 value = Number.CalculateDecimalIeee754<Decimal128, Int128, UInt128>(significand, exponent);
-            _lower = value.Lower;
+            UInt128 value = Number.ConstructorToDecimalIeee754Bits<Decimal128, UInt128>(significand < 0, (UInt128)(significand < 0 ? -significand : significand), exponent);
             _upper = value.Upper;
+            _lower = value.Lower;
         }
 
         /// <summary>
@@ -79,7 +83,7 @@ namespace System.Numerics
         public static Decimal128 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.ParseDecimal128(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseDecimalIeee754<char, Decimal128, UInt128>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -137,7 +141,7 @@ namespace System.Numerics
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseDecimalIeee754<Decimal128, Int128, char>(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimalIeee754<char, Decimal128, UInt128>(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         /// <summary>
@@ -157,7 +161,7 @@ namespace System.Numerics
                 result = default;
                 return false;
             }
-            return Number.TryParseDecimalIeee754<Decimal128, Int128, char>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimalIeee754<char, Decimal128, UInt128>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="IComparable.CompareTo(object?)" />
@@ -175,7 +179,7 @@ namespace System.Numerics
         {
             var current = new UInt128(_upper, _lower);
             var another = new UInt128(other._upper, other._lower);
-            return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(current, another);
+            return Number.CompareDecimalIeee754<Decimal128, UInt128>(current, another);
         }
 
         /// <inheritdoc cref="IEquatable{T}.Equals(T)" />
@@ -183,7 +187,7 @@ namespace System.Numerics
         {
             var current = new UInt128(_upper, _lower);
             var another = new UInt128(other._upper, other._lower);
-            return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(current, another) == 0;
+            return Number.CompareDecimalIeee754<Decimal128, UInt128>(current, another) == 0;
         }
 
         /// <summary>
@@ -207,7 +211,7 @@ namespace System.Numerics
         /// </summary>
         public override string ToString()
         {
-            return Number.FormatDecimalIeee754<Decimal128, Int128, UInt128>(this, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatDecimalIeee754<Decimal128, UInt128>(this, null, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -215,7 +219,7 @@ namespace System.Numerics
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return Number.FormatDecimalIeee754<Decimal128, Int128, UInt128>(this, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatDecimalIeee754<Decimal128, UInt128>(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -223,7 +227,7 @@ namespace System.Numerics
         /// </summary>
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatDecimalIeee754<Decimal128, Int128, UInt128>(this, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatDecimalIeee754<Decimal128, UInt128>(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -231,115 +235,126 @@ namespace System.Numerics
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return Number.FormatDecimalIeee754<Decimal128, Int128, UInt128>(this, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatDecimalIeee754<Decimal128, UInt128>(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.CountDigits(Int128 number) => FormattingHelpers.CountDigits((UInt128)number);
-
-        static Int128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.Power10(int exponent) => Int128Powers10[exponent];
-
-        static Int128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.MaxSignificand => new Int128(upper: 0x0001_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF); // 9_999_999_999_999_999_999_999_999_999_999_999;
-
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.MaxExponent => MaxExponent;
-
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.MinExponent => MinExponent;
-
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.Precision => Precision;
-
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.ExponentBias => ExponentBias;
-
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.NumberBitsEncoding => 128;
-
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.NumberBitsCombinationField => 17;
-
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.NumberBitsExponent => NumberBitsExponent;
-
-        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.PositiveInfinityBits => PositiveInfinityValue;
-
-        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.NegativeInfinityBits => NegativeInfinityValue;
-
-        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.Zero => ZeroValue;
-
-        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.G0G1Mask => new UInt128(0x6000_0000_0000_0000, 0);
-
-        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.MostSignificantBitOfSignificandMask => new UInt128(0x0002_0000_0000_0000, 0);
-
-        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.SignMask => new UInt128(0x8000_0000_0000_0000, 0);
-
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.ConvertToExponent(UInt128 value) => (int)value;
-
-        static Int128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.ConvertToSignificand(UInt128 value) => (Int128)value;
-
-        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.G0ToGwPlus1ExponentMask => new UInt128(0x7FFE_0000_0000_0000, 0);
-
-        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.G2ToGwPlus3ExponentMask => new UInt128(0x1FFF_8000_0000_0000, 0);
-
-        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.GwPlus2ToGwPlus4SignificandMask => new UInt128(0x0001_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
-
-        static UInt128 IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.GwPlus4SignificandMask => new UInt128(0x0000_7FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
-
-        static int IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>.NumberBitsSignificand => 110;
-
-        private static Int128[] Int128Powers10 =>
+        private static UInt128[] UInt128Powers10 =>
             [
-                new Int128(0, 1),
-                new Int128(0, 10),
-                new Int128(0, 100),
-                new Int128(0, 1000),
-                new Int128(0, 10000),
-                new Int128(0, 100000),
-                new Int128(0, 1000000),
-                new Int128(0, 10000000),
-                new Int128(0, 100000000),
-                new Int128(0, 1000000000),
-                new Int128(0, 10000000000),
-                new Int128(0, 100000000000),
-                new Int128(0, 1000000000000),
-                new Int128(0, 10000000000000),
-                new Int128(0, 100000000000000),
-                new Int128(0, 1000000000000000),
-                new Int128(0, 10000000000000000),
-                new Int128(0, 100000000000000000),
-                new Int128(0, 1000000000000000000),
-                new Int128(0, 10000000000000000000),
-                new Int128(5, 7766279631452241920),
-                new Int128(54, 3875820019684212736),
-                new Int128(542, 1864712049423024128),
-                new Int128(5421, 200376420520689664),
-                new Int128(54210, 2003764205206896640),
-                new Int128(542101, 1590897978359414784),
-                new Int128(5421010, 15908979783594147840),
-                new Int128(54210108, 11515845246265065472),
-                new Int128(542101086, 4477988020393345024),
-                new Int128(5421010862, 7886392056514347008),
-                new Int128(54210108624, 5076944270305263616),
-                new Int128(542101086242, 13875954555633532928),
-                new Int128(5421010862427, 9632337040368467968),
-                new Int128(54210108624275, 4089650035136921600),
-                new Int128(542101086242752, 4003012203950112768),
+                new UInt128(0, 1),
+                new UInt128(0, 10),
+                new UInt128(0, 100),
+                new UInt128(0, 1000),
+                new UInt128(0, 10000),
+                new UInt128(0, 100000),
+                new UInt128(0, 1000000),
+                new UInt128(0, 10000000),
+                new UInt128(0, 100000000),
+                new UInt128(0, 1000000000),
+                new UInt128(0, 10000000000),
+                new UInt128(0, 100000000000),
+                new UInt128(0, 1000000000000),
+                new UInt128(0, 10000000000000),
+                new UInt128(0, 100000000000000),
+                new UInt128(0, 1000000000000000),
+                new UInt128(0, 10000000000000000),
+                new UInt128(0, 100000000000000000),
+                new UInt128(0, 1000000000000000000),
+                new UInt128(0, 10000000000000000000),
+                new UInt128(5, 7766279631452241920),
+                new UInt128(54, 3875820019684212736),
+                new UInt128(542, 1864712049423024128),
+                new UInt128(5421, 200376420520689664),
+                new UInt128(54210, 2003764205206896640),
+                new UInt128(542101, 1590897978359414784),
+                new UInt128(5421010, 15908979783594147840),
+                new UInt128(54210108, 11515845246265065472),
+                new UInt128(542101086, 4477988020393345024),
+                new UInt128(5421010862, 7886392056514347008),
+                new UInt128(54210108624, 5076944270305263616),
+                new UInt128(542101086242, 13875954555633532928),
+                new UInt128(5421010862427, 9632337040368467968),
+                new UInt128(54210108624275, 4089650035136921600),
+                new UInt128(542101086242752, 4003012203950112768),
             ];
 
-        static bool IDecimalIeee754TryParseInfo<Decimal128, Int128>.TryNumberToDecimalIeee754(ref Number.NumberBuffer number, out Int128 significand, out int exponent)
-            => Number.TryNumberToDecimalIeee754<Decimal128, Int128, UInt128>(ref number, out significand, out exponent);
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MaxScale => 6145;
 
-        static int IDecimalIeee754TryParseInfo<Decimal128, Int128>.DecimalNumberBufferLength => Number.Decimal128NumberBufferLength;
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MinScale => -6175;
 
-        static Decimal128 IDecimalIeee754TryParseInfo<Decimal128, Int128>.Construct(Int128 significand, int exponent) => new Decimal128(significand, exponent);
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>.MaxScale => 6145;
-
-        static unsafe byte* IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>.ToDecChars(byte* p, Int128 significand)
+        static unsafe byte* IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ToDecChars(byte* p, UInt128 significand)
         {
-            return Number.UInt128ToDecChars(p, (UInt128)significand, 0);
+            return Number.UInt128ToDecChars(p, significand, 0);
         }
 
-        Number.DecimalIeee754<Int128> IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>.Unpack()
+        Number.DecimalIeee754<UInt128> IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Unpack()
         {
-            return Number.UnpackDecimalIeee754<Decimal128, Int128, UInt128>(new UInt128(_upper, _lower));
+            return Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower));
         }
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>.Precision => Precision;
+        static unsafe UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberToSignificand(ref Number.NumberBuffer number)
+        {
+            int count = Math.Min(number.DigitsCount, Precision);
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, Int128, UInt128>.BufferLength => Number.Decimal128NumberBufferLength;
+            if (count <= 19)
+            {
+                return Number.DigitsToUInt64(number.DigitsPtr, count);
+            }
+            else
+            {
+                Number.AccumulateDecimalDigitsIntoBigInteger(ref number, 0, (uint)count, out Number.BigInteger result);
+                return result.ToUInt128();
+            }
+        }
+
+        static Decimal128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Construct(UInt128 value) => new Decimal128(value);
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ConvertToExponent(UInt128 value) => (int)value;
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Power10(int exponent) => UInt128Powers10[exponent];
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Precision => Precision;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.BufferLength => Number.Decimal128NumberBufferLength;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MaxExponent => MaxExponent;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MinExponent => MinExponent;
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.PositiveInfinity => PositiveInfinityValue;
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NegativeInfinity => NegativeInfinityValue;
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Zero => ZeroValue;
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MostSignificantBitOfSignificandMask => new UInt128(0x0002_0000_0000_0000, 0);
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberBitsEncoding => 128;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberBitsExponent => NumberBitsExponent;
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SignMask => new UInt128(0x8000_0000_0000_0000, 0);
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.G0G1Mask => new UInt128(0x6000_0000_0000_0000, 0);
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ExponentBias => ExponentBias;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberBitsSignificand => 110;
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.G0ToGwPlus1ExponentMask => new UInt128(0x7FFE_0000_0000_0000, 0);
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.G2ToGwPlus3ExponentMask => new UInt128(0x1FFF_8000_0000_0000, 0);
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.GwPlus2ToGwPlus4SignificandMask => new UInt128(0x0001_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.GwPlus4SignificandMask => new UInt128(0x0000_7FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MaxSignificand => new UInt128(upper: 0x0001_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF); // 9_999_999_999_999_999_999_999_999_999_999_999;
+
+        static unsafe void IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ToNumber(UInt128 significand, ref Number.NumberBuffer number)
+        {
+            Number.UInt128ToNumber(significand, ref number);
+        }
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SignificandBufferLength => Number.UInt128NumberBufferLength;
     }
 }

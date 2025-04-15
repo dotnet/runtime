@@ -296,10 +296,9 @@ namespace System
                                         "80818283848586878889"u8 +
                                         "90919293949596979899"u8;
 
-        public static unsafe string FormatDecimalIeee754<TDecimal, TSignificand, TValue>(TDecimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
-            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TSignificand, TValue>
-            where TSignificand : unmanaged, IBinaryInteger<TSignificand>
-            where TValue : IBinaryInteger<TValue>
+        public static unsafe string FormatDecimalIeee754<TDecimal, TValue>(TDecimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
             byte[] buffer = ArrayPool<byte>.Shared.Rent(TDecimal.BufferLength);
@@ -309,7 +308,7 @@ namespace System
                 {
                     NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, TDecimal.BufferLength);
 
-                    DecimalIeee754ToNumber<TDecimal, TSignificand, TValue>(value, ref number);
+                    DecimalIeee754ToNumber<TDecimal, TValue>(value, ref number);
 
                     char* stackPtr = stackalloc char[CharStackBufferSize];
                     var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
@@ -388,13 +387,12 @@ namespace System
             return success;
         }
 
-        internal static unsafe void DecimalIeee754ToNumber<TDecimal, TSignificand, TValue>(TDecimal value, ref NumberBuffer number)
-            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TSignificand, TValue>
-            where TSignificand : unmanaged, IBinaryInteger<TSignificand>
-            where TValue : IBinaryInteger<TValue>
+        internal static unsafe void DecimalIeee754ToNumber<TDecimal, TValue>(TDecimal value, ref NumberBuffer number)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
         {
             byte* buffer = number.DigitsPtr;
-            DecimalIeee754<TSignificand> unpackDecimal = value.Unpack();
+            DecimalIeee754<TValue> unpackDecimal = value.Unpack();
             number.IsNegative = unpackDecimal.Signed;
 
             byte* p = buffer + TDecimal.Precision;
@@ -408,7 +406,7 @@ namespace System
                 *dst++ = *p++;
             }
 
-            number.Scale = TSignificand.IsZero(unpackDecimal.Significand) ? 0 : numberDigitsSignificand + unpackDecimal.Exponent;
+            number.Scale = TValue.IsZero(unpackDecimal.Significand) ? 0 : numberDigitsSignificand + unpackDecimal.Exponent;
 
             if (unpackDecimal.Exponent >= 0)
             {
@@ -1625,7 +1623,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void UInt32ToNumber(uint value, ref NumberBuffer number)
+        internal static unsafe void UInt32ToNumber(uint value, ref NumberBuffer number)
         {
             number.DigitsCount = UInt32Precision;
             number.IsNegative = false;
@@ -2090,7 +2088,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void UInt64ToNumber(ulong value, ref NumberBuffer number)
+        internal static unsafe void UInt64ToNumber(ulong value, ref NumberBuffer number)
         {
             number.DigitsCount = UInt64Precision;
             number.IsNegative = false;
@@ -2502,7 +2500,7 @@ namespace System
             }
         }
 
-        private static unsafe void UInt128ToNumber(UInt128 value, ref NumberBuffer number)
+        internal static unsafe void UInt128ToNumber(UInt128 value, ref NumberBuffer number)
         {
             number.DigitsCount = UInt128Precision;
             number.IsNegative = false;
