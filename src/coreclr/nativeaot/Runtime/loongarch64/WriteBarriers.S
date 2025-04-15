@@ -284,15 +284,15 @@ LEAF_END RhpAssignRef, _TEXT
 //
 // On exit:
 //  a0: original value of objectref
-//  t1, t3, t4: trashed
+//  t0, t1, t3, t4: trashed
 //
 LEAF_ENTRY RhpCheckedLockCmpXchg
 
 LOCAL_LABEL(RetryLoop):
         // Load the current value at the destination address.
-        ll.d  $t3, $a0, 0       // t3 = *dest (load with atomic ordering)
+        ll.d  $t0, $a0, 0       // t0 = *dest (load with atomic ordering)
         // Compare the loaded value with the comparand.
-        bne  $t3, $a2, LOCAL_LABEL(EndOfExchange) // if (*dest != comparand) goto EndOfExchange
+        bne  $t0, $a2, LOCAL_LABEL(EndOfExchange) // if (*dest != comparand) goto EndOfExchange
 
         ori  $t1, $a1, 0
         // Attempt to store the exchange value at the destination address.
@@ -312,7 +312,7 @@ LOCAL_LABEL(DoCardsCmpXchg):
         INSERT_CHECKED_WRITE_BARRIER_CORE  $a0, $a1
 
 LOCAL_LABEL(CmpXchgNoUpdate):
-        ori   $a0, $a2, 0   // a2 still contains the original value.
+        ori   $a0, $t0, 0   // t0 still contains the original value.
         jirl  $r0, $ra, 0
 
 LEAF_END RhpCheckedLockCmpXchg, _TEXT
