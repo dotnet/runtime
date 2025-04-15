@@ -878,7 +878,7 @@ JS_ENGINES = [NODE_JS]
       <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64" />
       <MonoAOTCMakeArgs Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64" />
       <MonoAOTCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
-      <MonoAOTCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
+      <MonoAOTCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>      
       <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-arch arm64" />
       <_MonoAOTCXXFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-arch arm64" />
       <!-- Force running as arm64 even when invoked from an x64 msbuild process -->
@@ -894,13 +894,14 @@ JS_ENGINES = [NODE_JS]
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
-    <_MonoAOTCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1" />
-    <_MonoAOTCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="--target=wasm64 -DMEMORY64" />
-    <_MonoAOTCPPFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1"/>
-    <_MonoAOTCPPFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64 --target=wasm64" />
-    <_MonoAOTCXXFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1"/>
-    <_MonoAOTCXXFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64 --target=wasm64" />
-    <MonoAOTCMakeArgs Condition="'$(WasmEnableMemory64)' == 'true'" Include="TARGET_BUILD_ARCH=wasm64" />
+      <MonoAOTCMakeArgs Include="-DDISABLE_JITERPRETER=1"/>
+      <_MonoAOTCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1" />
+      <_MonoAOTCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="--target=wasm64 -DMEMORY64" />
+      <_MonoAOTCPPFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1"/>
+      <_MonoAOTCPPFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64 --target=wasm64" />
+      <_MonoAOTCXXFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1"/>
+      <_MonoAOTCXXFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64 --target=wasm64" />
+      <MonoAOTCMakeArgs Condition="'$(WasmEnableMemory64)' == 'true'" Include="TARGET_BUILD_ARCH=wasm64" />
     </ItemGroup>
     
     <Message Text="MRH_LOGGING: AotHostOS is set to: $(AotHostOS)" Importance="high" />

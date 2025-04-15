@@ -161,8 +161,7 @@ mono_jiterp_cast_v2 (
 
 EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_localloc (gpointer *destination, gint32 len, InterpFrame *frame)
-{
-	return 0;
+{	
 }
 
 EMSCRIPTEN_KEEPALIVE void
