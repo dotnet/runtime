@@ -596,7 +596,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT
 
         ; Save establisher frame pointer into the argument scratch area of the funclet
         ; and put it in rcx parameter (older R2R ABI)
-        mov     rcx, [rsp + arguments_scratch_area_size + 8 + 8 * 8h + stack_alloc_size]
+        mov     rcx, [rsp + rsp_offsetof_arguments + 20h]
         mov     [rsp], rcx
 
         ; Save the SP of this function.
@@ -635,7 +635,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
 
         ; Save establisher frame pointer into the argument scratch area of the funclet
         ; and put it in rcx parameter (older R2R ABI)
-        mov     rcx, [rsp + arguments_scratch_area_size + 8 + 8 * 8h + stack_alloc_size]
+        mov     rcx, [rsp + rsp_offsetof_arguments + 20h]
         mov     [rsp], rcx
 
         ; Invoke the filter funclet
