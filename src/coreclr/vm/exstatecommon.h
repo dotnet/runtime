@@ -16,7 +16,7 @@ class ExceptionFlags;
 //
 // This class stores information necessary to intercept an exception.  It's basically a communication channel
 // between the debugger and the EH subsystem.  Each internal exception tracking structure
-// (ExInfo on x86 and ExceptionTracker on WIN64) contains one DebuggerExState.
+// (ExInfo) contains one DebuggerExState.
 //
 // Notes:
 //    This class actually stores more information on x86 than on WIN64 because the x86 EH subsystem

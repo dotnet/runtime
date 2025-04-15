@@ -179,6 +179,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_WidenUpper,
 	SN_Xor,
 // operators
+#if 0
 	SN_op_Addition,
 	SN_op_BitwiseAnd,
 	SN_op_BitwiseOr,
@@ -191,6 +192,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_op_Subtraction,
 	SN_op_UnaryNegation,
 	SN_op_UnsignedRightShift,
+#endif
 };
 
 static MonoTypeEnum 
