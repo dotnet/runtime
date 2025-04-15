@@ -2204,13 +2204,32 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
     size_t copySize;
     if (ctx.ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
     {
-        if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
+        // TODO-XArch-APX:
+        // After we introduced APX, the copySize calculation is not accurate here.
+        // We now have 4 cases:
+        // 1. hasApx && hasAvx512
+        // 2. hasApx && !hasAvx512 - this could be a rare case.
+        // 3. !hasApx && hasAvx512
+        // 4. !hasApx && !hasAvx512
+        // but the copied memory is supposed to be linear, 
+        // we cannot handle cases 2 or 3, depending on how we arrange the Context data structure.
+
+        // Below I provided an attempt with the assumption that APX always comes with AVX512.
+
+        const bool hasApx = (ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX;
+        const bool hasAvx512 = (ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512;
+
+        if (hasApx && hasAvx512)
         {
             copySize = sizeof(CONTEXT);
         }
-        else if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
+        else if (!hasApx && hasAvx512)
         {
-            copySize = offsetof(CONTEXT, Egpr16);
+            copySize = offsetof(CONTEXT, R16);
+        }
+        else if (hasApx && !hasAvx512)
+        {
+            assert("APX without AVX512 is not supported yet.");
         }
         else
         {
