@@ -2415,7 +2415,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         // (plus the "pre spill regs"). Note that we assume r12 and r13 aren't saved
         // (also assumed in genFnProlog()).
         assert((regSet.rsMaskCalleeSaved & (RBM_R12 | RBM_R13)) == 0);
-        unsigned preSpillRegArgSize                = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
+        unsigned preSpillRegArgSize = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
 
         regMaskTP rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
         unsigned  saveRegsCount   = genCountBits(rsMaskSaveRegs);

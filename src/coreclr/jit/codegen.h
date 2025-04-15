@@ -459,8 +459,8 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskTP fiSaveRegs;                  // Set of registers saved in the funclet prolog (includes LR)
-        unsigned  fiSpDelta;                   // Stack pointer delta
+        regMaskTP fiSaveRegs; // Set of registers saved in the funclet prolog (includes LR)
+        unsigned  fiSpDelta;  // Stack pointer delta
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
