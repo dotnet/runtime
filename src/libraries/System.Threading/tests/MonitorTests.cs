@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -511,5 +513,61 @@ namespace System.Threading.Tests
                 waitForThread();
             }
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void WaitCleanupTest(bool collectThread)
+        {
+            var lockObj = new object();
+            RunThreadAndAbandonWait(lockObj);
+            Thread.Sleep(50); // give the thread some time to actually exit
+
+            if (collectThread)
+            {
+                // Run a GC and wait for finalizers to have the managed thread object for the above thread be collected
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true);
+                GC.WaitForPendingFinalizers();
+                GC.WaitForPendingFinalizers();
+            }
+
+            lock (lockObj)
+            {
+                Monitor.PulseAll(lockObj);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void RunThreadAndAbandonWait(object lockObj)
+            {
+                var t = new Thread(() =>
+                {
+                    var sc = new MonitorWaitCleanupTest_SynchronizationContext();
+                    SynchronizationContext.SetSynchronizationContext(sc);
+                    lock (lockObj)
+                    {
+                        // The thread exits during the wait override
+                        Monitor.Wait(lockObj);
+                    }
+                });
+                t.IsBackground = true;
+                t.Start();
+                t.Join();
+            }
+        }
+
+        private sealed class MonitorWaitCleanupTest_SynchronizationContext : SynchronizationContext
+        {
+            public MonitorWaitCleanupTest_SynchronizationContext() => SetWaitNotificationRequired();
+
+            public override int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+            {
+                ExitThread(0);
+                return 0;
+            }
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern void ExitThread(uint exitCode);
     }
 }
