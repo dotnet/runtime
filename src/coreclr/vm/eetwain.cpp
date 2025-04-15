@@ -1663,8 +1663,6 @@ PTR_VOID EECodeManager::GetExactGenericsToken(PREGDISPLAY     pContext,
     return EECodeManager::GetExactGenericsToken(GetCallerSp(pContext), pCodeInfo);
 }
 
-EXTERN_C SIZE_T g_OffsetOfEstablisherFrameInFuncletSP;
-
 //static
 PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
                                               EECodeInfo *    pCodeInfo)
@@ -1696,7 +1694,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 #else
             offsetOfEstablisherFrameInFuncletSP = 36;
 #endif
-#elif defined(TARGET_ARM64) || defined(TARGET_RISC64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             // Stored past FP/LR pair
             offsetOfEstablisherFrameInFuncletSP = 16;
 #elif defined(TARGET_ARM)

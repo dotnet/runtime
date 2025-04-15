@@ -148,7 +148,7 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
         mov r11, r1
         // Set r1 to CallerSP (older R2R ABI) and save it into our frame
         ldr r1, [sp, 16]
-        sdr r1, [sp]
+        str r1, [sp]
         // Invoke the filter funclet
         blx r2
 
