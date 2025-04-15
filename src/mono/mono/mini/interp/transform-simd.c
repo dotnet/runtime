@@ -179,7 +179,6 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_WidenUpper,
 	SN_Xor,
 // operators
-#if 0
 	SN_op_Addition,
 	SN_op_BitwiseAnd,
 	SN_op_BitwiseOr,
@@ -192,7 +191,6 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_op_Subtraction,
 	SN_op_UnaryNegation,
 	SN_op_UnsignedRightShift,
-#endif
 };
 
 static MonoTypeEnum 
@@ -691,6 +689,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
+			else if (atype == MONO_TYPE_U8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_URIGHT_SHIFT;
 			break;
 		case SN_Shuffle:
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;

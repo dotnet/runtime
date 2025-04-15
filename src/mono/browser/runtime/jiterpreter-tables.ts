@@ -378,6 +378,21 @@ export const simdShiftTable = new Set<SimdIntrinsic3>([
     SimdIntrinsic3.V128_I2_URIGHT_SHIFT,
     SimdIntrinsic3.V128_I4_URIGHT_SHIFT,
     SimdIntrinsic3.V128_I8_URIGHT_SHIFT,
+
+    SimdIntrinsic3.ShiftLeftD1,
+    SimdIntrinsic3.ShiftLeftD2,
+    SimdIntrinsic3.ShiftLeftD4,
+    SimdIntrinsic3.ShiftLeftD8,
+
+    SimdIntrinsic3.ShiftRightArithmeticD1,
+    SimdIntrinsic3.ShiftRightArithmeticD2,
+    SimdIntrinsic3.ShiftRightArithmeticD4,
+    SimdIntrinsic3.ShiftRightArithmeticD8,
+
+    SimdIntrinsic3.ShiftRightLogicalD1,
+    SimdIntrinsic3.ShiftRightLogicalD2,
+    SimdIntrinsic3.ShiftRightLogicalD4,
+    SimdIntrinsic3.ShiftRightLogicalD8,
 ]);
 
 export const simdExtractTable: { [intrinsic: number]: [laneCount: number, laneStoreOpcode: WasmOpcode] } = {
