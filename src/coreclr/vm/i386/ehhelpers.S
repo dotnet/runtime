@@ -25,6 +25,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // [ebp+12] = PC to invoke
     // [ebp+16] = address of EDI register in CONTEXT record // used to restore the non-volatile registers of CrawlFrame
     // [ebp+20] = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+    // [ebp+24] = establisher frame (CallerSP)
     //
 
     // Save the SP of this function
@@ -51,6 +52,9 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     ESP_EPILOG_POP ebp
     ESP_EPILOG_END
 
+PATCH_LABEL g_OffsetOfEstablisherFrameInFuncletSP
+    .word   32 + 16 // our frame size + 5th argument
+
     ret     16
 
 NESTED_END CallEHFunclet, _TEXT
@@ -75,6 +79,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     // [ebp+12] = FP to restore
     // [ebp+16] = PC to invoke
     // [ebp+20] = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+    // [ebp+24] = establisher frame (CallerSP)
     //
 
     // Save the SP of this function

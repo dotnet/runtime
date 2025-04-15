@@ -29,6 +29,7 @@ _CallEHFunclet@16 proc public
     ; [ebp+12] = PC to invoke
     ; [ebp+16] = address of EDI register in CONTEXT record ; used to restore the non-volatile registers of CrawlFrame
     ; [ebp+20] = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+    ; [ebp+24] = establisher frame (CallerSP)
     ;
 
     ; Save the SP of this function
@@ -54,6 +55,9 @@ _CallEHFunclet@16 proc public
 
     ret     16
 
+PATCH_LABEL g_OffsetOfEstablisherFrameInFuncletSP
+    dd      36 ; 4 saved regs + return address + 5th parameter
+
 _CallEHFunclet@16 endp
 
 ; DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR CallerSP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
@@ -73,6 +77,7 @@ _CallEHFilterFunclet@16 proc public
     ; [ebp+12] = FP to restore
     ; [ebp+16] = PC to invoke
     ; [ebp+20] = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+    ; [ebp+24] = establisher frame (CallerSP)
     ;
 
     ; Save the SP of this function

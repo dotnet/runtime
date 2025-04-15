@@ -404,9 +404,10 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         // RSI = PC to invoke
         // RDX = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         // RCX = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        // R8 = establisher frame (InitialSP)
         //
 
-        FUNCLET_CALL_PROLOGUE 0, 1
+        FUNCLET_CALL_PROLOGUE 1, 0
 
         // Restore RBX, RBP, R12, R13, R14, R15 from CONTEXT
         mov     rbx, [rdx + 0]
@@ -416,8 +417,11 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         mov     r14, [rdx + 88]
         mov     r15, [rdx + 96]
 
+        // Save establisher frame pointer into our stack frame
+        mov     [rsp], r8
+
         // Save the SP of this function.
-        mov     [r9], rsp
+        mov     [rcx], rsp
 
         // Invoke the funclet
         call    rsi
@@ -425,6 +429,10 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         FUNCLET_CALL_EPILOGUE
 
         ret
+
+PATCH_LABEL g_OffsetOfEstablisherFrameInFuncletSP
+        .quad   0
+
 NESTED_END CallEHFunclet, _TEXT
 
 // This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
@@ -436,9 +444,13 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         // RSI = RBP of main function
         // RDX = PC to invoke
         // RCX = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        // R8 = establisher frame (InitialSP)
         //
 
-        FUNCLET_CALL_PROLOGUE 0, 1
+        FUNCLET_CALL_PROLOGUE 1, 0
+
+        // Save establisher frame pointer into our stack frame
+        mov     [rsp], r8
 
         // Save the SP of this function
         mov     [rcx], rsp

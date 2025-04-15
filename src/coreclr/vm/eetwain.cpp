@@ -1663,6 +1663,8 @@ PTR_VOID EECodeManager::GetExactGenericsToken(PREGDISPLAY     pContext,
     return EECodeManager::GetExactGenericsToken(GetCallerSp(pContext), pCodeInfo);
 }
 
+EXTERN_C SIZE_T g_OffsetOfEstablisherFrameInFuncletSP;
+
 //static
 PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
                                               EECodeInfo *    pCodeInfo)
@@ -1679,6 +1681,27 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
     INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
     if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
     {
+        if (pCodeInfo->IsFunclet())
+        {
+#if DACCESS_COMPILE
+            // TODO: ?
+            return NULL;
+#else
+            // Recover the establisher frame (InitialSP/CallerSP) from the funclet
+            // caller.
+            baseStackSlot += g_OffsetOfEstablisherFrameInFuncletSP;
+            baseStackSlot = *(SIZE_T*)baseStackSlot;
+#ifdef TARGET_AMD64
+            // On AMD64 the PSPSym stores the "Initial SP": the stack pointer at the end of
+            // prolog, before any dynamic allocations.
+            // However, the GenericsContext offset is relative to the caller SP for all
+            // platforms.  So here we adjust to convert AMD64's initial sp to a caller SP.
+            // But we have to be careful to use the main function's EECodeInfo, not the
+            // funclet's EECodeInfo because they have different stack sizes!
+            baseStackSlot += pCodeInfo->GetMainFunctionInfo().GetFixedStackSize();
+#endif // TARGET_AMD64
+#endif // DACCESS_COMPILE
+        }
         TADDR taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
         TADDR taExactGenericsToken = *PTR_TADDR(taSlot);
         return PTR_VOID(taExactGenericsToken);
@@ -1994,10 +2017,10 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 #ifndef TARGET_WASM
 
 // This is an assembly helper that enables us to call into EH funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
+EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP, UINT_PTR establisherFrame);
 
 // This is an assembly helper that enables us to call into EH filter funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR CallerSP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
+EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP, UINT_PTR establisherFrame);
 
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 
@@ -2026,26 +2049,6 @@ static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextReco
     return (UINT_PTR*)&(pContextRecord->Fp);
 #else
     PORTABILITY_ASSERT("GetFirstNonVolatileRegisterAddress");
-    return NULL;
-#endif
-}
-
-static inline TADDR GetFrameRestoreBase(PCONTEXT pContextRecord)
-{
-#if defined(TARGET_AMD64)
-    return pContextRecord->Rbp;
-#elif defined(TARGET_X86)
-    return pContextRecord->Ebp;
-#elif defined(TARGET_ARM)
-    return pContextRecord->R11;
-#elif defined(TARGET_ARM64)
-    return pContextRecord->Fp;
-#elif defined(TARGET_LOONGARCH64)
-    return pContextRecord->Fp;
-#elif defined(TARGET_RISCV64)
-    return pContextRecord->Fp;
-#else
-    PORTABILITY_ASSERT("GetFrameRestoreBase");
     return NULL;
 #endif
 }
@@ -2095,6 +2098,7 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
+    UINT_PTR establisherFrame = GetEstablisherFrame(pRD, pExInfo);
 
     if (isFilterFunclet)
     {
@@ -2102,16 +2106,18 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
         // it will retrieve the framepointer for accessing the locals in the parent
         // method.
         dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
-                                       GetFrameRestoreBase(pRD->pCurrentContext),
+                                       GetFP(pRD->pCurrentContext),
                                        CastHandlerFn(pfnHandler),
-                                       pFuncletCallerSP);
+                                       pFuncletCallerSP,
+                                       establisherFrame);
     }
     else
     {
         dwResult = CallEHFunclet(OBJECTREFToObject(throwable),
                                  CastHandlerFn(pfnHandler),
                                  GetFirstNonVolatileRegisterAddress(pRD->pCurrentContext),
-                                 pFuncletCallerSP);
+                                 pFuncletCallerSP,
+                                 establisherFrame);
     }
 
 #endif // TARGET_WASM
