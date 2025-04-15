@@ -706,6 +706,50 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLDSA()
+        {
+            using (MLDsa privKey = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65))
+            {
+                CertificateRequest req = new CertificateRequest($"CN={nameof(CheckCopyWithPrivateKey_MLDSA)}", privKey);
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                X509Certificate2 pubOnly = req.Create(
+                    req.SubjectName,
+                    X509SignatureGenerator.CreateForMLDsa(privKey),
+                    now.AddMinutes(-10),
+                    now.AddMinutes(10),
+                    new byte[] { 2, 4, 6, 8, 9, 7, 5, 3, 1 });
+
+                using (pubOnly)
+                using (X509Certificate2 wrongAlg = X509CertificateLoader.LoadCertificate(TestData.CertWithEnhancedKeyUsage))
+                {
+                    CheckCopyWithPrivateKey(
+                    pubOnly,
+                    wrongAlg,
+                    privKey,
+                    [
+                        () => MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44),
+                        () => MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65),
+                        () => MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa87),
+                    ],
+                    (cert, key) => cert.CopyWithPrivateKey(key),
+                    cert => cert.GetMLDsaPublicKey(),
+                    cert => cert.GetMLDsaPrivateKey(),
+                    (priv, pub) =>
+                    {
+                        byte[] data = new byte[RandomNumberGenerator.GetInt32(97)];
+                        RandomNumberGenerator.Fill(data);
+
+                        byte[] signature = new byte[pub.Algorithm.SignatureSizeInBytes];
+                        int written = priv.SignData(data, signature);
+                        Assert.Equal(signature.Length, written);
+                        Assert.True(pub.VerifyData(data, signature));
+                    });
+                }
+            }
+        }
+
         private static void CheckCopyWithPrivateKey<TKey>(
             X509Certificate2 cert,
             X509Certificate2 wrongAlgorithmCert,
