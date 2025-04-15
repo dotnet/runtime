@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-  <ItemGroup Condition="'$(OS)' != 'Windows_NT' or '$(ContinuousIntegrationBuild)' != 'true'">
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT' or '$(ContinuousIntegrationBuild)' != 'true'">
     <!-- This package from https://github.com/dotnet/hotreload-utils provides
          targets that read the json delta script and generates deltas based on the baseline assembly and the modified sources.
 
