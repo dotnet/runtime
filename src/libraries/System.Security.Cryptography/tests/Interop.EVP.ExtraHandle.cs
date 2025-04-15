@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        private static IntPtr GetExtraHandle(SafeEvpPKeyHandle handle)
+        private static partial IntPtr GetExtraHandle(SafeEvpPKeyHandle handle)
         {
             _ = handle;
             return IntPtr.Zero;
