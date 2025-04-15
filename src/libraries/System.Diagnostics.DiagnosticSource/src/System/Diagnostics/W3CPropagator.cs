@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
@@ -36,9 +37,9 @@ namespace System.Diagnostics
             }
 
             setter(carrier, TraceParent, id);
-            if (!string.IsNullOrEmpty(activity.TraceStateString))
+            if (activity.TraceStateString is { Length: > 0 } traceState)
             {
-                InjectTraceState(activity.TraceStateString, carrier, setter);
+                InjectTraceState(traceState, carrier, setter);
             }
 
             InjectW3CBaggage(carrier, activity.Baggage, setter);
@@ -233,10 +234,8 @@ namespace System.Diagnostics
                     {
                         setter(carrier, Baggage, encodedBaggage.AsSpan(0, lastGoodLength - 2).ToString());
                     }
-                    else
-                    {
-                        encodedBaggage.Dispose();
-                    }
+
+                    encodedBaggage.Dispose();
                 }
             }
         }
@@ -246,15 +245,7 @@ namespace System.Diagnostics
             key = null!;
             keySpan = Trim(keySpan);
 
-            foreach (char c in keySpan)
-            {
-                if (IsInvalidBaggageKeyCharacter(c))
-                {
-                    return false;
-                }
-            }
-
-            if (keySpan.IsEmpty)
+            if (keySpan.IsEmpty || IsInvalidBaggageKey(keySpan))
             {
                 return false;
             }
@@ -396,60 +387,53 @@ namespace System.Diagnostics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryDecodeHexDigit(char c, out byte value)
         {
-            if ((uint)(c - '0') <= ('9' - '0'))
-            {
-                value = (byte)(c - '0');
-                return true;
-            }
-
-            if ((uint)(c- 'a') <= ('f' - 'a'))
-            {
-                value = (byte)((c - 'a') + 10);
-                return true;
-            }
-
-            if ((uint)(c - 'A') <= ('F' - 'A'))
-            {
-                value = (byte)((c - 'A') + 10);
-                return true;
-            }
-
-            value = 0;
-            return false;
+            value = (byte)HexConverter.FromChar((int)c);
+            return value != 0xFF; // invalid hex digit
         }
 
         // Allowed baggage key characters:
         //  tchar = "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~" / DIGIT / ALPHA
         //  DIGIT = 0-9
         //  ALPHA = A-Z / a-z
-        private static ulong[] InvalidBaggageKeyCharsMask = [0xFC009305FFFFFFFF, 0x2800000038000001];
+#if NET
+        private const string BaggageKeyValidCharacters = "!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~";
+        private static readonly SearchValues<char> s_validBaggageKeyChars = SearchValues.Create(BaggageKeyValidCharacters);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsInvalidBaggageKeyCharacter(char c)
+        private static bool IsInvalidBaggageKey(ReadOnlySpan<char> span) => span.ContainsAnyExcept(s_validBaggageKeyChars);
+#else
+        private static ulong[] s_invalidBaggageKeyCharsMask = [0xFC009305FFFFFFFF, 0x2800000038000001];
+
+        private static bool IsInvalidBaggageKey(ReadOnlySpan<char> span)
         {
-            if (c >= 0x07F) // key support only ascii characters according to the W3C specs
+            foreach (char c in span)
             {
-                return true;
+                // key support only ascii characters according to the W3C specs
+                if (c >= 0x07F || ((s_invalidBaggageKeyCharsMask[c >> 6] & (ulong)((ulong)1 << ((int)c & 63))) != 0))
+                {
+                    return true;
+                }
             }
 
-            return (InvalidBaggageKeyCharsMask[c >> 6] & (ulong)((ulong)1 << ((int)c & 63))) != 0;
+            return false; // valid key
         }
+#endif
 
         // key = ( lcalpha / DIGIT ) 0*255 ( keychar )
         // keychar    = lcalpha / DIGIT / "_" / "-"/ "*" / "/" / "@"
         // lcalpha    = %x61-7A ; a-z
-        private static ulong[] InvalidTraceStateKeyCharsMask = [0x0000A40000000000, 0x07FFFFFE80000001];
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsInvalidTraceStateKeyCharacter(char c)
-        {
-            if (c >= 0x07F) // key support only ascii characters according to the W3C specs
-            {
-                return true;
-            }
+#if NET
+        private const string TraceStateKeyValidChars = "*-/@_abcdefghijklmnopqrstuvwxyz";
+        private static readonly SearchValues<char> s_validTraceStateChars = SearchValues.Create(TraceStateKeyValidChars);
 
-            return (InvalidTraceStateKeyCharsMask[c >> 6] & (ulong)((ulong)1 << ((int)c & 63))) == 0;
-        }
+        private static bool IsInvalidTraceStateKey(ReadOnlySpan<char> span) => span.ContainsAnyExcept(s_validTraceStateChars);
+
+        private const string TraceStateValueValidChars = "!\"#$%&'()*+-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+        private static readonly SearchValues<char> s_validTraceStateValueChars = SearchValues.Create(TraceStateValueValidChars);
+
+        private static bool IsInvalidTraceStateValue(ReadOnlySpan<char> span) => span.ContainsAnyExcept(s_validTraceStateValueChars);
+#else
+        private static ulong[] ValidTraceStateKeyCharsMask = [0x0000A40000000000, 0x07FFFFFE80000001];
 
         private static bool IsInvalidTraceStateKey(ReadOnlySpan<char> key)
         {
@@ -460,14 +444,19 @@ namespace System.Diagnostics
 
             foreach (char c in key)
             {
-                if (IsInvalidTraceStateKeyCharacter(c))
+                if (c >= 0x07F || (ValidTraceStateKeyCharsMask[c >> 6] & (ulong)((ulong)1 << ((int)c & 63))) == 0)
                 {
-                    return true; // invalid key character, skip current entry
+                    return true; // invalid key character
                 }
             }
 
             return false; // valid key
         }
+
+        // value = 0 * 255(chr) nblk-chr
+        // nblk-chr = % x21 - 2B / % x2D - 3C / % x3E - 7E
+        // chr = % x20 / nblk - chr
+        private static ulong[] s_traceStateValueMask = { 0xDFFFEFFE00000000, 0x7FFFFFFFFFFFFFFF };
 
         private static bool IsInvalidTraceStateValue(ReadOnlySpan<char> value)
         {
@@ -478,7 +467,7 @@ namespace System.Diagnostics
 
             foreach (char c in value)
             {
-                if (IsInvalidTraceStateValueCharacter(c))
+                if (c >= 0x07F || (s_traceStateValueMask[c >> 6] & (ulong)((ulong)1 << ((int)c & 63))) == 0)
                 {
                     return true; // invalid key character, skip current entry
                 }
@@ -486,22 +475,7 @@ namespace System.Diagnostics
 
             return false; // valid key
         }
-
-        //value = 0 * 255(chr) nblk - chr
-        //nblk - chr = % x21 - 2B / % x2D - 3C / % x3E - 7E
-        //chr = % x20 / nblk - chr
-        private static ulong[] traceStateValueMask = { 0xDFFFEFFE00000000, 0x7FFFFFFFFFFFFFFF };
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsInvalidTraceStateValueCharacter(char c)
-        {
-            if (c >= 0x07F)
-            {
-                return true;
-            }
-
-            return (traceStateValueMask[c >> 6] & (ulong)((ulong)1 << ((int)c & 63))) == 0;
-        }
+#endif
 
         // baggage-string         =  list-member 0*179( OWS "," OWS list-member )
         // list-member            =  key OWS "=" OWS value *( OWS ";" OWS property )
@@ -530,17 +504,9 @@ namespace System.Diagnostics
         {
             key = Trim(key);
 
-            if (key.Length == 0)
+            if (key.IsEmpty || IsInvalidBaggageKey(key))
             {
                 return false;
-            }
-
-            for (int i = 0; i < key.Length; i++)
-            {
-                if (IsInvalidBaggageKeyCharacter(key[i]))
-                {
-                    return false;
-                }
             }
 
             vsb.Append(key);
@@ -687,6 +653,7 @@ namespace System.Diagnostics
             return false;
         }
 
+        // '0' .. '9' and 'a' .. 'f' are valid characters in the traceparent header.
         private static ulong[] s_traceParentMask = [0x03FF000000000000, 0x0000007E00000000];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -711,35 +678,9 @@ namespace System.Diagnostics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> TrimSpaceOnly(ReadOnlySpan<char> span)
-        {
-            while (span.Length > 0 && (span[0] == Space))
-            {
-                span = span.Slice(1);
-            }
-
-            while (span.Length > 0 && span[span.Length - 1] == Space)
-            {
-                span = span.Slice(0, span.Length - 1);
-            }
-
-            return span;
-        }
+        public static ReadOnlySpan<char> TrimSpaceOnly(ReadOnlySpan<char> span) => span.Trim(Space);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> Trim(ReadOnlySpan<char> span)
-        {
-            while (span.Length > 0 && (span[0] == Space || span[0] == Tab))
-            {
-                span = span.Slice(1);
-            }
-
-            while (span.Length > 0 && (span[span.Length - 1] == Space || span[span.Length - 1] == Tab))
-            {
-                span = span.Slice(0, span.Length - 1);
-            }
-
-            return span;
-        }
+        public static ReadOnlySpan<char> Trim(ReadOnlySpan<char> span) => span.Trim(" \t");
     }
 }
