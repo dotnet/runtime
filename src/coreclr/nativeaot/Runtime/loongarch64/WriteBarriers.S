@@ -128,7 +128,7 @@
         // Check that this card has not already been written. Avoiding useless writes is a big win on
         // multi-proc systems since it avoids cache thrashing.
         ld.bu  $t3, $t4, 0
-        addi.d  $t3, $t3, -0xFF
+        xori  $t3, $t3, 0xFF
         beqz  $t3, 0f
 
         ori  $t3, $zero, 0xFF
@@ -140,7 +140,7 @@
         srli.d  $t4, \destReg, 21
         add.d  $t4, $t3, $t4
         ld.bu  $t3, $t4, 0
-        addi.d  $t3, $t3, -0xFF
+        xori  $t3, $t3, 0xFF
         beqz  $t3, 0f
 
         ori  $t3, $zero, 0xFF
@@ -284,24 +284,25 @@ LEAF_END RhpAssignRef, _TEXT
 //
 // On exit:
 //  a0: original value of objectref
-//  t0, t1, t3, t4: trashed
+//  t1, t3, t4: trashed
 //
 LEAF_ENTRY RhpCheckedLockCmpXchg
 
 LOCAL_LABEL(RetryLoop):
         // Load the current value at the destination address.
-        ll.d  $t0, $a0, 0       // t0 = *dest (load with atomic ordering)
+        ll.d  $t3, $a0, 0       // t3 = *dest (load with atomic ordering)
         // Compare the loaded value with the comparand.
-        bne  $t0, $a2, LOCAL_LABEL(CmpXchgNoUpdate) // if (*dest != comparand) goto CmpXchgNoUpdate
+        bne  $t3, $a2, LOCAL_LABEL(EndOfExchange) // if (*dest != comparand) goto EndOfExchange
 
         ori  $t1, $a1, 0
         // Attempt to store the exchange value at the destination address.
         sc.d  $t1, $a0, 0  // t1 = (store conditional result with atomic, 0 if failed)
         beqz  $t1, LOCAL_LABEL(RetryLoop) // if store conditional failed, retry
+        b  LOCAL_LABEL(DoCardsCmpXchg)
 
-        // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
-        // barrier is necessary.
-        dbar 0
+LOCAL_LABEL(EndOfExchange):
+        dbar  0x700
+        b  LOCAL_LABEL(CmpXchgNoUpdate)
 
 LOCAL_LABEL(DoCardsCmpXchg):
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
@@ -311,7 +312,7 @@ LOCAL_LABEL(DoCardsCmpXchg):
         INSERT_CHECKED_WRITE_BARRIER_CORE  $a0, $a1
 
 LOCAL_LABEL(CmpXchgNoUpdate):
-        ori   $a0, $t0, 0   // t0 still contains the original value.
+        ori   $a0, $a2, 0   // a2 still contains the original value.
         jirl  $r0, $ra, 0
 
 LEAF_END RhpCheckedLockCmpXchg, _TEXT
@@ -335,10 +336,6 @@ LEAF_END RhpCheckedLockCmpXchg, _TEXT
 //
 LEAF_ENTRY RhpCheckedXchg, _TEXT
         amswap_db.d  $t1, $a1, $a0      // exchange
-
-        // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
-        // barrier is necessary.
-        dbar 0
 
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in $a0 and the value in $a1 so the arguments are
