@@ -826,7 +826,8 @@ void emitter::emitIns_R_R_R(
     if ((INS_add <= ins && ins <= INS_and) || (INS_mul <= ins && ins <= INS_remuw) ||
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
-        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d))
+        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
+        (INS_min <= ins && ins <= INS_maxu))
     {
 #ifdef DEBUG
         switch (ins)
@@ -913,6 +914,11 @@ void emitter::emitIns_R_R_R(
             case INS_amominu_d:
             case INS_amomaxu_w:
             case INS_amomaxu_d:
+
+            case INS_min:
+            case INS_minu:
+            case INS_max:
+            case INS_maxu:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -4081,6 +4087,15 @@ void emitter::emitDispInsName(
                             return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0000101:
+                {
+                    if ((opcode3 >> 2) != 1) // clmul[h] unsupported
+                        return emitDispIllegalInstruction(code);
+
+                    static const char names[][5] = {"min ", "minu", "max ", "maxu"};
+                    printf("%s           %s, %s, %s\n", names[opcode3 & 0b11], rd, rs1, rs2);
+                    return;
+                }
                 default:
                     return emitDispIllegalInstruction(code);
             }

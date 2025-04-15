@@ -4728,6 +4728,8 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     emitAttr size = emitActualTypeSize(op1);
     bool     is4  = (size == EA_4BYTE);
 
+    bool isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED) != 0;
+
     instruction instr = INS_invalid;
     switch (treeNode->gtIntrinsicName)
     {
@@ -4743,6 +4745,12 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             break;
         case NI_System_Math_MaxNumber:
             instr = is4 ? INS_fmax_s : INS_fmax_d;
+            break;
+        case NI_System_Math_Min:
+            instr = isUnsigned ? INS_minu : INS_min;
+            break;
+        case NI_System_Math_Max:
+            instr = isUnsigned ? INS_maxu : INS_max;
             break;
         case NI_PRIMITIVE_LeadingZeroCount:
             instr = is4 ? INS_clzw : INS_clz;

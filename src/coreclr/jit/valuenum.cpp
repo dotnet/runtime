@@ -9583,9 +9583,10 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
     }
 }
 
-ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN, ValueNum arg1VN)
+ValueNum ValueNumStore::EvalMathFuncBinary(
+    var_types typ, GenTreeFlags flags, NamedIntrinsic gtMathFN, ValueNum arg0VN, ValueNum arg1VN)
 {
-    assert(varTypeIsFloating(typ));
+    assert(varTypeIsArithmetic(typ) RISCV64_ONLY(|| varTypeIsIntegral(typ)));
     assert(arg0VN == VNNormalValue(arg0VN));
     assert(arg1VN == VNNormalValue(arg1VN));
     assert(m_pComp->IsMathIntrinsic(gtMathFN));
@@ -9691,10 +9692,9 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 
             return VNForDoubleCon(res);
         }
-        else
+        else if (typ == TYP_FLOAT)
         {
             // Both operand and its result must be of the same floating point type.
-            assert(typ == TYP_FLOAT);
             assert(typ == TypeOfVN(arg0VN));
             float arg0Val = GetConstantSingle(arg0VN);
 
@@ -9787,6 +9787,37 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
             }
 
             return VNForFloatCon(res);
+        }
+        else
+        {
+#ifdef TARGET_RISCV64
+            // Both operands and its result must be of the same integer type.
+            assert(typ == TypeOfVN(arg0VN));
+            assert(typ == TypeOfVN(arg1VN));
+            // Note: GetConstantInt64 sign-extends 'uint' but for comparison purposes that's ok
+            INT64 arg0Val = GetConstantInt64(arg0VN);
+            INT64 arg1Val = GetConstantInt64(arg1VN);
+            INT64 result  = 0;
+
+            bool isUnsigned = (flags & GTF_UNSIGNED) != 0;
+            switch (gtMathFN)
+            {
+                case NI_System_Math_Min:
+                    result = isUnsigned ? std::min<UINT64>(arg0Val, arg1Val) : std::min<INT64>(arg0Val, arg1Val);
+                    break;
+
+                case NI_System_Math_Max:
+                    result = isUnsigned ? std::max<UINT64>(arg0Val, arg1Val) : std::max<INT64>(arg0Val, arg1Val);
+                    break;
+
+                default:
+                    // the above are the only binary math intrinsics at the time of this writing.
+                    unreached();
+            }
+            return (typ == TYP_LONG) || (typ == TYP_ULONG) ? VNForLongCon(result) : VNForIntCon(result);
+#else  // !TARGET_RISCV64
+            unreached();
+#endif // !TARGET_RISCV64
         }
     }
     else
@@ -12909,8 +12940,8 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         }
         else
         {
-            ValueNumPair newVNP =
-                vnStore->EvalMathFuncBinary(tree->TypeGet(), intrinsic->gtIntrinsicName, arg0VNP, arg1VNP);
+            ValueNumPair newVNP = vnStore->EvalMathFuncBinary(tree->TypeGet(), tree->gtFlags,
+                                                              intrinsic->gtIntrinsicName, arg0VNP, arg1VNP);
             ValueNumPair excSet = vnStore->VNPExcSetUnion(arg0VNPx, arg1VNPx);
             intrinsic->gtVNPair = vnStore->VNPWithExc(newVNP, excSet);
         }
