@@ -200,7 +200,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintBootConfig>$(WasmFingerprintBootConfig)</_WasmFingerprintBootConfig>
       <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintBootConfig>
       <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
+      <_WasmInlineBootConfig>$(WasmInlineBootConfig)</_WasmInlineBootConfig>
+      <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == ''">false</_WasmInlineBootConfig>
       <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
+      <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true' and '$(_WasmInlineBootConfig)' == 'true'">dotnet.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true'">dotnet.boot.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == ''">blazor.boot.json</_WasmBootConfigFileName>
       <_WasmPublishBootConfigFileName>publish.$(_WasmBootConfigFileName)</_WasmPublishBootConfigFileName>
@@ -341,6 +344,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmJsModuleCandidatesForBuild
         Include="@(StaticWebAsset)"
         Condition="'%(StaticWebAsset.AssetTraitName)' == 'JSModule' and '%(StaticWebAsset.AssetTraitValue)' == 'JSLibraryModule' and '%(AssetKind)' != 'Publish'" />
+      <_WasmDotnetJsForBuild
+        Include="@(WasmStaticWebAsset)"
+        Condition="'%(FileName)%(Extension)' == 'dotnet.js' and '%(AssetKind)' != 'Publish' and '$(_WasmInlineBootConfig)' == 'true'" />
     </ItemGroup>
 
     <FilterStaticWebAssetEndpoints Condition="'@(_WasmJsModuleCandidatesForBuild)' != ''"
@@ -376,6 +382,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="false"
       CacheBootResources="$(BlazorCacheBootResources)"
+      MergeWith="@(_WasmDotnetJsForBuild->'%(OriginalItemSpec)')"
       OutputPath="$(_WasmBuildBootJsonPath)"
       ConfigurationFiles="@(_WasmJsConfigStaticWebAsset)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
@@ -434,6 +441,17 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="Endpoints" ItemName="_WasmBuildBootConfigStaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
+    
+    <FilterStaticWebAssetEndpoints
+      Endpoints="@(WasmStaticWebAssetEndpoint)"
+      Assets="@(_WasmDotnetJsForBuild)"
+    >
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmDotnetJsForBuildEndpoint" />
+    </FilterStaticWebAssetEndpoints>
+    <ItemGroup Condition="'@(_WasmDotnetJsForBuild)' != ''">
+      <WasmStaticWebAsset Remove="@(_WasmDotnetJsForBuild)" />
+      <WasmStaticWebAssetEndpoint Remove="@(_WasmDotnetJsForBuildEndpoint)" />
+    </ItemGroup>
 
   </Target>
 
