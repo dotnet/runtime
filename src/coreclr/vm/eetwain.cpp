@@ -1701,6 +1701,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
             offsetOfEstablisherFrameInFuncletSP = 0;
 #elif defined(TARGET_WASM)
             _ASSERTE(!"CallFunclet for WASM not implemented yet");
+            offsetOfEstablisherFrameInFuncletSP = 0;
 #else
             PORTABILITY_ASSERT("offsetOfEstablisherFrameInFuncletSP");
 #endif
