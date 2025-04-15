@@ -2890,8 +2890,10 @@ public:
         : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
         m_pTopInterpMethodContextFrame(pContextFrame),
         m_resumeIP(0),
-        m_resumeSP(0),
-        m_SSP(0)
+        m_resumeSP(0)
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+        , m_SSP(0)
+#endif
     {
         WRAPPER_NO_CONTRACT;
         Push();
