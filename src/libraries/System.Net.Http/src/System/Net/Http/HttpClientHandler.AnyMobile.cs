@@ -45,8 +45,11 @@ namespace System.Net.Http
 
                         // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
                         // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
-                        handler = new MetricsHandler(handler, _nativeMeterFactory, out _);
-                        if (DiagnosticsHandler.IsGloballyEnabled())
+                        if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
+                        {
+                            handler = new MetricsHandler(handler, _nativeMeterFactory, out _);
+                        }
+                        if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation)
                         {
                             handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
                         }

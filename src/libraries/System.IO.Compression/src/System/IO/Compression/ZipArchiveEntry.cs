@@ -43,7 +43,9 @@ namespace System.IO.Compression
         private byte[] _storedEntryNameBytes;
         // only apply to update mode
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
+        private byte[]? _cdTrailingExtraFieldData;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
+        private byte[]? _lhTrailingExtraFieldData;
         private byte[] _fileComment;
         private readonly CompressionLevel _compressionLevel;
 
@@ -53,6 +55,11 @@ namespace System.IO.Compression
             _archive = archive;
 
             _originallyInArchive = true;
+            // It's possible for the CompressionMethod setter and DetectEntryNameVersion to update this, even without any explicit
+            // changes. This can occur if a ZipArchive instance runs in Update mode and opens a stream with invalid data. In such
+            // a situation, both the local file header and the central directory header will be rewritten (to prevent the headers
+            // from falling out of sync when the central directory header is rewritten.)
+            Changes = ZipArchive.ChangeState.Unchanged;
 
             _diskNumberStart = cd.DiskNumberStart;
             _versionMadeByPlatform = (ZipVersionMadeByPlatform)cd.VersionMadeByCompatibility;
@@ -84,12 +91,11 @@ namespace System.IO.Compression
             _lhUnknownExtraFields = null;
             // the cd should have this as null if we aren't in Update mode
             _cdUnknownExtraFields = cd.ExtraFields;
+            _cdTrailingExtraFieldData = cd.TrailingExtraFieldData;
 
             _fileComment = cd.FileComment;
 
             _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
-
-            Changes = ZipArchive.ChangeState.Unchanged;
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -543,8 +549,9 @@ namespace System.IO.Compression
 
 
             // determine if we can fit zip64 extra field and original extra fields all in
+            int currExtraFieldDataLength = ZipGenericExtraField.TotalSize(_cdUnknownExtraFields, _cdTrailingExtraFieldData?.Length ?? 0);
             int bigExtraFieldLength = (zip64ExtraField != null ? zip64ExtraField.TotalSize : 0)
-                                      + (_cdUnknownExtraFields != null ? ZipGenericExtraField.TotalSize(_cdUnknownExtraFields) : 0);
+                                      + currExtraFieldDataLength;
             ushort extraFieldLength;
             if (bigExtraFieldLength > ushort.MaxValue)
             {
@@ -561,7 +568,7 @@ namespace System.IO.Compression
                 long centralDirectoryHeaderLength = ZipCentralDirectoryFileHeader.FieldLocations.DynamicData
                     + _storedEntryNameBytes.Length
                     + (zip64ExtraField != null ? zip64ExtraField.TotalSize : 0)
-                    + (_cdUnknownExtraFields != null ? ZipGenericExtraField.TotalSize(_cdUnknownExtraFields) : 0)
+                    + currExtraFieldDataLength
                     + _fileComment.Length;
 
                 _archive.ArchiveStream.Seek(centralDirectoryHeaderLength, SeekOrigin.Current);
@@ -609,13 +616,11 @@ namespace System.IO.Compression
                 _archive.ArchiveStream.Write(cdStaticHeader);
                 _archive.ArchiveStream.Write(_storedEntryNameBytes);
 
-                // write extra fields, and only write zip64ExtraField if we decided we need it (it's not null)
+                // only write zip64ExtraField if we decided we need it (it's not null)
                 zip64ExtraField?.WriteBlock(_archive.ArchiveStream);
 
-                if (_cdUnknownExtraFields != null)
-                {
-                    ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _archive.ArchiveStream);
-                }
+                // write extra fields (and any malformed trailing data).
+                ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream);
 
                 if (_fileComment.Length > 0)
                 {
@@ -626,7 +631,7 @@ namespace System.IO.Compression
 
         // throws exception if fails, will get called on every relevant entry before closing in update mode
         // can throw InvalidDataException
-        internal void LoadLocalHeaderExtraFieldAndCompressedBytesIfNeeded()
+        internal void LoadLocalHeaderExtraFieldIfNeeded()
         {
             // we should have made this exact call in _archive.Init through ThrowIfOpenable
             Debug.Assert(IsOpenable(false, true, out _));
@@ -635,8 +640,16 @@ namespace System.IO.Compression
             if (_originallyInArchive)
             {
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveStream);
+                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveStream, out _lhTrailingExtraFieldData);
             }
+        }
+
+        // throws exception if fails, will get called on every relevant entry before closing in update mode
+        // can throw InvalidDataException
+        internal void LoadCompressedBytesIfNeeded()
+        {
+            // we should have made this exact call in _archive.Init through ThrowIfOpenable
+            Debug.Assert(IsOpenable(false, true, out _));
 
             if (!_everOpenedForWrite && _originallyInArchive)
             {
@@ -979,8 +992,9 @@ namespace System.IO.Compression
             _offsetOfLocalHeader = _archive.ArchiveStream.Position;
 
             // calculate extra field. if zip64 stuff + original extraField aren't going to fit, dump the original extraField, because this is more important
+            int currExtraFieldDataLength = ZipGenericExtraField.TotalSize(_lhUnknownExtraFields, _lhTrailingExtraFieldData?.Length ?? 0);
             int bigExtraFieldLength = (zip64ExtraField != null ? zip64ExtraField.TotalSize : 0)
-                                      + (_lhUnknownExtraFields != null ? ZipGenericExtraField.TotalSize(_lhUnknownExtraFields) : 0);
+                                      + currExtraFieldDataLength;
             ushort extraFieldLength;
             if (bigExtraFieldLength > ushort.MaxValue)
             {
@@ -1003,10 +1017,7 @@ namespace System.IO.Compression
                     _archive.ArchiveStream.Seek(zip64ExtraField.TotalSize, SeekOrigin.Current);
                 }
 
-                if (_lhUnknownExtraFields != null)
-                {
-                    _archive.ArchiveStream.Seek(ZipGenericExtraField.TotalSize(_lhUnknownExtraFields), SeekOrigin.Current);
-                }
+                _archive.ArchiveStream.Seek(currExtraFieldDataLength, SeekOrigin.Current);
             }
             else
             {
@@ -1029,8 +1040,7 @@ namespace System.IO.Compression
                 // Only when handling zip64
                 zip64ExtraField?.WriteBlock(_archive.ArchiveStream);
 
-                if (_lhUnknownExtraFields != null)
-                    ZipGenericExtraField.WriteAllBlocks(_lhUnknownExtraFields, _archive.ArchiveStream);
+                ZipGenericExtraField.WriteAllBlocks(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream);
             }
 
             return zip64ExtraField != null;
@@ -1252,10 +1262,12 @@ namespace System.IO.Compression
             if (_versionToExtract < value)
             {
                 _versionToExtract = value;
+                Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
             if (_versionMadeBySpecification < value)
             {
                 _versionMadeBySpecification = value;
+                Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
         }
 

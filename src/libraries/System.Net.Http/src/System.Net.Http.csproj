@@ -24,10 +24,6 @@
     <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\CancellationHelper.cs" />
