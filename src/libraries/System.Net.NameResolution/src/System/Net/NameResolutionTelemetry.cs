@@ -170,6 +170,8 @@ namespace System.Net
         private readonly long _startingTimestamp;
         private readonly Activity? _activity;
 
+
+#pragma warning disable CA2207 // remove the explicit static constructor
         static NameResolutionActivity()
         {
             if (IsActivitySourceSupported)
@@ -181,6 +183,7 @@ namespace System.Net
                 s_activitySource = null;
             }
         }
+#pragma warning restore CA2207 // remove the explicit static constructor
 
         public NameResolutionActivity(object hostNameOrAddress, long startingTimestamp)
         {

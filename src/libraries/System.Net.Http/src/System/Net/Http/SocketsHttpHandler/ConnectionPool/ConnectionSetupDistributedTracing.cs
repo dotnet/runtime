@@ -16,6 +16,7 @@ namespace System.Net.Http
 
         private static readonly ActivitySource? s_connectionsActivitySource;
 
+#pragma warning disable CA1810 // remove the explicit static constructor
         static ConnectionSetupDistributedTracing()
         {
             if (IsActivitySourceSupported)
@@ -27,6 +28,7 @@ namespace System.Net.Http
                 s_connectionsActivitySource = null;
             }
         }
+#pragma warning restore CA1810 // remove the explicit static constructor
 
         public static Activity? StartConnectionSetupActivity(bool isSecure, HttpAuthority authority)
         {

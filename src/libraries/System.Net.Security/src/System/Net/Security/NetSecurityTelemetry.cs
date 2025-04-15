@@ -23,6 +23,7 @@ namespace System.Net.Security
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
         public static readonly NetSecurityTelemetry Log = new NetSecurityTelemetry();
 
+#pragma warning disable CA1810 // remove the explicit static constructor
         static NetSecurityTelemetry()
         {
             if (IsActivitySourceSupported)
@@ -34,6 +35,7 @@ namespace System.Net.Security
                 s_activitySource = null;
             }
         }
+#pragma warning restore CA1810 // remove the explicit static constructor
 
         private IncrementingPollingCounter? _tlsHandshakeRateCounter;
         private PollingCounter? _totalTlsHandshakesCounter;

@@ -25,6 +25,7 @@ namespace System.Net.Http
         [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
         private static bool IsActivitySourceSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
 
+#pragma warning disable CA1810 // remove the explicit static constructor
         static DiagnosticsHandler()
         {
             if (IsActivitySourceSupported)
@@ -36,6 +37,7 @@ namespace System.Net.Http
                 s_activitySource = null;
             }
         }
+#pragma warning restore CA1810 // remove the explicit static constructor
 
         public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {

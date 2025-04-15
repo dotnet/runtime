@@ -39,8 +39,8 @@ class Program
         trimmedTypes.Add((typeof(ActivityStatusCode).Assembly,"System.Diagnostics.DiagnosticSource", true));
         trimmedTypes.Add((typeof(ActivityStatusCode).Assembly,"System.Diagnostics.DiagnosticListener", true));
         trimmedTypes.Add((typeof(ActivityStatusCode).Assembly,"System.Diagnostics.HttpHandlerDiagnosticListener", true));
+        trimmedTypes.Add((typeof(ActivityStatusCode).Assembly,"System.Diagnostics.DiagLinkedList ", true));
 
-        trimmedTypes.Add((typeof(ActivityStatusCode).Assembly,"System.Diagnostics.DiagLinkedList ", false));
         trimmedTypes.Add((typeof(ActivityStatusCode).Assembly,"System.Diagnostics.ActivitySource", false));
         trimmedTypes.Add((typeof(ActivityStatusCode).Assembly,"System.Diagnostics.Activity", false));
 

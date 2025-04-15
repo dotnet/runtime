@@ -20,6 +20,7 @@ namespace System.Net.Sockets
 
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
+#pragma warning disable CA1810 // remove the explicit static constructor
         static SocketsTelemetry()
         {
             if (IsActivitySourceSupported)
@@ -31,6 +32,7 @@ namespace System.Net.Sockets
                 s_connectActivitySource = null;
             }
         }
+#pragma warning restore CA1810 // remove the explicit static constructor
 
         private PollingCounter? _currentOutgoingConnectAttemptsCounter;
         private PollingCounter? _outgoingConnectionsEstablishedCounter;

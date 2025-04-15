@@ -524,6 +524,11 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity AddEvent(ActivityEvent e)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                return this;
+            }
+
             if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
             {
                 _events.Add(e);
@@ -612,6 +617,11 @@ namespace System.Diagnostics
         /// </remarks>
         public Activity AddLink(ActivityLink link)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                return this;
+            }
+
             if (_links != null || Interlocked.CompareExchange(ref _links, new DiagLinkedList<ActivityLink>(link), null) != null)
             {
                 _links.Add(link);
