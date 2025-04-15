@@ -10,6 +10,6 @@
     <LDFlag Include="/guard:ehcont" />
   </ItemGroup>
   <ItemGroup>
-    <CMakeArg Include="-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1" Condition="'$(BuildFlavor)' != 'NOIPO'" />
+    <CMakeArg Include="-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1" Condition="'$(BuildFlavor)' != 'NOIPO' and '$(Configuration)' == 'Release'" />
   </ItemGroup>
 </Project>
