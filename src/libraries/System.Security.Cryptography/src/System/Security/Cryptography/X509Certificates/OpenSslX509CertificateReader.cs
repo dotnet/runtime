@@ -615,10 +615,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return null;
             }
 
-            // TODO: Use MLDsaOpenSsl when it is available.
-            return MLDsaImplementation.FromHandle(
-                MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(KeyAlgorithm)!,
-                _privateKey);
+            return new MLDsaOpenSsl(_privateKey);
         }
 
         private OpenSslX509CertificateReader CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
@@ -697,7 +694,10 @@ namespace System.Security.Cryptography.X509Certificates
                 return CopyWithPrivateKey(impl.DuplicateHandle());
             }
 
-            // TODO: Special case MLDsaOpenSsl when it is available.
+            if (privateKey is MLDsaOpenSsl implOpenSsl)
+            {
+                return CopyWithPrivateKey(implOpenSsl.DuplicateKeyHandle());
+            }
 
             using (MLDsaImplementation clone = MLDsaImplementation.DuplicatePrivateKey(privateKey))
             {

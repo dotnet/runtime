@@ -6923,6 +6923,9 @@ bool ValueNumStore::IsVNConstantBound(ValueNum vn)
         {
             const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
             const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
+
+            // Technically, we can allow both to be constants,
+            // but such relops are expected to be constant folded anyway.
             return op1IsConst != op2IsConst;
         }
     }
@@ -6940,6 +6943,8 @@ bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
             case VNF_LE_UN:
             case VNF_GE_UN:
             case VNF_GT_UN:
+                // Technically, we can allow both to be constants,
+                // but such relops are expected to be constant folded anyway.
                 return IsVNPositiveInt32Constant(funcApp.m_args[0]) != IsVNPositiveInt32Constant(funcApp.m_args[1]);
             default:
                 break;

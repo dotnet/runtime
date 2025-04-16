@@ -496,7 +496,6 @@ class Thread
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
 
-    friend class ExceptionTracker;
     friend class ThreadExceptionState;
 
     friend class StackFrameIterator;
@@ -3698,7 +3697,7 @@ private:
 private:
     // At the end of a catch, we may raise ThreadAbortException.  If catch clause set IP to resume in the
     // corresponding try block, our exception system will execute the same catch clause again and again.
-    // So we save reference to the clause post which TA was reraised, which is used in ExceptionTracker::ProcessManagedCallFrame
+    // So we save reference to the clause post which TA was reraised, which is used in ExInfo::ProcessManagedCallFrame
     // to make ThreadAbort proceed ahead instead of going in a loop.
     // This problem only happens on Win64 due to JIT64.  The common scenario is VB's "On error resume next"
 #ifdef FEATURE_EH_FUNCLETS
@@ -4032,7 +4031,6 @@ typedef SList<Thread, false, PTR_Thread> ThreadList;
 #define CHECK_ONE_STORE()       _ASSERTE(this == ThreadStore::s_pThreadStore);
 
 typedef DPTR(class ThreadStore) PTR_ThreadStore;
-typedef DPTR(class ExceptionTracker) PTR_ExceptionTracker;
 
 class ThreadStore
 {
