@@ -447,7 +447,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         mov     [rcx], rsp
 
         // Invoke the filter funclet
-        call    rsi
+        call    rdx
 
         FUNCLET_CALL_EPILOGUE
 
