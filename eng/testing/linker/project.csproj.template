@@ -51,17 +51,17 @@
     <MicrosoftNetCoreAppFrameworkName>{MicrosoftNetCoreAppFrameworkName}</MicrosoftNetCoreAppFrameworkName>
     <MicrosoftNetCoreAppRefPackDir>{MicrosoftNetCoreAppRefPackDir}</MicrosoftNetCoreAppRefPackDir>
     <MicrosoftNetCoreAppRuntimePackDir>{MicrosoftNetCoreAppRuntimePackDir}</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>{MicrosoftNetCoreAppRuntimePackRidLibTfmDir}</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
+    <MicrosoftNetCoreAppRuntimePackNativeDir>{MicrosoftNetCoreAppRuntimePackNativeDir}</MicrosoftNetCoreAppRuntimePackNativeDir>
+    <CoreCLRILCompilerDir>{CoreCLRILCompilerDir}</CoreCLRILCompilerDir>
+    <CoreCLRCrossILCompilerDir>{CoreCLRCrossILCompilerDir}</CoreCLRCrossILCompilerDir>
+    <CoreCLRAotSdkDir>{CoreCLRAotSdkDir}</CoreCLRAotSdkDir>
 
     <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
     {AdditionalProperties}
 
     <!-- Needed for PublishAot -->
-    <IlcToolsPath>{IlcToolsPath}</IlcToolsPath>
-    <IlcBuildTasksPath>{IlcBuildTasksPath}</IlcBuildTasksPath>
-    <IlcSdkPath>{IlcSdkPath}</IlcSdkPath>
-    <IlcFrameworkPath>{IlcFrameworkPath}</IlcFrameworkPath>
-    <IlcFrameworkNativePath>{IlcFrameworkNativePath}</IlcFrameworkNativePath>
     <CoreCLRBuildIntegrationDir>{CoreCLRBuildIntegrationDir}</CoreCLRBuildIntegrationDir>
   </PropertyGroup>
 
