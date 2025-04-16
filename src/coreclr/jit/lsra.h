@@ -546,7 +546,6 @@ public:
     regNumber     regNum;
     bool          isCalleeSave;
     unsigned char regOrder;
-    RegRecord *nextRegRecord; // next register in the list
 };
 
 inline bool leafInRange(GenTree* leaf, int lower, int upper)

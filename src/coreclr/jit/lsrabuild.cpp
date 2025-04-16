@@ -1931,23 +1931,11 @@ const unsigned         lsraRegOrderMskSize = ArrLen(lsraRegOrderMsk);
 //
 void LinearScan::buildPhysRegRecords()
 {
-    regNumber reg = REG_FIRST;
-    RegRecord* prev = &physRegs[reg];
-    prev->init(reg);
-    reg = REG_NEXT(reg);
-    for (; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* curr = &physRegs[reg];
         curr->init(reg);
-        prev->nextRegRecord = curr;
-        prev = curr;
     }
-    prev->nextRegRecord = nullptr;
-#if defined(TARGET_AMD64)
-    RegRecord* lastInt = &physRegs[get_REG_INT_LAST()];
-    RegRecord* firstSIMD = &physRegs[REG_FP_FIRST];
-    lastInt->nextRegRecord = firstSIMD;
-#endif //  TARGET_AMD64
     for (unsigned int i = 0; i < lsraRegOrderSize; i++)
     {
         regNumber  reg  = lsraRegOrder[i];
@@ -2764,9 +2752,6 @@ void LinearScan::buildIntervals()
     if (!needNonIntegerRegisters)
     {
         availableRegCount = REG_INT_COUNT;
-        int last  = availableRegCount - 1;
-        RegRecord* lastRegRecord = &physRegs[last];
-        lastRegRecord->nextRegRecord = nullptr;
     }
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
