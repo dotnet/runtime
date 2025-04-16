@@ -99,7 +99,8 @@ endif()
 
 if (CMAKE_USE_MEMORY64)
     message("MRH_LOGGING: Building native libs with MEMORY64 enabled")
-    add_compile_options(--target=wasm64)    
+    add_compile_options(--target=wasm64)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim_stubs.c)
 endif()
 
 if (LOCAL_BUILD)
