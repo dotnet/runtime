@@ -1518,7 +1518,7 @@ void HelperCallProperties::init()
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
         bool isNoEscape    = false; // true if none of the GC ref arguments can escape
-        bool isNoGC        = false; // true is the helper cannot trigger GC
+        bool isNoGC        = false; // true if the helper cannot trigger GC
 
         switch (helper)
         {

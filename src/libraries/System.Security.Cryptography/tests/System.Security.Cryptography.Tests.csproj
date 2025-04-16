@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -156,6 +156,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemBaseTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemBaseTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemContractTests.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemImplementationTests.cs"
@@ -164,6 +166,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemKeyTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemKeyTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PbeParametersTests.cs"
+             Link="CommonTest\System\Security\Cryptography\PbeParametersTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"
@@ -280,8 +284,16 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaTestsBase.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestImplementation.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestImplementation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaImplementationTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaImplementationTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsBase.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsBase.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherOneShotTests.cs"
@@ -318,6 +330,18 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\TestData.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\TestData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaAlgorithmTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaAlgorithmTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaConstructionTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaConstructionTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaPlatformTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaPlatformTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaBaseClassTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaBaseClassTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestsBase.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestsBase.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestImplementation.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestImplementation.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\Symmetric\SymmetricOneShotBase.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\Symmetric\SymmetricOneShotBase.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs"
@@ -335,17 +359,19 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
-             Link="CommonTest\System\Security\Cryptography\509Certificates\RevocationResponder.cs" />
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\TempFileHolder.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\TempFileHolder.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\TestData.cs"
-             Link="CommonTest\System\Security\Cryptography\509Certificates\TestData.cs" />
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\TestData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\MLKemCertTests.cs"
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\MLKemCertTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12CollectionTests.cs"
-             Link="CommonTest\System\Security\Cryptography\509Certificates\X509CertificateLoaderPkcs12CollectionTests.cs" />
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12CollectionTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.cs"
-             Link="CommonTest\System\Security\Cryptography\509Certificates\X509CertificateLoaderPkcs12Tests.cs" />
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderTests.cs"
-             Link="CommonTest\System\Security\Cryptography\509Certificates\X509CertificateLoaderTests.cs" />
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AesGcmTests.cs"
              Link="CommonTest\System\Security\Cryptography\AesGcmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
@@ -422,7 +448,6 @@
     <Compile Include="OidCollectionTests.cs" />
     <Compile Include="OpenSslNamedKeysTests.manual.cs" />
     <Compile Include="PaddingModeTests.cs" />
-    <Compile Include="PbeParametersTests.cs" />
     <Compile Include="PemEncodingTests.cs" />
     <Compile Include="PemEncodingFindTests.cs" />
     <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
@@ -534,7 +559,7 @@
     <Compile Include="DefaultECDsaProvider.Windows.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Windows.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
-             Link="CommonTest\System\Security\Cryptography\509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs" />
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="DefaultECDsaProvider.Unix.cs" />
@@ -616,11 +641,14 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.ExportKeyContents.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.FromData.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.FromData.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPKey.MLDsa.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPKey.MLDsa.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
-    <Compile Include="Interop.EVP.Kem.ExtraHandle.cs" />
+    <Compile Include="Interop.EVP.ExtraHandle.cs" />
+    <Compile Include="MLDsaOpenSslTests.Unix.cs" />
     <Compile Include="MLKemOpenSslTests.Unix.cs" />
     <Compile Include="X509Certificates\HostnameMatchTests.Unix.cs" />
     <Compile Include="X509Certificates\X509FilesystemTests.Unix.cs" />
