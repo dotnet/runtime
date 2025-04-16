@@ -130,25 +130,7 @@ void PrintToStdErrA(const char *pszString)
     }
     CONTRACTL_END
 
-    minipal_log_flags flags = minipal_log_flags_level_error;
-#ifdef HOST_WINDOWS
-    const char *next = pszString;
-    while (*next)
-    {
-        if (next[0] == '\n')
-        {
-            break;
-        }
-        else if (next[0] == '\r' && next[1] == '\n')
-        {
-            minipal_log_flags_add(flags, minipal_log_flags_output_mode_binary);
-            break;
-        }
-        next++;
-    }
-#endif
-
-    minipal_log_write(flags, pszString);
+    minipal_log_write_error(pszString);
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)

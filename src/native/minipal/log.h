@@ -15,53 +15,45 @@ extern "C"
 
 typedef enum
 {
-    // Log level flags.
-    minipal_log_flags_level_fatal = 1 << 1,
-    minipal_log_flags_level_error = 1 << 2,
-    minipal_log_flags_level_warning = 1 << 3,
-    minipal_log_flags_level_info = 1 << 4,
-    minipal_log_flags_level_debug = 1 << 5,
-    minipal_log_flags_level_verbose = 1 << 6,
-    // Log output mode flags.
-    minipal_log_flags_output_mode_binary = 1 << 7,
+    minipal_log_flags_fatal = 1 << 1,
+    minipal_log_flags_error = 1 << 2,
+    minipal_log_flags_warning = 1 << 3,
+    minipal_log_flags_info = 1 << 4,
+    minipal_log_flags_debug = 1 << 5,
+    minipal_log_flags_verbose = 1 << 6
 } minipal_log_flags;
 
-#define minipal_log_flags_add(flags, flag) (flags = (minipal_log_flags)(flags | flag))
-#define minipal_log_flags_remove(flags, flag) (flags = (minipal_log_flags)(flags & ~flag))
-#define minipal_log_flags_level(flags) ((minipal_log_flags)(flags & ~(minipal_log_flags_output_mode_binary)))
-#define minipal_log_flags_output_mode(flags) ((flags) & minipal_log_flags_output_mode_binary)
-
-#define minipal_log_print_fatal(...) minipal_log_print(minipal_log_flags_level_fatal, __VA_ARGS__)
-#define minipal_log_print_error(...) minipal_log_print(minipal_log_flags_level_error, __VA_ARGS__)
-#define minipal_log_print_info(...) minipal_log_print(minipal_log_flags_level_info, __VA_ARGS__)
-#define minipal_log_print_verbose(...) minipal_log_print(minipal_log_flags_level_verbose, __VA_ARGS__)
+#define minipal_log_print_fatal(...) minipal_log_print(minipal_log_flags_fatal, __VA_ARGS__)
+#define minipal_log_print_error(...) minipal_log_print(minipal_log_flags_error, __VA_ARGS__)
+#define minipal_log_print_info(...) minipal_log_print(minipal_log_flags_info, __VA_ARGS__)
+#define minipal_log_print_verbose(...) minipal_log_print(minipal_log_flags_verbose, __VA_ARGS__)
 int minipal_log_print(minipal_log_flags flags, const char* fmt, ... );
 
-#define minipal_log_vprint_fatal(...) minipal_log_vprint(minipal_log_flags_level_fatal, __VA_ARGS__)
-#define minipal_log_vprint_error(...) minipal_log_vprint(minipal_log_flags_level_error, __VA_ARGS__)
-#define minipal_log_vprint_info(...) minipal_log_vprint(minipal_log_flags_level_info, __VA_ARGS__)
-#define minipal_log_vprint_verbose(...) minipal_log_vprint(minipal_log_flags_level_verbose, __VA_ARGS__)
+#define minipal_log_vprint_fatal(...) minipal_log_vprint(minipal_log_flags_fatal, __VA_ARGS__)
+#define minipal_log_vprint_error(...) minipal_log_vprint(minipal_log_flags_error, __VA_ARGS__)
+#define minipal_log_vprint_info(...) minipal_log_vprint(minipal_log_flags_info, __VA_ARGS__)
+#define minipal_log_vprint_verbose(...) minipal_log_vprint(minipal_log_flags_verbose, __VA_ARGS__)
 int minipal_log_vprint(minipal_log_flags flags, const char* fmt,va_list args);
 
-#define minipal_log_flush_fatal() minipal_log_flush(minipal_log_flags_level_fatal)
-#define minipal_log_flush_error() minipal_log_flush(minipal_log_flags_level_error)
-#define minipal_log_flush_info() minipal_log_flush(minipal_log_flags_level_info)
-#define minipal_log_flush_verbose() minipal_log_flush(minipal_log_flags_level_verbose)
+#define minipal_log_flush_fatal() minipal_log_flush(minipal_log_flags_fatal)
+#define minipal_log_flush_error() minipal_log_flush(minipal_log_flags_error)
+#define minipal_log_flush_info() minipal_log_flush(minipal_log_flags_info)
+#define minipal_log_flush_verbose() minipal_log_flush(minipal_log_flags_verbose)
 void minipal_log_flush(minipal_log_flags flags);
 void minipal_log_flush_all(void);
 
 // None crt, async safe log write.
-#define minipal_log_write_fatal(msg) minipal_log_write(minipal_log_flags_level_fatal, msg)
-#define minipal_log_write_error(msg) minipal_log_write(minipal_log_flags_level_error, msg)
-#define minipal_log_write_info(msg) minipal_log_write(minipal_log_flags_level_info, msg)
-#define minipal_log_write_verbose(msg) minipal_log_write(minipal_log_flags_level_verbose, msg)
+#define minipal_log_write_fatal(msg) minipal_log_write(minipal_log_flags_fatal, msg)
+#define minipal_log_write_error(msg) minipal_log_write(minipal_log_flags_error, msg)
+#define minipal_log_write_info(msg) minipal_log_write(minipal_log_flags_info, msg)
+#define minipal_log_write_verbose(msg) minipal_log_write(minipal_log_flags_verbose, msg)
 int minipal_log_write(minipal_log_flags flags, const char* msg);
 
 // None crt, async safe log sync.
-#define minipal_log_sync_fatal() minipal_log_sync(minipal_log_flags_level_fatal)
-#define minipal_log_sync_error() minipal_log_sync(minipal_log_flags_level_error)
-#define minipal_log_sync_info() minipal_log_sync(minipal_log_flags_level_info)
-#define minipal_log_sync_verbose() minipal_log_sync(minipal_log_flags_level_verbose)
+#define minipal_log_sync_fatal() minipal_log_sync(minipal_log_flags_fatal)
+#define minipal_log_sync_error() minipal_log_sync(minipal_log_flags_error)
+#define minipal_log_sync_info() minipal_log_sync(minipal_log_flags_info)
+#define minipal_log_sync_verbose() minipal_log_sync(minipal_log_flags_verbose)
 void minipal_log_sync(minipal_log_flags flags);
 void minipal_log_sync_all(void);
 

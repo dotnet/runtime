@@ -26,19 +26,19 @@
 
 static int android_log_flag(minipal_log_flags flags)
 {
-    switch(minipal_log_flags_level(flags))
+    switch(flags)
     {
-    case minipal_log_flags_level_fatal:
+    case minipal_log_flags_fatal:
         return ANDROID_LOG_FATAL;
-    case minipal_log_flags_level_error:
+    case minipal_log_flags_error:
         return ANDROID_LOG_ERROR;
-    case minipal_log_flags_level_warning:
+    case minipal_log_flags_warning:
         return ANDROID_LOG_WARN;
-    case minipal_log_flags_level_info:
+    case minipal_log_flags_info:
         return ANDROID_LOG_INFO;
-    case minipal_log_flags_level_debug:
+    case minipal_log_flags_debug:
         return ANDROID_LOG_DEBUG;
-    case minipal_log_flags_level_verbose:
+    case minipal_log_flags_verbose:
         return ANDROID_LOG_VERBOSE;
     default:
         return ANDROID_LOG_UNKNOWN;
@@ -177,15 +177,15 @@ void minipal_log_sync_all(void)
 
 static FILE * get_std_file(minipal_log_flags flags)
 {
-    switch(minipal_log_flags_level(flags))
+    switch(flags)
     {
-    case minipal_log_flags_level_fatal:
-    case minipal_log_flags_level_error:
+    case minipal_log_flags_fatal:
+    case minipal_log_flags_error:
         return stderr;
-    case minipal_log_flags_level_warning:
-    case minipal_log_flags_level_info:
-    case minipal_log_flags_level_debug:
-    case minipal_log_flags_level_verbose:
+    case minipal_log_flags_warning:
+    case minipal_log_flags_info:
+    case minipal_log_flags_debug:
+    case minipal_log_flags_verbose:
     default:
         return stdout;
     }
@@ -214,8 +214,8 @@ void minipal_log_flush(minipal_log_flags flags)
 
 void minipal_log_flush_all(void)
 {
-    minipal_log_flush(minipal_log_flags_level_error);
-    minipal_log_flush(minipal_log_flags_level_info);
+    minipal_log_flush(minipal_log_flags_error);
+    minipal_log_flush(minipal_log_flags_info);
 }
 
 #ifdef HOST_WINDOWS
@@ -226,16 +226,16 @@ typedef ptrdiff_t ssize_t;
 
 static HANDLE get_std_handle(minipal_log_flags flags)
 {
-    switch(minipal_log_flags_level(flags))
+    switch(flags)
     {
-    case minipal_log_flags_level_fatal:
-    case minipal_log_flags_level_error:
+    case minipal_log_flags_fatal:
+    case minipal_log_flags_error:
         return GetStdHandle(STD_ERROR_HANDLE);
         break;
-    case minipal_log_flags_level_warning:
-    case minipal_log_flags_level_info:
-    case minipal_log_flags_level_debug:
-    case minipal_log_flags_level_verbose:
+    case minipal_log_flags_warning:
+    case minipal_log_flags_info:
+    case minipal_log_flags_debug:
+    case minipal_log_flags_verbose:
     default:
         return GetStdHandle(STD_OUTPUT_HANDLE);
         break;
@@ -361,7 +361,7 @@ void minipal_log_sync(minipal_log_flags flags)
 
 void minipal_log_sync_all(void)
 {
-    minipal_log_sync(minipal_log_flags_level_error);
-    minipal_log_sync(minipal_log_flags_level_info);
+    minipal_log_sync(minipal_log_flags_error);
+    minipal_log_sync(minipal_log_flags_info);
 }
 #endif

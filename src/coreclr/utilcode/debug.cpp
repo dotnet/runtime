@@ -202,7 +202,7 @@ HRESULT _OutOfMemory(LPCSTR szFile, int iLine)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_DEBUG_ONLY;
 
-    minipal_log_print(minipal_log_flags_level_warning, "WARNING: Out of memory condition being issued from: %s, line %d\n", szFile, iLine);
+    minipal_log_print(minipal_log_flags_warning, "WARNING: Out of memory condition being issued from: %s, line %d\n", szFile, iLine);
     return (E_OUTOFMEMORY);
 }
 
