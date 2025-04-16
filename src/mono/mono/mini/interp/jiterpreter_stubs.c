@@ -62,6 +62,8 @@ void jiterp_preserve_module (void);
 //  functions are not consumed by C anywhere else
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
 
+int mono_jiterp_first_trace_fn_ptr = 0;
+
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_encode_leb64_ref (unsigned char * destination, void * source, int valueIsSigned) {	
 		return 0;	
