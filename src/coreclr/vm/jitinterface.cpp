@@ -14602,19 +14602,17 @@ bool CEEInfo::getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken,
     return success;
 }
 
-static Signature AllocateSignature(LoaderAllocator* alloc, SigBuilder& sigBuilder)
+static Signature AllocateSignature(LoaderAllocator* alloc, SigBuilder& sigBuilder, AllocMemTracker* pamTracker)
 {
     DWORD sigLen;
     PCCOR_SIGNATURE builderSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&sigLen);
-    AllocMemTracker pamTracker;
-    PVOID newBlob = pamTracker.Track(alloc->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sigLen)));
+    PVOID newBlob = pamTracker->Track(alloc->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sigLen)));
     memcpy(newBlob, builderSig, sigLen);
 
-    pamTracker.SuppressRelease();
     return Signature((PCCOR_SIGNATURE)newBlob, sigLen);
 }
 
-static Signature BuildResumptionStubSignature(LoaderAllocator* alloc)
+static Signature BuildResumptionStubSignature(LoaderAllocator* alloc, AllocMemTracker* pamTracker)
 {
     SigBuilder sigBuilder;
     sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
@@ -14622,10 +14620,10 @@ static Signature BuildResumptionStubSignature(LoaderAllocator* alloc)
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // return type
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
 
-    return AllocateSignature(alloc, sigBuilder);
+    return AllocateSignature(alloc, sigBuilder, pamTracker);
 }
 
-static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* mt, LoaderAllocator* alloc)
+static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* mt, LoaderAllocator* alloc, AllocMemTracker* pamTracker)
 {
     unsigned numArgs = 0;
     if (msig.HasGenericContextArg())
@@ -14692,7 +14690,7 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
 #endif
 
-    return AllocateSignature(alloc, sigBuilder);
+    return AllocateSignature(alloc, sigBuilder, pamTracker);
 }
 
 CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
@@ -14706,11 +14704,12 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     MethodDesc* md = m_pMethodBeingCompiled;
 
     LoaderAllocator* loaderAlloc = md->GetLoaderAllocator();
+    AllocMemTracker amTracker;
 
-    Signature stubSig = BuildResumptionStubSignature(md->GetLoaderAllocator());
+    Signature stubSig = BuildResumptionStubSignature(md->GetLoaderAllocator(), &amTracker);
 
     MetaSig msig(md);
-    Signature calliSig = BuildResumptionStubCalliSignature(msig, md->GetMethodTable(), md->GetLoaderAllocator());
+    Signature calliSig = BuildResumptionStubCalliSignature(msig, md->GetMethodTable(), md->GetLoaderAllocator(), &amTracker);
 
     SigTypeContext emptyCtx;
     ILStubLinker sl(md->GetModule(), stubSig, &emptyCtx, NULL, ILSTUB_LINKER_FLAG_NONE);
@@ -14791,9 +14790,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     else
     {
         {
-            AllocMemTracker pamTracker;
-            m_finalCodeAddressSlot = (PCODE*)pamTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
-            pamTracker.SuppressRelease();
+            m_finalCodeAddressSlot = (PCODE*)amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
         }
 
         pCode->EmitLDC((DWORD_PTR)m_finalCodeAddressSlot);
@@ -14926,6 +14923,8 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
             &emptyCtx,
             &sl);
 
+    amTracker.SuppressRelease();
+
     const char* optimizationTierName = nullptr;
     switch (ncv.GetOptimizationTier())
     {
@@ -14942,11 +14941,11 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     int numWritten = sprintf_s(name, ARRAY_SIZE(name), "IL_STUB_AsyncResume_%s_%s", m_pMethodBeingCompiled->GetName(), optimizationTierName);
     if (numWritten != -1)
     {
-        AllocMemTracker pamTracker;
-        void* allocedMem = pamTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numWritten + 1)));
+        AllocMemTracker amTracker;
+        void* allocedMem = amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numWritten + 1)));
         memcpy(allocedMem, name, (size_t)(numWritten + 1));
         result->AsDynamicMethodDesc()->SetMethodName((LPCUTF8)allocedMem);
-        pamTracker.SuppressRelease();
+        amTracker.SuppressRelease();
     }
 
 #ifdef _DEBUG
