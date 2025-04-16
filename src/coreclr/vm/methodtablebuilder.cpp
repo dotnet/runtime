@@ -2691,7 +2691,7 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif // _PREFAST_
 
-void GetNameOfTypeDefOrRef(Module* pModule, mdToken tk, LPCSTR* pName, LPCSTR* pNamespace)
+static void GetNameOfTypeDefOrRef(Module* pModule, mdToken tk, LPCSTR* pName, LPCSTR* pNamespace)
 {
     *pName = "";
     *pNamespace = "";
@@ -2705,7 +2705,7 @@ void GetNameOfTypeDefOrRef(Module* pModule, mdToken tk, LPCSTR* pName, LPCSTR* p
     }
 }
 
-bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
+static bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
 {
     if (TypeFromToken(tk) == mdtTypeDef)
     {
@@ -2729,11 +2729,11 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
     return false;
 }
 
-bool IsTypeDefOrRefAByRefStruct(Module* pModule, mdToken tk)
+static bool IsTypeDefOrRefAByRefStruct(Module* pModule, mdToken tk)
 {
     if (TypeFromToken(tk) == mdtTypeRef)
     {
-        if(!ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModule, &tk))
+        if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModule, &tk))
         {
             return false;
         }
@@ -2749,7 +2749,7 @@ bool IsTypeDefOrRefAByRefStruct(Module* pModule, mdToken tk)
     return false;
 }
 
-MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
+static MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
 {
     // Without FEATURE_RUNTIME_ASYNC every declared method is classified as a NormalMethod.
     // Thus code that handles runtime async scenarios becomes unreachable.
