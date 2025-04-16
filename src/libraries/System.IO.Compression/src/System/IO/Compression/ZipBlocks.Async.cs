@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -56,14 +55,17 @@ internal sealed partial class Zip64ExtraField
 
 internal sealed partial class Zip64EndOfCentralDirectoryLocator
 {
-    public static async Task<(bool, Zip64EndOfCentralDirectoryLocator?)> TryReadBlockAsync(Stream stream, CancellationToken cancellationToken)
+    public static async Task<Zip64EndOfCentralDirectoryLocator> TryReadBlockAsync(Stream stream, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         byte[] blockContents = new byte[TotalSize];
         int bytesRead = await stream.ReadAtLeastAsync(blockContents, blockContents.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-        bool result = TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryLocator? zip64EOCDLocator);
-        return (result, zip64EOCDLocator);
+        bool zip64eocdLocatorProper = TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryLocator? zip64EOCDLocator);
+
+        Debug.Assert(zip64eocdLocatorProper && zip64EOCDLocator != null); // we just found this using the signature finder, so it should be okay
+
+        return zip64EOCDLocator;
     }
 
     public static ValueTask WriteBlockAsync(Stream stream, long zip64EOCDRecordStart, CancellationToken cancellationToken)
@@ -78,14 +80,19 @@ internal sealed partial class Zip64EndOfCentralDirectoryLocator
 
 internal sealed partial class Zip64EndOfCentralDirectoryRecord
 {
-    public static async Task<(bool, Zip64EndOfCentralDirectoryRecord?)> TryReadBlock(Stream stream, CancellationToken cancellationToken)
+    public static async Task<Zip64EndOfCentralDirectoryRecord> TryReadBlockAsync(Stream stream, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         byte[] blockContents = new byte[BlockConstantSectionSize];
         int bytesRead = await stream.ReadAtLeastAsync(blockContents, blockContents.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-        bool result = TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryRecord? zip64EOCDRecord);
-        return (result, zip64EOCDRecord);
+
+        if (!TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryRecord? zip64EOCDRecord))
+        {
+            throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
+        }
+
+        return zip64EOCDRecord;
     }
 
     public static ValueTask WriteBlockAsync(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, CancellationToken cancellationToken)
@@ -113,23 +120,23 @@ internal readonly partial struct ZipLocalFileHeader
 
         GetExtraFieldsCore(fixedHeaderBuffer, relativeFilenameLengthLocation, relativeExtraFieldLengthLocation, out ushort filenameLength, out ushort extraFieldLength);
 
-        byte[]? arrayPoolBuffer = extraFieldLength > StackAllocationThreshold ? ArrayPool<byte>.Shared.Rent(extraFieldLength) : null;
-        Memory<byte> extraFieldBuffer = extraFieldLength <= StackAllocationThreshold ? new byte[extraFieldLength] : arrayPoolBuffer.AsMemory(0, extraFieldLength);
+        byte[] arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(extraFieldLength);
+        Memory<byte> extraFieldBuffer = arrayPoolBuffer.AsMemory(0, extraFieldLength);
 
         try
         {
             stream.Seek(filenameLength, SeekOrigin.Current);
             await stream.ReadExactlyAsync(extraFieldBuffer, cancellationToken).ConfigureAwait(false);
 
-            List<ZipGenericExtraField> result = GetExtraFieldPostReadWork(extraFieldBuffer.Span, out byte[] trailingData);
+            List<ZipGenericExtraField> list = GetExtraFieldPostReadWork(extraFieldBuffer.Span, out byte[] trailingData);
 
-            return (result, trailingData);
+            return (list, trailingData);
         }
         finally
         {
             if (arrayPoolBuffer != null)
             {
-                System.Buffers.ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
+                ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
             }
         }
     }
@@ -233,7 +240,7 @@ internal sealed partial class ZipEndOfCentralDirectoryBlock
         }
     }
 
-    public static async Task<(bool, ZipEndOfCentralDirectoryBlock?)> TryReadBlock(Stream stream, CancellationToken cancellationToken)
+    public static async Task<ZipEndOfCentralDirectoryBlock> ReadBlockAsync(Stream stream, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -242,13 +249,13 @@ internal sealed partial class ZipEndOfCentralDirectoryBlock
 
         if (!TryReadBlockInitialize(stream, blockContents, bytesRead, out ZipEndOfCentralDirectoryBlock? eocdBlock, out bool readComment))
         {
-            return (false, null);
+            // // We shouldn't get here becasue we found the eocd block using the signature finder
+            throw new InvalidDataException(SR.EOCDNotFound);
         }
         else if (readComment)
         {
             stream.ReadExactly(eocdBlock._archiveComment);
         }
-
-        return (true, eocdBlock);
+        return eocdBlock;
     }
 }

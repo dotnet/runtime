@@ -583,14 +583,9 @@ namespace System.IO.Compression
             }
         }
 
-        private void ReadEndOfCentralDirectoryInnerWork(out long eocdStart, out ZipEndOfCentralDirectoryBlock eocd)
+        private void ReadEndOfCentralDirectoryInnerWork(ZipEndOfCentralDirectoryBlock eocd, out long eocdStart)
         {
             eocdStart = _archiveStream.Position;
-
-            // read the EOCD
-            bool eocdProper = ZipEndOfCentralDirectoryBlock.TryReadBlock(_archiveStream, out eocd!);
-            Debug.Assert(eocdProper); // we just found this using the signature finder, so it should be okay
-            Debug.Assert(eocd != null);
 
             if (eocd.NumberOfThisDisk != eocd.NumberOfTheDiskWithTheStartOfTheCentralDirectory)
                 throw new InvalidDataException(SR.SplitSpanned);
@@ -625,7 +620,10 @@ namespace System.IO.Compression
                         ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.FieldLengths.Signature))
                     throw new InvalidDataException(SR.EOCDNotFound);
 
-                ReadEndOfCentralDirectoryInnerWork(out long eocdStart, out ZipEndOfCentralDirectoryBlock eocd);
+                // read the EOCD
+                ZipEndOfCentralDirectoryBlock eocd = ZipEndOfCentralDirectoryBlock.ReadBlock(_archiveStream);
+
+                ReadEndOfCentralDirectoryInnerWork(eocd, out long eocdStart);
 
                 TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
 
@@ -644,23 +642,18 @@ namespace System.IO.Compression
             }
         }
 
-        private void TryReadZip64EndOfCentralDirectoryInnerWork(bool zip64eocdLocatorProper, Zip64EndOfCentralDirectoryLocator? locator)
+        private void TryReadZip64EndOfCentralDirectoryInnerInitialWork(Zip64EndOfCentralDirectoryLocator? locator)
         {
-            Debug.Assert(zip64eocdLocatorProper); // we just found this using the signature finder, so it should be okay
-
             if (locator == null || locator.OffsetOfZip64EOCD > long.MaxValue)
                 throw new InvalidDataException(SR.FieldTooBigOffsetToZip64EOCD);
 
             long zip64EOCDOffset = (long)locator.OffsetOfZip64EOCD;
 
             _archiveStream.Seek(zip64EOCDOffset, SeekOrigin.Begin);
+        }
 
-            // Read Zip64 End of Central Directory Record
-            if (!Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveStream, out Zip64EndOfCentralDirectoryRecord? record))
-            {
-                throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
-            }
-
+        private void TryReadZip64EndOfCentralDirectoryInnerFinalWork(Zip64EndOfCentralDirectoryRecord record)
+        {
             _numberOfThisDisk = record.NumberOfThisDisk;
 
             if (record.NumberOfEntriesTotal > long.MaxValue)
@@ -699,8 +692,13 @@ namespace System.IO.Compression
                         Zip64EndOfCentralDirectoryLocator.FieldLengths.Signature))
                 {
                     // use locator to get to Zip64-EOCD
-                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveStream, out Zip64EndOfCentralDirectoryLocator? locator);
-                    TryReadZip64EndOfCentralDirectoryInnerWork(zip64eocdLocatorProper, locator);
+                    Zip64EndOfCentralDirectoryLocator locator = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveStream);
+                    TryReadZip64EndOfCentralDirectoryInnerInitialWork(locator);
+
+                    // Read Zip64 End of Central Directory Record
+                    Zip64EndOfCentralDirectoryRecord record = Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveStream);
+
+                    TryReadZip64EndOfCentralDirectoryInnerFinalWork(record);
                 }
             }
         }

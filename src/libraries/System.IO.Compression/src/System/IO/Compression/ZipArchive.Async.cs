@@ -244,7 +244,10 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     cancellationToken).ConfigureAwait(false))
                 throw new InvalidDataException(SR.EOCDNotFound);
 
-            ReadEndOfCentralDirectoryInnerWork(out long eocdStart, out ZipEndOfCentralDirectoryBlock eocd);
+            // read the EOCD
+            ZipEndOfCentralDirectoryBlock eocd = await ZipEndOfCentralDirectoryBlock.ReadBlockAsync(_archiveStream, cancellationToken).ConfigureAwait(false);
+
+            ReadEndOfCentralDirectoryInnerWork(eocd, out long eocdStart);
 
             await TryReadZip64EndOfCentralDirectoryAsync(eocd, eocdStart, cancellationToken).ConfigureAwait(false);
 
@@ -265,7 +268,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
 
     // Tries to find the Zip64 End of Central Directory Locator, then the Zip64 End of Central Directory, assuming the
     // End of Central Directory block has already been found, as well as the location in the stream where the EOCD starts.
-    private async Task TryReadZip64EndOfCentralDirectoryAsync(ZipEndOfCentralDirectoryBlock eocd, long eocdStart, CancellationToken cancellationToken)
+    private async ValueTask TryReadZip64EndOfCentralDirectoryAsync(ZipEndOfCentralDirectoryBlock eocd, long eocdStart, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -288,13 +291,18 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     Zip64EndOfCentralDirectoryLocator.FieldLengths.Signature, cancellationToken).ConfigureAwait(false))
             {
                 // use locator to get to Zip64-EOCD
-                (bool zip64eocdLocatorProper, Zip64EndOfCentralDirectoryLocator? locator) = await Zip64EndOfCentralDirectoryLocator.TryReadBlockAsync(_archiveStream, cancellationToken).ConfigureAwait(false);
-                TryReadZip64EndOfCentralDirectoryInnerWork(zip64eocdLocatorProper, locator);
+                Zip64EndOfCentralDirectoryLocator locator = await Zip64EndOfCentralDirectoryLocator.TryReadBlockAsync(_archiveStream, cancellationToken).ConfigureAwait(false);
+                TryReadZip64EndOfCentralDirectoryInnerInitialWork(locator);
+
+                // Read Zip64 End of Central Directory Record
+                Zip64EndOfCentralDirectoryRecord record = await Zip64EndOfCentralDirectoryRecord.TryReadBlockAsync(_archiveStream, cancellationToken).ConfigureAwait(false);
+
+                TryReadZip64EndOfCentralDirectoryInnerFinalWork(record);
             }
         }
     }
 
-    private async Task WriteFileAsync(CancellationToken cancellationToken = default)
+    private async ValueTask WriteFileAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -379,7 +387,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
 
     // writes eocd, and if needed, zip 64 eocd, zip64 eocd locator
     // should only throw an exception in extremely exceptional cases because it is called from dispose
-    private async Task WriteArchiveEpilogueAsync(long startOfCentralDirectory, long sizeOfCentralDirectory, bool centralDirectoryChanged, CancellationToken cancellationToken)
+    private async ValueTask WriteArchiveEpilogueAsync(long startOfCentralDirectory, long sizeOfCentralDirectory, bool centralDirectoryChanged, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 

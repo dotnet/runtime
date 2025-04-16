@@ -434,11 +434,15 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static bool TryReadBlock(Stream stream, out Zip64EndOfCentralDirectoryLocator? zip64EOCDLocator)
+        public static Zip64EndOfCentralDirectoryLocator TryReadBlock(Stream stream)
         {
             Span<byte> blockContents = stackalloc byte[TotalSize];
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
-            return TryReadBlockCore(blockContents, bytesRead, out zip64EOCDLocator);
+            bool zip64eocdLocatorProper = TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryLocator? zip64EOCDLocator);
+
+            Debug.Assert(zip64eocdLocatorProper && zip64EOCDLocator != null); // we just found this using the signature finder, so it should be okay
+
+            return zip64EOCDLocator;
         }
 
         private static void WriteBlockCore(Span<byte> blockContents, long zip64EOCDRecordStart)
@@ -509,11 +513,16 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static bool TryReadBlock(Stream stream, [NotNullWhen(returnValue: true)] out Zip64EndOfCentralDirectoryRecord? zip64EOCDRecord)
+        public static Zip64EndOfCentralDirectoryRecord TryReadBlock(Stream stream)
         {
             Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
-            return TryReadBlockCore(blockContents, bytesRead, out zip64EOCDRecord);
+            if (!TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryRecord? zip64EOCDRecord))
+            {
+                throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
+            }
+
+            return zip64EOCDRecord;
         }
 
         private static void WriteBlockCore(Span<byte> blockContents, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
@@ -547,9 +556,6 @@ namespace System.IO.Compression
 
     internal readonly partial struct ZipLocalFileHeader
     {
-        private const int StackAllocationThreshold = 512;
-
-
         // The Zip File Format Specification references 0x08074B50 and 0x04034B50, these are big endian representations.
         // ZIP files store values in little endian, so these are reversed.
         public static ReadOnlySpan<byte> DataDescriptorSignatureConstantBytes => [0x50, 0x4B, 0x07, 0x08];
@@ -571,10 +577,10 @@ namespace System.IO.Compression
 
         private static List<ZipGenericExtraField> GetExtraFieldPostReadWork(Span<byte> extraFieldBuffer, out byte[] trailingData)
         {
-            List<ZipGenericExtraField> result = ZipGenericExtraField.ParseExtraField(extraFieldBuffer, out ReadOnlySpan<byte> trailingDataSpan);
-            Zip64ExtraField.RemoveZip64Blocks(result);
+            List<ZipGenericExtraField> list = ZipGenericExtraField.ParseExtraField(extraFieldBuffer, out ReadOnlySpan<byte> trailingDataSpan);
+            Zip64ExtraField.RemoveZip64Blocks(list);
             trailingData = trailingDataSpan.ToArray();
-            return result;
+            return list;
         }
 
         public static List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
@@ -587,8 +593,10 @@ namespace System.IO.Compression
 
             GetExtraFieldsCore(fixedHeaderBuffer, relativeFilenameLengthLocation, relativeExtraFieldLengthLocation, out ushort filenameLength, out ushort extraFieldLength);
 
+            const int StackAllocationThreshold = 512;
+
             byte[]? arrayPoolBuffer = extraFieldLength > StackAllocationThreshold ? ArrayPool<byte>.Shared.Rent(extraFieldLength) : null;
-            Span<byte> extraFieldBuffer = extraFieldLength <= StackAllocationThreshold ? stackalloc byte[extraFieldLength] : arrayPoolBuffer.AsSpan(0, extraFieldLength);
+            Span<byte> extraFieldBuffer = extraFieldLength <= StackAllocationThreshold ? stackalloc byte[StackAllocationThreshold].Slice(0, extraFieldLength) : arrayPoolBuffer.AsSpan(0, extraFieldLength);
             try
             {
                 stream.Seek(filenameLength, SeekOrigin.Current);
@@ -948,21 +956,22 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static bool TryReadBlock(Stream stream, [NotNullWhen(returnValue: true)] out ZipEndOfCentralDirectoryBlock? eocdBlock)
+        public static ZipEndOfCentralDirectoryBlock ReadBlock(Stream stream)
         {
             Span<byte> blockContents = stackalloc byte[TotalSize];
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
 
-            if (!TryReadBlockInitialize(stream, blockContents, bytesRead, out eocdBlock, out bool readComment))
+            if (!TryReadBlockInitialize(stream, blockContents, bytesRead, out ZipEndOfCentralDirectoryBlock? eocdBlock, out bool readComment))
             {
-                return false;
+                // // We shouldn't get here becasue we found the eocd block using the signature finder
+                throw new InvalidDataException(SR.EOCDNotFound);
             }
             else if (readComment)
             {
                 stream.ReadExactly(eocdBlock._archiveComment);
             }
 
-            return true;
+            return eocdBlock;
         }
     }
 }
