@@ -31,7 +31,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         // For this use case we can use int.MaxValue to allow PEReader to read as much as it wants.
         // As long as PEStreamOptions.PrefetchEntireImage is not set, PEReader will not read the entire stream.
         TargetStream stream = new(target, module.Base, int.MaxValue);
-        PEReader peReader = new PEReader(stream, PEStreamOptions.PrefetchMetadata | isLoaded);
+        using PEReader peReader = new PEReader(stream, PEStreamOptions.PrefetchMetadata | isLoaded);
 
         int metadataStartOffset = peReader.PEHeaders.MetadataStartOffset;
         int metadataSize = peReader.PEHeaders.MetadataSize;
