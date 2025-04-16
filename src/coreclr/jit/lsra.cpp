@@ -4286,15 +4286,19 @@ void LinearScan::resetAllRegistersState()
     clearAllNextIntervalRef();
     clearAllSpillCost();
 
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    int first = REG_FIRST;
+    RegRecord* physRegRecord = &physRegs[first];
+    while((physRegRecord != nullptr)/* && (physRegRecord->regNum < (regNumber)AVAILABLE_REG_COUNT)*/)
     {
-        RegRecord* physRegRecord = getRegisterRecord(reg);
+        assert(physRegRecord != nullptr);
 #ifdef DEBUG
         Interval* assignedInterval = physRegRecord->assignedInterval;
         assert(assignedInterval == nullptr || assignedInterval->isConstant);
 #endif
         physRegRecord->assignedInterval = nullptr;
+        physRegRecord = physRegRecord->nextRegRecord;
     }
+
 }
 
 //------------------------------------------------------------------------
@@ -4555,10 +4559,10 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     }
 
 #ifdef TARGET_ARM
-
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    RegRecord* physRegRecord = &physRegs[first];
+    while((physRegRecord != nullptr)
     {
-        RegRecord* physRegRecord = getRegisterRecord(reg);
+        regNumber  reg           = physRegRecord->regNum;
         if (!liveRegs.IsRegNumInMask(reg))
         {
             makeRegAvailable(reg, physRegRecord->registerType);
@@ -4614,6 +4618,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 reg = REG_NEXT(reg);
             }
         }
+        physRegRecord = physRegRecord->nextRegRecord;
     }
 #else
 
@@ -4896,12 +4901,15 @@ void LinearScan::allocateRegistersMinimal()
     clearAllNextIntervalRef();
     clearAllSpillCost();
 
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    int first = REG_FIRST;
+    RegRecord* physRegRecord = &physRegs[first];
+    while((physRegRecord != nullptr)/* && (physRegRecord->regNum < (regNumber)AVAILABLE_REG_COUNT)*/)
     {
-        RegRecord* physRegRecord         = getRegisterRecord(reg);
+        assert(physRegRecord != nullptr);
         physRegRecord->recentRefPosition = nullptr;
         updateNextFixedRefDispatch(physRegRecord, physRegRecord->firstRefPosition, killHead);
         assert(physRegRecord->assignedInterval == nullptr);
+        physRegRecord = physRegRecord->nextRegRecord;
     }
 
 #ifdef DEBUG
@@ -5559,9 +5567,12 @@ void LinearScan::allocateRegisters()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     resetRegState();
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    int first = REG_FIRST;
+    RegRecord* physRegRecord = &physRegs[first];
+    while((physRegRecord != nullptr)/* && (physRegRecord->regNum < (regNumber)AVAILABLE_REG_COUNT)*/)
     {
-        RegRecord* physRegRecord         = getRegisterRecord(reg);
+        assert(physRegRecord != nullptr);
+        regNumber reg = physRegRecord->regNum;
         physRegRecord->recentRefPosition = nullptr;
         updateNextFixedRefDispatch(physRegRecord, physRegRecord->firstRefPosition, killHead);
 
@@ -5585,6 +5596,8 @@ void LinearScan::allocateRegisters()
             clearNextIntervalRef(reg, physRegRecord->registerType);
             clearSpillCost(reg, physRegRecord->registerType);
         }
+
+        physRegRecord = physRegRecord->nextRegRecord;
     }
 
 #ifdef DEBUG
@@ -7878,9 +7891,11 @@ void LinearScan::resolveRegisters()
     // are encountered.
     if (localVarsEnregistered)
     {
-        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+        int first = REG_FIRST;
+        RegRecord* physRegRecord = &physRegs[first];
+        while((physRegRecord != nullptr)/* && (physRegRecord->regNum < (regNumber)AVAILABLE_REG_COUNT)*/)
         {
-            RegRecord* physRegRecord    = getRegisterRecord(reg);
+            assert(physRegRecord != nullptr);
             Interval*  assignedInterval = physRegRecord->assignedInterval;
             if (assignedInterval != nullptr)
             {
@@ -7889,6 +7904,8 @@ void LinearScan::resolveRegisters()
             }
             physRegRecord->assignedInterval  = nullptr;
             physRegRecord->recentRefPosition = nullptr;
+
+            physRegRecord = physRegRecord->nextRegRecord;
         }
 
         // Clear "recentRefPosition" for lclVar intervals
@@ -11803,16 +11820,22 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 //
 void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
 {
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    int first = REG_FIRST;
+    RegRecord* physRegRecord = &physRegs[first];
+    while((physRegRecord != nullptr) /*&& (physRegRecord->regNum < (regNumber)AVAILABLE_REG_COUNT)*/)
     {
+        assert(physRegRecord != nullptr);
+        regNumber reg = physRegRecord->regNum;
+        assert(reg >= REG_FIRST && reg < AVAILABLE_REG_COUNT);
+
         regMaskTP regMask = genRegMask(reg);
         // If this isn't available or if it's still waiting to be freed (i.e. it was in
         // delayRegsToFree and so now it's in regsToFree), then skip it.
         if ((regMask & allAvailableRegs & ~regsToFree).IsEmpty())
         {
+            physRegRecord = physRegRecord->nextRegRecord;
             continue;
         }
-        RegRecord* physRegRecord    = getRegisterRecord(reg);
         Interval*  assignedInterval = physRegRecord->assignedInterval;
         if (assignedInterval != nullptr)
         {
@@ -11824,6 +11847,7 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
             {
                 if (recentRefPosition->refType == RefTypeExpUse)
                 {
+                    physRegRecord = physRegRecord->nextRegRecord;
                     // We don't update anything on these, as they're just placeholders to extend the
                     // lifetime.
                     continue;
@@ -11832,6 +11856,7 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
                 // For copyReg or moveReg, we don't have anything further to assert.
                 if (recentRefPosition->copyReg || recentRefPosition->moveReg)
                 {
+                    physRegRecord = physRegRecord->nextRegRecord;
                     continue;
                 }
                 assert(assignedInterval->isConstant == isRegConstant(reg, assignedInterval->registerType));
@@ -11900,7 +11925,10 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
             reg = REG_NEXT(reg);
         }
 #endif
+
+        physRegRecord = physRegRecord->nextRegRecord;
     }
+
 }
 
 //------------------------------------------------------------------------
