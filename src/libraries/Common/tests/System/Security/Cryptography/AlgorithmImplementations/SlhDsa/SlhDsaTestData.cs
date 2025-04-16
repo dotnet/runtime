@@ -47,6 +47,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             public byte[] SecretKey => SecretKeyHex.HexToByteArray();
             public byte[] PublicKey => PublicKeyHex.HexToByteArray();
+
+            public override string ToString() => $"{nameof(SlhDsaKeyGenTestVector)} {{ {nameof(TestCaseId)} = {TestCaseId}, {nameof(Algorithm)} = \"{Algorithm.Name}\" }}";
         }
 
 
@@ -179,6 +181,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             public byte[] Message => MessageHex.HexToByteArray();
             public byte[] Context => ContextHex.HexToByteArray();
             public byte[] Signature => SignatureHex.HexToByteArray();
+
+            public override string ToString() => $"{nameof(SlhDsaSigVerTestVector)} {{ {nameof(TestCaseId)} = {TestCaseId}, {nameof(Algorithm)} = \"{Algorithm.Name}\", {nameof(TestPassed)} = {TestPassed} }}";
         }
 
         // The vectors below are generated from the NIST ACVP projections.

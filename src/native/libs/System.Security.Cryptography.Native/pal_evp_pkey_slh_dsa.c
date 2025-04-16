@@ -58,7 +58,6 @@ int32_t CryptoNative_SlhDsaSignPure(EVP_PKEY *pkey,
 {
 
     assert(pkey);
-    assert(msg);
     assert(msgLen >= 0);
     assert(contextLen >= 0);
     assert(destination);
@@ -138,7 +137,6 @@ int32_t CryptoNative_SlhDsaVerifyPure(EVP_PKEY *pkey,
                                       uint8_t* sig, int32_t sigLen)
 {
     assert(pkey);
-    assert(msg);
     assert(msgLen >= 0);
     assert(sig);
     assert(sigLen >= 7856 /* SLH-DSA-SHA2-128s/SLH-DSA-SHAKE-128s signature size */);

@@ -59,6 +59,29 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public void GenerateSignVerifyEmptyMessageNoContext(SlhDsaAlgorithm algorithm)
+        {
+            using SlhDsa slhDsa = GenerateKey(algorithm);
+            byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
+            Assert.Equal(signature.Length, slhDsa.SignData([], signature));
+
+            ExerciseSuccessfulVerify(slhDsa, [], signature, []);
+        }
+
+        [Theory]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public void GenerateSignVerifyEmptyMessageWithContext(SlhDsaAlgorithm algorithm)
+        {
+            using SlhDsa slhDsa = GenerateKey(algorithm);
+            byte[] context = [1, 1, 3, 5, 6];
+            byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
+            Assert.Equal(signature.Length, slhDsa.SignData([], signature, context));
+
+            ExerciseSuccessfulVerify(slhDsa, [], signature, context);
+        }
+
+        [Theory]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public void GenerateSignExportPublicVerifyWithPublicOnly(SlhDsaAlgorithm algorithm)
         {
             byte[] publicKey;
@@ -107,33 +130,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
                 ExerciseSuccessfulVerify(slhDsa, data, signature, []);
             }
-        }
-
-        private static void ExerciseSuccessfulVerify(SlhDsa slhDsa, byte[] data, byte[] signature, byte[] context)
-        {
-            AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, context));
-            data[0] ^= 1;
-            AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
-            data[0] ^= 1;
-
-            signature[0] ^= 1;
-            AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
-            signature[0] ^= 1;
-
-            if (context.Length > 0)
-            {
-                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, []));
-
-                context[0] ^= 1;
-                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
-                context[0] ^= 1;
-            }
-            else
-            {
-                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, [0]));
-            }
-
-            AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, context));
         }
     }
 }

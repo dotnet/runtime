@@ -5,13 +5,18 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    [ConditionalClass(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
     public class SlhDsaOpenSslConstructionTests : SlhDsaConstructionTestsBase
     {
         [Fact]
         public void SlhDsaOpenSsl_Ctor_ArgValidation()
         {
             AssertExtensions.Throws<ArgumentNullException>("pkeyHandle", static () => new SlhDsaOpenSsl(null));
+        }
+
+        [Fact]
+        public void SlhDsaOpenSsl_Ctor_InvalidHandle()
+        {
+            AssertExtensions.Throws<ArgumentException>("pkeyHandle", static () => new SlhDsaOpenSsl(new SafeEvpPKeyHandle()));
         }
 
         [Fact]
@@ -22,42 +27,80 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<CryptographicException>(() => new SlhDsaOpenSsl(rsaHandle));
         }
 
-        [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public void SlhDsaOpenSsl_DuplicateKeyHandle(SlhDsaAlgorithm algorithm)
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public void SlhDsaOpenSsl_DuplicateKeyHandle()
         {
-            SlhDsaOpenSsl orig;
-            using (SafeEvpPKeyHandle key = Interop.Crypto.SlhDsaGenerateKey(algorithm.Name))
+            using SafeEvpPKeyHandle key = Interop.Crypto.SlhDsaGenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128s.Name);
+            using SlhDsaOpenSsl slhDsa = new(key);
+            Assert.Same(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
+
+            SafeEvpPKeyHandle secondKey;
+
+            using (secondKey = slhDsa.DuplicateKeyHandle())
             {
-                orig = new SlhDsaOpenSsl(key);
+                AssertExtensions.FalseExpression(secondKey.IsInvalid);
             }
 
-            SlhDsaOpenSsl dup;
-            using (SafeEvpPKeyHandle key = orig.DuplicateKeyHandle())
+            AssertExtensions.TrueExpression(secondKey.IsInvalid);
+            AssertExtensions.FalseExpression(key.IsInvalid);
+
+            VerifyInstanceIsUsable(slhDsa);
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public void SlhDsaOpenSsl_DuplicateKeyHandleLifetime()
+        {
+            SlhDsaOpenSsl one;
+            SlhDsaOpenSsl two;
+
+            using (SafeEvpPKeyHandle key = Interop.Crypto.SlhDsaGenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128s.Name))
             {
-                dup = new SlhDsaOpenSsl(key);
+                one = new SlhDsaOpenSsl(key);
+                Assert.Same(SlhDsaAlgorithm.SlhDsaSha2_128s, one.Algorithm);
             }
 
-            Span<byte> msg = [42];
-            Span<byte> ctx = [1, 2, 3];
-            byte[] sig = new byte[algorithm.SignatureSizeInBytes];
+            using (SafeEvpPKeyHandle dup = one.DuplicateKeyHandle())
+            {
+                two = new SlhDsaOpenSsl(dup);
+                Assert.Same(SlhDsaAlgorithm.SlhDsaSha2_128s, one.Algorithm);
+            }
 
-            // Both can sign/verify
-            Assert.Equal(algorithm.SignatureSizeInBytes, orig.SignData(msg, sig, ctx));
-            AssertExtensions.TrueExpression(dup.VerifyData(msg, sig, ctx));
+            using (two)
+            {
+                byte[] data = [1, 1, 2, 3, 5, 8];
+                byte[] context = [13, 21];
+                byte[] oneSignature = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SignatureSizeInBytes];
 
-            sig.AsSpan().Clear();
-            Assert.Equal(algorithm.SignatureSizeInBytes, dup.SignData(msg, sig, ctx));
-            AssertExtensions.TrueExpression(orig.VerifyData(msg, sig, ctx));
+                using (one)
+                {
+                    Assert.Equal(oneSignature.Length, one.SignData(data, oneSignature, context));
+                    VerifyInstanceIsUsable(one);
+                    VerifyInstanceIsUsable(two);
+                }
 
-            // Disposing the original key should not affect the duplicate
-            orig.Dispose();
+                VerifyDisposed(one);
+                Assert.Throws<ObjectDisposedException>(() => one.DuplicateKeyHandle());
 
-            AssertExtensions.TrueExpression(dup.VerifyData(msg, sig, ctx));
+                VerifyInstanceIsUsable(two);
+                ExerciseSuccessfulVerify(two, data, oneSignature, context);
+            }
 
-            sig.AsSpan().Clear();
-            Assert.Equal(algorithm.SignatureSizeInBytes, dup.SignData(msg, sig, ctx));
-            AssertExtensions.TrueExpression(dup.VerifyData(msg, sig, ctx));
+            VerifyDisposed(two);
+            Assert.Throws<ObjectDisposedException>(() => two.DuplicateKeyHandle());
+        }
+
+        private static void VerifyInstanceIsUsable(SlhDsaOpenSsl slhDsa)
+        {
+            byte[] secretKey = new byte[slhDsa.Algorithm.SecretKeySizeInBytes];
+            Assert.Equal(slhDsa.Algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey)); // does not throw
+
+            // usable
+            byte[] data = [1, 2, 3];
+            byte[] context = [4];
+            byte[] signature = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SignatureSizeInBytes];
+            slhDsa.SignData(data, signature, context);
+
+            ExerciseSuccessfulVerify(slhDsa, data, signature, context);
         }
 
         protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
