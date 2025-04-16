@@ -3844,8 +3844,6 @@ ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(Method
 void InitReadyToRunStandaloneMethodMetadata();
 #endif // FEATURE_READYTORUN
 
-MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *pIsValueType);
-
 #include "method.inl"
 
 #endif // !_METHOD_H
