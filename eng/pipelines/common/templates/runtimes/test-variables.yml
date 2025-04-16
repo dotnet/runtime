@@ -60,12 +60,12 @@ variables:
     - name: timeoutPerTestInMinutes
       value: 30
   - ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
-    ${{ if and(eq(parameters.osGroup, 'osx'), eq(parameters.archType, 'arm64')) }}:
+    - ${{ if and(eq(parameters.osGroup, 'osx'), eq(parameters.archType, 'arm64')) }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 480
       - name: timeoutPerTestInMinutes
         value: 120
-    ${{ else }}:
+    - ${{ else }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 240
       - name: timeoutPerTestInMinutes
