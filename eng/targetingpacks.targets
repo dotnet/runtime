@@ -113,7 +113,7 @@
   <!-- Use local targeting/runtime pack for NetCoreAppCurrent. -->
   <Target Name="UpdateLocalTargetingAndRuntimePack"
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
-          AfterTargets="ResolveFrameworkReferences">          
+          AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup Condition="'$(UseBootstrapLayout)' != 'true'">
       <LocalRefPackDir>$(MicrosoftNetCoreAppRefPackDir)</LocalRefPackDir>
       <LocalRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</LocalRuntimePackDir>
@@ -152,15 +152,14 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(UseLocalAppHostPack)' == 'true'">
-    <AppHostSourcePath>$(LocalAppHostPath)</AppHostSourcePath>
-    <SingleFileHostSourcePath>$(LocalSingleFileHostPath)</SingleFileHostSourcePath>
-  </PropertyGroup>
-
   <!-- Use local app host pack for NetCoreAppCurrent. -->
   <Target Name="UpdateLocalAppHostPack"
           Condition="'$(UseLocalAppHostPack)' == 'true'"
           AfterTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+      <AppHostSourcePath>$(LocalAppHostPath)</AppHostSourcePath>
+      <SingleFileHostSourcePath>$(LocalSingleFileHostPath)</SingleFileHostSourcePath>
+    </PropertyGroup>
     <ItemGroup>
       <ResolvedAppHostPack Path="$(AppHostSourcePath)"
                            PackageDirectory="$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))"

@@ -118,6 +118,7 @@
 
   <Target Name="GetBuildArgumentsForDNNE"
           DependsOnTargets="ResolveFrameworkReferences;
+                            UpdateLocalAppHostPack;
                             GetUnixBuildArgumentsForDNNE;
                             GetAppleBuildArgumentsForDNNE;
                             GetUnixCrossBuildArgumentsForDNNE"
