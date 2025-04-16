@@ -2229,7 +2229,7 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
         }
         else if (hasApx && !hasAvx512)
         {
-            assert("APX without AVX512 is not supported yet.");
+            ASSERT("APX without AVX512 is not supported yet.\n");
         }
         else
         {
