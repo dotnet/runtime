@@ -10945,10 +10945,6 @@ public:
     unsigned typGetBlkLayoutNum(unsigned blockSize);
     // Get the layout for the specified array of known length
     ClassLayout* typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsigned length);
-    // Get a layout like an existing layout, with all gc refs removed
-    ClassLayout* typGetNonGCLayout(ClassLayout* existingLayout);
-    // Get a layout like an existing layout, with all gc refs changed to byrefs
-    ClassLayout* typGetByrefLayout(ClassLayout* existingLayout);
 
     var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
     var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);

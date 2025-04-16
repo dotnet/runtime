@@ -1227,36 +1227,6 @@ void emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNum
 regNumber emitIns_BASE_R_R_RM(
     instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp);
 
-enum EmitCallType
-{
-    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method (call addr with RIP-relative encoding)
-    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method (call [addr]/call [rip+addr])
-    EC_INDIR_R,          // Indirect call via register (call rax)
-    EC_INDIR_ARD,        // Indirect call via an addressing mode (call [rax+rdx*8+disp])
-
-    EC_COUNT
-};
-
-// clang-format off
-void emitIns_Call(EmitCallType          callType,
-                  CORINFO_METHOD_HANDLE methHnd,
-                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*                 addr,
-                  ssize_t               argSize,
-                  emitAttr              retSize
-                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                  VARSET_VALARG_TP      ptrVars,
-                  regMaskTP             gcrefRegs,
-                  regMaskTP             byrefRegs,
-                  const DebugInfo& di = DebugInfo(),
-                  regNumber             ireg     = REG_NA,
-                  regNumber             xreg     = REG_NA,
-                  unsigned              xmul     = 0,
-                  ssize_t               disp     = 0,
-                  bool                  isJump   = false,
-                  bool                  noSafePoint   = false);
-// clang-format on
-
 #ifdef TARGET_AMD64
 // Is the last instruction emitted a call instruction?
 bool emitIsLastInsCall();

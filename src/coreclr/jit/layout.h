@@ -35,7 +35,6 @@ public:
 
     void SetGCPtrType(unsigned slot, var_types type);
     void CopyGCInfoFrom(unsigned offset, ClassLayout* layout);
-    void CopyGCInfoFromMakeByref(unsigned offset, ClassLayout* layout);
     void CopyPaddingFrom(unsigned offset, ClassLayout* layout);
     void AddPadding(const SegmentList::Segment& padding);
     void RemovePadding(const SegmentList::Segment& nonPadding);
