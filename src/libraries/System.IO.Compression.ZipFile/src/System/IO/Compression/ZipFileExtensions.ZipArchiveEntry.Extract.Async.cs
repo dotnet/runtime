@@ -69,32 +69,7 @@ public static partial class ZipFileExtensions
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        ArgumentNullException.ThrowIfNull(source);
-        ArgumentNullException.ThrowIfNull(destinationFileName);
-
-        FileStreamOptions fileStreamOptions = new()
-        {
-            Access = FileAccess.Write,
-            Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
-            Share = FileShare.None,
-            BufferSize = 0x1000,
-            Options = FileOptions.Asynchronous
-        };
-
-        const UnixFileMode OwnershipPermissions =
-            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-            UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
-            UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
-
-        // Restore Unix permissions.
-        // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
-        // We don't apply UnixFileMode.None because .zip files created on Windows and .zip files created
-        // with previous versions of .NET don't include permissions.
-        UnixFileMode mode = (UnixFileMode)(source.ExternalAttributes >> 16) & OwnershipPermissions;
-        if (mode != UnixFileMode.None && !OperatingSystem.IsWindows())
-        {
-            fileStreamOptions.UnixCreateMode = mode;
-        }
+        ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
 
         FileStream fs = new FileStream(destinationFileName, fileStreamOptions);
         await using (fs)
@@ -106,40 +81,14 @@ public static partial class ZipFileExtensions
             }
         }
 
-        ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, source.LastWriteTime);
+        ExtractToFileFinalize(source, destinationFileName);
     }
 
     internal static async Task ExtractRelativeToDirectoryAsync(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        ArgumentNullException.ThrowIfNull(source);
-        ArgumentNullException.ThrowIfNull(destinationDirectoryName);
-
-        // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
-        DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
-        string destinationDirectoryFullPath = di.FullName;
-        if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
-        {
-            char sep = Path.DirectorySeparatorChar;
-            destinationDirectoryFullPath = string.Concat(destinationDirectoryFullPath, new ReadOnlySpan<char>(in sep));
-        }
-
-        string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
-
-        if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
-            throw new IOException(SR.IO_ExtractingResultsInOutside);
-
-        if (Path.GetFileName(fileDestinationPath).Length == 0)
-        {
-            // If it is a directory:
-
-            if (source.Length != 0)
-                throw new IOException(SR.IO_DirectoryNameWithData);
-
-            Directory.CreateDirectory(fileDestinationPath);
-        }
-        else
+        if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryName, out string fileDestinationPath))
         {
             // If it is a file:
             // Create containing directory:
