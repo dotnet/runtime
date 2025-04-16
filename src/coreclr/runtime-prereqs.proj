@@ -39,8 +39,4 @@
   <PropertyGroup>
     <DebugType>Portable</DebugType>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="$(RepoRoot)/src/native/external/vendored-libs.proj" />
-  </ItemGroup>
 </Project>
