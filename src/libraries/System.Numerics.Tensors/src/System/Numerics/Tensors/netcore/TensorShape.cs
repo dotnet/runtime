@@ -413,16 +413,17 @@ namespace System.Numerics.Tensors
 
         public static bool operator !=(in TensorShape left, in TensorShape right) => !(left == right);
 
-        public nint AdjustToNextIndex(nint linearOffset, Span<nint> indexes)
+        public nint AdjustToNextIndex(in TensorShape destinationShape, nint linearOffset, Span<nint> indexes)
         {
-            Debug.Assert(indexes.Length == Rank);
+            Debug.Assert(indexes.Length >= Rank);
+            Debug.Assert(indexes.Length == destinationShape.Rank);
 
             ReadOnlySpan<nint> lengths = Lengths;
             ReadOnlySpan<nint> strides = Strides;
 
-            for (int i = 0; i < indexes.Length; i++)
+            for (int i = 0; i < strides.Length; i++)
             {
-                int rankIndex = indexes.Length - (i + 1);
+                int rankIndex = lengths.Length - (i + 1);
 
                 nint length = lengths[rankIndex];
                 nint stride = strides[rankIndex];
@@ -432,17 +433,39 @@ namespace System.Numerics.Tensors
 
                 if (index < length)
                 {
-                    break;
+                    return linearOffset;
                 }
 
                 indexes[rankIndex] = 0;
                 linearOffset -= (stride * length);
             }
 
-            return linearOffset;
+            if (indexes.Length != Rank)
+            {
+                lengths = destinationShape.Lengths;
+                for (int i = strides.Length; i < indexes.Length; i++)
+                {
+                    int rankIndex = lengths.Length - (i + 1);
+
+                    nint length = lengths[rankIndex];
+                    // Strides are always 0 because we are broadcasting at this point in the loop.
+
+                    nint index = ++indexes[rankIndex];
+
+                    if (index < length)
+                    {
+                        break;
+                    }
+
+                    indexes[rankIndex] = 0;
+                }
+            }
+
+            return 0;
         }
 
-        public static bool AreCompatible(in TensorShape shape1, in TensorShape shape2)
+        // can shape2 turn into shape1
+        public static bool AreCompatible(in TensorShape shape1, in TensorShape shape2, bool allowBidirectional)
         {
             scoped ReadOnlySpan<nint> lengths1 = shape1.Lengths;
             scoped ReadOnlySpan<nint> lengths2 = shape2.Lengths;
@@ -453,6 +476,11 @@ namespace System.Numerics.Tensors
             {
                 if (rankDelta < 0)
                 {
+                    if (!allowBidirectional)
+                    {
+                        return false;
+                    }
+
                     lengths1 = shape2.Lengths;
                     lengths2 = shape1.Lengths;
 
@@ -460,14 +488,21 @@ namespace System.Numerics.Tensors
                     Debug.Assert(rankDelta > 0);
                 }
 
-                if (lengths1[..rankDelta].ContainsAnyExcept(1))
-                {
-                    return false;
-                }
                 lengths1 = lengths1[rankDelta..];
             }
 
-            return lengths1.SequenceEqual(lengths2);
+            // if equal or one is 1
+            for (int i = 0; i < lengths1.Length; i++)
+            {
+                nint length1 = lengths1[i];
+                nint length2 = lengths2[i];
+                if ((length1 != length2) && (length1 != 1) && (length2 != 1))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static bool AreLengthsTheSame(in TensorShape shape1, in TensorShape shape2)

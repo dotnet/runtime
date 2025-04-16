@@ -65,12 +65,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgumentException_DestinationTooShort()
-        {
-            throw GetArgumentException(SR.DestinationTooShort);
-        }
-
-        [DoesNotReturn]
         public static void ThrowArgument_LengthsMustEqualArrayLength()
         {
             throw new ArgumentOutOfRangeException();
@@ -122,9 +116,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_LengthsNotBroadcastCompatible()
+        public static void ThrowArgument_LengthsNotCompatible()
         {
-            throw new ArgumentException(SR.ThrowArgument_LengthsNotBroadcastCompatible);
+            throw new ArgumentException(SR.ThrowArgument_LengthsNotCompatible);
         }
 
         [DoesNotReturn]

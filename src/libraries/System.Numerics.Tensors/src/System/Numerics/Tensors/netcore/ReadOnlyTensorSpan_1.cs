@@ -266,7 +266,7 @@ namespace System.Numerics.Tensors
         {
             if (!TryCopyTo(destination))
             {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                ThrowHelper.ThrowArgument_DestinationTooShort();
             }
         }
 
@@ -285,7 +285,7 @@ namespace System.Numerics.Tensors
         {
             if (!TryFlattenTo(destination))
             {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                ThrowHelper.ThrowArgument_DestinationTooShort();
             }
         }
 
@@ -348,7 +348,7 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryCopyTo(in TensorSpan{T})" />
         public bool TryCopyTo(scoped in TensorSpan<T> destination)
         {
-            if (TensorShape.AreCompatible(_shape, destination._shape))
+            if (TensorShape.AreCompatible(destination._shape, _shape, false))
             {
                 TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(this, destination);
                 return true;
