@@ -108,7 +108,7 @@ namespace LibraryImportGenerator.IntegrationTests
     {
         [Fact]
         [SkipOnCI("Allocates enough memory that the OOM killer can kill the process on our Helix machines.")]
-        public void UTFStringConversionFailures()
+        public void BigUTFStringConversionFailures()
         {
             bool threw = false;
             try
