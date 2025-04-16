@@ -779,6 +779,71 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLKem_OtherMLKem_Seed()
+        {
+            using (X509Certificate2 pubOnly = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
+            using (MLKemContract contract = new(MLKemAlgorithm.MLKem512))
+            {
+                contract.OnExportPrivateSeedCore = (Span<byte> source) =>
+                {
+                    MLKemTestData.IncrementalSeed.CopyTo(source);
+                };
+
+                contract.OnExportEncapsulationKeyCore = (Span<byte> source) =>
+                {
+                    PublicKey publicKey = PublicKey.CreateFromSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki, out _);
+                    publicKey.EncodedKeyValue.RawData.AsSpan().CopyTo(source);
+                };
+
+                using (X509Certificate2 cert = pubOnly.CopyWithPrivateKey(contract))
+                {
+                    AssertExtensions.TrueExpression(cert.HasPrivateKey);
+
+                    using (MLKem kem = cert.GetMLKemPrivateKey())
+                    {
+                        AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+                    }
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLKem_OtherMLKem_DecapsulationKey()
+        {
+            using (X509Certificate2 pubOnly = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
+            using (MLKemContract contract = new(MLKemAlgorithm.MLKem512))
+            {
+                contract.OnExportPrivateSeedCore = (Span<byte> source) =>
+                {
+                    throw new CryptographicException("Should signal to try decaps key");
+                };
+
+                contract.OnExportDecapsulationKeyCore = (Span<byte> source) =>
+                {
+                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey.AsSpan().CopyTo(source);
+                };
+
+                contract.OnExportEncapsulationKeyCore = (Span<byte> source) =>
+                {
+                    PublicKey publicKey = PublicKey.CreateFromSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki, out _);
+                    publicKey.EncodedKeyValue.RawData.AsSpan().CopyTo(source);
+                };
+
+                using (X509Certificate2 cert = pubOnly.CopyWithPrivateKey(contract))
+                {
+                    AssertExtensions.TrueExpression(cert.HasPrivateKey);
+
+                    using (MLKem kem = cert.GetMLKemPrivateKey())
+                    {
+                        AssertExtensions.SequenceEqual(
+                            MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
+                            kem.ExportDecapsulationKey());
+                    }
+                }
+            }
+        }
+
         private static void CheckCopyWithPrivateKey<TKey>(
             X509Certificate2 cert,
             X509Certificate2 wrongAlgorithmCert,
