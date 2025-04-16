@@ -1162,19 +1162,33 @@ namespace System.Security.Cryptography.X509Certificates
 
                 return keyAlgorithm switch
                 {
-                    Oids.Rsa => ExtractKeyFromPem<RSA>(keyPem, s_RsaPublicKeyPrivateKeyLabels, RSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.Dsa when Helpers.IsDSASupported => ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.Rsa => ExtractKeyFromPem<RSA>(
+                        keyPem,
+                        s_RsaPublicKeyPrivateKeyLabels,
+                        static keyPem => CreateAndImport(keyPem, RSA.Create),
+                        certificate.CopyWithPrivateKey),
+                    Oids.Dsa when Helpers.IsDSASupported => ExtractKeyFromPem<DSA>(
+                        keyPem,
+                        s_DsaPublicKeyPrivateKeyLabels,
+                        static keyPem => CreateAndImport(keyPem, DSA.Create),
+                        certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDsa(certificate) =>
                         ExtractKeyFromPem<ECDsa>(
                             keyPem,
                             s_EcPublicKeyPrivateKeyLabels,
-                            ECDsa.Create,
+                            static keyPem => CreateAndImport(keyPem, ECDsa.Create),
                             certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
                         ExtractKeyFromPem<ECDiffieHellman>(
                             keyPem,
                             s_EcPublicKeyPrivateKeyLabels,
-                            ECDiffieHellman.Create,
+                            static keyPem => CreateAndImport(keyPem, ECDiffieHellman.Create),
+                            certificate.CopyWithPrivateKey),
+                    Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 =>
+                        ExtractKeyFromPem<MLKem>(
+                            keyPem,
+                            [PemLabels.Pkcs8PrivateKey],
+                            MLKem.ImportFromPem,
                             certificate.CopyWithPrivateKey),
                     _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
                 };
@@ -1233,19 +1247,35 @@ namespace System.Security.Cryptography.X509Certificates
 
                 return keyAlgorithm switch
                 {
-                    Oids.Rsa => ExtractKeyFromEncryptedPem<RSA>(keyPem, password, RSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.Dsa when Helpers.IsDSASupported => ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.Rsa =>
+                        ExtractKeyFromEncryptedPem<RSA>(
+                            keyPem,
+                            password,
+                            static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, RSA.Create),
+                            certificate.CopyWithPrivateKey),
+                    Oids.Dsa when Helpers.IsDSASupported =>
+                        ExtractKeyFromEncryptedPem<DSA>(
+                            keyPem,
+                            password,
+                            static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, DSA.Create),
+                            certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDsa(certificate) =>
                         ExtractKeyFromEncryptedPem<ECDsa>(
                             keyPem,
                             password,
-                            ECDsa.Create,
+                            static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, ECDsa.Create),
                             certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
                         ExtractKeyFromEncryptedPem<ECDiffieHellman>(
                             keyPem,
                             password,
-                            ECDiffieHellman.Create,
+                            static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, ECDiffieHellman.Create),
+                            certificate.CopyWithPrivateKey),
+                    Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 =>
+                        ExtractKeyFromEncryptedPem<MLKem>(
+                            keyPem,
+                            password,
+                            MLKem.ImportFromEncryptedPem,
                             certificate.CopyWithPrivateKey),
                     _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
                 };
@@ -1638,11 +1668,28 @@ namespace System.Security.Cryptography.X509Certificates
             return false;
         }
 
+        private static TAlg CreateAndImport<TAlg>(ReadOnlySpan<char> keyPem, Func<TAlg> factory) where TAlg : AsymmetricAlgorithm
+        {
+            TAlg alg = factory();
+            alg.ImportFromPem(keyPem);
+            return alg;
+        }
+
+        private static TAlg CreateAndImportEncrypted<TAlg>(
+            ReadOnlySpan<char> keyPem,
+            ReadOnlySpan<char> password,
+            Func<TAlg> factory) where TAlg : AsymmetricAlgorithm
+        {
+            TAlg alg = factory();
+            alg.ImportFromEncryptedPem(keyPem, password);
+            return alg;
+        }
+
         private static X509Certificate2 ExtractKeyFromPem<TAlg>(
             ReadOnlySpan<char> keyPem,
-            string[] labels,
-            Func<TAlg> factory,
-            Func<TAlg, X509Certificate2> import) where TAlg : AsymmetricAlgorithm
+            ReadOnlySpan<string> labels,
+            Func<ReadOnlySpan<char>, TAlg> factory,
+            Func<TAlg, X509Certificate2> import) where TAlg : IDisposable
         {
             foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(keyPem))
             {
@@ -1652,10 +1699,8 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (label.SequenceEqual(eligibleLabel))
                     {
-                        using (TAlg key = factory())
+                        using (TAlg key = factory(contents[fields.Location]))
                         {
-                            key.ImportFromPem(contents[fields.Location]);
-
                             try
                             {
                                 return import(key);
@@ -1675,8 +1720,8 @@ namespace System.Security.Cryptography.X509Certificates
         private static X509Certificate2 ExtractKeyFromEncryptedPem<TAlg>(
             ReadOnlySpan<char> keyPem,
             ReadOnlySpan<char> password,
-            Func<TAlg> factory,
-            Func<TAlg, X509Certificate2> import) where TAlg : AsymmetricAlgorithm
+            Func<ReadOnlySpan<char>, ReadOnlySpan<char>, TAlg> factory,
+            Func<TAlg, X509Certificate2> import) where TAlg : IDisposable
         {
             foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(keyPem))
             {
@@ -1684,18 +1729,17 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (label.SequenceEqual(PemLabels.EncryptedPkcs8PrivateKey))
                 {
-                    TAlg key = factory();
-                    key.ImportFromEncryptedPem(contents[fields.Location], password);
-
-                    try
+                    using (TAlg key = factory(contents[fields.Location], password))
                     {
-                        return import(key);
+                        try
+                        {
+                            return import(key);
+                        }
+                        catch (ArgumentException ae)
+                        {
+                            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                        }
                     }
-                    catch (ArgumentException ae)
-                    {
-                        throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
-                    }
-
                 }
             }
 

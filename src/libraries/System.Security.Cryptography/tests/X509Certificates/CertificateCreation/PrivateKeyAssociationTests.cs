@@ -772,7 +772,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     cert => cert.GetMLKemPrivateKey(),
                     (priv, pub) =>
                     {
-                        byte[] ciphertext = pub.Encapsulate(out byte[] pubSharedSecret);
+                        pub.Encapsulate(out byte[] ciphertext, out byte[] pubSharedSecret);
                         byte[] privSharedSecret = priv.Decapsulate(ciphertext);
                         AssertExtensions.SequenceEqual(pubSharedSecret, privSharedSecret);
                     });
