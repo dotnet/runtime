@@ -278,7 +278,7 @@ internal static partial class Interop
         internal unsafe struct CRYPTO_SETTINGS
         {
             public TlsAlgorithmUsage eAlgorithmUsage;   // How this algorithm is being used.
-            public UNICODE_STRING strCngAlgId;         // CNG algorithm identifier.
+            public UNICODE_STRING strCngAlgId;          // CNG algorithm identifier.
             public int cChainingModes;                  // Set to 0 if CNG algorithm does not have a chaining mode.
             public UNICODE_STRING* rgstrChainingModes;  // Set to NULL if CNG algorithm does not have a chaining mode.
             public int dwMinBitLength;                  // Minimum bit length for the specified CNG algorithm. Set to 0 if not defined or CNG algorithm implies bit length.
