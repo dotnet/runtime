@@ -29,14 +29,14 @@ namespace System.Diagnostics.Tests
 
                 Assert.NotNull(DistributedContextPropagator.Current);
                 Assert.Same(DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.Current);
+                Assert.Same(DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.CreateW3CPropagator());
 
                 //
                 // Legacy Propagator
                 //
 
                 // Temporary till we expose a method to retun it.
-                DistributedContextPropagator.Current = typeof(Activity).Assembly.GetType("System.Diagnostics.LegacyPropagator")
-                                                            .GetProperty("Instance", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null) as DistributedContextPropagator;
+                DistributedContextPropagator.Current = DistributedContextPropagator.CreatePreW3CPropagator();
 
                 TestLegacyPropagatorUsingW3CActivity(
                                 DistributedContextPropagator.Current,

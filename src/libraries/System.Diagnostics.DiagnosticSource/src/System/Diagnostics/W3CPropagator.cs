@@ -426,12 +426,12 @@ namespace System.Diagnostics
         private const string TraceStateKeyValidChars = "*-/@_abcdefghijklmnopqrstuvwxyz";
         private static readonly SearchValues<char> s_validTraceStateChars = SearchValues.Create(TraceStateKeyValidChars);
 
-        private static bool IsInvalidTraceStateKey(ReadOnlySpan<char> span) => span.ContainsAnyExcept(s_validTraceStateChars);
+        private static bool IsInvalidTraceStateKey(ReadOnlySpan<char> key) => key.IsEmpty || (key[0] < 'a' || key[0] > 'z') || key.ContainsAnyExcept(s_validTraceStateChars);
 
         private const string TraceStateValueValidChars = "!\"#$%&'()*+-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
         private static readonly SearchValues<char> s_validTraceStateValueChars = SearchValues.Create(TraceStateValueValidChars);
 
-        private static bool IsInvalidTraceStateValue(ReadOnlySpan<char> span) => span.ContainsAnyExcept(s_validTraceStateValueChars);
+        private static bool IsInvalidTraceStateValue(ReadOnlySpan<char> value) => value.IsEmpty || value.ContainsAnyExcept(s_validTraceStateValueChars);
 #else
         private static ulong[] ValidTraceStateKeyCharsMask = [0x0000A40000000000, 0x07FFFFFE80000001];
 

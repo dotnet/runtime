@@ -22,10 +22,6 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class DiagnosticsTest : DiagnosticsTestBase
     {
-        // Temporary till we expose a method to retun it.
-        private static DistributedContextPropagator s_legacyPropagator = typeof(Activity).Assembly.GetType("System.Diagnostics.LegacyPropagator")
-                                                    .GetProperty("Instance", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null) as DistributedContextPropagator;
-
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
         private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
 
@@ -828,7 +824,7 @@ namespace System.Net.Http.Functional.Tests
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 // To test the Hierarchical propagation format, we need to set the legacy propagator.
-                DistributedContextPropagator.Current = s_legacyPropagator;
+                DistributedContextPropagator.Current = DistributedContextPropagator.CreatePreW3CPropagator();
 
                 Activity parentActivity = new Activity("parent");
                 parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
@@ -1367,7 +1363,14 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SocketsHttpHandlerPropagators_WithIdFormat_MemberData()
         {
-            foreach (var propagator in new[] { null, DistributedContextPropagator.CreateDefaultPropagator(), s_legacyPropagator, DistributedContextPropagator.CreateNoOutputPropagator(), DistributedContextPropagator.CreatePassThroughPropagator() })
+            foreach (var propagator in new[]
+                                        {
+                                            null,
+                                            DistributedContextPropagator.CreateDefaultPropagator(),
+                                            DistributedContextPropagator.CreatePreW3CPropagator(),
+                                            DistributedContextPropagator.CreateNoOutputPropagator(),
+                                            DistributedContextPropagator.CreatePassThroughPropagator()
+                                        })
             {
                 foreach (ActivityIdFormat format in new[] { ActivityIdFormat.Hierarchical, ActivityIdFormat.W3C })
                 {

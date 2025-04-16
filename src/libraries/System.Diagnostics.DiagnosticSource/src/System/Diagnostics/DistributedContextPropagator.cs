@@ -100,6 +100,22 @@ namespace System.Diagnostics
         public static DistributedContextPropagator CreatePassThroughPropagator() => PassThroughPropagator.Instance;
 
         /// <summary>
+        /// Returns a propagator that encodes and decodes distributed context information in accordance with the W3C Trace Context and Baggage specifications.
+        /// </summary>
+        public static DistributedContextPropagator CreateW3CPropagator() => W3CPropagator.Instance;
+
+        /// <summary>
+        /// Returns a propagator that encodes and decodes distributed context and baggage information in a backward-compatible manner.
+        /// </summary>
+        /// <remarks>
+        /// This propagator is not fully compliant with the W3C specification.
+        /// It inserts baggage using the "Correlation-Context" header instead of "baggage".
+        /// It also takes a more relaxed approach to handling trace state and baggage key-value pairs, allowing characters that are not permitted by the W3C specification.
+        /// Additionally, this propagator supports injecting values from Activity objects that use the ActivityIdFormat.Hierarchical format, which is not supported by the W3C specification.
+        /// </remarks>
+        public static DistributedContextPropagator CreatePreW3CPropagator() => LegacyPropagator.Instance;
+
+        /// <summary>
         /// Returns a propagator which does not transmit any distributed context information in outbound network messages.
         /// </summary>
         public static DistributedContextPropagator CreateNoOutputPropagator() => NoOutputPropagator.Instance;
