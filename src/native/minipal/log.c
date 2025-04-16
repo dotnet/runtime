@@ -251,19 +251,18 @@ static int sync_file(minipal_log_flags flags)
     return 0;
 }
 
-static ssize_t write_file(minipal_log_flags flags, const char* msg, size_t bytes_to_write)
+static ssize_t write_file_binary(minipal_log_flags flags, const char* msg, size_t bytes_to_write)
 {
     assert(bytes_to_write < INT_MAX);
 
-    if (minipal_log_flags_output_mode(flags) == minipal_log_flags_output_mode_binary)
-    {
-        DWORD bytes_written = 0;
-        return WriteFile(get_std_handle(flags), msg, (DWORD)bytes_to_write, &bytes_written, NULL) ? (ssize_t)bytes_written : (ssize_t)-1;
-    }
-    else
-    {
-        return _write(_fileno(get_std_file(flags)), msg, (unsigned int)bytes_to_write);
-    }
+    DWORD bytes_written = 0;
+    return WriteFile(get_std_handle(flags), msg, (DWORD)bytes_to_write, &bytes_written, NULL) ? (ssize_t)bytes_written : (ssize_t)-1;
+}
+
+static ssize_t write_file(minipal_log_flags flags, const char* msg, size_t bytes_to_write)
+{
+    assert(bytes_to_write < INT_MAX);
+    return _write(_fileno(get_std_file(flags)), msg, (unsigned int)bytes_to_write);
 }
 #else
 #if defined(__APPLE__)
@@ -302,16 +301,34 @@ static ssize_t write_file(minipal_log_flags flags, const char* msg, size_t bytes
 }
 #endif
 
+typedef ssize_t (*write_file_fnptr)(minipal_log_flags flags, const char* msg, size_t bytes_to_write);
+
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
     assert(msg != NULL && msg[0] != '\0');
 
-    size_t bytes_to_write = strlen(msg);
+    size_t bytes_to_write = 0;
     size_t bytes_written = 0;
+
+    write_file_fnptr write_fnptr = write_file;
+
+#ifdef HOST_WINDOWS
+    const char* msg_char = msg;
+    while (*msg_char)
+    {   if (msg_char[0] == '\r' && msg_char[1] == '\n')
+        {
+            write_fnptr = write_file_binary;
+        }
+        msg_char++;
+    }
+    bytes_to_write = msg_char - msg;
+#else
+    bytes_to_write = strlen(msg);
+#endif
 
     while (bytes_to_write > 0)
     {
-        ssize_t chunk_written = write_file(flags, msg, bytes_to_write < MINIPAL_LOG_MAX_PAYLOAD ? bytes_to_write : MINIPAL_LOG_MAX_PAYLOAD);
+        ssize_t chunk_written = write_fnptr(flags, msg, bytes_to_write < MINIPAL_LOG_MAX_PAYLOAD ? bytes_to_write : MINIPAL_LOG_MAX_PAYLOAD);
         if (chunk_written <= 0)
             break;
 
