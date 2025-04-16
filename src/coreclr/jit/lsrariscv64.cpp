@@ -366,6 +366,8 @@ int LinearScan::BuildNode(GenTree* tree)
                 // Integer Min/Max
                 case NI_System_Math_Min:
                 case NI_System_Math_Max:
+                case NI_System_Math_MinUnsigned:
+                case NI_System_Math_MaxUnsigned:
                     assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
                     assert(op2 != nullptr);
                     assert(op2->TypeIs(tree->TypeGet()));

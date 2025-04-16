@@ -1373,8 +1373,7 @@ public:
 
     ValueNum EvalMathFuncUnary(var_types typ, NamedIntrinsic mthFunc, ValueNum arg0VN);
 
-    ValueNum EvalMathFuncBinary(
-        var_types typ, GenTreeFlags flags, NamedIntrinsic mthFunc, ValueNum arg0VN, ValueNum arg1VN);
+    ValueNum EvalMathFuncBinary(var_types typ, NamedIntrinsic mthFunc, ValueNum arg0VN, ValueNum arg1VN);
 
     ValueNumPair EvalMathFuncUnary(var_types typ, NamedIntrinsic mthFunc, ValueNumPair arg0VNP)
     {
@@ -1382,12 +1381,10 @@ public:
                             EvalMathFuncUnary(typ, mthFunc, arg0VNP.GetConservative()));
     }
 
-    ValueNumPair EvalMathFuncBinary(
-        var_types typ, GenTreeFlags flags, NamedIntrinsic mthFunc, ValueNumPair arg0VNP, ValueNumPair arg1VNP)
+    ValueNumPair EvalMathFuncBinary(var_types typ, NamedIntrinsic mthFunc, ValueNumPair arg0VNP, ValueNumPair arg1VNP)
     {
-        return ValueNumPair(EvalMathFuncBinary(typ, flags, mthFunc, arg0VNP.GetLiberal(), arg1VNP.GetLiberal()),
-                            EvalMathFuncBinary(typ, flags, mthFunc, arg0VNP.GetConservative(),
-                                               arg1VNP.GetConservative()));
+        return ValueNumPair(EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetLiberal(), arg1VNP.GetLiberal()),
+                            EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
     }
 
 #if defined(FEATURE_HW_INTRINSICS)

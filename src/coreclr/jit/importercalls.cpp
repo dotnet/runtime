@@ -7948,6 +7948,8 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_ReciprocalSqrtEstimate:
             return true;
 
+        case NI_System_Math_MinUnsigned:
+        case NI_System_Math_MaxUnsigned:
         case NI_PRIMITIVE_LeadingZeroCount:
         case NI_PRIMITIVE_TrailingZeroCount:
         case NI_PRIMITIVE_PopCount:
@@ -8022,10 +8024,12 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MaxMagnitude:
         case NI_System_Math_MaxMagnitudeNumber:
         case NI_System_Math_MaxNumber:
+        case NI_System_Math_MaxUnsigned:
         case NI_System_Math_Min:
         case NI_System_Math_MinMagnitude:
         case NI_System_Math_MinMagnitudeNumber:
         case NI_System_Math_MinNumber:
+        case NI_System_Math_MinUnsigned:
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_Pow:
         case NI_System_Math_ReciprocalEstimate:
@@ -10305,11 +10309,11 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                 op2 = gtNewCastNode(TYP_I_IMPL, op2, zeroExtend, TYP_I_IMPL);
                 op1 = gtNewCastNode(TYP_I_IMPL, op1, zeroExtend, TYP_I_IMPL);
             }
+            if (varTypeIsUnsigned(preciseType))
+                intrinsicName = isMax ? NI_System_Math_MaxUnsigned : NI_System_Math_MinUnsigned;
+
             GenTreeIntrinsic* minMax = new (this, GT_INTRINSIC)
                 GenTreeIntrinsic(TYP_I_IMPL, op1, op2, intrinsicName, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
-
-            if (varTypeIsUnsigned(preciseType))
-                minMax->gtFlags |= GTF_UNSIGNED;
 
             return minMax;
         }

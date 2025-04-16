@@ -9583,8 +9583,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
     }
 }
 
-ValueNum ValueNumStore::EvalMathFuncBinary(
-    var_types typ, GenTreeFlags flags, NamedIntrinsic gtMathFN, ValueNum arg0VN, ValueNum arg1VN)
+ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN, ValueNum arg1VN)
 {
     assert(varTypeIsArithmetic(typ));
     assert(arg0VN == VNNormalValue(arg0VN));
@@ -9799,15 +9798,22 @@ ValueNum ValueNumStore::EvalMathFuncBinary(
             INT64 arg1Val = GetConstantInt64(arg1VN);
             INT64 result  = 0;
 
-            bool isUnsigned = (flags & GTF_UNSIGNED) != 0;
             switch (gtMathFN)
             {
                 case NI_System_Math_Min:
-                    result = isUnsigned ? std::min<UINT64>(arg0Val, arg1Val) : std::min<INT64>(arg0Val, arg1Val);
+                    result = std::min<INT64>(arg0Val, arg1Val);
+                    break;
+
+                case NI_System_Math_MinUnsigned:
+                    result = std::min<UINT64>(arg0Val, arg1Val);
                     break;
 
                 case NI_System_Math_Max:
-                    result = isUnsigned ? std::max<UINT64>(arg0Val, arg1Val) : std::max<INT64>(arg0Val, arg1Val);
+                    result = std::max<INT64>(arg0Val, arg1Val);
+                    break;
+
+                case NI_System_Math_MaxUnsigned:
+                    result = std::max<UINT64>(arg0Val, arg1Val);
                     break;
 
                 default:
@@ -9825,8 +9831,6 @@ ValueNum ValueNumStore::EvalMathFuncBinary(
     {
         VNFunc vnf = VNF_Boundary;
 
-        bool isUnsigned = (flags & GTF_UNSIGNED) != 0;
-
         switch (gtMathFN)
         {
             case NI_System_Math_Atan2:
@@ -9834,7 +9838,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(
                 break;
 
             case NI_System_Math_Max:
-                vnf = isUnsigned ? VNF_Max_UN : VNF_Max;
+                vnf = VNF_Max;
                 break;
 
             case NI_System_Math_MaxMagnitude:
@@ -9850,7 +9854,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(
                 break;
 
             case NI_System_Math_Min:
-                vnf = isUnsigned ? VNF_Min_UN : VNF_Min;
+                vnf = VNF_Min;
                 break;
 
             case NI_System_Math_MinMagnitude:
@@ -9864,6 +9868,16 @@ ValueNum ValueNumStore::EvalMathFuncBinary(
             case NI_System_Math_MinNumber:
                 vnf = VNF_MinNumber;
                 break;
+
+#ifdef TARGET_RISCV64
+            case NI_System_Math_MaxUnsigned:
+                vnf = VNF_Max_UN;
+                break;
+
+            case NI_System_Math_MinUnsigned:
+                vnf = VNF_Min_UN;
+                break;
+#endif // TARGET_RISCV64
 
             case NI_System_Math_Pow:
                 vnf = VNF_Pow;
@@ -12943,8 +12957,8 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         }
         else
         {
-            ValueNumPair newVNP = vnStore->EvalMathFuncBinary(tree->TypeGet(), tree->gtFlags,
-                                                              intrinsic->gtIntrinsicName, arg0VNP, arg1VNP);
+            ValueNumPair newVNP =
+                vnStore->EvalMathFuncBinary(tree->TypeGet(), intrinsic->gtIntrinsicName, arg0VNP, arg1VNP);
             ValueNumPair excSet = vnStore->VNPExcSetUnion(arg0VNPx, arg1VNPx);
             intrinsic->gtVNPair = vnStore->VNPWithExc(newVNP, excSet);
         }
