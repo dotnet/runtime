@@ -94,5 +94,6 @@ namespace System.Net.Security
         public X509ChainPolicy? CertificateChainPolicy { get; set; }
 
         public bool AllowRsaPssPad { get; set; } = true;
+        public bool AllowRsaRsae { get; set; } = true;
     }
 }

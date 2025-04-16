@@ -30,14 +30,15 @@ namespace System.Net.Security
                 LocalCertificateSelectionCallback = options.LocalCertificateSelectionCallback,
                 RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback,
                 TargetHost = options.TargetHost,
-                AllowRsaPssPad = options.AllowRsaPssPad
+                AllowRsaPssPad = options.AllowRsaPssPad,
+                AllowRsaRsae = options.AllowRsaRsae
             };
 
 #if DEBUG
             // Try to detect if a property gets added that we're not copying correctly.
             // The property count is guard for new properties that also needs to be added above.
             PropertyInfo[] properties = typeof(SslClientAuthenticationOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!;
-            Debug.Assert(properties.Length == 14);
+            Debug.Assert(properties.Length == 15);
             foreach (PropertyInfo pi in properties)
             {
                 object? origValue = pi.GetValue(options);

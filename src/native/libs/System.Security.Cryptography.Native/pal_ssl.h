@@ -539,6 +539,11 @@ and emits a value indicating if the cipher belongs to the SSL2-TLS1.2 list, or t
 PALEXPORT const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite, int32_t* isTls12OrLower);
 
 /*
+Returns the signature algorithms enabled by default
+*/
+PALEXPORT int32_t CryptoNative_GetDefaultSignatureAlgorithms(uint16_t* buffer, int32_t* count);
+
+/*
 Checks if given protocol version is supported.
 */
 PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
