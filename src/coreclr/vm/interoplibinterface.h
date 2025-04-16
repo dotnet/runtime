@@ -153,7 +153,6 @@ public: // GC interaction
     static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
 };
 
-
 extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
     _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
@@ -168,6 +167,34 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
     _In_ void* fptr);
 #endif // FEATURE_OBJCMARSHAL
+
+#ifdef FEATURE_JAVAMARSHAL
+class JavaNative
+{
+public: // GC interaction
+    static bool TriggerGCBridge(
+        _In_ size_t sccsLen,
+        _In_ StronglyConnectedComponent* sccs,
+        _In_ size_t ccrsLen,
+        _In_ ComponentCrossReference* ccrs);
+};
+
+extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
+    _In_ void* markCrossReferences);
+
+extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
+    _In_ QCall::ObjectHandleOnStack obj,
+    _In_ void* context);
+
+extern "C" void QCALLTYPE JavaMarshal_ReleaseMarkCrossReferenceResources(
+    _In_ int32_t sccsLen,
+    _In_ StronglyConnectedComponent* sccs,
+    _In_ ComponentCrossReference* ccrs);
+
+extern "C" BOOL QCALLTYPE JavaMarshal_GetContext(
+    _In_ OBJECTHANDLE handle,
+    _Out_ void** context);
+#endif // FEATURE_JAVAMARSHAL
 
 class Interop
 {
@@ -198,6 +225,19 @@ public:
     // and OnGCFinished.
     static void OnBeforeGCScanRoots(_In_ bool isConcurrent);
     static void OnAfterGCScanRoots(_In_ bool isConcurrent);
+
+#ifdef FEATURE_GCBRIDGE
+    static void TriggerGCBridge(
+        _In_ size_t sccsLen,
+        _In_ StronglyConnectedComponent* sccs,
+        _In_ size_t ccrsLen,
+        _In_ ComponentCrossReference* ccrs);
+
+    static void ReleaseGCBridgeArguments(
+        _In_ size_t sccsLen,
+        _In_ StronglyConnectedComponent* sccs,
+        _In_ ComponentCrossReference* ccrs);
+#endif // FEATURE_GCBRIDGE
 };
 
 #endif // _INTEROPLIBINTERFACE_H_

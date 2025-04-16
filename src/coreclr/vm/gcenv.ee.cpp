@@ -400,6 +400,20 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     return false;
 }
 
+void GCToEEInterface::TriggerGCBridge(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_GCBRIDGE
+    Interop::TriggerGCBridge(sccsLen, sccs, ccrsLen, ccrs);
+#endif // FEATURE_GCBRIDGE
+}
+
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)
 {
     CONTRACTL
