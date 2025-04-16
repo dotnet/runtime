@@ -2213,23 +2213,15 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
         // 4. !hasApx && !hasAvx512
         // but the copied memory is supposed to be linear, 
         // we cannot handle cases 2 or 3, depending on how we arrange the Context data structure.
-
-        // Below I provided an attempt with the assumption that APX always comes with AVX512.
-
-        const bool hasApx = (ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX;
-        const bool hasAvx512 = (ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512;
-
-        if (hasApx && hasAvx512)
+        
+        // Current implementation only takes care of case 1,3,4.
+        if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
         {
             copySize = sizeof(CONTEXT);
         }
-        else if (!hasApx && hasAvx512)
+        else if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
         {
             copySize = offsetof(CONTEXT, R16);
-        }
-        else if (hasApx && !hasAvx512)
-        {
-            ASSERT("APX without AVX512 is not supported yet.\n");
         }
         else
         {
