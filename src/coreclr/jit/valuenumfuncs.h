@@ -109,6 +109,10 @@ ValueNumFuncDef(Tan, 1, false, false, false)
 ValueNumFuncDef(Tanh, 1, false, false, false)
 ValueNumFuncDef(Truncate, 1, false, false, false)
 
+ValueNumFuncDef(LeadingZeroCount, 1, false, false, false)
+ValueNumFuncDef(TrailingZeroCount, 1, false, false, false)
+ValueNumFuncDef(PopCount, 1, false, false, false)
+
 ValueNumFuncDef(ManagedThreadId, 0, false, false, false)
 
 ValueNumFuncDef(ObjGetType, 1, false, true, false)

@@ -42,6 +42,7 @@ void bindings_initialize_internals ();
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 char *mono_method_get_full_name (MonoMethod *method);
+char *mono_method_full_name (MonoMethod *method, int32_t signature);
 
 #ifndef INVARIANT_TIMEZONE
 extern void mono_register_timezones_bundle (void);
@@ -432,14 +433,14 @@ mono_wasm_profiler_init_aot (const char *desc)
 
 #endif
 
-#ifdef ENABLE_BROWSER_PROFILER
+#ifdef ENABLE_DEVTOOLS_PROFILER
 
-void mono_profiler_init_browser (const char *desc);
+void mono_profiler_init_browser_devtools (const char *desc);
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_profiler_init_browser (const char *desc)
+mono_wasm_profiler_init_browser_devtools (const char *desc)
 {
-	mono_profiler_init_browser (desc);
+	mono_profiler_init_browser_devtools (desc);
 }
 
 #endif
@@ -518,8 +519,8 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 }
 
 // JS is responsible for freeing this
-EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_full_name (MonoMethod *method) {
-	const char *res;
+EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_full_name (MonoMethod *method) {
+	char *res;
 	MONO_ENTER_GC_UNSAFE;
 	res = mono_method_get_full_name (method);
 	MONO_EXIT_GC_UNSAFE;

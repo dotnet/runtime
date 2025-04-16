@@ -14,7 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // AggregateSymbol - a symbol representing an aggregate type. These are classes,
     // interfaces, and structs. Parent is a namespace or class. Children are methods,
     // properties, and member variables, and types (including its own AGGTYPESYMs).
-
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class AggregateSymbol : NamespaceOrAggregateSymbol
     {
         public Type AssociatedSystemType;
