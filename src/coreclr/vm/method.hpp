@@ -2115,7 +2115,6 @@ public:
     BOOL MayUsePrecompiledCode();
     virtual PCODE IsJitCancellationRequested();
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
-    virtual PTR_PCODE GetNativeCodeSlot();
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
 #ifdef FEATURE_ON_STACK_REPLACEMENT

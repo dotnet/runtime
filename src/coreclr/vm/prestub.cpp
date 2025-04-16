@@ -1757,12 +1757,6 @@ BOOL PrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
     return FALSE;
 }
 
-PTR_PCODE PrepareCodeConfig::GetNativeCodeSlot()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_nativeCodeVersion.GetNativeCodeSlot();
-}
-
 COR_ILMETHOD* PrepareCodeConfig::GetILHeader()
 {
     STANDARD_VM_CONTRACT;
