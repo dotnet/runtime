@@ -4718,6 +4718,18 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
         case NI_System_Math_MaxNumber:
             instr = is4 ? INS_fmax_s : INS_fmax_d;
             break;
+        case NI_System_Math_Min:
+            instr = INS_min;
+            break;
+        case NI_System_Math_MinUnsigned:
+            instr = INS_minu;
+            break;
+        case NI_System_Math_Max:
+            instr = INS_max;
+            break;
+        case NI_System_Math_MaxUnsigned:
+            instr = INS_maxu;
+            break;
         case NI_PRIMITIVE_LeadingZeroCount:
             instr = is4 ? INS_clzw : INS_clz;
             break;
