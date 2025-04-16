@@ -3875,8 +3875,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 #ifdef DEBUG
         if (compiler->opts.IsOSR())
         {
-            const int callerSpOffset =
-                compiler->lvaToCallerSPRelativeOffset(offset, compiler->isFramePointerUsed());
+            const int callerSpOffset = compiler->lvaToCallerSPRelativeOffset(offset, compiler->isFramePointerUsed());
 
             // Sanity check the offset vs saved patchpoint info.
             //
