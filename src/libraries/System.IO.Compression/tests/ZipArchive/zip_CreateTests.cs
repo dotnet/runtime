@@ -65,22 +65,33 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> GetCreateNormal_Seekable_Data()
         {
+            foreach (string folder in _folderNames)
+            {
+                yield return new object[] { folder, false, false, };
+            }
+
+            yield return new object[] { "small", false, true };
+            yield return new object[] { "small", true, false };
+            yield return new object[] { "normal", false, true };
+            yield return new object[] { "normal", true, false };
+        }
+
+        public static IEnumerable<object[]> GetCreateNormal_Seekable_Async_Data()
+        {
             foreach (bool async in _bools)
             {
-                foreach (string folder in _folderNames)
+                foreach (object[] data in GetCreateNormal_Seekable_Data())
                 {
-                    yield return new object[] { folder, false, false, async };
+                    string folder = (string)data[0];
+                    bool useSpansForWriting = (bool)data[1];
+                    bool writeInChunks = (bool)data[2];
+                    yield return new object[] { folder, useSpansForWriting, writeInChunks, async };
                 }
-
-                yield return new object[] { "small", false, true, async };
-                yield return new object[] { "small", true, false, async };
-                yield return new object[] { "normal", false, true, async };
-                yield return new object[] { "normal", true, false, async };
             }
         }
 
         [Theory]
-        [MemberData(nameof(GetCreateNormal_Seekable_Data))]
+        [MemberData(nameof(GetCreateNormal_Seekable_Async_Data))]
         public static async Task CreateNormal_Seekable(string folder, bool useSpansForWriting, bool writeInChunks, bool async)
         {
             using (var s = new MemoryStream())
@@ -88,6 +99,33 @@ namespace System.IO.Compression.Tests
                 var testStream = new WrappedStream(s, false, true, true, null);
                 await CreateFromDir(zfolder(folder), testStream, async, ZipArchiveMode.Create, useSpansForWriting: useSpansForWriting, writeInChunks: writeInChunks);
                 await IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true, async: async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetCreateNormal_Seekable_Data))]
+        public static async Task CreateNormal_Seekable_CompareSyncAndAsync(string folder, bool useSpansForWriting, bool writeInChunks)
+        {
+            using var s_sync = new MemoryStream();
+            using var s_async = new MemoryStream();
+
+            var testStream_sync = new WrappedStream(s_sync, false, true, true, null);
+            await CreateFromDir(zfolder(folder), testStream_sync, async: false, ZipArchiveMode.Create, useSpansForWriting: useSpansForWriting, writeInChunks: writeInChunks);
+
+            var testStream_async = new WrappedStream(s_async, false, true, true, null);
+            await CreateFromDir(zfolder(folder), testStream_async, async: true, ZipArchiveMode.Create, useSpansForWriting: useSpansForWriting, writeInChunks: writeInChunks);
+
+            s_sync.Position = 0;
+            s_async.Position = 0;
+
+            Assert.Equal(s_sync.ToArray(), s_async.ToArray());
+        }
+
+        public static IEnumerable<object[]> Get_FolderNames_Data()
+        {
+            foreach (string folder in _folderNames)
+            {
+                yield return new object[] { folder };
             }
         }
 
@@ -110,6 +148,25 @@ namespace System.IO.Compression.Tests
                 await CreateFromDir(zfolder(folder), testStream, async, ZipArchiveMode.Create);
                 await IsZipSameAsDir(s, zfolder(folder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true, async);
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_FolderNames_Data))]
+        public static async Task CreateNormal_Unseekable_CompareSyncAndAsync(string folder)
+        {
+            using var s_sync = new MemoryStream();
+            using var s_async = new MemoryStream();
+
+            var testStream_sync = new WrappedStream(s_sync, false, true, canSeek: false, null);
+            await CreateFromDir(zfolder(folder), testStream_sync, async: false, ZipArchiveMode.Create);
+
+            var testStream_async = new WrappedStream(s_async, false, true, canSeek: false, null);
+            await CreateFromDir(zfolder(folder), testStream_async, async: true, ZipArchiveMode.Create);
+
+            s_sync.Position = 0;
+            s_async.Position = 0;
+
+            Assert.Equal(s_sync.ToArray(), s_async.ToArray());
         }
 
         [Theory]
@@ -146,7 +203,7 @@ namespace System.IO.Compression.Tests
                 var testFileContent = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 
                 ZipArchive zip = await CreateZipArchive(async, testStream, ZipArchiveMode.Create);
-                
+
                 var utf8WithoutBom = new Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
                 ZipArchiveEntry newEntry = zip.CreateEntry(testfilename, CompressionLevel.NoCompression);
 
@@ -228,7 +285,7 @@ namespace System.IO.Compression.Tests
             using (var reReadStream = new MemoryStream(zipFileContent))
             {
                 ZipArchive reReadZip = await CreateZipArchive(async, reReadStream, ZipArchiveMode.Read);
-               
+
                 var firstArchive = reReadZip.Entries[0];
                 var secondArchive = reReadZip.Entries[1];
                 var compressionLevelFieldInfo = typeof(ZipArchiveEntry).GetField("_compressionLevel", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
@@ -264,7 +321,7 @@ namespace System.IO.Compression.Tests
 
             // Creation will go through the path that sets the data descriptor bit when the stream is unseekable
             ZipArchive archive = await CreateZipArchive(async, wrappedStream, ZipArchiveMode.Create);
-            
+
             CreateEntry(archive, "A", "xxx");
             CreateEntry(archive, "B", "yyy");
 
