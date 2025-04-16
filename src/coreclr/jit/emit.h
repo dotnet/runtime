@@ -452,9 +452,9 @@ enum EmitCallType
 #ifdef TARGET_XARCH
     EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method (call [addr]/call [rip+addr])
 #endif
-    EC_INDIR_R,          // Indirect call via register (call/bl reg)
+    EC_INDIR_R, // Indirect call via register (call/bl reg)
 #ifdef TARGET_XARCH
-    EC_INDIR_ARD,        // Indirect call via an addressing mode (call [rax+rdx*8+disp])
+    EC_INDIR_ARD, // Indirect call via an addressing mode (call [rax+rdx*8+disp])
 #endif
 
     EC_COUNT
