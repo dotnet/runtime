@@ -7,18 +7,10 @@
  *
  */
 
-// Interpreter-FIXME: we get an existing implementation of ASSERTE via PCH that isn't usable
-//  from inside the interpreter, so we need to replace it with our own.
-#undef _ASSERTE
-#define _ASSERTE(x) _GCINFO_ASSERTE(x)
-
 #include <stdint.h>
 
 #include "gcinfohelpers.h"
 #include "gcinfoencoder.h"
-
-#undef _ASSERTE
-#define _ASSERTE(x) _GCINFO_ASSERTE(x)
 
 using namespace GcInfoEncoderExt;
 
@@ -448,25 +440,12 @@ template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncode
         m_InterruptibleRanges( pJitAllocator ),
         m_LifetimeTransitions( pJitAllocator )
 {
-    // HACK: Initialize this first so it can be used by _ASSERTE
     _ASSERTE( pCorJitInfo != NULL );
-    m_pCorJitInfo = pCorJitInfo;
-
-#define GCINFOENCODER_ASSERT(expr) \
-    if (!(expr)) { \
-        /* doAssert returns true if we're meant to trigger a debugger break */ \
-        if (m_pCorJitInfo->doAssert(__FILE__, __LINE__, #expr)) \
-            /* use GCINFO_ASSERTE to trigger a debug break */ \
-            _GCINFO_ASSERTE(false); \
-    }
-
-#undef _ASSERTE
-#define _ASSERTE(x) GCINFOENCODER_ASSERT(x)
-
     _ASSERTE( pMethodInfo != NULL );
     _ASSERTE( pJitAllocator != NULL );
     _ASSERTE( pNoMem != NULL );
 
+    m_pCorJitInfo = pCorJitInfo;
     m_pMethodInfo = pMethodInfo;
     m_pAllocator = pJitAllocator;
     m_pNoMem = pNoMem;
@@ -787,10 +766,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetRever
 }
 
 
-#undef _ASSERTE
-#define _ASSERTE(x) _GCINFO_ASSERTE(x)
-
-
 struct GcSlotDescAndId
 {
     GcSlotDesc m_SlotDesc;
@@ -924,10 +899,6 @@ void BitStreamWriter::MemoryBlockList::Dispose(IAllocator* allocator)
     m_tail = nullptr;
 #endif
 }
-
-
-#undef _ASSERTE
-#define _ASSERTE(x) GCINFOENCODER_ASSERT(x)
 
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::FinalizeSlotIds()
@@ -2477,10 +2448,6 @@ template <typename GcInfoEncoding> size_t TGcInfoEncoder<GcInfoEncoding>::GetEnc
 {
     return m_BlockSize;
 }
-
-
-#undef _ASSERTE
-#define _ASSERTE(x) _GCINFO_ASSERTE(x)
 
 
 BitStreamWriter::BitStreamWriter( IAllocator* pAllocator )

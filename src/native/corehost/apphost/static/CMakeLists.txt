@@ -195,7 +195,7 @@ else()
         LIST(APPEND NATIVE_LIBS
             eventprovider
         )
-    endif(FEATURE_EVENT_TRACE) 
+    endif(FEATURE_EVENT_TRACE)
     LIST(APPEND NATIVE_LIBS
         nativeresourcestring
     )
@@ -223,6 +223,10 @@ else()
     set(RUNTIMEINFO_LIB runtimeinfo)
 
 endif()
+
+LIST(APPEND NATIVE_LIBS
+    gcinfo
+)
 
 if(CLR_CMAKE_TARGET_APPLE)
     LIST(APPEND NATIVE_LIBS

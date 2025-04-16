@@ -34,6 +34,9 @@ static const InterpType g_interpTypeFromStackType[] =
     InterpTypeI,        // F
 };
 
+// Used by assertAbort
+thread_local ICorJitInfo* gInterpJitInfoTls = nullptr;
+
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
 
 /*****************************************************************************/
@@ -3441,4 +3444,18 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
 
     PrintInsData(NULL, insOffset, ip, opcode);
     printf("\n");
+}
+
+extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line)
+{
+    if (gInterpJitInfoTls) {
+        if (!gInterpJitInfoTls->doAssert(file, line, why))
+            return;
+    }
+
+#ifdef _MSC_VER
+    __debugbreak();
+#else // _MSC_VER
+    __builtin_trap();
+#endif // _MSC_VER
 }

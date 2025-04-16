@@ -11,8 +11,6 @@
 #include "iallocator.h"
 #include "gcinfoarraylist.h"
 #include "safemath.h"
-#undef _ASSERTE
-#define _ASSERTE(x) _GCINFO_ASSERTE(x)
 
 inline size_t roundUp(size_t size, size_t alignment)
 {

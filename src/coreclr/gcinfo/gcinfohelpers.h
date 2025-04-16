@@ -4,26 +4,17 @@
 #ifndef _GCINFOHELPERS_H_
 #define _GCINFOHELPERS_H_
 
-#if defined(_DEBUG)
-// NOTE: This needs to actually do something with expr or crossgen will crash in safemath.h
-//  because safemath verifies that you've actually performed overflow checks and there's a load-bearing assert somewhere in GcInfoEncoder
-// It is not possible to use libc assert here without linker errors.
-static bool ___ASSERTE_hack_global = false;
-#ifdef _MSC_VER
-#define _GCINFO_ASSERTE(expr) if (!(___ASSERTE_hack_global = (expr))) { \
-    __debugbreak(); \
-}
-#else // _MSC_VER
-#define _GCINFO_ASSERTE(expr) if (!(___ASSERTE_hack_global = (expr))) { \
-    __builtin_trap(); \
-}
-#endif // _MSC_VER
-#else // _DEBUG
-#define _GCINFO_ASSERTE(expr) (void)0
-#endif // _DEBUG
+#undef _ASSERTE
 
-#undef _ASSERTE_SAFEMATH
-#define _ASSERTE_SAFEMATH(expr) _GCINFO_ASSERTE(expr)
+#if defined(_DEBUG)
+extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line);
+
+#define _ASSERTE(expr) if (!(expr)) { \
+    assertAbort(#expr, __FILE__, __LINE__); \
+}
+#else // _DEBUG
+#define _ASSERTE(expr) (void)0
+#endif // _DEBUG
 
 // If you want GcInfoEncoder logging to work, replace this macro with an appropriate definition.
 // This previously relied on our common logging infrastructure, but that caused linker failures in the interpreter.

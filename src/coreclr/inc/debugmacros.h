@@ -15,7 +15,7 @@
 #include "palclr.h"
 #include <minipal/utils.h>
 
-#undef _ASSERTE
+// #undef _ASSERTE
 #undef VERIFY
 
 #ifdef __cplusplus
