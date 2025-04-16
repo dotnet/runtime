@@ -32551,10 +32551,9 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
         }
 
 #ifdef SIMPLE_DPRINTF
-        dprintf (REGIONS_LOG, ("h%d ad_p_d: PL: %zd, SL: %zd, pfr: %.3f, psr: %.3f, prmoote gen1 %d. gen1_pins_left %Id, total surv %Id (p:%Id), total_space %Id(%Id)",
-            heap_number, gen1_pins_left, total_space_to_skip, pin_frag_ratio, pin_surv_ratio, actual_promote_gen1_pins_p,
-            gen1_pins_left, dd_survived_size (dynamic_data_of (max_generation - 1)), dd_pinned_survived_size (dynamic_data_of (max_generation - 1)),
-            total_space_to_skip, total_space_no_es));
+        dprintf (REGIONS_LOG, ("h%d ad_p_d: PL: %zd, SL: %zd, pfr: %.3f, psr: %.3f, prmoote gen1 %d. gen1_pins_left %Id, total surv %Id (p:%Id), total_space %Id",
+            heap_number, gen1_pins_left, total_space_to_skip, pin_frag_ratio, pin_surv_ratio, actual_promote_gen1_pins_p, gen1_pins_left,
+            dd_survived_size (dynamic_data_of (max_generation - 1)), dd_pinned_survived_size (dynamic_data_of (max_generation - 1)), total_space_to_skip));
 #endif
     }
 
