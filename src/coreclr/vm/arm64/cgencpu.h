@@ -279,13 +279,13 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return (TADDR)(context->Fp);
 }
 
-inline void SetFirstArgReg(CONTEXT *context, TADDR value)
+inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     SetReg(context, 0, value);
 }
 
-inline TADDR GetFirstArgReg(CONTEXT *context)
+inline TADDR GetFirstArgReg(T_CONTEXT *context)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetReg(context, 0);

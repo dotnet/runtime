@@ -3935,6 +3935,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
         goto Exit;
     }
 
+    #ifdef FEATURE_INTERPRETER
     if ((pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME) && (GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext) == 0))
     {
         // The callerIP is 0 when we are going to unwind from the first interpreted frame belonging to an InterpreterFrame.
@@ -3947,6 +3948,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
         retVal = pThis->Next();
         _ASSERTE(retVal != SWA_FAILED);
     }
+#endif // FEATURE_INTERPRETER
 
     // Check for reverse pinvoke or CallDescrWorkerInternal.
     if (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
