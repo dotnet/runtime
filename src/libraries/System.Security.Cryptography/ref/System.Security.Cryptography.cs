@@ -1877,14 +1877,11 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public byte[] Decapsulate(byte[] ciphertext) { throw null; }
         public void Decapsulate(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret) { }
-        public void Decapsulate(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret, out int sharedSecretBytesWritten) { throw null; }
         protected abstract void DecapsulateCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> sharedSecret);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public byte[] Encapsulate(out byte[] sharedSecret) { throw null; }
-        public byte[] Encapsulate(System.Span<byte> sharedSecret) { throw null; }
+        public void Encapsulate(out byte[] ciphertext, out byte[] sharedSecret) { throw null; }
         public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret) { }
-        public void Encapsulate(System.Span<byte> ciphertext, System.Span<byte> sharedSecret, out int ciphertextBytesWritten, out int sharedSecretBytesWritten) { throw null; }
         protected abstract void EncapsulateCore(System.Span<byte> ciphertext, System.Span<byte> sharedSecret);
         public byte[] ExportDecapsulationKey() { throw null; }
         public void ExportDecapsulationKey(System.Span<byte> destination) { }
@@ -1925,7 +1922,6 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.MLKem ImportPrivateSeed(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
-        protected void ThrowIfDisposed() { }
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
