@@ -143,6 +143,11 @@ namespace System.IO.Compression
         /// </param>
         public static ZipArchive Open(string archiveFileName, ZipArchiveMode mode, Encoding? entryNameEncoding)
         {
+            // the FileStream gets passed to the new ZipArchive, which stores it internally.
+            // The stream will then be owned by the archive and be disposed when the archive is disposed.
+            // If the ZipArchive ctor completes without throwing, we know fs has been successfully stores in the archive;
+            // If the ctor throws, we need to close it in a try finally for the ZipArchive.
+
             FileStream fs = GetFileStreamForOpen(mode, archiveFileName, useAsync: false);
 
             try
@@ -468,12 +473,7 @@ namespace System.IO.Compression
                 _ => throw new ArgumentOutOfRangeException(nameof(mode)),
             };
 
-            // Suppress CA2000: fs gets passed to the new ZipArchive, which stores it internally.
-            // The stream will then be owned by the archive and be disposed when the archive is disposed.
-            // If the ctor completes without throwing, we know fs has been successfully stores in the archive;
-            // If the ctor throws, we need to close it here.
-
-            return new FileStream(archiveFileName, fileMode, access, fileShare, bufferSize: 0x1000, useAsync);
+            return new FileStream(archiveFileName, fileMode, access, fileShare, bufferSize: FileStreamBufferSize, useAsync);
         }
 
         private static (string, string) GetFullPathsForDoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName)
@@ -530,6 +530,8 @@ namespace System.IO.Compression
                 archive.CreateEntry(ArchivingUtils.EntryFromPath(di.Name, appendPathSeparator: true));
             }
         }
+
+        internal const int FileStreamBufferSize = 0x4000; // 16K
 
         private enum CreateEntryType
         {

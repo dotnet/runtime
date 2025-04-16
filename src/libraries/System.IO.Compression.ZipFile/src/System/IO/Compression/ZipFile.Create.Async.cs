@@ -153,6 +153,11 @@ public static partial class ZipFile
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        // the FileStream gets passed to the new ZipArchive, which stores it internally.
+        // The stream will then be owned by the archive and be disposed when the archive is disposed.
+        // If the ZipArchive ctor completes without throwing, we know fs has been successfully stores in the archive;
+        // If the ctor throws, we need to close it in a try finally for the ZipArchive.
+
         FileStream fs = GetFileStreamForOpen(mode, archiveFileName, useAsync: true);
 
         try
@@ -488,5 +493,4 @@ public static partial class ZipFile
 
         FinalizeCreateZipArchiveFromDirectory(archive, di, includeBaseDirectory, directoryIsEmpty);
     }
-
 }

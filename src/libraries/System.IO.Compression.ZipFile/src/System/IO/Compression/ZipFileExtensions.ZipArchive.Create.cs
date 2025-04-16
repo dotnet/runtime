@@ -104,7 +104,7 @@ namespace System.IO.Compression
 
             // Argument checking gets passed down to FileStream's ctor and CreateEntry
 
-            FileStream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x4000, useAsync);
+            FileStream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, ZipFile.FileStreamBufferSize, useAsync);
 
             ZipArchiveEntry entry = compressionLevel.HasValue ?
                                     destination.CreateEntry(entryName, compressionLevel.Value) :

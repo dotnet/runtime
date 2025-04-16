@@ -83,7 +83,7 @@ namespace System.IO.Compression
                 Access = FileAccess.Write,
                 Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
                 Share = FileShare.None,
-                BufferSize = 0x1000
+                BufferSize = ZipFile.FileStreamBufferSize
             };
 
             const UnixFileMode OwnershipPermissions =
