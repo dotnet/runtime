@@ -1936,6 +1936,10 @@ void LinearScan::buildPhysRegRecords()
         RegRecord* curr = &physRegs[reg];
         curr->init(reg);
     }
+#if defined(TARGET_AMD64)
+    RegRecord* lastInt  = &physRegs[get_REG_INT_LAST()];
+    lastInt->nextRegNum = REG_FP_FIRST;
+#endif //  TARGET_AMD64
     for (unsigned int i = 0; i < lsraRegOrderSize; i++)
     {
         regNumber  reg  = lsraRegOrder[i];
