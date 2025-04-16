@@ -1,4 +1,8 @@
 parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
   testGroup: 'innerloop'
   readyToRun: false
   sanitizers: ''
@@ -56,10 +60,16 @@ variables:
     - name: timeoutPerTestInMinutes
       value: 30
   - ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
-    - name: timeoutPerTestCollectionInMinutes
-      value: 240
-    - name: timeoutPerTestInMinutes
-      value: 60
+    ${{ if and(eq(parameters.osGroup, 'osx'), eq(parameters.archType, 'arm64')) }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 480
+      - name: timeoutPerTestInMinutes
+        value: 120
+    ${{ else }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 240
+      - name: timeoutPerTestInMinutes
+        value: 60
   - ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra') }}:
     - name: timeoutPerTestCollectionInMinutes
       value: 300
