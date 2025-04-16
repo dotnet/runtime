@@ -4794,7 +4794,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
             message.Append(exceptionMessage);
         }
 
-        PrintToStdErrW(message.GetUnicode(), TRUE);
+        PrintToStdErrW(message.GetUnicode());
         PrintToStdErrA("\n");
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)

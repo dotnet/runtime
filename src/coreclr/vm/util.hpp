@@ -189,8 +189,8 @@ class CQuickHeap
         QuickBlock      *m_pFirstBigQuickBlock;
 };
 
-void PrintToStdErrA(const char *pszString, BOOL binaryOutputMode = FALSE);
-void PrintToStdErrW(const WCHAR *pwzString, BOOL binaryOutputMode = FALSE);
+void PrintToStdErrA(const char *pszString);
+void PrintToStdErrW(const WCHAR *pwzString);
 
 #include "nativevaraccessors.h"
 

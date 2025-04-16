@@ -384,20 +384,20 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
 
         if (errorSource != NULL)
         {
-            PrintToStdErrW(errorSource, TRUE);
+            PrintToStdErrW(errorSource);
             PrintToStdErrA("\n");
         }
 
         if (pszMessage != NULL)
         {
-            PrintToStdErrW(pszMessage, TRUE);
+            PrintToStdErrW(pszMessage);
         }
         else
         {
             // If no message was passed in, generate it from the exitCode
             InlineSString<256> exitCodeMessage;
             GetHRMsg(exitCode, exitCodeMessage);
-            PrintToStdErrW(exitCodeMessage.GetUnicode(), TRUE);
+            PrintToStdErrW(exitCodeMessage.GetUnicode());
         }
 
         PrintToStdErrA("\n");
@@ -408,7 +408,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
             LogCallstackForLogWorker(pThread, pExceptionInfo);
 
             if (argExceptionString != NULL) {
-                PrintToStdErrW(argExceptionString, TRUE);
+                PrintToStdErrW(argExceptionString);
             }
         }
     }
