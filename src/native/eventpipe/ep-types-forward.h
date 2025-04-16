@@ -180,6 +180,15 @@ typedef enum
 } EventPipeProviderOptionalFieldFlags;
 
 /*
+ *  EventPipe session types that can be started via IPC commands.
+ */
+typedef enum {
+	EP_IPC_SESSION_TYPE_STREAMING,
+	EP_IPC_SESSION_TYPE_USEREVENTS,
+	EP_IPC_SESSION_TYPE_COUNT
+} EventPipeIPCSessionType;
+
+/*
  * EventPipe Basic Types.
  */
 

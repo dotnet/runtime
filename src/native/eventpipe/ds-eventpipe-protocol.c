@@ -115,6 +115,12 @@ eventpipe_collect_tracing4_command_try_parse_payload (
 	uint16_t buffer_len);
 
 static
+uint8_t *
+eventpipe_collect_tracing5_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len);
+
+static
 bool
 eventpipe_protocol_helper_stop_tracing (
 	DiagnosticsIpcMessage *message,
@@ -640,6 +646,7 @@ eventpipe_collect_tracing_command_try_parse_payload (
 	instance->rundown_requested = true;
 	instance->stackwalk_requested = true;
 	instance->rundown_keyword = ep_default_rundown_keyword;
+	instance->session_type = EP_IPC_SESSION_TYPE_STREAMING;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -675,6 +682,7 @@ eventpipe_collect_tracing2_command_try_parse_payload (
 	instance->rundown_keyword = instance->rundown_requested ? ep_default_rundown_keyword : 0;
 
 	instance->stackwalk_requested = true;
+	instance->session_type = EP_IPC_SESSION_TYPE_STREAMING;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -709,6 +717,7 @@ eventpipe_collect_tracing3_command_try_parse_payload (
 		ep_raise_error ();
 
 	instance->rundown_keyword = instance->rundown_requested ? ep_default_rundown_keyword : 0;
+	instance->session_type = EP_IPC_SESSION_TYPE_STREAMING;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -741,6 +750,67 @@ eventpipe_collect_tracing4_command_try_parse_payload (
 		!eventpipe_collect_tracing_command_try_parse_stackwalk_requested (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested) ||
 		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs, EP_PROVIDER_OPTFIELD_NONE))
 		ep_raise_error ();
+
+	instance->rundown_requested = instance->rundown_keyword != 0;
+	instance->session_type = EP_IPC_SESSION_TYPE_STREAMING;
+
+ep_on_exit:
+	return (uint8_t *)instance;
+
+ep_on_error:
+	ds_eventpipe_collect_tracing_command_payload_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+/*
+ *  eventpipe_collect_tracing5_command_try_parse_payload
+ *
+ *  Implements the CollectTracing5 IPC Protocol deserialization.
+ *
+ *  Ownership of the EventPipeCollectTracingCommandPayload is transferred to the caller.
+ */
+static
+uint8_t *
+eventpipe_collect_tracing5_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len)
+{
+	EP_ASSERT (buffer != NULL);
+
+	uint8_t * buffer_cursor = buffer;
+	uint32_t buffer_cursor_len = buffer_len;
+
+	EventPipeProviderOptionalFieldFlags optional_field_flags = EP_PROVIDER_OPTFIELD_EVENT_FILTER;
+
+	EventPipeCollectTracingCommandPayload *instance = ds_eventpipe_collect_tracing_command_payload_alloc ();
+	ep_raise_error_if_nok (instance != NULL);
+
+	instance->incoming_buffer = buffer;
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->session_type));
+	ep_raise_error_if_nok (instance->session_type < EP_IPC_SESSION_TYPE_COUNT);
+
+	if (instance->session_type == EP_IPC_SESSION_TYPE_STREAMING) {
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb));
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format));
+	} else if (instance->session_type == EP_IPC_SESSION_TYPE_USEREVENTS) {
+		instance->circular_buffer_size_in_mb = 0;
+		instance->serialization_format = EP_SERIALIZATION_FORMAT_NETTRACE_V4; // Serialization format isn't used for user_events sessions, default for check_options_valid.
+	}
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (&buffer_cursor, &buffer_cursor_len, &instance->rundown_keyword));
+
+	if (instance->session_type == EP_IPC_SESSION_TYPE_STREAMING) {
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_bool (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested));
+	} else if (instance->session_type == EP_IPC_SESSION_TYPE_USEREVENTS) {
+		instance->stackwalk_requested = false;
+	}
+
+	if (instance->session_type == EP_IPC_SESSION_TYPE_USEREVENTS)
+		optional_field_flags = (EventPipeProviderOptionalFieldFlags)(optional_field_flags | EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG);
+
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs, optional_field_flags));
 
 	instance->rundown_requested = instance->rundown_keyword != 0;
 
@@ -842,6 +912,11 @@ eventpipe_protocol_helper_collect_tracing (
 		return false;
 	}
 
+	uint32_t user_events_data_fd = -1;
+	if (payload->session_type == EP_IPC_SESSION_TYPE_USEREVENTS) {
+		// Extract file descriptor from IpcStream
+	}
+
 	EventPipeSessionOptions options;
 	ep_session_options_init(
 		&options,
@@ -849,14 +924,14 @@ eventpipe_protocol_helper_collect_tracing (
 		payload->circular_buffer_size_in_mb,
 		dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration),
 		dn_vector_size (payload->provider_configs),
-		EP_SESSION_TYPE_IPCSTREAM,
+		payload->session_type == EP_IPC_SESSION_TYPE_USEREVENTS ? EP_SESSION_TYPE_USEREVENTS : EP_SESSION_TYPE_IPCSTREAM,
 		payload->serialization_format,
 		payload->rundown_keyword,
 		payload->stackwalk_requested,
-		ds_ipc_stream_get_stream_ref (stream),
+		payload->session_type == EP_IPC_SESSION_TYPE_STREAMING ? ds_ipc_stream_get_stream_ref (stream) : NULL,
 		NULL,
 		NULL,
-		0);
+		user_events_data_fd);
 
 	EventPipeSessionID session_id = 0;
 	bool result = false;
@@ -928,6 +1003,24 @@ ds_eventpipe_protocol_helper_handle_ipc_message (
 	case EP_COMMANDID_COLLECT_TRACING_4:
 		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing4_command_try_parse_payload);
 		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
+		break;
+	case EP_COMMANDID_COLLECT_TRACING_5:
+		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing5_command_try_parse_payload);
+		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
+		// If there was a problem transferring ownership of the payload to the session's providers,
+		// we need to free the dynamically allocated event_filter and tracepoint_config here.
+		if (!result) {
+			if (payload->provider_configs != NULL) {
+				// Until ep_provider_config_fini is implemented, we need to manually free the provider_config manually.
+				DN_VECTOR_FOREACH_BEGIN (EventPipeProviderConfiguration, config, payload->provider_configs) {
+					ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config));
+					ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config));
+					ep_event_filter_free (ep_provider_config_get_event_filter (&config));
+					ep_tracepoint_config_free (ep_provider_config_get_tracepoint_config (&config));
+					ep_rt_object_free (&config);
+				} DN_VECTOR_FOREACH_END;
+			}
+		}
 		break;
 	case EP_COMMANDID_STOP_TRACING:
 		result = eventpipe_protocol_helper_stop_tracing (message, stream);

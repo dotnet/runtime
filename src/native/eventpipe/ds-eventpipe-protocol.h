@@ -21,6 +21,7 @@
 // Command = 0x0203
 // Command = 0x0204
 // Command = 0x0205
+// Command = 0x0206
 #if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)
 struct _EventPipeCollectTracingCommandPayload {
 #else
@@ -42,6 +43,7 @@ struct _EventPipeCollectTracingCommandPayload_Internal {
 	bool rundown_requested;
 	bool stackwalk_requested;
 	uint64_t rundown_keyword;
+	uint32_t session_type;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)
