@@ -566,7 +566,7 @@ internal static partial class Interop
             return Array.ConvertAll(rawAlgs, ConvertAlg);
         }
 
-        internal static unsafe void ConfigureSignatureAlgorithms(SafeSslHandle sslHandle, bool enablePss, bool enableRsae)
+        internal static unsafe void ConfigureSignatureAlgorithms(SafeSslHandle sslHandle, bool enablePss, bool enablePkcs)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(512);
             try
@@ -580,7 +580,7 @@ internal static partial class Interop
                         continue;
                     }
 
-                    if (alg.StartsWith("rsa_pss_rsae_") && !enableRsae)
+                    if (alg.StartsWith("rsa_pkcs1_") && !enablePkcs)
                     {
                         continue;
                     }

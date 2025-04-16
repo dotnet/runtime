@@ -461,10 +461,11 @@ namespace System.Net.Security
             {
                 if (cryptoSettings.Length > 0)
                 {
-
                     if (!authOptions.AllowRsaPkcsPad)
                     {
-                        algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PSS_PAD");
+                        algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PKCS_PAD");
+
+                        cryptoSettings[cryptoSettingsCount] = default;
                         cryptoSettings[cryptoSettingsCount].eAlgorithmUsage = Interop.SspiCli.CRYPTO_SETTINGS.TlsAlgorithmUsage.TlsParametersCngAlgUsageCertSig;
                         Interop.NtDll.RtlInitUnicodeString(out cryptoSettings[cryptoSettingsCount].strCngAlgId, algIdPtrs[cryptoSettingsCount]);
                         cryptoSettingsCount++;
@@ -472,7 +473,9 @@ namespace System.Net.Security
 
                     if (!authOptions.AllowRsaPssPad)
                     {
-                        algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PKCS_PAD");
+                        algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PSS_PAD");
+
+                        cryptoSettings[cryptoSettingsCount] = default;
                         cryptoSettings[cryptoSettingsCount].eAlgorithmUsage = Interop.SspiCli.CRYPTO_SETTINGS.TlsAlgorithmUsage.TlsParametersCngAlgUsageCertSig;
                         Interop.NtDll.RtlInitUnicodeString(out cryptoSettings[cryptoSettingsCount].strCngAlgId, algIdPtrs[cryptoSettingsCount]);
                         cryptoSettingsCount++;
