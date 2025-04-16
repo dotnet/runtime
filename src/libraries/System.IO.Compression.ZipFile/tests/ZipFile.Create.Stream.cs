@@ -31,7 +31,7 @@ public class ZipFile_Create_Stream : ZipFileTestBase
         Assert.Throws<ArgumentOutOfRangeException>(() => ZipFile.CreateFromDirectory("sourceDirectory", ms, invalidCompressionLevel, includeBaseDirectory: false));
         Assert.Throws<ArgumentOutOfRangeException>(() => ZipFile.CreateFromDirectory("sourceDirectory", ms, invalidCompressionLevel, includeBaseDirectory: false, Encoding.UTF8));
     }
-       
+
     [Fact]
     public void CreateFromDirectory_UnwritableStream_Throws()
     {
@@ -40,46 +40,54 @@ public class ZipFile_Create_Stream : ZipFileTestBase
         Assert.Throws<ArgumentException>("destination", () => ZipFile.CreateFromDirectory(GetTestFilePath(), destination));
     }
 
-    [Fact]
-    public void CreateFromDirectoryNormal()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task CreateFromDirectoryNormal(bool async)
     {
         string folderName = zfolder("normal");
         using MemoryStream destination = new();
-        ZipFile.CreateFromDirectory(folderName, destination);
+        await CallZipFileCreateFromDirectory(async, folderName, destination);
         destination.Position = 0;
-        IsZipSameAsDir(destination, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
+        await IsZipSameAsDir(destination, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false, async);
     }
 
-    [Fact]
-    public void CreateFromDirectoryNormal_Unreadable_Unseekable()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task CreateFromDirectoryNormal_Unreadable_Unseekable(bool async)
     {
         string folderName = zfolder("normal");
         using MemoryStream ms = new();
         using WrappedStream destination = new(ms, canRead: false, canWrite: true, canSeek: false);
-        ZipFile.CreateFromDirectory(folderName, destination);
+        await CallZipFileCreateFromDirectory(async, folderName, destination);
         ms.Position = 0;
-        IsZipSameAsDir(ms, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
+        await IsZipSameAsDir(ms, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false, async);
     }
 
-    [Fact]
-    public void CreateFromDirectory_IncludeBaseDirectory()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task CreateFromDirectory_IncludeBaseDirectory(bool async)
     {
         string folderName = zfolder("normal");
         using MemoryStream destination = new();
-        ZipFile.CreateFromDirectory(folderName, destination, CompressionLevel.Optimal, true);
+        await CallZipFileCreateFromDirectory(async, folderName, destination, CompressionLevel.Optimal, true);
 
         IEnumerable<string> expected = Directory.EnumerateFiles(zfolder("normal"), "*", SearchOption.AllDirectories);
         destination.Position = 0;
-        using ZipArchive archive = new(destination);
+        ZipArchive archive = await CreateZipArchive(async, destination, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+
         foreach (ZipArchiveEntry actualEntry in archive.Entries)
         {
             string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
             Assert.StartsWith("normal", actualEntry.FullName);
             Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
             using Stream expectedStream = File.OpenRead(expectedFile);
-            using Stream actualStream = actualEntry.Open();
+
+            Stream actualStream = await OpenEntryStream(async, actualEntry);
             StreamsEqual(expectedStream, actualStream);
+
         }
+
+        await DisposeZipArchive(async, archive);
     }
 
     [Fact]
@@ -99,7 +107,7 @@ public class ZipFile_Create_Stream : ZipFileTestBase
     public void CreatedEmptyDirectoriesRoundtrip()
     {
         using TempDirectory tempFolder = new(GetTestFilePath());
-        
+
         DirectoryInfo rootDir = new(tempFolder.Path);
         rootDir.CreateSubdirectory("empty1");
 

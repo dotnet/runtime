@@ -1,30 +1,38 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression.Tests
 {
     public class ZipFile_Extract : ZipFileTestBase
     {
+        public static IEnumerable<object[]> Get_ExtractToDirectoryNormal_Data()
+        {
+            foreach (bool async in _bools)
+            {
+            yield return new object[] { "normal.zip", "normal", async };
+            yield return new object[] { "empty.zip", "empty", async };
+            yield return new object[] { "explicitdir1.zip", "explicitdir", async };
+            yield return new object[] { "explicitdir2.zip", "explicitdir", async };
+            yield return new object[] { "appended.zip", "small", async };
+            yield return new object[] { "prepended.zip", "small", async };
+            yield return new object[] { "noexplicitdir.zip", "explicitdir", async };
+            }
+        }
+
         [Theory]
-        [InlineData("normal.zip", "normal")]
-        [InlineData("empty.zip", "empty")]
-        [InlineData("explicitdir1.zip", "explicitdir")]
-        [InlineData("explicitdir2.zip", "explicitdir")]
-        [InlineData("appended.zip", "small")]
-        [InlineData("prepended.zip", "small")]
-        [InlineData("noexplicitdir.zip", "explicitdir")]
-        public void ExtractToDirectoryNormal(string file, string folder)
+        [MemberData(nameof(Get_ExtractToDirectoryNormal_Data))]
+        public async Task ExtractToDirectoryNormal(string file, string folder, bool async)
         {
             string zipFileName = zfile(file);
             string folderName = zfolder(folder);
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
-            {
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path);
-                DirsEqual(tempFolder.Path, folderName);
-            }
+            using TempDirectory tempFolder = new TempDirectory(GetTestFilePath());
+            await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path);
+            DirsEqual(tempFolder.Path, folderName);
         }
 
         [Fact]
@@ -109,7 +117,7 @@ namespace System.IO.Compression.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_ZipWithInvalidFileNames()
         {
-            
+
             var testDirectory = GetTestFilePath();
             ZipFile.ExtractToDirectory(compat("InvalidWindowsFileNameChars.zip"), testDirectory);
             CheckExists(testDirectory, "TestText______________________________________.txt");
@@ -149,38 +157,38 @@ namespace System.IO.Compression.Tests
             Assert.Equal(fileName, Path.GetFileName(results[0]));
         }
 
-        [Fact]
-        public void ExtractToDirectoryOverwrite()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectoryOverwrite(bool async)
         {
             string zipFileName = zfile("normal.zip");
             string folderName = zfolder("normal");
 
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
-            {
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, overwriteFiles: false);
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path /* default false */));
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, overwriteFiles: false));
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, overwriteFiles: true);
+            using TempDirectory tempFolder = new TempDirectory(GetTestFilePath());
 
-                DirsEqual(tempFolder.Path, folderName);
-            }
+            await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, overwriteFiles: false);
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path /* default false */));
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, overwriteFiles: false));
+            ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, overwriteFiles: true);
+
+            DirsEqual(tempFolder.Path, folderName);
         }
 
-        [Fact]
-        public void ExtractToDirectoryOverwriteEncoding()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectoryOverwriteEncoding(bool async)
         {
             string zipFileName = zfile("normal.zip");
             string folderName = zfolder("normal");
 
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
-            {
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false);
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8 /* default false */));
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false));
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: true);
+            using TempDirectory tempFolder = new(GetTestFilePath());
 
-                DirsEqual(tempFolder.Path, folderName);
-            }
+            await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false);
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, Encoding.UTF8 /* default false */));
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false));
+            await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: true);
+
+            DirsEqual(tempFolder.Path, folderName);
         }
 
         [Fact]

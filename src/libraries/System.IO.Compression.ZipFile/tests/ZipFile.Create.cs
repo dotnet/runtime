@@ -11,62 +11,41 @@ namespace System.IO.Compression.Tests
 {
     public class ZipFile_Create : ZipFileTestBase
     {
-        [Fact]
-        public async Task CreateFromDirectoryNormal()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task CreateFromDirectoryNormal(bool async)
         {
             string folderName = zfolder("normal");
             string noBaseDir = GetTestFilePath();
-            ZipFile.CreateFromDirectory(folderName, noBaseDir);
+            await CallZipFileCreateFromDirectory(async, folderName, noBaseDir);
 
-            await IsZipSameAsDirAsync(noBaseDir, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
+            await IsZipSameAsDir(noBaseDir, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false, async);
         }
 
-        [Fact]
-        public void CreateFromDirectory_IncludeBaseDirectory()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task CreateFromDirectory_IncludeBaseDirectory(bool async)
         {
             string folderName = zfolder("normal");
             string withBaseDir = GetTestFilePath();
-            ZipFile.CreateFromDirectory(folderName, withBaseDir, CompressionLevel.Optimal, true);
+            await CallZipFileCreateFromDirectory(async, folderName, withBaseDir, CompressionLevel.Optimal, true);
 
             IEnumerable<string> expected = Directory.EnumerateFiles(zfolder("normal"), "*", SearchOption.AllDirectories);
-            using (ZipArchive actual_withbasedir = ZipFile.Open(withBaseDir, ZipArchiveMode.Read))
-            {
-                foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
-                {
-                    string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
-                    Assert.StartsWith("normal", actualEntry.FullName);
-                    Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
-                    using (Stream expectedStream = File.OpenRead(expectedFile))
-                    using (Stream actualStream = actualEntry.Open())
-                    {
-                        StreamsEqual(expectedStream, actualStream);
-                    }
-                }
-            }
-        }
 
-        [Fact]
-        public async Task CreateFromDirectory_IncludeBaseDirectoryAsync()
-        {
-            string folderName = zfolder("normal");
-            string withBaseDir = GetTestFilePath();
-            ZipFile.CreateFromDirectory(folderName, withBaseDir, CompressionLevel.Optimal, true);
+            ZipArchive actual_withbasedir = await CallZipFileOpen(async, withBaseDir, ZipArchiveMode.Read);
 
-            IEnumerable<string> expected = Directory.EnumerateFiles(zfolder("normal"), "*", SearchOption.AllDirectories);
-            using (ZipArchive actual_withbasedir = ZipFile.Open(withBaseDir, ZipArchiveMode.Read))
+            foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
             {
-                foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
-                {
-                    string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
-                    Assert.StartsWith("normal", actualEntry.FullName);
-                    Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
-                    using (Stream expectedStream = File.OpenRead(expectedFile))
-                    using (Stream actualStream = actualEntry.Open())
-                    {
-                        await StreamsEqualAsync(expectedStream, actualStream);
-                    }
-                }
+                string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
+                Assert.StartsWith("normal", actualEntry.FullName);
+                Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
+                using Stream expectedStream = File.OpenRead(expectedFile);
+                Stream actualStream = await OpenEntryStream(async, actualEntry);
+                StreamsEqual(expectedStream, actualStream);
+                await DisposeStream(async, actualStream);
             }
+
+            await DisposeZipArchive(async, actual_withbasedir);
         }
 
         [Fact]
