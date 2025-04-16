@@ -901,6 +901,9 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
 {
+    // Fill in the thread-local used for assertions
+    gInterpJitInfoTls = compHnd;
+
     m_methodHnd = methodInfo->ftn;
     m_compScopeHnd = methodInfo->scope;
     m_compHnd = compHnd;
