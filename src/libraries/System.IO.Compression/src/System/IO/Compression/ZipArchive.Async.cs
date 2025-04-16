@@ -103,15 +103,18 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     {
                         await zipArchive.ReadEndOfCentralDirectoryAsync(cancellationToken).ConfigureAwait(false);
                         await zipArchive.EnsureCentralDirectoryReadAsync(cancellationToken).ConfigureAwait(false);
-                        zipArchive.CheckIfEntriesAreOpenable();
+
+                        foreach (ZipArchiveEntry entry in zipArchive._entries)
+                        {
+                            await entry.ThrowIfNotOpenableAsync(needToUncompress: false, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
+                        }
                     }
                     break;
             }
 
             return zipArchive;
-
         }
-        catch
+        catch (Exception)
         {
             if (extraTempStream != null)
             {

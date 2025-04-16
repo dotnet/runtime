@@ -148,7 +148,7 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         // we should have made this exact call in _archive.Init through ThrowIfOpenable
-        Debug.Assert(IsOpenable(false, true, out _));
+        Debug.Assert(await GetIsOpenableAsync(false, true, cancellationToken).ConfigureAwait(false));
 
         // load local header's extra fields. it will be null if we couldn't read for some reason
         if (_originallyInArchive)
@@ -162,7 +162,7 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         // we should have made this exact call in _archive.Init through ThrowIfOpenable
-        Debug.Assert(IsOpenable(false, true, out _));
+        Debug.Assert(await GetIsOpenableAsync(false, true, cancellationToken).ConfigureAwait(false));
 
         if (!_everOpenedForWrite && _originallyInArchive)
         {
@@ -176,6 +176,13 @@ public partial class ZipArchiveEntry
             }
             await ZipHelper.ReadBytesAsync(_archive.ArchiveStream, _compressedBytes[_compressedBytes.Length - 1], (int)(_compressedSize % maxSingleBufferSize), cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private async Task<bool> GetIsOpenableAsync(bool needToUncompress, bool needToLoadIntoMemory, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        (bool result, _) = await IsOpenableAsync(needToUncompress, needToLoadIntoMemory, cancellationToken).ConfigureAwait(false);
+        return result;
     }
 
     internal async Task ThrowIfNotOpenableAsync(bool needToUncompress, bool needToLoadIntoMemory, CancellationToken cancellationToken)
@@ -288,9 +295,8 @@ public partial class ZipArchiveEntry
 
                 //The compressor fills in CRC and sizes
                 //The DirectToArchiveWriterStream writes headers and such
-                using (Stream entryWriter = new DirectToArchiveWriterStream(
-                                                GetDataCompressor(_archive.ArchiveStream, true, null),
-                                                this))
+                DirectToArchiveWriterStream entryWriter = new(GetDataCompressor(_archive.ArchiveStream, true, null), this);
+                await using (entryWriter)
                 {
                     _storedUncompressedData.Seek(0, SeekOrigin.Begin);
                     await _storedUncompressedData.CopyToAsync(entryWriter, cancellationToken).ConfigureAwait(false);

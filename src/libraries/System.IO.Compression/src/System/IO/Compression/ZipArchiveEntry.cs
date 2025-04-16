@@ -1104,7 +1104,7 @@ namespace System.IO.Compression
 
                     //The compressor fills in CRC and sizes
                     //The DirectToArchiveWriterStream writes headers and such
-                    using (Stream entryWriter = new DirectToArchiveWriterStream(
+                    using (DirectToArchiveWriterStream entryWriter = new(
                                                     GetDataCompressor(_archive.ArchiveStream, true, null),
                                                     this))
                     {

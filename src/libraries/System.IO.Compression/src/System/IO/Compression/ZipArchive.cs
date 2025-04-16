@@ -158,12 +158,16 @@ namespace System.IO.Compression
                         {
                             ReadEndOfCentralDirectory();
                             EnsureCentralDirectoryRead();
-                            CheckIfEntriesAreOpenable();
+
+                            foreach (ZipArchiveEntry entry in _entries)
+                            {
+                                entry.ThrowIfNotOpenable(needToUncompress: false, needToLoadIntoMemory: true);
+                            }
                         }
                         break;
                 }
             }
-            catch
+            catch (Exception)
             {
                 extraTempStream?.Dispose();
 
@@ -918,14 +922,6 @@ namespace System.IO.Compression
             return mode == ZipArchiveMode.Create && !stream.CanSeek ?
                 new PositionPreservingWriteOnlyStreamWrapper(stream) :
                 stream;
-        }
-
-        private void CheckIfEntriesAreOpenable()
-        {
-            foreach (ZipArchiveEntry entry in _entries)
-            {
-                entry.ThrowIfNotOpenable(needToUncompress: false, needToLoadIntoMemory: true);
-            }
         }
 
 
