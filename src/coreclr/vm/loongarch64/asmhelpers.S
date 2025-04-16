@@ -875,7 +875,7 @@ NESTED_END CallEHFunclet, _TEXT
 // frame pointer for accessing the locals in the parent method.
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     //                             $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16, 0
 
     // On entry:
     //
@@ -885,7 +885,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
     // Save the SP of this function
-    st.d  $fp, $a3, 0
+    st.d  $sp, $a3, 0
     // Restore frame pointer
     move  $fp, $a1
     // Invoke the filter funclet
