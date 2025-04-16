@@ -7,7 +7,22 @@
  *
  */
 
-#include <stdint.h>
+// Interpreter-FIXME: we get an existing implementation of ASSERTE via PCH that isn't usable
+//  from inside the interpreter, so we need to replace it with our own.
+#undef _ASSERTE
+
+#if defined(_DEBUG)
+extern "C" void assertAbort(const char* why, const char* file, unsigned line);
+
+#define _ASSERTE(expr) if (!(expr)) { \
+    assertAbort(#expr, __FILE__, __LINE__); \
+}
+#else // _DEBUG
+#define _ASSERTE(expr) (void)0
+#endif // _DEBUG
+
+
+ #include <stdint.h>
 
 #include "gcinfohelpers.h"
 #include "gcinfoencoder.h"

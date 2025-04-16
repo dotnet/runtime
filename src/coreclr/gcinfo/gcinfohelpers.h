@@ -4,18 +4,6 @@
 #ifndef _GCINFOHELPERS_H_
 #define _GCINFOHELPERS_H_
 
-#undef _ASSERTE
-
-#if defined(_DEBUG)
-extern "C" void assertAbort(const char* why, const char* file, unsigned line);
-
-#define _ASSERTE(expr) if (!(expr)) { \
-    assertAbort(#expr, __FILE__, __LINE__); \
-}
-#else // _DEBUG
-#define _ASSERTE(expr) (void)0
-#endif // _DEBUG
-
 // If you want GcInfoEncoder logging to work, replace this macro with an appropriate definition.
 // This previously relied on our common logging infrastructure, but that caused linker failures in the interpreter.
 // Example implementation:
