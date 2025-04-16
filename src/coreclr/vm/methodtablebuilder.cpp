@@ -2751,6 +2751,9 @@ bool IsTypeDefOrRefAByRefStruct(Module* pModule, mdToken tk)
 
 MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
 {
+    // Without FEATURE_RUNTIME_ASYNC every declared method is classified as a NormalMethod.
+    // Thus code that handles runtime async scenarios becomes unreachable.
+#ifdef FEATURE_RUNTIME_ASYNC
     PCCOR_SIGNATURE initialSig = sig.GetPtr();
     uint32_t data;
     IfFailThrow(sig.GetCallingConvInfo(&data));
@@ -2808,6 +2811,7 @@ MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG
                 return MethodReturnKind::NonGenericTaskReturningMethod;
         }
     }
+#endif // FEATURE_RUNTIME_ASYNC
 
     return MethodReturnKind::NormalMethod;
 }

@@ -161,6 +161,8 @@ if(FEATURE_OBJCMARSHAL)
   add_compile_definitions(FEATURE_OBJCMARSHAL)
 endif()
 
+# add_compile_definitions(FEATURE_RUNTIME_ASYNC)
+
 add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>:FEATURE_PROFAPI_ATTACH_DETACH>)
 
 add_definitions(-DFEATURE_READYTORUN)
