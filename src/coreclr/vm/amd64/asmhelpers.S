@@ -374,6 +374,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         //
 
         push_nonvol_reg rbp
+        alloc_stack     20h
 
         // Restore RBP
         mov     rbp, [rdx + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
@@ -382,6 +383,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         // Invoke the funclet
         call    rsi
 
+        free_stack     20h
         pop_nonvol_reg rbp
         ret
 NESTED_END CallEHFunclet, _TEXT
@@ -398,6 +400,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         //
 
         push_nonvol_reg rbp
+        alloc_stack     20h
 
         // Restore RBP to match main funtion RBP
         mov     rbp, rsi
@@ -406,6 +409,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         // Invoke the filter funclet
         call    rdx
 
+        free_stack     20h
         pop_nonvol_reg rbp
         ret
 NESTED_END CallEHFilterFunclet, _TEXT
