@@ -31,7 +31,7 @@ namespace System.Net.Security
                 RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback,
                 TargetHost = options.TargetHost,
                 AllowRsaPssPad = options.AllowRsaPssPad,
-                AllowRsaRsae = options.AllowRsaRsae
+                AllowRsaPkcsPad = options.AllowRsaPkcsPad
             };
 
 #if DEBUG
