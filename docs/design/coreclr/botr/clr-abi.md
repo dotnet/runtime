@@ -324,7 +324,7 @@ Note that JIT64 does not implement this properly. The C# compiler used to always
 
 ## Funclet parameters
 
-For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores all non-volatile registers. The same convention is used across all platforms.
+For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores only the frame register on AMD64 and all non-volatile registers on all other platforms.
 
 Catch, Filter, and Filter-handlers also get an Exception object (GC ref) as an argument (`REG_EXCEPTION_OBJECT`). On AMD64 it is passed in RCX (Windows ABI) or RSI (Unix ABI). On ARM and ARM64 this is the first argument and passed in R0.
 
