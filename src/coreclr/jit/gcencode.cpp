@@ -3870,7 +3870,8 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
                 assert(false);
         }
 
-        const int offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
+        const int genericContextArgOffset = compiler->lvaCachedGenericContextArgOffset();
+        const int offset = compiler->lvaToCallerSPRelativeOffset(genericContextArgOffset,
                                                                  compiler->isFramePointerUsed());
 
 #ifdef DEBUG
@@ -3894,7 +3895,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         }
 #endif
 
-        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(offset, ctxtParamType);
+        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(genericContextArgOffset, ctxtParamType);
     }
     // As discussed above, handle the case where the generics context is obtained via
     // the method table of "this".
@@ -3913,7 +3914,8 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             useRootFrameSlot = ppInfo->HasKeptAliveThis();
         }
 
-        const int offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
+        const int genericContextArgOffset = compiler->lvaCachedGenericContextArgOffset();
+        const int offset = compiler->lvaToCallerSPRelativeOffset(genericContextArgOffset,
                                                                  compiler->isFramePointerUsed(), useRootFrameSlot);
 
 #ifdef DEBUG
@@ -3937,7 +3939,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         }
 #endif
 
-        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(offset, GENERIC_CONTEXTPARAM_THIS);
+        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(genericContextArgOffset, GENERIC_CONTEXTPARAM_THIS);
     }
 
     if (compiler->getNeedsGSSecurityCookie())

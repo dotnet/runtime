@@ -458,6 +458,11 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::HasMetho
     return (m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) == GC_INFO_HAS_GENERICS_INST_CONTEXT_MT;
 }
 
+template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::HasStackBaseRegister()
+{
+    return (m_headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER) == GC_INFO_HAS_STACK_BASE_REGISTER;
+}
+
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
 // This is used for gcinfodumper: is the given offset

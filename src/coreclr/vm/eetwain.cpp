@@ -1660,17 +1660,15 @@ PTR_VOID EECodeManager::GetExactGenericsToken(PREGDISPLAY     pContext,
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    pCodeInfo->GetCodeManager()->EnsureCallerContextIsValid(pContext, NULL);
-
-    return EECodeManager::GetExactGenericsToken(GetSP(pContext->pCallerContext),
-                                                pCodeInfo,
-                                                GetIP(pContext->pCallerContext));
+    return EECodeManager::GetExactGenericsToken(GetSP(pContext->pCurrentContext),
+                                                GetFP(pContext->pCurrentContext),
+                                                pCodeInfo);
 }
 
 //static
-PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
-                                              EECodeInfo *    pCodeInfo,
-                                              UINT_PTR        returnAddress /* = 0 */)
+PTR_VOID EECodeManager::GetExactGenericsToken(TADDR           sp,
+                                              TADDR           fp,
+                                              EECodeInfo *    pCodeInfo)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -1684,59 +1682,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
     INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
     if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
     {
-        // For funclets we need to recover the establisher frame from
-        // the main function.
-        //
-        // Finally funclets can be called directly from the managed code
-        // in non-exceptional path. In that case the we don't need to do
-        // any adjustment.
-        //
-        // For calls made through CallEHFunclet and CallEHFilterFunclet
-        // we recover the establisher frame address from the frame of the
-        // helper call.
-        //
-        // Presumably profiler callbacks are not generated for funclets
-        // so we can use returnAddress == 0 and skip this.
-        if (returnAddress != 0 &&
-            pCodeInfo->IsFunclet() &&
-            !ExecutionManager::IsManagedCode(returnAddress))
-        {
-            SIZE_T offsetOfEstablisherFrameInFuncletSP;
-#if defined(TARGET_AMD64)
-            offsetOfEstablisherFrameInFuncletSP = 0;
-#elif defined(TARGET_X86)
-            // CallEHFunclet frame size + return address + 16 (5th parameter)
-#ifdef UNIX_X86_ABI
-            offsetOfEstablisherFrameInFuncletSP = 48;
-#else
-            offsetOfEstablisherFrameInFuncletSP = 36;
-#endif
-#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-            // Stored past FP/LR pair
-            offsetOfEstablisherFrameInFuncletSP = 16;
-#elif defined(TARGET_ARM)
-            offsetOfEstablisherFrameInFuncletSP = 0;
-#elif defined(TARGET_WASM)
-            _ASSERTE(!"CallFunclet for WASM not implemented yet");
-            offsetOfEstablisherFrameInFuncletSP = 0;
-#else
-            PORTABILITY_ASSERT("offsetOfEstablisherFrameInFuncletSP");
-#endif
-
-            // Recover the establisher frame (InitialSP/CallerSP) from the funclet
-            // caller.
-            baseStackSlot += offsetOfEstablisherFrameInFuncletSP;
-            baseStackSlot = *(SIZE_T*)baseStackSlot;
-#ifdef TARGET_AMD64
-            // On AMD64 the PSPSym stores the "Initial SP": the stack pointer at the end of
-            // prolog, before any dynamic allocations.
-            // However, the GenericsContext offset is relative to the caller SP for all
-            // platforms.  So here we adjust to convert AMD64's initial sp to a caller SP.
-            // But we have to be careful to use the main function's EECodeInfo, not the
-            // funclet's EECodeInfo because they have different stack sizes!
-            baseStackSlot += pCodeInfo->GetMainFunctionInfo().GetFixedStackSize();
-#endif // TARGET_AMD64
-        }
+        TADDR baseStackSlot = gcInfoDecoder.HasStackBaseRegister() ? fp : sp;
         TADDR taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
         TADDR taExactGenericsToken = *PTR_TADDR(taSlot);
         return PTR_VOID(taExactGenericsToken);

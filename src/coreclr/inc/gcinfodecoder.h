@@ -583,6 +583,7 @@ public:
     INT32   GetReversePInvokeFrameStackSlot();
     bool    HasMethodDescGenericsInstContext();
     bool    HasMethodTableGenericsInstContext();
+    bool    HasStackBaseRegister();
     bool    GetIsVarArg();
     bool    WantsReportOnlyLeaf();
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
