@@ -1336,7 +1336,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         // Hierarchical format is not supported with the default W3C propgator. Only Legacy propagator support it.
                         Assert.Null(GetHeaderValue(firstRequestData, "Request-Id"));
-                        Assert.Null(GetHeaderValue(firstRequestData, "Request-Id"));
+                        Assert.Null(GetHeaderValue(secondRequestData, "Request-Id"));
                     }
                 });
             });
