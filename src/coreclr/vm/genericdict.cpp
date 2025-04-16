@@ -1052,7 +1052,6 @@ Dictionary::PopulateEntry(
                 }
             }
 
-
             if (fRequiresDispatchStub)
             {
                 LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
