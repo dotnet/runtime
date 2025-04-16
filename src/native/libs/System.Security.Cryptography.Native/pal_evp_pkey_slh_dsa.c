@@ -214,9 +214,9 @@ int32_t CryptoNative_SlhDsaGetPalId(const EVP_PKEY* pKey, int32_t* slhDsaTypeId)
     {
         ERR_clear_error();
 
-        // TODO: This conditional chain seems unavoidable. If there are multiple synonyms for a given key,
+        // This conditional chain seems unavoidable. If there are multiple synonyms for a given key,
         // then the provider determines which one will be returned from EVP_PKEY_get0_type_name.
-        // We don't have to worry about this if we use EVP_PKEY_is_a check instead.
+        // We use EVP_PKEY_is_a here instead to avoid this issue.
         if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-128s"))
         {
             *slhDsaTypeId = PalSlhDsaId_Sha2_128s;

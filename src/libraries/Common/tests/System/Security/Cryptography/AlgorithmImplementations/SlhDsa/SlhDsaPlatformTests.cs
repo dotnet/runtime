@@ -14,15 +14,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Equal(PlatformSupportsSlhDsa(), SlhDsa.IsSupported);
         }
 
-        private static bool PlatformSupportsSlhDsa()
-        {
-            if (PlatformDetection.IsOpenSsl3_5)
-            {
-                return true;
-            }
-
-            return false;
-        }
+        private static bool PlatformSupportsSlhDsa() => PlatformDetection.IsOpenSsl3_5;
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void IsSupported_InitializesCrypto()

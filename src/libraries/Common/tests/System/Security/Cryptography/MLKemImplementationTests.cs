@@ -53,14 +53,6 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(PlatformSupportsMLKem(), MLKem.IsSupported);
         }
 
-        private static bool PlatformSupportsMLKem()
-        {
-            if (PlatformDetection.IsOpenSsl3_5)
-            {
-                return true;
-            }
-
-            return false;
-        }
+        private static bool PlatformSupportsMLKem() => PlatformDetection.IsOpenSsl3_5;
     }
 }
