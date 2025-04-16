@@ -96,6 +96,9 @@ public enum DataType
     MethodImpl,
     NativeCodeSlot,
     GCCoverageInfo,
+    ArrayListBase,
+    ArrayListBlock,
+
     TransitionBlock,
     DebuggerEval,
     CalleeSavedRegisters,
