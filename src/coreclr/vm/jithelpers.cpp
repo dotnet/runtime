@@ -1494,25 +1494,35 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
 
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
     OBJECTREF oref = ObjectToOBJECTREF(obj);
+    GetThread()->GetExceptionState()->SetRaisingForeignException();
 
+#ifdef FEATURE_EH_FUNCLETS
+    Thread *pThread = GetThread();
+    
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    _ASSERTE(!"Introduce `IL_ThrowExact_x86` following the pattern of other Throw helpers.");
+    // exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
+#endif
+    exceptionFrame.InitAndLink(pThread);
+
+    FC_CAN_TRIGGER_GC();
+    DispatchManagedException(oref, exceptionFrame.GetContext());
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
+#else
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
 #if defined(_DEBUG) && defined(TARGET_X86)
     __helperframe.EnsureInit(NULL);
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
-    GetThread()->GetExceptionState()->SetRaisingForeignException();
-
-#ifdef FEATURE_EH_FUNCLETS
-    DispatchManagedException(oref);
-    UNREACHABLE();
-#else
     RaiseTheExceptionInternalOnly(oref, FALSE);
-#endif
-
     HELPER_METHOD_FRAME_END();
+#endif
 }
 HCIMPLEND
 
