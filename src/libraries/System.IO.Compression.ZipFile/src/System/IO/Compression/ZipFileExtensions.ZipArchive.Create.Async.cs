@@ -80,8 +80,8 @@ public static partial class ZipFileExtensions
                                                       string sourceFileName, string entryName, CompressionLevel compressionLevel, CancellationToken cancellationToken = default) =>
         DoCreateEntryFromFileAsync(destination, sourceFileName, entryName, compressionLevel, cancellationToken);
 
-    internal static async Task<ZipArchiveEntry> DoCreateEntryFromFileAsync(this ZipArchive destination,
-                                                          string sourceFileName, string entryName, CompressionLevel? compressionLevel, CancellationToken cancellationToken = default)
+    internal static async Task<ZipArchiveEntry> DoCreateEntryFromFileAsync(this ZipArchive destination, string sourceFileName, string entryName,
+                                                    CompressionLevel? compressionLevel, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 

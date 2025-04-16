@@ -418,7 +418,7 @@ public static partial class ZipFile
         DoCreateFromDirectoryAsync(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding, cancellationToken);
 
     private static async Task DoCreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName,
-                                              CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding, CancellationToken cancellationToken = default)
+                                              CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding, CancellationToken cancellationToken)
 
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -437,7 +437,7 @@ public static partial class ZipFile
     }
 
     private static async Task DoCreateFromDirectoryAsync(string sourceDirectoryName, Stream destination,
-                                              CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding, CancellationToken cancellationToken = default)
+                                              CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -451,7 +451,7 @@ public static partial class ZipFile
     }
 
     private static async Task CreateZipArchiveFromDirectoryAsync(string sourceDirectoryName, ZipArchive archive,
-                                                      CompressionLevel? compressionLevel, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+                                                      CompressionLevel? compressionLevel, bool includeBaseDirectory, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -481,7 +481,6 @@ public static partial class ZipFile
                         archive.CreateEntry(entryName);
                     }
                     break;
-                case CreateEntryType.Unsupported:
                 default:
                     throw new IOException(SR.Format(SR.ZipUnsupportedFile, fullPath));
             }
