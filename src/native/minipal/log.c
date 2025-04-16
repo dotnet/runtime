@@ -318,9 +318,14 @@ int minipal_log_write(minipal_log_flags flags, const char* msg)
     {   if (msg_char[0] == '\r' && msg_char[1] == '\n')
         {
             write_fnptr = write_file_binary;
+            break;
         }
         msg_char++;
     }
+
+    while (*msg_char)
+        msg_char++;
+
     bytes_to_write = msg_char - msg;
 #else
     bytes_to_write = strlen(msg);
