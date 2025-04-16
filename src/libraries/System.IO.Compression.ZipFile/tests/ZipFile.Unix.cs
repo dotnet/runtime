@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,8 +14,9 @@ namespace System.IO.Compression.Tests
 {
     public partial class ZipFile_Unix : ZipFileTestBase
     {
-        [Fact]
-        public void UnixCreateSetsPermissionsInExternalAttributes()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task UnixCreateSetsPermissionsInExternalAttributes(bool async)
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits get preserved in ExternalAttributes
             string[] testPermissions = new[] { "777", "755", "644", "600", "7600" };
@@ -23,28 +26,29 @@ namespace System.IO.Compression.Tests
                 string[] expectedPermissions = CreateFiles(tempFolder.Path, testPermissions);
 
                 string archivePath = GetTestFilePath();
-                ZipFile.CreateFromDirectory(tempFolder.Path, archivePath);
+                await CallZipFileCreateFromDirectory(async, tempFolder.Path, archivePath);
 
-                using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+                ZipArchive archive = await CallZipFileOpenRead(async, archivePath);
+
+                Assert.Equal(expectedPermissions.Length, archive.Entries.Count);
+
+                foreach (ZipArchiveEntry entry in archive.Entries)
                 {
-                    Assert.Equal(expectedPermissions.Length, archive.Entries.Count);
-
-                    foreach (ZipArchiveEntry entry in archive.Entries)
-                    {
-                        Assert.EndsWith(".txt", entry.Name, StringComparison.Ordinal);
-                        EnsureExternalAttributes(entry.Name.Substring(0, entry.Name.Length - 4), entry);
-                    }
-
-                    void EnsureExternalAttributes(string permissions, ZipArchiveEntry entry)
-                    {
-                        Assert.Equal(Convert.ToInt32(permissions, 8), (entry.ExternalAttributes >> 16) & 0xFFF);
-                    }
+                    Assert.EndsWith(".txt", entry.Name, StringComparison.Ordinal);
+                    EnsureExternalAttributes(entry.Name.Substring(0, entry.Name.Length - 4), entry);
                 }
+
+                void EnsureExternalAttributes(string permissions, ZipArchiveEntry entry)
+                {
+                    Assert.Equal(Convert.ToInt32(permissions, 8), (entry.ExternalAttributes >> 16) & 0xFFF);
+                }
+
+                await DisposeZipArchive(async, archive);
 
                 // test that round tripping the archive has the same file permissions
                 using (var extractFolder = new TempDirectory(Path.Combine(GetTestFilePath(), "extract")))
                 {
-                    ZipFile.ExtractToDirectory(archivePath, extractFolder.Path);
+                    await CallZipFileExtractToDirectory(async, archivePath, extractFolder.Path);
 
                     foreach (string permission in expectedPermissions)
                     {
@@ -57,57 +61,72 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void UnixCreateSetsPermissionsInExternalAttributesUMaskZero()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public void UnixCreateSetsPermissionsInExternalAttributesUMaskZero(bool async)
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(async () =>
             {
                 umask(0);
-                new ZipFile_Unix().UnixCreateSetsPermissionsInExternalAttributes();
+                await new ZipFile_Unix().UnixCreateSetsPermissionsInExternalAttributes(async);
             }).Dispose();
         }
 
-        [Fact]
-        public void UnixExtractSetsFilePermissionsFromExternalAttributes()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task UnixExtractSetsFilePermissionsFromExternalAttributes(bool async)
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits don't get extracted to file permissions
             string[] testPermissions = new[] { "777", "755", "644", "754", "7600" };
 
             string archivePath = GetTestFilePath();
             using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))
-            using (ZipArchive archive = new ZipArchive(fileStream, ZipArchiveMode.Create))
             {
+                ZipArchive archive = await CreateZipArchive(async, fileStream, ZipArchiveMode.Create);
+
                 foreach (string permission in testPermissions)
                 {
                     ZipArchiveEntry entry = archive.CreateEntry(permission + ".txt");
                     entry.ExternalAttributes = Convert.ToInt32(permission, 8) << 16;
-                    using Stream stream = entry.Open();
-                    stream.Write("contents"u8);
+                    Stream stream = await OpenEntryStream(async, entry);
+                    ReadOnlySpan<byte> contents = "contents"u8;
+                    if (async)
+                    {
+                        await stream.WriteAsync(contents.ToArray());
+                    }
+                    else
+                    {
+                        stream.Write(contents);
+                    }
                     stream.Flush();
+                    await DisposeStream(async, stream);
                 }
-            }
 
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
-            {
-                ZipFile.ExtractToDirectory(archivePath, tempFolder.Path);
+                await DisposeZipArchive(async, archive);
 
-                foreach (string permission in testPermissions)
+                using (var tempFolder = new TempDirectory(GetTestFilePath()))
                 {
-                    string filename = Path.Combine(tempFolder.Path, permission + ".txt");
-                    Assert.True(File.Exists(filename));
+                    await CallZipFileExtractToDirectory(async, archivePath, tempFolder.Path);
 
-                    EnsureFilePermissions(filename, permission);
+                    foreach (string permission in testPermissions)
+                    {
+                        string filename = Path.Combine(tempFolder.Path, permission + ".txt");
+                        Assert.True(File.Exists(filename));
+
+                        EnsureFilePermissions(filename, permission);
+                    }
                 }
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void UnixExtractSetsFilePermissionsFromExternalAttributesUMaskZero()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public void UnixExtractSetsFilePermissionsFromExternalAttributesUMaskZero(bool async)
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(async () =>
             {
                 umask(0);
-                new ZipFile_Unix().UnixExtractSetsFilePermissionsFromExternalAttributes();
+                await new ZipFile_Unix().UnixExtractSetsFilePermissionsFromExternalAttributes(async);
             }).Dispose();
         }
 
@@ -158,21 +177,29 @@ namespace System.IO.Compression.Tests
             Assert.Equal(Convert.ToInt32(permissions, 8), status.Mode & 0xFFF);
         }
 
+        public static IEnumerable<object[]> Get_UnixExtractFilePermissionsCompat_Data()
+        {
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { "sharpziplib.zip", null, async }; // ExternalAttributes are not set in this .zip, use the system default
+                yield return new object[] { "Linux_RW_RW_R__.zip", "664", async };
+                yield return new object[] { "Linux_RWXRW_R__.zip", "764", async };
+                yield return new object[] { "OSX_RWXRW_R__.zip", "764", async };
+            }
+        }
+
         [Theory]
-        [InlineData("sharpziplib.zip", null)] // ExternalAttributes are not set in this .zip, use the system default
-        [InlineData("Linux_RW_RW_R__.zip", "664")]
-        [InlineData("Linux_RWXRW_R__.zip", "764")]
-        [InlineData("OSX_RWXRW_R__.zip", "764")]
-        public void UnixExtractFilePermissionsCompat(string zipName, string expectedPermissions)
+        [MemberData(nameof(Get_UnixExtractFilePermissionsCompat_Data))]
+        public async Task UnixExtractFilePermissionsCompat(string zipName, string expectedPermissions, bool async)
         {
             expectedPermissions = GetExpectedPermissions(expectedPermissions);
 
             string zipFileName = compat(zipName);
             using (var tempFolder = new TempDirectory(GetTestFilePath()))
             {
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path);
+                await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path);
 
-                using ZipArchive archive = ZipFile.Open(zipFileName, ZipArchiveMode.Read);
+                ZipArchive archive = await CallZipFileOpen(async, zipFileName, ZipArchiveMode.Read);
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
                     string filename = Path.Combine(tempFolder.Path, entry.FullName);
@@ -180,13 +207,15 @@ namespace System.IO.Compression.Tests
 
                     EnsureFilePermissions(filename, expectedPermissions);
                 }
+                await DisposeZipArchive(async, archive);
             }
         }
 
-        [Fact]
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.tvOS & ~TestPlatforms.iOS)] // browser doesn't have libc mkfifo. tvOS/iOS return an error for mkfifo.
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal file permissions")]
-        public void ZipNamedPipeIsNotSupported()
+        public async Task ZipNamedPipeIsNotSupported(bool async)
         {
             string destPath = Path.Combine(TestDirectory, "dest.zip");
 
@@ -195,7 +224,7 @@ namespace System.IO.Compression.Tests
             Directory.CreateDirectory(subFolderPath); // mandatory before calling mkfifo
             Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */));
 
-            Assert.Throws<IOException>(() => ZipFile.CreateFromDirectory(subFolderPath, destPath));
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileCreateFromDirectory(async, subFolderPath, destPath));
         }
 
         private static string GetExpectedPermissions(string expectedPermissions)

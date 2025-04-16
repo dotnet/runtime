@@ -371,7 +371,7 @@ namespace System.IO.Compression.Tests
 
         /// <param name="useSpansForWriting">Tests the Span and Memory overloads of Write and WriteAsync.</param>
         /// <param name="writeInChunks">Writes in chunks of 5 to test Write with a nonzero offset</param>
-        public static async Task CreateFromDir(string directory, Stream archiveStream, bool async, ZipArchiveMode mode,bool useSpansForWriting = false, bool writeInChunks = false)
+        public static async Task CreateFromDir(string directory, Stream archiveStream, bool async, ZipArchiveMode mode, bool useSpansForWriting = false, bool writeInChunks = false)
         {
             var files = FileData.InPath(directory);
 
@@ -566,10 +566,13 @@ namespace System.IO.Compression.Tests
         // Returns: originalComment, expectedComment
         private static IEnumerable<object[]> SharedComment_Data()
         {
-            yield return new object[] { null, string.Empty };
-            yield return new object[] { string.Empty, string.Empty };
-            yield return new object[] { "a", "a" };
-            yield return new object[] { Utf8LowerCaseOUmlautChar, Utf8LowerCaseOUmlautChar };
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { null, string.Empty, async };
+                yield return new object[] { string.Empty, string.Empty, async };
+                yield return new object[] { "a", "a", async };
+                yield return new object[] { Utf8LowerCaseOUmlautChar, Utf8LowerCaseOUmlautChar, async };
+            }
         }
 
         // Returns pairs as expected by Utf8
@@ -586,14 +589,17 @@ namespace System.IO.Compression.Tests
             // so it should not be truncated if it's the last character and the total length is not over the limit.
             string utf8OriginalALettersAndOneEmojiFits = "aaaaa" + Utf8SmileyEmoji;
 
-            yield return new object[] { asciiOriginalOverMaxLength, ALettersUShortMaxValue };
-            yield return new object[] { utf8OriginalALettersAndOneEmojiDoesNotFit, ALettersUShortMaxValueMinusOne };
-            yield return new object[] { utf8OriginalALettersAndOneEmojiFits, utf8OriginalALettersAndOneEmojiFits };
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { asciiOriginalOverMaxLength, ALettersUShortMaxValue, async };
+                yield return new object[] { utf8OriginalALettersAndOneEmojiDoesNotFit, ALettersUShortMaxValueMinusOne, async };
+                yield return new object[] { utf8OriginalALettersAndOneEmojiFits, utf8OriginalALettersAndOneEmojiFits, async };
+            }
 
             foreach (object[] e in SharedComment_Data())
-            {
-                yield return e;
-            }
+                {
+                    yield return e;
+                }
         }
 
         // Returns pairs as expected by Latin1
@@ -605,23 +611,29 @@ namespace System.IO.Compression.Tests
             string latin1ExpectedALettersAndOneOUmlaut = ALettersUShortMaxValueMinusOne + Utf8LowerCaseOUmlautChar;
             string latin1OriginalALettersAndTwoOUmlauts = latin1ExpectedALettersAndOneOUmlaut + Utf8LowerCaseOUmlautChar;
 
-            yield return new object[] { latin1OriginalALettersAndTwoOUmlauts, latin1ExpectedALettersAndOneOUmlaut };
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { latin1OriginalALettersAndTwoOUmlauts, latin1ExpectedALettersAndOneOUmlaut, async };
+            }
 
             foreach (object[] e in SharedComment_Data())
-            {
-                yield return e;
-            }
+                {
+                    yield return e;
+                }
         }
 
         // Returns pairs encoded with Latin1, but decoded with UTF8.
         // Returns: originalComment, expectedComment, transcoded expectedComment
         public static IEnumerable<object[]> MismatchingEncodingComment_Data()
         {
-            foreach (object[] e in Latin1Comment_Data())
+            foreach (bool async in _bools)
             {
-                byte[] expectedBytes = Encoding.Latin1.GetBytes(e[1] as string);
+                foreach (object[] e in Latin1Comment_Data())
+                {
+                    byte[] expectedBytes = Encoding.Latin1.GetBytes(e[1] as string);
 
-                yield return new object[] { e[0], e[1], Encoding.UTF8.GetString(expectedBytes) };
+                    yield return new object[] { e[0], e[1], Encoding.UTF8.GetString(expectedBytes), async };
+                }
             }
         }
     }

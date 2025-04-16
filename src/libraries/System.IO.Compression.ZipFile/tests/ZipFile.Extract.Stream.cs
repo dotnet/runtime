@@ -90,17 +90,8 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
         await DisposeStream(async, source);
     }
 
-    public static IEnumerable<object[]> GEt_ExtractOutOfRoot_Data()
-    {
-        foreach (bool async in _bools)
-        {
-            yield return new object[] { "../Foo", async };
-            yield return new object[] { "../Barbell", async };
-        }
-    }
-
     [Theory]
-    [MemberData(nameof(GEt_ExtractOutOfRoot_Data))]
+    [MemberData(nameof(Get_ExtractOutOfRoot_Data))]
     public async Task ExtractOutOfRoot(string entryName, bool async)
     {
         FileStream source = new(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, bufferSize: 4096, useAsync: async);
@@ -113,15 +104,6 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
         source.Position = 0;
         await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, source, destination.FullName));
         await DisposeStream(async, source);
-    }
-
-    public static IEnumerable<object[]> Get_Unix_ZipWithInvalidFileNames_Data()
-    {
-        foreach (bool async in _bools)
-        {
-            yield return new object[] { "NullCharFileName_FromWindows", async };
-            yield return new object[] { "NullCharFileName_FromUnix", async };
-        }
     }
 
     /// <summary>
@@ -140,17 +122,6 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
         await DisposeStream(async, source);
     }
 
-    public static IEnumerable<object[]> Get_Unix_ZipWithOSSpecificFileNames_Data()
-    {
-        foreach (bool async in _bools)
-        {
-            yield return new object[] { "backslashes_FromUnix", "aa\\bb\\cc\\dd", async };
-            yield return new object[] { "backslashes_FromWindows", "aa\\bb\\cc\\dd", async };
-            yield return new object[] { "WindowsInvalid_FromUnix", "aa<b>d", async };
-            yield return new object[] { "WindowsInvalid_FromWindows", "aa<b>d", async };
-        }
-    }
-
     [Theory]
     [MemberData(nameof(Get_Unix_ZipWithOSSpecificFileNames_Data))]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
@@ -163,29 +134,6 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
         Assert.Equal(1, results.Length);
         Assert.Equal(fileName, Path.GetFileName(results[0]));
         await DisposeStream(async, source);
-    }
-
-    /// <summary>
-    /// This test checks whether or not ZipFile.ExtractToDirectory() is capable of handling filenames
-		/// which contain invalid path characters in Windows.
-    ///  Archive:  InvalidWindowsFileNameChars.zip
-    ///  Test/
-    ///  Test/normalText.txt
-    ///  Test"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_/
-    ///  Test"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_/TestText1"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_.txt
-    ///  TestEmpty/
-    ///  TestText"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_.txt
-    /// </summary>
-    public static IEnumerable<object[]> Get_Windows_ZipWithInvalidFileNames_Data()
-    {
-        foreach (bool async in _bools)
-        {
-            yield return new object[] { "InvalidWindowsFileNameChars.zip", new string[] { "TestText______________________________________.txt", "Test______________________________________/TestText1______________________________________.txt", "Test/normalText.txt" }, async };
-            yield return new object[] { "NullCharFileName_FromWindows.zip", new string[] { "a_6b6d" }, async };
-            yield return new object[] { "NullCharFileName_FromUnix.zip", new string[] { "a_6b6d" }, async };
-            yield return new object[] { "WindowsInvalid_FromUnix.zip", new string[] { "aa_b_d" }, async };
-            yield return new object[] { "WindowsInvalid_FromWindows.zip", new string[] { "aa_b_d" }, async };
-        }
     }
 
     [Theory]
@@ -204,15 +152,6 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
             File.Delete(path);
         }
         await DisposeStream(async, source);
-    }
-
-    public static IEnumerable<object[]> Get_Windows_ZipWithOSSpecificFileNames_Data()
-    {
-        foreach (bool async in _bools)
-        {
-            yield return new object[] { "backslashes_FromUnix", "dd", async };
-            yield return new object[] { "backslashes_FromWindows", "dd", async };
-        }
     }
 
     [Theory]
@@ -269,46 +208,53 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
         DirsEqual(tempFolder.Path, folderName);
     }
 
-    [Fact]
-    public void FilesOutsideDirectory()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task FilesOutsideDirectory(bool async)
     {
         using MemoryStream source = new();
-        using (ZipArchive archive = new(source, ZipArchiveMode.Create, leaveOpen: true))
+        ZipArchive archive = await CreateZipArchive(async, source, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null);
+        ZipArchiveEntry entry = archive.CreateEntry(Path.Combine("..", "entry1"), CompressionLevel.Optimal);
+        Stream entryStream = await OpenEntryStream(async, entry);
+        using (StreamWriter writer = new(entryStream))
         {
-            using (StreamWriter writer = new(archive.CreateEntry(Path.Combine("..", "entry1"), CompressionLevel.Optimal).Open()))
-            {
-                writer.Write("This is a test.");
-            }
+            writer.Write("This is a test.");
         }
+        await DisposeStream(async, entryStream);
+        await DisposeZipArchive(async, archive);
         source.Position = 0;
-        Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(source, GetTestFilePath()));
+        await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, source, GetTestFilePath()));
     }
 
-    [Fact]
-    public void DirectoryEntryWithData()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task DirectoryEntryWithData(bool async)
     {
         using MemoryStream source = new();
-        using (ZipArchive archive = new(source, ZipArchiveMode.Create, leaveOpen: true))
+        ZipArchive archive = new(source, ZipArchiveMode.Create, leaveOpen: true);
+        ZipArchiveEntry entry = archive.CreateEntry("testdir" + Path.DirectorySeparatorChar, CompressionLevel.Optimal);
+        Stream entryStream = await OpenEntryStream(async, entry);
+        using (StreamWriter writer = new(entryStream))
         {
-            using (StreamWriter writer = new(archive.CreateEntry("testdir" + Path.DirectorySeparatorChar, CompressionLevel.Optimal).Open()))
-            {
-                writer.Write("This is a test.");
-            }
+            writer.Write("This is a test.");
         }
+        await DisposeStream(async, entryStream);
+        await DisposeZipArchive(async, archive);
         source.Position = 0;
-        Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(source, GetTestFilePath()));
+        await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, source, GetTestFilePath()));
     }
 
-    [Fact]
-    public void ExtractToDirectoryRoundTrip()
+    [Theory]
+    [MemberData(nameof(Get_Booleans_Data))]
+    public async Task ExtractToDirectoryRoundTrip(bool async)
     {
         string folderName = zfolder("normal");
         MemoryStream source = new();
         using TempDirectory tempFolder = new();
 
-        ZipFile.CreateFromDirectory(folderName, source);
+        await CallZipFileCreateFromDirectory(async, folderName, source);
         source.Position = 0;
-        ZipFile.ExtractToDirectory(source, tempFolder.Path, overwriteFiles: false);
+        await CallZipFileExtractToDirectory(async, source, tempFolder.Path, overwriteFiles: false);
 
         DirFileNamesEqual(tempFolder.Path, folderName);
     }

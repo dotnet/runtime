@@ -95,7 +95,6 @@ public class ZipFile_Open : ZipFileTestBase
         }
     }
 
-
     [Fact]
     public async Task InvalidFilesAsync()
     {

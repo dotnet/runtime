@@ -41,7 +41,7 @@ namespace System.IO.Compression.Tests
             MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("small.zip"));
 
             ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update);
-            
+
             ZipArchiveEntry entry = archive.Entries[0];
             string contents1, contents2;
 
@@ -158,7 +158,7 @@ namespace System.IO.Compression.Tests
             MemoryStream testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             ZipArchive archive = await CreateZipArchive(async, testArchive, ZipArchiveMode.Update, leaveOpen: true);
-            
+
             ZipArchiveEntry toBeDeleted = archive.GetEntry("binary.wmv");
             toBeDeleted.Delete();
             toBeDeleted.Delete(); //delete twice should be okay
@@ -250,7 +250,7 @@ namespace System.IO.Compression.Tests
             Stream testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             ZipArchive archive = await CreateZipArchive(async, testArchive, ZipArchiveMode.Update, true);
-            
+
             string fileName = zmodified(Path.Combine("overwrite", "first.txt"));
 
             string entryName = "first.txt";
@@ -270,7 +270,7 @@ namespace System.IO.Compression.Tests
             var testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             ZipArchive archive = await CreateZipArchive(async, testArchive, ZipArchiveMode.Update, true);
-            
+
             await CreateAndUpdateEntry(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt", async);
 
             await DisposeZipArchive(async, archive);
@@ -286,7 +286,7 @@ namespace System.IO.Compression.Tests
             Stream testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             ZipArchive archive = await CreateZipArchive(async, testArchive, ZipArchiveMode.Update, true);
-            
+
             var x = archive.Entries;
 
             await CreateAndUpdateEntry(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt", async);
@@ -304,7 +304,7 @@ namespace System.IO.Compression.Tests
             Stream testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             ZipArchive archive = await CreateZipArchive(async, testArchive, ZipArchiveMode.Update, true);
-            
+
             await CreateAndUpdateEntry(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt", async);
 
             var x = archive.Entries;
@@ -347,8 +347,8 @@ namespace System.IO.Compression.Tests
         [MemberData(nameof(Get_Booleans_Data))]
         public static async Task UpdateModeInvalidOperations(bool async)
         {
-            using LocalMemoryStream ms = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
-            
+            using LocalMemoryStream ms = await LocalMemoryStream.ReadAppFileAsync(zfile("normal.zip"));
+
             ZipArchive target = await CreateZipArchive(async, ms, ZipArchiveMode.Update, true);
 
             ZipArchiveEntry edeleted = target.GetEntry("first.txt");
@@ -374,7 +374,7 @@ namespace System.IO.Compression.Tests
 
             //invalid ops while entry deleted
             await Assert.ThrowsAsync<InvalidOperationException>(() => OpenEntryStream(async, edeleted));
-            
+
             Assert.Throws<InvalidOperationException>(() => { edeleted.LastWriteTime = new DateTimeOffset(); });
 
             ZipArchiveEntry e = target.GetEntry("notempty/second.txt");
@@ -399,7 +399,7 @@ namespace System.IO.Compression.Tests
             using (var memStream = new MemoryStream())
             {
                 ZipArchive zip = await CreateZipArchive(async, memStream, ZipArchiveMode.Create);
-                
+
                 ZipArchiveEntry entry = zip.CreateEntry("testing", CompressionLevel.NoCompression);
                 using (var writer = new StreamWriter(entry.Open(), utf8WithoutBom))
                 {
@@ -452,7 +452,7 @@ namespace System.IO.Compression.Tests
         [MemberData(nameof(Get_Booleans_Data))]
         public async Task Update_PerformMinimalWritesWhenNoFilesChanged(bool async)
         {
-            using (LocalMemoryStream ms = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip")))
+            using (LocalMemoryStream ms = await LocalMemoryStream.ReadAppFileAsync(zfile("normal.zip")))
             using (CallTrackingStream trackingStream = new CallTrackingStream(ms))
             {
                 int writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write));
@@ -854,7 +854,7 @@ namespace System.IO.Compression.Tests
         [Fact]
         public async Task Update_PerformMinimalWritesWhenArchiveCommentChanged()
         {
-            using (LocalMemoryStream ms = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip")))
+            using (LocalMemoryStream ms = await LocalMemoryStream.ReadAppFileAsync(zfile("normal.zip")))
             using (CallTrackingStream trackingStream = new CallTrackingStream(ms))
             {
                 int writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write));
