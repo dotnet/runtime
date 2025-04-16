@@ -419,12 +419,7 @@ namespace System.IO.Compression
         private static bool TryReadBlockCore(Span<byte> blockContents, int bytesRead, [NotNullWhen(returnValue: true)] out Zip64EndOfCentralDirectoryLocator? zip64EOCDLocator)
         {
             zip64EOCDLocator = null;
-            if (bytesRead < TotalSize)
-            {
-                return false;
-            }
-
-            if (!blockContents.StartsWith(SignatureConstantBytes))
+            if (bytesRead < TotalSize || !blockContents.StartsWith(SignatureConstantBytes))
             {
                 return false;
             }
