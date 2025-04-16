@@ -913,10 +913,14 @@ namespace System.IO.Compression
 
         // Depending on mode and stream seekability, we will decide if the archive
         // stream needs to be wrapped or not by another stream to help with writing.
-        private static Stream DecideArchiveStream(ZipArchiveMode mode, Stream stream) =>
-            mode == ZipArchiveMode.Create && !stream.CanSeek ?
+        private static Stream DecideArchiveStream(ZipArchiveMode mode, Stream stream)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+
+            return mode == ZipArchiveMode.Create && !stream.CanSeek ?
                 new PositionPreservingWriteOnlyStreamWrapper(stream) :
                 stream;
+        }
 
         private void CheckIfEntriesAreOpenable()
         {
