@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -23,11 +24,19 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         {
             throw new InvalidOperationException("Module is not loaded.");
         }
-
         bool isMapped = (imageFlags & 0x1) != 0; // FLAG_MAPPED = 0x1
-        TargetPointer baseAddress = module.GetLoadedMetadata(isMapped, out ulong size);
+        PEStreamOptions isLoaded = isMapped ? PEStreamOptions.IsLoadedImage : PEStreamOptions.Default;
 
-        return new TargetSpan(baseAddress, size);
+        // Stream is backed by Target's read and doesn't have a definable size limit.
+        // For this use case we can use int.MaxValue to allow PEReader to read as much as it wants.
+        // As long as PEStreamOptions.PrefetchEntireImage is not set, PEReader will not read the entire stream.
+        TargetStream stream = new(target, module.Base, int.MaxValue);
+        PEReader peReader = new PEReader(stream, PEStreamOptions.PrefetchMetadata | isLoaded);
+
+        int metadataStartOffset = peReader.PEHeaders.MetadataStartOffset;
+        int metadataSize = peReader.PEHeaders.MetadataSize;
+
+        return new TargetSpan(module.Base + (ulong)metadataStartOffset, (ulong)metadataSize);
     }
 
     public MetadataReader? GetMetadata(ModuleHandle handle)
