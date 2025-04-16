@@ -1352,6 +1352,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                             goto DONE_ASSERTION;
                         }
                     }
+                    break;
                 }
 
                 default:
