@@ -408,6 +408,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_X509DecodeOcspToExpiration)
     DllImportEntry(CryptoNative_X509Duplicate)
     DllImportEntry(CryptoNative_SslGet0AlpnSelected)
+    DllImportEntry(CryptoNative_GetDefaultSignatureAlgorithms)
 };
 
 EXTERN_C const void* CryptoResolveDllImport(const char* name);

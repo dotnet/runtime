@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,6 +16,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -28,6 +30,7 @@ internal static partial class Interop
         private const int DefaultTlsCacheSizeClient = 500; // since we keep only one TLS Session per hostname, 500 should be enough to cover most scenarios
         private const int DefaultTlsCacheSizeServer = -1; // use implementation default
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
+        private static readonly Lazy<string[]> s_defaultSigAlgs = new(GetDefaultSignatureAlgorithms);
 
         private sealed class SafeSslContextCache : SafeHandleCache<SslContextCacheKey, SafeSslContextHandle> { }
 
@@ -414,11 +417,9 @@ internal static partial class Interop
                     sslHandle.SslContextHandle = sslCtxHandle;
                 }
 
-                if (Environment.GetEnvironmentVariable("DOTNET_SIGALGS") is string s)
+                if (!sslAuthenticationOptions.AllowRsaPssPad || !sslAuthenticationOptions.AllowRsaRsae)
                 {
-                    byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(s);
-                    int result = Interop.Ssl.SslSetSigalgs(sslHandle, utf8Bytes);
-                    Debug.Assert(result == 1);
+                    ConfigureSignatureAlgorithms(sslHandle, sslAuthenticationOptions.AllowRsaPssPad, sslAuthenticationOptions.AllowRsaRsae);
                 }
 
                 if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
@@ -521,6 +522,116 @@ internal static partial class Interop
             }
 
             return sslHandle;
+        }
+
+        internal static string[] GetDefaultSignatureAlgorithms()
+        {
+            ushort[] rawAlgs = Interop.Ssl.GetDefaultSignatureAlgorithms();
+
+            static string ConvertAlg(ushort rawAlg) => rawAlg switch
+            {
+                0x0201 => "rsa_pkcs1_sha1",
+                0x0203 => "ecdsa_sha1",
+                0x0401 => "rsa_pkcs1_sha256",
+                0x0403 => "ecdsa_secp256r1_sha256",
+                0x0501 => "rsa_pkcs1_sha384",
+                0x0503 => "ecdsa_secp384r1_sha384",
+                0x0601 => "rsa_pkcs1_sha512",
+                0x0603 => "ecdsa_secp521r1_sha512",
+                0x0804 => "rsa_pss_rsae_sha256",
+                0x0805 => "rsa_pss_rsae_sha384",
+                0x0806 => "rsa_pss_rsae_sha512",
+                0x0807 => "ed25519",
+                0x0808 => "ed448",
+                0x0809 => "rsa_pss_pss_sha256",
+                0x080a => "rsa_pss_pss_sha384",
+                0x080b => "rsa_pss_pss_sha512",
+                0x081a => "ecdsa_brainpoolP256r1_sha256",
+                0x081b => "ecdsa_brainpoolP384r1_sha384",
+                0x081c => "ecdsa_brainpoolP512r1_sha512",
+                _ => $"{Tls12SignatureName((byte)rawAlg)}+{Tls12HashName((byte)(rawAlg >> 8))}"
+            };
+
+            static string Tls12HashName(byte raw) => raw switch
+            {
+                0x00 => "none",
+                0x01 => "MD5",
+                0x02 => "SHA1",
+                0x03 => "SHA224",
+                0x04 => "SHA256",
+                0x05 => "SHA384",
+                0x06 => "SHA512",
+                _ => $"unknown(0x{raw:x2})"
+            };
+
+            static string Tls12SignatureName(byte raw) => raw switch
+            {
+                0x00 => "anonymous",
+                0x01 => "RSA",
+                0x02 => "DSA",
+                0x03 => "ECDSA",
+                _ => $"unknown(0x{raw:x2})"
+            };
+
+            return Array.ConvertAll(rawAlgs, ConvertAlg);
+        }
+
+        internal static unsafe void ConfigureSignatureAlgorithms(SafeSslHandle sslHandle, bool enablePss, bool enableRsae)
+        {
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(512);
+            try
+            {
+                int index = 0;
+
+                foreach (string alg in s_defaultSigAlgs.Value)
+                {
+                    if (alg.StartsWith("rsa_pss_pss_") && !enablePss)
+                    {
+                        continue;
+                    }
+
+                    if (alg.StartsWith("rsa_pss_rsae_") && !enableRsae)
+                    {
+                        continue;
+                    }
+
+                    EnsureSize(ref buffer, index + alg.Length + 1);
+
+                    if (index > 0)
+                    {
+                        buffer[index++] = (byte)':';
+                    }
+
+                    index += Encoding.UTF8.GetBytes(alg, buffer.AsSpan(index));
+                }
+                buffer[index] = 0; // null terminator
+
+                int ret;
+                fixed (byte* pBuffer = buffer)
+                {
+                    ret = Interop.Ssl.SslSetSigalgs(sslHandle, pBuffer);
+                }
+
+                if (ret != 1)
+                {
+                    throw new InvalidOperationException("Failed to set signature algorithms.");
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            static void EnsureSize(ref byte[] buffer, int size)
+            {
+                if (buffer.Length < size)
+                {
+                    byte[] oldBuffer = buffer;
+                    Array.Resize(ref buffer, buffer.Length * 2);
+
+                    ArrayPool<byte>.Shared.Return(oldBuffer);
+                }
+            }
         }
 
         internal static SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)

@@ -83,6 +83,17 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead", SetLastError = true)]
         internal static partial int SslRead(SafeSslHandle ssl, ref byte buf, int num, out SslErrorCode error);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetDefaultSignatureAlgorithms")]
+        private static unsafe partial void GetDefaultSignatureAlgorithms(Span<ushort> algorithms, ref int algorithmCount);
+
+        internal static ushort[] GetDefaultSignatureAlgorithms()
+        {
+            Span<ushort> algorithms = stackalloc ushort[256];
+            int algorithmCount = algorithms.Length;
+            GetDefaultSignatureAlgorithms(algorithms, ref algorithmCount);
+            return algorithms.Slice(0, algorithmCount).ToArray();
+        }
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRenegotiate")]
         internal static partial int SslRenegotiate(SafeSslHandle ssl, out SslErrorCode error);
 
@@ -187,7 +198,7 @@ internal static partial class Interop
         internal static partial void SslSetPostHandshakeAuth(SafeSslHandle ssl, int value);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetSigalgs")]
-        internal static partial int SslSetSigalgs(SafeSslHandle ssl, ReadOnlySpan<byte> str);
+        internal static unsafe partial int SslSetSigalgs(SafeSslHandle ssl, byte* str);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
         private static partial int Tls13SupportedImpl();
