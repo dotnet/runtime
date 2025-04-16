@@ -2092,28 +2092,28 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // 1. Build the new signature
+    // Build the new signature
     SigBuilder stubSigBuilder;
     MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
 
-    // 2. Emit the method body
+    // Emit the method body
     mdToken tokRawData = pCode->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
-    // 2.1 Push the thisptr
+    // Push the thisptr
     // We need to skip over the MethodTable*
     // The trick below will do that.
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokRawData);
 
 #if defined(TARGET_X86)
-    // 2.2 Push the rest of the arguments for x86
+    // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
 #endif
 
-    // 2.3 Push the hidden context param
+    // Push the hidden context param
     // The context is going to be captured from the thisptr
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokRawData);
@@ -2122,17 +2122,17 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitLDIND_I();
 
 #if !defined(TARGET_X86)
-    // 2.4 Push the rest of the arguments for not x86
+    // Push the rest of the arguments for not x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
 #endif
 
-    // 2.5 Push the target address
+    // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
-    // 2.6 Do the calli
+    // Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
@@ -2199,47 +2199,47 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // 1. Build the new signature
+    // Build the new signature
     SigBuilder stubSigBuilder;
     MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
 
-    // 2. Emit the method body
+    // Emit the method body
     if (msig.HasThis())
     {
-        // 2.1 Push the thisptr
+        // Push the thisptr
         pCode->EmitLoadThis();
     }
 
 #if defined(TARGET_X86)
-    // 2.2 Push the rest of the arguments for x86
+    // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
 #endif // TARGET_X86
 
-    // 2.3 Push the hidden context param
+    // Push the hidden context param
     // InstantiatingStub
     pCode->EmitLDC((TADDR)pHiddenArg);
 
-    // 2.3.2 Push the async continuation
+    // Push the async continuation
     if (msig.HasAsyncContinuation())
     {
         pCode->EmitLDNULL();
     }
 
 #if !defined(TARGET_X86)
-    // 2.4 Push the rest of the arguments for not x86
+    // Push the rest of the arguments for not x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
 #endif // !TARGET_X86
 
-    // 2.5 Push the target address
+    // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
-    // 2.6 Do the calli
+    // Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
