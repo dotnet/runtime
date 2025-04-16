@@ -1998,10 +1998,10 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 #ifndef TARGET_WASM
 
 // This is an assembly helper that enables us to call into EH funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP, UINT_PTR establisherFrame);
+EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
 
 // This is an assembly helper that enables us to call into EH filter funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP, UINT_PTR establisherFrame);
+EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 
@@ -2034,33 +2034,6 @@ static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextReco
 #endif
 }
 
-typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
-static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
-{
-#ifdef HOST_AMD64
-    _ASSERTE(exInfo->m_frameIter.m_crawl.GetRegisterSet() == pvRegDisplay);
-    if (exInfo->m_frameIter.m_crawl.GetCodeInfo()->HasFrameRegister())
-    {
-        ULONG frameOffset = exInfo->m_frameIter.m_crawl.GetCodeInfo()->GetFrameOffsetFromUnwindInfo();
-        return pvRegDisplay->pCurrentContext->Rbp - 16 * frameOffset;
-    }
-    else
-    {
-        return pvRegDisplay->SP;
-    }
-#elif defined(HOST_ARM64)
-    return pvRegDisplay->SP;
-#elif defined(HOST_ARM)
-    return pvRegDisplay->SP;
-#elif defined(HOST_X86)
-    return pvRegDisplay->SP;
-#elif defined(HOST_RISCV64)
-    return pvRegDisplay->SP;
-#elif defined(HOST_LOONGARCH64)
-    return pvRegDisplay->SP;
-#endif
-}
-
 #endif // TARGET_WASM
 
 // Call catch, finally or filter funclet.
@@ -2079,7 +2052,6 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
-    UINT_PTR establisherFrame = GetEstablisherFrame(pRD, pExInfo);
 
     if (isFilterFunclet)
     {
@@ -2089,16 +2061,14 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
         dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
                                        GetFP(pRD->pCurrentContext),
                                        CastHandlerFn(pfnHandler),
-                                       pFuncletCallerSP,
-                                       establisherFrame);
+                                       pFuncletCallerSP);
     }
     else
     {
         dwResult = CallEHFunclet(OBJECTREFToObject(throwable),
                                  CastHandlerFn(pfnHandler),
                                  GetFirstNonVolatileRegisterAddress(pRD->pCurrentContext),
-                                 pFuncletCallerSP,
-                                 establisherFrame);
+                                 pFuncletCallerSP);
     }
 
 #endif // TARGET_WASM

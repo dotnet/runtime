@@ -830,22 +830,18 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // $a1 = PC to invoke
     // $a2 = address of s0 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
     // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    // $a4 = establisher frame (CallerSP)
     //
 
     //                            $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 112, 0
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 96, 0
 
     // Spill callee saved registers
     //                    $s0,$s1
-    PROLOG_SAVE_REG_PAIR   23, 24, 32
-    PROLOG_SAVE_REG_PAIR   25, 26, 48
-    PROLOG_SAVE_REG_PAIR   27, 28, 64
-    PROLOG_SAVE_REG_PAIR   29, 30, 80
-    PROLOG_SAVE_REG        31,     96
-
-    // Save establisher frame pointer into our stack frame
-    st.d  $a4, $sp, 16
+    PROLOG_SAVE_REG_PAIR   23, 24, 16
+    PROLOG_SAVE_REG_PAIR   25, 26, 32
+    PROLOG_SAVE_REG_PAIR   27, 28, 48
+    PROLOG_SAVE_REG_PAIR   29, 30, 64
+    PROLOG_SAVE_REG        31,     80
 
     // Save the SP of this function
     st.d  $sp, $a3, 0
@@ -864,13 +860,13 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // Invoke the funclet
     jirl $ra, $a1, 0
 
-    EPILOG_RESTORE_REG_PAIR   23, 24, 32
-    EPILOG_RESTORE_REG_PAIR   25, 26, 48
-    EPILOG_RESTORE_REG_PAIR   27, 28, 64
-    EPILOG_RESTORE_REG_PAIR   29, 30, 80
-    EPILOG_RESTORE_REG        31,     96
+    EPILOG_RESTORE_REG_PAIR   23, 24, 16
+    EPILOG_RESTORE_REG_PAIR   25, 26, 32
+    EPILOG_RESTORE_REG_PAIR   27, 28, 48
+    EPILOG_RESTORE_REG_PAIR   29, 30, 64
+    EPILOG_RESTORE_REG        31,     80
     //                              $fp,$ra
-    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 112
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 96
     EPILOG_RETURN
 
 NESTED_END CallEHFunclet, _TEXT
@@ -879,7 +875,7 @@ NESTED_END CallEHFunclet, _TEXT
 // frame pointer for accessing the locals in the parent method.
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     //                             $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 32
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
 
     // On entry:
     //
@@ -887,19 +883,15 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     // $a1 = FP of main function
     // $a2 = PC to invoke
     // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-    // $a4 = establisher frame (CallerSP)
     //
-    // Save establisher frame pointer into our stack frame
-    st.d  $a4, $sp, 16
     // Save the SP of this function
     st.d  $fp, $a3, 0
     // Restore frame pointer
     move  $fp, $a1
     // Invoke the filter funclet
-    move  $a1, $a4 // a1 = CallerSP (older R2R ABI)
     jirl  $ra, $a2, 0
 
-    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 32
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 16
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
 

@@ -10936,9 +10936,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *
  *  Funclets have the following incoming arguments:
  *
- *      catch/filter-handler: rcx/rdi = unused, rdx/rsi = the exception object that was caught (see GT_CATCH_ARG)
- *      filter:               rcx/rdi = unused, rdx/rsi = the exception object to filter (see GT_CATCH_ARG)
- *      finally/fault:        rcx/rdi = unused
+ *      catch/filter-handler: rcx/rdi = the exception object that was caught (see GT_CATCH_ARG)
+ *      filter:               rcx/rdi = the exception object to filter (see GT_CATCH_ARG)
+ *      finally/fault:        none
  *
  *  Funclets set the following registers on exit:
  *

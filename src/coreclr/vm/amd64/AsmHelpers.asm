@@ -563,47 +563,37 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         ; RDX = PC to invoke
         ; R8 = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-        ; [RSP+40] = establisher frame address (InitialSP)
         ;
 
         FUNCLET_CALL_PROLOGUE 0, 1
 
         ; Restore RBX, RBP, RSI, RDI, R12, R13, R14, R15 from CONTEXT
-        mov     rbx, [r8 + 0]
-        mov     rbp, [r8 + 16]
-        mov     rsi, [r8 + 24]
-        mov     rdi, [r8 + 32]
-        mov     r12, [r8 + 72]
-        mov     r13, [r8 + 80]
-        mov     r14, [r8 + 88]
-        mov     r15, [r8 + 96]
+        mov     rbx, [r8 + OFFSETOF__CONTEXT__Rbx - OFFSETOF__CONTEXT__Rbx]
+        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
+        mov     rsi, [r8 + OFFSETOF__CONTEXT__Rsi - OFFSETOF__CONTEXT__Rbx]
+        mov     rdi, [r8 + OFFSETOF__CONTEXT__Rdi - OFFSETOF__CONTEXT__Rbx]
+        mov     r12, [r8 + OFFSETOF__CONTEXT__R12 - OFFSETOF__CONTEXT__Rbx]
+        mov     r13, [r8 + OFFSETOF__CONTEXT__R13 - OFFSETOF__CONTEXT__Rbx]
+        mov     r14, [r8 + OFFSETOF__CONTEXT__R14 - OFFSETOF__CONTEXT__Rbx]
+        mov     r15, [r8 + OFFSETOF__CONTEXT__R15 - OFFSETOF__CONTEXT__Rbx]
 
         ; Restore XMM registers from CONTEXT
-        movdqa  xmm6, [r8 + 272 + 0*10h]
-        movdqa  xmm7, [r8 + 272 + 1*10h]
-        movdqa  xmm8, [r8 + 272 + 2*10h]
-        movdqa  xmm9, [r8 + 272 + 3*10h]
-        movdqa  xmm10, [r8 + 272 + 4*10h]
-        movdqa  xmm11, [r8 + 272 + 5*10h]
-        movdqa  xmm12, [r8 + 272 + 6*10h]
-        movdqa  xmm13, [r8 + 272 + 7*10h]
-        movdqa  xmm14, [r8 + 272 + 8*10h]
-        movdqa  xmm15, [r8 + 272 + 9*10h]
-
-        ; Swap input parameters to avoid trashing them
-        mov     rax, rdx
-        mov     rdx, rcx
-
-        ; Save establisher frame pointer into the argument scratch area of the funclet
-        ; and put it in rcx parameter (older R2R ABI)
-        mov     rcx, [rsp + rsp_offsetof_arguments + 20h]
-        mov     [rsp], rcx
+        movdqa  xmm6, [r8 + OFFSETOF__CONTEXT__Xmm6 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm7, [r8 + OFFSETOF__CONTEXT__Xmm7 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm8, [r8 + OFFSETOF__CONTEXT__Xmm8 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm9, [r8 + OFFSETOF__CONTEXT__Xmm9 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm10, [r8 + OFFSETOF__CONTEXT__Xmm10 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm11, [r8 + OFFSETOF__CONTEXT__Xmm11 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm12, [r8 + OFFSETOF__CONTEXT__Xmm12 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm13, [r8 + OFFSETOF__CONTEXT__Xmm13 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15 - OFFSETOF__CONTEXT__Rbx]
 
         ; Save the SP of this function.
         mov     [r9], rsp
 
         ; Invoke the funclet
-        call    rax
+        call    rdx
 
         FUNCLET_CALL_EPILOGUE
 
@@ -619,7 +609,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         ; RDX = RBP of main function
         ; R8 = PC to invoke
         ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
-        ; [RSP+40] = establisher frame address (InitialSP)
         ;
 
         FUNCLET_CALL_PROLOGUE 0, 1
@@ -627,16 +616,11 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         ; Save the SP of this function
         mov     [r9], rsp
 
-        ; Restore RBP to match main funtion RBP
+        ; Restore RBP to match main function RBP
         mov     rbp, rdx
 
         ; Move throwable into the second parameter
         mov     rdx, rcx
-
-        ; Save establisher frame pointer into the argument scratch area of the funclet
-        ; and put it in rcx parameter (older R2R ABI)
-        mov     rcx, [rsp + rsp_offsetof_arguments + 20h]
-        mov     [rsp], rcx
 
         ; Invoke the filter funclet
         call    r8
