@@ -171,9 +171,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     withConfig (config: MonoConfig): DotnetHostBuilder {
         try {
-            if (config) {
-                deep_merge_config(monoConfig, config);
-            }
+            deep_merge_config(monoConfig, config);
             return this;
         } catch (err) {
             mono_exit(1, err);

@@ -56,7 +56,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             if (mergeWith != null)
             {
                 string existingContent = File.ReadAllText(mergeWith);
-                output = existingContent.Replace("/*! dotnetBootConfig */", $"/*json-start*/{output}/*json-end*/");
+                output = existingContent.Replace("/*! dotnetBootConfig */{}", $"/*json-start*/{output}/*json-end*/");
                 if (existingContent.Equals(output))
                     Log.LogError($"Merging boot config into '{mergeWith}' failed to find the placeholder.");
             }
