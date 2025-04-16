@@ -9825,6 +9825,8 @@ ValueNum ValueNumStore::EvalMathFuncBinary(
     {
         VNFunc vnf = VNF_Boundary;
 
+        bool isUnsigned = (flags & GTF_UNSIGNED) != 0;
+
         switch (gtMathFN)
         {
             case NI_System_Math_Atan2:
@@ -9832,7 +9834,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(
                 break;
 
             case NI_System_Math_Max:
-                vnf = VNF_Max;
+                vnf = isUnsigned ? VNF_Max_UN : VNF_Max;
                 break;
 
             case NI_System_Math_MaxMagnitude:
@@ -9848,7 +9850,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(
                 break;
 
             case NI_System_Math_Min:
-                vnf = VNF_Min;
+                vnf = isUnsigned ? VNF_Min_UN : VNF_Min;
                 break;
 
             case NI_System_Math_MinMagnitude:

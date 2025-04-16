@@ -205,8 +205,8 @@ ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((
     //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
 
 #elif defined (TARGET_RISCV64)
-    //TODO-RISCV64-CQ: add RISCV64's Hardware Intrinsics Instructions if supported.
-
+    ValueNumFuncDef(Min_UN, 2, true, false, false)  // unsigned min/max intrinsics
+    ValueNumFuncDef(Max_UN, 2, true, false, false)
 #else
 #error Unsupported platform
 #endif
