@@ -282,7 +282,21 @@ CDAC_TYPE_END(ProbeExtensionResult)
 CDAC_TYPE_BEGIN(AppDomain)
 CDAC_TYPE_INDETERMINATE(AppDomain)
 CDAC_TYPE_FIELD(AppDomain, /*pointer*/, RootAssembly, cdac_data<AppDomain>::RootAssembly)
+CDAC_TYPE_FIELD(AppDomain, /*DomainAssemblyList*/, DomainAssemblyList, cdac_data<AppDomain>::DomainAssemblyList)
 CDAC_TYPE_END(AppDomain)
+
+CDAC_TYPE_BEGIN(ArrayListBase)
+CDAC_TYPE_INDETERMINATE(ArrayListBase)
+CDAC_TYPE_FIELD(ArrayListBase, /*uint32*/, Count, cdac_data<ArrayListBase>::Count)
+CDAC_TYPE_FIELD(ArrayListBase, /*pointer*/, FirstBlock, cdac_data<ArrayListBase>::FirstBlock)
+CDAC_TYPE_END(ArrayListBase)
+
+CDAC_TYPE_BEGIN(ArrayListBlock)
+CDAC_TYPE_INDETERMINATE(ArrayListBlock)
+CDAC_TYPE_FIELD(ArrayListBlock, /*pointer*/, Next, cdac_data<ArrayListBlock>::Next)
+CDAC_TYPE_FIELD(ArrayListBlock, /*uint32*/, Size, cdac_data<ArrayListBlock>::Size)
+CDAC_TYPE_FIELD(ArrayListBlock, /*pointer*/, ArrayStart, cdac_data<ArrayListBlock>::ArrayStart)
+CDAC_TYPE_END(ArrayListBlock)
 
 // RuntimeTypeSystem
 
