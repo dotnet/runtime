@@ -130,10 +130,10 @@ void PrintToStdErrA(const char *pszString, BOOL binaryOutputMode)
     }
     CONTRACTL_END
 
-    minipal_log_flags flags = minipal_log_flags_error;
+    minipal_log_flags flags = minipal_log_flags_level_error;
     if (binaryOutputMode)
     {
-        minipal_log_flags_append(flags, minipal_log_flags_binary);
+        minipal_log_flags_add(flags, minipal_log_flags_output_mode_binary);
     }
 
     minipal_log_write(flags, pszString);
