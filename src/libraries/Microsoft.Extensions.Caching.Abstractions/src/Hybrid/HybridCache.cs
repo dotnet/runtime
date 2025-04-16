@@ -104,6 +104,9 @@ public abstract class HybridCache
         IEnumerable<string>? tags = null,
         CancellationToken cancellationToken = default)
     {
+        // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
+        // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
+        // the buffer even in the non-synchronous completion scenario.
         ValueTask<T> result = GetOrCreateAsync(key.Text, factory, WrappedCallbackCache<T>.Instance, options, tags, cancellationToken);
         key.Clear();
         return result;
@@ -129,17 +132,12 @@ public abstract class HybridCache
         IEnumerable<string>? tags = null,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            return GetOrCreateAsync(key.Text, state, factory, options, tags, cancellationToken);
-        }
-        finally
-        {
-            // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
-            // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
-            // the buffer even in the non-synchronous completion scenario.
-            key.Clear();
-        }
+        // It is *not* an error that this Clear occurs before the "await"; by definition, the implementation is *required* to copy
+        // the value locally before an await, precisely because the ref-struct cannot bridge an await. Thus: we are fine to clean
+        // the buffer even in the non-synchronous completion scenario.
+        ValueTask<T> result = GetOrCreateAsync(key.Text, state, factory, options, tags, cancellationToken);
+        key.Clear();
+        return result;
     }
 #endif
 
