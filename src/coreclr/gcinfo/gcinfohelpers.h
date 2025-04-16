@@ -7,7 +7,7 @@
 #undef _ASSERTE
 
 #if defined(_DEBUG)
-extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line);
+extern "C" void assertAbort(const char* why, const char* file, unsigned line);
 
 #define _ASSERTE(expr) if (!(expr)) { \
     assertAbort(#expr, __FILE__, __LINE__); \
