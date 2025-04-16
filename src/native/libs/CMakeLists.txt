@@ -107,7 +107,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     endif ()
 else ()
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
-    add_subdirectory(System.Globalization.Native)
+    #add_subdirectory(System.Globalization.Native)
 endif ()
 
 add_subdirectory(System.IO.Compression.Native)
@@ -153,7 +153,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     endif ()
 
     add_subdirectory(System.Native)
-    add_subdirectory(System.Globalization.Native)
+    #add_subdirectory(System.Globalization.Native)
 
     if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         # skip for now
