@@ -119,7 +119,7 @@ namespace System.IO.Compression
         /// </param>
         /// <exception cref="ArgumentException">If a Unicode encoding other than UTF-8 is specified for the <code>entryNameEncoding</code>.</exception>
         public ZipArchive(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
-            : this(mode, leaveOpen, entryNameEncoding, backingStream: null, archiveStream: null)
+            : this(mode, leaveOpen, entryNameEncoding, backingStream: null, archiveStream: DecideArchiveStream(mode, stream))
         {
             ArgumentNullException.ThrowIfNull(stream);
 
@@ -174,10 +174,10 @@ namespace System.IO.Compression
         /// Helper constructor that initializes some of the essential ZipArchive
         /// information that other constructors initialize the same way.
         /// Validations, checks and entry collection need to be done outside this constructor.
-        private ZipArchive(ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, Stream? backingStream, Stream? archiveStream)
+        private ZipArchive(ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, Stream? backingStream, Stream archiveStream)
         {
             _backingStream = backingStream;
-            _archiveStream = archiveStream!; // If null, this needs to be set by the calling constructor
+            _archiveStream = archiveStream;
             _mode = mode;
             EntryNameAndCommentEncoding = entryNameEncoding;
             _archiveStreamOwner = null;
