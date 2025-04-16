@@ -460,33 +460,13 @@ namespace System.IO.Compression
         {
             // Relies on FileStream's ctor for checking of archiveFileName
 
-            FileMode fileMode;
-            FileAccess access;
-            FileShare fileShare;
-
-            switch (mode)
+            (FileMode fileMode, FileAccess access, FileShare fileShare) = mode switch
             {
-                case ZipArchiveMode.Read:
-                    fileMode = FileMode.Open;
-                    access = FileAccess.Read;
-                    fileShare = FileShare.Read;
-                    break;
-
-                case ZipArchiveMode.Create:
-                    fileMode = FileMode.CreateNew;
-                    access = FileAccess.Write;
-                    fileShare = FileShare.None;
-                    break;
-
-                case ZipArchiveMode.Update:
-                    fileMode = FileMode.OpenOrCreate;
-                    access = FileAccess.ReadWrite;
-                    fileShare = FileShare.None;
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(mode));
-            }
+                ZipArchiveMode.Read => (FileMode.Open, FileAccess.Read, FileShare.Read),
+                ZipArchiveMode.Create => (FileMode.CreateNew, FileAccess.Write, FileShare.None),
+                ZipArchiveMode.Update => (FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None),
+                _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+            };
 
             // Suppress CA2000: fs gets passed to the new ZipArchive, which stores it internally.
             // The stream will then be owned by the archive and be disposed when the archive is disposed.
