@@ -845,8 +845,10 @@ void mono_threads_join_unlock (void);
 
 #ifdef HOST_WASM
 typedef void (*background_job_cb)(void);
+typedef gsize (*ds_job_cb)(void* data);
 #ifdef DISABLE_THREADS
 void mono_main_thread_schedule_background_job (background_job_cb cb);
+void mono_schedule_ds_job (ds_job_cb cb, void* data);
 #else
 void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread);
 #endif // DISABLE_THREADS

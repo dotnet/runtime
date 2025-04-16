@@ -143,7 +143,10 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   #pragma intrinsic(__dmb)
   #define MemoryBarrier() { __dmb(_ARM64_BARRIER_SY); }
 
- #elif defined(HOST_AMD64)
+ #elif defined(HOST_BROWSER)
+  #define YieldProcessor()
+  #define MemoryBarrier __sync_synchronize
+#elif defined(HOST_AMD64)
 
   extern "C" void
   _mm_pause (

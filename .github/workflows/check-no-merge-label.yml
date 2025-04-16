@@ -5,7 +5,7 @@ permissions:
 
 on:
   pull_request_target:
-    types: [labeled, unlabeled]
+    types: [opened, edited, reopened, labeled, unlabeled, synchronize]
     branches:
       - 'main'
       - 'release/**'

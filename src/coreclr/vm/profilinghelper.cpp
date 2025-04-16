@@ -707,8 +707,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return hr;
     }
 
-    char clsidUtf8[GUID_STR_BUFFER_LEN];
-    GuidToLPSTR(clsid, clsidUtf8);
+    char clsidUtf8[MINIPAL_GUID_BUFFER_LEN];
+    minipal_guid_as_string(clsid, clsidUtf8, MINIPAL_GUID_BUFFER_LEN);
     hr = LoadProfiler(
         kStartupLoad,
         &clsid,
@@ -741,8 +741,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiler loading from GUID/Path stored from the IPC channel."));
         CLSID *pClsid = &(item->guid);
 
-        char clsidUtf8[GUID_STR_BUFFER_LEN];
-        GuidToLPSTR(*pClsid, clsidUtf8);
+        char clsidUtf8[MINIPAL_GUID_BUFFER_LEN];
+        minipal_guid_as_string(*pClsid, clsidUtf8, MINIPAL_GUID_BUFFER_LEN);
         HRESULT hr = LoadProfiler(
             kStartupLoad,
             pClsid,
@@ -824,8 +824,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             continue;
         }
 
-        char clsidUtf8[GUID_STR_BUFFER_LEN];
-        GuidToLPSTR(clsid, clsidUtf8);
+        char clsidUtf8[MINIPAL_GUID_BUFFER_LEN];
+        minipal_guid_as_string(clsid, clsidUtf8, MINIPAL_GUID_BUFFER_LEN);
         hr = LoadProfiler(
             kStartupLoad,
             &clsid,

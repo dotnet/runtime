@@ -186,5 +186,32 @@ namespace System.Linq.Tests
                 Assert.Equal(4, funcCount);
             }
         }
+
+        [Fact]
+        public async Task Callbacks_InvokedOnOriginalContext()
+        {
+            await Task.Run(async () =>
+            {
+                TrackingSynchronizationContext ctx = new();
+                SynchronizationContext.SetSynchronizationContext(ctx);
+
+                await ConsumeAsync(CreateSource(2, 4, 8, 16).Yield().AggregateBy(
+                    i =>
+                    {
+                        Assert.Same(ctx, SynchronizationContext.Current);
+                        return i;
+                    },
+                    i =>
+                    {
+                        Assert.Same(ctx, SynchronizationContext.Current);
+                        return i;
+                    },
+                    (x, y) =>
+                    {
+                        Assert.Same(ctx, SynchronizationContext.Current);
+                        return x + y;
+                    }));
+            });
+        }
     }
 }

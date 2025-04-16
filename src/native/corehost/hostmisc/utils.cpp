@@ -277,7 +277,7 @@ bool multilevel_lookup_enabled()
     return multilevel_lookup;
 }
 
-void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations)
+void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations)
 {
     bool multilevel_lookup = disable_multilevel_lookup ? false : multilevel_lookup_enabled();
 

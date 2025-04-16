@@ -65,7 +65,7 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
 
     SString strMessage;
     SString strResource;
-    WCHAR strClsid[GUID_STR_BUFFER_LEN];
+    WCHAR strClsid[MINIPAL_GUID_BUFFER_LEN];
     SString strHRDescription;
 
     // Obtain the textual representation of the HRESULT.
@@ -505,7 +505,7 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     {
         SString strMessage;
         SString strResource;
-        WCHAR strClsid[GUID_STR_BUFFER_LEN];
+        WCHAR strClsid[MINIPAL_GUID_BUFFER_LEN];
         SString strHRDescription;
 
         // Obtain the textual representation of the HRESULT.
@@ -2512,7 +2512,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         }
 
         // Convert the IID to a string.
-        WCHAR strIID[GUID_STR_BUFFER_LEN];
+        WCHAR strIID[MINIPAL_GUID_BUFFER_LEN];
         GuidToLPWSTR(iid, strIID);
 
         // Obtain the textual description of the HRESULT.
@@ -2530,7 +2530,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             pSrcItfClass->GetGuid(&SrcItfIID, TRUE);
 
             // Convert the source interface IID to a string.
-            WCHAR strSrcItfIID[GUID_STR_BUFFER_LEN];
+            WCHAR strSrcItfIID[MINIPAL_GUID_BUFFER_LEN];
             GuidToLPWSTR(SrcItfIID, strSrcItfIID);
 
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),

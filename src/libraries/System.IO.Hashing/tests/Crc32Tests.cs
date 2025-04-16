@@ -83,6 +83,7 @@ namespace System.IO.Hashing.Tests
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new Crc32();
+        protected override NonCryptographicHashAlgorithm Clone(NonCryptographicHashAlgorithm instance) => ((Crc32)instance).Clone();
 
         protected override byte[] StaticOneShot(byte[] source) => Crc32.Hash(source);
 

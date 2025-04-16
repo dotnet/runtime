@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -143,6 +144,146 @@ namespace System.Linq.Tests
         {
             IEnumerable<string> source = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {"ABC"};
             Assert.True(source.Contains("abc"));
+        }
+
+        [Fact]
+        public void FollowingVariousOperators()
+        {
+            IEnumerable<int> source = Enumerable.Range(1, 3);
+            foreach (var transform in IdentityTransforms<int>())
+            {
+                IEnumerable<int> transformedSource = transform(source);
+                IEnumerable<int> transformedEmpty = transform([]);
+
+                Assert.True(transformedSource.Contains(1));
+                Assert.True(transformedSource.Contains(2));
+                Assert.True(transformedSource.Contains(3));
+                Assert.False(transformedSource.Contains(0));
+                Assert.False(transformedSource.Contains(4));
+
+                // Append/Prepend
+                var ap = transformedSource.Append(4).Prepend(5).Append(6).Prepend(7);
+                Assert.True(ap.Contains(3));
+                Assert.True(ap.Contains(4));
+                Assert.True(ap.Contains(5));
+                Assert.True(ap.Contains(6));
+                Assert.True(ap.Contains(7));
+                Assert.False(ap.Contains(8));
+
+                // Concat
+                Assert.True(transform([4, 5, 6]).Concat(transformedSource).Contains(2));
+                Assert.False(transform([4, 5, 6]).Concat(transformedSource).Contains(7));
+                Assert.True(transform([4, 5, 6]).Concat(transform([7, 8, 9])).Concat(transformedSource).Contains(2));
+                Assert.False(transform([4, 5, 6]).Concat(transform([7, 8, 9])).Concat(transformedSource).Contains(10));
+
+                // DefaultIfEmpty
+                Assert.True(transformedSource.DefaultIfEmpty(4).Contains(1));
+                Assert.False(transformedEmpty.DefaultIfEmpty(4).Contains(0));
+                Assert.True(transformedEmpty.DefaultIfEmpty(4).Contains(4));
+                Assert.False(transformedSource.DefaultIfEmpty(4).Contains(4));
+                Assert.False(transformedSource.DefaultIfEmpty(0).Contains(4));
+                Assert.False(transformedSource.DefaultIfEmpty().Contains(0));
+                Assert.True(transformedEmpty.DefaultIfEmpty().Contains(0));
+                Assert.False(transformedSource.DefaultIfEmpty().Contains(4));
+
+                // Distinct
+                Assert.True(transform(source.Concat(source)).Distinct().Contains(2));
+                Assert.False(transform(source.Concat(source)).Distinct().Contains(4));
+                Assert.True(transform(source.Concat(source)).Distinct().Contains(1));
+                Assert.True(transform(source.Concat(source)).Distinct(EqualityComparer<int>.Create((x, y) => true, x => 0)).Contains(1));
+                Assert.False(transform(source.Concat(source)).Distinct(EqualityComparer<int>.Create((x, y) => true, x => 0)).Contains(2));
+                Assert.False(transform(source.Concat(source)).Distinct(EqualityComparer<int>.Create((x, y) => true, x => 0)).Contains(0));
+
+                // OrderBy
+                Assert.True(transformedSource.OrderBy(x => x).Contains(2));
+                Assert.True(transformedSource.OrderBy(x => x).ThenBy(x => x).Contains(2));
+                Assert.False(transformedSource.OrderBy(x => x).Contains(4));
+                Assert.False(transformedSource.OrderBy(x => x).ThenBy(x => x).Contains(4));
+
+                // OrderByDescending
+                Assert.True(transformedSource.OrderByDescending(x => x).Contains(2));
+                Assert.True(transformedSource.OrderByDescending(x => x).ThenByDescending(x => x).Contains(2));
+                Assert.False(transformedSource.OrderByDescending(x => x).Contains(4));
+                Assert.False(transformedSource.OrderByDescending(x => x).ThenByDescending(x => x).Contains(4));
+
+                // Where/Select
+                Assert.True(transformedSource.Where(x => x > 1).Contains(2));
+                Assert.False(transformedSource.Where(x => x > 3).Contains(2));
+                Assert.True(transformedSource.Select(x => x * 2).Contains(6));
+                Assert.False(transformedSource.Select(x => x * 2).Contains(3));
+                Assert.True(transformedSource.Where(x => x % 2 == 0).Select(x => x * 2).Contains(4));
+                Assert.False(transformedSource.Where(x => x % 2 == 0).Select(x => x * 2).Contains(6));
+
+                // SelectMany
+                Assert.True(transformedSource.SelectMany(x => new[] { x }).Contains(2));
+                Assert.True(transformedSource.SelectMany(x => new List<int> { x, x * 2 }).Contains(2));
+                Assert.False(transformedSource.SelectMany(x => new[] { x }).Contains(4));
+                Assert.True(transformedSource.SelectMany(x => new List<int> { x, x * 2 }).Contains(4));
+                Assert.False(transformedSource.SelectMany(x => new List<int> { x, x * 2 }).Contains(5));
+
+                // Shuffle
+                Assert.True(transformedSource.Shuffle().Contains(2));
+                Assert.False(transformedSource.Shuffle().Contains(4));
+                Assert.False(transformedSource.Shuffle().Take(1).Contains(4));
+                Assert.True(transformedSource.Shuffle().Take(3).Contains(2));
+                Assert.False(transformedSource.Shuffle().Take(1).Contains(4));
+                for (int trial = 0; trial < 100 && !transformedSource.Shuffle().Take(1).Contains(3); trial++)
+                {
+                    if (trial == 99)
+                    {
+                        Assert.Fail("Shuffle().Take() didn't contain value after 100 tries. The chances of that are infinitesimal with a correct implementation.");
+                    }
+                }
+
+                // Skip/Take
+                Assert.True(transformedSource.Skip(2).Contains(3));
+                Assert.True(transformedSource.Skip(2).Take(1).Contains(3));
+                Assert.True(transformedSource.Take(1).Contains(1));
+                Assert.False(transformedSource.Take(1).Contains(2));
+                Assert.False(transformedSource.Take(1).Contains(2));
+                Assert.False(transformedSource.Take(2).Contains(3));
+                Assert.False(transformedSource.Skip(1).Take(1).Contains(1));
+                Assert.True(transformedSource.Skip(1).Take(1).Contains(2));
+                Assert.False(transformedSource.Skip(1).Take(1).Contains(3));
+
+                // Union
+                Assert.True(transformedSource.Union(transform([4])).Contains(4));
+                Assert.True(transformedSource.Union(transform([4]), EqualityComparer<int>.Create((x, y) => true, x => 0)).Contains(1));
+                Assert.False(transformedSource.Union(transform([4]), EqualityComparer<int>.Create((x, y) => true, x => 0)).Contains(4));
+                Assert.False(transformedSource.Union(transform([3])).Contains(4));
+            }
+
+            // DefaultIfEmpty
+            Assert.True(Enumerable.Empty<int>().DefaultIfEmpty(1).Contains(1));
+            Assert.False(Enumerable.Empty<int>().DefaultIfEmpty(1).Contains(0));
+
+            // Distinct
+            Assert.True(new string[] { "a", "A" }.Distinct().Contains("a"));
+            Assert.True(new string[] { "a", "A" }.Distinct().Contains("A"));
+            Assert.True(new string[] { "a", "A" }.Distinct(StringComparer.OrdinalIgnoreCase).Contains("a"));
+            Assert.False(new string[] { "a", "A" }.Distinct(StringComparer.OrdinalIgnoreCase).Contains("A"));
+
+            // Repeat
+            Assert.True(Enumerable.Repeat(1, 5).Contains(1));
+            Assert.False(Enumerable.Repeat(1, 5).Contains(2));
+
+            // Cast
+            Assert.True(new int[] { 1, 2, 3 }.Cast<object>().Contains(2));
+            Assert.True(new object[] { 1, 2, 3 }.Cast<int>().Contains(2));
+            Assert.False(new object[] { 1, 2, 3 }.Cast<int>().Contains(4));
+
+            // OfType
+            Assert.True(new object[] { 1, "2", 3 }.OfType<int>().Contains(3));
+            Assert.False(new object[] { 1, "2", 3 }.OfType<int>().Contains(4));
+            Assert.False(new object[] { 1, "2", 3 }.OfType<int>().Contains(2));
+            Assert.True(new object[] { 1, "2", 3 }.OfType<string>().Contains("2"));
+            Assert.False(new object[] { 1, "2", 3 }.OfType<string>().Contains("4"));
+
+            // Union
+            Assert.True(new string[] { "a" }.Union(new string[] { "A" }).Contains("a"));
+            Assert.True(new string[] { "a" }.Union(new string[] { "A" }).Contains("A"));
+            Assert.True(new string[] { "a" }.Union(new string[] { "A" }, StringComparer.OrdinalIgnoreCase).Contains("a"));
+            Assert.False(new string[] { "a" }.Union(new string[] { "A" }, StringComparer.OrdinalIgnoreCase).Contains("A"));
         }
     }
 }

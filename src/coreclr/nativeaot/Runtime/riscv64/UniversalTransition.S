@@ -12,15 +12,12 @@
     .global RhpFpTrashValues
 #endif // TRASH_SAVED_ARGUMENT_REGISTERS
 
-// Padding to account for the odd number of saved integer registers
-#define ALIGNMENT_PADDING_SIZE (8)
-
 #define COUNT_ARG_REGISTERS (8)
 #define INTEGER_REGISTER_SIZE (8)
 #define ARGUMENT_REGISTERS_SIZE (COUNT_ARG_REGISTERS * INTEGER_REGISTER_SIZE)
 
 // Largest return block is 4 doubles
-#define RETURN_BLOCK_SIZE (32)
+#define RETURN_BLOCK_SIZE 16
 
 #define COUNT_FLOAT_ARG_REGISTERS (8)
 #define FLOAT_REGISTER_SIZE (8)
@@ -31,7 +28,6 @@
 
 // From CallerSP to ChildSP, the stack frame is composed of the following adjacent regions:
 //
-//      ALIGNMENT_PADDING_SIZE
 //      ARGUMENT_REGISTERS_SIZE
 //      RETURN_BLOCK_SIZE
 //      FLOAT_ARG_REGISTERS_SIZE
@@ -41,7 +37,7 @@
 
 #define DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK (PUSHED_FP_SIZE + PUSHED_RA_SIZE + FLOAT_ARG_REGISTERS_SIZE)
 
-#define STACK_SIZE (ALIGNMENT_PADDING_SIZE + ARGUMENT_REGISTERS_SIZE + RETURN_BLOCK_SIZE + FLOAT_ARG_REGISTERS_SIZE + PUSHED_RA_SIZE + PUSHED_FP_SIZE)
+#define STACK_SIZE (ARGUMENT_REGISTERS_SIZE + RETURN_BLOCK_SIZE + FLOAT_ARG_REGISTERS_SIZE + PUSHED_RA_SIZE + PUSHED_FP_SIZE)
 
 #define FLOAT_ARG_OFFSET (PUSHED_FP_SIZE + PUSHED_RA_SIZE)
 #define ARGUMENT_REGISTERS_OFFSET (FLOAT_ARG_OFFSET + FLOAT_ARG_REGISTERS_SIZE + RETURN_BLOCK_SIZE)
@@ -63,9 +59,8 @@
 // Frame layout is:
 //
 //  {StackPassedArgs}                           ChildSP+100     CallerSP+000
-//  {AlignmentPad (0x8 bytes)}                  ChildSP+0F8     CallerSP-008
 //  {IntArgRegs (a0-a7) (0x40 bytes)}           ChildSP+0B8     CallerSP-048
-//  {ReturnBlock (0x20 bytes)}                  ChildSP+098     CallerSP-068
+//  {ReturnBlock (0x10 bytes)}                  ChildSP+098     CallerSP-068
 //   -- The base address of the Return block is the TransitionBlock pointer, the floating point args are
 //      in the neg space of the TransitionBlock pointer.  Note that the callee has knowledge of the exact
 //      layout of all pieces of the frame that lie at or above the pushed floating point registers.
@@ -91,9 +86,7 @@
     NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
 
         # FP and RA registers
-        addi        sp, sp, -STACK_SIZE
-        sd          s0, 0x0(sp)       # Save frame pointer
-        sd          ra, 0x08(sp)      # Save return address
+        PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, STACK_SIZE
 
         # Floating point registers
         fsd         fa0, FLOAT_ARG_OFFSET(sp)
@@ -105,7 +98,7 @@
         fsd         fa6, FLOAT_ARG_OFFSET + 0x30(sp)
         fsd         fa7, FLOAT_ARG_OFFSET + 0x38(sp)
 
-        # Space for return buffer data (0x40 bytes)
+        # Space for return block data (0x10 bytes)
 
         # Save argument registers
         sd          a0, ARGUMENT_REGISTERS_OFFSET(sp)

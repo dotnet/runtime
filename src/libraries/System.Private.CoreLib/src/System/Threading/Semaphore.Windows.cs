@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -12,42 +11,137 @@ namespace System.Threading
     {
         private const uint AccessRights = (uint)Interop.Kernel32.MAXIMUM_ALLOWED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.SEMAPHORE_MODIFY_STATE;
 
+#if TARGET_WINDOWS
+        // Can't use MAXIMUM_ALLOWED in an access control entry (ACE)
+        private const int CurrentUserOnlyAceRights =
+            Interop.Kernel32.STANDARD_RIGHTS_REQUIRED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.SEMAPHORE_MODIFY_STATE;
+#endif
+
         private Semaphore(SafeWaitHandle handle)
         {
             SafeWaitHandle = handle;
         }
 
-        private void CreateSemaphoreCore(int initialCount, int maximumCount, string? name, out bool createdNew)
+        private void CreateSemaphoreCore(int initialCount, int maximumCount)
         {
-            Debug.Assert(initialCount >= 0);
-            Debug.Assert(maximumCount >= 1);
-            Debug.Assert(initialCount <= maximumCount);
+            ValidateArguments(initialCount, maximumCount);
 
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
-            if (name != null)
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
-#endif
-            SafeWaitHandle myHandle = Interop.Kernel32.CreateSemaphoreEx(IntPtr.Zero, initialCount, maximumCount, name, 0, AccessRights);
-
-            int errorCode = Marshal.GetLastPInvokeError();
-            if (myHandle.IsInvalid)
+            SafeWaitHandle handle =
+                Interop.Kernel32.CreateSemaphoreEx(
+                    lpSecurityAttributes: 0,
+                    initialCount,
+                    maximumCount,
+                    name: null,
+                    flags: 0,
+                    AccessRights);
+            if (handle.IsInvalid)
             {
-                myHandle.Dispose();
-
-                if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
-                    throw new WaitHandleCannotBeOpenedException(
-                        SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
-
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
+                handle.SetHandleAsInvalid();
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
+
+            SafeWaitHandle = handle;
+        }
+
+        private unsafe void CreateSemaphoreCore(
+            int initialCount,
+            int maximumCount,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew)
+        {
+            ValidateArguments(initialCount, maximumCount);
+
+#if !TARGET_WINDOWS
+            if (name != null)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
+            }
+#endif
+
+            void* securityAttributesPtr = null;
+            SafeWaitHandle myHandle;
+            int errorCode;
+#if TARGET_WINDOWS
+            Thread.CurrentUserSecurityDescriptorInfo securityDescriptorInfo = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+            if (!string.IsNullOrEmpty(name) && options.WasSpecified)
+            {
+                name = options.GetNameWithSessionPrefix(name);
+                if (options.CurrentUserOnly)
+                {
+                    securityDescriptorInfo = new(CurrentUserOnlyAceRights);
+                    securityAttributes.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
+                    securityAttributes.lpSecurityDescriptor = (void*)securityDescriptorInfo.SecurityDescriptor;
+                    securityAttributesPtr = &securityAttributes;
+                }
+            }
+
+            using (securityDescriptorInfo)
+            {
+#endif
+                myHandle =
+                    Interop.Kernel32.CreateSemaphoreEx(
+                        (nint)securityAttributesPtr,
+                        initialCount,
+                        maximumCount,
+                        name,
+                        flags: 0,
+                        AccessRights);
+                errorCode = Marshal.GetLastPInvokeError();
+
+                if (myHandle.IsInvalid)
+                {
+                    myHandle.SetHandleAsInvalid();
+
+                    if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
+                    {
+                        throw new WaitHandleCannotBeOpenedException(
+                            SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
+                    }
+
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+                }
+#if TARGET_WINDOWS
+
+                if (errorCode == Interop.Errors.ERROR_ALREADY_EXISTS && securityAttributesPtr != null)
+                {
+                    try
+                    {
+                        if (!Thread.CurrentUserSecurityDescriptorInfo.IsSecurityDescriptorCompatible(
+                                securityDescriptorInfo.TokenUser,
+                                myHandle,
+                                Interop.Kernel32.SEMAPHORE_MODIFY_STATE))
+                        {
+                            throw new WaitHandleCannotBeOpenedException(SR.Format(SR.NamedWaitHandles_ExistingObjectIncompatibleWithCurrentUserOnly, name));
+                        }
+                    }
+                    catch
+                    {
+                        myHandle.Dispose();
+                        throw;
+                    }
+                }
+            }
+#endif
+
             createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
             this.SafeWaitHandle = myHandle;
         }
 
-        private static OpenExistingResult OpenExistingWorker(string name, out Semaphore? result)
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out Semaphore? result)
         {
 #if TARGET_WINDOWS
             ArgumentException.ThrowIfNullOrEmpty(name);
+
+            if (options.WasSpecified)
+            {
+                name = options.GetNameWithSessionPrefix(name);
+            }
 
             // Pass false to OpenSemaphore to prevent inheritedHandles
             SafeWaitHandle myHandle = Interop.Kernel32.OpenSemaphore(AccessRights, false, name);
@@ -65,8 +159,29 @@ namespace System.Threading
                     return OpenExistingResult.PathNotFound;
                 if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     return OpenExistingResult.NameInvalid;
+
                 // this is for passed through NativeMethods Errors
                 throw Win32Marshal.GetExceptionForLastWin32Error();
+            }
+
+            if (options.WasSpecified && options.CurrentUserOnly)
+            {
+                try
+                {
+                    if (!Thread.CurrentUserSecurityDescriptorInfo.IsValidSecurityDescriptor(
+                            myHandle,
+                            Interop.Kernel32.SEMAPHORE_MODIFY_STATE))
+                    {
+                        myHandle.Dispose();
+                        result = null;
+                        return OpenExistingResult.ObjectIncompatibleWithCurrentUserOnly;
+                    }
+                }
+                catch
+                {
+                    myHandle.Dispose();
+                    throw;
+                }
             }
 
             result = new Semaphore(myHandle);

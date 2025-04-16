@@ -37,10 +37,9 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 HashSet<TSource> set;
-                IAsyncEnumerator<TSource> e = second.GetAsyncEnumerator(cancellationToken);
-                try
+                await using (IAsyncEnumerator<TSource> e = second.GetAsyncEnumerator(cancellationToken))
                 {
-                    if (!await e.MoveNextAsync().ConfigureAwait(false))
+                    if (!await e.MoveNextAsync())
                     {
                         yield break;
                     }
@@ -50,14 +49,10 @@ namespace System.Linq
                     {
                         set.Add(e.Current);
                     }
-                    while (await e.MoveNextAsync().ConfigureAwait(false));
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    while (await e.MoveNextAsync());
                 }
 
-                await foreach (TSource element in first.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in first.WithCancellation(cancellationToken))
                 {
                     if (set.Remove(element))
                     {

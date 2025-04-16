@@ -14,6 +14,6 @@
 
     DEFINITIONS IMPLICIT TAGS, so [0] is [0] IMPLICIT
   -->
-  <asn:AsnType name="IssuerAndSerialNumber" typeName="System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn" />
+  <asn:AsnType name="IssuerAndSerialNumber" typeName="System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn" />
   <asn:OctetString name="SubjectKeyIdentifier" implicitTag="0" />
 </asn:Choice>

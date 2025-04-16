@@ -52,28 +52,20 @@ namespace System.Text.Json.Serialization.Metadata
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong GetKey(ReadOnlySpan<byte> name)
         {
-            ref byte reference = ref MemoryMarshal.GetReference(name);
             int length = name.Length;
             ulong key = (ulong)(byte)length << 56;
-
-            switch (length)
+            key |= length switch
             {
-                case 0: goto ComputedKey;
-                case 1: goto OddLength;
-                case 2: key |= Unsafe.ReadUnaligned<ushort>(ref reference); goto ComputedKey;
-                case 3: key |= Unsafe.ReadUnaligned<ushort>(ref reference); goto OddLength;
-                case 4: key |= Unsafe.ReadUnaligned<uint>(ref reference); goto ComputedKey;
-                case 5: key |= Unsafe.ReadUnaligned<uint>(ref reference); goto OddLength;
-                case 6: key |= Unsafe.ReadUnaligned<uint>(ref reference) | (ulong)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref reference, 4)) << 32; goto ComputedKey;
-                case 7: key |= Unsafe.ReadUnaligned<uint>(ref reference) | (ulong)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref reference, 4)) << 32; goto OddLength;
-                default: key |= Unsafe.ReadUnaligned<ulong>(ref reference) & 0x00ffffffffffffffL; goto ComputedKey;
-            }
-
-        OddLength:
-            int offset = length - 1;
-            key |= (ulong)Unsafe.Add(ref reference, offset) << (offset * 8);
-
-        ComputedKey:
+                0 => 0,
+                1 => name[0],
+                2 => MemoryMarshal.Read<ushort>(name),
+                3 => MemoryMarshal.Read<ushort>(name) | ((ulong)name[2] << 16),
+                4 => MemoryMarshal.Read<uint>(name),
+                5 => MemoryMarshal.Read<uint>(name) | ((ulong)name[4] << 32),
+                6 => MemoryMarshal.Read<uint>(name) | ((ulong)MemoryMarshal.Read<ushort>(name.Slice(4, 2)) << 32),
+                7 => MemoryMarshal.Read<uint>(name) | ((ulong)MemoryMarshal.Read<ushort>(name.Slice(4, 2)) << 32) | ((ulong)name[6] << 48),
+                _ => MemoryMarshal.Read<ulong>(name) & 0x00ffffffffffffffUL
+            };
 #if DEBUG
             // Verify key contains the embedded bytes as expected.
             // Note: the expected properties do not hold true on big-endian platforms

@@ -1411,23 +1411,23 @@ namespace System
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override Type MakeGenericType(Type[] instantiation)
+        public override Type MakeGenericType(Type[] typeArguments)
         {
-            ArgumentNullException.ThrowIfNull(instantiation);
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
-            RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
+            RuntimeType[] instantiationRuntimeType = new RuntimeType[typeArguments.Length];
 
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
             RuntimeType[] genericParameters = GetGenericArgumentsInternal();
 
-            if (genericParameters.Length != instantiation.Length)
-                throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(instantiation));
+            if (genericParameters.Length != typeArguments.Length)
+                throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(typeArguments));
 
-            for (int i = 0; i < instantiation.Length; i++)
+            for (int i = 0; i < typeArguments.Length; i++)
             {
-                Type instantiationElem = instantiation[i];
+                Type instantiationElem = typeArguments[i];
                 if (instantiationElem == null)
                     throw new ArgumentNullException();
 
@@ -1436,14 +1436,14 @@ namespace System
                 if (rtInstantiationElem == null)
                 {
                     if (instantiationElem.IsSignatureType)
-                        return MakeGenericSignatureType(this, instantiation);
-                    Type[] instantiationCopy = new Type[instantiation.Length];
-                    for (int iCopy = 0; iCopy < instantiation.Length; iCopy++)
-                        instantiationCopy[iCopy] = instantiation[iCopy];
-                    instantiation = instantiationCopy;
+                        return MakeGenericSignatureType(this, typeArguments);
+                    Type[] instantiationCopy = new Type[typeArguments.Length];
+                    for (int iCopy = 0; iCopy < typeArguments.Length; iCopy++)
+                        instantiationCopy[iCopy] = typeArguments[iCopy];
+                    typeArguments = instantiationCopy;
                     if (!RuntimeFeature.IsDynamicCodeSupported)
                         throw new PlatformNotSupportedException();
-                    return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, instantiation);
+                    return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
                 }
 
                 instantiationRuntimeType[i] = rtInstantiationElem;

@@ -3,8 +3,10 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -13,6 +15,15 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
 {
     private readonly TargetPointer _address;
     private readonly Target _target;
+
+    private bool _extentsSet;
+    private CLRDataModuleExtent[] _extents = new CLRDataModuleExtent[2];
+
+#if DEBUG
+    private ulong legacyExtentHandle;
+#endif
+
+
     private readonly IXCLRDataModule? _legacyModule;
     private readonly IXCLRDataModule2? _legacyModule2;
 
@@ -164,20 +175,238 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
     }
 
     int IXCLRDataModule.GetFlags(uint* flags)
-        => _legacyModule is not null ? _legacyModule.GetFlags(flags) : HResults.E_NOTIMPL;
+    {
+        *flags = 0;
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(_address);
+
+            ModuleFlags moduleFlags = contract.GetFlags(handle);
+            if ((moduleFlags & ModuleFlags.EditAndContinue) != 0)
+            {
+                *flags |= 0x1; // CLRDATA_MODULE_IS_DYNAMIC
+            }
+
+            if (contract.GetAssembly(handle) == contract.GetRootAssembly())
+            {
+
+                *flags |= 0x4; // CLRDATA_MODULE_FLAGS_ROOT_ASSEMBLY
+            }
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            uint flagsLocal;
+            int hrLocal = _legacyModule.GetFlags(&flagsLocal);
+            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK}, DAC: {hrLocal}");
+            Debug.Assert(flagsLocal == *flags, $"cDAC: {*flags}, DAC: {flagsLocal}");
+        }
+#endif
+
+        return HResults.S_OK;
+    }
 
     int IXCLRDataModule.IsSameObject(IXCLRDataModule* mod)
         => _legacyModule is not null ? _legacyModule.IsSameObject(mod) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumExtents(ulong* handle)
-        => _legacyModule is not null ? _legacyModule.StartEnumExtents(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (!_extentsSet)
+            {
+                Contracts.ILoader contract = _target.Contracts.Loader;
+                Contracts.ModuleHandle moduleHandle = contract.GetModuleHandle(_address);
+
+                TargetPointer peAssembly = contract.GetPEAssembly(moduleHandle);
+                if (peAssembly == 0)
+                {
+                    *handle = 0;
+                    hr = HResults.E_INVALIDARG;
+                }
+                else
+                {
+                    if (contract.TryGetLoadedImageContents(moduleHandle, out TargetPointer baseAddress, out uint size, out _))
+                    {
+                        _extents[0].baseAddress = baseAddress;
+                        _extents[0].length = size;
+                        _extents[0].type = 0x0; // CLRDATA_MODULE_PE_FILE
+                    }
+                    _extentsSet = true;
+                }
+
+                *handle = 1;
+                hr = _extents[0].baseAddress != 0 ? HResults.S_OK : HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            ulong handleLocal = 0;
+            int hrLocal = _legacyModule.StartEnumExtents(&handleLocal);
+            legacyExtentHandle = handleLocal;
+            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK}, DAC: {hrLocal}");
+        }
+#endif
+
+        return hr;
+    }
     int IXCLRDataModule.EnumExtent(ulong* handle, /*CLRDATA_MODULE_EXTENT*/ void* extent)
-        => _legacyModule is not null ? _legacyModule.EnumExtent(handle, extent) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle moduleHandle = contract.GetModuleHandle(_address);
+
+            if (!_extentsSet)
+            {
+                hr = HResults.E_INVALIDARG;
+            }
+            else if (*handle == 1)
+            {
+                *handle += 1;
+                CLRDataModuleExtent* dataModuleExtent = (CLRDataModuleExtent*)extent;
+                dataModuleExtent->baseAddress = _extents[0].baseAddress;
+                dataModuleExtent->length = _extents[0].length;
+                dataModuleExtent->type = _extents[0].type;
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            ulong handleLocal = legacyExtentHandle;
+            CLRDataModuleExtent dataModuleExtentLocal = default;
+            int hrLocal = _legacyModule.EnumExtent(&handleLocal, &dataModuleExtentLocal);
+            legacyExtentHandle = handleLocal;
+            Debug.Assert(hr == hrLocal, $"cDAC: {hr}, DAC: {hrLocal}");
+            CLRDataModuleExtent* dataModuleExtent = (CLRDataModuleExtent*)extent;
+            Debug.Assert(dataModuleExtent->baseAddress == dataModuleExtentLocal.baseAddress, $"cDAC: {dataModuleExtent->baseAddress}, DAC: {dataModuleExtentLocal.baseAddress}");
+            Debug.Assert(dataModuleExtent->length == dataModuleExtentLocal.length, $"cDAC: {dataModuleExtent->length}, DAC: {dataModuleExtentLocal.length}");
+            Debug.Assert(dataModuleExtent->type == dataModuleExtentLocal.type, $"cDAC: {dataModuleExtent->type}, DAC: {dataModuleExtentLocal.type}");
+        }
+#endif
+
+        return hr;
+    }
     int IXCLRDataModule.EndEnumExtents(ulong handle)
-        => _legacyModule is not null ? _legacyModule.EndEnumExtents(handle) : HResults.E_NOTIMPL;
+    {
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            int hrLocal = _legacyModule.EndEnumExtents(handle);
+            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK}, DAC: {hrLocal}");
+        }
+#endif
+
+        return HResults.S_OK;
+    }
 
     int IXCLRDataModule.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => _legacyModule is not null ? _legacyModule.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+    {
+        return reqCode switch
+        {
+            0xf0000001 /*DACDATAMODULEPRIV_REQUEST_GET_MODULEDATA*/ => DacPrivateRequestGetModuleData(inBufferSize, inBuffer, outBufferSize, outBuffer),
+            _ => _legacyModule is not null ? _legacyModule.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL
+        };
+    }
+
+    private int DacPrivateRequestGetModuleData(uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
+    {
+        // Validate params.
+        // Input: Nothing.
+        // Output: a DacpGetModuleData structure.
+        if (inBufferSize != 0 || inBuffer != null || outBufferSize != sizeof(DacpGetModuleData) || outBuffer == null)
+            return HResults.E_INVALIDARG;
+
+        // Cast outbuffer to DacpGetModuleData and zero it out
+        DacpGetModuleData* getModuleData = (DacpGetModuleData*)outBuffer;
+        Unsafe.InitBlock(getModuleData, 0, (uint)sizeof(DacpGetModuleData));
+
+        Contracts.ILoader contract = _target.Contracts.Loader;
+        Contracts.ModuleHandle moduleHandle = contract.GetModuleHandle(_address);
+        TargetPointer peAssembly = contract.GetPEAssembly(moduleHandle);
+
+        bool isReflectionEmit = (contract.GetFlags(moduleHandle) & ModuleFlags.ReflectionEmit) != 0;
+
+        getModuleData->PEAssembly = _address;
+        getModuleData->IsDynamic = isReflectionEmit ? 1u : 0u;
+
+        if (peAssembly != TargetPointer.Null)
+        {
+            // If isReflectionEmit or ProbeExtension is valid, the path is not valid.
+            if (isReflectionEmit || contract.IsProbeExtensionResultValid(moduleHandle))
+            {
+                getModuleData->IsInMemory = 1u;
+            }
+            else
+            {
+                getModuleData->IsInMemory = contract.GetPath(moduleHandle).Length == 0 ? 1u : 0u;
+            }
+
+            contract.TryGetLoadedImageContents(moduleHandle, out TargetPointer baseAddress, out uint size, out uint flags);
+            getModuleData->LoadedPEAddress = baseAddress;
+            getModuleData->LoadedPESize = size;
+
+            // Can not get the assembly layout for a dynamic module
+            if (getModuleData->IsDynamic == 0u)
+            {
+                getModuleData->IsFileLayout = ((flags & /*FLAG_CONTENTS*/0x2) != 0) && !((flags & /*FLAG_MAPPED*/0x1) != 0) ? 1u : 0u; // HasContents && !IsMapped
+            }
+        }
+
+        if (contract.TryGetSymbolStream(moduleHandle, out TargetPointer symbolBuffer, out uint symbolBufferSize))
+        {
+            getModuleData->InMemoryPdbAddress = symbolBuffer;
+            getModuleData->InMemoryPdbSize = symbolBufferSize;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            DacpGetModuleData getModuleDataLocal = default;
+            int hrLocal = _legacyModule.Request(
+                0xf0000001 /*DACDATAMODULEPRIV_REQUEST_GET_MODULEDATA*/,
+                0,
+                null,
+                (uint)sizeof(DacpGetModuleData),
+                (byte*)&getModuleDataLocal);
+            Debug.Assert(HResults.S_OK == hrLocal, $"cDAC: {HResults.S_OK}, DAC: {hrLocal}");
+
+            Debug.Assert(getModuleDataLocal.IsDynamic == getModuleData->IsDynamic, $"cDAC: {getModuleData->IsDynamic}, DAC: {getModuleDataLocal.IsDynamic}");
+            Debug.Assert(getModuleDataLocal.IsInMemory == getModuleData->IsInMemory, $"cDAC: {getModuleData->IsInMemory}, DAC: {getModuleDataLocal.IsInMemory}");
+            Debug.Assert(getModuleDataLocal.IsFileLayout == getModuleData->IsFileLayout, $"cDAC: {getModuleData->IsFileLayout}, DAC: {getModuleDataLocal.IsFileLayout}");
+            Debug.Assert(getModuleDataLocal.PEAssembly == getModuleData->PEAssembly, $"cDAC: {getModuleData->PEAssembly}, DAC: {getModuleDataLocal.PEAssembly}");
+            Debug.Assert(getModuleDataLocal.LoadedPEAddress == getModuleData->LoadedPEAddress, $"cDAC: {getModuleData->LoadedPEAddress}, DAC: {getModuleDataLocal.LoadedPEAddress}");
+            Debug.Assert(getModuleDataLocal.LoadedPESize == getModuleData->LoadedPESize, $"cDAC: {getModuleData->LoadedPESize}, DAC: {getModuleDataLocal.LoadedPESize}");
+            Debug.Assert(getModuleDataLocal.InMemoryPdbAddress == getModuleData->InMemoryPdbAddress, $"cDAC: {getModuleData->InMemoryPdbAddress}, DAC: {getModuleDataLocal.InMemoryPdbAddress}");
+            Debug.Assert(getModuleDataLocal.InMemoryPdbSize == getModuleData->InMemoryPdbSize, $"cDAC: {getModuleData->InMemoryPdbSize}, DAC: {getModuleDataLocal.InMemoryPdbSize}");
+        }
+#endif
+
+        return HResults.S_OK;
+    }
 
     int IXCLRDataModule.StartEnumAppDomains(ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;

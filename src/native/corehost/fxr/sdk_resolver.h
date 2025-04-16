@@ -41,7 +41,9 @@ public:
 
     const fx_ver_t& get_requested_version() const;
 
-    pal::string_t resolve(const pal::string_t& dotnet_root, bool print_errors = true) const;
+    pal::string_t resolve(const pal::string_t& dotnet_root, bool print_errors = true, pal::string_t* out_resolved_root = nullptr) const;
+
+    std::vector<pal::string_t> get_search_paths(const pal::string_t& dotnet_root) const;
 
     void print_resolution_error(const pal::string_t& dotnet_root, const pal::char_t *prefix) const;
 
@@ -60,10 +62,15 @@ private:
     bool is_better_match(const fx_ver_t& current, const fx_ver_t& previous) const;
     bool exact_match_preferred() const;
     bool is_policy_use_latest() const;
+
+    // Returns true and sets sdk_path/resolved_version if a matching SDK was found
     bool resolve_sdk_path_and_version(const pal::string_t& dir, pal::string_t& sdk_path, fx_ver_t& resolved_version) const;
 
     pal::string_t global_file;
     fx_ver_t requested_version;
     sdk_roll_forward_policy roll_forward;
     bool allow_prerelease;
+    bool has_custom_paths;
+    std::vector<pal::string_t> paths;
+    pal::string_t error_message;
 };

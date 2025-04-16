@@ -22,6 +22,7 @@ namespace System.Runtime.CompilerServices.Tests
             AssertExtensions.Throws<ArgumentNullException>("key", () => cwt.Add(null, new object())); // null key
             AssertExtensions.Throws<ArgumentNullException>("key", () => cwt.TryGetValue(null, out ignored)); // null key
             AssertExtensions.Throws<ArgumentNullException>("key", () => cwt.Remove(null)); // null key
+            AssertExtensions.Throws<ArgumentNullException>("key", () => cwt.Remove(null, out _)); // null key
             AssertExtensions.Throws<ArgumentNullException>("key", () => cwt.GetOrAdd(null, new object())); // null key
             AssertExtensions.Throws<ArgumentNullException>("key", () => cwt.GetOrAdd(null, k => new object())); // null key
             AssertExtensions.Throws<ArgumentNullException>("key", () => cwt.GetOrAdd(null, (k, a) => new object(), 42)); // null key
@@ -172,6 +173,39 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public static void AddMany_ThenRemoveAll_ValidateRemovedValue(int numObjects)
+        {
+            object[] keys = Enumerable.Range(0, numObjects).Select(_ => new object()).ToArray();
+            object[] values = Enumerable.Range(0, numObjects).Select(_ => new object()).ToArray();
+            var cwt = new ConditionalWeakTable<object, object>();
+
+            for (int i = 0; i < numObjects; i++)
+            {
+                cwt.Add(keys[i], values[i]);
+            }
+
+            for (int i = 0; i < numObjects; i++)
+            {
+                Assert.Same(values[i], cwt.GetValue(keys[i], _ => new object()));
+            }
+
+            for (int i = 0; i < numObjects; i++)
+            {
+                Assert.True(cwt.Remove(keys[i], out var value));
+                Assert.False(cwt.Remove(keys[i], out _));
+                Assert.Same(values[i], value);
+            }
+
+            for (int i = 0; i < numObjects; i++)
+            {
+                object ignored;
+                Assert.False(cwt.TryGetValue(keys[i], out ignored));
+            }
+        }
+
+        [Theory]
         [InlineData(100)]
         public static void AddRemoveIteratively(int numObjects)
         {
@@ -185,6 +219,24 @@ namespace System.Runtime.CompilerServices.Tests
                 Assert.Same(values[i], cwt.GetValue(keys[i], _ => new object()));
                 Assert.True(cwt.Remove(keys[i]));
                 Assert.False(cwt.Remove(keys[i]));
+            }
+        }
+
+        [Theory]
+        [InlineData(100)]
+        public static void AddRemoveIteratively_ValidateRemovedValue(int numObjects)
+        {
+            object[] keys = Enumerable.Range(0, numObjects).Select(_ => new object()).ToArray();
+            object[] values = Enumerable.Range(0, numObjects).Select(_ => new object()).ToArray();
+            var cwt = new ConditionalWeakTable<object, object>();
+
+            for (int i = 0; i < numObjects; i++)
+            {
+                cwt.Add(keys[i], values[i]);
+                Assert.Same(values[i], cwt.GetValue(keys[i], _ => new object()));
+                Assert.True(cwt.Remove(keys[i], out var value));
+                Assert.False(cwt.Remove(keys[i], out _));
+                Assert.Same(values[i], value);
             }
         }
 
@@ -214,6 +266,26 @@ namespace System.Runtime.CompilerServices.Tests
                     Assert.Same(value, cwt.GetValue(key, _ => new object()));
                     Assert.True(cwt.Remove(key));
                     Assert.False(cwt.Remove(key));
+                }
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void Concurrent_Add_Read_Remove_ValidateRemovedValue_DifferentObjects()
+        {
+            var cwt = new ConditionalWeakTable<object, object>();
+            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.25);
+            Parallel.For(0, Environment.ProcessorCount, i =>
+            {
+                while (DateTime.UtcNow < end)
+                {
+                    object key = new object();
+                    object value = new object();
+                    cwt.Add(key, value);
+                    Assert.Same(value, cwt.GetValue(key, _ => new object()));
+                    Assert.True(cwt.Remove(key, out var removedValue));
+                    Assert.False(cwt.Remove(key, out _));
+                    Assert.Same(value, removedValue);
                 }
             });
         }

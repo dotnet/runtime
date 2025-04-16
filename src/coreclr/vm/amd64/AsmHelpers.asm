@@ -497,4 +497,14 @@ NESTED_ENTRY InterpreterStub, _TEXT
 NESTED_END InterpreterStub, _TEXT
 endif ; FEATURE_INTERPRETER
 
+; rcx -This pointer
+; rdx -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    mov  METHODDESC_REGISTER, [METHODDESC_REGISTER + ThisPtrRetBufPrecodeData__Target]
+    mov r11, rcx
+    mov rcx, rdx
+    mov rdx, r11
+    jmp METHODDESC_REGISTER
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
         end

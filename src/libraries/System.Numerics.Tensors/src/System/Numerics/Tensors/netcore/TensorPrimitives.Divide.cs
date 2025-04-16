@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
@@ -70,7 +69,8 @@ namespace System.Numerics.Tensors
         internal readonly struct DivideOperator<T> : IBinaryOperator<T> where T : IDivisionOperators<T, T, T>
         {
             public static bool Vectorizable => typeof(T) == typeof(float)
-                                            || typeof(T) == typeof(double);
+                                            || typeof(T) == typeof(double)
+                                            || (Vector256.IsHardwareAccelerated && typeof(T) == typeof(int));
             public static T Invoke(T x, T y) => x / y;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x / y;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x / y;

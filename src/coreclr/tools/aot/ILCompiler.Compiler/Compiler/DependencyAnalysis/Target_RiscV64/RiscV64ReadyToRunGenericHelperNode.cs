@@ -47,8 +47,7 @@ namespace ILCompiler.DependencyAnalysis
             // should be reported by someone else - the system should not rely on it coming from here.
             if (!relocsOnly && _hasInvalidEntries)
             {
-                encoder.EmitXORI(encoder.TargetRegister.IntraProcedureCallScratch1, result, 0);
-                encoder.EmitJALR(Register.X0, encoder.TargetRegister.IntraProcedureCallScratch1, 0);
+                encoder.EmitJMPIfZero(result, GetBadSlotHelper(factory));
             }
         }
 
@@ -76,6 +75,7 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitADDI(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, 0);
+                            encoder.EmitFENCE_R_RW();
                             encoder.EmitRETIfZero(encoder.TargetRegister.Arg2);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
@@ -107,6 +107,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             encoder.EmitADDI(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
+                            encoder.EmitFENCE_R_RW();
                             encoder.EmitRETIfZero(encoder.TargetRegister.Arg3);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);

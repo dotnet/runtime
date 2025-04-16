@@ -11,7 +11,6 @@ using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.DotNet.CoreSetup;
 using Microsoft.NET.HostModel.AppHost;
 using Microsoft.NET.HostModel.MachO;
 
@@ -345,18 +344,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 _tracer.Log($"Bundle: Path={bundlePath}, Size={bundle.Length}");
             }
 
-            HostWriter.SetAsBundle(bundlePath, headerOffset);
-
-            // Sign the bundle if requested
-            // TODO: use managed code signing
-            if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && Codesign.IsAvailable)
-            {
-                var (exitCode, stdErr) = Codesign.Run("-s -", bundlePath);
-                if (exitCode != 0)
-                {
-                    throw new InvalidOperationException($"Failed to codesign '{bundlePath}': {stdErr}");
-                }
-            }
+            HostWriter.SetAsBundle(bundlePath, headerOffset, _macosCodesign);
 
             return bundlePath;
         }

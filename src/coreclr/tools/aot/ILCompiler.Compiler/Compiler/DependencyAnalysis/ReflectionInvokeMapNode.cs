@@ -55,9 +55,9 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
 
                 var signature = method.Signature;
-                AddSignatureDependency(ref dependencies, factory, signature.ReturnType, "Reflection invoke");
+                AddSignatureDependency(ref dependencies, factory, method, signature.ReturnType, "Reflection invoke", isOut: true);
                 foreach (var parameterType in signature)
-                    AddSignatureDependency(ref dependencies, factory, parameterType, "Reflection invoke");
+                    AddSignatureDependency(ref dependencies, factory, method, parameterType, "Reflection invoke", isOut: false);
             }
 
             if (method.OwningType.IsValueType && !method.Signature.IsStatic)
@@ -68,38 +68,24 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.AddressTakenMethodEntrypoint(method), "Body of a reflectable method");
             }
 
-            // If the method is defined in a different module than this one, a metadata token isn't known for performing the reference
-            // Use a name/sig reference instead.
-            if (!factory.MetadataManager.WillUseMetadataTokenToReferenceMethod(method))
-            {
-                dependencies.Add(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition())),
-                    "Non metadata-local method reference");
-            }
-
             if (method.HasInstantiation)
             {
-                if (method.IsCanonicalMethod(CanonicalFormKind.Any))
+                foreach (var instArg in method.Instantiation)
                 {
-                    dependencies.Add(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition())),
-                        "Signature of canonical method");
-                }
-
-                if (!method.IsCanonicalMethod(CanonicalFormKind.Universal))
-                {
-                    foreach (var instArg in method.Instantiation)
-                    {
-                        dependencies.Add(factory.NecessaryTypeSymbol(instArg), "Reflectable generic method inst arg");
-                    }
+                    dependencies.Add(factory.NecessaryTypeSymbol(instArg), "Reflectable generic method inst arg");
                 }
             }
 
             ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(ref dependencies, factory, method);
         }
 
-        internal static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, string reason)
+        internal static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeSystemEntity referent, TypeDesc type, string reason, bool isOut)
         {
             if (type.IsByRef)
+            {
                 type = ((ParameterizedType)type).ParameterType;
+                isOut = true;
+            }
 
             // Pointer runtime type handles can be created at runtime if necessary
             while (type.IsPointer)
@@ -109,16 +95,26 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsPrimitive || type.IsVoid)
                 return;
 
-            // Reflection doesn't need the ability to generate MethodTables out of thin air for reference types.
-            // Skip generating the dependencies.
-            if (type.IsGCPointer)
-                return;
+            try
+            {
+                factory.TypeSystemContext.DetectGenericCycles(type, referent);
 
-            TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-            if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, canonType);
-            else
-                dependencies.Add(factory.MaximallyConstructableType(type), reason);
+                // Reflection might need to create boxed instances of valuetypes as part of reflection invocation.
+                // Non-valuetypes are only needed for the purposes of casting/type checks.
+                // If this is a non-exact type, we need the type loader template to get the type handle.
+                if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.NormalizeInstantiation());
+                else if (isOut && !type.IsGCPointer)
+                    dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
+                else
+                    dependencies.Add(factory.NecessaryTypeSymbol(type.NormalizeInstantiation()), reason);
+            }
+            catch (TypeSystemException)
+            {
+                // It's fine to continue compiling if there's a problem getting these. There's going to be a MissingMetadata
+                // exception when actually trying to invoke this and the exception will be different than the one we'd get with
+                // a JIT, but that's fine, we don't need to be bug-for-bug compatible.
+            }
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -167,14 +163,8 @@ namespace ILCompiler.DependencyAnalysis
                 if (!method.IsAbstract)
                     flags |= InvokeTableFlags.HasEntrypoint;
 
-                if (mappingEntry.MetadataHandle != 0)
-                    flags |= InvokeTableFlags.HasMetadataHandle;
-
                 if (!factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
                     flags |= InvokeTableFlags.NeedsParameterInterpretation;
-
-                if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
-                    flags |= InvokeTableFlags.IsUniversalCanonicalEntry;
 
                 // TODO: native signature for P/Invokes and UnmanagedCallersOnly methods
                 if (method.IsRawPInvoke() || method.IsUnmanagedCallersOnly)
@@ -185,17 +175,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 Vertex vertex = writer.GetUnsignedConstant((uint)flags);
 
-                if ((flags & InvokeTableFlags.HasMetadataHandle) != 0)
-                {
-                    // Only store the offset portion of the metadata handle to get better integer compression
-                    vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant((uint)(mappingEntry.MetadataHandle & MetadataManager.MetadataOffsetMask)));
-                }
-                else
-                {
-                    var nameAndSig = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition()));
-                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)nameAndSig.SavedVertex.VertexOffset));
-                }
+                // Only store the offset portion of the metadata handle to get better integer compression
+                vertex = writer.GetTuple(vertex,
+                    writer.GetUnsignedConstant((uint)(mappingEntry.MetadataHandle & MetadataManager.MetadataOffsetMask)));
 
                 // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
                 IEETypeNode owningTypeSymbol = factory.NecessaryTypeSymbol(method.OwningType);
@@ -219,22 +201,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 if ((flags & InvokeTableFlags.IsGenericMethod) != 0)
                 {
-                    if ((flags & InvokeTableFlags.RequiresInstArg) != 0)
+                    VertexSequence args = new VertexSequence();
+                    for (int i = 0; i < method.Instantiation.Length; i++)
                     {
-                        var nameAndSigGenericMethod = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition()));
-                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)nameAndSigGenericMethod.SavedVertex.VertexOffset));
+                        uint argId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(method.Instantiation[i]));
+                        args.Append(writer.GetUnsignedConstant(argId));
                     }
-
-                    if ((flags & InvokeTableFlags.IsUniversalCanonicalEntry) == 0)
-                    {
-                        VertexSequence args = new VertexSequence();
-                        for (int i = 0; i < method.Instantiation.Length; i++)
-                        {
-                            uint argId = _externalReferences.GetIndex(factory.NecessaryTypeSymbol(method.Instantiation[i]));
-                            args.Append(writer.GetUnsignedConstant(argId));
-                        }
-                        vertex = writer.GetTuple(vertex, args);
-                    }
+                    vertex = writer.GetTuple(vertex, args);
                 }
 
                 int hashCode = method.OwningType.GetHashCode();

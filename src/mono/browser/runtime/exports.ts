@@ -11,7 +11,7 @@ import { type RuntimeAPI } from "./types";
 
 import { Module, exportedRuntimeAPI, loaderHelpers, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects, RuntimeHelpers } from "./types/internal";
-import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup } from "./startup";
+import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup, mono_wasm_process_current_pid } from "./startup";
 
 import { create_weak_ref } from "./weak-ref";
 import { export_internal } from "./exports-internal";
@@ -25,6 +25,7 @@ import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_dump_threads } from "./pthreads";
 
 import { threads_c_functions as tcwraps } from "./cwraps";
+import { utf8ToString } from "./strings";
 
 export let runtimeList: RuntimeList;
 
@@ -40,7 +41,10 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         instantiate_asset,
         jiterpreter_dump_stats,
         forceDisposeProxies,
-
+        utf8ToString,
+        mono_wasm_process_current_pid,
+        mono_background_exec: () => tcwraps.mono_background_exec(),
+        mono_wasm_ds_exec: () => tcwraps.mono_wasm_ds_exec(),
     };
     if (WasmEnableThreads) {
         rh.dumpThreads = mono_wasm_dump_threads;

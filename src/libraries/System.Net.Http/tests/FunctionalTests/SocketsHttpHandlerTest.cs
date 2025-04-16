@@ -1299,9 +1299,35 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData("Basic")]
+        [InlineData("Digest")]
+        public async Task SocketsHttpHandler_UseDefaultCredentials_OneRequestForBasicAndDigestAuth(string authType)
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async url =>
+                {
+                    using (var handler = new SocketsHttpHandler())
+                    using (var invoker = new HttpMessageInvoker(handler))
+                    {
+                        handler.Credentials = CredentialCache.DefaultCredentials;
+                        var request = new HttpRequestMessage(HttpMethod.Get, url);
+                        var response = await invoker.SendAsync(request, CancellationToken.None);
+                        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                    }
+                },
+                async server =>
+                {
+                    var responseHeader = new[] { new HttpHeaderData("WWW-Authenticate", $"{authType} realm=\"Test Realm\"") };
+                    await server.HandleRequestAsync(HttpStatusCode.Unauthorized, responseHeader);
+                }
+            );
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

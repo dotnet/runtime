@@ -634,6 +634,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 struct LateDevirtualizationInfo
 {
     CORINFO_CONTEXT_HANDLE exactContextHnd;
+    InlineContext*         inlinersContext;
 };
 
 // InlArgInfo describes inline candidate argument properties.
@@ -1071,14 +1072,6 @@ private:
 
     // Accounting updates for a successful or failed inline.
     void NoteOutcome(InlineContext* context);
-
-    // Cap on allowable increase in jit time due to inlining.
-    // Multiplicative, so BUDGET = 10 means up to 10x increase
-    // in jit time.
-    enum
-    {
-        BUDGET = 10
-    };
 
     // Estimate the jit time change because of this inline.
     int EstimateTime(InlineContext* context);

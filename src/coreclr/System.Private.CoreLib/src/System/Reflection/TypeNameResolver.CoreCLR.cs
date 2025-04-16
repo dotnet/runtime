@@ -80,13 +80,13 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError);
+            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError, new() { IsAssemblyGetType = true });
 
             if (parsed is null)
             {
                 return null;
             }
-            else if (topLevelAssembly is not null && parsed.AssemblyName is not null)
+            else if (parsed.AssemblyName is not null)
             {
                 return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
             }
@@ -131,7 +131,12 @@ namespace System.Reflection
             bool throwOnError, bool requireAssemblyQualifiedName)
         {
             ReadOnlySpan<char> typeName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTypeName);
+            return GetTypeHelper(typeName, requestingAssembly, throwOnError, requireAssemblyQualifiedName);
+        }
 
+        internal static unsafe RuntimeType? GetTypeHelper(ReadOnlySpan<char> typeName, RuntimeAssembly? requestingAssembly,
+            bool throwOnError, bool requireAssemblyQualifiedName)
+        {
             // Compat: Empty name throws TypeLoadException instead of
             // the natural ArgumentException
             if (typeName.Length == 0)

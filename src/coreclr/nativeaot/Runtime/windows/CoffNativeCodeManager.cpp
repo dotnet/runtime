@@ -11,7 +11,7 @@
 #include "regdisplay.h"
 #include "ICodeManager.h"
 #include "CoffNativeCodeManager.h"
-#include "varint.h"
+#include "NativePrimitiveDecoder.h"
 #include "holder.h"
 
 #include "CommonMacros.inl"
@@ -1044,7 +1044,7 @@ bool CoffNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
     pEnumState->pMethodStartAddress = dac_cast<PTR_uint8_t>(*pMethodStartAddress);
     pEnumState->pEHInfo = dac_cast<PTR_uint8_t>(m_moduleBase + *dac_cast<PTR_int32_t>(p));
     pEnumState->uClause = 0;
-    pEnumState->nClauses = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+    pEnumState->nClauses = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
 
     return true;
 }
@@ -1059,9 +1059,9 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
         return false;
     pEnumState->uClause++;
 
-    pEHClauseOut->m_tryStartOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+    pEHClauseOut->m_tryStartOffset = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
 
-    uint32_t tryEndDeltaAndClauseKind = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+    uint32_t tryEndDeltaAndClauseKind = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
     pEHClauseOut->m_clauseKind = (EHClauseKind)(tryEndDeltaAndClauseKind & 0x3);
     pEHClauseOut->m_tryEndOffset = pEHClauseOut->m_tryStartOffset + (tryEndDeltaAndClauseKind >> 2);
 
@@ -1077,22 +1077,22 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     switch (pEHClauseOut->m_clauseKind)
     {
     case EH_CLAUSE_TYPED:
-        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
 
         // Read target type
         {
             // @TODO: Compress EHInfo using type table index scheme
             // https://github.com/dotnet/corert/issues/972
-            uint32_t typeRVA = *((PTR_uint32_t&)pEnumState->pEHInfo)++;
+            uint32_t typeRVA = NativePrimitiveDecoder::ReadUInt32(pEnumState->pEHInfo);
             pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(m_moduleBase + typeRVA);
         }
         break;
     case EH_CLAUSE_FAULT:
-        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
         break;
     case EH_CLAUSE_FILTER:
-        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
-        pEHClauseOut->m_filterAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_filterAddress = pEnumState->pMethodStartAddress + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
         break;
     default:
         UNREACHABLE_MSG("unexpected EHClauseKind");

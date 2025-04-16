@@ -5,7 +5,7 @@
 #include "gcenv.h"
 #include <exinfo.h>
 
-#if defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 
 struct FindFirstInterruptiblePointState
 {
@@ -58,7 +58,6 @@ bool FindFirstInterruptiblePointStateCB(
 // the end is exclusive). Return -1 if no such point exists.
 unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
 {
-#ifdef USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
     GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
@@ -70,13 +69,9 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
     gcInfoDecoder.EnumerateInterruptibleRanges(&FindFirstInterruptiblePointStateCB, &state);
 
     return state.returnOffs;
-#else
-    PORTABILITY_ASSERT("FindFirstInterruptiblePoint");
-    return -1;
-#endif // USE_GC_INFO_DECODER
 }
 
-#endif // FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
 
 //-----------------------------------------------------------------------------
 // Determine whether we should report the generic parameter context
@@ -308,7 +303,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
 
     #ifdef TARGET_X86
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM EIP = %p &EIP = %p\n",
-                pMD, GetControlPC(pCF->GetRegisterSet()), pCF->GetRegisterSet()->PCTAddr);
+                pMD, GetControlPC(pCF->GetRegisterSet()), GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
     #else
             STRESS_LOG2(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM ControlPC = %p\n",
                 pMD, GetControlPC(pCF->GetRegisterSet()));
@@ -367,8 +362,8 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             Frame * pFrame = pCF->GetFrame();
 
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000,
-                "Scanning ExplicitFrame %p AssocMethod = %pM frameVTable = %pV\n",
-                pFrame, pFrame->GetFunction(), *((void**) pFrame));
+                "Scanning ExplicitFrame %p AssocMethod = %pM FrameIdentifier = %s\n",
+                pFrame, pFrame->GetFunction(), Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
             pFrame->GcScanRoots( gcctx->f, gcctx->sc);
         }
     }

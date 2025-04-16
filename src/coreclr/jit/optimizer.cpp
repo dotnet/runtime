@@ -2368,57 +2368,71 @@ PhaseStatus Compiler::optInvertLoops()
 }
 
 //-----------------------------------------------------------------------------
-// optOptimizeFlow: simplify flow graph
+// optOptimizeFlow: Simplify flowgraph, and run a few flow optimizations
 //
 // Returns:
 //   suitable phase status
-//
-// Notes:
-//   Does not do profile-based reordering to try and ensure that
-//   that we recognize and represent as many loops as possible.
 //
 PhaseStatus Compiler::optOptimizeFlow()
 {
     noway_assert(opts.OptimizationEnabled());
 
-    fgUpdateFlowGraph(/* doTailDuplication */ true);
-    fgReorderBlocks(/* useProfile */ false);
+    bool modified = fgUpdateFlowGraph(/* doTailDuplication */ true);
 
-    // fgReorderBlocks can cause IR changes even if it does not modify
-    // the flow graph. It calls gtPrepareCost which can cause operand swapping.
-    // Work around this for now.
-    //
-    // Note phase status only impacts dumping and checking done post-phase,
-    // it has no impact on a release build.
-    //
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    // TODO: Always rely on profile synthesis to identify cold blocks.
+    if (!fgIsUsingProfileWeights())
+    {
+        modified |= fgExpandRarelyRunBlocks();
+    }
+
+    // Run branch optimizations for non-handler blocks.
+    assert(!fgFuncletsCreated);
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+    {
+        if (block->hasHndIndex())
+        {
+            assert(bbIsHandlerBeg(block));
+            block = ehGetDsc(block->getHndIndex())->ebdHndLast;
+            continue;
+        }
+
+        modified |= fgOptimizeBranch(block);
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-----------------------------------------------------------------------------
-// optOptimizeLayout: reorder blocks to reduce cost of control flow
+// optOptimizePreLayout: Optimizes flow before reordering blocks.
 //
 // Returns:
 //   suitable phase status
 //
-// Notes:
-//   Reorders using profile data, if available.
-//
-PhaseStatus Compiler::optOptimizeLayout()
+PhaseStatus Compiler::optOptimizePreLayout()
 {
-    noway_assert(opts.OptimizationEnabled());
+    assert(opts.OptimizationEnabled());
 
-    fgUpdateFlowGraph(/* doTailDuplication */ false);
-    fgReorderBlocks(/* useProfile */ true);
-    fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+    bool modified = fgUpdateFlowGraph();
 
-    // fgReorderBlocks can cause IR changes even if it does not modify
-    // the flow graph. It calls gtPrepareCost which can cause operand swapping.
-    // Work around this for now.
-    //
-    // Note phase status only impacts dumping and checking done post-phase,
-    // it has no impact on a release build.
-    //
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    // TODO: Always rely on profile synthesis to identify cold blocks.
+    if (!fgIsUsingProfileWeights())
+    {
+        modified |= fgExpandRarelyRunBlocks();
+    }
+
+    // Run a late pass of unconditional-to-conditional branch optimization, skipping handler blocks.
+    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = block->Next())
+    {
+        if (!UsesFunclets() && block->hasHndIndex())
+        {
+            block = ehGetDsc(block->getHndIndex())->ebdHndLast;
+            continue;
+        }
+
+        modified |= fgOptimizeBranch(block);
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-----------------------------------------------------------------------------
@@ -2866,7 +2880,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
             {
                 // Preheader should be in the true enclosing region of the header.
                 //
-                preheaderEHRegion    = ehTrueEnclosingTryIndexIL(preheaderEHRegion);
+                preheaderEHRegion    = ehTrueEnclosingTryIndex(preheaderEHRegion);
                 inSameRegionAsHeader = false;
                 break;
             }
@@ -5208,7 +5222,7 @@ void Compiler::fgSetEHRegionForNewPreheaderOrExit(BasicBlock* block)
     {
         // `next` is the beginning of a try block. Figure out the EH region to use.
         assert(next->hasTryIndex());
-        unsigned newTryIndex = ehTrueEnclosingTryIndexIL(next->getTryIndex());
+        unsigned newTryIndex = ehTrueEnclosingTryIndex(next->getTryIndex());
         if (newTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
         {
             // No EH try index.

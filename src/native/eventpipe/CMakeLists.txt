@@ -29,7 +29,11 @@ target_include_directories(dn-diagnosticserver-pal INTERFACE ${CMAKE_CURRENT_BIN
 target_include_directories(dn-diagnosticserver-pal INTERFACE ${SHARED_EVENTPIPE_CONFIG_HEADER_PATH})
 target_link_libraries(dn-diagnosticserver-pal INTERFACE dn-containers)
 
-if (FEATURE_PERFTRACING_PAL_TCP)
+if (FEATURE_PERFTRACING_PAL_WS)
+    target_sources(dn-diagnosticserver-pal INTERFACE
+        ds-ipc-pal-websocket.c
+    )
+elseif (FEATURE_PERFTRACING_PAL_TCP)
     target_sources(dn-diagnosticserver-pal INTERFACE
         ds-ipc-pal-socket.c
     )
@@ -41,7 +45,7 @@ else()
     target_sources(dn-diagnosticserver-pal INTERFACE
         ds-ipc-pal-socket.c
     )
-endif (FEATURE_PERFTRACING_PAL_TCP)
+endif (FEATURE_PERFTRACING_PAL_WS)
 
 
 add_library(dn-eventpipe INTERFACE)

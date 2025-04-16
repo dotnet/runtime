@@ -49,6 +49,8 @@ class StgStringPool;
 class StgBlobPool;
 class StgCodePool;
 
+template<typename T> struct cdac_data;
+
 //  Perform binary search on index table.
 //
 class RIDBinarySearch : public CBinarySearch<UINT32>
@@ -1500,6 +1502,15 @@ public:
          IStream ** ppstm);
 
 #endif // DACCESS_COMPILE
+
+    friend struct cdac_data<CGrowableStream>;
 }; // class CGrowableStream
+
+template<>
+struct cdac_data<CGrowableStream>
+{
+    static constexpr size_t Buffer = offsetof(CGrowableStream, m_swBuffer);
+    static constexpr size_t Size = offsetof(CGrowableStream, m_dwBufferSize);
+};
 
 #endif // __StgPool_h__

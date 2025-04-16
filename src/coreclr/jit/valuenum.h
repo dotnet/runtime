@@ -1211,10 +1211,6 @@ public:
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
 
-    // Returns true if the two VNs represent the same value
-    // despite being different VNs. Useful for phi def VNs.
-    bool AreVNsEquivalent(ValueNum vn1, ValueNum vn2);
-
     enum class VN_RELATION_KIND
     {
         VRK_Inferred,   // (x ?  y)

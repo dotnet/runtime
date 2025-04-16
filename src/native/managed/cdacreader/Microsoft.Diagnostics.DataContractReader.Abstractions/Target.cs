@@ -28,11 +28,28 @@ public abstract class Target
     public abstract bool IsLittleEndian { get; }
 
     /// <summary>
+    /// Fills a buffer with the context of the given thread
+    /// </summary>
+    /// <param name="threadId">The identifier of the thread whose context is to be retrieved. The identifier is defined by the operating system.</param>
+    /// <param name="contextFlags">A bitwise combination of platform-dependent flags that indicate which portions of the context should be read.</param>
+    /// <param name="buffer">Buffer to be filled with thread context.</param>
+    /// <returns>true if successful, false otherwise</returns>
+    public abstract bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer);
+
+    /// <summary>
     /// Reads a well-known global pointer value from the target process
     /// </summary>
     /// <param name="global">The name of the global</param>
     /// <returns>The value of the global</returns>
     public abstract TargetPointer ReadGlobalPointer(string global);
+
+    /// <summary>
+    /// Reads a well-known global pointer value from the target process
+    /// </summary>
+    /// <param name="global">The name of the global</param>
+    /// <param name="value">The value of the global, if found.</param>
+    /// <returns>True if the global is found, false otherwise.</returns>
+    public abstract bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value);
 
     /// <summary>
     /// Read a pointer from the target in target endianness
@@ -77,12 +94,36 @@ public abstract class Target
     public abstract TargetNUInt ReadNUInt(ulong address);
 
     /// <summary>
+    /// Read a well known global from the target process as a string
+    /// </summary>
+    /// <param name="name">The name of the global</param>
+    /// <param name="value">The value of the global if found</param>
+    /// <returns>True if a global is found, false otherwise</returns>
+    public abstract bool TryReadGlobalString(string name, [NotNullWhen(true)] out string? value);
+
+    /// <summary>
+    /// Read a well known global from the target process as a string
+    /// </summary>
+    /// <param name="name">The name of the global</param>
+    /// <returns>A string value</returns>
+    public abstract string ReadGlobalString(string name);
+
+    /// <summary>
     /// Read a well known global from the target process as a number in the target endianness
     /// </summary>
     /// <typeparam name="T">The numeric type to be read</typeparam>
     /// <param name="name">The name of the global</param>
     /// <returns>A numeric value</returns>
     public abstract T ReadGlobal<T>(string name) where T : struct, INumber<T>;
+
+    /// <summary>
+    /// Read a well known global from the target process as a number in the target endianness
+    /// </summary>
+    /// <typeparam name="T">The numeric type to be read</typeparam>
+    /// <param name="name">The name of the global</param>
+    /// <param name="value">The numeric value read.</param>
+    /// <returns>True if a global is found, false otherwise.</returns>
+    public abstract bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value) where T : struct, INumber<T>;
 
     /// <summary>
     /// Read a value from the target in target endianness

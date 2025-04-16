@@ -9,11 +9,44 @@ namespace System.Numerics.Tensors
     /// <summary>
     /// Represents a tensor.
     /// </summary>
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+    public interface ITensor : IReadOnlyTensor
+    {
+        /// <summary>
+        /// Gets the value at the specified indexes.
+        /// </summary>
+        /// <param name="indexes">The indexes to be used.</param>
+        new object this[params scoped ReadOnlySpan<nint> indexes] { get; set; }
+
+        /// <summary>
+        /// Gets the value at the specified indexes.
+        /// </summary>
+        /// <param name="indexes">The indexes to be used.</param>
+        new object this[params scoped ReadOnlySpan<NIndex> indexes] { get; set; }
+
+        /// <summary>
+        /// Gets a value that indicates whether the collection is read-only.
+        /// </summary>
+        bool IsReadOnly { get; }
+
+        /// <summary>
+        /// Clears the tensor.
+        /// </summary>
+        void Clear();
+
+        /// <summary>
+        /// Fills the contents of this tensor with the given value.
+        /// </summary>
+        void Fill(object value);
+    }
+
+    /// <summary>
+    /// Represents a tensor.
+    /// </summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="T">The element type.</typeparam>
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    public interface ITensor<TSelf, T>
-        : IReadOnlyTensor<TSelf, T>
+    public interface ITensor<TSelf, T> : ITensor, IReadOnlyTensor<TSelf, T>
         where TSelf : ITensor<TSelf, T>
     {
         // TODO: Determine if we can implement `IEqualityOperators<TSelf, T, bool>`.
@@ -68,11 +101,6 @@ namespace System.Numerics.Tensors
         static abstract TSelf CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
 
         /// <summary>
-        /// Gets a value that idicates whether the collection is read-only.
-        /// </summary>
-        bool IsReadOnly { get; }
-
-        /// <summary>
         /// Gets the value at the specified indexes.
         /// </summary>
         /// <param name="indexes">The indexes to use.</param>
@@ -116,11 +144,6 @@ namespace System.Numerics.Tensors
         /// <param name="range">The ranges to be used.</param>
         /// <returns>The converted <see cref="TensorSpan{T}"/>.</returns>
         TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NRange> range);
-
-        /// <summary>
-        /// Clears the tensor.
-        /// </summary>
-        void Clear();
 
         /// <summary>
         /// Fills the contents of this tensor with the given value.

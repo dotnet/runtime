@@ -7785,7 +7785,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean noreturn; noreturn = FALSE;
 			gboolean gshared_static_virtual; gshared_static_virtual = FALSE;
 #ifdef TARGET_WASM
-			gboolean needs_stack_walk; needs_stack_walk = FALSE;
+			gboolean needs_LMF; needs_LMF = FALSE;
 #endif
 
 			// Variables shared by CEE_CALLI and CEE_CALL/CEE_CALLVIRT.
@@ -7881,10 +7881,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 #ifdef TARGET_WASM
 				else {
-					needs_stack_walk = TRUE;
+					needs_LMF = TRUE;
 				}
 #endif
 			}
+#ifdef TARGET_WASM
+			if (cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT) {
+				needs_LMF = TRUE;
+			}
+#endif
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT) && !gshared_static_virtual) {
 				if (!mono_class_is_interface (method->klass))
@@ -8557,7 +8562,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 #ifdef TARGET_WASM
 			/* Push an LMF so these frames can be enumerated during stack walks by mono_arch_unwind_frame () */
-			if (needs_stack_walk && !cfg->deopt) {
+			if (needs_LMF && !cfg->deopt) {
 				MonoInst *method_ins;
 				int lmf_reg;
 
@@ -8594,7 +8599,7 @@ call_end:
 				ins = handle_call_res_devirt (cfg, cmethod, ins);
 
 #ifdef TARGET_WASM
-			if (common_call && needs_stack_walk && !cfg->deopt)
+			if (common_call && needs_LMF && !cfg->deopt)
 				emit_pop_lmf (cfg);
 #endif
 

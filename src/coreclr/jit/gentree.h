@@ -450,6 +450,7 @@ enum GenTreeFlags : unsigned int
     GTF_VAR_MOREUSES      = 0x00800000, // GT_LCL_VAR -- this node has additional uses, for example due to cloning
     GTF_VAR_CONTEXT       = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
     GTF_VAR_EXPLICIT_INIT = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
+    GTF_VAR_CONNECTED     = 0x00100000, // GT_STORE_LCL_VAR -- this store was modelled in the connection graph during escape analysis
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -483,7 +484,7 @@ enum GenTreeFlags : unsigned int
                                               //           This flag is useful in cases where it is required to generate register
                                               //           indirect addressing mode. One such case is virtual stub calls on xarch.
     GTF_IND_UNALIGNED           = 0x02000000, // OperIsIndir() -- the load or store is unaligned (we assume worst case alignment of 1 byte)
-    GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
+    GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (an AOT indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
     GTF_IND_INITCLASS           = 0x00200000, // OperIsIndir() -- the indirection requires preceding static cctor
     GTF_IND_ALLOW_NON_ATOMIC    = 0x00100000, // GT_IND -- this memory access does not need to be atomic
@@ -3095,6 +3096,19 @@ struct GenTreeOp : public GenTreeUnOp
     // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
     void CheckDivideByConstOptimized(Compiler* comp);
 
+    GenTree*& ReturnValueRef()
+    {
+        assert(OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+#ifdef SWIFT_SUPPORT
+        if (OperIs(GT_SWIFT_ERROR_RET))
+        {
+            return gtOp2;
+        }
+#endif // SWIFT_SUPPORT
+
+        return gtOp1;
+    }
+
     GenTree* GetReturnValue() const
     {
         assert(OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
@@ -3248,7 +3262,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 
     /* The InitializeArray intrinsic needs to go back to the newarray statement
        to find the class handle of the array so that we can get its size.  However,
-       in ngen mode, the handle in that statement does not correspond to the compile
+       in AOT mode, the handle in that statement does not correspond to the compile
        time handle (rather it lets you get a handle at run-time).  In that case, we also
        need to store a compile time handle, which goes in this gtCompileTimeHandle field.
     */
@@ -4225,12 +4239,11 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_ALLOC_SIDE_EFFECTS      = 0x00100000, // this is a call to an allocator with side effects
     GTF_CALL_M_SUPPRESS_GC_TRANSITION  = 0x00200000, // suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
     GTF_CALL_M_EXPANDED_EARLY          = 0x00800000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
-    GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x01000000, // this call has late devirtualzation info
-    GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x02000000, // ldvirtftn on an interface type
-    GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
-    GTF_CALL_M_CAST_OBJ_NONNULL        = 0x08000000, // if we expand this specific cast we don't need to check the input object for null
+    GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x01000000, // ldvirtftn on an interface type
+    GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x02000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
+    GTF_CALL_M_CAST_OBJ_NONNULL        = 0x04000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
-    GTF_CALL_M_STACK_ARRAY             = 0x10000000, // this call is a new array helper for a stack allocated array.
+    GTF_CALL_M_STACK_ARRAY             = 0x08000000, // this call is a new array helper for a stack allocated array.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4571,151 +4584,6 @@ enum class WellKnownArg : unsigned
 const char* getWellKnownArgName(WellKnownArg arg);
 #endif
 
-struct CallArgABIInformation
-{
-    CallArgABIInformation()
-        : NumRegs(0)
-        , ByteOffset(0)
-        , ByteSize(0)
-        , ArgType(TYP_UNDEF)
-#if FEATURE_ARG_SPLIT
-        , m_isSplit(false)
-#endif
-#ifdef FEATURE_HFA_FIELDS_PRESENT
-        , m_hfaElemKind(CORINFO_HFA_ELEM_NONE)
-#endif
-    {
-        for (size_t i = 0; i < MAX_ARG_REG_COUNT; i++)
-        {
-            RegNums[i] = REG_NA;
-        }
-    }
-
-private:
-    // The registers to use when passing this argument, set to REG_STK for
-    // arguments passed on the stack
-    regNumberSmall RegNums[MAX_ARG_REG_COUNT];
-
-public:
-    // Count of number of registers that this argument uses. Note that on ARM,
-    // if we have a double hfa, this reflects the number of DOUBLE registers.
-    unsigned NumRegs;
-    unsigned ByteOffset;
-    unsigned ByteSize;
-    // The type used to pass this argument. This is generally the original
-    // argument type, but when a struct is passed as a scalar type, this is
-    // that type. Note that if a struct is passed by reference, this will still
-    // be the struct type.
-    var_types ArgType : 5;
-
-private:
-#if FEATURE_ARG_SPLIT
-    // True when this argument is split between the registers and OutArg area
-    bool m_isSplit : 1;
-#endif
-
-#ifdef FEATURE_HFA_FIELDS_PRESENT
-    // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
-    CorInfoHFAElemType m_hfaElemKind : 3;
-#endif
-
-public:
-    CorInfoHFAElemType GetHfaElemKind() const
-    {
-#ifdef FEATURE_HFA_FIELDS_PRESENT
-        return m_hfaElemKind;
-#else
-        NOWAY_MSG("GetHfaElemKind");
-        return CORINFO_HFA_ELEM_NONE;
-#endif
-    }
-
-    void SetHfaElemKind(CorInfoHFAElemType elemKind)
-    {
-#ifdef FEATURE_HFA_FIELDS_PRESENT
-        m_hfaElemKind = elemKind;
-#else
-        NOWAY_MSG("SetHfaElemKind");
-#endif
-    }
-
-    bool      IsHfaArg() const;
-    bool      IsHfaRegArg() const;
-    var_types GetHfaType() const;
-    void      SetHfaType(var_types type, unsigned hfaSlots);
-
-    regNumber GetRegNum() const
-    {
-        return (regNumber)RegNums[0];
-    }
-
-    regNumber GetOtherRegNum() const
-    {
-        return (regNumber)RegNums[1];
-    }
-    regNumber GetRegNum(unsigned int i)
-    {
-        assert(i < MAX_ARG_REG_COUNT);
-        return (regNumber)RegNums[i];
-    }
-    void SetRegNum(unsigned int i, regNumber regNum)
-    {
-        assert(i < MAX_ARG_REG_COUNT);
-        RegNums[i] = (regNumberSmall)regNum;
-    }
-
-    bool IsSplit() const
-    {
-#if FEATURE_ARG_SPLIT
-        return compFeatureArgSplit() && m_isSplit;
-#else // FEATURE_ARG_SPLIT
-        return false;
-#endif
-    }
-    void SetSplit(bool value)
-    {
-#if FEATURE_ARG_SPLIT
-        m_isSplit = value;
-#endif
-    }
-
-    bool IsPassedInRegisters() const
-    {
-        return !IsSplit() && (NumRegs != 0);
-    }
-
-    bool IsPassedInFloatRegisters() const
-    {
-#ifdef TARGET_X86
-        return false;
-#else
-        return isValidFloatArgReg(GetRegNum());
-#endif
-    }
-
-    bool IsMismatchedArgType() const
-    {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        return genIsValidIntReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
-#else
-        return false;
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
-    }
-
-    // Get the number of bytes that this argument is occupying on the stack,
-    // including padding up to the target pointer size for platforms
-    // where a stack argument can't take less.
-    unsigned GetStackByteSize() const;
-
-    // Return number of stack slots that this argument is taking.
-    // This value is not meaningful on Apple arm64 where multiple arguments can
-    // be passed in the same stack slot.
-    unsigned GetStackSlotsNumber() const
-    {
-        return roundUp(GetStackByteSize(), TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
-    }
-};
-
 struct NewCallArg
 {
     // The node being passed.
@@ -4802,8 +4670,7 @@ private:
     }
 
 public:
-    CallArgABIInformation AbiInfo;
-    ABIPassingInformation NewAbiInfo;
+    ABIPassingInformation AbiInfo;
 
     CallArg(const NewCallArg& arg)
         : CallArg()
@@ -4872,11 +4739,11 @@ class CallArgs
     // made for this call.
     unsigned m_padStkAlign;
 #endif
-    bool m_hasThisPointer              : 1;
-    bool m_hasRetBuffer                : 1;
-    bool m_isVarArgs                   : 1;
-    bool m_abiInformationDetermined    : 1;
-    bool m_newAbiInformationDetermined : 1;
+    bool m_hasThisPointer           : 1;
+    bool m_hasRetBuffer             : 1;
+    bool m_isVarArgs                : 1;
+    bool m_abiInformationDetermined : 1;
+    bool m_hasAddedFinalArgs        : 1;
     // True if we have one or more register arguments.
     bool m_hasRegArgs : 1;
     // True if we have one or more stack arguments.
@@ -4938,7 +4805,7 @@ public:
     void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
     void ResetFinalArgsAndABIInfo();
 
-    void DetermineNewABIInfo(Compiler* comp, GenTreeCall* call);
+    void DetermineABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
     void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
@@ -4952,7 +4819,6 @@ public:
     void SetIsVarArgs() { m_isVarArgs = true; }
     void ClearIsVarArgs() { m_isVarArgs = false; }
     bool IsAbiInformationDetermined() const { return m_abiInformationDetermined; }
-    bool IsNewAbiInformationDetermined() const { return m_newAbiInformationDetermined; }
 
     // TODO-Remove: Workaround for bad codegen in MSVC versions < 19.41, see
     // https://github.com/dotnet/runtime/pull/104370#issuecomment-2222910359
@@ -5742,10 +5608,12 @@ struct GenTreeCall final : public GenTree
         jitstd::vector<InlineCandidateInfo*>* gtInlineCandidateInfoList;
 
         HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
-        LateDevirtualizationInfo*            gtLateDevirtualizationInfo;
+
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
+
+    LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
 
     // expression evaluated after args are placed which determines the control target
     GenTree* gtControlExpr;
@@ -6567,7 +6435,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStoreOrBarrier() const;
     bool OperIsEmbBroadcastCompatible() const;
     bool OperIsBroadcastScalar() const;
-    bool OperIsCreateScalarUnsafe() const;
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
 
@@ -6921,26 +6788,25 @@ struct GenTreeVecCon : public GenTree
             case TYP_LONG:
             case TYP_ULONG:
             {
-#if defined(TARGET_64BIT)
-                if (arg->IsCnsIntOrI())
+                if (arg->IsIntegralConst())
                 {
-                    simdVal.i64[argIdx] = static_cast<int64_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i64[argIdx] = arg->AsIntConCommon()->IntegralValue();
                     return true;
                 }
-#else
-                if (arg->OperIsLong() && arg->AsOp()->gtOp1->IsCnsIntOrI() && arg->AsOp()->gtOp2->IsCnsIntOrI())
+#if !defined(TARGET_64BIT)
+                else if (arg->OperIsLong() && arg->gtGetOp1()->IsCnsIntOrI() && arg->gtGetOp2()->IsCnsIntOrI())
                 {
-                    // 32-bit targets will decompose GT_CNS_LNG into two GT_CNS_INT
+                    // 32-bit targets may decompose GT_CNS_LNG into two GT_CNS_INT
                     // We need to reconstruct the 64-bit value in order to handle this
 
-                    INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+                    INT64 gtLconVal = arg->gtGetOp2()->AsIntCon()->gtIconVal;
                     gtLconVal <<= 32;
-                    gtLconVal |= arg->AsOp()->gtOp1->AsIntCon()->gtIconVal;
+                    gtLconVal |= static_cast<uint32_t>(arg->gtGetOp1()->AsIntCon()->gtIconVal);
 
                     simdVal.i64[argIdx] = gtLconVal;
                     return true;
                 }
-#endif // TARGET_64BIT
+#endif // !TARGET_64BIT
                 else
                 {
                     // We expect the constant to have been already zeroed
@@ -7508,8 +7374,6 @@ struct GenTreeIndexAddr : public GenTreeOp
 
     CORINFO_CLASS_HANDLE gtStructElemClass; // If the element type is a struct, this is the struct type.
 
-    BasicBlock* gtIndRngFailBB; // Basic block to jump to for array-index-out-of-range
-
     var_types gtElemType;   // The element type of the array.
     unsigned  gtElemSize;   // size of elements in the array
     unsigned  gtLenOffset;  // The offset from the array's base address to its length.
@@ -7525,7 +7389,6 @@ struct GenTreeIndexAddr : public GenTreeOp
                      bool                 boundsCheck)
         : GenTreeOp(GT_INDEX_ADDR, TYP_BYREF, arr, ind)
         , gtStructElemClass(structElemClass)
-        , gtIndRngFailBB(nullptr)
         , gtElemType(elemType)
         , gtElemSize(elemSize)
         , gtLenOffset(lenOffset)
@@ -7722,8 +7585,7 @@ public:
 //
 struct GenTreeBoundsChk : public GenTreeOp
 {
-    BasicBlock*     gtIndRngFailBB; // Basic block to jump to for index-out-of-range
-    SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
+    SpecialCodeKind gtThrowKind; // Kind of throw block to branch to on failure
 
     // Store some information about the array element type that was in the GT_INDEX_ADDR node before morphing.
     // Note that this information is also stored in the ARR_ADDR node of the morphed tree, but that can be hard
@@ -7732,7 +7594,6 @@ struct GenTreeBoundsChk : public GenTreeOp
 
     GenTreeBoundsChk(GenTree* index, GenTree* length, SpecialCodeKind kind)
         : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length)
-        , gtIndRngFailBB(nullptr)
         , gtThrowKind(kind)
         , gtInxType(TYP_UNKNOWN)
     {
@@ -9556,7 +9417,7 @@ enum insCC : unsigned
 };
 #endif
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 struct GenTreeCCMP final : public GenTreeOpCC
 {
     insCflags gtFlagsVal;

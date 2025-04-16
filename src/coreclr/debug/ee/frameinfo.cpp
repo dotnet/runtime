@@ -16,6 +16,10 @@
 #include "COMToClrCall.h"
 #endif
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif // FEATURE_EH_FUNCLETS
+
 // Get a frame pointer from a RegDisplay.
 // This is mostly used for chains and stub frames (i.e. internal frames), where we don't need an exact
 // frame pointer.  This is why it is okay to use the current SP instead of the caller SP on IA64.
@@ -1310,7 +1314,7 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
 // frame pointer for the parent method frame.  Otherwise we return LEAF_MOST_FRAME.  If we are already skipping
 // frames, then we return the current frame pointer for the parent method frame.
 //
-// The return value of this function corresponds to the return value of ExceptionTracker::FindParentStackFrame().
+// The return value of this function corresponds to the return value of ExInfo::FindParentStackFrame().
 // Refer to that function for more information.
 //
 // Arguments:
@@ -1524,7 +1528,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             // skipping if the current frame pointer matches fpParent.  In either case, clear fpParent, and
             // then check again.
             if ((d->fpParent == ROOT_MOST_FRAME) ||
-                ExceptionTracker::IsUnwoundToTargetParentFrame(pCF, ConvertFPToStackFrame(d->fpParent)))
+                ExInfo::IsUnwoundToTargetParentFrame(pCF, ConvertFPToStackFrame(d->fpParent)))
             {
                 LOG((LF_CORDB, LL_INFO100000, "DWSP: Stopping to skip funclet at 0x%p.\n", d->fpParent.GetSPValue()));
 

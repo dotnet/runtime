@@ -16,6 +16,7 @@ public sealed class PrecodeStubsFactory : IContractFactory<IPrecodeStubs>
         return version switch
         {
             1 => new PrecodeStubs_1(target, precodeMachineDescriptor, codePointerFlags),
+            2 => new PrecodeStubs_2(target, precodeMachineDescriptor, codePointerFlags),
             _ => default(PrecodeStubs),
         };
     }

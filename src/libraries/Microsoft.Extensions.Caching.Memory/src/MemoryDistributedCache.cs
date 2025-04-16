@@ -47,7 +47,8 @@ namespace Microsoft.Extensions.Caching.Distributed
         {
             ThrowHelper.ThrowIfNull(key);
 
-            return (byte[]?)_memCache.Get(key);
+            _memCache.TryGetValue(key, out object? value);
+            return (byte[]?)value;
         }
 
         /// <summary>
@@ -75,13 +76,12 @@ namespace Microsoft.Extensions.Caching.Distributed
             ThrowHelper.ThrowIfNull(value);
             ThrowHelper.ThrowIfNull(options);
 
-            var memoryCacheEntryOptions = new MemoryCacheEntryOptions();
-            memoryCacheEntryOptions.AbsoluteExpiration = options.AbsoluteExpiration;
-            memoryCacheEntryOptions.AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow;
-            memoryCacheEntryOptions.SlidingExpiration = options.SlidingExpiration;
-            memoryCacheEntryOptions.Size = value.Length;
-
-            _memCache.Set(key, value, memoryCacheEntryOptions);
+            using ICacheEntry entry = _memCache.CreateEntry(key);
+            entry.AbsoluteExpiration = options.AbsoluteExpiration;
+            entry.AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow;
+            entry.SlidingExpiration = options.SlidingExpiration;
+            entry.Size = value.Length;
+            entry.Value = value;
         }
 
         /// <summary>

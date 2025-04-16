@@ -130,8 +130,8 @@ namespace Microsoft.Win32.SafeHandles
             if (_sslSessions != null)
             {
                 // The SSL_CTX is ref counted and may not immediately die when we call SslCtxDestroy()
-                // Since there is no relation between SafeSslContextHandle and SafeSslHandle `this` can be release
-                // while we still have SSL session using it.
+                // Since there is no relation between SafeSslContextHandle and SafeSslHandle `this`
+                // can be released while we still have SSL session using it.
                 Interop.Ssl.SslCtxSetData(handle, IntPtr.Zero);
 
                 lock (_sslSessions)

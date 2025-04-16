@@ -800,14 +800,18 @@ namespace System.Reflection.Emit
         private static bool IsInstance(CallingConventions callingConvention) =>
             callingConvention.HasFlag(CallingConventions.HasThis) || callingConvention.HasFlag(CallingConventions.ExplicitThis) ? true : false;
 
-        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConvention)
+        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConventions)
         {
             SignatureCallingConvention convention = SignatureCallingConvention.Default;
 
-            if ((callingConvention & CallingConventions.VarArgs) != 0)
+            if ((callingConventions & CallingConventions.VarArgs) != 0)
             {
                 convention = SignatureCallingConvention.VarArgs;
             }
+
+            // CallingConventions.HasThis (0x20) and ExplicitThis (0x40) can use a bitwise OR with SignatureCallingConvention.
+            const byte Mask = (byte)(CallingConventions.HasThis | CallingConventions.ExplicitThis);
+            convention = (SignatureCallingConvention)((byte)convention | (unchecked((byte)callingConventions) & Mask));
 
             return convention;
         }

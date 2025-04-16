@@ -26,6 +26,7 @@ The ECMA-335-II standard is amended by an addition of the following tables to th
     * [SourceLink](#source-link-c-and-vb-compilers)
     * [CompilationMetadataReferences](#compilation-metadata-references-c-and-vb-compilers)
     * [CompilationOptions](#compilation-options-c-and-vb-compilers)
+    * [TypeDefinitionDocument](#type-definition-document-c-and-vb-compilers)
 
 Debugging metadata tables may be embedded into type system metadata (and part of a PE file), or they may be stored separately in a metadata blob contained in a .pdb file. In the latter case additional information is included that connects the debugging metadata to the type system metadata.
 
@@ -598,3 +599,22 @@ The order of the options in the list is insignificant.
 > The purpose of this data is to allow a tool to reconstruct the compilation the module was built from.
 > The source files for the compilation are expected to be recovered from the source server using [SourceLink](#source-link-c-and-vb-compilers) and/or from [sources embedded](#embedded-source-c-and-vb-compilers) in the PDB.
 > The metadata references for the compilation are expected to be recovered from a file indexing service (e.g. symbol server) using information in [Compilation Metadata References](#compilation-metadata-references-c-and-vb-compilers) record.
+
+##### Type Definition Document (C# and VB compilers)
+Parent: TypeDef
+
+Kind: {932E74BC-DBA9-4478-8D46-0F32A7BAB3D3}
+
+Stores document information for type definitions that would otherwise not have document information stored through other means, for example in the [MethodDebugInformation](#methoddebuginformation-table-0x31) table.
+
+The blob has the following structure:
+
+    Blob ::= (document-ordinal)*
+
+| terminal         | encoding                    | description                            |
+|:-----------------|:----------------------------|:---------------------------------------|
+| document-ordinal | compressed unsigned integer | row id of the Document table. |
+
+> The purpose of this data is to allow a tool navigate to the source of a type definition where there would
+> otherwise not be any data available. For example an empty class definition, or an enum, where there are
+> no methods to provide the data in the `MethodDebugInformation` table.

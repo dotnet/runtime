@@ -105,32 +105,6 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Gets the value of the field ordinal. Ordinals are computed by also including static fields, but excluding
-        /// literal fields and fields with RVAs.
-        /// </summary>
-        public static int GetFieldOrdinal(this FieldDesc inputField)
-        {
-            // Make sure we are asking the question for a valid instance or static field
-            Debug.Assert(!inputField.HasRva && !inputField.IsLiteral);
-
-            int fieldOrdinal = 0;
-            foreach (FieldDesc field in inputField.OwningType.GetFields())
-            {
-                // If this field does not contribute to layout, skip
-                if (field.HasRva || field.IsLiteral)
-                    continue;
-
-                if (field == inputField)
-                    return fieldOrdinal;
-
-                fieldOrdinal++;
-            }
-
-            Debug.Assert(false);
-            return -1;
-        }
-
-        /// <summary>
         /// Determine if a type has a generic depth greater than a given value
         /// </summary>
         public static bool IsGenericDepthGreaterThan(this TypeDesc type, int depth)

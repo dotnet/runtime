@@ -1,11 +1,5 @@
 function(clr_unknown_arch)
-    if (WIN32)
-        message(FATAL_ERROR "Only AMD64, ARM64, ARM, I386, LOONGARCH64 and RISCV64 hosts are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
-    elseif(CLR_CROSS_COMPONENTS_BUILD)
-        message(FATAL_ERROR "Only AMD64, ARM64, I386, LOONGARCH64 and RISCV64 hosts are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
-    else()
-        message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
-    endif()
+    message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
 endfunction()
 
 # C to MASM include file translator

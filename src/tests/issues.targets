@@ -617,8 +617,8 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- Crossgen2 win-arm64 and linux-arm64 specific excludes -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'arm64' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux')">
+    <!-- Crossgen2 arm64 specific excludes -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'arm64'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/*">
             <Issue>https://github.com/dotnet/runtime/issues/104927</Issue>
         </ExcludeList>
@@ -3083,6 +3083,9 @@
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
             <Issue>System.Diagnostics.Process is not supported</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Regressions/coreclr/GitHub_76531/test76531/**">
+            <Issue>Assembly.GetExecutingAssembly().Location returns NULL on WASM</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>

@@ -229,7 +229,6 @@
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Runtime\RuntimeHelpers.cs" />
-    <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\Buffer.cs" />

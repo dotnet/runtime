@@ -28,6 +28,11 @@ struct DispatchCellInfo
     uint8_t HasCache = 0;
     uint32_t MetadataToken = 0;
     uint32_t VTableOffset = 0;
+
+    uint32_t GetVTableOffset() const
+    {
+        return VTableOffset;
+    }
 };
 
 struct InterfaceDispatchCacheHeader

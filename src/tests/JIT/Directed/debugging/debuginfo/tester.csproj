@@ -10,12 +10,6 @@
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
-    <!-- These expectedly interfere with debug info -->
-    <CLRTestEnvironmentVariable Include="DOTNET_JitNoForwardSub" Value="1" />
-    <CLRTestEnvironmentVariable Include="DOTNET_JitEnableHeadTailMerge" Value="0" />
-    <CLRTestEnvironmentVariable Include="DOTNET_JitEnableCrossBlockLocalAssertionProp" Value="0" />
-    <CLRTestEnvironmentVariable Include="DOTNET_JitEnableOptRepeat" Value="0" />
-
     <ProjectReference Include="tests_d.ilproj" Aliases="tests_d" />
     <ProjectReference Include="tests_r.ilproj" Aliases="tests_r" />
     <ProjectReference Include="attribute.csproj" />

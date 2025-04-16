@@ -22,32 +22,36 @@ namespace NetCoreServer
                 return;
             }
 
-            // Add original request method verb as a custom response header.
-            context.Response.Headers["X-HttpRequest-Method"] = context.Request.Method;
 
-            // Echo back JSON encoded payload.
-            RequestInformation info = await RequestInformation.CreateAsync(context.Request);
-            string echoJson = info.SerializeToJson();
-
-            byte[] bytes = Encoding.UTF8.GetBytes(echoJson);
-
+            var qs = context.Request.QueryString.HasValue ? context.Request.QueryString.Value : "";
             var delay = 0;
-            if (context.Request.QueryString.HasValue)
+            if (qs.Contains("delay1sec"))
             {
-                if (context.Request.QueryString.Value.Contains("delay1sec"))
-                {
-                    delay = 1000;
-                }
-                else if (context.Request.QueryString.Value.Contains("delay10sec"))
-                {
-                    delay = 10000;
-                }
+                delay = 1000;
+            }
+            else if (qs.Contains("delay10sec"))
+            {
+                delay = 10000;
+            }
+
+            if (qs.Contains("abortBeforeHeaders"))
+            {
+                context.Abort();
+                return;
             }
 
             if (delay > 0)
             {
                 context.Features.Get<IHttpResponseBodyFeature>().DisableBuffering();
             }
+
+            // Echo back JSON encoded payload.
+            RequestInformation info = await RequestInformation.CreateAsync(context.Request);
+            string echoJson = info.SerializeToJson();
+            byte[] bytes = Encoding.UTF8.GetBytes(echoJson);
+
+            // Add original request method verb as a custom response header.
+            context.Response.Headers["X-HttpRequest-Method"] = context.Request.Method;
 
             // Compute MD5 hash so that clients can verify the received data.
             using (MD5 md5 = MD5.Create())
@@ -60,11 +64,32 @@ namespace NetCoreServer
                 context.Response.ContentLength = bytes.Length;
             }
 
-            if (delay > 0)
+            await context.Response.StartAsync(CancellationToken.None);
+
+            if (qs.Contains("abortAfterHeaders"))
             {
-                await context.Response.StartAsync(CancellationToken.None);
+                await Task.Delay(10);
+                context.Abort();
+                return;
+            }
+
+            if (HttpMethods.IsHead(context.Request.Method))
+            {
+                return;
+            }
+
+            if (delay > 0 || qs.Contains("abortDuringBody"))
+            {
                 await context.Response.Body.WriteAsync(bytes, 0, 10);
                 await context.Response.Body.FlushAsync();
+                if (qs.Contains("abortDuringBody"))
+                {
+                    await context.Response.Body.FlushAsync();
+                    await Task.Delay(10);
+                    context.Abort();
+                    return;
+                }
+
                 await Task.Delay(delay);
                 await context.Response.Body.WriteAsync(bytes, 10, bytes.Length-10);
                 await context.Response.Body.FlushAsync();

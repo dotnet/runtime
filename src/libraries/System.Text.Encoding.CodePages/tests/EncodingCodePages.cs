@@ -392,6 +392,154 @@ namespace System.Text.Tests
             yield return new object[] { 57011, "x-iscii-pa", "x-iscii-pa" };
         }
 
+        // CodePage, WindowsCodePage, IsBrowserDisplay, IsBrowserSave, IsMailNewsDisplay, IsMailNewsSave
+        public static IEnumerable<object[]> CodePageMappingToWindowsCodePageAndFlags()
+        {
+            yield return new object[] {37, 1252, false, false, false, false};
+            yield return new object[] {437, 1252, false, false, false, false};
+            yield return new object[] {500, 1252, false, false, false, false};
+            yield return new object[] {708, 1256, true, true, false, false};
+            yield return new object[] {720, 1256, true, true, false, false};
+            yield return new object[] {737, 1253, false, false, false, false};
+            yield return new object[] {775, 1257, false, false, false, false};
+            yield return new object[] {850, 1252, false, false, false, false};
+            yield return new object[] {852, 1250, true, true, false, false};
+            yield return new object[] {855, 1252, false, false, false, false};
+            yield return new object[] {857, 1254, false, false, false, false};
+            yield return new object[] {858, 1252, false, false, false, false};
+            yield return new object[] {860, 1252, false, false, false, false};
+            yield return new object[] {861, 1252, false, false, false, false};
+            yield return new object[] {862, 1255, true, true, false, false};
+            yield return new object[] {863, 1252, false, false, false, false};
+            yield return new object[] {864, 1256, false, false, false, false};
+            yield return new object[] {865, 1252, false, false, false, false};
+            yield return new object[] {866, 1251, true, true, false, false};
+            yield return new object[] {869, 1253, false, false, false, false};
+            yield return new object[] {870, 1250, false, false, false, false};
+            yield return new object[] {874, 874, true, true, true, true};
+            yield return new object[] {875, 1253, false, false, false, false};
+            yield return new object[] {932, 932, true, true, true, true};
+            yield return new object[] {936, 936, true, true, true, true};
+            yield return new object[] {949, 949, true, true, true, true};
+            yield return new object[] {950, 950, true, true, true, true};
+            yield return new object[] {1026, 1254, false, false, false, false};
+            yield return new object[] {1047, 1252, false, false, false, false};
+            yield return new object[] {1140, 1252, false, false, false, false};
+            yield return new object[] {1141, 1252, false, false, false, false};
+            yield return new object[] {1142, 1252, false, false, false, false};
+            yield return new object[] {1143, 1252, false, false, false, false};
+            yield return new object[] {1144, 1252, false, false, false, false};
+            yield return new object[] {1145, 1252, false, false, false, false};
+            yield return new object[] {1146, 1252, false, false, false, false};
+            yield return new object[] {1147, 1252, false, false, false, false};
+            yield return new object[] {1148, 1252, false, false, false, false};
+            yield return new object[] {1149, 1252, false, false, false, false};
+            yield return new object[] {1200, 1200, false, true, false, false};
+            yield return new object[] {1201, 1200, false, false, false, false};
+            yield return new object[] {1250, 1250, true, true, true, true};
+            yield return new object[] {1251, 1251, true, true, true, true};
+            yield return new object[] {1252, 1252, true, true, true, true};
+            yield return new object[] {1253, 1253, true, true, true, true};
+            yield return new object[] {1254, 1254, true, true, true, true};
+            yield return new object[] {1255, 1255, true, true, true, true};
+            yield return new object[] {1256, 1256, true, true, true, true};
+            yield return new object[] {1257, 1257, true, true, true, true};
+            yield return new object[] {1258, 1258, true, true, true, true};
+            yield return new object[] {1361, 949, false, false, false, false};
+            yield return new object[] {10000, 1252, false, false, false, false};
+            yield return new object[] {10001, 932, false, false, false, false};
+            yield return new object[] {10002, 950, false, false, false, false};
+            yield return new object[] {10003, 949, false, false, false, false};
+            yield return new object[] {10004, 1256, false, false, false, false};
+            yield return new object[] {10005, 1255, false, false, false, false};
+            yield return new object[] {10006, 1253, false, false, false, false};
+            yield return new object[] {10007, 1251, false, false, false, false};
+            yield return new object[] {10008, 936, false, false, false, false};
+            yield return new object[] {10010, 1250, false, false, false, false};
+            yield return new object[] {10017, 1251, false, false, false, false};
+            yield return new object[] {10021, 874, false, false, false, false};
+            yield return new object[] {10029, 1250, false, false, false, false};
+            yield return new object[] {10079, 1252, false, false, false, false};
+            yield return new object[] {10081, 1254, false, false, false, false};
+            yield return new object[] {10082, 1250, false, false, false, false};
+            yield return new object[] {12000, 1200, false, false, false, false};
+            yield return new object[] {12001, 1200, false, false, false, false};
+            yield return new object[] {20000, 950, false, false, false, false};
+            yield return new object[] {20001, 950, false, false, false, false};
+            yield return new object[] {20002, 950, false, false, false, false};
+            yield return new object[] {20003, 950, false, false, false, false};
+            yield return new object[] {20004, 950, false, false, false, false};
+            yield return new object[] {20005, 950, false, false, false, false};
+            yield return new object[] {20105, 1252, false, false, false, false};
+            yield return new object[] {20106, 1252, false, false, false, false};
+            yield return new object[] {20107, 1252, false, false, false, false};
+            yield return new object[] {20108, 1252, false, false, false, false};
+            yield return new object[] {20127, 1252, false, false, true, true};
+            yield return new object[] {20261, 1252, false, false, false, false};
+            yield return new object[] {20269, 1252, false, false, false, false};
+            yield return new object[] {20273, 1252, false, false, false, false};
+            yield return new object[] {20277, 1252, false, false, false, false};
+            yield return new object[] {20278, 1252, false, false, false, false};
+            yield return new object[] {20280, 1252, false, false, false, false};
+            yield return new object[] {20284, 1252, false, false, false, false};
+            yield return new object[] {20285, 1252, false, false, false, false};
+            yield return new object[] {20290, 932, false, false, false, false};
+            yield return new object[] {20297, 1252, false, false, false, false};
+            yield return new object[] {20420, 1256, false, false, false, false};
+            yield return new object[] {20423, 1253, false, false, false, false};
+            yield return new object[] {20424, 1255, false, false, false, false};
+            yield return new object[] {20833, 949, false, false, false, false};
+            yield return new object[] {20838, 874, false, false, false, false};
+            yield return new object[] {20866, 1251, true, true, true, true};
+            yield return new object[] {20871, 1252, false, false, false, false};
+            yield return new object[] {20880, 1251, false, false, false, false};
+            yield return new object[] {20905, 1254, false, false, false, false};
+            yield return new object[] {20924, 1252, false, false, false, false};
+            yield return new object[] {20932, 932, false, false, false, false};
+            yield return new object[] {20936, 936, false, false, false, false};
+            yield return new object[] {20949, 949, false, false, false, false};
+            yield return new object[] {21025, 1251, false, false, false, false};
+            yield return new object[] {21866, 1251, true, true, true, true};
+            yield return new object[] {28591, 1252, true, true, true, true};
+            yield return new object[] {28592, 1250, true, true, true, true};
+            yield return new object[] {28593, 1254, false, false, true, true};
+            yield return new object[] {28594, 1257, true, true, true, true};
+            yield return new object[] {28595, 1251, true, true, true, true};
+            yield return new object[] {28596, 1256, true, true, true, true};
+            yield return new object[] {28597, 1253, true, true, true, true};
+            yield return new object[] {28598, 1255, true, true, false, false};
+            yield return new object[] {28599, 1254, true, true, true, true};
+            yield return new object[] {28603, 1257, false, false, true, true};
+            yield return new object[] {28605, 1252, false, true, true, true};
+            yield return new object[] {29001, 1252, false, false, false, false};
+            yield return new object[] {38598, 1255, true, true, true, true};
+            yield return new object[] {50220, 932, false, false, true, true};
+            yield return new object[] {50221, 932, false, true, true, true};
+            yield return new object[] {50222, 932, false, false, false, false};
+            yield return new object[] {50225, 949, false, false, true, false};
+            yield return new object[] {50227, 936, false, false, false, false};
+            yield return new object[] {51932, 932, true, true, true, true};
+            yield return new object[] {51936, 936, false, false, false, false};
+            yield return new object[] {51949, 949, false, false, true, true};
+            yield return new object[] {52936, 936, true, true, true, true};
+            yield return new object[] {54936, 936, true, true, true, true};
+            yield return new object[] {57002, 57002, false, false, false, false};
+            yield return new object[] {57003, 57003, false, false, false, false};
+            yield return new object[] {57004, 57004, false, false, false, false};
+            yield return new object[] {57005, 57005, false, false, false, false};
+            yield return new object[] {57006, 57006, false, false, false, false};
+            yield return new object[] {57007, 57007, false, false, false, false};
+            yield return new object[] {57008, 57008, false, false, false, false};
+            yield return new object[] {57009, 57009, false, false, false, false};
+            yield return new object[] {57010, 57010, false, false, false, false};
+            yield return new object[] {57011, 57011, false, false, false, false};
+#if NETFRAMEWORK
+            // UTF-7 is not supported in .NET Core, so we don't have a code page for it.
+            yield return new object[] {65000, 1200, false, false, true, true};
+#endif // NETFRAMEWORK
+            yield return new object[] {65001, 1200, true, true, true, true};
+        }
+
         public static IEnumerable<object[]> SpecificCodepageEncodings()
         {
             // Layout is codepage encoding, bytes, and matching unicode string.
@@ -520,6 +668,7 @@ namespace System.Text.Tests
 
             TestRegister1252();
             TestMultiBytesEncodingsSupportSurrogate();
+            TestWindowsCodePageAndFlagsThroughEncoding();
         }
 
         private static void ValidateDefaultEncodings()
@@ -626,6 +775,23 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [MemberData(nameof(CodePageMappingToWindowsCodePageAndFlags))]
+        public static void TestWindowsCodePageAndFlags(int codePage, int windowsCodePage, bool isBrowserDisplay, bool isBrowserSave, bool isMailNewsDisplay, bool isMailNewsSave)
+        {
+            Encoding encoding = CodePagesEncodingProvider.Instance.GetEncoding(codePage);
+            if (encoding is null) // Not supported encoded like utf cases
+            {
+                return;
+            }
+
+            Assert.Equal(windowsCodePage, encoding.WindowsCodePage);
+            Assert.Equal(isBrowserDisplay, encoding.IsBrowserDisplay);
+            Assert.Equal(isBrowserSave, encoding.IsBrowserSave);
+            Assert.Equal(isMailNewsDisplay, encoding.IsMailNewsDisplay);
+            Assert.Equal(isMailNewsSave, encoding.IsMailNewsSave);
+        }
+
+        [Theory]
         [MemberData(nameof(CodePageInfo))]
         public static void TestEncodingDisplayNames(int codePage, string webName, string queryString)
         {
@@ -638,6 +804,28 @@ namespace System.Text.Tests
             // Names can't be empty, and must be printable characters.
             Assert.False(string.IsNullOrWhiteSpace(name));
             Assert.All(name, c => Assert.True(c >= ' ' && c < '~' + 1, "Name: " + name + " contains character: " + c));
+        }
+
+        private static void TestWindowsCodePageAndFlagsThroughEncoding()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            foreach (var objects in CodePageMappingToWindowsCodePageAndFlags())
+            {
+                int codePage = (int)objects[0];
+                int windowsCodePage = (int)objects[1];
+                bool isBrowserDisplay = (bool)objects[2];
+                bool isBrowserSave = (bool)objects[3];
+                bool isMailNewsDisplay = (bool)objects[4];
+                bool isMailNewsSave = (bool)objects[5];
+
+                Encoding encoding = Encoding.GetEncoding(codePage);
+                Assert.Equal(windowsCodePage, encoding.WindowsCodePage);
+                Assert.Equal(isBrowserDisplay, encoding.IsBrowserDisplay);
+                Assert.Equal(isBrowserSave, encoding.IsBrowserSave);
+                Assert.Equal(isMailNewsDisplay, encoding.IsMailNewsDisplay);
+                Assert.Equal(isMailNewsSave, encoding.IsMailNewsSave);
+            }
         }
 
         private static void TestMultiBytesEncodingsSupportSurrogate()

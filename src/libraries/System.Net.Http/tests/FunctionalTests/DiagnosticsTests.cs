@@ -31,7 +31,6 @@ namespace System.Net.Http.Functional.Tests
         public DiagnosticsTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71877", TestPlatforms.Browser)]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(HttpClient).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
@@ -1506,8 +1505,82 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Equal(activitySourceCreatesActivity.HasValue, madeASamplingDecision);
                 Assert.Equal(diagnosticListenerActivityEnabled.HasValue, listenerCallbackWasCalled);
-        }, UseVersion.ToString(), TestAsync.ToString(), parameters).DisposeAsync();
-    }
+            }, UseVersion.ToString(), TestAsync.ToString(), parameters).DisposeAsync();
+        }
+
+        private sealed class SendMultipleTimesHandler : DelegatingHandler
+        {
+            private readonly Activity[] _parentActivities;
+
+            public SendMultipleTimesHandler(HttpMessageHandler innerHandler, params Activity[] parentActivities) : base(innerHandler)
+            {
+                Assert.NotEmpty(parentActivities);
+                _parentActivities = parentActivities;
+            }
+
+            protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+                => SendAsync(request, testAsync: false, cancellationToken).Result;
+
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+                => await SendAsync(request, testAsync: true, cancellationToken);
+
+            private async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool testAsync, CancellationToken cancellationToken)
+            {
+                HttpResponseMessage response = null;
+                foreach (Activity parent in _parentActivities)
+                {
+                    parent.Start();
+                    Assert.Equal(ActivityIdFormat.W3C, parent.IdFormat);
+                    response = testAsync ? await base.SendAsync(request, cancellationToken) : base.Send(request, cancellationToken);
+                    parent.Stop();
+                    if (parent != _parentActivities.Last())
+                    {
+                        response.Dispose(); // only keep the last response
+                    }
+                }
+                return response;
+            }   
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task SendAsync_ReuseRequestInHandler_ResetsHeadersForEachReuse()
+        {
+            Activity parent0 = new Activity("parent0");
+            Activity parent1 = new Activity("parent1") { TraceStateString = "wow=1" };
+            Activity parent2 = new Activity("parent2") { TraceStateString = "wow=2" };
+
+            const string FirstTraceParent = "00-F";
+            const string FirstTraceState = "first";
+
+            await GetFactoryForVersion(UseVersion).CreateServerAsync(async (server, uri) =>
+            {
+                SendMultipleTimesHandler handler = new SendMultipleTimesHandler(CreateSocketsHttpHandler(allowAllCertificates: true), parent0, parent1, parent2);
+                using HttpClient client = new HttpClient(handler);
+                HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+
+                request.Headers.Add("traceparent", FirstTraceParent);
+                request.Headers.Add("tracestate", FirstTraceState);
+
+                Task clientTask = TestAsync ? client.SendAsync(request) : Task.Run(() => client.Send(request));
+
+                HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+
+                // On the first send DiagnosticsHandler should keep user-supplied headers.
+                string traceparent = GetHeaderValue(requestData, "traceparent");
+                string tracestate = GetHeaderValue(requestData, "tracestate");
+                Assert.Equal(FirstTraceParent, traceparent);
+                Assert.Equal(FirstTraceState, tracestate);
+
+                requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+
+                // Headers should be overridden on each subsequent send.
+                AssertHeadersAreInjected(requestData, parent1);
+                requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.OK);
+                AssertHeadersAreInjected(requestData, parent2);
+
+                await clientTask;
+            });
+        }
 
         private static T GetProperty<T>(object obj, string propertyName)
         {

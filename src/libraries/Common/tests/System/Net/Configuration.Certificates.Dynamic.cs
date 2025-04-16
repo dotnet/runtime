@@ -139,7 +139,7 @@ namespace System.Net.Test.Common
                     intermediateAuthorityCount: longChain ? 3 : 1,
                     subjectName: targetName,
                     testName: testName,
-                    keySize: keySize,
+                    keyFactory: CertificateAuthority.KeyFactory.RSASize(keySize),
                     extensions: extensions);
 
                 // Walk the intermediates backwards so we build the chain collection as

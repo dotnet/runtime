@@ -104,6 +104,12 @@ namespace MonoTargetsTasks
             }
         }
 
+        private static bool IsDisableRuntimeMarshallingAttribute(MetadataReader mdtReader, StringHandle ns, StringHandle name)
+        {
+            return mdtReader.StringComparer.Equals(ns, "System.Runtime.CompilerServices") &&
+                   mdtReader.StringComparer.Equals(name, "DisableRuntimeMarshallingAttribute");
+        }
+
         private bool IsAssemblyIncompatible(string assyPath, MinimalMarshalingTypeCompatibilityProvider mmtcp)
         {
             using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -124,9 +130,19 @@ namespace MonoTargetsTasks
                     TypeDefinitionHandle tdh = md.GetDeclaringType();
                     TypeDefinition td = mdtReader.GetTypeDefinition(tdh);
 
-                    if (mdtReader.GetString(td.Namespace) == "System.Runtime.CompilerServices" &&
-                        mdtReader.GetString(td.Name) == "DisableRuntimeMarshallingAttribute")
+                    if (IsDisableRuntimeMarshallingAttribute(mdtReader, td.Namespace, td.Name))
                         return false;
+                }
+                else if (attr.Constructor.Kind == HandleKind.MemberReference)
+                {
+                    MemberReferenceHandle mrh = (MemberReferenceHandle)attr.Constructor;
+                    MemberReference mr = mdtReader.GetMemberReference(mrh);
+                    if (mr.Parent.Kind == HandleKind.TypeReference) {
+                        TypeReference tr = mdtReader.GetTypeReference((TypeReferenceHandle)mr.Parent);
+
+                        if (IsDisableRuntimeMarshallingAttribute(mdtReader, tr.Namespace, tr.Name))
+                            return false;
+                    }
                 }
             }
 

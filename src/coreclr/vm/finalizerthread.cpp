@@ -380,6 +380,20 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     LOG((LF_GC, LL_INFO10, "Finalizer thread starting...\n"));
 
+#ifdef TARGET_WINDOWS
+#ifdef FEATURE_COMINTEROP
+    // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
+    // termination callback.
+    ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    g_fComStarted = true;
+#endif
+
+    InitFlsSlot();
+
+    // handshake with EE initialization, as now we can attach Thread objects to native threads.
+    hEventFinalizerDone->Set();
+#endif
+
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();
 
     _ASSERTE(s_FinalizerThreadOK);
@@ -395,9 +409,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
             while (!fQuitFinalizer)
             {
-                // This will apply any policy for swallowing exceptions during normal
-                // processing, without allowing the finalizer thread to disappear on us.
-                ManagedThreadBase::FinalizerBase(FinalizerThreadWorker);
+                ManagedThreadBase::KickOff(FinalizerThreadWorker, NULL);
 
                 // If we came out on an exception, then we probably lost the signal that
                 // there are objects in the queue ready to finalize.  The safest thing is
@@ -489,6 +501,15 @@ void FinalizerThread::SignalFinalizationDone(int observedFullGcCount)
 
     g_fullGcCountSeenByFinalization = observedFullGcCount;
     hEventFinalizerDone->Set();
+}
+
+void FinalizerThread::WaitForFinalizerThreadStart()
+{
+    // this should be only called during EE startup
+    _ASSERTE(!g_fEEStarted);
+
+    hEventFinalizerDone->Wait(INFINITE,FALSE);
+    hEventFinalizerDone->Reset();
 }
 
 // Wait for the finalizer thread to complete one pass.

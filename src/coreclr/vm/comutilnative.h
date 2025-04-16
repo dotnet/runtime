@@ -87,8 +87,8 @@ public:
     static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
 };
 
-extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length);
 extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length);
+extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length);
 
 const UINT MEM_PRESSURE_COUNT = 4;
 

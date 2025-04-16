@@ -65,6 +65,8 @@ public:
         }
     }
 
+    static void WaitForFinalizerThreadStart();
+
     static void FinalizerThreadWait();
 
     static void SignalFinalizationDone(int observedFullGcCount);

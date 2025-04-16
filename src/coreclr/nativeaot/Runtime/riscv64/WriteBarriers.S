@@ -31,7 +31,6 @@
         la    t3, g_GCShadow
         ld    t3, 0(t3)
         beq  t3, zero, 1f
-        li   t4, 0
 
         // Save destReg since we're about to modify it (and we need the original value both within the macro and
         // once we exit the macro).
@@ -106,6 +105,7 @@
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Update the write watch table if necessary
         la      t2, g_write_watch_table
+        ld      t2, (t2)
 
         beqz    t2, 2f
         srli    t6, \destReg, 12   // SoftwareWriteWatch::AddressToTableByteIndexShift
@@ -120,33 +120,40 @@
         // We can skip the card table write if the reference is to
         // an object not on the ephemeral segment.
         la      t2, g_ephemeral_low
+        ld      t2, (t2)
         la      t6, g_ephemeral_high
-        bgeu    \refReg, t2, 0f
-        bltu    \refReg, t6, 0f
+        ld      t6, (t6)
+        bltu    \refReg, t2, 0f
+        bgeu    \refReg, t6, 0f
 
         // Set this object's card, if it has not already been set.
         la      t2, g_card_table
+        ld      t2, (t2)
         srli    t6, \destReg, 11
         add     t6, t2, t6
 
         // Check that this card has not already been written. Avoiding useless writes
         // is a big win on multi-proc systems since it avoids cache thrashing.
-        lb      t2, 0(t6)
-        li      t6, 0xFF
-        beq     t2, t6, 0f
+        lbu     t2, 0(t6)
+        addi    t2, t2, -0xFF
+        beqz    t2, 0f
 
-        sb      t6, 0(t6)
+        li      t2, 0xFF
+        sb      t2, 0(t6)
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Check if we need to update the card bundle table
         la      t2, g_card_bundle_table
+        ld      t2, (t2)
+
         srli    t6, \destReg, 21
         add     t6, t2, t6
-        lb      t2, 0(t6)
-        li      t6, 0xFF
-        beq     t2, t6, 0f
+        lbu     t2, 0(t6)
+        addi    t2, t2, -0xFF
+        beqz    t2, 0f
 
-        sb      t6, 0(t6)
+        li      t2, 0xFF
+        sb      t2, 0(t6)
 #endif
 
 0:
@@ -166,10 +173,12 @@
         // If no, early out.
 
         la      t2, g_lowest_address
-        bgeu    \destReg, t2, 0f
+        ld      t2, (t2)
+        bltu    \destReg, t2, 0f
 
         la      t2, g_highest_address
-        bltu    \destReg, t2, 0f
+        ld      t2, (t2)
+        bgeu    \destReg, t2, 0f
 
 1:
         INSERT_UNCHECKED_WRITE_BARRIER_CORE \destReg, \refReg
@@ -220,8 +229,10 @@ LEAF_END RhpByRefAssignRef, _TEXT
 LEAF_ENTRY RhpCheckedAssignRef, _TEXT
 
         # Check if the destination is within the heap bounds
-        la t2, C_FUNC(g_lowest_address)
-        la t6, C_FUNC(g_highest_address)
+        la      t2, C_FUNC(g_lowest_address)
+        ld      t2, (t2)
+        la      t6, C_FUNC(g_highest_address)
+        ld      t6, (t6)
 
         bltu    t3, t2, LOCAL_LABEL(NotInHeap)
         bgeu    t3, t6, LOCAL_LABEL(NotInHeap)
@@ -250,6 +261,7 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 //  t2, t6 : trashed
 //  t3 : incremented by 8
 LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
+        fence rw, rw
 
     ALTERNATE_ENTRY RhpAssignRefAVLocation
         sd    t4, 0(t3)
@@ -295,13 +307,17 @@ LEAF_ENTRY RhpCheckedLockCmpXchg
 
 LOCAL_LABEL(CmpXchgRetry):
         // Load the current value at the destination address.
-        lr.d    t0, (a0)         // t0 = *dest
+        lr.d.aqrl    t0, (a0)       // t0 = *dest (load with acquire-release ordering)
         // Compare the loaded value with the comparand.
         bne     t0, a2, LOCAL_LABEL(CmpXchgNoUpdate) // if (*dest != comparand) goto CmpXchgNoUpdate
 
         // Attempt to store the exchange value at the destination address.
-        sc.d    t1, a1, (a0)     // t1 = (store conditional result: 0 if successful)
+        sc.d.rl    t1, a1, (a0)  // t1 = (store conditional result: 0 if successful, with release ordering)
         bnez    t1, LOCAL_LABEL(CmpXchgRetry) // if store conditional failed, retry
+
+        // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
+        // barrier is necessary.
+        fence   rw, rw
 
 LOCAL_LABEL(DoCardsCmpXchg):
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
@@ -331,13 +347,14 @@ LEAF_END RhpCheckedLockCmpXchg
 //
 // On exit:
 //  a0: original value of objectref
-//  t1: trashed
-//  t3, t6, t4: trashed
+//  t1, t6: trashed
 //
 LEAF_ENTRY RhpCheckedXchg
+        amoswap.d.aqrl t1, a1, (a0)
 
-        ld   t1, 0(a0)
-        sd   a1, 0(a0)
+        // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
+        // barrier is necessary.
+        fence rw, rw
 
 DoCardsXchg:
         // We have successfully updated the value of the objectref so now we need a GC write barrier.

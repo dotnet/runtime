@@ -133,7 +133,6 @@ HRESULT EEConfig::Init()
     pszBreakOnComToClrNativeInfoInit = 0;
     pszBreakOnStructMarshalSetup = 0;
     fJitVerificationDisable= false;
-    fVerifierOff           = false;
 
 #ifdef ENABLE_STARTUP_DELAY
     iStartupDelayMS = 0;
@@ -171,7 +170,6 @@ HRESULT EEConfig::Init()
 
     fSuppressChecks = false;
     fConditionalContracts = false;
-    fEnableFullDebug = false;
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
@@ -557,10 +555,6 @@ HRESULT EEConfig::sync()
     Contract::SetUnconditionalContractEnforcement(!fConditionalContracts);
 #endif
 
-    fEnableFullDebug = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableFullDebug) != 0);
-
-    fVerifierOff    = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VerifierOff) != 0);
-
     fJitVerificationDisable = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitVerificationDisable) != 0);
 #endif
 
@@ -769,6 +763,11 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_GDBJIT_FRAME)
     fGDBJitEmitDebugFrame = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitEmitDebugFrame) != 0;
 #endif
+
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+    fUseCachedInterfaceDispatch = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseCachedInterfaceDispatch) != 0;
+#endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
     return hr;
 }
 

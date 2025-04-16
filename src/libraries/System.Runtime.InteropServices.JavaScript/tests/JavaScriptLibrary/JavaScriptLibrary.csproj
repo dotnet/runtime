@@ -1,19 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- This test library intentionally references inbox P2Ps as it needs the implementation, instead of the contract.
+         Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
   </PropertyGroup>
+
   <!-- Make debugging easier -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)JavaScriptInterop.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="System.Runtime.InteropServices.JavaScript.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" PrivateAssets="all" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
@@ -23,4 +34,5 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
+
 </Project>

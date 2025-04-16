@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="tailcallinvoker.il" />
+    <ProjectReference Include="dependencytodelete.csproj" />
+  </ItemGroup>
+</Project>

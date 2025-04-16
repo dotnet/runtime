@@ -74,8 +74,8 @@ LOCAL_LABEL(RhpNewFast_RarePath):
 
         // a3: transition frame
 
-        // Preserve the MethodTable in s0
-        mv  s0, a0
+        // Preserve the MethodTable in s2
+        mv  s2, a0
 
         li  a2, 0 // numElements
 
@@ -96,7 +96,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
-        mv  a0, s0                // MethodTable pointer
+        mv  a0, s2                // MethodTable pointer
         li  a1, 0                 // Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
@@ -243,7 +243,7 @@ LOCAL_LABEL(RhpNewArray_Rare):
         PUSH_COOP_PINVOKE_FRAME a3
 
         // Preserve data we will need later into the callee saved registers
-        mv   s0, a0              // Preserve MethodTable
+        mv   s2, a0              // Preserve MethodTable
 
         mv   a2, a1              // numElements
         li   a1, 0                // uFlags
@@ -264,7 +264,7 @@ LOCAL_LABEL(ArrayOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
-        mv   a0, s0             // MethodTable Pointer
+        mv   a0, s2             // MethodTable Pointer
         li   a1, 0               // Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME

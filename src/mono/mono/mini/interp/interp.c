@@ -3891,6 +3891,64 @@ interp_ldvirtftn_delegate (gpointer arg, MonoDelegate *del)
 	return imethod_to_ftnptr (imethod, need_unbox);
 }
 
+static MONO_NEVER_INLINE void
+mono_interp_trace_with_ctx (InterpFrame *frame, void (*trace_cb)(MonoMethod*,MonoJitInfo*,MonoProfilerCallContext*))
+{
+	MonoProfilerCallContext prof_ctx;
+	MonoLMFExt ext;
+	memset (&prof_ctx, 0, sizeof (MonoProfilerCallContext));
+	prof_ctx.interp_frame = frame;
+	prof_ctx.method = frame->imethod->method;
+	prof_ctx.return_value = frame->retval;
+	interp_push_lmf (&ext, frame);
+	trace_cb (frame->imethod->method, frame->imethod->jinfo, &prof_ctx);
+	interp_pop_lmf (&ext);
+}
+
+static MONO_NEVER_INLINE void
+mono_interp_profiler_raise_with_ctx (InterpFrame *frame, void (*prof_cb)(MonoMethod*,MonoProfilerCallContext*))
+{
+	MonoProfilerCallContext prof_ctx;
+	MonoLMFExt ext;
+	memset (&prof_ctx, 0, sizeof (MonoProfilerCallContext));
+	prof_ctx.interp_frame = frame;
+	prof_ctx.method = frame->imethod->method;
+	prof_ctx.return_value = frame->retval;
+	interp_push_lmf (&ext, frame);
+	prof_cb (frame->imethod->method, &prof_ctx);
+	interp_pop_lmf (&ext);
+}
+
+static MONO_NEVER_INLINE void
+mono_interp_profiler_raise (InterpFrame *frame, void (*prof_cb)(MonoMethod*,MonoProfilerCallContext*))
+{
+	MonoLMFExt ext;
+	interp_push_lmf (&ext, frame);
+	prof_cb (frame->imethod->method, NULL);
+	interp_pop_lmf (&ext);
+}
+
+static MONO_NEVER_INLINE void
+mono_interp_profiler_raise_tail_call (InterpFrame *frame, MonoMethod *new_method)
+{
+	MonoLMFExt ext;
+	interp_push_lmf (&ext, frame);
+	mono_profiler_raise_method_tail_call (frame->imethod->method, new_method);
+	interp_pop_lmf (&ext);
+}
+
+#define INTERP_PROFILER_RAISE(name_lower, name_upper) \
+	if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_ ## name_lower) && \
+			(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ ## name_upper ## _CONTEXT ))) { \
+		if (flag & TRACING_FLAG) \
+			mono_interp_trace_with_ctx (frame, mono_trace_ ## name_lower ## _method); \
+		if (flag & PROFILING_FLAG) \
+			mono_interp_profiler_raise_with_ctx (frame, mono_profiler_raise_method_ ## name_lower); \
+	} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_ ## name_lower)) { \
+		mono_interp_profiler_raise (frame, mono_profiler_raise_method_ ## name_lower); \
+	}
+
+
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -4116,7 +4174,8 @@ main_loop:
 			}
 
 			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
-				MONO_PROFILER_RAISE (method_tail_call, (frame->imethod->method, new_method->method));
+				if (MONO_PROFILER_ENABLED (method_tail_call))
+					mono_interp_profiler_raise_tail_call (frame, new_method->method);
 
 			if (!new_method->transformed) {
 				MonoException *transform_ex = do_transform_method (new_method, frame, context);
@@ -7610,24 +7669,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_PROF_ENTER) {
 			guint16 flag = ip [1];
 			ip += 2;
-
-			if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter) &&
-					(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT))) {
-				MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);
-				prof_ctx->interp_frame = frame;
-				prof_ctx->method = frame->imethod->method;
-				// FIXME push/pop LMF
-				if (flag & TRACING_FLAG)
-					mono_trace_enter_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
-				if (flag & PROFILING_FLAG)
-					MONO_PROFILER_RAISE (method_enter, (frame->imethod->method, prof_ctx));
-				g_free (prof_ctx);
-			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
-				MONO_PROFILER_RAISE (method_enter, (frame->imethod->method, NULL));
-			}
+			INTERP_PROFILER_RAISE(enter, ENTER);
 			MINT_IN_BREAK;
 		}
-
+		MINT_IN_CASE(MINT_PROF_SAMPLEPOINT) {
+			guint16 flag = ip [1];
+			ip += 2;
+			INTERP_PROFILER_RAISE(samplepoint, SAMPLEPOINT);
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_PROF_EXIT)
 		MINT_IN_CASE(MINT_PROF_EXIT_VOID) {
 			gboolean is_void = ip [0] == MINT_PROF_EXIT_VOID;
@@ -7640,24 +7690,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				else
 					frame->retval [0] = LOCAL_VAR (ip [1], stackval);
 			}
-
-			if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_leave) &&
-					(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT))) {
-				MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);
-				prof_ctx->interp_frame = frame;
-				prof_ctx->method = frame->imethod->method;
-				if (!is_void)
-					prof_ctx->return_value = frame->retval;
-				// FIXME push/pop LMF
-				if (flag & TRACING_FLAG)
-					mono_trace_leave_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
-				if (flag & PROFILING_FLAG)
-					MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, prof_ctx));
-				g_free (prof_ctx);
-			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
-				MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, NULL));
-			}
-
+			INTERP_PROFILER_RAISE(leave, LEAVE);
 			frame_data_allocator_pop (&context->data_stack, frame);
 			goto exit_frame;
 		}
@@ -9126,7 +9159,7 @@ mono_jiterp_interp_entry (JiterpEntryData *_data, void *res)
 	int params_size = get_arg_offset_fast (header.rmethod, NULL, header.params_count);
 	// g_printf ("jiterp_interp_entry: rmethod=%d, params_count=%d, params_size=%d\n", header.rmethod, header.params_count, params_size);
 	header.context->stack_pointer = (guchar*)ALIGN_TO ((guchar*)sp + params_size, MINT_STACK_ALIGNMENT);
-;
+
 	g_assert (header.context->stack_pointer < header.context->stack_end);
 
 	MONO_ENTER_GC_UNSAFE;
@@ -9160,6 +9193,28 @@ EMSCRIPTEN_KEEPALIVE volatile size_t *
 mono_jiterp_get_polling_required_address ()
 {
 	return &mono_polling_required;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_prof_enter (InterpFrame *frame, guint16 *ip)
+{
+	guint16 flag = ip [1];
+	INTERP_PROFILER_RAISE(enter, ENTER);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_prof_samplepoint (InterpFrame *frame, guint16 *ip)
+{
+	guint16 flag = ip [1];
+	INTERP_PROFILER_RAISE(samplepoint, SAMPLEPOINT);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_prof_leave (InterpFrame *frame, guint16 *ip)
+{
+	gboolean is_void = ip [0] == MINT_PROF_EXIT_VOID;
+	guint16 flag = is_void ? ip [1] : ip [2];
+	INTERP_PROFILER_RAISE(leave, LEAVE);
 }
 
 EMSCRIPTEN_KEEPALIVE void

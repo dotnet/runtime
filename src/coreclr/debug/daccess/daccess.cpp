@@ -5825,7 +5825,7 @@ ClrDataAccess::RawGetMethodName(
                 {
                     // Try to find matching precode entrypoint
                     Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(alignedAddress, TRUE);
-                    if (pPrecode != NULL)
+                    if (pPrecode != NULL && pPrecode->GetType() != PRECODE_UMENTRY_THUNK)
                     {
                         methodDesc = pPrecode->GetMethodDesc();
                         if (methodDesc != NULL)

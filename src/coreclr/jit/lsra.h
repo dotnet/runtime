@@ -741,15 +741,16 @@ public:
     void updateMaxSpill(RefPosition* refPosition);
     void recordMaxSpill();
 
+private:
     // max simultaneous spill locations used of every type
     unsigned int maxSpill[TYP_COUNT];
     unsigned int currentSpill[TYP_COUNT];
     bool         needFloatTmpForFPCall;
     bool         needDoubleTmpForFPCall;
     bool         needNonIntegerRegisters;
+    bool         needToKillFloatRegs;
 
 #ifdef DEBUG
-private:
     //------------------------------------------------------------------------
     // Should we stress lsra? This uses the DOTNET_JitStressRegs variable.
     //
@@ -1004,8 +1005,10 @@ private:
 
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
-    void processBlockEndLocations(BasicBlock* current);
-    void resetAllRegistersState();
+
+    FORCEINLINE void handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap);
+    void             processBlockEndLocations(BasicBlock* current);
+    void             resetAllRegistersState();
 
 #ifdef TARGET_ARM
     bool       isSecondHalfReg(RegRecord* regRec, Interval* interval);
@@ -1078,9 +1081,10 @@ private:
     SingleTypeRegSet lowSIMDRegs();
     SingleTypeRegSet internalFloatRegCandidates();
 
-    void makeRegisterInactive(RegRecord* physRegRecord);
-    void freeRegister(RegRecord* physRegRecord);
-    void freeRegisters(regMaskTP regsToFree);
+    void             makeRegisterInactive(RegRecord* physRegRecord);
+    void             freeRegister(RegRecord* physRegRecord);
+    void             freeRegisters(regMaskTP regsToFree);
+    FORCEINLINE void freeRegistersSingleType(SingleTypeRegSet regsToFree, int regBase);
 
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
@@ -1192,7 +1196,12 @@ private:
     void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
     void processKills(RefPosition* killRefPosition);
-    void spillGCRefs(RefPosition* killRefPosition);
+    template <bool isLow>
+    FORCEINLINE void freeKilledRegs(RefPosition*     killRefPosition,
+                                    SingleTypeRegSet killedRegs,
+                                    RefPosition*     nextKill,
+                                    int              regBase);
+    void             spillGCRefs(RefPosition* killRefPosition);
 
     /*****************************************************************************
      * Register selection
@@ -1814,9 +1823,28 @@ private:
     }
     SingleTypeRegSet getMatchingConstants(SingleTypeRegSet mask, Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskTP    fixedRegs;
+    SingleTypeRegSet fixedRegsLow;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    SingleTypeRegSet fixedRegsHigh;
+#endif
     LsraLocation nextFixedRef[REG_COUNT];
-    void         updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+    template <bool isLow>
+    void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+    void updateNextFixedRefDispatch(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
+    {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        if (regRecord->regNum < 64)
+        {
+            updateNextFixedRef<true>(regRecord, nextRefPosition, nextKill);
+        }
+        else
+        {
+            updateNextFixedRef<false>(regRecord, nextRefPosition, nextKill);
+        }
+#else
+        updateNextFixedRef<true>(regRecord, nextRefPosition, nextKill);
+#endif
+    }
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
     {
         LsraLocation loc = nextFixedRef[regNum];

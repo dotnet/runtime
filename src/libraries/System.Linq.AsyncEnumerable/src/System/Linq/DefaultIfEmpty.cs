@@ -42,25 +42,19 @@ namespace System.Linq
                 TSource defaultValue,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
                 {
-                    if (await e.MoveNextAsync().ConfigureAwait(false))
+                    do
                     {
-                        do
-                        {
-                            yield return e.Current;
-                        }
-                        while (await e.MoveNextAsync().ConfigureAwait(false));
+                        yield return e.Current;
                     }
-                    else
-                    {
-                        yield return defaultValue;
-                    }
+                    while (await e.MoveNextAsync());
                 }
-                finally
+                else
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    yield return defaultValue;
                 }
             }
         }

@@ -131,7 +131,9 @@ class LCGMethodResolver : public DynamicResolver
     friend class DynamicMethodTable;
     // review this to see whether the EEJitManageris the only thing to worry about
     friend class ExecutionManager;
+    friend class EECodeGenManager;
     friend class EEJitManager;
+    friend class InterpreterJitManager;
     friend class HostCodeHeap;
     friend struct ExecutionManager::JumpStubCache;
 
@@ -268,7 +270,9 @@ class HostCodeHeap : CodeHeap
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #else
+    friend class EECodeGenManager;
     friend class EEJitManager;
+    friend class InterpreterJitManager;
 #endif
 
     VPTR_VTABLE_CLASS(HostCodeHeap, CodeHeap)
@@ -276,7 +280,7 @@ class HostCodeHeap : CodeHeap
 private:
     // pointer back to jit manager info
     PTR_HeapList m_pHeapList;
-    PTR_EEJitManager m_pJitManager;
+    PTR_EECodeGenManager m_pJitManager;
     // basic allocation data
     PTR_BYTE m_pBaseAddr;
     PTR_BYTE m_pLastAvailableCommittedAddr;
@@ -284,6 +288,7 @@ private:
     size_t m_ApproximateLargestBlock;
     // Heap ref count
     DWORD m_AllocationCount;
+    bool m_isExecutable;
 
     // data to track free list and pointers into this heap
     // - on an used block this struct has got a pointer back to the CodeHeap, size and start of aligned allocation
@@ -302,10 +307,10 @@ private:
     LoaderAllocator*m_pAllocator;
 
 public:
-    static HeapList* CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager *pJitManager);
+    static HeapList* CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenManager *pJitManager);
 
 private:
-    HostCodeHeap(EEJitManager *pJitManager);
+    HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable);
     HeapList* InitializeHeapList(CodeHeapRequestInfo *pInfo);
     TrackAllocation* AllocFromFreeList(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs);
     void AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocation *pBlockToInsertRW);

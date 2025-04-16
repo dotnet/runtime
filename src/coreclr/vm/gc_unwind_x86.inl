@@ -126,6 +126,11 @@ __forceinline int decodeSigned(PTR_CBYTE& src)
 #define fastSkipSigned(src) (decodeSigned(src))
 #endif
 
+unsigned int DecodeGCHdrInfoMethodSize(GCInfoToken gcInfoToken)
+{
+    PTR_CBYTE table = (PTR_CBYTE) gcInfoToken.Info;
+    return fastDecodeUnsigned(table);
+}
 
 /*****************************************************************************
  *

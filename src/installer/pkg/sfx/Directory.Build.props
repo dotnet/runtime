@@ -14,7 +14,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(BuildOnlyPgoInstrumentedAssets)' != 'true' and '$(DotNetBuildSourceOnly)' != 'true'">
     <GenerateInstallers>true</GenerateInstallers>
-    <BuildDebPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and '$(TargetArchitecture)' == 'x64'">true</BuildDebPackage>
+    <BuildDebPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</BuildDebPackage>
     <BuildRpmPackage Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</BuildRpmPackage>
     <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>
   </PropertyGroup>

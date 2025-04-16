@@ -65,27 +65,48 @@ namespace System
                     {
                         vector = Vector256.Create(vec128).AsVector();
                     }
+                    else if (Vector<byte>.Count == 64)
+                    {
+                        vector = Vector512.Create(vec128).AsVector();
+                    }
                     else
                     {
-                        Debug.Fail("Vector<T> isn't 128 or 256 bits in size?");
+                        Debug.Fail("Vector<T> is unexpected size.");
                         goto CannotVectorize;
                     }
                 }
                 else if (sizeof(T) == 32)
                 {
+                    Vector256<byte> vec256 = Unsafe.As<T, Vector256<byte>>(ref tmp);
                     if (Vector<byte>.Count == 32)
                     {
-                        vector = Unsafe.As<T, Vector256<byte>>(ref tmp).AsVector();
+                        vector = vec256.AsVector();
+                    }
+                    else if (Vector<byte>.Count == 64)
+                    {
+                        vector = Vector512.Create(vec256).AsVector();
                     }
                     else
                     {
-                        Debug.Fail("Vector<T> isn't 256 bits in size?");
+                        Debug.Fail("Vector<T> is unexpected size.");
+                        goto CannotVectorize;
+                    }
+                }
+                else if (sizeof(T) == 64)
+                {
+                    if (Vector<byte>.Count == 64)
+                    {
+                        vector = Unsafe.As<T, Vector512<byte>>(ref tmp).AsVector();
+                    }
+                    else
+                    {
+                        Debug.Fail("Vector<T> is unexpected size.");
                         goto CannotVectorize;
                     }
                 }
                 else
                 {
-                    Debug.Fail("Vector<T> is greater than 256 bits in size?");
+                    Debug.Fail("Vector<T> is greater than 512 bits in size?");
                     goto CannotVectorize;
                 }
 

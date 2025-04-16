@@ -101,6 +101,8 @@ public:
     static const SIZE_T CodeSize = 40;
 #elif defined(TARGET_RISCV64)
     static const SIZE_T CodeSize = 40;
+#elif defined(TARGET_WASM)
+    static const SIZE_T CodeSize = 0;
 #endif
 
 private:
@@ -259,7 +261,7 @@ private:
     private:
         // LoaderHeap cannot be constructed when DACCESS_COMPILE is defined (at the time, its destructor was private). Working
         // around that by controlling creation/destruction using a pointer.
-        LoaderHeap *m_heap;
+        InterleavedLoaderHeap *m_heap;
         RangeList m_heapRangeList;
 
     public:
@@ -271,7 +273,7 @@ private:
         void Reset();
         const CallCountingStub *AllocateStub(CallCount *remainingCallCountCell, PCODE targetForMethod);
     private:
-        LoaderHeap *AllocateHeap();
+        InterleavedLoaderHeap *AllocateHeap();
     #endif // !DACCESS_COMPILE
 
     public:

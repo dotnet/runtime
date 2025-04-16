@@ -42,6 +42,11 @@ install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)
 
 # cDAC contract descriptor
 
+if(CDAC_BUILD_TOOL_BINARY_PATH AND "${CLR_DOTNET_RID}" STREQUAL "")
+  message(FATAL_ERROR "CLR_DOTNET_RID is not set. Please ensure it is being set to the portable RID of the target platform by runtime.proj.")
+endif()
+configure_file(configure.h.in ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+
 if (NOT CDAC_BUILD_TOOL_BINARY_PATH)
   # if CDAC_BUILD_TOOL_BINARY_PATH is unspecified (for example for a build without a .NET SDK or msbuild),
   # link a stub contract descriptor into the runtime

@@ -61,8 +61,6 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory]
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]
-    [InlineData(Configuration.Debug, true)]
-    [InlineData(Configuration.Release, true)]
     public void DefaultTemplate_CheckFingerprinting(Configuration config, bool expectFingerprintOnDotnetJs)
     {
         var extraProperty = expectFingerprintOnDotnetJs ?

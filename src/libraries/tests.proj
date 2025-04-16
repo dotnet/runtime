@@ -40,6 +40,11 @@
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'">
+    <!-- https://github.com/dotnet/dnceng/issues/3008 - osx Helix queue doesn't have OpenSSL -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl\tests\System.Security.Cryptography.OpenSsl.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- Samples which are too complex for CI -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />
@@ -56,16 +61,19 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj" />
   </ItemGroup>
 
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">
+    <ProjectExclusions Include="$(MonoProjectRoot)sample/wasm/**/*.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)src/tests/FunctionalTests/WebAssembly/Browser/HotReload/WebAssembly.Browser.HotReload.Test.csproj" />
+  </ItemGroup>
+
   <!-- Samples that require a multi-threaded runtime -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' != 'true'" >
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
-    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'" >
     <!-- https://github.com/dotnet/runtime/issues/91676 -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-minimal-config\Wasm.Browser.Config.Sample.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/98026 -->
-    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
   </ItemGroup>
 
   <!-- wasm EAT/AOT -->

@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace System.Diagnostics.Metrics
 {
-    [UnsupportedOSPlatform("browser")]
     [SecuritySafeCritical]
     internal sealed class AggregationManager
     {
@@ -29,6 +28,9 @@ namespace System.Diagnostics.Metrics
         private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private readonly CancellationTokenSource _cts = new();
         private Thread? _collectThread;
+#if OS_ISBROWSER_SUPPORT
+        private Timer? _pollingTimer;
+#endif
         private readonly MeterListener _listener;
         private int _currentTimeSeries;
         private int _currentHistograms;
@@ -43,6 +45,9 @@ namespace System.Diagnostics.Metrics
         private readonly Action _timeSeriesLimitReached;
         private readonly Action _histogramLimitReached;
         private readonly Action<Exception> _observableInstrumentCallbackError;
+        private DateTime _startTime;
+        private DateTime _intervalStartTime;
+        private DateTime _nextIntervalStartTime;
 
         public AggregationManager(
             int maxTimeSeries,
@@ -160,15 +165,28 @@ namespace System.Diagnostics.Metrics
             Debug.Assert(_collectThread == null && !_cts.IsCancellationRequested);
             Debug.Assert(CollectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
 
-            // This explicitly uses a Thread and not a Task so that metrics still work
-            // even when an app is experiencing thread-pool starvation. Although we
-            // can't make in-proc metrics robust to everything, this is a common enough
-            // problem in .NET apps that it feels worthwhile to take the precaution.
-            _collectThread = new Thread(() => CollectWorker(_cts.Token));
-            _collectThread.IsBackground = true;
-            _collectThread.Name = "MetricsEventSource CollectWorker";
-            _collectThread.Start();
+            _intervalStartTime = _nextIntervalStartTime = _startTime = DateTime.UtcNow;
+#if OS_ISBROWSER_SUPPORT
+            if (OperatingSystem.IsBrowser())
+            {
+                TimeSpan delayTime = CalculateDelayTime(CollectionPeriod.TotalSeconds);
+                _pollingTimer = new Timer(CollectOnTimer, null, (int)delayTime.TotalMilliseconds, 0);
+            }
+            else
+#endif
+            {
+                // This explicitly uses a Thread and not a Task so that metrics still work
+                // even when an app is experiencing thread-pool starvation. Although we
+                // can't make in-proc metrics robust to everything, this is a common enough
+                // problem in .NET apps that it feels worthwhile to take the precaution.
+                _collectThread = new Thread(CollectWorker);
+                _collectThread.IsBackground = true;
+                _collectThread.Name = "MetricsEventSource CollectWorker";
+    #pragma warning disable CA1416 // 'Thread.Start' is unsupported on: 'browser', there the actual implementation is in AggregationManager.Wasm.cs
+                _collectThread.Start();
+    #pragma warning restore CA1416
 
+            }
             _listener.Start();
             _initialInstrumentEnumerationComplete();
         }
@@ -187,46 +205,54 @@ namespace System.Diagnostics.Metrics
             _initialInstrumentEnumerationComplete();
         }
 
-        private void CollectWorker(CancellationToken cancelToken)
+        private TimeSpan CalculateDelayTime(double collectionIntervalSecs)
+        {
+            _intervalStartTime = _nextIntervalStartTime;
+
+            // intervals end at startTime + X*collectionIntervalSecs. Under normal
+            // circumstance X increases by 1 each interval, but if the time it
+            // takes to do collection is very large then we might need to skip
+            // ahead multiple intervals to catch back up.
+            //
+            DateTime now = DateTime.UtcNow;
+            double secsSinceStart = (now - _startTime).TotalSeconds;
+            double alignUpSecsSinceStart = Math.Ceiling(secsSinceStart / collectionIntervalSecs) *
+                collectionIntervalSecs;
+            _nextIntervalStartTime = _startTime.AddSeconds(alignUpSecsSinceStart);
+
+            // The delay timer precision isn't exact. We might have a situation
+            // where in the previous loop iterations intervalStartTime=20.00,
+            // nextIntervalStartTime=21.00, the timer was supposed to delay for 1s but
+            // it exited early so we looped around and DateTime.Now=20.99.
+            // Aligning up from DateTime.Now would give us 21.00 again so we also need to skip
+            // forward one time interval
+            DateTime minNextInterval = _intervalStartTime.AddSeconds(collectionIntervalSecs);
+            if (_nextIntervalStartTime <= minNextInterval)
+            {
+                _nextIntervalStartTime = minNextInterval;
+            }
+            return _nextIntervalStartTime - now;
+        }
+
+        private void CollectWorker()
         {
             try
             {
                 double collectionIntervalSecs = -1;
+                CancellationToken cancelToken;
                 lock (this)
                 {
                     collectionIntervalSecs = CollectionPeriod.TotalSeconds;
+                    cancelToken = _cts.Token;
                 }
                 Debug.Assert(collectionIntervalSecs >= MinCollectionTimeSecs);
 
                 DateTime startTime = DateTime.UtcNow;
                 DateTime intervalStartTime = startTime;
-                while (!cancelToken.IsCancellationRequested)
+                while (!_cts.Token.IsCancellationRequested)
                 {
-                    // intervals end at startTime + X*collectionIntervalSecs. Under normal
-                    // circumstance X increases by 1 each interval, but if the time it
-                    // takes to do collection is very large then we might need to skip
-                    // ahead multiple intervals to catch back up.
-                    //
-                    DateTime now = DateTime.UtcNow;
-                    double secsSinceStart = (now - startTime).TotalSeconds;
-                    double alignUpSecsSinceStart = Math.Ceiling(secsSinceStart / collectionIntervalSecs) *
-                        collectionIntervalSecs;
-                    DateTime nextIntervalStartTime = startTime.AddSeconds(alignUpSecsSinceStart);
-
-                    // The delay timer precision isn't exact. We might have a situation
-                    // where in the previous loop iterations intervalStartTime=20.00,
-                    // nextIntervalStartTime=21.00, the timer was supposed to delay for 1s but
-                    // it exited early so we looped around and DateTime.Now=20.99.
-                    // Aligning up from DateTime.Now would give us 21.00 again so we also need to skip
-                    // forward one time interval
-                    DateTime minNextInterval = intervalStartTime.AddSeconds(collectionIntervalSecs);
-                    if (nextIntervalStartTime <= minNextInterval)
-                    {
-                        nextIntervalStartTime = minNextInterval;
-                    }
-
                     // pause until the interval is complete
-                    TimeSpan delayTime = nextIntervalStartTime - now;
+                    TimeSpan delayTime = CalculateDelayTime(collectionIntervalSecs);
                     if (cancelToken.WaitHandle.WaitOne(delayTime))
                     {
                         // don't do collection if timer may not have run to completion
@@ -234,10 +260,9 @@ namespace System.Diagnostics.Metrics
                     }
 
                     // collect statistics for the completed interval
-                    _beginCollection(intervalStartTime, nextIntervalStartTime);
+                    _beginCollection(_intervalStartTime, _nextIntervalStartTime);
                     Collect();
-                    _endCollection(intervalStartTime, nextIntervalStartTime);
-                    intervalStartTime = nextIntervalStartTime;
+                    _endCollection(_intervalStartTime, _nextIntervalStartTime);
                 }
             }
             catch (Exception e)
@@ -246,12 +271,49 @@ namespace System.Diagnostics.Metrics
             }
         }
 
+#if OS_ISBROWSER_SUPPORT
+        private void CollectOnTimer(object? _)
+        {
+            try
+            {
+                // this is single-threaded so we don't need to lock
+                CancellationToken cancelToken = _cts.Token;
+                double collectionIntervalSecs = CollectionPeriod.TotalSeconds;
+
+                if (cancelToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                // collect statistics for the completed interval
+                _beginCollection(_intervalStartTime, _nextIntervalStartTime);
+                Collect();
+                _endCollection(_intervalStartTime, _nextIntervalStartTime);
+
+                TimeSpan delayTime = CalculateDelayTime(collectionIntervalSecs);
+                // schedule the next collection
+                _pollingTimer!.Change((int)delayTime.TotalMilliseconds, 0);
+            }
+            catch (Exception e)
+            {
+                _collectionError(e);
+            }
+        }
+#endif
+
         public void Dispose()
         {
             _cts.Cancel();
-            if (_collectThread != null)
+#if OS_ISBROWSER_SUPPORT
+            if (OperatingSystem.IsBrowser())
             {
-                _collectThread.Join();
+                _pollingTimer?.Dispose();
+                _pollingTimer = null;
+            }
+            else
+#endif
+            {
+                _collectThread?.Join();
                 _collectThread = null;
             }
             _listener.Dispose();

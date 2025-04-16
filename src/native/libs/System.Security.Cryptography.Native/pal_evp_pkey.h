@@ -4,6 +4,16 @@
 #include "pal_types.h"
 #include "pal_compiler.h"
 #include "opensslshim.h"
+#include "pal_atomic.h"
+
+struct EvpPKeyExtraHandle_st
+{
+    atomic_int refCount;
+    OSSL_LIB_CTX* libCtx;
+    OSSL_PROVIDER* prov;
+};
+
+typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
 
 /*
 Shims the EVP_PKEY_new method.
@@ -120,7 +130,25 @@ until the EVP_PKEY is destroyed.
 PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider);
 
 /*
+Loads a key using EVP_PKEY_fromdata_init and EVP_PKEY_fromdata.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_EvpPKeyFromData(const char* algorithmName, uint8_t* key, int32_t keyLength, int32_t privateKey);
+
+/*
 It's a wrapper for EVP_PKEY_CTX_new_from_pkey and EVP_PKEY_CTX_new
 which handles extraHandle.
 */
 EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle);
+
+/*
+Internal function to get the octet string parameter from the given EVP_PKEY.
+*/
+int32_t EvpPKeyGetKeyOctetStringParam(const EVP_PKEY* pKey,
+    const char* name,
+    uint8_t* destination,
+    int32_t destinationLength);
+
+/*
+Internal function to determine if an EVP_PKEY has a given octet string property.
+*/
+int32_t EvpPKeyHasKeyOctetStringParam(const EVP_PKEY* pKey, const char* name);

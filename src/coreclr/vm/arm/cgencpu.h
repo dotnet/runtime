@@ -52,9 +52,6 @@ struct ArgLocDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
-// CPU-dependent functions
-Stub * GenerateInitPInvokeFrameHelper();
-
 EXTERN_C void checkStack(void);
 
 #define THUMB_CODE      1
@@ -555,8 +552,6 @@ public:
         ThumbEmitJumpRegister(thumbRegLr);
     }
 
-    void ThumbEmitGetThread(ThumbReg dest);
-
     void ThumbEmitNop()
     {
         // nop
@@ -914,40 +909,6 @@ public:
     VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 };
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4359) // Prevent "warning C4359: 'UMEntryThunkCode': Alignment specifier is less than actual alignment (8), and will be ignored." in crossbitness scenario
-#endif // _MSC_VER
-
-struct DECLSPEC_ALIGN(4) UMEntryThunkCode
-{
-    WORD        m_code[4];
-
-    TADDR       m_pTargetCode;
-    TADDR       m_pvSecretParam;
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)((TADDR)this | THUMB_CODE);
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 0;
-    }
-};
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER
-
 struct HijackArgs
 {
     union
@@ -995,63 +956,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-
-//------------------------------------------------------------------------
-//
-// Precode definitions
-//
-//------------------------------------------------------------------------
-//
-// Note: If you introduce new precode implementation below, then please
-//       update PrecodeStubManager::CheckIsStub_Internal to account for it.
-
-// Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
-struct ThisPtrRetBufPrecode {
-
-    static const int Type = 0x01;
-
-    // mov r12, r0
-    // mov r0, r1
-    // mov r1, r12
-    // ldr pc, [pc, #0]     ; =m_pTarget
-    // dcd pTarget
-    // dcd pMethodDesc
-    WORD    m_rgCode[6];
-    TADDR   m_pTarget;
-    TADDR   m_pMethodDesc;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
-
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pMethodDesc;
-    }
-
-    PCODE GetTarget()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pTarget;
-    }
-
-#ifndef DACCESS_COMPILE
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-        }
-        CONTRACTL_END;
-
-        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode));
-        return InterlockedCompareExchange((LONG*)&precodeWriterHolder.GetRW()->m_pTarget, (LONG)target, (LONG)expected) == (LONG)expected;
-    }
-#endif // !DACCESS_COMPILE
-};
-typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
-
 
 //**********************************************************************
 // Miscellaneous

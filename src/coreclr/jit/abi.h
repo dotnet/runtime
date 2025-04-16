@@ -130,6 +130,7 @@ public:
     bool     HasExactlyOneStackSegment() const;
     bool     IsSplitAcrossRegistersAndStack() const;
     unsigned CountRegsAndStackSlots() const;
+    unsigned StackBytesConsumed() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, bool passedByRef, const ABIPassingSegment& segment);
     static ABIPassingInformation FromSegmentByValue(Compiler* comp, const ABIPassingSegment& segment);
