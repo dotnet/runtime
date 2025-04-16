@@ -171,3 +171,13 @@ docker run --rm \
   mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12 \
   ./build.sh --subset clr --cross --os freebsd
 ```
+
+### Building CoreCLR with Bootstrapping
+
+CoreCLR builds a few tools, namely crossgen2 and ilc, using NativeAOT (or single file where NativeAOT is not supported). However, due to the slowness of debug builds, the build defaults to using a "Last Known Good" version of NativeAOT to actually build and ship the tools by default. This "Last Known Good" version comes from the .NET SDK referenced in the global.json file. The runtime's build scripts provide an additional set of options to build with the live NativeAOT version instead of the "Last Known Good" version. This is useful for testing changes to NativeAOT or the tools that are built with it, and is required for building those tools for target platforms that are not known to the "Last Known Good" version of NativeAOT, such as FreeBSD, community architectures, or non-portable builds of .NET.
+
+To build the bootstrap subset of the runtime repo, you can build the `bootstrap` subset. To use the bootstrap components in the runtime repo build, you can pass the `--use-bootstrap` argument to the build script. This will use the bootstrap components instead of the "Last Known Good" version of NativeAOT.
+
+For simplicity, a `--bootstrap` option is also provided. This option will build the `bootstrap` subset, clean up the artifacts directory, and then build the runtime repo with the `--use-bootstrap` option. This is useful for building the runtime repo with the live NativeAOT version without having to run two separate commands.
+
+The `--bootstrap` option is automatically specified when building the runtime repo for .NET Source Build, as the vast majority of Source Build scenarios use non-portable RIDs.
