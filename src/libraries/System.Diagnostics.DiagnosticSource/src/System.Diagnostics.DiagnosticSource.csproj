@@ -56,6 +56,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\NoOutputPropagator.cs" />
     <Compile Include="System\Diagnostics\PassThroughPropagator.cs" />
     <Compile Include="System\Diagnostics\RandomNumberGenerator.cs" />
+    <Compile Include="System\Diagnostics\W3CPropagator.cs" />
     <Compile Include="System\Diagnostics\Metrics\AggregationManager.cs" />
     <Compile Include="System\Diagnostics\Metrics\Aggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\AggregatorStore.cs" />
