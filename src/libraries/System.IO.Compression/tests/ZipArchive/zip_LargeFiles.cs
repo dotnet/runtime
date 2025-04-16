@@ -51,8 +51,7 @@ public class zip_LargeFiles : ZipFileTestBase
 
     [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
     [OuterLoop("It requires 5~6 GB of free disk space and a lot of CPU time for compressed tests")]
-    [InlineData(false)]
-    [InlineData(true)]
+    [MemberData(nameof(Get_Booleans_Data))]
     public static void CheckZIP64VersionIsSet_ForSmallFilesAfterBigFiles(bool isCompressed)
     {
         // issue #94899

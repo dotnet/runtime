@@ -606,15 +606,24 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [Theory]
-        [InlineData("extradata/extraDataLHandCDentryAndArchiveComments.zip", "verysmall", true)]
-        [InlineData("extradata/extraDataThenZip64.zip", "verysmall", true)]
-        [InlineData("extradata/zip64ThenExtraData.zip", "verysmall", true)]
-        [InlineData("dataDescriptor.zip", "normalWithoutBinary", false)]
-        [InlineData("filenameTimeAndSizesDifferentInLH.zip", "verysmall", false)]
-        public static async Task StrangeFiles(string zipFile, string zipFolder, bool requireExplicit)
+        public static IEnumerable<object[]> Get_StrangeFiles_Data()
         {
-            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(strange(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit, checkTimes: true);
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { "extradata/extraDataLHandCDentryAndArchiveComments.zip", "verysmall", true, async };
+                yield return new object[] { "extradata/extraDataThenZip64.zip", "verysmall", true, async };
+                yield return new object[] { "extradata/zip64ThenExtraData.zip", "verysmall", true, async };
+                yield return new object[] { "dataDescriptor.zip", "normalWithoutBinary", false, async };
+                yield return new object[] { "filenameTimeAndSizesDifferentInLH.zip", "verysmall", false, async };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_StrangeFiles_Data))]
+        public static async Task StrangeFiles(string zipFile, string zipFolder, bool requireExplicit, bool async)
+        {
+            MemoryStream stream = await StreamHelpers.CreateTempCopyStream(strange(zipFile));
+            await IsZipSameAsDir(stream, zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit, checkTimes: true, async);
         }
 
         /// <summary>
