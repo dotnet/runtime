@@ -239,6 +239,10 @@ typedef uint64_t regMaskSmall;
 #define HAS_MORE_THAN_64_REGISTERS 1
 #endif // TARGET_ARM64
 
+#ifdef TARGET_AMD64
+#define HAS_MORE_THAN_64_REGISTERS 1
+#endif // TARGET_AMD64
+
 #define REG_LOW_BASE 0
 #ifdef HAS_MORE_THAN_64_REGISTERS
 #define REG_HIGH_BASE 64
