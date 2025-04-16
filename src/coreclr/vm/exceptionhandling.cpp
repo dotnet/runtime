@@ -3060,16 +3060,17 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     // in that case. The shadow stack contains the return address of the DispatchManagedException call, but the ControlPC is the
     // value captured to the exception context before the DispatchManagedException call.
     _ASSERTE(targetSSP == 0 ||
-        exInfo->m_frameIter.m_crawl.GetCodeManager() == ExecutionManager::GetInterpreterCodeManager() ||
+        (pHandlerIP != NULL) && (exInfo->m_frameIter.m_crawl.GetCodeManager() == ExecutionManager::GetInterpreterCodeManager()) ||
         (*(size_t*)(targetSSP-8) == exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC));
 #else
     size_t targetSSP = 0;
 #endif
 
-    ICodeManager* pCodeManager = exInfo->m_frameIter.m_crawl.GetCodeManager();
+    ICodeManager* pCodeManager = NULL;
 
     if (pHandlerIP != NULL)
     {
+        pCodeManager = exInfo->m_frameIter.m_crawl.GetCodeManager();
 #ifdef _DEBUG
         pCodeManager->EnsureCallerContextIsValid(pvRegDisplay);
         _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == GetSP(pvRegDisplay->pCallerContext));
@@ -3936,7 +3937,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
         goto Exit;
     }
 
-    #ifdef FEATURE_INTERPRETER
+#ifdef FEATURE_INTERPRETER
     if ((pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME) && (GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext) == 0))
     {
         // The callerIP is 0 when we are going to unwind from the first interpreted frame belonging to an InterpreterFrame.
