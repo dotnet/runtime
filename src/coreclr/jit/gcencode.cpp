@@ -3870,13 +3870,14 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
                 assert(false);
         }
 
-        const int genericContextArgOffset = compiler->lvaCachedGenericContextArgOffset();
-        const int offset = compiler->lvaToCallerSPRelativeOffset(genericContextArgOffset,
-                                                                 compiler->isFramePointerUsed());
+        const int offset = compiler->lvaCachedGenericContextArgOffset();
 
 #ifdef DEBUG
         if (compiler->opts.IsOSR())
         {
+            const int callerSpOffset =
+                compiler->lvaToCallerSPRelativeOffset(offset, compiler->isFramePointerUsed());
+
             // Sanity check the offset vs saved patchpoint info.
             //
             const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
@@ -3885,12 +3886,12 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             // subtract off 2 register slots (saved FP, saved RA).
             //
             const int osrOffset = ppInfo->GenericContextArgOffset() - 2 * REGSIZE_BYTES;
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->GenericContextArgOffset();
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #endif
         }
 #endif
@@ -3903,24 +3904,16 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     {
         assert(compiler->info.compThisArg != BAD_VAR_NUM);
 
-        // OSR can report the root method's frame slot, if that method reported context.
-        // If not, the OSR frame will have saved the needed context.
-        //
-        bool useRootFrameSlot = true;
-        if (compiler->opts.IsOSR())
-        {
-            const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
-
-            useRootFrameSlot = ppInfo->HasKeptAliveThis();
-        }
-
-        const int genericContextArgOffset = compiler->lvaCachedGenericContextArgOffset();
-        const int offset = compiler->lvaToCallerSPRelativeOffset(genericContextArgOffset,
-                                                                 compiler->isFramePointerUsed(), useRootFrameSlot);
+        const int offset = compiler->lvaCachedGenericContextArgOffset();
 
 #ifdef DEBUG
-        if (compiler->opts.IsOSR() && useRootFrameSlot)
+        // OSR can report the root method's frame slot, if that method reported context.
+        // If not, the OSR frame will have saved the needed context.
+        if (compiler->opts.IsOSR() && compiler->info.compPatchpointInfo->HasKeptAliveThis())
         {
+            const int callerSpOffset =
+                compiler->lvaToCallerSPRelativeOffset(offset, compiler->isFramePointerUsed(), true);
+
             // Sanity check the offset vs saved patchpoint info.
             //
             const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
@@ -3929,17 +3922,17 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             // subtract off 2 register slots (saved FP, saved RA).
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset() - 2 * REGSIZE_BYTES;
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset();
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #endif
         }
 #endif
 
-        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(genericContextArgOffset, GENERIC_CONTEXTPARAM_THIS);
+        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(offset, GENERIC_CONTEXTPARAM_THIS);
     }
 
     if (compiler->getNeedsGSSecurityCookie())
