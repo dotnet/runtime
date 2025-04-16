@@ -924,6 +924,355 @@ char** EnvironGetSystemEnvironment()
     return sysEnviron;
 }
 
+#ifdef HOST_ANDROID
+#include <sys/system_properties.h>
+
+// Passed to __system_property_foreach callback.
+typedef struct _SystemPropertyValues
+{
+    int index;
+    int max;
+    char** values;
+} SystemPropertyValues;
+
+// Prefixes and names used by dotnet Android system properties.
+#define ENV_DOTNET_PREFIX "DOTNET_"
+#define ENV_DOTNET_PREFIX_LEN STRING_LENGTH(ENV_DOTNET_PREFIX)
+#define SYS_PROPS_DEBUG_PREFIX "debug."
+#define SYS_PROPS_DEBUG_PREFIX_LEN STRING_LENGTH(SYS_PROPS_DEBUG_PREFIX)
+#define SYS_PROPS_DOTNET_PREFIX "dotnet."
+#define SYS_PROPS_DOTNET_PREFIX_LEN STRING_LENGTH(SYS_PROPS_DOTNET_PREFIX)
+#define ENABLED_SYS_PROPS "enable_sys_props"
+#define ENABLED_SYS_PROPS_LEN STRING_LENGTH(ENABLED_SYS_PROPS)
+
+/*++
+Function:
+  GetSystemProperty
+
+Retrieves the value of an Android system property with the specified name.
+
+Parameters
+
+    name
+           [in] The name of the Android system property to retrieve.
+    value
+           [out] Buffer to receive the value of the Andoird system property.
+    len
+           [in] Lenght of value in bytes, at least PROP_VALUE_MAX.
+
+Return Values
+
+    Returns length if the property was found and read successfully, -1 otherwise.
+
+--*/
+int GetSystemProperty(const char* name, char* value, size_t valueLen)
+{
+    _ASSERT(valueLen >= PROP_VALUE_MAX);
+
+    int ret = -1;
+    const prop_info* info = __system_property_find(name);
+    if (info != nullptr)
+    {
+        char tmpName[PROP_NAME_MAX];
+        ret = __system_property_read(info, tmpName, value);
+    }
+
+    return ret;
+}
+
+/*++
+Function:
+  IsSystemPropertiesEnabled
+
+Determines whether Android system property should be enabled.
+
+Return Values
+
+    true if Android system properties are enabled, false otherwise.
+
+--*/
+bool IsSystemPropertiesEnabled()
+{
+    char value[PROP_VALUE_MAX];
+    bool enabled = false;
+
+    int ret = GetSystemProperty(SYS_PROPS_DEBUG_PREFIX SYS_PROPS_DOTNET_PREFIX ENABLED_SYS_PROPS, value, ARRAY_SIZE(value));
+    if (ret == -1)
+    {
+        ret = GetSystemProperty(SYS_PROPS_DOTNET_PREFIX ENABLED_SYS_PROPS, value, ARRAY_SIZE(value));
+    }
+
+    if (ret == 1 && *value == '1')
+    {
+        enabled = true;
+    }
+
+    return enabled;
+}
+
+/*++
+Function:
+  SystemPropertyCallback
+
+Callback function used to enumerate Android system properties.
+
+Parameters
+
+    info
+           [in] Pointer to the property info structure.
+    cookie
+           [in, out] Pointer to user data (SystemPropertyValues).
+
+--*/
+void SystemPropertyCallback(const prop_info* info, void* cookie)
+{
+    SystemPropertyValues* sysProps = (SystemPropertyValues*)cookie;
+    if (sysProps == nullptr)
+    {
+        return;
+    }
+
+    char name[PROP_NAME_MAX];
+    char value[PROP_VALUE_MAX];
+
+    int ret = __system_property_read(info, name, value);
+    if (ret <= 0)
+    {
+        return;
+    }
+
+    const char* propertyNamePrefix = "";
+    const char* propertyDelimiter = "=";
+    const char* propertyName = name;
+    const char* propertyValue = value;
+
+    if (_strnicmp(propertyName, SYS_PROPS_DEBUG_PREFIX, SYS_PROPS_DEBUG_PREFIX_LEN) == 0)
+    {
+        propertyName += SYS_PROPS_DEBUG_PREFIX_LEN;
+    }
+
+    if (_strnicmp(propertyName, SYS_PROPS_DOTNET_PREFIX, SYS_PROPS_DOTNET_PREFIX_LEN) == 0)
+    {
+        propertyName += SYS_PROPS_DOTNET_PREFIX_LEN;
+        if (_strnicmp(propertyName, ENABLED_SYS_PROPS, ENABLED_SYS_PROPS_LEN) == 0)
+        {
+            return;
+        }
+
+        // Ending property name with a "." and a number is a way to handle large property name and value.
+        // Property ending with index 0 include property name, up to PROP_VALUE_MAX in length.
+        // Property ending with index 1 - n include values. All concatenated into final value.
+        // debug.dotnet.long_prop.0 = ThisIsReallyALongPropertyNameAbove32Chars
+        // debug.dotnet.long_prop.1 = SomePropertyNameValue
+        char* indexStart = strrchr(name, '.');
+        if (indexStart != nullptr && isdigit(indexStart[1]) == 0)
+        {
+            indexStart = nullptr;
+        }
+
+        if (indexStart != nullptr)
+        {
+            indexStart++;
+
+            char* indexEnd = nullptr;
+            long index = strtoul(indexStart, &indexEnd, 10);
+            if (indexStart == indexEnd || errno == ERANGE)
+            {
+                indexStart = nullptr;
+            }
+            else
+            {
+                if (index != 0)
+                {
+                    return;
+                }
+
+                *(indexStart - 1) = '\0';
+            }
+        }
+
+        if (sysProps->values == nullptr && *propertyValue != '\0')
+        {
+            sysProps->max++;
+            return;
+        }
+
+        if (sysProps->values != nullptr && *propertyValue != '\0')
+        {
+            _ASSERT(sysProps->index < sysProps->max);
+
+            if (indexStart != nullptr)
+            {
+                propertyName = propertyValue;
+                propertyValue = "";
+            }
+            else if (strchr(propertyValue, '=') != nullptr)
+            {
+                propertyName = propertyValue;
+                propertyValue = "";
+                propertyDelimiter = "";
+            }
+
+            if (_strnicmp(propertyName, ENV_DOTNET_PREFIX, ENV_DOTNET_PREFIX_LEN) != 0)
+            {
+                propertyNamePrefix = ENV_DOTNET_PREFIX;
+            }
+
+            // propertyNamPrefix + propertyName + propertyDelimiter + propertyValue + \0
+            size_t allocSize = strlen(propertyNamePrefix) + strlen(propertyName) + strlen(propertyDelimiter) + 1;
+            if (*propertyValue != '\0')
+            {
+                allocSize += strlen(propertyValue);
+            }
+            else
+            {
+                allocSize += PROP_VALUE_MAX;
+            }
+
+            sysProps->values[sysProps->index] = (char*)malloc(allocSize * sizeof(char));
+            if (sysProps->values[sysProps->index] != nullptr)
+            {
+                strcpy_s(sysProps->values[sysProps->index], allocSize, propertyNamePrefix);
+                strcat_s(sysProps->values[sysProps->index], allocSize, propertyName);
+                strcat_s(sysProps->values[sysProps->index], allocSize, propertyDelimiter);
+                strcat_s(sysProps->values[sysProps->index], allocSize, propertyValue);
+
+                // If the property name is indexed, we need to append the values in index 1 - n.
+                if (indexStart)
+                {
+                    int index = 1;
+                    char name2[PROP_NAME_MAX];
+                    char value2[PROP_VALUE_MAX];
+
+                    size_t usedSize = strlen(sysProps->values[sysProps->index]) + 1;
+
+                    do
+                    {
+                        sprintf_s(name2, ARRAY_SIZE(name2), "%s.%d", name, index);
+                        ret = GetSystemProperty(name2, value2, ARRAY_SIZE(value2));
+                        if (ret > 0)
+                        {
+                            if (usedSize + ret <= allocSize)
+                            {
+                                strcat_s(sysProps->values[sysProps->index], allocSize, value2);
+                            }
+                            else
+                            {
+                                // Reallocate the buffer to fit the new value.
+                                allocSize += ret;
+                                char* newValue = (char*)malloc(allocSize * sizeof(char));
+                                if (newValue != nullptr)
+                                {
+                                    strcpy_s(newValue, allocSize, sysProps->values[sysProps->index]);
+                                    strcat_s(newValue, allocSize, value2);
+                                    free(sysProps->values[sysProps->index]);
+                                    sysProps->values[sysProps->index] = newValue;
+                                }
+                            }
+
+                            usedSize += ret;
+                            index++;
+                        }
+                    }
+                    while (ret > 0);
+                }
+
+                sysProps->index++;
+            }
+        }
+    }
+}
+
+/*++
+Function:
+  GetSystemProperties
+
+Retrieves all Android system properties using "debug.dotnet" or "dotnet."
+prefixes as an array of strings.
+
+Return Values
+
+    Returns a pointer to an array of strings containing filtered Android system properties,
+    or nullptr if none are found or Android system properties are not enabled.
+
+Remarks
+
+    The returned array should be freed by calling FreeSystemProperties.
+
+--*/
+char** GetSystemProperties()
+{
+    if (!IsSystemPropertiesEnabled())
+    {
+        return nullptr;
+    }
+
+    SystemPropertyValues sysProps = { 0 };
+    __system_property_foreach(SystemPropertyCallback, &sysProps);
+    if (sysProps.max == 0)
+    {
+        return nullptr;
+    }
+
+    sysProps.values = (char**)malloc((sysProps.max + 1) * sizeof(char*));
+    if (sysProps.values != nullptr)
+    {
+        memset(sysProps.values, 0, (sysProps.max + 1) * sizeof(char*));
+        sysProps.index = 0;
+        __system_property_foreach(SystemPropertyCallback, &sysProps);
+    }
+
+    return sysProps.values;
+}
+
+/*++
+Function:
+  FreeSystemProperties
+
+Frees the memory allocated for the array of Android system properties.
+
+Parameters
+
+    systemProps
+           [in] Pointer to the array of Android system property strings to free.
+
+--*/
+void FreeSystemProperties(char** systemProps)
+{
+    if (systemProps != nullptr)
+    {
+        for (int i = 0; systemProps[i] != nullptr; i++)
+        {
+            free(systemProps[i]);
+        }
+        free(systemProps);
+    }
+}
+#else
+/*++
+Function:
+  GetSystemProperties
+
+Only implemented on Android.
+
+--*/
+char** GetSystemProperties()
+{
+    return nullptr;
+}
+
+/*++
+Function:
+  FreeSystemProperties
+
+Only implemented on Android.
+
+--*/
+void FreeSystemProperties(char** systemProps)
+{
+}
+#endif // HOST_ANDROID
+
 /*++
 Function:
   EnvironInitialize
@@ -943,11 +1292,29 @@ EnvironInitialize(void)
     CPalThread * pthrCurrent = InternalGetCurrentThread();
     minipal_mutex_enter(&gcsEnvironment);
 
-    char** sourceEnviron = EnvironGetSystemEnvironment();
-
     int variableCount = 0;
-    while (sourceEnviron[variableCount] != nullptr)
-        variableCount++;
+
+    char** sourceSystemProps = GetSystemProperties();
+    if (sourceSystemProps != nullptr)
+    {
+        int sourceSystemPropsIndex = 0;
+        while (sourceSystemProps[sourceSystemPropsIndex] != nullptr)
+        {
+            sourceSystemPropsIndex++;
+            variableCount++;
+        }   
+    }
+
+    char** sourceEnviron = EnvironGetSystemEnvironment();
+    if (sourceEnviron)
+    {
+        int sourceEnvironIndex = 0;
+        while (sourceEnviron[sourceEnvironIndex] != nullptr)
+        {
+            sourceEnvironIndex++;
+            variableCount++;
+        }
+    }
 
     palEnvironmentCount = 0;
 
@@ -963,17 +1330,36 @@ EnvironInitialize(void)
     if (ret == TRUE)
     {
         _ASSERTE(palEnvironment != nullptr);
-        for (int i = 0; i < variableCount; ++i)
+
+        if (sourceSystemProps != nullptr)
         {
-            palEnvironment[i] = strdup(sourceEnviron[i]);
-            palEnvironmentCount++;
+            int sourceSystemPropsIndex = 0;
+            while (sourceSystemProps[sourceSystemPropsIndex] != nullptr)
+            {
+                palEnvironment[palEnvironmentCount] = strdup(sourceSystemProps[sourceSystemPropsIndex]);
+                sourceSystemPropsIndex++;
+                palEnvironmentCount++;
+            }
+        }
+
+        if (sourceEnviron != nullptr)
+        {
+            int sourceEnvironIndex = 0;
+            while (sourceEnviron[sourceEnvironIndex] != nullptr)
+            {
+                palEnvironment[palEnvironmentCount] = strdup(sourceEnviron[sourceEnvironIndex]);
+                sourceEnvironIndex++;
+                palEnvironmentCount++;
+            }
         }
 
         // Set the entry after the last variable to null to indicate the end.
         palEnvironment[variableCount] = nullptr;
     }
 
+    FreeSystemProperties(sourceSystemProps);
     minipal_mutex_leave(&gcsEnvironment);
+
     return ret;
 }
 
