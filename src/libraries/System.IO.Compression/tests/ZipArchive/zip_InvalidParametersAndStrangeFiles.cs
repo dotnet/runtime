@@ -1480,6 +1480,190 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Fact]
+        public static async Task NoAsyncCallsWhenUsingSync()
+        {
+            using MemoryStream ms = new();
+            using NoAsyncCallsStream s = new(ms); // Only allows sync calls
+
+            // Create mode
+            using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: Encoding.UTF8))
+            {
+                using MemoryStream normalZipStream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+                normalZipStream.Position = 0;
+
+                // Note this is not using NoAsyncCallsStream, so it can be opened in async mode
+                await using (ZipArchive normalZipArchive = await ZipArchive.CreateAsync(normalZipStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
+                {
+                    var normalZipEntries = normalZipArchive.Entries;
+
+                    foreach (ZipArchiveEntry normalEntry in normalZipEntries)
+                    {
+                        ZipArchiveEntry newEntry = archive.CreateEntry(normalEntry.FullName);
+                        using (Stream newEntryStream = newEntry.Open())
+                        {
+                            // Note the parent archive is not using NoAsyncCallsStream, so it can be opened in async mode
+                            await using (Stream normalEntryStream = await normalEntry.OpenAsync())
+                            {
+                                // Note the parent archive is not using NoAsyncCallsStream, so it can be copied in async mode
+                                await normalEntryStream.CopyToAsync(newEntryStream);
+                            }
+                        }
+                    }
+                }
+            }
+
+            ms.Position = 0;
+
+            // Read mode
+            using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: Encoding.UTF8))
+            {
+                _ = archive.Comment;
+
+                // Entries is sync only
+                s.IsRestrictionEnabled = false;
+                var entries = archive.Entries;
+                s.IsRestrictionEnabled = true;
+
+                foreach (var entry in entries)
+                {
+                    _ = archive.GetEntry(entry.Name);
+                    _ = entry.Archive;
+                    _ = entry.Comment;
+                    _ = entry.CompressedLength;
+                    _ = entry.Crc32;
+                    _ = entry.ExternalAttributes;
+                    _ = entry.FullName;
+                    _ = entry.IsEncrypted;
+                    _ = entry.LastWriteTime;
+                    _ = entry.Length;
+                    _ = entry.Name;
+                    using (var es = entry.Open())
+                    {
+                        byte[] buffer = [0x0];
+
+                        _ = es.Read(buffer, 0, buffer.Length);
+                        _ = es.Read(buffer.AsSpan());
+                        _ = es.ReadByte();
+                    }
+                }
+                _ = archive.Mode;
+            }
+
+            ms.Position = 0;
+
+            // Update mode
+            using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
+            {
+                // Entries is sync only
+                s.IsRestrictionEnabled = false;
+                ZipArchiveEntry entryToDelete = archive.Entries[0];
+                s.IsRestrictionEnabled = true;
+
+                entryToDelete.Delete();
+
+                ZipArchiveEntry entry = archive.CreateEntry("mynewentry.txt");
+                using (var es = entry.Open())
+                {
+                    byte[] buffer = [0x0];
+                    es.Write(buffer, 0, buffer.Length);
+                    es.Write(buffer.AsSpan());
+                    es.WriteByte(buffer[0]);
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task NoSyncCallsWhenUsingAsync()
+        {
+            using MemoryStream ms = new();
+            using NoSyncCallsStream s = new(ms); // Only allows async calls
+
+            // Create mode
+            await using (ZipArchive archive = await ZipArchive.CreateAsync(s, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: Encoding.UTF8))
+            {
+                await using MemoryStream normalZipStream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+                normalZipStream.Position = 0;
+
+                // Note this is not using NoSyncCallsStream, so it can be opened in sync mode
+                using (ZipArchive normalZipArchive = new ZipArchive(normalZipStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
+                {
+                    var normalZipEntries = normalZipArchive.Entries;
+
+                    foreach (ZipArchiveEntry normalEntry in normalZipEntries)
+                    {
+                        ZipArchiveEntry newEntry = archive.CreateEntry(normalEntry.FullName);
+                        await using (Stream newEntryStream = await newEntry.OpenAsync())
+                        {
+                            // Note the parent archive is not using NoSyncCallsStream, so it can be opened in sync mode
+                            using (Stream normalEntryStream = normalEntry.Open())
+                            {
+                                // Note the parent archive is not using NoSyncCallsStream, so it can be copied in sync mode
+                                normalEntryStream.CopyTo(newEntryStream);
+                            }
+                        }
+                    }
+                }
+            }
+
+            ms.Position = 0;
+
+            // Read mode
+            await using (ZipArchive archive = await ZipArchive.CreateAsync(s, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: Encoding.UTF8))
+            {
+                _ = archive.Comment;
+
+                // Entries is sync only
+                s.IsRestrictionEnabled = false;
+                var entries = archive.Entries;
+                s.IsRestrictionEnabled = true;
+
+                foreach (var entry in entries)
+                {
+                    _ = archive.GetEntry(entry.Name);
+                    _ = entry.Archive;
+                    _ = entry.Comment;
+                    _ = entry.CompressedLength;
+                    _ = entry.Crc32;
+                    _ = entry.ExternalAttributes;
+                    _ = entry.FullName;
+                    _ = entry.IsEncrypted;
+                    _ = entry.LastWriteTime;
+                    _ = entry.Length;
+                    _ = entry.Name;
+                    await using (var es = await entry.OpenAsync())
+                    {
+                        byte[] buffer = [0x0];
+
+                        _ = await es.ReadAsync(buffer);
+                        _ = await es.ReadAsync(buffer.AsMemory());
+                        _ = await es.ReadByteAsync();
+                    }
+                }
+                _ = archive.Mode;
+            }
+
+            ms.Position = 0;
+
+            await using (ZipArchive archive = await ZipArchive.CreateAsync(s, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
+            {
+                // Entries is sync only
+                s.IsRestrictionEnabled = false;
+                ZipArchiveEntry entryToDelete = archive.Entries[0];
+                s.IsRestrictionEnabled = true;
+
+                entryToDelete.Delete(); // Delete is async only
+
+                ZipArchiveEntry entry = archive.CreateEntry("mynewentry.txt");
+                await using (var es = await entry.OpenAsync())
+                {
+                    byte[] buffer = [0x0];
+                    await es.WriteAsync(buffer, 0, buffer.Length);
+                    await es.WriteAsync(buffer.AsMemory());
+                }
+            }
+        }
+
         // Generates a copy of s_invalidExtraFieldData with a variable number of bytes as extra field data.
         private static byte[] GenerateInvalidExtraFieldData(byte modifiedVersionToExtract, ushort extraFieldDataLength,
             out int lhVersionToExtractOffset,
