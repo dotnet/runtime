@@ -91,7 +91,7 @@ typedef DPTR(ThreadLocalData) PTR_ThreadLocalData;
 extern __declspec(selectany) __declspec(thread) ThreadLocalData t_ThreadStatics;
 #else
 extern __thread ThreadLocalData t_ThreadStatics;
-#endif // !_MSC_VER
+#endif // _MSC_VER
 #endif // !DACCESS_COMPILE
 
 #define NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY 2
