@@ -3895,7 +3895,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         }
 #endif
 
-        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(genericContextArgOffset, ctxtParamType);
+        gcInfoEncoderWithLog->SetGenericsInstContextStackSlot(offset, ctxtParamType);
     }
     // As discussed above, handle the case where the generics context is obtained via
     // the method table of "this".
