@@ -8,7 +8,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Text;
+using System.Threading.Tasks;
+using static System.Numerics.Tensors.TensorOperation;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace System.Numerics.Tensors
 {
@@ -69,7 +73,7 @@ namespace System.Numerics.Tensors
         {
             nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
             if (!destination.Lengths.SequenceEqual(newSize))
-                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotCompatible();
 
             ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
             intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
@@ -84,7 +88,7 @@ namespace System.Numerics.Tensors
         {
             nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
             if (!destination.Lengths.SequenceEqual(newSize))
-                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotCompatible();
 
             ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
             intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
@@ -99,7 +103,7 @@ namespace System.Numerics.Tensors
         {
             nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
             if (!destination.Lengths.SequenceEqual(newSize))
-                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotCompatible();
 
             ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
             intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
@@ -120,7 +124,7 @@ namespace System.Numerics.Tensors
                 return new TensorSpan<T>(ref input._reference, input._shape.LinearLength, lengths, input.Strides);
 
             if (!TensorHelpers.IsBroadcastableTo(input.Lengths, lengths))
-                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotCompatible();
 
             nint newSize = TensorSpanHelpers.CalculateFlattenedLength(lengths);
 
@@ -163,7 +167,7 @@ namespace System.Numerics.Tensors
                 return new TensorSpan<T>(ref input._reference, input._shape.LinearLength, shape, input.Strides);
 
             if (!TensorHelpers.IsBroadcastableTo(input.Lengths, shape))
-                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotCompatible();
 
             nint newSize = TensorSpanHelpers.CalculateFlattenedLength(shape);
 
@@ -206,7 +210,7 @@ namespace System.Numerics.Tensors
                 return new Tensor<T>(input._values, lengths, input._start, isPinned: false);
 
             if (!TensorHelpers.IsBroadcastableTo(input.Lengths, lengths))
-                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotCompatible();
 
             nint newSize = TensorSpanHelpers.CalculateFlattenedLength(lengths);
 
@@ -1116,7 +1120,7 @@ namespace System.Numerics.Tensors
         /// <param name="y">Value to compare against.</param>
         /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
         public static bool GreaterThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IComparisonOperators<T, T, bool> => return !TensorOperation.Invoke<TensorOperation.GreaterThanOrEqualAny<T>, T>(x, y);
+            where T : IComparisonOperators<T, T, bool> => !TensorOperation.Invoke<TensorOperation.GreaterThanOrEqualAny<T>, T>(x, y);
 
         /// <summary>
         /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="y"/> are greater than <paramref name="x"/>.
@@ -2623,9 +2627,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Abs<T>(in ReadOnlyTensorSpan<T> x)
             where T : INumberBase<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Abs(x, output);
-            return output;
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Abs<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2636,7 +2640,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Abs<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : INumberBase<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Abs);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Abs<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -2648,9 +2654,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Acos<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Acos(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Acos<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2661,7 +2667,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Acos<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Acos);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Acos<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -2673,9 +2681,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Acosh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Acosh(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Acosh<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2686,7 +2694,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Acosh<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Acosh);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Acosh<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -2698,9 +2708,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> AcosPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            AcosPi(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.AcosPi<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2711,7 +2721,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> AcosPi<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.AcosPi);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.AcosPi<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -2724,18 +2736,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Add<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Add(x, y, output);
-            return output;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2746,9 +2749,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Add<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Add(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2760,7 +2763,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Add<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Add);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -2772,7 +2777,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Add<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Add);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -2784,9 +2791,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Asin<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Asin(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Asin<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2797,7 +2804,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Asin<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Asin);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Asin<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -2809,9 +2818,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Asinh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Asinh(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Asinh<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2822,7 +2831,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Asinh<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Asinh);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Asinh<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -2834,9 +2845,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> AsinPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            AsinPi(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.AsinPi<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2847,7 +2858,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> AsinPi<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.AsinPi);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.AsinPi<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -2859,9 +2872,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Atan(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Atan<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2872,7 +2885,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Atan<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Atan);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Atan<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -2885,18 +2900,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Atan2(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Atan2<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2908,7 +2914,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Atan2<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Atan2);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Atan2<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -2919,10 +2927,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-
-            Atan2(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Atan2<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2934,7 +2941,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Atan2<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Atan2);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Atan2<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -2945,10 +2954,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> output = Tensor.Create<T>(y.Lengths);
-
-            Atan2(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(y.Lengths);
+            TensorOperation.Invoke<TensorOperation.Atan2<T>, T, T>(y, x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2960,7 +2968,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Atan2<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperTInSpanInSpanOut(x, y, destination, TensorPrimitives.Atan2);
+            TensorOperation.ValidateCompatibility(y, destination);
+            TensorOperation.Invoke<TensorOperation.Atan2<T>, T, T>(y, x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -2973,18 +2983,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2Pi<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Atan2Pi(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Atan2Pi<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -2996,7 +2997,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Atan2Pi<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Atan2Pi);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Atan2Pi<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -3007,10 +3010,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2Pi<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-
-            Atan2Pi(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Atan2Pi<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3022,7 +3024,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Atan2Pi<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Atan2Pi);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Atan2Pi<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -3033,10 +3037,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atan2Pi<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> output = Tensor.Create<T>(y.Lengths);
-
-            Atan2Pi(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(y.Lengths);
+            TensorOperation.Invoke<TensorOperation.Atan2Pi<T>, T, T>(y, x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3048,8 +3051,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Atan2Pi<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperTInSpanInSpanOut(x, y, destination, TensorPrimitives.Atan2Pi);
-
+            TensorOperation.ValidateCompatibility(y, destination);
+            TensorOperation.Invoke<TensorOperation.Atan2Pi<T>, T, T>(y, x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3061,9 +3065,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Atanh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Atanh(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Atanh<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3074,7 +3078,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Atanh<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Atanh);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Atanh<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3086,9 +3092,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> AtanPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            AtanPi(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.AtanPi<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3099,7 +3105,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> AtanPi<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.AtanPi);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.AtanPi<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3112,7 +3120,11 @@ namespace System.Numerics.Tensors
         public static T Average<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumberBase<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Average);
+            // Get the flattenedLength first so we don't spend time computing if we'll fail due to overflow
+
+            T flattenedLength = T.CreateChecked(x.FlattenedLength);
+            T sum = Sum(x);
+            return sum / flattenedLength;
         }
         #endregion
 
@@ -3125,18 +3137,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> BitwiseAnd<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            BitwiseAnd(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3148,7 +3151,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> BitwiseAnd<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.BitwiseAnd);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -3159,10 +3164,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> BitwiseAnd<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-
-            BitwiseAnd(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3174,7 +3178,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> BitwiseAnd<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.BitwiseAnd);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3187,18 +3193,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> BitwiseOr<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            BitwiseOr(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.BitwiseOr<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3210,7 +3207,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> BitwiseOr<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.BitwiseOr);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.BitwiseOr<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -3221,10 +3220,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> BitwiseOr<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-
-            BitwiseOr(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.BitwiseOr<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3236,7 +3234,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> BitwiseOr<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.BitwiseOr);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.BitwiseOr<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3248,9 +3248,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Cbrt<T>(in ReadOnlyTensorSpan<T> x)
             where T : IRootFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Cbrt(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Cbrt<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3261,7 +3261,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Cbrt<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IRootFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Cbrt);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Cbrt<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3273,9 +3275,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Ceiling<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Ceiling(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Ceiling<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3286,7 +3288,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Ceiling<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Ceiling);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Ceiling<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3300,10 +3304,9 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            Tensor<TTo> output = Tensor.Create<TTo>(source.Lengths);
-
-            ConvertChecked<TFrom, TTo>(source, output);
-            return output;
+            Tensor<TTo> destination = Tensor.CreateUninitialized<TTo>(source.Lengths);
+            TensorOperation.Invoke<TensorOperation.ConvertChecked<TFrom, TTo>, TFrom, TTo>(source, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3316,7 +3319,9 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(source, destination, TensorPrimitives.ConvertChecked);
+            TensorOperation.ValidateCompatibility(source, destination);
+            TensorOperation.Invoke<TensorOperation.ConvertChecked<TFrom, TTo>, TFrom, TTo>(source, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3330,10 +3335,9 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            Tensor<TTo> output = Tensor.Create<TTo>(source.Lengths);
-
-            ConvertSaturating<TFrom, TTo>(source, output);
-            return output;
+            Tensor<TTo> destination = Tensor.CreateUninitialized<TTo>(source.Lengths);
+            TensorOperation.Invoke<TensorOperation.ConvertSaturating<TFrom, TTo>, TFrom, TTo>(source, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3346,7 +3350,9 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(source, destination, TensorPrimitives.ConvertSaturating);
+            TensorOperation.ValidateCompatibility(source, destination);
+            TensorOperation.Invoke<TensorOperation.ConvertSaturating<TFrom, TTo>, TFrom, TTo>(source, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3360,10 +3366,9 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            Tensor<TTo> output = Tensor.Create<TTo>(source.Lengths);
-
-            ConvertTruncating<TFrom, TTo>(source, output);
-            return output;
+            Tensor<TTo> destination = Tensor.CreateUninitialized<TTo>(source.Lengths);
+            TensorOperation.Invoke<TensorOperation.ConvertTruncating<TFrom, TTo>, TFrom, TTo>(source, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3376,7 +3381,9 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(source, destination, TensorPrimitives.ConvertTruncating);
+            TensorOperation.ValidateCompatibility(source, destination);
+            TensorOperation.Invoke<TensorOperation.ConvertTruncating<TFrom, TTo>, TFrom, TTo>(source, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3389,10 +3396,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> CopySign<T>(in ReadOnlyTensorSpan<T> x, T sign)
             where T : INumber<T>
         {
-            Tensor<T> output = Create<T>(x.Lengths);
-
-            CopySign(x, sign, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.CopySign<T>, T, T>(x, sign, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3403,18 +3409,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> CopySign<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> sign)
             where T : INumber<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(sign.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, sign.Lengths));
-            }
-
-            CopySign(x, sign, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.CopySign<T>, T, T>(x, sign, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3426,7 +3423,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> CopySign<T>(scoped in ReadOnlyTensorSpan<T> x, T sign, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, sign, destination, TensorPrimitives.CopySign);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.CopySign<T>, T, T>(x, sign, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -3438,7 +3437,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> CopySign<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> sign, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, sign, destination, TensorPrimitives.CopySign);
+            TensorOperation.ValidateCompatibility(x, sign, destination);
+            TensorOperation.Invoke<TensorOperation.CopySign<T>, T, T>(x, sign, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3450,9 +3451,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Cos<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Cos(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Cos<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3463,7 +3464,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Cos<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Cos);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Cos<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3475,9 +3478,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Cosh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Cosh(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Cosh<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3488,7 +3491,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Cosh<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Cosh);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Cosh<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3498,79 +3503,13 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="x">The first <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <param name="y">The second <see cref="ReadOnlyTensorSpan{T}"/></param>
-        public static Tensor<T> CosineSimilarity<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
+        public static T CosineSimilarity<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IRootFunctions<T>
         {
-            if (x.Rank != 2)
-                ThrowHelper.ThrowArgument_2DTensorRequired(nameof(x));
-
-            if (y.Rank != 2)
-                ThrowHelper.ThrowArgument_2DTensorRequired(nameof(y));
-
-            if (x.Lengths[1] != y.Lengths[1])
-                ThrowHelper.ThrowArgument_IncompatibleDimensions(x.Lengths[1], y.Lengths[1]);
-
-            nint dim1 = x.Lengths[0];
-            nint dim2 = y.Lengths[0];
-
-            T[] values = new T[dim1 * dim2];
-
-            Tensor<T> output = Tensor.Create<T>(values, [dim1, dim2]);
-
-            CosineSimilarity(x, y, output);
-
-            return output;
-        }
-
-        /// <summary>
-        /// Compute cosine similarity between <paramref name="x"/> and <paramref name="y"/>.
-        /// </summary>
-        /// <param name="x">The first <see cref="ReadOnlyTensorSpan{T}"/></param>
-        /// <param name="y">The second <see cref="ReadOnlyTensorSpan{T}"/></param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> CosineSimilarity<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IRootFunctions<T>
-        {
-            if (x.Rank != 2)
-                ThrowHelper.ThrowArgument_2DTensorRequired(nameof(x));
-
-            if (y.Rank != 2)
-                ThrowHelper.ThrowArgument_2DTensorRequired(nameof(y));
-
-            if (x.Lengths[1] != y.Lengths[1])
-                ThrowHelper.ThrowArgument_IncompatibleDimensions(x.Lengths[1], y.Lengths[1]);
-
-            nint dim1 = x.Lengths[0];
-            nint dim2 = y.Lengths[0];
-
-            if (destination.Lengths[0] != dim1 || destination.Lengths[1] != dim2)
-                ThrowHelper.ThrowArgument_IncompatibleDimensions(x.Lengths[1], y.Lengths[1]);
-
-            Span<T> values = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-
-            scoped Span<nint> leftIndexes = stackalloc nint[2];
-            scoped Span<nint> rightIndexes = stackalloc nint[2];
-
-            int outputOffset = 0;
-
-            ReadOnlySpan<T> lspan;
-            ReadOnlySpan<T> rspan;
-            int rowLength = (int)x.Lengths[1];
-            for (int i = 0; i < dim1; i++)
-            {
-                for (int j = 0; j < dim2; j++)
-                {
-                    lspan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref x._reference, TensorSpanHelpers.ComputeLinearIndex(leftIndexes, x.Strides, x.Lengths)), (int)rowLength);
-                    rspan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref y._reference, TensorSpanHelpers.ComputeLinearIndex(rightIndexes, y.Strides, y.Lengths)), (int)rowLength);
-                    values[outputOffset++] = TensorPrimitives.CosineSimilarity(lspan, rspan);
-                    rightIndexes[0]++;
-                }
-                rightIndexes[0] = 0;
-                leftIndexes[0]++;
-            }
-
-            return ref destination;
-
+            TensorOperation.ValidateCompatibility<T, T>(x, y);
+            ValueTuple<T, T, T> result = (T.AdditiveIdentity, T.AdditiveIdentity, T.AdditiveIdentity);
+            TensorOperation.Invoke<TensorOperation.CosineSimilarity<T>, T, ValueTuple<T, T, T>>(x, y, ref result);
+            return result.Item1 / (T.Sqrt(result.Item2) * T.Sqrt(result.Item3));
         }
         #endregion
 
@@ -3592,9 +3531,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> CosPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            CosPi(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.CosPi<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise cosine of the value in the specified tensor that has been multiplied by Pi and returns a new <see cref="TensorSpan{T}"/> with the results.</summary>
@@ -3615,7 +3554,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> CosPi<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.CosPi);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.CosPi<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3627,9 +3568,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> DegreesToRadians<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            DegreesToRadians(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.DegreesToRadians<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3640,7 +3581,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> DegreesToRadians<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.DegreesToRadians);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.DegreesToRadians<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3653,7 +3596,10 @@ namespace System.Numerics.Tensors
         public static T Distance<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y)
             where T : IRootFunctions<T>
         {
-            return TensorPrimitivesHelperTwoSpanInTOut(x, y, TensorPrimitives.Distance);
+            TensorOperation.ValidateCompatibility(x, y);
+            T result = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.SumOfSquaredDifferences<T>, T, T>(x, y, ref result);
+            return T.Sqrt(result);
         }
         #endregion
 
@@ -3666,9 +3612,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Divide<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IDivisionOperators<T, T, T>
         {
-            Tensor<T> output = Create<T>(x.Lengths);
-            Divide(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3679,9 +3625,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Divide<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : IDivisionOperators<T, T, T>
         {
-            Tensor<T> output = Tensor.Create<T>(y.Lengths);
-            Divide(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(y.Lengths);
+            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3693,18 +3639,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Divide<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IDivisionOperators<T, T, T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Divide(x, y, output);
-            return output;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3716,7 +3653,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Divide<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : IDivisionOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Divide);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -3728,7 +3667,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Divide<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IDivisionOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperTInSpanInSpanOut(x, y, destination, TensorPrimitives.Divide);
+            TensorOperation.ValidateCompatibility(y, destination);
+            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -3741,7 +3682,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Divide<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IDivisionOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Divide);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3754,7 +3697,10 @@ namespace System.Numerics.Tensors
         public static T Dot<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IMultiplicativeIdentity<T, T>, IMultiplyOperators<T, T, T>
         {
-            return TensorPrimitivesHelperTwoSpanInTOut(x, y, TensorPrimitives.Dot);
+            TensorOperation.ValidateCompatibility(x, y);
+            T result = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.Dot<T>, T, T>(x, y, ref result);
+            return result;
         }
         #endregion
 
@@ -3766,9 +3712,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Exp<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Exp(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Exp<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3779,7 +3725,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Exp<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Exp);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Exp<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3791,9 +3739,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Exp10<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Exp10(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Exp10<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3804,7 +3752,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Exp10<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Exp10);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Exp10<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3814,9 +3764,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Exp10M1<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Exp10M1(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Exp10M1<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise result of raising 10 to the number powers in the specified tensor, minus one.</summary>
@@ -3825,7 +3775,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Exp10M1<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Exp10M1);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Exp10M1<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3835,9 +3787,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Exp2<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Exp2(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Exp2<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise result of raising 2 to the number powers in the specified tensor.</summary>
@@ -3846,7 +3798,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Exp2<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Exp2);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Exp2<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3856,9 +3810,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Exp2M1<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Exp2M1(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Exp2M1<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise result of raising 2 to the number powers in the specified tensor, minus one.</summary>
@@ -3867,7 +3821,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Exp2M1<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Exp2M1);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Exp2M1<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3877,9 +3833,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> ExpM1<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            ExpM1(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.ExpM1<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise result of raising <c>e</c> to the number powers in the specified tensor, minus 1.</summary>
@@ -3888,7 +3844,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> ExpM1<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.ExpM1);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.ExpM1<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3898,9 +3856,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Floor<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Floor(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Floor<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise floor of numbers in the specified tensor.</summary>
@@ -3909,7 +3867,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Floor<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Floor);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Floor<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3923,18 +3883,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Hypot<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IRootFunctions<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Hypot(x, y, output);
-            return output;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.Hypot<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -3947,7 +3898,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Hypot<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IRootFunctions<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Hypot);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Hypot<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -3959,18 +3912,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Ieee754Remainder<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Ieee754Remainder(x, y, output);
-            return output;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.Ieee754Remainder<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise remainder of the numbers in the specified tensors.</summary>
@@ -3981,7 +3925,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Ieee754Remainder<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Ieee754Remainder);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Ieee754Remainder<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise remainder of the numbers in the specified tensors.</summary>
@@ -3990,10 +3936,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Ieee754Remainder<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-
-            Ieee754Remainder(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Ieee754Remainder<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise remainder of the numbers in the specified tensors.</summary>
@@ -4003,7 +3948,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Ieee754Remainder<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Ieee754Remainder);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Ieee754Remainder<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise remainder of the numbers in the specified tensors.</summary>
@@ -4012,10 +3959,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Ieee754Remainder<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<T> output = Tensor.Create<T>(y.Lengths);
-
-            Ieee754Remainder(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(y.Lengths);
+            TensorOperation.Invoke<TensorOperation.Ieee754Remainder<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise remainder of the numbers in the specified tensors.</summary>
@@ -4025,7 +3971,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Ieee754Remainder<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperTInSpanInSpanOut(x, y, destination, TensorPrimitives.Ieee754Remainder);
+            TensorOperation.ValidateCompatibility(y, destination);
+            TensorOperation.Invoke<TensorOperation.Ieee754Remainder<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4035,9 +3983,9 @@ namespace System.Numerics.Tensors
         public static Tensor<int> ILogB<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPointIeee754<T>
         {
-            Tensor<int> output = Tensor.Create<int>(x.Lengths, x.Strides);
-            ILogB(x, output);
-            return output;
+            Tensor<int> destination = Tensor.CreateUninitialized<int>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.ILogB<T>, T, int>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise integer logarithm of numbers in the specified tensor.</summary>
@@ -4046,25 +3994,28 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<int> ILogB<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<int> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.ILogB);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.ILogB<T>, T, int>(x, destination);
+            return ref destination;
         }
         #endregion
 
         #region IndexOfMax
         /// <summary>Searches for the index of the largest number in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static int IndexOfMax<T>(scoped in ReadOnlyTensorSpan<T> x)
+        public static nint IndexOfMax<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
             return TensorPrimitives.IndexOfMax(span);
         }
+
         #endregion
 
         #region IndexOfMaxMagnitude
         /// <summary>Searches for the index of the number with the largest magnitude in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static int IndexOfMaxMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
+        public static nint IndexOfMaxMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
@@ -4075,7 +4026,7 @@ namespace System.Numerics.Tensors
         #region IndexOfMin
         /// <summary>Searches for the index of the smallest number in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static int IndexOfMin<T>(scoped in ReadOnlyTensorSpan<T> x)
+        public static nint IndexOfMin<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
@@ -4088,7 +4039,7 @@ namespace System.Numerics.Tensors
         /// Searches for the index of the number with the smallest magnitude in the specified tensor.
         /// </summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static int IndexOfMinMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
+        public static nint IndexOfMinMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
@@ -4104,9 +4055,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> LeadingZeroCount<T>(in ReadOnlyTensorSpan<T> x)
             where T : IBinaryInteger<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            LeadingZeroCount(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.LeadingZeroCount<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -4117,7 +4068,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> LeadingZeroCount<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IBinaryInteger<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.LeadingZeroCount);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.LeadingZeroCount<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4129,9 +4082,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Log(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Log<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -4142,7 +4095,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Log<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Log);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Log<T>, T, T>(x, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise logarithm of the numbers in a specified tensor to the specified base in another specified tensor.</summary>
@@ -4151,18 +4106,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Log(x, y, output);
-            return output;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.Log<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise logarithm of the numbers in a specified tensor to the specified base in another specified tensor.</summary>
@@ -4172,7 +4118,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Log<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Log);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Log<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise logarithm of the numbers in a specified tensor to the specified base in another specified tensor.</summary>
@@ -4181,10 +4129,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-
-            Log(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Log<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise logarithm of the numbers in a specified tensor to the specified base in another specified tensor.</summary>
@@ -4194,7 +4141,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Log<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Log);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Log<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4206,9 +4155,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log10<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Log10(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Log10<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -4219,7 +4168,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Log10<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Log10);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Log10<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4231,9 +4182,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log10P1<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Log10P1(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Log10P1<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -4244,7 +4195,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Log10P1<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Log10P1);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Log10P1<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4256,9 +4209,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log2<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Log2(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Log2<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -4269,7 +4222,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Log2<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Log2);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Log2<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4281,9 +4236,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Log2P1<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Log2P1(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Log2P1<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -4294,7 +4249,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Log2P1<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Log2P1);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Log2P1<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4306,9 +4263,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> LogP1<T>(in ReadOnlyTensorSpan<T> x)
             where T : ILogarithmicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            LogP1(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.LogP1<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -4319,7 +4276,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> LogP1<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.LogP1);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.LogP1<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4327,28 +4286,21 @@ namespace System.Numerics.Tensors
         /// <summary>Searches for the largest number in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
         public static T Max<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>
+            where T : INumber<T>, IMinMaxValue<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Max);
+            T result = T.MinValue;
+            TensorOperation.Invoke<TensorOperation.Max<T>, T, T>(x, ref result);
+            return result;
         }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> Max<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : INumber<T>
+            where T : INumber<T>, IMinMaxValue<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Max(x, y, output);
+            TensorOperation.ValidateCompatibility(in x, in y, out Tensor<T> output);
+            TensorOperation.Invoke<TensorOperation.Max<T>, T, T>(x, y, output);
             return output;
         }
 
@@ -4359,7 +4311,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Max<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Max);
+            TensorOperation.ValidateCompatibility(in x, in y, in destination);
+            TensorOperation.Invoke<TensorOperation.Max<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
@@ -4368,9 +4322,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Max<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Max(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Max<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
@@ -4380,7 +4334,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Max<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Max);
+            TensorOperation.ValidateCompatibility(in x, in destination);
+            TensorOperation.Invoke<TensorOperation.Max<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4390,7 +4346,9 @@ namespace System.Numerics.Tensors
         public static T MaxMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.MaxMagnitude);
+            T result = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.MaxMagnitude<T>, T, T>(x, ref result);
+            return result;
         }
 
         /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
@@ -4399,18 +4357,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MaxMagnitude<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : INumber<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            MaxMagnitude(x, y, output);
-            return output;
+            ValidateCompatibility(in x, in y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.MaxMagnitude<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
@@ -4420,7 +4369,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> MaxMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.MaxMagnitude);
+            ValidateCompatibility(in x, in y, in destination);
+            TensorOperation.Invoke<TensorOperation.MaxMagnitude<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
@@ -4429,9 +4380,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MaxMagnitude<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            MaxMagnitude(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.MaxMagnitude<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
@@ -4441,7 +4392,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> MaxMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.MaxMagnitude);
+            ValidateCompatibility(in x, in destination);
+            TensorOperation.Invoke<TensorOperation.MaxMagnitude<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4451,7 +4404,9 @@ namespace System.Numerics.Tensors
         public static T MaxMagnitudeNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumberBase<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.MaxMagnitudeNumber);
+            T result = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.MaxMagnitudeNumber<T>, T, T>(x, ref result);
+            return result;
         }
 
         /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
@@ -4460,18 +4415,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MaxMagnitudeNumber<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : INumber<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            MaxMagnitudeNumber(x, y, output);
-            return output;
+            ValidateCompatibility(in x, in y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.MaxMagnitudeNumber<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
@@ -4481,7 +4427,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> MaxMagnitudeNumber<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.MaxMagnitudeNumber);
+            ValidateCompatibility(in x, in y, in destination);
+            TensorOperation.Invoke<TensorOperation.MaxMagnitudeNumber<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
@@ -4490,9 +4438,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MaxMagnitudeNumber<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            MaxMagnitudeNumber(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.MaxMagnitudeNumber<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
@@ -4502,7 +4450,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> MaxMagnitudeNumber<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.MaxMagnitudeNumber);
+            TensorOperation.ValidateCompatibility(in x, in destination);
+            TensorOperation.Invoke<TensorOperation.MaxMagnitudeNumber<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4510,9 +4460,11 @@ namespace System.Numerics.Tensors
         /// <summary>Searches for the largest number in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
         public static T MaxNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>
+            where T : INumber<T>, IMinMaxValue<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.MaxNumber);
+            T result = T.MinValue;
+            TensorOperation.Invoke<TensorOperation.MaxNumber<T>, T, T>(x, ref result);
+            return result;
         }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
@@ -4521,18 +4473,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MaxNumber<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : INumber<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            MaxNumber(x, y, output);
-            return output;
+            ValidateCompatibility(in x, in y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.MaxNumber<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
@@ -4542,7 +4485,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> MaxNumber<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.MaxNumber);
+            ValidateCompatibility(in x, in y, in destination);
+            TensorOperation.Invoke<TensorOperation.MaxNumber<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
@@ -4551,9 +4496,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> MaxNumber<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            MaxNumber(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.MaxNumber<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
@@ -4563,251 +4508,241 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> MaxNumber<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.MaxNumber);
+            TensorOperation.ValidateCompatibility(in x, in destination);
+            TensorOperation.Invoke<TensorOperation.MaxNumber<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
         #region Min
-        /// <summary>Searches for the smallest number in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <summary>Searches for the largest number in the specified tensor.</summary>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
         public static T Min<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>
+            where T : INumber<T>, IMinMaxValue<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Min);
+            T result = T.MaxValue;
+            TensorOperation.Invoke<TensorOperation.Min<T>, T, T>(x, ref result);
+            return result;
         }
 
-        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> Min<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : INumber<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Min(x, y, output);
+            TensorOperation.ValidateCompatibility(in x, in y, out Tensor<T> output);
+            TensorOperation.Invoke<TensorOperation.Min<T>, T, T>(x, y, output);
             return output;
         }
 
-        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         public static ref readonly TensorSpan<T> Min<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Min);
+            TensorOperation.ValidateCompatibility(in x, in y, in destination);
+            TensorOperation.Invoke<TensorOperation.Min<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
-        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> Min<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Min(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Min<T>, T, T>(x, y, destination);
+            return destination;
         }
 
-        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         public static ref readonly TensorSpan<T> Min<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Min);
+            TensorOperation.ValidateCompatibility(in x, in destination);
+            TensorOperation.Invoke<TensorOperation.Min<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
         #region MinMagnitude
-        /// <summary>Searches for the number with the smallest magnitude in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <summary>Searches for the number with the largest magnitude in the specified tensor.</summary>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
         public static T MinMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.MinMagnitude);
+            T result = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.MinMagnitude<T>, T, T>(x, ref result);
+            return result;
         }
 
-        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinMagnitude<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : INumber<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            MinMagnitude(x, y, output);
-            return output;
+            ValidateCompatibility(in x, in y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.MinMagnitude<T>, T, T>(x, y, destination);
+            return destination;
         }
 
-        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         public static ref readonly TensorSpan<T> MinMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.MinMagnitude);
+            ValidateCompatibility(in x, in y, in destination);
+            TensorOperation.Invoke<TensorOperation.MinMagnitude<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
-        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinMagnitude<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            MinMagnitude(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.MinMagnitude<T>, T, T>(x, y, destination);
+            return destination;
         }
 
-        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         public static ref readonly TensorSpan<T> MinMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.MinMagnitude);
+            ValidateCompatibility(in x, in destination);
+            TensorOperation.Invoke<TensorOperation.MinMagnitude<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
         #region MinMagnitudeNumber
-        /// <summary>Searches for the number with the smallest magnitude in the specified tensor.</summary>
+        /// <summary>Searches for the number with the largest magnitude in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
         public static T MinMagnitudeNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumberBase<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.MinMagnitudeNumber);
+            T result = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.MinMagnitudeNumber<T>, T, T>(x, ref result);
+            return result;
         }
 
-        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinMagnitudeNumber<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : INumber<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            MinMagnitudeNumber(x, y, output);
-            return output;
+            ValidateCompatibility(in x, in y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.MinMagnitudeNumber<T>, T, T>(x, y, destination);
+            return destination;
         }
 
-        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         public static ref readonly TensorSpan<T> MinMagnitudeNumber<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.MinMagnitudeNumber);
+            ValidateCompatibility(in x, in y, in destination);
+            TensorOperation.Invoke<TensorOperation.MinMagnitudeNumber<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
-        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinMagnitudeNumber<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            MinMagnitudeNumber(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.MinMagnitudeNumber<T>, T, T>(x, y, destination);
+            return destination;
         }
 
-        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         public static ref readonly TensorSpan<T> MinMagnitudeNumber<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.MinMagnitudeNumber);
+            TensorOperation.ValidateCompatibility(in x, in destination);
+            TensorOperation.Invoke<TensorOperation.MinMagnitudeNumber<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
         #region MinNumber
-        /// <summary>Searches for the smallest number in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="TensorSpan{T}"/>..</param>
+        /// <summary>Searches for the largest number in the specified tensor.</summary>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
         public static T MinNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>
+            where T : INumber<T>, IMinMaxValue<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.MinNumber);
+            T result = T.MaxValue;
+            TensorOperation.Invoke<TensorOperation.MinNumber<T>, T, T>(x, ref result);
+            return result;
         }
 
-        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinNumber<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : INumber<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            MinNumber(x, y, output);
-            return output;
+            ValidateCompatibility(in x, in y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.MinNumber<T>, T, T>(x, y, destination);
+            return destination;
         }
 
-        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         public static ref readonly TensorSpan<T> MinNumber<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.MinNumber);
+            ValidateCompatibility(in x, in y, in destination);
+            TensorOperation.Invoke<TensorOperation.MinNumber<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
-        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinNumber<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : INumber<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            MinNumber(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.MinNumber<T>, T, T>(x, y, destination);
+            return destination;
         }
 
-        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         public static ref readonly TensorSpan<T> MinNumber<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.MinNumber);
+            TensorOperation.ValidateCompatibility(in x, in destination);
+            TensorOperation.Invoke<TensorOperation.MinNumber<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4820,9 +4755,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Multiply<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Multiply((ReadOnlyTensorSpan<T>)x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.Create<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -4834,18 +4769,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Multiply<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Multiply((ReadOnlyTensorSpan<T>)x, y, output);
-            return output;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -4857,9 +4783,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Multiply<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            TensorPrimitives.Multiply(span, y, ospan);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
             return ref destination;
         }
 
@@ -4873,7 +4798,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Multiply<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Multiply);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4883,9 +4810,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Negate<T>(in ReadOnlyTensorSpan<T> x)
             where T : IUnaryNegationOperators<T, T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Negate(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Negate<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
@@ -4894,7 +4821,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Negate<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IUnaryNegationOperators<T, T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Negate);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Negate<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4906,7 +4835,10 @@ namespace System.Numerics.Tensors
         public static T Norm<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : IRootFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Norm);
+            // TODO: TANNER ADVICE
+            T result = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.SumOfSquaredDifferences<T>, T, T>(x, T.AdditiveIdentity, ref result);
+            return T.Sqrt(result);
         }
         #endregion
 
@@ -4916,9 +4848,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> OnesComplement<T>(in ReadOnlyTensorSpan<T> x)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            OnesComplement(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.OnesComplement<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise one's complement of numbers in the specified tensor.</summary>
@@ -4927,7 +4859,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> OnesComplement<T>(scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(y, destination, TensorPrimitives.OnesComplement);
+            TensorOperation.ValidateCompatibility(y, destination);
+            TensorOperation.Invoke<TensorOperation.OnesComplement<T>, T, T>(y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4937,9 +4871,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> PopCount<T>(in ReadOnlyTensorSpan<T> x)
             where T : IBinaryInteger<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            PopCount(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.PopCount<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise population count of numbers in the specified tensor.</summary>
@@ -4948,7 +4882,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> PopCount<T>(scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IBinaryInteger<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(y, destination, TensorPrimitives.PopCount);
+            TensorOperation.ValidateCompatibility(y, destination);
+            TensorOperation.Invoke<TensorOperation.PopCount<T>, T, T>(y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -4959,18 +4895,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Pow<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IPowerFunctions<T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Pow(x, y, output);
-            return output;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.Pow<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise power of a number in a specified tensor raised to a number in another specified tensors.</summary>
@@ -4980,7 +4907,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Pow<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IPowerFunctions<T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Pow);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Pow<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise power of a number in a specified tensor raised to a number in another specified tensors.</summary>
@@ -4989,10 +4918,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Pow<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IPowerFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-
-            Pow(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Pow<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise power of a number in a specified tensor raised to a number in another specified tensors.</summary>
@@ -5002,7 +4930,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Pow<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : IPowerFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Pow);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Pow<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise power of a number in a specified tensor raised to a number in another specified tensors.</summary>
@@ -5011,10 +4941,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Pow<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : IPowerFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(y.Lengths);
-
-            Pow(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(y.Lengths);
+            TensorOperation.Invoke<TensorOperation.Pow<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise power of a number in a specified tensor raised to a number in another specified tensors.</summary>
@@ -5024,7 +4953,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Pow<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IPowerFunctions<T>
         {
-            return ref TensorPrimitivesHelperTInSpanInSpanOut(x, y, destination, TensorPrimitives.Pow);
+            TensorOperation.ValidateCompatibility(y, destination);
+            TensorOperation.Invoke<TensorOperation.Pow<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5034,7 +4965,9 @@ namespace System.Numerics.Tensors
         public static T Product<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : IMultiplicativeIdentity<T, T>, IMultiplyOperators<T, T, T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Product);
+            T destination = T.MultiplicativeIdentity;
+            TensorOperation.Invoke<TensorOperation.Product<T>, T, T>(x, ref destination);
+            return destination;
         }
         #endregion
 
@@ -5044,9 +4977,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> RadiansToDegrees<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            RadiansToDegrees(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.RadiansToDegrees<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise conversion of each number of radians in the specified tensor to degrees.</summary>
@@ -5055,7 +4988,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> RadiansToDegrees<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.RadiansToDegrees);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.RadiansToDegrees<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5065,9 +5000,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Reciprocal<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Reciprocal(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Reciprocal<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise reciprocal of numbers in the specified tensor.</summary>
@@ -5076,7 +5011,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Reciprocal<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Reciprocal);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Reciprocal<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5087,9 +5024,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> RootN<T>(in ReadOnlyTensorSpan<T> x, int n)
             where T : IRootFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            RootN(x, n, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.RootN<T>, T, T>(x, n, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise n-th root of the values in the specified tensor.</summary>
@@ -5099,12 +5036,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> RootN<T>(scoped in ReadOnlyTensorSpan<T> x, int n, in TensorSpan<T> destination)
             where T : IRootFunctions<T>
         {
-            if (destination._shape.LinearLength < x._shape.LinearLength)
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            TensorPrimitives.RootN(span, n, ospan);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.RootN<T>, T, T>(x, n, destination);
             return ref destination;
         }
         #endregion
@@ -5117,9 +5050,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> RotateLeft<T>(in ReadOnlyTensorSpan<T> x, int rotateAmount)
             where T : IBinaryInteger<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            RotateLeft(x, rotateAmount, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.RotateLeft<T>, T, T>(x, rotateAmount, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise rotation left of numbers in the specified tensor by the specified rotation amount.</summary>
@@ -5130,12 +5063,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> RotateLeft<T>(scoped in ReadOnlyTensorSpan<T> x, int rotateAmount, in TensorSpan<T> destination)
             where T : IBinaryInteger<T>
         {
-            if (destination._shape.LinearLength < x._shape.LinearLength)
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            TensorPrimitives.RotateLeft(span, rotateAmount, ospan);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.RotateLeft<T>, T, T>(x, rotateAmount, destination);
             return ref destination;
         }
         #endregion
@@ -5148,9 +5077,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> RotateRight<T>(in ReadOnlyTensorSpan<T> x, int rotateAmount)
             where T : IBinaryInteger<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            RotateRight(x, rotateAmount, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.RotateRight<T>, T, T>(x, rotateAmount, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise rotation right of numbers in the specified tensor by the specified rotation amount.</summary>
@@ -5161,12 +5090,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> RotateRight<T>(scoped in ReadOnlyTensorSpan<T> x, int rotateAmount, in TensorSpan<T> destination)
             where T : IBinaryInteger<T>
         {
-            if (destination._shape.LinearLength < x._shape.LinearLength)
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            TensorPrimitives.RotateRight(span, rotateAmount, ospan);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.RotateRight<T>, T, T>(x, rotateAmount, destination);
             return ref destination;
         }
         #endregion
@@ -5177,9 +5102,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Round<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Round(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Round<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
@@ -5188,7 +5113,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Round<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Round);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Round<T>, T, T>(x, destination);
+            return ref destination;
         }
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
@@ -5198,9 +5125,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Round<T>(in ReadOnlyTensorSpan<T> x, int digits, MidpointRounding mode)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Round(x, digits, mode, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Round<T>, T, Tuple<int, MidpointRounding>, T>(x, Tuple.Create(digits, mode), destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
@@ -5211,12 +5138,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Round<T>(scoped in ReadOnlyTensorSpan<T> x, int digits, MidpointRounding mode, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            if (destination._shape.LinearLength < x._shape.LinearLength)
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            TensorPrimitives.Round(span, digits, mode, ospan);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Round<T>, T, Tuple<int, MidpointRounding>, T>(x, Tuple.Create(digits, mode), in destination);
             return ref destination;
         }
 
@@ -5226,9 +5149,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Round<T>(in ReadOnlyTensorSpan<T> x, int digits)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Round(x, digits, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Round<T>, T, Tuple<int, MidpointRounding>, T>(x, Tuple.Create(digits, MidpointRounding.ToEven), destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
@@ -5238,12 +5161,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Round<T>(scoped in ReadOnlyTensorSpan<T> x, int digits, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            if (destination._shape.LinearLength < x._shape.LinearLength)
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            TensorPrimitives.Round(span, digits, ospan);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Round<T>, T, Tuple<int, MidpointRounding>, T>(x, Tuple.Create(digits, MidpointRounding.ToEven), in destination);
             return ref destination;
         }
 
@@ -5253,9 +5172,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Round<T>(in ReadOnlyTensorSpan<T> x, MidpointRounding mode)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Round(x, mode, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Round<T>, T, Tuple<int, MidpointRounding>, T>(x, Tuple.Create(0, mode), destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
@@ -5265,12 +5184,8 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Round<T>(scoped in ReadOnlyTensorSpan<T> x, MidpointRounding mode, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            if (destination._shape.LinearLength < x._shape.LinearLength)
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            TensorPrimitives.Round(span, mode, ospan);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Round<T>, T, Tuple<int, MidpointRounding>, T>(x, Tuple.Create(0, mode), in destination);
             return ref destination;
         }
         #endregion
@@ -5281,9 +5196,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Sigmoid<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Sigmoid(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Sigmoid<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of numbers.</summary>
@@ -5292,7 +5207,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Sigmoid<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Sigmoid);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Sigmoid<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5304,9 +5221,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Sin<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Sin(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Sin<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -5317,7 +5234,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Sin<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Sin);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Sin<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5327,9 +5246,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Sinh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Sinh(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Sinh<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise hyperbolic sine of each radian angle in the specified tensor.</summary>
@@ -5338,7 +5257,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Sinh<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Sinh);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Sinh<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5348,9 +5269,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> SinPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            SinPi(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.SinPi<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise sine of the value in the specified tensor that has been multiplied by Pi.</summary>
@@ -5359,7 +5280,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> SinPi<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.SinPi);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.SinPi<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5369,9 +5292,12 @@ namespace System.Numerics.Tensors
         public static Tensor<T> SoftMax<T>(in ReadOnlyTensorSpan<T> x)
             where T : IExponentialFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            SoftMax(x, output);
-            return output;
+            T sumExp = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.SumExp<T>, T, T>(x, ref sumExp);
+
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.SoftMax<T>, T, T>(x, sumExp, destination);
+            return destination;
         }
 
         /// <summary>Computes the softmax function over the specified non-empty tensor of numbers.</summary>
@@ -5380,7 +5306,12 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> SoftMax<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.SoftMax);
+            T sumExp = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.SumExp<T>, T, T>(x, ref sumExp);
+
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.SoftMax<T>, T, T>(x, sumExp, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5392,9 +5323,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Sqrt<T>(in ReadOnlyTensorSpan<T> x)
             where T : IRootFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Sqrt(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Sqrt<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>
@@ -5405,7 +5336,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Sqrt<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IRootFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Sqrt);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Sqrt<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5418,7 +5351,12 @@ namespace System.Numerics.Tensors
         public static T StdDev<T>(in ReadOnlyTensorSpan<T> x)
             where T : IRootFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.StdDev);
+            T mean = Average(x);
+            T result = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.SumOfSquaredDifferences<T>, T, T>(x, mean, ref result);
+            T variance = result / T.CreateChecked(x.FlattenedLength);
+            return T.Sqrt(variance);
+
         }
         #endregion
 
@@ -5431,9 +5369,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Subtract<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : ISubtractionOperators<T, T, T>
         {
-            Tensor<T> output = Create<T>(x.Lengths);
-            Subtract(x, y, output);
-            return output;
+            Tensor<T> destination = CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -5444,9 +5382,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Subtract<T>(T x, in ReadOnlyTensorSpan<T> y)
             where T : ISubtractionOperators<T, T, T>
         {
-            Tensor<T> output = Create<T>(y.Lengths);
-            Subtract(x, y, output);
-            return output;
+            Tensor<T> destination = CreateUninitialized<T>(y.Lengths);
+            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -5457,18 +5395,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Subtract<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : ISubtractionOperators<T, T, T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Subtract(x, y, output);
-            return output;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -5480,7 +5409,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Subtract<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : ISubtractionOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Subtract);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -5492,7 +5423,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Subtract<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : ISubtractionOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperTInSpanInSpanOut(x, y, destination, TensorPrimitives.Subtract);
+            TensorOperation.ValidateCompatibility(y, destination);
+            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -5504,7 +5437,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Subtract<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : ISubtractionOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Subtract);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5517,7 +5452,9 @@ namespace System.Numerics.Tensors
         public static T Sum<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Sum);
+            T destination = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.Sum<T>, T, T>(x, ref destination);
+            return destination;
         }
         #endregion
 
@@ -5530,7 +5467,9 @@ namespace System.Numerics.Tensors
         internal static T SumOfSquares<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IMultiplyOperators<T, T, T>
         {
-            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.SumOfSquares);
+            T result = T.AdditiveIdentity;
+            TensorOperation.Invoke<TensorOperation.SumOfSquares<T>, T, T>(x, ref result);
+            return result;
         }
         #endregion
 
@@ -5540,9 +5479,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Tan<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Tan(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Tan<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise tangent of the value in the specified tensor.</summary>
@@ -5551,7 +5490,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Tan<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Tan);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Tan<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5561,9 +5502,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Tanh<T>(in ReadOnlyTensorSpan<T> x)
             where T : IHyperbolicFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Tanh(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Tanh<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise hyperbolic tangent of each radian angle in the specified tensor.</summary>
@@ -5572,7 +5513,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Tanh<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Tanh);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Tanh<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5582,9 +5525,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> TanPi<T>(in ReadOnlyTensorSpan<T> x)
             where T : ITrigonometricFunctions<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            TanPi(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.TanPi<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise tangent of the value in the specified tensor that has been multiplied by Pi.</summary>
@@ -5593,7 +5536,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> TanPi<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.TanPi);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.TanPi<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5603,9 +5548,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> TrailingZeroCount<T>(in ReadOnlyTensorSpan<T> x)
             where T : IBinaryInteger<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            TrailingZeroCount(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.TrailingZeroCount<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise trailing zero count of numbers in the specified tensor.</summary>
@@ -5614,7 +5559,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> TrailingZeroCount<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IBinaryInteger<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.TrailingZeroCount);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.TrailingZeroCount<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5624,9 +5571,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Truncate<T>(in ReadOnlyTensorSpan<T> x)
             where T : IFloatingPoint<T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Truncate(x, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Truncate<T>, T, T>(x, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise truncation of numbers in the specified tensor.</summary>
@@ -5635,7 +5582,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Truncate<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.Truncate);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Truncate<T>, T, T>(x, destination);
+            return ref destination;
         }
         #endregion
 
@@ -5646,18 +5595,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Xor<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> output;
-            if (x.Lengths.SequenceEqual(y.Lengths))
-            {
-                output = Tensor.Create<T>(x.Lengths);
-            }
-            else
-            {
-                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
-            }
-
-            Xor(x, y, output);
-            return output;
+            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
+            TensorOperation.Invoke<TensorOperation.Xor<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>Computes the element-wise XOR of numbers in the specified tensors.</summary>
@@ -5667,7 +5607,9 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Xor<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.Xor);
+            TensorOperation.ValidateCompatibility(x, y, destination);
+            TensorOperation.Invoke<TensorOperation.Xor<T>, T, T>(x, y, destination);
+            return ref destination;
         }
 
         /// <summary>
@@ -5678,9 +5620,9 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Xor<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IBitwiseOperators<T, T, T>
         {
-            Tensor<T> output = Tensor.Create<T>(x.Lengths);
-            Xor(x, y, output);
-            return output;
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(x.Lengths);
+            TensorOperation.Invoke<TensorOperation.Xor<T>, T, T>(x, y, destination);
+            return destination;
         }
 
         /// <summary>
@@ -5692,367 +5634,11 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> Xor<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.Xor);
+            TensorOperation.ValidateCompatibility(x, destination);
+            TensorOperation.Invoke<TensorOperation.Xor<T>, T, T>(x, y, destination);
+            return ref destination;
         }
         #endregion
-
-        /// <summary>
-        /// Gets the smallest broadcastable lengths for two shapes.
-        /// </summary>
-        /// <param name="shape1">The first shape to broadcast.</param>
-        /// <param name="shape2">The second shape to broadcast.</param>
-        /// <returns>The smallest lengths these shapes can be broadcast to.</returns>
-        /// <exception cref="ArgumentException">The lengths of <paramref name="shape1" /> and  <paramref name="shape2" /> are not broadcast compatible.</exception>
-        public static nint[] GetSmallestBroadcastableLengths(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
-        {
-            if (!TensorHelpers.IsBroadcastableTo(shape1, shape2))
-                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
-
-            nint[] intermediateShape = TensorHelpers.GetIntermediateShape(shape1, shape2.Length);
-            for (int i = 1; i <= shape1.Length; i++)
-            {
-                intermediateShape[^i] = Math.Max(intermediateShape[^i], shape1[^i]);
-            }
-            for (int i = 1; i <= shape2.Length; i++)
-            {
-                intermediateShape[^i] = Math.Max(intermediateShape[^i], shape2[^i]);
-            }
-
-            return intermediateShape;
-        }
-
-        #region TensorPrimitivesHelpers
-        private delegate void PerformCalculationSpanInSpanOut<TIn, TOut>(ReadOnlySpan<TIn> input, Span<TOut> output);
-
-        private delegate void PerformCalculationSpanInTInSpanOut<T>(ReadOnlySpan<T> input, T value, Span<T> output);
-
-        private delegate void PerformCalculationTInSpanInSpanOut<T>(T value, ReadOnlySpan<T> input, Span<T> output);
-
-        private delegate void PerformCalculationTwoSpanInSpanOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output);
-
-        private delegate T PerformCalculationTwoSpanInTOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo);
-
-        private delegate T PerformCalculationSpanInTOut<T>(ReadOnlySpan<T> input);
-
-        private static T TensorPrimitivesHelperSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> input, PerformCalculationSpanInTOut<T> performCalculation)
-        {
-            if (TensorHelpers.IsContiguousAndDense(input))
-            {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape.FlattenedLength);
-                return performCalculation(span);
-            }
-            // Flattening needs to happen
-            else
-            {
-                // TODO: Can optimize this to not need to realize the broadcasts
-                // That will need to be done on a per method basis.
-                nint flattenedLength = input.FlattenedLength;
-                T[] flattened = new T[flattenedLength];
-                input.FlattenTo(flattened);
-                return performCalculation(flattened);
-            }
-        }
-
-        private static T TensorPrimitivesHelperTwoSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, PerformCalculationTwoSpanInTOut<T> performCalculation)
-        {
-            // If sizes are the same.
-            if (TensorHelpers.IsContiguousAndDense(left) && TensorHelpers.IsContiguousAndDense(right) && TensorShape.AreLengthsTheSame(left, right))
-            {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left._shape.FlattenedLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right._shape.FlattenedLength);
-                return performCalculation(span, rspan);
-            }
-            // Broadcasting needs to happen.
-            else
-            {
-                // Have a couple different possible cases here.
-                // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
-                // 2 - One tensor has row contiguous memory and the right has column contiguous memory (i.e. a 1x5 and a 5x1)
-                // Because we are returning a single T though we need to actual realize the broadcasts at this point to perform the calculations.
-
-                // TODO: Can optimize this to not need to realize the broadcasts
-                // That will need to be done on a per method basis.
-                nint[] newLengths = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
-                nint newLength = TensorSpanHelpers.CalculateFlattenedLength(newLengths);
-                TensorSpan<T> broadcastedLeft = new TensorSpan<T>(new T[newLength], newLengths, ReadOnlySpan<nint>.Empty);
-                TensorSpan<T> broadcastedRight = new TensorSpan<T>(new T[newLength], newLengths, ReadOnlySpan<nint>.Empty);
-                BroadcastTo(left, broadcastedLeft);
-                BroadcastTo(right, broadcastedRight);
-
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref broadcastedLeft._reference, (int)broadcastedLeft.FlattenedLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref broadcastedRight._reference, (int)broadcastedRight.FlattenedLength);
-                return performCalculation(span, rspan);
-            }
-        }
-
-        private static ref readonly TensorSpan<TOut> TensorPrimitivesHelperSpanInSpanOut<TIn, TOut>(scoped in ReadOnlyTensorSpan<TIn> input, in TensorSpan<TOut> destination, PerformCalculationSpanInSpanOut<TIn, TOut> performCalculation)
-        {
-            // Make sure destination has enough memory
-            if (destination._shape.LinearLength < input._shape.FlattenedLength)
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-
-            // Make sure destination shape works with input shape
-            TensorSpan<TOut> slicedDestination = destination.Slice(input._shape.Lengths);
-
-            Span<TOut> destinationSpan;
-            ReadOnlySpan<TIn> inputSpan;
-
-            // Memory is contiguous for both input and destination
-            if (TensorHelpers.IsContiguousAndDense(input) && TensorHelpers.IsContiguousAndDense<TOut>(slicedDestination))
-            {
-                inputSpan = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape.FlattenedLength);
-                destinationSpan = MemoryMarshal.CreateSpan(ref slicedDestination._reference, (int)slicedDestination._shape.FlattenedLength);
-                performCalculation(inputSpan, destinationSpan);
-            }
-            else
-            {
-                scoped Span<nint> curIndex;
-                nint[]? curIndexArray;
-                if (input.Lengths.Length > TensorShape.MaxInlineRank)
-                {
-                    curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
-                    curIndex = curIndexArray.AsSpan(0, input.Rank);
-                }
-                else
-                {
-                    curIndexArray = null;
-                    curIndex = stackalloc nint[input.Lengths.Length];
-                }
-                curIndex.Clear();
-
-                int copiedValues = 0;
-                nint rowLength = input.Lengths[^1];
-
-                while (copiedValues < slicedDestination.FlattenedLength)
-                {
-                    inputSpan = MemoryMarshal.CreateReadOnlySpan(in input[curIndex], (int)rowLength);
-                    destinationSpan = MemoryMarshal.CreateSpan(ref slicedDestination[curIndex], (int)rowLength);
-                    performCalculation(inputSpan, destinationSpan);
-                    copiedValues += (int)rowLength;
-                    TensorSpanHelpers.AdjustIndexes(input.Rank - 2, 1, curIndex, input.Lengths);
-                }
-
-                if (curIndexArray != null)
-                    ArrayPool<nint>.Shared.Return(curIndexArray);
-            }
-
-            return ref destination;
-        }
-
-        private static ref readonly TensorSpan<T> TensorPrimitivesHelperSpanInTInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, T value, in TensorSpan<T> destination, PerformCalculationSpanInTInSpanOut<T> performCalculation)
-        {
-            if (destination._shape.LinearLength < input._shape.FlattenedLength)
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-
-            // Make sure destination shape works with input shape
-            TensorSpan<T> slicedDestination = destination.Slice(input._shape.Lengths);
-
-            ReadOnlySpan<T> inputSpan;
-            Span<T> destinationSpan;
-
-            if (TensorHelpers.IsContiguousAndDense(input) && TensorHelpers.IsContiguousAndDense<T>(slicedDestination))
-            {
-                inputSpan = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-                destinationSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
-                performCalculation(inputSpan, value, destinationSpan);
-            }
-            else
-            {
-                scoped Span<nint> curIndex;
-                nint[]? curIndexArray;
-                if (input.Lengths.Length > TensorShape.MaxInlineRank)
-                {
-                    curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
-                    curIndex = curIndexArray.AsSpan(0, input.Rank);
-                }
-                else
-                {
-                    curIndexArray = null;
-                    curIndex = stackalloc nint[input.Lengths.Length];
-                }
-                curIndex.Clear();
-
-                int copiedValues = 0;
-                nint rowLength = input.Lengths[^1];
-
-                while (copiedValues < slicedDestination.FlattenedLength)
-                {
-                    inputSpan = MemoryMarshal.CreateReadOnlySpan(in input[curIndex], (int)rowLength);
-                    destinationSpan = MemoryMarshal.CreateSpan(ref slicedDestination[curIndex], (int)rowLength);
-                    performCalculation(inputSpan, value, destinationSpan);
-                    copiedValues += (int)rowLength;
-                    TensorSpanHelpers.AdjustIndexes(input.Rank - 2, 1, curIndex, input.Lengths);
-                }
-
-                if (curIndexArray != null)
-                    ArrayPool<nint>.Shared.Return(curIndexArray);
-            }
-
-            return ref destination;
-        }
-
-        private static ref readonly TensorSpan<T> TensorPrimitivesHelperTInSpanInSpanOut<T>(T value, scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination, PerformCalculationTInSpanInSpanOut<T> performCalculation)
-        {
-            if (destination._shape.LinearLength < input._shape.FlattenedLength)
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-
-            // Make sure destination shape works with input shape
-            TensorSpan<T> slicedDestination = destination.Slice(input._shape.Lengths);
-
-            ReadOnlySpan<T> inputSpan;
-            Span<T> destinationSpan;
-
-            if (TensorHelpers.IsContiguousAndDense(input) && TensorHelpers.IsContiguousAndDense<T>(slicedDestination))
-            {
-                inputSpan = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape.LinearLength);
-                destinationSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-                performCalculation(value, inputSpan, destinationSpan);
-            }
-            else
-            {
-                scoped Span<nint> curIndex;
-                nint[]? curIndexArray;
-                if (input.Lengths.Length > TensorShape.MaxInlineRank)
-                {
-                    curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
-                    curIndex = curIndexArray.AsSpan(0, input.Rank);
-                }
-                else
-                {
-                    curIndexArray = null;
-                    curIndex = stackalloc nint[input.Lengths.Length];
-                }
-                curIndex.Clear();
-
-                int copiedValues = 0;
-                nint rowLength = input.Lengths[^1];
-
-                while (copiedValues < slicedDestination.FlattenedLength)
-                {
-                    inputSpan = MemoryMarshal.CreateReadOnlySpan(in input[curIndex], (int)rowLength);
-                    destinationSpan = MemoryMarshal.CreateSpan(ref slicedDestination[curIndex], (int)rowLength);
-                    performCalculation(value, inputSpan, destinationSpan);
-                    copiedValues += (int)rowLength;
-                    TensorSpanHelpers.AdjustIndexes(input.Rank - 2, 1, curIndex, input.Lengths);
-                }
-
-                if (curIndexArray != null)
-                    ArrayPool<nint>.Shared.Return(curIndexArray);
-            }
-
-            return ref destination;
-        }
-
-        private static ref readonly TensorSpan<T> TensorPrimitivesHelperTwoSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination, PerformCalculationTwoSpanInSpanOut<T> performCalculation)
-        {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
-
-            TensorSpan<T> slicedDestination = destination.Slice(newSize);
-
-            // If sizes are the same and memory is contiguous for all tensors
-            if (TensorShape.AreLengthsTheSame(left, right) && TensorHelpers.IsUnderlyingStorageSameSize(left, right) && TensorHelpers.IsContiguousAndDense(left)
-                && TensorHelpers.IsContiguousAndDense(right) && TensorHelpers.IsContiguousAndDense<T>(slicedDestination))
-            {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, left._shape.LinearLength <= left.FlattenedLength ? (int)left._shape.LinearLength : (int)left.FlattenedLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, right._shape.LinearLength <= right.FlattenedLength ? (int)right._shape.LinearLength : (int)right.FlattenedLength);
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref slicedDestination._reference, (int)slicedDestination._shape.LinearLength);
-                performCalculation(span, rspan, ospan);
-                return ref destination;
-            }
-            // Broadcasting needs to happen.
-            else
-            {
-                // Have a couple different possible cases here.
-                // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
-                // 2 - One tensor has row contiguous memory and the right has column contiguous memory (i.e. a 1x5 and a 5x1)
-
-                ReadOnlyTensorSpan<T> broadcastedLeft = Tensor.LazyBroadcast(left, newSize);
-                ReadOnlyTensorSpan<T> broadcastedRight = Tensor.LazyBroadcast(right, newSize);
-
-                nint rowLength = newSize[^1];
-                Span<T> ospan;
-                ReadOnlySpan<T> ispan;
-                Span<T> buffer = new T[rowLength];
-
-                scoped Span<nint> curIndex;
-                nint[]? curIndexArray;
-                if (newSize.Length > TensorShape.MaxInlineRank)
-                {
-                    curIndexArray = ArrayPool<nint>.Shared.Rent(newSize.Length);
-                    curIndex = curIndexArray.AsSpan(0, newSize.Length);
-                }
-                else
-                {
-                    curIndexArray = null;
-                    curIndex = stackalloc nint[newSize.Length];
-                }
-                curIndex.Clear();
-
-                int outputOffset = 0;
-                // neither row contiguous
-                if (broadcastedLeft.Strides[^1] == 0 && broadcastedRight.Strides[^1] == 0)
-                {
-                    Span<T> buffer2 = new T[rowLength];
-
-                    while (outputOffset < slicedDestination.FlattenedLength)
-                    {
-                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref slicedDestination._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, slicedDestination.Strides, slicedDestination.Lengths)), (int)rowLength);
-                        buffer.Fill(broadcastedLeft[curIndex]);
-                        buffer2.Fill(broadcastedRight[curIndex]);
-                        performCalculation(buffer, buffer2, ospan);
-                        outputOffset += (int)rowLength;
-                        TensorSpanHelpers.AdjustIndexes(broadcastedLeft.Rank - 2, 1, curIndex, broadcastedLeft.Lengths);
-                    }
-                }
-                // tensor not row contiguous
-                else if (broadcastedLeft.Strides[^1] == 0)
-                {
-                    while (outputOffset < slicedDestination.FlattenedLength)
-                    {
-                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref slicedDestination._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, slicedDestination.Strides, slicedDestination.Lengths)), (int)rowLength);
-                        buffer.Fill(broadcastedLeft[curIndex]);
-                        ispan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref broadcastedRight._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, broadcastedRight.Strides, broadcastedRight.Lengths)), (int)rowLength);
-                        performCalculation(buffer, ispan, ospan);
-                        outputOffset += (int)rowLength;
-                        TensorSpanHelpers.AdjustIndexes(broadcastedLeft.Rank - 2, 1, curIndex, broadcastedLeft.Lengths);
-                    }
-                }
-                // right not row contiguous
-                else if (broadcastedRight.Strides[^1] == 0)
-                {
-                    while (outputOffset < slicedDestination.FlattenedLength)
-                    {
-                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref slicedDestination._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, slicedDestination.Strides, slicedDestination.Lengths)), (int)rowLength);
-                        buffer.Fill(broadcastedRight[curIndex]);
-                        ispan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref broadcastedLeft._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, broadcastedLeft.Strides, broadcastedLeft.Lengths)), (int)rowLength);
-                        performCalculation(ispan, buffer, ospan);
-                        outputOffset += (int)rowLength;
-                        TensorSpanHelpers.AdjustIndexes(broadcastedLeft.Rank - 2, 1, curIndex, broadcastedLeft.Lengths);
-                    }
-                }
-                // both row contiguous
-                else
-                {
-                    Span<T> rspan;
-                    while (outputOffset < slicedDestination.FlattenedLength)
-                    {
-                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref slicedDestination._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, slicedDestination.Strides, slicedDestination.Lengths)), (int)rowLength);
-                        ispan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref broadcastedLeft._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, broadcastedLeft.Strides, broadcastedLeft.Lengths)), (int)rowLength);
-                        rspan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref broadcastedRight._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, broadcastedRight.Strides, broadcastedRight.Lengths)), (int)rowLength);
-                        performCalculation(ispan, rspan, ospan);
-                        outputOffset += (int)rowLength;
-                        TensorSpanHelpers.AdjustIndexes(broadcastedLeft.Rank - 2, 1, curIndex, broadcastedLeft.Lengths);
-                    }
-                }
-
-                if (curIndexArray != null)
-                    ArrayPool<nint>.Shared.Return(curIndexArray);
-            }
-            return ref destination;
-        }
-
-        #endregion
-
         #endregion
     }
 }

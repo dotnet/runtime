@@ -201,7 +201,7 @@ namespace System.Numerics.Tensors
         {
             if (!TryCopyTo(destination))
             {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                ThrowHelper.ThrowArgument_DestinationTooShort();
             }
         }
 
@@ -219,7 +219,7 @@ namespace System.Numerics.Tensors
         {
             if (!TryFlattenTo(destination))
             {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                ThrowHelper.ThrowArgument_DestinationTooShort();
             }
         }
 
