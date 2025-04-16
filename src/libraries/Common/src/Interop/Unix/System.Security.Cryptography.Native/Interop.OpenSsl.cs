@@ -398,9 +398,9 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
-                if (!sslAuthenticationOptions.AllowRsaPssPad || !sslAuthenticationOptions.AllowRsaRsae)
+                if (!sslAuthenticationOptions.AllowRsaPssPad || !sslAuthenticationOptions.AllowRsaPkcsPad)
                 {
-                    ConfigureSignatureAlgorithms(sslHandle, sslAuthenticationOptions.AllowRsaPssPad, sslAuthenticationOptions.AllowRsaRsae);
+                    ConfigureSignatureAlgorithms(sslHandle, sslAuthenticationOptions.AllowRsaPssPad, sslAuthenticationOptions.AllowRsaPkcsPad);
                 }
 
                 if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
