@@ -1631,7 +1631,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     assert(callType < EC_COUNT);
     assert((callType != EC_FUNC_TOKEN) || (ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
-    assert(callType < EC_INDIR_R || addr == NULL);
+    assert(callType < EC_INDIR_R || addr == nullptr || isValidSimm12((ssize_t)addr));
     assert(callType != EC_INDIR_R || (ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
 
     // RISCV64 never uses these
@@ -1735,7 +1735,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // INS_OPTS_C: placeholders.  1/2/4-ins:
     //   if (callType == EC_INDIR_R)
-    //      jalr REG_R0/REG_RA, ireg, 0   <---- 1-ins
+    //      jalr REG_R0/REG_RA, ireg, offset   <---- 1-ins
     //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
     //     if reloc:
     //             //pc + offset_38bits       # only when reloc.
@@ -1758,7 +1758,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         regNumber reg_jalr = isJump ? REG_R0 : REG_RA;
         id->idReg4(reg_jalr);
-        id->idReg3(ireg); // NOTE: for EC_INDIR_R, using idReg3.
+        id->idReg3(ireg);  // NOTE: for EC_INDIR_R, using idReg3.
+        id->idSmallCns(0); // SmallCns will contain JALR's offset.
+        if (addr != nullptr)
+        {
+            // If addr is not NULL, it must contain JALR's offset, which is set to the lower 12 bits of address.
+            assert(id->fitsInSmallCns((size_t)addr));
+            id->idSmallCns((size_t)addr);
+        }
         assert(xreg == REG_NA);
 
         id->idCodeSize(4);
@@ -1861,10 +1868,12 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
     assert(id->idIns() == INS_jalr);
     if (id->idIsCallRegPtr())
     { // EC_INDIR_R
+        ssize_t offset = id->idSmallCns();
+        assert(isValidSimm12(offset));
         code = emitInsCode(id->idIns());
         code |= (code_t)id->idReg4() << 7;
         code |= (code_t)id->idReg3() << 15;
-        // the offset default is 0;
+        code |= (code_t)offset << 20;
         emitOutput_Instr(dst, code);
     }
     else if (id->idIsReloc())

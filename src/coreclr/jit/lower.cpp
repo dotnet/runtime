@@ -2745,6 +2745,15 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
         BlockRange().InsertBefore(call, std::move(controlExprRange));
         call->gtControlExpr = controlExpr;
+
+#ifdef TARGET_RISCV64
+        // If controlExpr is a constant, we should containt it inside the call so that we can move the lower 12-bits of
+        // the value to call instruction's (JALR) offset.
+        if (controlExpr->IsCnsIntOrI() && !controlExpr->AsIntCon()->ImmedValNeedsReloc(comp) && !call->IsFastTailCall())
+        {
+            MakeSrcContained(call, controlExpr);
+        }
+#endif // TARGET_RISCV64
     }
 
     if (comp->opts.IsCFGEnabled())
