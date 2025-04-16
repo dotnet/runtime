@@ -369,7 +369,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
     // of method. However, this method needs to be able to change fp before calling funclet.
     // This is required to access locals in funclet.
-    PROLOG_SAVE_REG_PAIR_NO_FP   x29, lr, -96
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   x29, lr, -96
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, 16
@@ -406,7 +406,7 @@ NESTED_END CallEHFunclet, _TEXT
 // This helper enables us to call into a filter funclet after restoring Fp register
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_NO_FP   fp, lr, -16
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
 
     // On entry:
     //
