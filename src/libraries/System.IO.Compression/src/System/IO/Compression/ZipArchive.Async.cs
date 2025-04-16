@@ -122,11 +122,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
         }
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        await DisposeAsyncCore().ConfigureAwait(false);
-        GC.SuppressFinalize(this);
-    }
+    public async ValueTask DisposeAsync() => await DisposeAsyncCore().ConfigureAwait(false);
 
     protected virtual async ValueTask DisposeAsyncCore()
     {
