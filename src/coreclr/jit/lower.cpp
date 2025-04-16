@@ -732,6 +732,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerArrLength(node->AsArrCommon());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            LowerAsyncContinuation(node);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            LowerReturnSuspend(node);
+            break;
+
         default:
             break;
     }
@@ -5407,6 +5415,61 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
         }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerAsyncContinuation: Lower a GT_ASYNC_CONTINUATION node
+//
+// Arguments:
+//   asyncCont - Async continuation node
+//
+void Lowering::LowerAsyncContinuation(GenTree* asyncCont)
+{
+    assert(asyncCont->OperIs(GT_ASYNC_CONTINUATION));
+
+    // When the ASYNC_CONTINUATION was created as a result of
+    // StubHelpers.Async2CallContinuation() the previous call hasn't been
+    // marked as an async call. We need to do that to get the right GC
+    // reporting behavior for the returned async continuation.
+    GenTree* node = asyncCont;
+    while (true)
+    {
+        node = node->gtPrev;
+        noway_assert((node != nullptr) && "Ran out of nodes while looking for call before async continuation");
+
+        if (node->IsCall())
+        {
+            if (!node->AsCall()->IsAsync())
+            {
+                JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
+                        Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
+                node->AsCall()->SetIsAsync();
+            }
+
+            break;
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerReturnSuspend:
+//   Lower a GT_RETURN_SUSPEND by making it a terminator node.
+//
+// Arguments:
+//   node - The node
+//
+void Lowering::LowerReturnSuspend(GenTree* node)
+{
+    assert(node->OperIs(GT_RETURN_SUSPEND));
+    while (BlockRange().LastNode() != node)
+    {
+        BlockRange().Remove(BlockRange().LastNode(), true);
+    }
+
+    if (comp->compMethodRequiresPInvokeFrame())
+    {
+        InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(node));
     }
 }
 

@@ -434,7 +434,6 @@ public:
             MODE_ANY;
             GC_NOTRIGGER;
             PRECONDITION(pMD != NULL);
-            PRECONDITION(typeSignature != mdTokenNil);
             PRECONDITION(methodSignature != mdTokenNil);
         }
         CONTRACTL_END;

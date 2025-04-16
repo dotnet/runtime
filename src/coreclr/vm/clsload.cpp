@@ -2801,7 +2801,7 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
         {
             MethodDesc * pMD = it.GetMethodDesc();
             CONSISTENCY_CHECK(pMD != NULL && pMD->GetMethodTable() == pMT);
-            if (!pMD->IsUnboxingStub())
+            if (!pMD->IsUnboxingStub() && !pMD->IsAsync2VariantMethod())
             {
                 pModule->EnsuredStoreMethodDef(pMD->GetMemberDef(), pMD);
             }

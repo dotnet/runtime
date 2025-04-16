@@ -339,7 +339,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     pRD->pCurrentContextPointers->Rsi = NULL;
     pRD->pCurrentContextPointers->Rdi = NULL;
 #endif
-    pRD->pCurrentContextPointers->Rcx = NULL;
 #ifdef UNIX_AMD64_ABI
     pRD->pCurrentContextPointers->Rdx = (PULONG64)&m_Args->Rdx;
 #else // UNIX_AMD64_ABI
@@ -351,6 +350,7 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     pRD->pCurrentContextPointers->R11 = NULL;
 
     pRD->pCurrentContextPointers->Rax = (PULONG64)&m_Args->Rax;
+    pRD->pCurrentContextPointers->Rcx = (PULONG64)&m_Args->Rcx;
 
     SyncRegDisplayToCurrentContext(pRD);
 }

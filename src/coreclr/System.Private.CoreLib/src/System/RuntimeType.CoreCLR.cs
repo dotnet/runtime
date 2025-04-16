@@ -407,34 +407,34 @@ namespace System
                         switch (listType)
                         {
                             case MemberListType.CaseSensitive:
+                            {
+                                // Ensure we always return a list that has
+                                // been merged with the global list.
+                                T[]? cachedList = m_csMemberInfos[name!];
+                                if (cachedList == null)
                                 {
-                                    // Ensure we always return a list that has
-                                    // been merged with the global list.
-                                    T[]? cachedList = m_csMemberInfos[name!];
-                                    if (cachedList == null)
-                                    {
-                                        MergeWithGlobalList(list);
-                                        m_csMemberInfos[name!] = list;
-                                    }
-                                    else
-                                        list = cachedList;
+                                    MergeWithGlobalList(list);
+                                    m_csMemberInfos[name!] = list;
                                 }
-                                break;
+                                else
+                                    list = cachedList;
+                            }
+                            break;
 
                             case MemberListType.CaseInsensitive:
+                            {
+                                // Ensure we always return a list that has
+                                // been merged with the global list.
+                                T[]? cachedList = m_cisMemberInfos[name!];
+                                if (cachedList == null)
                                 {
-                                    // Ensure we always return a list that has
-                                    // been merged with the global list.
-                                    T[]? cachedList = m_cisMemberInfos[name!];
-                                    if (cachedList == null)
-                                    {
-                                        MergeWithGlobalList(list);
-                                        m_cisMemberInfos[name!] = list;
-                                    }
-                                    else
-                                        list = cachedList;
+                                    MergeWithGlobalList(list);
+                                    m_cisMemberInfos[name!] = list;
                                 }
-                                break;
+                                else
+                                    list = cachedList;
+                            }
+                            break;
 
                             case MemberListType.All:
                                 if (!m_cacheComplete)
@@ -2371,7 +2371,7 @@ namespace System
 
         #endregion
 
-#endregion
+        #endregion
 
         #region Private Data Members
 

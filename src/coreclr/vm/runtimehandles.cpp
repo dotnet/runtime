@@ -191,6 +191,9 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
 
     MethodTable* pMT = typeHandle.AsMethodTable();
     MethodDesc* pMethod = MethodTable::IntroducedMethodIterator::GetFirst(pMT);
+    while (pMethod && pMethod->IsAsync2VariantMethod())
+        pMethod = MethodTable::IntroducedMethodIterator::GetNext(pMethod);
+
     return pMethod;
 }
 FCIMPLEND
@@ -205,6 +208,8 @@ FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod
     CONTRACTL_END;
 
     MethodDesc *pMethod = MethodTable::IntroducedMethodIterator::GetNext(*ppMethod);
+    while (pMethod && pMethod->IsAsync2VariantMethod())
+        pMethod = MethodTable::IntroducedMethodIterator::GetNext(pMethod);
 
     *ppMethod = pMethod;
 }
@@ -1826,6 +1831,10 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetStubIfNeededInternal,
 
     TypeHandle instType = refType->GetType();
 
+    // do not report async2 variants to reflection.
+    if (pMethod->IsAsync2VariantMethod())
+        return NULL;
+
     // Perf optimization: this logic is actually duplicated in FindOrCreateAssociatedMethodDescForReflection, but since it
     // is the more common case it's worth the duplicate check here to avoid the helper method frame
     if (pMethod->HasMethodInstantiation()
@@ -1849,6 +1858,12 @@ extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodD
     BEGIN_QCALL;
 
     GCX_COOP();
+
+    if (pMethod->IsAsync2VariantMethod())
+    {
+        // do not report async2 variants to reflection.
+        pMethod = pMethod->GetAsyncOtherVariant(/*allowInstParam*/ false);
+    }
 
     TypeHandle instType = declaringTypeHandle.AsTypeHandle();
 

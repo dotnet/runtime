@@ -5534,6 +5534,7 @@ namespace
                 FALSE,                  // allowInstParam
                 TRUE,                   // forceRemoteableMethod
                 TRUE,                   // allowCreate
+                AsyncVariantLookup::MatchingAsyncVariant,
                 level                   // level
             );
         }
@@ -7777,7 +7778,8 @@ namespace
         {
             MethodDesc* pMD = it.GetMethodDesc();
             if (pMD->GetMemberDef() == tkMethod
-                && pMD->GetModule() == mod)
+                && pMD->GetModule() == mod
+                && pMD->IsAsync2VariantMethod() == pDefMD->IsAsync2VariantMethod())
             {
                 return pMD;
             }
@@ -7787,7 +7789,7 @@ namespace
     }
 }
 
-MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
+MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantLookup asyncVariantLookup)
 {
     CONTRACTL
     {
@@ -7797,12 +7799,36 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
     }
     CONTRACTL_END;
 
+    if (asyncVariantLookup == AsyncVariantLookup::MatchingAsyncVariant)
+    {
 #ifdef FEATURE_METADATA_UPDATER
-    if (pDefMD->IsEnCAddedMethod())
-        return GetParallelMethodDescForEnC(this, pDefMD);
+        if (pDefMD->IsEnCAddedMethod())
+            return GetParallelMethodDescForEnC(this, pDefMD);
 #endif // FEATURE_METADATA_UPDATER
 
-    return GetMethodDescForSlot_NoThrow(pDefMD->GetSlot()); // TODO! We should probably use the throwing variant where possible
+        return GetMethodDescForSlot_NoThrow(pDefMD->GetSlot()); // TODO! We should probably use the throwing variant where possible
+    }
+    else
+    {
+        // Slow path for finding the Async2 variant (or not-Async2 variant, if we start from Async2 one)
+        // This could be optimized with some trickery around slot numbers, but doing so is ... confusing, so I'm not implementing this yet
+        mdMethodDef tkMethod = pDefMD->GetMemberDef();
+        Module* mod = pDefMD->GetModule();
+        bool isAsync2VariantMethod = pDefMD->IsAsync2VariantMethod();
+
+        MethodTable::IntroducedMethodIterator it(this);
+        for (; it.IsValid(); it.Next())
+        {
+            MethodDesc* pMD = it.GetMethodDesc();
+            if (pMD->GetMemberDef() == tkMethod
+                && pMD->GetModule() == mod
+                && pMD->IsAsync2VariantMethod() != isAsync2VariantMethod)
+            {
+                return pMD;
+            }
+        }
+        return NULL;
+    }
 }
 
 #ifndef DACCESS_COMPILE
@@ -8179,9 +8205,23 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
+
+        bool differsByAsyncVariant = false;
         if (!pMethodDecl->HasSameMethodDefAs(pInterfaceMD))
         {
-            continue;
+            if (pMethodDecl->GetMemberDef() == pInterfaceMD->GetMemberDef() && 
+                pMethodDecl->GetModule() == pInterfaceMD->GetModule() &&
+                pMethodDecl->IsAsync2VariantMethod() != pInterfaceMD->IsAsync2VariantMethod())
+            {
+                differsByAsyncVariant = true;
+                pMethodDecl = pMethodDecl->GetAsyncOtherVariant();
+                if (verifyImplemented)
+                    return pMethodDecl;
+            }
+            else
+            {
+                continue;
+            }
         }
 
         // Spec requires that all body token for MethodImpls that refer to static virtual implementation methods must be MethodDef tokens.
@@ -8207,6 +8247,11 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             COMPlusThrow(kTypeLoadException, E_FAIL);
         }
 
+        if (differsByAsyncVariant)
+        {
+            pMethodImpl = pMethodImpl->GetAsyncOtherVariant();
+        }
+
         if (!verifyImplemented && instantiateMethodParameters)
         {
             pMethodImpl = pMethodImpl->FindOrCreateAssociatedMethodDesc(
@@ -8217,6 +8262,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
                 /* allowInstParam */ FALSE,
                 /* forceRemotableMethod */ FALSE,
                 /* allowCreate */ TRUE,
+                AsyncVariantLookup::MatchingAsyncVariant,
                 /* level */ level);
         }
         if (pMethodImpl != nullptr)

@@ -1241,6 +1241,7 @@ CallArgs::CallArgs()
 #endif
     , m_hasThisPointer(false)
     , m_hasRetBuffer(false)
+    , m_hasAsyncContinuation(false)
     , m_isVarArgs(false)
     , m_abiInformationDetermined(false)
     , m_hasAddedFinalArgs(false)
@@ -1519,6 +1520,9 @@ void CallArgs::AddedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             m_hasRetBuffer = true;
             break;
+        case WellKnownArg::AsyncContinuation:
+            m_hasAsyncContinuation = true;
+            break;
         default:
             break;
     }
@@ -1541,6 +1545,10 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             assert(FindWellKnownArg(arg) == nullptr);
             m_hasRetBuffer = false;
+            break;
+        case WellKnownArg::AsyncContinuation:
+            assert(FindWellKnownArg(arg) == nullptr);
+            m_hasAsyncContinuation = false;
             break;
         default:
             break;
@@ -2245,6 +2253,37 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     // then this call has side effects.
     return !helperProperties.IsPure(helper) &&
            (!helperProperties.IsAllocator(helper) || ((gtCallMoreFlags & GTF_CALL_M_ALLOC_SIDE_EFFECTS) != 0));
+}
+
+//-------------------------------------------------------------------------
+// IsAsync2: Whether or not this call is to an async2 function.
+//
+// Return Value:
+//   True if so.
+//
+// Remarks:
+//   async2 involves passing an async continuation as a separate argument and
+//   returning an async continuation in REG_ASYNC_CONTINUATION_RET.
+//
+//   The async continuation is usually JIT added
+//   (WellKnownArg::AsyncContinuation). This is the case for an async2 method
+//   calling another async2 method by normal means. However, the VM also
+//   creates stubs that call async2 runtimes through calli where the async
+//   continuations are passed explicitly. See
+//   CEEJitInfo::getAsyncResumptionStub and
+//   MethodDesc::EmitJitStateMachineBasedRuntimeAsyncThunk for examples. In
+//   those cases the JIT does not know (and does not need to know) which arg is
+//   the async continuation.
+//
+//   The VM also uses the StubHelpers.Async2CallContinuation() intrinsic in the
+//   stubs discussed above. The JIT must take care in those cases to still mark
+//   the preceding call as an async call; this is required for correct LSRA
+//   behavior and GC reporting around the returned async continuation. This is
+//   currently done in lowering; see LowerAsyncContinuation().
+//
+bool GenTreeCall::IsAsync() const
+{
+    return (gtCallMoreFlags & GTF_CALL_M_ASYNC) != 0;
 }
 
 //-------------------------------------------------------------------------
@@ -6556,6 +6595,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_LCL_FLD:
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -6621,6 +6661,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_RETURNTRAP:
         case GT_RETURN:
         case GT_RETFILT:
+        case GT_RETURN_SUSPEND:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
@@ -6920,6 +6961,8 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
 
         case GT_GCPOLL:
         case GT_KEEPALIVE:
+        case GT_ASYNC_CONTINUATION:
+        case GT_RETURN_SUSPEND:
             return true;
 
         case GT_SWIFT_ERROR:
@@ -7249,6 +7292,8 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_KEEPALIVE:
+        case GT_ASYNC_CONTINUATION:
+        case GT_RETURN_SUSPEND:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
             return true;
@@ -7309,6 +7354,8 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
+        case GT_RETURN_SUSPEND:
         case GT_SWIFT_ERROR:
             return true;
         default:
@@ -9422,6 +9469,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 goto DONE;
 
             case GT_CATCH_ARG:
+            case GT_ASYNC_CONTINUATION:
             case GT_NO_OP:
             case GT_NOP:
             case GT_LABEL:
@@ -10163,6 +10211,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_LCL_FLD:
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -10234,6 +10283,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
+        case GT_RETURN_SUSPEND:
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;
@@ -11773,6 +11823,10 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
         {
             ilName = "this";
         }
+        else if (lclNum == lvaAsyncContinuationArg)
+        {
+            ilName = "AsyncCont";
+        }
         else
         {
             ilKind = "arg";
@@ -12333,6 +12387,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
         case GT_MEMORYBARRIER:
         case GT_PINVOKE_PROLOG:
         case GT_JMPTABLE:
@@ -13075,6 +13130,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "va cookie";
         case WellKnownArg::InstParam:
             return "gctx";
+        case WellKnownArg::AsyncContinuation:
+            return "async";
         case WellKnownArg::RetBuffer:
             return "retbuf";
         case WellKnownArg::PInvokeFrame:
