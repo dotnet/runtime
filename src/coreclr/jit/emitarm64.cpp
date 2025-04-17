@@ -1398,6 +1398,34 @@ static const char * const  bRegNames[] =
 // clang-format on
 
 //------------------------------------------------------------------------
+// emitPacInProlog: Sign LR as part of Pointer Authentication (PAC) support
+//
+void emitter::emitPacInProlog()
+{
+    if (JitConfig.JitPacEnabled() == 0)
+    {
+        return;
+    }
+    // TODO-PAC: should be paciasp
+    emitIns(INS_paciaz);
+    emitComp->unwindPacSignLR();
+}
+
+//------------------------------------------------------------------------
+// emitPacInEpilog: unsign LR as part of Pointer Authentication (PAC) support
+//
+void emitter::emitPacInEpilog()
+{
+    if (JitConfig.JitPacEnabled() == 0)
+    {
+        return;
+    }
+    // TODO-PAC: should be autiasp
+    emitIns(INS_autiaz);
+    emitComp->unwindPacSignLR();
+}
+
+//------------------------------------------------------------------------
 // emitRegName: Returns a general-purpose register name or SIMD and floating-point scalar register name.
 //
 // Arguments:
