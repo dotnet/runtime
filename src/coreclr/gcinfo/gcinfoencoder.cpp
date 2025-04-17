@@ -12,7 +12,17 @@
 #undef _ASSERTE
 
 #if defined(_DEBUG)
-extern "C" void assertAbort(const char* why, const char* file, unsigned line);
+#if !defined(_MSC_VER)
+#if !defined(__cdecl)
+#if defined(__i386__)
+#define __cdecl __attribute__((cdecl))
+#else
+#define __cdecl
+#endif
+#endif
+#endif
+
+extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line);
 
 #define _ASSERTE(expr) if (!(expr)) { \
     assertAbort(#expr, __FILE__, __LINE__); \
@@ -22,7 +32,7 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line);
 #endif // _DEBUG
 
 
- #include <stdint.h>
+#include <stdint.h>
 
 #include "gcinfohelpers.h"
 #include "gcinfoencoder.h"
