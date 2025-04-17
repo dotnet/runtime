@@ -324,9 +324,7 @@ Note that JIT64 does not implement this properly. The C# compiler used to always
 
 ## Funclet parameters
 
-For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores only the frame register on AMD64 and all non-volatile registers on all other platforms.
-
-Catch, Filter, and Filter-handlers also get an Exception object (GC ref) as an argument (`REG_EXCEPTION_OBJECT`). On AMD64 it is passed in RCX (Windows ABI) or RSI (Unix ABI). On ARM and ARM64 this is the first argument and passed in R0.
+Catch, Filter, and Filter-handlers get an Exception object (GC ref) as an argument (`REG_EXCEPTION_OBJECT`). On AMD64 it is passed in RCX (Windows ABI) or RSI (Unix ABI). On ARM and ARM64 this is the first argument and passed in R0.
 
 ## Funclet Return Values
 
@@ -352,7 +350,11 @@ Some definitions:
 
 When an exception occurs, the VM is invoked to do some processing. If the exception is within a "try" region, it eventually calls a corresponding handler (which also includes calling filters). The exception location within a function might be where a "throw" instruction executes, the point of a processor exception like null pointer dereference or divide by zero, or the point of a call where the callee threw an exception but did not catch it.
 
-All non-volatile registers are restored to their values at the exception point.
+The VM sets the frame register to be the same as the parent function.
+
+On CoreCLR/AMD64, all other register values that existed at the exception point in the corresponding "try" region are trashed on entry to the funclet. That is, the only registers that have known values are those of the funclet parameters and the frame register.
+
+On all other platforms and NativeAOT/AMD64, all non-volatile registers are restored to their values at the exception point.
 
 ### Registers on return from a funclet
 
