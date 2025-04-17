@@ -97,6 +97,8 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         case INS_OPTS_RELOC:
         case INS_OPTS_NONE:
             return sizeof(instrDesc);
+        case INS_OPTS_I:
+            return sizeof(instrDescLoadImm);
         default:
             NO_WAY("unexpected instruction descriptor format");
             break;
@@ -824,7 +826,8 @@ void emitter::emitIns_R_R_R(
     if ((INS_add <= ins && ins <= INS_and) || (INS_mul <= ins && ins <= INS_remuw) ||
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
-        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d))
+        (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
+        (INS_min <= ins && ins <= INS_maxu))
     {
 #ifdef DEBUG
         switch (ins)
@@ -911,6 +914,11 @@ void emitter::emitIns_R_R_R(
             case INS_amominu_d:
             case INS_amomaxu_w:
             case INS_amomaxu_d:
+
+            case INS_min:
+            case INS_minu:
+            case INS_max:
+            case INS_maxu:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -1362,7 +1370,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
      *       b  <-a
      * */
 
-    constexpr int absMaxInsCount  = 8;
+    constexpr int absMaxInsCount  = instrDescLoadImm::absMaxInsCount;
     constexpr int prefMaxInsCount = 5;
     assert(prefMaxInsCount <= absMaxInsCount);
 
@@ -1553,33 +1561,21 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     if (numberOfInstructions <= insCountLimit)
     {
-        for (int i = 0; i < numberOfInstructions; i++)
-        {
-            if ((i == 0) && (ins[0] == INS_lui))
-            {
-                emitIns_R_I(ins[i], size, reg, values[i]);
-            }
-            else if ((i == 0) && ((ins[0] == INS_addiw) || (ins[0] == INS_addi)))
-            {
-                emitIns_R_R_I(ins[i], size, reg, REG_R0, values[i]);
-            }
-            else if (i == 0)
-            {
-                assert(false && "First instruction must be lui / addiw / addi");
-            }
-            else if ((ins[i] == INS_addi) || (ins[i] == INS_addiw) || (ins[i] == INS_slli))
-            {
-                emitIns_R_R_I(ins[i], size, reg, reg, values[i]);
-            }
-            else
-            {
-                assert(false && "Remainding instructions must be addi / addiw / slli");
-            }
-        }
+        instrDescLoadImm* id = static_cast<instrDescLoadImm*>(emitNewInstrLoadImm(size, originalImm));
+        id->idReg1(reg);
+        memcpy(id->ins, ins, sizeof(instruction) * numberOfInstructions);
+        memcpy(id->values, values, sizeof(int32_t) * numberOfInstructions);
         if (utilizeSRLI)
         {
-            emitIns_R_R_I(INS_srli, size, reg, reg, srliShiftAmount);
+            numberOfInstructions += 1;
+            assert(numberOfInstructions < absMaxInsCount);
+            id->ins[numberOfInstructions - 1]    = INS_srli;
+            id->values[numberOfInstructions - 1] = srliShiftAmount;
         }
+        id->idCodeSize(numberOfInstructions * 4);
+        id->idIns(id->ins[numberOfInstructions - 1]);
+
+        appendToCurIG(id);
     }
     else if (size == EA_PTRSIZE)
     {
@@ -1610,47 +1606,34 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
  *
  */
 
-void emitter::emitIns_Call(EmitCallType          callType,
-                           CORINFO_METHOD_HANDLE methHnd,
-                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                           void*            addr,
-                           ssize_t          argSize,
-                           emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                           VARSET_VALARG_TP ptrVars,
-                           regMaskTP        gcrefRegs,
-                           regMaskTP        byrefRegs,
-                           const DebugInfo& di /* = DebugInfo() */,
-                           regNumber        ireg /* = REG_NA */,
-                           regNumber        xreg /* = REG_NA */,
-                           unsigned         xmul /* = 0     */,
-                           ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */,
-                           bool             noSafePoint /* = false */)
+void emitter::emitIns_Call(const EmitCallParams& params)
 {
     /* Sanity check the arguments depending on callType */
 
-    assert(callType < EC_COUNT);
-    assert((callType != EC_FUNC_TOKEN) || (ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
-    assert(callType < EC_INDIR_R || addr == NULL);
-    assert(callType != EC_INDIR_R || (ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
+    assert(params.callType < EC_COUNT);
+    assert((params.callType != EC_FUNC_TOKEN) ||
+           (params.ireg == REG_NA && params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
+    assert(params.callType < EC_INDIR_R || params.addr == NULL);
+    assert(params.callType != EC_INDIR_R ||
+           (params.ireg < REG_COUNT && params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
 
     // RISCV64 never uses these
-    assert(xreg == REG_NA && xmul == 0 && disp == 0);
+    assert(params.xreg == REG_NA && params.xmul == 0 && params.disp == 0);
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
-    assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
+    assert((unsigned)std::abs(params.argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
-    gcrefRegs &= savedSet;
-    byrefRegs &= savedSet;
+    regMaskTP savedSet  = emitGetGCRegsSavedOrModified(params.methHnd);
+    regMaskTP gcrefRegs = params.gcrefRegs & savedSet;
+    regMaskTP byrefRegs = params.byrefRegs & savedSet;
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
     {
-        printf("Call: GCvars=%s ", VarSetOps::ToString(emitComp, ptrVars));
-        dumpConvertedVarSet(emitComp, ptrVars);
+        printf("Call: GCvars=%s ", VarSetOps::ToString(emitComp, params.ptrVars));
+        dumpConvertedVarSet(emitComp, params.ptrVars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
         emitDispRegSet(gcrefRegs);
@@ -1662,9 +1645,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && di.GetLocation().IsValid())
+    if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
     {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
     }
 
     /*
@@ -1674,55 +1657,56 @@ void emitter::emitIns_Call(EmitCallType          callType,
      */
     instrDesc* id;
 
-    assert(argSize % REGSIZE_BYTES == 0);
-    int argCnt = (int)(argSize / (int)REGSIZE_BYTES);
+    assert(params.argSize % REGSIZE_BYTES == 0);
+    int argCnt = (int)(params.argSize / (int)REGSIZE_BYTES);
 
-    if (callType >= EC_INDIR_R)
+    if (params.callType >= EC_INDIR_R)
     {
         /* Indirect call, virtual calls */
 
-        assert(callType == EC_INDIR_R);
+        assert(params.callType == EC_INDIR_R);
 
-        id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+        id = emitNewInstrCallInd(argCnt, params.disp, params.ptrVars, gcrefRegs, byrefRegs, params.retSize,
+                                 params.secondRetSize);
     }
     else
     {
         /* Helper/static/nonvirtual/function calls (direct or through handle),
            and calls to an absolute addr. */
 
-        assert(callType == EC_FUNC_TOKEN);
+        assert(params.callType == EC_FUNC_TOKEN);
 
-        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+        id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs, params.retSize, params.secondRetSize);
     }
 
     /* Update the emitter's live GC ref sets */
 
     // If the method returns a GC ref, mark RBM_INTRET appropriately
-    if (retSize == EA_GCREF)
+    if (params.retSize == EA_GCREF)
     {
         gcrefRegs |= RBM_INTRET;
     }
-    else if (retSize == EA_BYREF)
+    else if (params.retSize == EA_BYREF)
     {
         byrefRegs |= RBM_INTRET;
     }
 
     // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
-    if (secondRetSize == EA_GCREF)
+    if (params.secondRetSize == EA_GCREF)
     {
         gcrefRegs |= RBM_INTRET_1;
     }
-    else if (secondRetSize == EA_BYREF)
+    else if (params.secondRetSize == EA_BYREF)
     {
         byrefRegs |= RBM_INTRET_1;
     }
 
-    VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
+    VarSetOps::Assign(emitComp, emitThisGCrefVars, params.ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
     // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
+    id->idSetIsNoGC(params.isJump || params.noSafePoint || emitNoGChelper(params.methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -1749,17 +1733,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
     //      jalr REG_R0/REG_RA, t2, 0
 
     /* Record the address: method, indirection, or funcptr */
-    if (callType == EC_INDIR_R)
+    if (params.callType == EC_INDIR_R)
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
         // assert(callType == EC_INDIR_R);
 
         id->idSetIsCallRegPtr();
 
-        regNumber reg_jalr = isJump ? REG_R0 : REG_RA;
+        regNumber reg_jalr = params.isJump ? REG_R0 : REG_RA;
         id->idReg4(reg_jalr);
-        id->idReg3(ireg); // NOTE: for EC_INDIR_R, using idReg3.
-        assert(xreg == REG_NA);
+        id->idReg3(params.ireg); // NOTE: for EC_INDIR_R, using idReg3.
+        assert(params.xreg == REG_NA);
 
         id->idCodeSize(4);
     }
@@ -1767,10 +1751,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         /* This is a simple direct call: "call helper/method/addr" */
 
-        assert(callType == EC_FUNC_TOKEN);
-        assert(addr != NULL);
+        assert(params.callType == EC_FUNC_TOKEN);
+        assert(params.addr != NULL);
 
-        addr = (void*)(((size_t)addr) + (isJump ? 0 : 1)); // NOTE: low-bit0 is used for jalr ra/r0,rd,0
+        void* addr =
+            (void*)(((size_t)params.addr) + (params.isJump ? 0 : 1)); // NOTE: low-bit0 is used for jalr ra/r0,rd,0
         id->idAddr()->iiaAddr = (BYTE*)addr;
 
         if (emitComp->opts.compReloc)
@@ -1797,14 +1782,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     if (m_debugInfoSize > 0)
     {
-        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
-        id->idDebugOnlyInfo()->idMemCookie = reinterpret_cast<size_t>(methHnd); // method token
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = reinterpret_cast<size_t>(params.methHnd); // method token
     }
 
 #ifdef LATE_DISASM
-    if (addr != nullptr)
+    if (params.addr != nullptr)
     {
-        codeGen->getDisAssembler().disSetMethod((size_t)addr, methHnd);
+        codeGen->getDisAssembler().disSetMethod((size_t)params.addr, params.methHnd);
     }
 #endif // LATE_DISASM
 
@@ -3444,6 +3429,50 @@ BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* i
     return dst;
 }
 
+BYTE* emitter::emitOutputInstr_OptsI(BYTE* dst, instrDesc* id, instruction* lastIns)
+{
+    assert(id->idInsOpt() == INS_OPTS_I);
+
+    instrDescLoadImm* idli   = static_cast<instrDescLoadImm*>(id);
+    instruction*      ins    = idli->ins;
+    int32_t*          values = idli->values;
+    regNumber         reg    = idli->idReg1();
+
+    assert((reg != REG_NA) && (reg != REG_R0));
+
+    int numberOfInstructions = idli->idCodeSize() / sizeof(code_t);
+    for (int i = 0; i < numberOfInstructions; i++)
+    {
+        if ((i == 0) && (ins[0] == INS_lui))
+        {
+            assert(isValidSimm20(values[i]));
+            dst += emitOutput_UTypeInstr(dst, ins[i], reg, values[i] & 0xfffff);
+        }
+        else if ((i == 0) && ((ins[0] == INS_addiw) || (ins[0] == INS_addi)))
+        {
+            assert(isValidSimm12(values[i]) || ((ins[i] == INS_addiw) && isValidUimm12(values[i])));
+            dst += emitOutput_ITypeInstr(dst, ins[i], reg, REG_R0, values[i] & 0xfff);
+        }
+        else if (i == 0)
+        {
+            assert(false && "First instruction must be lui / addiw / addi");
+        }
+        else if ((ins[i] == INS_addi) || (ins[i] == INS_addiw) || (ins[i] == INS_slli) || (ins[i] == INS_srli))
+        {
+            assert(isValidSimm12(values[i]) || ((ins[i] == INS_addiw) && isValidUimm12(values[i])));
+            dst += emitOutput_ITypeInstr(dst, ins[i], reg, reg, values[i] & 0xfff);
+        }
+        else
+        {
+            assert(false && "Remaining instructions must be addi / addiw / slli / srli");
+        }
+    }
+
+    *lastIns = ins[numberOfInstructions - 1];
+
+    return dst;
+}
+
 /*****************************************************************************
  *
  *  Append the machine code corresponding to the given instruction descriptor
@@ -3496,6 +3525,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst  = emitOutputInstr_OptsC(dst, id, ig, &sz);
             dst2 = dst;
             ins  = INS_nop;
+            break;
+        case INS_OPTS_I:
+            dst = emitOutputInstr_OptsI(dst, id, &ins);
+            sz  = sizeof(instrDescLoadImm);
             break;
         default: // case INS_OPTS_NONE:
             dst += emitOutput_Instr(dst, id->idAddr()->iiaGetInstrEncode());
@@ -3752,6 +3785,8 @@ void emitter::emitDispInsName(
 
     printf("      ");
 
+    bool willPrintLoadImmValue = (id->idInsOpt() == INS_OPTS_I) && !emitComp->opts.disDiffable;
+
     switch (GetMajorOpcode(code))
     {
         case MajorOpcode::Lui:
@@ -3763,7 +3798,7 @@ void emitter::emitDispInsName(
                 imm20 |= 0xfff00000;
             }
             printf("lui            %s, ", rd);
-            emitDispImmediate(imm20);
+            emitDispImmediate(imm20, !willPrintLoadImmValue);
             return;
         }
         case MajorOpcode::Auipc:
@@ -3881,7 +3916,10 @@ void emitter::emitDispInsName(
                     printf("%d", imm12);
                 }
             }
-            printf("\n");
+            if (!willPrintLoadImmValue)
+            {
+                printf("\n");
+            }
 
             return;
         }
@@ -3901,7 +3939,7 @@ void emitter::emitDispInsName(
                     else
                     {
                         printf("addiw          %s, %s, ", rd, rs1);
-                        emitDispImmediate(imm12);
+                        emitDispImmediate(imm12, !willPrintLoadImmValue);
                     }
                     return;
                 case 0x1:
@@ -4038,6 +4076,15 @@ void emitter::emitDispInsName(
                             return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0000101:
+                {
+                    if ((opcode3 >> 2) != 1) // clmul[h] unsupported
+                        return emitDispIllegalInstruction(code);
+
+                    static const char names[][5] = {"min ", "minu", "max ", "maxu"};
+                    printf("%s           %s, %s, %s\n", names[opcode3 & 0b11], rd, rs1, rs2);
+                    return;
+                }
                 default:
                     return emitDispIllegalInstruction(code);
             }
@@ -4749,6 +4796,8 @@ void emitter::emitDispIns(
 
     emitDispInsInstrNum(id);
 
+    bool willPrintLoadImmValue = (id->idInsOpt() == INS_OPTS_I) && !emitComp->opts.disDiffable;
+
     const BYTE* instr = pCode + writeableOffset;
     unsigned    instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
@@ -4764,6 +4813,17 @@ void emitter::emitDispIns(
         }
 #endif
         emitDispInsName(instruction, instr, doffs, offset, id, ig);
+
+        if (willPrintLoadImmValue && ((i + instrSize) < sz))
+        {
+            printf("\n");
+        }
+    }
+
+    if (willPrintLoadImmValue)
+    {
+        instrDescLoadImm* liid = static_cast<instrDescLoadImm*>(id);
+        printf("\t\t;; load imm: hex=0x%016lX dec=%ld\n", liid->idcCnsVal, liid->idcCnsVal);
     }
 }
 
@@ -5446,13 +5506,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     unsigned codeSize = id->idCodeSize();
     assert((codeSize >= 4) && (codeSize % sizeof(code_t) == 0));
+
     // Some instructions like jumps or loads may have not-yet-known simple auxilliary instructions (lui, addi, slli,
     // etc) for building immediates, assume cost of one each.
+    // instrDescLoadImm consists of OpImm, OpImm32, and Lui instructions.
     float immediateBuildingCost = ((codeSize / sizeof(code_t)) - 1) * PERFSCORE_LATENCY_1C;
 
     instruction ins = id->idIns();
     assert(ins != INS_invalid);
-    if (ins == INS_lea)
+    if ((ins == INS_lea) || (id->idInsOpt() == INS_OPTS_I))
     {
         result.insLatency += immediateBuildingCost;
         result.insThroughput += immediateBuildingCost;

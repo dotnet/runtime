@@ -866,7 +866,7 @@ void Module::InitializeDynamicILCrst()
 // Add a (token, address) pair to the table of IL blobs for reflection/dynamics
 // Arguments:
 //     Input:
-//         token        method token
+//         token        method token or field token (See SetDynamicRvaField)
 //         blobAddress  address of the start of the IL blob address, including the header
 //     Output: not explicit, but if the pair was not already in the table it will be added.
 //             Does not add duplicate tokens to the table.
@@ -928,6 +928,35 @@ TADDR Module::GetDynamicIL(mdToken token)
     // If the lookup fails, it returns the 'NULL' entry
     // The 'NULL' entry has m_il set to NULL, so either way we're safe
     return entry.m_il;
+}
+
+#ifndef DACCESS_COMPILE
+void Module::SetDynamicRvaField(mdToken token, TADDR blobAddress)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    SetDynamicIL(token, blobAddress);
+}
+#endif // !DACCESS_COMPILE
+
+TADDR Module::GetDynamicRvaField(mdToken token)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    return GetDynamicIL(token);
 }
 
 #if !defined(DACCESS_COMPILE)
