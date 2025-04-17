@@ -178,6 +178,7 @@
 
   <PropertyGroup>
     <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRID).$(HostConfiguration)', 'corehost'))</DotNetHostBinDir>
+    <DotNetCDacBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'cdac', '$(Configuration)', '$(NetCoreAppCurrent)', '$(OutputRID)', 'publish'))</DotNetCDacBinDir>
   </PropertyGroup>
 
   <!--Feature switches -->
