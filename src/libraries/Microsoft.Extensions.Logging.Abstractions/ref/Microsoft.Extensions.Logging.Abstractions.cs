@@ -155,6 +155,12 @@ namespace Microsoft.Extensions.Logging
         Critical = 5,
         None = 6,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public partial class ProviderAliasAttribute : System.Attribute
+    {
+        public ProviderAliasAttribute(string alias) { }
+        public string Alias { get { throw null; } }
+    }
 }
 namespace Microsoft.Extensions.Logging.Abstractions
 {

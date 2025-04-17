@@ -363,6 +363,18 @@ int LinearScan::BuildNode(GenTree* tree)
                     assert(varTypeIsFloating(tree));
                     break;
 
+                // Integer Min/Max
+                case NI_System_Math_Min:
+                case NI_System_Math_Max:
+                case NI_System_Math_MinUnsigned:
+                case NI_System_Math_MaxUnsigned:
+                    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                    assert(op2 != nullptr);
+                    assert(op2->TypeIs(tree->TypeGet()));
+                    assert(op1->TypeIs(tree->TypeGet()));
+                    assert(tree->TypeIs(TYP_I_IMPL));
+                    break;
+
                 // Operand and its result must be integers
                 case NI_PRIMITIVE_LeadingZeroCount:
                 case NI_PRIMITIVE_TrailingZeroCount:
