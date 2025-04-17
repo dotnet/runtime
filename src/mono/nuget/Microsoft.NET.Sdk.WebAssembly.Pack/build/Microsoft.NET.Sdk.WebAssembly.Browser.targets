@@ -526,7 +526,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
   <Target Name="_AddWasmPreloadPropertiesForPublish" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
     <ItemGroup>
-      <_WasmPreloadPublishScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Build' and '%(FileName)%(Extension)' == 'dotnet.js')" />
+      <_WasmPreloadPublishScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Build' and '%(FileName)%(Extension)' == 'dotnet.js'" />
     </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
