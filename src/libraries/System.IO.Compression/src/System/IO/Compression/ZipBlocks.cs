@@ -409,8 +409,8 @@ namespace System.IO.Compression
         // ZIP files store values in little endian, so this is reversed.
         public static readonly byte[] SignatureConstantBytes = [0x50, 0x4B, 0x06, 0x07];
 
-        public static readonly int TotalSize = FieldLocations.TotalNumberOfDisks + FieldLengths.TotalNumberOfDisks;
-        public static readonly int SizeOfBlockWithoutSignature = TotalSize - FieldLengths.Signature;
+        public const int TotalSize = FieldLocations.TotalNumberOfDisks + FieldLengths.TotalNumberOfDisks;
+        public const int SizeOfBlockWithoutSignature = TotalSize - FieldLengths.Signature;
 
         public uint NumberOfDiskWithZip64EOCD;
         public ulong OffsetOfZip64EOCD;
@@ -850,9 +850,9 @@ namespace System.IO.Compression
         public static readonly byte[] SignatureConstantBytes = [0x50, 0x4B, 0x05, 0x06];
 
         // This also assumes a zero-length comment.
-        public static readonly int TotalSize = FieldLocations.ArchiveCommentLength + FieldLengths.ArchiveCommentLength;
+        public const int TotalSize = FieldLocations.ArchiveCommentLength + FieldLengths.ArchiveCommentLength;
         // These are the minimum possible size, assuming the zip file comments variable section is empty
-        public static readonly int SizeOfBlockWithoutSignature = TotalSize - FieldLengths.Signature;
+        public const int SizeOfBlockWithoutSignature = TotalSize - FieldLengths.Signature;
 
         // The end of central directory can have a variable size zip file comment at the end, but its max length can be 64K
         // The Zip File Format Specification does not explicitly mention a max size for this field, but we are assuming this
