@@ -852,7 +852,8 @@ extends:
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
           platforms:
-            - browser_wasm
+# disable linux https://github.com/dotnet/runtime/issues/89402
+#            - browser_wasm
             - browser_wasm_win
           nameSuffix: _Smoke_AOT
           runAOT: true
