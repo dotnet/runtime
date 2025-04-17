@@ -159,8 +159,8 @@ unsafe class Program
         bool? ExpectedBmi1 = null;
         bool? ExpectedBmi2 = null;
         bool? ExpectedAvxVnni = null;
-        bool? ExpectedAvxVnniInt8 = null;
-        bool? ExpectedAvxVnniInt16 = null;
+        bool? ExpectedAvxVnniInt8 = false;
+        bool? ExpectedAvxVnniInt16 = false;
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
         bool? ExpectedAvx10v2 = false;
