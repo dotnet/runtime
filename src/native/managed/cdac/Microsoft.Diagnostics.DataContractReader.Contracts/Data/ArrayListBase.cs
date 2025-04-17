@@ -1,10 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.using System;
+// The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
+/// <summary>
+/// Encapsulates structure and logic for ArrayListBase implemented in arraylist.h
+/// </summary>
 internal sealed class ArrayListBase : IData<ArrayListBase>
 {
     static ArrayListBase IData<ArrayListBase>.Create(Target target, TargetPointer address) => new ArrayListBase(target, address);
@@ -21,6 +25,21 @@ internal sealed class ArrayListBase : IData<ArrayListBase>
             ArrayListBlock block = target.ProcessedData.GetOrAdd<ArrayListBlock>(next);
             Blocks.Add(block);
             next = block.Next;
+        }
+
+        uint elementsFound = 0;
+        foreach (ArrayListBlock block in Blocks)
+        {
+            foreach (TargetPointer element in block.Elements)
+            {
+                if (elementsFound >= Count)
+                {
+                    break;
+                }
+
+                Elements.Add(element);
+                elementsFound++;
+            }
         }
     }
 

@@ -964,6 +964,8 @@ protected:
         {
             return m_array.Iterate();
         }
+
+        friend struct cdac_data<AppDomain>;
     };  // class DomainAssemblyList
 
     // Conceptually a list of code:Assembly structures, protected by lock code:GetAssemblyListLock
@@ -1621,6 +1623,7 @@ template<>
 struct cdac_data<AppDomain>
 {
     static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
+    static constexpr size_t DomainAssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::DomainAssemblyList, m_array);
 };
 
 typedef DPTR(class SystemDomain) PTR_SystemDomain;
@@ -1913,9 +1916,10 @@ private:
 
     InlineSString<100>  m_SystemDirectory;
 
+public:
     // Global domain that every one uses
     SPTR_DECL(SystemDomain, m_pSystemDomain);
-
+private:
     LoaderAllocator * m_pDelayedUnloadListOfLoaderAllocators;
 
 #ifndef DACCESS_COMPILE

@@ -32,6 +32,7 @@ public enum DataType
     ModuleLookupMap,
     AppDomain,
     Assembly,
+    LoaderAllocator,
     PEAssembly,
     PEImage,
     PEImageLayout,
