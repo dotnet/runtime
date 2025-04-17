@@ -164,6 +164,10 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     return false;
 }
 
+void GCToEEInterface::TriggerGCBridge(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs)
+{
+}
+
 bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     Thread* pThread = ::GetThread();

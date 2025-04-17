@@ -49,6 +49,11 @@ namespace standalone
             return ::GCToEEInterface::RefCountedHandleCallbacks(pObject);
         }
 
+        void TriggerGCBridge(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs)
+        {
+            return ::GCToEEInterface::TriggerGCBridge(sccsLen, sccs, ccrsLen, ccrs);
+        }
+
         void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
         {
             ::GCToEEInterface::SyncBlockCacheWeakPtrScan(scanProc, lp1, lp2);

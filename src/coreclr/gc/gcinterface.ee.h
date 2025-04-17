@@ -239,6 +239,9 @@ public:
     virtual
     bool RefCountedHandleCallbacks(Object * pObject) PURE_VIRTUAL
 
+    virtual
+    void TriggerGCBridge(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs) PURE_VIRTUAL
+
     // Performs a weak pointer scan of the sync block cache.
     virtual
     void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2) PURE_VIRTUAL
