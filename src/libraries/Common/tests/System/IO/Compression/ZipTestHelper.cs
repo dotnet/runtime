@@ -597,9 +597,9 @@ namespace System.IO.Compression.Tests
             }
 
             foreach (object[] e in SharedComment_Data())
-                {
-                    yield return e;
-                }
+            {
+                yield return e;
+            }
         }
 
         // Returns pairs as expected by Latin1
@@ -617,9 +617,9 @@ namespace System.IO.Compression.Tests
             }
 
             foreach (object[] e in SharedComment_Data())
-                {
-                    yield return e;
-                }
+            {
+                yield return e;
+            }
         }
 
         // Returns pairs encoded with Latin1, but decoded with UTF8.
