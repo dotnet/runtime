@@ -366,7 +366,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             dict[Path.GetFileName(file)] = (file, unchanged);
 
         // those files do not change on re-link
-        dict["dotnet.js"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.js"), true);
+        dict["dotnet.js"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.js"), false); // Inline boot config
         dict["dotnet.js.map"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.js.map"), true);
         dict["dotnet.runtime.js"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.runtime.js"), true);
         dict["dotnet.runtime.js.map"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.runtime.js.map"), true);
@@ -374,6 +374,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (IsFingerprintingEnabled)
         {
             string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.boot.js");
+            if (!File.Exists(bootJsonPath))
+                bootJsonPath = Path.Combine(paths.BinFrameworkDir, "dotnet.js"); // inline boot config
+
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             var keysToUpdate = new List<string>();
             var updates = new List<(string oldKey, string newKey, (string fullPath, bool unchanged) value)>();
@@ -514,7 +517,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
         EnsureProjectDirIsSet();
-        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
+        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName ?? "dotnet.js");
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
