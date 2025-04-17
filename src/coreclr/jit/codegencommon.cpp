@@ -1506,6 +1506,21 @@ FOUND_AM:
     return true;
 }
 
+//------------------------------------------------------------------------
+// genEmitCallWithCurrentGC:
+//   Emit a call with GC information captured from current GC information.
+//
+// Parameters:
+//   params - Call emission parameters
+//
+void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
+{
+    params.ptrVars   = gcInfo.gcVarPtrSetCur;
+    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
+    params.byrefRegs = gcInfo.gcRegByrefSetCur;
+    GetEmitter()->emitIns_Call(params);
+}
+
 /*****************************************************************************
  *
  *  Generate an exit sequence for a return from a method (note: when compiling

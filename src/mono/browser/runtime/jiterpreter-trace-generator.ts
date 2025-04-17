@@ -3688,6 +3688,15 @@ function append_simd_4_load (builder: WasmBuilder, ip: MintOpcodePtr) {
 
 function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(1, index);
+    const bitmask = bitmaskTable[index];
+
+    if (bitmask) {
+        append_simd_2_load(builder, ip);
+        builder.appendSimd(bitmask);
+        append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+        return true;
+    }
+
     if (simple >= 0) {
         if (simdLoadTable.has(index)) {
             // Indirect load, so v1 is T** and res is Vector128*
@@ -3701,14 +3710,6 @@ function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
             builder.appendSimd(simple);
             append_simd_store(builder, ip);
         }
-        return true;
-    }
-
-    const bitmask = bitmaskTable[index];
-    if (bitmask) {
-        append_simd_2_load(builder, ip);
-        builder.appendSimd(bitmask);
-        append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
         return true;
     }
 
