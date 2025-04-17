@@ -373,20 +373,17 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void InnerScopeLocalCreatedBeforeOuterScopeLocal()
         {
-            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
-            {
-                Assembly coreAssembly = mlc.CoreAssembly!;
-                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
-                Emit(type);
 
-                using var stream = new MemoryStream();
-                ab.Save(stream);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            Emit(type);
 
-                stream.Seek(0, SeekOrigin.Begin);
-                var assembly = AssemblyLoadContext.Default.LoadFromStream(stream);
-                var method = assembly.GetType("MyType")!.GetMethod("Test");
-                method!.Invoke(null, null); // should not throw
-            }
+            using var stream = new MemoryStream();
+            ab.Save(stream);
+
+            stream.Seek(0, SeekOrigin.Begin);
+            var assembly = AssemblyLoadContext.Default.LoadFromStream(stream);
+            var method = assembly.GetType("MyType")!.GetMethod("Test");
+            method!.Invoke(null, null); // should not throw
 
             static void Emit(TypeBuilder typeBuilder)
             {
@@ -416,12 +413,10 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Beq, label3);
                 methodInfo = typeof(Util).GetMethod(nameof(Util.OOO), new Type[] { });
                 ilGenerator.Emit(OpCodes.Call, methodInfo);
-                ilGenerator.Emit(OpCodes.Br, label3);
                 ilGenerator.MarkLabel(label3);
                 ilGenerator.Emit(OpCodes.Br, label1);
                 ilGenerator.MarkLabel(label2);
                 ilGenerator.EndScope();
-                ilGenerator.Emit(OpCodes.Br, label0);
                 ilGenerator.MarkLabel(label0);
                 methodInfo = typeof(TestClass).GetMethod(nameof(TestClass.New), new Type[] { });
                 ilGenerator.Emit(OpCodes.Call, methodInfo);
