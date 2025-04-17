@@ -23,6 +23,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             if (data.Length > 0)
             {
                 AssertExtensions.FalseExpression(slhDsa.VerifyData([], signature, context));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
 
                 data[0] ^= 1;
                 AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
@@ -30,6 +31,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
             else
             {
+                AssertExtensions.TrueExpression(slhDsa.VerifyData([], signature, context));
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
+
                 AssertExtensions.FalseExpression(slhDsa.VerifyData([0], signature, context));
                 AssertExtensions.FalseExpression(slhDsa.VerifyData([1, 2, 3], signature, context));
             }
@@ -41,6 +45,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             if (context.Length > 0)
             {
                 AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, []));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
 
                 context[0] ^= 1;
                 AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
@@ -48,6 +53,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
             else
             {
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, []));
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
+
                 AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, [0]));
                 AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, [1, 2, 3]));
             }
