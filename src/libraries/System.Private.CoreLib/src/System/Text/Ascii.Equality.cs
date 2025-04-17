@@ -522,6 +522,11 @@ namespace System.Text
                     Vector128<byte> vec = Vector128.CreateScalarUnsafe(Unsafe.ReadUnaligned<long>(ref ptr)).AsByte();
                     return Sse2.UnpackLow(vec, Vector128<byte>.Zero).AsUInt16();
                 }
+                else if (PackedSimd.IsSupported)
+                {
+                    Vector128<byte> vec = Vector128.CreateScalarUnsafe(Unsafe.ReadUnaligned<long>(ref ptr)).AsByte();
+                    return PackeSimd.ZeroExtendWideningLower(vec);
+                }
                 else
                 {
                     (Vector64<ushort> lower, Vector64<ushort> upper) = Vector64.Widen(Vector64.LoadUnsafe(ref ptr));
