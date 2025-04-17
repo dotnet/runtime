@@ -281,7 +281,6 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
-        [SkipOnPlatform(TestPlatforms.Browser, "https://github.com/dotnet/runtime/issues/114769")]
         public static async Task ZipArchiveEntry_CorruptedStream_EnsureNoExtraBytesReadOrOverWritten(bool async)
         {
             MemoryStream stream = await LocalMemoryStream.ReadAppFileAsync(zfile("normal.zip"));

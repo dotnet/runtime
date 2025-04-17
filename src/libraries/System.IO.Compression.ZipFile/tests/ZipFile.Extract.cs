@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "https://github.com/dotnet/runtime/issues/114769")]
     public class ZipFile_Extract : ZipFileTestBase
     {
         public static IEnumerable<object[]> Get_ExtractToDirectoryNormal_Data()
