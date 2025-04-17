@@ -27,10 +27,18 @@ check_c_source_compiles(
   BROTLI_EMSCRIPTEN
 )
 if (BROTLI_EMSCRIPTEN)
-  message("-- Compiler is EMSCRIPTEN")
+  message("-- Brotli Compiler is EMSCRIPTEN")
 else()
-  message("-- Compiler is not EMSCRIPTEN")
+  message("-- Brotli Compiler is not EMSCRIPTEN")
 endif()
+
+if (BROTLI_EMSCRIPTEN AND "${CMAKE_C_FLAGS}" MATCHES "MEMORY64")
+    message("MRH_LOGGING BROTLI: Building native BROTLI with MEMORY64")    
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --target=wasm64")
+else()
+    message("MRH_LOGGING: BROTLI unable to set wasm64")
+endif()
+
 
 # If Brotli is being bundled in another project, we don't want to
 # install anything.  However, we want to let people override this, so
