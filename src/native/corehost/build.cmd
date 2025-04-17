@@ -80,7 +80,7 @@ if %__Ninja% == 0 (
 set "__ResourcesDir=%__objDir%\%__OutputRid%.%CMAKE_BUILD_TYPE%\hostResourceFiles"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
-
+set "__sourceDir=%__sourceDir:\=/%"
 
 :: Check that the intermediate directory exists so we can place our cmake build tree there
 if /i "%__IncrementalNativeBuild%" == "1" goto CreateIntermediates
