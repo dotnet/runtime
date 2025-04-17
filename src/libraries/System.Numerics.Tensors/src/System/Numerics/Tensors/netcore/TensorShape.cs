@@ -505,6 +505,47 @@ namespace System.Numerics.Tensors
             return true;
         }
 
+        // can shape1 turn into lengths
+        public static bool AreCompatible(in ReadOnlySpan<nint> lengths, in TensorShape shape1, bool allowBidirectional)
+        {
+            scoped ReadOnlySpan<nint> lengths1 = lengths;
+            scoped ReadOnlySpan<nint> lengths2 = shape1.Lengths;
+
+            int rankDelta = lengths1.Length - shape1.Rank;
+
+            if (rankDelta != 0)
+            {
+                if (rankDelta < 0)
+                {
+                    if (!allowBidirectional)
+                    {
+                        return false;
+                    }
+
+                    lengths1 = shape1.Lengths;
+                    lengths2 = lengths;
+
+                    rankDelta = -rankDelta;
+                    Debug.Assert(rankDelta > 0);
+                }
+
+                lengths1 = lengths1[rankDelta..];
+            }
+
+            // if equal or one is 1
+            for (int i = 0; i < lengths1.Length; i++)
+            {
+                nint length1 = lengths1[i];
+                nint length2 = lengths2[i];
+                if ((length1 != length2) && (length1 != 1) && (length2 != 1))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public static bool AreLengthsTheSame(in TensorShape shape1, in TensorShape shape2)
         {
             return AreLengthsTheSame(shape1.Lengths, shape2.Lengths);

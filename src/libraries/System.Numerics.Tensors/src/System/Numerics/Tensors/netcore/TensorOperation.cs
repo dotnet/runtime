@@ -125,6 +125,27 @@ namespace System.Numerics.Tensors
             destinationRentedBuffer.Dispose();
         }
 
+        // For copyto/flattento
+        public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in Span<TResult> destination)
+            where TOperation : TensorOperation.IUnaryOperation_Tensor<TArg, TResult>
+        {
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
+            nint destinationIndex = -1;
+
+            for (nint i = 0; i < destination.Length; i++)
+            {
+                xLinearOffset = x._shape.AdjustToNextIndex(x._shape, xLinearOffset, xIndexes);
+                destinationIndex++;
+
+                TOperation.Invoke(
+                    in Unsafe.Add(ref x._reference, xLinearOffset),
+                    ref Unsafe.Add(ref destination[0], destinationIndex)
+                );
+            }
+
+            xRentedBuffer.Dispose();
+        }
+
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, ref TResult destination)
             where TOperation : TensorOperation.IUnaryReduction_Tensor<TArg, TResult>
         {
@@ -267,17 +288,24 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, TArg y, ref TResult result)
             where TOperation : TensorOperation.IBinaryOperation_Tensor_Scalar<TArg, TResult> => Invoke<TOperation, TArg, TArg, TResult>(in x, y, ref result);
 
+        public static void ValidateCompatibility<TArg>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlySpan<nint> lengths)
+        {
+            // x can be broadcast to destination, not vice verse
+            if (!TensorShape.AreCompatible(lengths, x._shape, true))
+                ThrowHelper.ThrowArgument_LengthsNotCompatible();
+        }
+
         public static void ValidateCompatibility<TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlyTensorSpan<TResult> y)
         {
-            // can do bidirectional validation
-            if (!x.Lengths.SequenceEqual(y.Lengths))
+            // Can be bidirectional validation
+            if (!TensorShape.AreCompatible(x._shape, y._shape, true))
                 ThrowHelper.ThrowArgument_LengthsNotCompatible();
         }
 
         public static void ValidateCompatibility<TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in TensorSpan<TResult> destination)
         {
             // x can be broadcast to destination, not vice verse
-            if (!x.Lengths.SequenceEqual(destination.Lengths))
+            if (!TensorShape.AreCompatible(destination._shape, x._shape, false))
                 ThrowHelper.ThrowArgument_LengthsNotCompatible();
         }
 
