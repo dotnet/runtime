@@ -89,7 +89,7 @@ namespace System.Net.Http.Json
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
+            await using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
             {
                 return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonSerializerOptions.Web, cancellationToken).ConfigureAwait(false);
             }
@@ -99,7 +99,7 @@ namespace System.Net.Http.Json
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         private static async Task<T?> ReadFromJsonAsyncCore<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
+            await using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
             {
                 return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonSerializerOptions.Web, cancellationToken).ConfigureAwait(false);
             }
@@ -127,7 +127,7 @@ namespace System.Net.Http.Json
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, JsonSerializerContext context, CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
+            await using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
             {
                 return await JsonSerializer.DeserializeAsync(contentStream, type, context, cancellationToken).ConfigureAwait(false);
             }
@@ -135,7 +135,7 @@ namespace System.Net.Http.Json
 
         private static async Task<T?> ReadFromJsonAsyncCore<T>(HttpContent content, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
+            await using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
             {
                 return await JsonSerializer.DeserializeAsync(contentStream, jsonTypeInfo, cancellationToken).ConfigureAwait(false);
             }
