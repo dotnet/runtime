@@ -14,9 +14,8 @@ namespace System.IO.Compression.Tests
 {
     public partial class ZipFile_Unix : ZipFileTestBase
     {
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task UnixCreateSetsPermissionsInExternalAttributes(bool async)
+        [Fact]
+        public void UnixCreateSetsPermissionsInExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits get preserved in ExternalAttributes
             string[] testPermissions = new[] { "777", "755", "644", "600", "7600" };
@@ -26,29 +25,28 @@ namespace System.IO.Compression.Tests
                 string[] expectedPermissions = CreateFiles(tempFolder.Path, testPermissions);
 
                 string archivePath = GetTestFilePath();
-                await CallZipFileCreateFromDirectory(async, tempFolder.Path, archivePath);
+                ZipFile.CreateFromDirectory(tempFolder.Path, archivePath);
 
-                ZipArchive archive = await CallZipFileOpenRead(async, archivePath);
-
-                Assert.Equal(expectedPermissions.Length, archive.Entries.Count);
-
-                foreach (ZipArchiveEntry entry in archive.Entries)
+                using (ZipArchive archive = ZipFile.OpenRead(archivePath))
                 {
-                    Assert.EndsWith(".txt", entry.Name, StringComparison.Ordinal);
-                    EnsureExternalAttributes(entry.Name.Substring(0, entry.Name.Length - 4), entry);
-                }
+                    Assert.Equal(expectedPermissions.Length, archive.Entries.Count);
 
-                void EnsureExternalAttributes(string permissions, ZipArchiveEntry entry)
-                {
-                    Assert.Equal(Convert.ToInt32(permissions, 8), (entry.ExternalAttributes >> 16) & 0xFFF);
-                }
+                    foreach (ZipArchiveEntry entry in archive.Entries)
+                    {
+                        Assert.EndsWith(".txt", entry.Name, StringComparison.Ordinal);
+                        EnsureExternalAttributes(entry.Name.Substring(0, entry.Name.Length - 4), entry);
+                    }
 
-                await DisposeZipArchive(async, archive);
+                    void EnsureExternalAttributes(string permissions, ZipArchiveEntry entry)
+                    {
+                        Assert.Equal(Convert.ToInt32(permissions, 8), (entry.ExternalAttributes >> 16) & 0xFFF);
+                    }
+                }
 
                 // test that round tripping the archive has the same file permissions
                 using (var extractFolder = new TempDirectory(Path.Combine(GetTestFilePath(), "extract")))
                 {
-                    await CallZipFileExtractToDirectory(async, archivePath, extractFolder.Path);
+                    ZipFile.ExtractToDirectory(archivePath, extractFolder.Path);
 
                     foreach (string permission in expectedPermissions)
                     {
@@ -61,72 +59,57 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public void UnixCreateSetsPermissionsInExternalAttributesUMaskZero(bool async)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void UnixCreateSetsPermissionsInExternalAttributesUMaskZero()
         {
-            RemoteExecutor.Invoke(async () =>
+            RemoteExecutor.Invoke(() =>
             {
                 umask(0);
-                await new ZipFile_Unix().UnixCreateSetsPermissionsInExternalAttributes(async);
+                new ZipFile_Unix().UnixCreateSetsPermissionsInExternalAttributes();
             }).Dispose();
         }
 
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task UnixExtractSetsFilePermissionsFromExternalAttributes(bool async)
+        [Fact]
+        public void UnixExtractSetsFilePermissionsFromExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits don't get extracted to file permissions
             string[] testPermissions = new[] { "777", "755", "644", "754", "7600" };
 
             string archivePath = GetTestFilePath();
             using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))
+            using (ZipArchive archive = new ZipArchive(fileStream, ZipArchiveMode.Create))
             {
-                ZipArchive archive = await CreateZipArchive(async, fileStream, ZipArchiveMode.Create);
-
                 foreach (string permission in testPermissions)
                 {
                     ZipArchiveEntry entry = archive.CreateEntry(permission + ".txt");
                     entry.ExternalAttributes = Convert.ToInt32(permission, 8) << 16;
-                    Stream stream = await OpenEntryStream(async, entry);
-                    ReadOnlySpan<byte> contents = "contents"u8;
-                    if (async)
-                    {
-                        await stream.WriteAsync(contents.ToArray());
-                    }
-                    else
-                    {
-                        stream.Write(contents);
-                    }
+                    using Stream stream = entry.Open();
+                    stream.Write("contents"u8);
                     stream.Flush();
-                    await DisposeStream(async, stream);
                 }
+            }
 
-                await DisposeZipArchive(async, archive);
+            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            {
+                ZipFile.ExtractToDirectory(archivePath, tempFolder.Path);
 
-                using (var tempFolder = new TempDirectory(GetTestFilePath()))
+                foreach (string permission in testPermissions)
                 {
-                    await CallZipFileExtractToDirectory(async, archivePath, tempFolder.Path);
+                    string filename = Path.Combine(tempFolder.Path, permission + ".txt");
+                    Assert.True(File.Exists(filename));
 
-                    foreach (string permission in testPermissions)
-                    {
-                        string filename = Path.Combine(tempFolder.Path, permission + ".txt");
-                        Assert.True(File.Exists(filename));
-
-                        EnsureFilePermissions(filename, permission);
-                    }
+                    EnsureFilePermissions(filename, permission);
                 }
             }
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public void UnixExtractSetsFilePermissionsFromExternalAttributesUMaskZero(bool async)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void UnixExtractSetsFilePermissionsFromExternalAttributesUMaskZero()
         {
-            RemoteExecutor.Invoke(async () =>
+            RemoteExecutor.Invoke(() =>
             {
                 umask(0);
-                await new ZipFile_Unix().UnixExtractSetsFilePermissionsFromExternalAttributes(async);
+                new ZipFile_Unix().UnixExtractSetsFilePermissionsFromExternalAttributes();
             }).Dispose();
         }
 
