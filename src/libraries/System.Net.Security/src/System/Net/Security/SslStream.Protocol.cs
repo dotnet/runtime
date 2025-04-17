@@ -1056,6 +1056,8 @@ namespace System.Net.Security
                     return true;
                 }
 
+                // don't assign to _remoteCertificate yet, this prevents weird exceptions if SslStream is disposed in parallel with X509Chain building
+
                 if (certificate == null)
                 {
                     if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
