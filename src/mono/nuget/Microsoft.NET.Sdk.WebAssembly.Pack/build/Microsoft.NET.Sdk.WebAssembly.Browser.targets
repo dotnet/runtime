@@ -455,7 +455,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       $(GenerateHtmlAssetPlaceholdersBuildStaticWebAssetsDependsOn)
     </GenerateHtmlAssetPlaceholdersBuildStaticWebAssetsDependsOn>
     <GenerateHtmlAssetPlaceholdersPublishStaticWebAssetsDependsOn>
-      _AddWasmPreloadPropertiesForPublish;
+      _AddWasmPreloadPublishProperties;
       $(GenerateHtmlAssetPlaceholdersPublishStaticWebAssetsDependsOn)
     </GenerateHtmlAssetPlaceholdersPublishStaticWebAssetsDependsOn>
   </PropertyGroup>
@@ -501,7 +501,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_AddWasmPreloadBuildProperties" DependsOnTargets="_WasmConfigurePreload;_AddWasmStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
     <ItemGroup>
-      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == 'dotnet.js'" />
+      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileName)'" />
     </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
@@ -524,9 +524,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <StaticWebAssetEndpoint Include="@(_UpdatedWasmPreloadBuildAssetEndpoint)" />
     </ItemGroup>
   </Target>
-  <Target Name="_AddWasmPreloadPropertiesForPublish" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
+  <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
     <ItemGroup>
-      <_WasmPreloadPublishScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Build' and '%(FileName)%(Extension)' == 'dotnet.js'" />
+      <_WasmPreloadPublishScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Build' and '%(FileName)%(Extension)' == '$(_WasmPublishBootConfigFileName)'" />
     </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
