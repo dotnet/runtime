@@ -138,6 +138,15 @@
   <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
+  <data name="Argument_PrivateSeedWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The private seed is not the correct size for the indicated algorithm.</value>
+  </data>
+  <data name="Argument_PublicKeyWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The public key is not the correct size for the indicated algorithm.</value>
+  </data>
+  <data name="Argument_SecretKeyWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The secret key is not the correct size for the indicated algorithm.</value>
+  </data>
   <data name="Argument_SignatureContextTooLong255" xml:space="preserve">
     <value>The specified signature context exceeds the maximum length of 255 bytes.</value>
   </data>
@@ -281,6 +290,9 @@
   </data>
   <data name="Cryptography_CertReq_NoKeyProvided" xml:space="preserve">
     <value>This method cannot be used since no signing key was provided via a constructor, use an overload accepting an X509SignatureGenerator instead.</value>
+  </data>
+  <data name="Cryptography_CertReq_NoHashAlgorithmProvided" xml:space="preserve">
+    <value>The intended signature algorithm requires a HashAlgorithmName, but one was not provided when building the CertificateRequest object.</value>
   </data>
   <data name="Cryptography_CertReq_NotAfterNotNested" xml:space="preserve">
     <value>The requested notAfter value ({0}) is later than issuerCertificate.NotAfter ({1}).</value>
@@ -498,6 +510,12 @@
   <data name="Cryptography_Invalid_X500Name" xml:space="preserve">
     <value>The string contains an invalid X500 name attribute key, oid, value or delimiter.</value>
   </data>
+  <data name="Cryptography_KemInvalidAlgorithmHandle" xml:space="preserve">
+    <value>The specified EVP_PKEY handle is not a known ML-KEM algorithm.</value>
+  </data>
+  <data name="Cryptography_KemPkcs8KeyMismatch" xml:space="preserve">
+    <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
+  </data>
   <data name="Cryptography_KeyBlobParsingError" xml:space="preserve">
     <value>Key Blob not in expected format.</value>
   </data>
@@ -515,6 +533,9 @@
   </data>
   <data name="Cryptography_MatchFeedbackSize" xml:space="preserve">
     <value>The specified plaintext size is not valid for the padding and feedback size.</value>
+  </data>
+  <data name="Cryptography_MLDsaInvalidAlgorithmHandle" xml:space="preserve">
+    <value>The specified EVP_PKEY handle is not a known ML-DSA algorithm.</value>
   </data>
   <data name="Cryptography_Encryption_MessageTooLong" xml:space="preserve">
     <value>The message exceeds the maximum allowable length for the chosen options ({0}).</value>
