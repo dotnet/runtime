@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -22,10 +23,88 @@ internal readonly struct Loader_1 : ILoader
         return new ModuleHandle(modulePointer);
     }
 
+    TargetPointer ILoader.GetRootAssembly()
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
+        return appDomain.RootAssembly;
+    }
+
     TargetPointer ILoader.GetAssembly(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return module.Assembly;
+    }
+
+    TargetPointer ILoader.GetPEAssembly(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.PEAssembly;
+    }
+
+    bool ILoader.TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags)
+    {
+        baseAddress = TargetPointer.Null;
+        size = 0;
+        imageFlags = 0;
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        if (module.PEAssembly == TargetPointer.Null)
+            return false; // no loaded PEAssembly
+
+        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
+
+        if (peAssembly.PEImage == TargetPointer.Null)
+            return false; // no loaded PEImage
+
+        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
+
+        if (peImage.LoadedImageLayout == TargetPointer.Null)
+            return false; // no loaded image layout
+
+        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+
+        baseAddress = peImageLayout.Base;
+        size = peImageLayout.Size;
+        imageFlags = peImageLayout.Flags;
+
+        return true;
+    }
+
+    bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
+    {
+        buffer = TargetPointer.Null;
+        size = 0;
+
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        if (module.GrowableSymbolStream == TargetPointer.Null)
+            return false;
+
+        Data.CGrowableSymbolStream growableSymbolStream = _target.ProcessedData.GetOrAdd<CGrowableSymbolStream>(module.GrowableSymbolStream);
+
+        buffer = growableSymbolStream.Buffer;
+        size = growableSymbolStream.Size;
+
+        return true;
+    }
+
+    bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        if (module.PEAssembly == TargetPointer.Null)
+            return false; // no loaded PEAssembly
+
+        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
+
+        if (peAssembly.PEImage == TargetPointer.Null)
+            return false; // no loaded PEImage
+
+        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
+
+        // 0 is the invalid type. See assemblyprobeextension.h for details
+        return peImage.ProbeExtensionResult.Type != 0;
     }
 
     ModuleFlags ILoader.GetFlags(ModuleHandle handle)

@@ -1,0 +1,6 @@
+<Project>
+  <!-- redefine SDK tasks below with TaskHostFactory to avoid memory issues https://github.com/dotnet/msbuild/issues/11337 -->
+  <UsingTask TaskName="GenerateDepsFile" AssemblyFile="$(MicrosoftNETBuildTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.DotNet.ApiCompat.Task.ValidateAssembliesTask" AssemblyFile="$(DotNetApiCompatTaskAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="ResolveRuntimePackAssets" AssemblyFile="$(MicrosoftNETBuildTasksAssembly)" TaskFactory="TaskHostFactory" />
+</Project>
