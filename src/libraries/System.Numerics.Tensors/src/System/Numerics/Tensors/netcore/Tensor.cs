@@ -54,12 +54,10 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
         public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> source, scoped ReadOnlySpan<nint> lengths)
         {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, lengths);
-
-            ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
-            Tensor<T> output = Tensor.CreateUninitialized<T>(intermediate.Lengths);
-            intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref output._values[0], (int)output.FlattenedLength));
-            return output;
+            TensorOperation.ValidateCompatibility<T>(source, lengths);
+            Tensor<T> destination = Tensor.CreateUninitialized<T>(lengths);
+            TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(source, destination);
+            return destination;
         }
         #endregion
 
@@ -71,12 +69,8 @@ namespace System.Numerics.Tensors
         /// <param name="destination"></param>
         public static void BroadcastTo<T>(this Tensor<T> source, in TensorSpan<T> destination)
         {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
-            if (!destination.Lengths.SequenceEqual(newSize))
-                ThrowHelper.ThrowArgument_LengthsNotCompatible();
-
-            ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
-            intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
+            TensorOperation.ValidateCompatibility<T, T>(source, destination);
+            TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(source, destination);
         }
 
         /// <summary>
@@ -86,12 +80,8 @@ namespace System.Numerics.Tensors
         /// <param name="destination">Other <see cref="TensorSpan{T}"/> to make shapes broadcastable.</param>
         public static void BroadcastTo<T>(in this TensorSpan<T> source, in TensorSpan<T> destination)
         {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
-            if (!destination.Lengths.SequenceEqual(newSize))
-                ThrowHelper.ThrowArgument_LengthsNotCompatible();
-
-            ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
-            intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
+            TensorOperation.ValidateCompatibility<T, T>(source, destination);
+            TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(source, destination);
         }
 
         /// <summary>
@@ -101,141 +91,8 @@ namespace System.Numerics.Tensors
         /// <param name="destination"></param>
         public static void BroadcastTo<T>(in this ReadOnlyTensorSpan<T> source, in TensorSpan<T> destination)
         {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
-            if (!destination.Lengths.SequenceEqual(newSize))
-                ThrowHelper.ThrowArgument_LengthsNotCompatible();
-
-            ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
-            intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
-        }
-
-        // Lazy/non-copy broadcasting, internal only for now.
-        /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="lengths"/>. Creates a new <see cref="Tensor{T}"/>
-        /// but no memory is allocated. It manipulates the strides to achieve this affect.
-        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        internal static TensorSpan<T> LazyBroadcast<T>(in TensorSpan<T> input, ReadOnlySpan<nint> lengths)
-        {
-            if (input.Lengths.SequenceEqual(lengths))
-                return new TensorSpan<T>(ref input._reference, input._shape.LinearLength, lengths, input.Strides);
-
-            if (!TensorHelpers.IsBroadcastableTo(input.Lengths, lengths))
-                ThrowHelper.ThrowArgument_LengthsNotCompatible();
-
-            nint newSize = TensorSpanHelpers.CalculateFlattenedLength(lengths);
-
-            if (newSize == input.FlattenedLength)
-                return Reshape(input, lengths);
-
-            nint[] intermediateShape = TensorHelpers.GetIntermediateShape(input.Lengths, lengths.Length);
-            nint[] strides = new nint[lengths.Length];
-
-            nint stride = 1;
-
-            for (int i = strides.Length - 1; i >= 0; i--)
-            {
-                if ((intermediateShape[i] == 1 && lengths[i] != 1) || (intermediateShape[i] == 1 && lengths[i] == 1))
-                    strides[i] = 0;
-                else
-                {
-                    strides[i] = stride;
-                    stride *= intermediateShape[i];
-                }
-            }
-
-            TensorSpan<T> output = new TensorSpan<T>(ref input._reference, input._shape.LinearLength, lengths, strides);
-
-            return output;
-        }
-
-        // Lazy/non-copy broadcasting, internal only for now.
-        /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="shape"/>. Creates a new <see cref="Tensor{T}"/>
-        /// but no memory is allocated. It manipulates the strides to achieve this affect.
-        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        internal static ReadOnlyTensorSpan<T> LazyBroadcast<T>(in ReadOnlyTensorSpan<T> input, ReadOnlySpan<nint> shape)
-        {
-            if (input.Lengths.SequenceEqual(shape))
-                return new TensorSpan<T>(ref input._reference, input._shape.LinearLength, shape, input.Strides);
-
-            if (!TensorHelpers.IsBroadcastableTo(input.Lengths, shape))
-                ThrowHelper.ThrowArgument_LengthsNotCompatible();
-
-            nint newSize = TensorSpanHelpers.CalculateFlattenedLength(shape);
-
-            if (newSize == input.FlattenedLength)
-                return Reshape(input, shape);
-
-            nint[] intermediateShape = TensorHelpers.GetIntermediateShape(input.Lengths, shape.Length);
-            nint[] strides = new nint[shape.Length];
-
-            nint stride = 1;
-
-            for (int i = strides.Length - 1; i >= 0; i--)
-            {
-                if ((intermediateShape[i] == 1 && shape[i] != 1) || (intermediateShape[i] == 1 && shape[i] == 1))
-                    strides[i] = 0;
-                else
-                {
-                    strides[i] = stride;
-                    stride *= intermediateShape[i];
-                }
-            }
-
-            TensorSpan<T> output = new TensorSpan<T>(ref input._reference, input._shape.LinearLength, shape, strides);
-
-            return output;
-        }
-
-        // Lazy/non-copy broadcasting, internal only for now.
-        /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="lengths"/>. Creates a new <see cref="Tensor{T}"/>
-        /// but no memory is allocated. It manipulates the strides to achieve this affect.
-        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
-        /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
-        /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        internal static Tensor<T> LazyBroadcast<T>(Tensor<T> input, ReadOnlySpan<nint> lengths)
-        {
-            if (input.Lengths.SequenceEqual(lengths))
-                return new Tensor<T>(input._values, lengths, input._start, isPinned: false);
-
-            if (!TensorHelpers.IsBroadcastableTo(input.Lengths, lengths))
-                ThrowHelper.ThrowArgument_LengthsNotCompatible();
-
-            nint newSize = TensorSpanHelpers.CalculateFlattenedLength(lengths);
-
-            if (newSize == input.FlattenedLength)
-                return Reshape(input, lengths);
-
-            nint[] intermediateShape = TensorHelpers.GetIntermediateShape(input.Lengths, lengths.Length);
-            nint[] strides = new nint[lengths.Length];
-
-            nint stride = 1;
-
-            for (int i = strides.Length - 1; i >= 0; i--)
-            {
-                if ((intermediateShape[i] == 1 && lengths[i] != 1) || (intermediateShape[i] == 1 && lengths[i] == 1))
-                    strides[i] = 0;
-                else
-                {
-                    strides[i] = stride;
-                    stride *= intermediateShape[i];
-                }
-            }
-
-            Tensor<T> output = new Tensor<T>(input._values, input._start, lengths, strides);
-
-            return output;
+            TensorOperation.ValidateCompatibility<T, T>(source, destination);
+            TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(source, destination);
         }
         #endregion
 
@@ -265,7 +122,7 @@ namespace System.Numerics.Tensors
             // Calculate total space needed.
             nint totalLength = 0;
             for (int i = 0; i < tensors.Length; i++)
-                totalLength += TensorSpanHelpers.CalculateFlattenedLength(tensors[i].Lengths);
+                totalLength += tensors[i].FlattenedLength;
 
             nint sumOfAxis = 0;
             // If axis != -1, make sure all dimensions except the one to concatenate on match.
@@ -333,13 +190,12 @@ namespace System.Numerics.Tensors
             // Calculate total space needed.
             nint totalLength = 0;
             for (int i = 0; i < tensors.Length; i++)
-                totalLength += TensorSpanHelpers.CalculateFlattenedLength(tensors[i].Lengths);
+                totalLength += tensors[i].FlattenedLength;
 
-            nint sumOfAxis = 0;
             // If axis != -1, make sure all dimensions except the one to concatenate on match.
             if (dimension != -1)
             {
-                sumOfAxis = tensors[0].Lengths[dimension];
+                nint sumOfAxis = tensors[0].Lengths[dimension];
                 for (int i = 1; i < tensors.Length; i++)
                 {
                     if (tensors[0].Rank != tensors[i].Rank)
@@ -364,41 +220,12 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
             }
             Span<T> dstSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)totalLength);
-            nint valuesCopied = 0;
 
-            scoped Span<nint> curIndex;
-            nint[]? curIndexArray;
-
-            if (tensors[0].Rank > TensorShape.MaxInlineRank)
+            for (int i = 0; i < tensors.Length; i++)
             {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(tensors[0].Rank);
-                curIndex = curIndexArray.AsSpan(0, tensors[0].Rank);
+                TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(tensors[i], dstSpan);
+                dstSpan = dstSpan.Slice((int)tensors[i].FlattenedLength);
             }
-            else
-            {
-                curIndexArray = null;
-                curIndex = stackalloc nint[tensors[0].Rank];
-            }
-            curIndex.Clear();
-
-            nint srcIndex;
-            nint copyLength;
-
-            while (valuesCopied < totalLength)
-            {
-                for (int i = 0; i < tensors.Length; i++)
-                {
-                    srcIndex = TensorSpanHelpers.ComputeLinearIndex(curIndex, tensors[i].Strides, tensors[i].Lengths);
-                    copyLength = CalculateCopyLength(tensors[i].Lengths, dimension);
-                    Span<T> srcSpan = MemoryMarshal.CreateSpan(ref tensors[i]._values[srcIndex], (int)copyLength);
-                    TensorSpanHelpers.Memmove(dstSpan, srcSpan, copyLength, valuesCopied);
-                    valuesCopied += copyLength;
-                }
-                TensorSpanHelpers.AdjustIndexes(dimension - 1, 1, curIndex, tensors[0].Lengths);
-            }
-
-            if (curIndexArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexArray);
 
             return ref destination;
         }
@@ -1803,15 +1630,15 @@ namespace System.Numerics.Tensors
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         public static Tensor<T> Resize<T>(Tensor<T> tensor, ReadOnlySpan<nint> lengths)
         {
-            nint newSize = TensorSpanHelpers.CalculateFlattenedLength(lengths);
+            nint newSize = TensorPrimitives.Product(lengths);
             T[] values = tensor.IsPinned ? GC.AllocateArray<T>((int)newSize) : (new T[newSize]);
-            Tensor<T> output = new Tensor<T>(values, lengths, tensor._start, isPinned: false);
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor.AsTensorSpan()._reference, (int)tensor._values.Length);
+            Tensor<T> output = Tensor.Create(values, 0, lengths, []);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), (int)tensor._values.Length - tensor._start);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
-            if (newSize > tensor._values.Length)
-                TensorSpanHelpers.Memmove(ospan, span, tensor._values.Length);
+            if (newSize >= span.Length)
+                span.CopyTo(ospan);
             else
-                TensorSpanHelpers.Memmove(ospan, span, newSize);
+                span.Slice(0, ospan.Length).CopyTo(ospan);
 
             return output;
         }
@@ -1824,12 +1651,12 @@ namespace System.Numerics.Tensors
         /// <param name="destination">Destination <see cref="TensorSpan{T}"/> with the desired new shape.</param>
         public static void ResizeTo<T>(scoped in Tensor<T> tensor, in TensorSpan<T> destination)
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._values[0], tensor._values.Length);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), (int)tensor._values.Length - tensor._start);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            if (destination._shape.LinearLength > tensor._values.Length)
-                TensorSpanHelpers.Memmove(ospan, span, tensor._values.Length);
+            if (ospan.Length >= span.Length)
+                span.CopyTo(ospan);
             else
-                TensorSpanHelpers.Memmove(ospan, span, destination._shape.LinearLength);
+                span.Slice(0, ospan.Length).CopyTo(ospan);
         }
 
         /// <summary>
@@ -1842,10 +1669,10 @@ namespace System.Numerics.Tensors
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._shape.LinearLength);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            if (destination._shape.LinearLength > tensor._shape.LinearLength)
-                TensorSpanHelpers.Memmove(ospan, span, tensor._shape.LinearLength);
+            if (ospan.Length >= span.Length)
+                span.CopyTo(ospan);
             else
-                TensorSpanHelpers.Memmove(ospan, span, destination._shape.LinearLength);
+                span.Slice(0, ospan.Length).CopyTo(ospan);
         }
 
         /// <summary>
@@ -1858,10 +1685,10 @@ namespace System.Numerics.Tensors
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._shape.LinearLength);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            if (destination._shape.LinearLength > tensor._shape.LinearLength)
-                TensorSpanHelpers.Memmove(ospan, span, tensor._shape.LinearLength);
+            if (ospan.Length >= span.Length)
+                span.CopyTo(ospan);
             else
-                TensorSpanHelpers.Memmove(ospan, span, destination._shape.LinearLength);
+                span.Slice(0, ospan.Length).CopyTo(ospan);
         }
         #endregion
 
