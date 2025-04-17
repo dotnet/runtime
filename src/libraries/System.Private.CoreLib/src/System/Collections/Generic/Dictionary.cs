@@ -421,6 +421,10 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
+            // Necessary because some tests check whether we call GetHashCode when empty
+            if (_count == 0)
+                goto ReturnNotFound;
+
             ref Entry entry = ref Unsafe.NullRef<Entry>();
             IEqualityComparer<TKey>? comparer = _comparer;
             if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
@@ -835,6 +839,10 @@ namespace System.Collections.Generic
             {
                 Dictionary<TKey, TValue> dictionary = Dictionary;
                 IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
+
+                // Necessary for certain tests to pass because they track how many times we call GetHashCode
+                if (dictionary._count <= 0)
+                    goto ReturnNotFound;
 
                 ref Entry entry = ref Unsafe.NullRef<Entry>();
                 uint hashCode = (uint)comparer.GetHashCode(key);
