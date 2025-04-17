@@ -6299,6 +6299,8 @@ void CodeGen::genCall(GenTreeCall* call)
 //
 void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes))
 {
+    EmitCallParams params;
+
 #if defined(TARGET_X86)
     // If the callee pops the arguments, we pass a positive value as the argSize, and the emitter will
     // adjust its stack level accordingly.
@@ -6309,20 +6311,19 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     {
         argSizeForEmitter = -stackArgBytes;
     }
+    params.argSize = argSizeForEmitter;
 #endif // defined(TARGET_X86)
 
     // Determine return value size(s).
-    const ReturnTypeDesc* retTypeDesc   = call->GetReturnTypeDesc();
-    emitAttr              retSize       = EA_PTRSIZE;
-    emitAttr              secondRetSize = EA_UNKNOWN;
+    const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
 
     // unused values are of no interest to GC.
     if (!call->IsUnusedValue())
     {
         if (call->HasMultiRegRetVal())
         {
-            retSize       = emitTypeSize(retTypeDesc->GetReturnRegType(0));
-            secondRetSize = emitTypeSize(retTypeDesc->GetReturnRegType(1));
+            params.retSize       = emitTypeSize(retTypeDesc->GetReturnRegType(0));
+            params.secondRetSize = emitTypeSize(retTypeDesc->GetReturnRegType(1));
         }
         else
         {
@@ -6330,39 +6331,40 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
             if (call->gtType == TYP_REF)
             {
-                retSize = EA_GCREF;
+                params.retSize = EA_GCREF;
             }
             else if (call->gtType == TYP_BYREF)
             {
-                retSize = EA_BYREF;
+                params.retSize = EA_BYREF;
             }
         }
     }
+
+    params.isJump = call->IsFastTailCall();
 
     // We need to propagate the IL offset information to the call instruction, so we can emit
     // an IL to native mapping record for the call, to support managed return value debugging.
     // We don't want tail call helper calls that were converted from normal calls to get a record,
     // so we skip this hash table lookup logic in that case.
 
-    DebugInfo di;
-
     if (compiler->opts.compDbgInfo && compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
     {
+        DebugInfo di;
         (void)compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
+        params.debugInfo = di;
     }
 
-    CORINFO_SIG_INFO* sigInfo = nullptr;
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
     // native call sites with the signatures they were generated from.
     if (!call->IsHelperCall())
     {
-        sigInfo = call->callSig;
+        params.sigInfo = call->callSig;
     }
 #endif // DEBUG
 
-    CORINFO_METHOD_HANDLE methHnd;
-    GenTree*              target = getCallTarget(call, &methHnd);
+    GenTree* target = getCallTarget(call, &params.methHnd);
+
     if (target != nullptr)
     {
 #ifdef TARGET_X86
@@ -6389,19 +6391,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
             GetEmitter()->emitIns_Nop(3);
 
-            // clang-format off
-            GetEmitter()->emitIns_Call(emitter::EC_INDIR_ARD,
-                                       methHnd,
-                                       INDEBUG_LDISASM_COMMA(sigInfo)
-                                       nullptr,
-                                       argSizeForEmitter,
-                                       retSize
-                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                                       gcInfo.gcVarPtrSetCur,
-                                       gcInfo.gcRegGCrefSetCur,
-                                       gcInfo.gcRegByrefSetCur,
-                                       di, REG_VIRTUAL_STUB_TARGET, REG_NA, 1, 0);
-            // clang-format on
+            params.callType = EC_INDIR_ARD;
+            params.ireg     = REG_VIRTUAL_STUB_TARGET;
+            genEmitCallWithCurrentGC(params);
         }
         else
 #endif
@@ -6418,18 +6410,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 // contained only if it can be encoded as PC-relative offset.
                 assert(target->AsIndir()->Base()->AsIntConCommon()->FitsInAddrBase(compiler));
 
-                // clang-format off
-                genEmitCall(emitter::EC_FUNC_TOKEN_INDIR,
-                            methHnd,
-                            INDEBUG_LDISASM_COMMA(sigInfo)
-                            (void*) target->AsIndir()->Base()->AsIntConCommon()->IconValue()
-                            X86_ARG(argSizeForEmitter),
-                            retSize
-                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                            di,
-                            REG_NA,
-                            call->IsFastTailCall());
-                // clang-format on
+                params.callType = EC_FUNC_TOKEN_INDIR;
+                params.addr     = (void*)target->AsIndir()->Base()->AsIntConCommon()->IconValue();
+                genEmitCallWithCurrentGC(params);
             }
             else
             {
@@ -6440,17 +6423,21 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                     genConsumeAddress(target->AsIndir()->Addr());
                 }
 
-                // clang-format off
-                genEmitCallIndir(emitter::EC_INDIR_ARD,
-                                 methHnd,
-                                 INDEBUG_LDISASM_COMMA(sigInfo)
-                                 target->AsIndir()
-                                 X86_ARG(argSizeForEmitter),
-                                 retSize
-                                 MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                                 di,
-                                 call->IsFastTailCall());
-                // clang-format on
+                GenTreeIndir* indir = target->AsIndir();
+                regNumber     iReg  = indir->HasBase() ? indir->Base()->GetRegNum() : REG_NA;
+                regNumber     xReg  = indir->HasIndex() ? indir->Index()->GetRegNum() : REG_NA;
+
+                // These should have been put in volatile registers to ensure they do not
+                // get overridden by epilog sequence during tailcall.
+                assert(!params.isJump || (iReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(iReg)) != 0));
+                assert(!params.isJump || (xReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(xReg)) != 0));
+
+                params.callType = EC_INDIR_ARD;
+                params.ireg     = iReg;
+                params.xreg     = xReg;
+                params.xmul     = indir->Scale();
+                params.disp     = indir->Offset();
+                genEmitCallWithCurrentGC(params);
             }
         }
         else
@@ -6468,18 +6455,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                     genConsumeReg(target);
                 }
 
-                // clang-format off
-                genEmitCall(emitter::EC_INDIR_R,
-                            methHnd,
-                            INDEBUG_LDISASM_COMMA(sigInfo)
-                            nullptr // addr
-                            X86_ARG(argSizeForEmitter),
-                            retSize
-                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                            di,
-                            target->GetRegNum(),
-                            call->IsFastTailCall());
-                // clang-format on
+                params.callType = EC_INDIR_R;
+                params.ireg     = target->GetRegNum();
+                genEmitCallWithCurrentGC(params);
             }
             else
             {
@@ -6490,19 +6468,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 GetEmitter()->emitIns_Data16();
                 GetEmitter()->emitIns_Data16();
 
-                // clang-format off
-                genEmitCall(emitter::EC_FUNC_TOKEN,
-                            (CORINFO_METHOD_HANDLE)1,
-                            INDEBUG_LDISASM_COMMA(sigInfo)
-                            (void*)tlsGetAddr->AsIntCon()->gtIconVal // addr
-                            X86_ARG(argSizeForEmitter),
-                            retSize
-                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                            di,
-                            target->GetRegNum(),
-                            call->IsFastTailCall(),
-                            true); // noSafePoint
-                // clang-format on
+                params.callType    = EC_FUNC_TOKEN;
+                params.methHnd     = (CORINFO_METHOD_HANDLE)1;
+                params.addr        = (void*)tlsGetAddr->AsIntCon()->gtIconVal;
+                params.noSafePoint = true;
+                genEmitCallWithCurrentGC(params);
             }
         }
     }
@@ -6518,39 +6488,16 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         regNumber indirCellReg = getCallIndirectionCellReg(call);
         if (indirCellReg != REG_NA)
         {
-            // clang-format off
-            GetEmitter()->emitIns_Call(
-                emitter::EC_INDIR_ARD,
-                methHnd,
-                INDEBUG_LDISASM_COMMA(sigInfo)
-                nullptr,
-                0,
-                retSize
-                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                gcInfo.gcVarPtrSetCur,
-                gcInfo.gcRegGCrefSetCur,
-                gcInfo.gcRegByrefSetCur,
-                di, indirCellReg, REG_NA, 0, 0,
-                call->IsFastTailCall());
-            // clang-format on
+            params.callType = EC_INDIR_ARD;
+            params.ireg     = indirCellReg;
+            genEmitCallWithCurrentGC(params);
         }
 #ifdef FEATURE_READYTORUN
         else if (call->gtEntryPoint.addr != nullptr)
         {
-            emitter::EmitCallType type =
-                (call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR;
-            // clang-format off
-            genEmitCall(type,
-                        methHnd,
-                        INDEBUG_LDISASM_COMMA(sigInfo)
-                        (void*)call->gtEntryPoint.addr
-                        X86_ARG(argSizeForEmitter),
-                        retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        di,
-                        REG_NA,
-                        call->IsFastTailCall());
-            // clang-format on
+            params.callType = (call->gtEntryPoint.accessType == IAT_VALUE) ? EC_FUNC_TOKEN : EC_FUNC_TOKEN_INDIR;
+            params.addr     = (void*)call->gtEntryPoint.addr;
+            genEmitCallWithCurrentGC(params);
         }
 #endif
         else
@@ -6562,7 +6509,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             if (call->IsHelperCall())
             {
                 // Direct call to a helper method.
-                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
+                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
                 noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
                 void* pAddr = nullptr;
@@ -6579,18 +6526,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
             // Non-virtual direct calls to known addresses
 
-            // clang-format off
-            genEmitCall(emitter::EC_FUNC_TOKEN,
-                        methHnd,
-                        INDEBUG_LDISASM_COMMA(sigInfo)
-                        addr
-                        X86_ARG(argSizeForEmitter),
-                        retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        di,
-                        REG_NA,
-                        call->IsFastTailCall());
-            // clang-format on
+            params.callType = EC_FUNC_TOKEN;
+            params.addr     = addr;
+            genEmitCallWithCurrentGC(params);
         }
     }
 }
@@ -8900,15 +8838,14 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg)
 {
-    void* addr  = nullptr;
     void* pAddr = nullptr;
 
-    emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
-    addr                           = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
-    regNumber callTarget           = REG_NA;
-    regMaskTP killMask             = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    EmitCallParams params;
+    params.callType    = EC_FUNC_TOKEN;
+    params.addr        = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
+    regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    if (!addr)
+    if (params.addr == nullptr)
     {
         assert(pAddr != nullptr);
 
@@ -8919,8 +8856,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
             genCodeIndirAddrCanBeEncodedAsZeroRelOffset((size_t)pAddr))
         {
             // generate call whose target is specified by 32-bit offset relative to PC or zero.
-            callType = emitter::EC_FUNC_TOKEN_INDIR;
-            addr     = pAddr;
+            params.callType = EC_FUNC_TOKEN_INDIR;
+            params.addr     = pAddr;
         }
         else
         {
@@ -8948,29 +8885,18 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
             }
 #endif
 
-            callTarget = callTargetReg;
-            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, callTarget, (ssize_t)pAddr);
-            callType = emitter::EC_INDIR_ARD;
+            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, callTargetReg, (ssize_t)pAddr);
+
+            params.ireg     = callTargetReg;
+            params.callType = EC_INDIR_ARD;
         }
     }
 
-    // clang-format off
-    GetEmitter()->emitIns_Call(callType,
-                               compiler->eeFindHelper(helper),
-                               INDEBUG_LDISASM_COMMA(nullptr) addr,
-                               argSize,
-                               retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),
-                               gcInfo.gcVarPtrSetCur,
-                               gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur,
-                               DebugInfo(),
-                               callTarget,    // ireg
-                               REG_NA, 0, 0,  // xreg, xmul, disp
-                               false         // isJump
-                               );
-    // clang-format on
+    params.methHnd = compiler->eeFindHelper(helper);
+    params.argSize = argSize;
+    params.retSize = retSize;
 
+    genEmitCallWithCurrentGC(params);
     regSet.verifyRegistersUsed(killMask);
 }
 
@@ -10858,52 +10784,34 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
             // If we have IAT_PVALUE we might need to jump via register indirect, as sometimes the
             // indirection cell can't be reached by the jump.
-            emitter::EmitCallType callType;
-            void*                 addr;
-            regNumber             indCallReg;
+            EmitCallParams params;
+            params.methHnd = methHnd;
 
             if (addrInfo.accessType == IAT_PVALUE)
             {
                 if (genCodeIndirAddrCanBeEncodedAsPCRelOffset((size_t)addrInfo.addr))
                 {
                     // 32 bit displacement will work
-                    callType   = emitter::EC_FUNC_TOKEN_INDIR;
-                    addr       = addrInfo.addr;
-                    indCallReg = REG_NA;
+                    params.callType = EC_FUNC_TOKEN_INDIR;
+                    params.addr     = addrInfo.addr;
                 }
                 else
                 {
                     // 32 bit displacement won't work
-                    callType   = emitter::EC_INDIR_ARD;
-                    indCallReg = REG_RAX;
-                    addr       = nullptr;
-                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addrInfo.addr);
-                    regSet.verifyRegUsed(indCallReg);
+                    params.callType = EC_INDIR_ARD;
+                    params.ireg     = REG_RAX;
+                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, REG_RAX, (ssize_t)addrInfo.addr);
+                    regSet.verifyRegUsed(REG_RAX);
                 }
             }
             else
             {
-                callType   = emitter::EC_FUNC_TOKEN;
-                addr       = addrInfo.addr;
-                indCallReg = REG_NA;
+                params.callType = EC_FUNC_TOKEN;
+                params.addr     = addrInfo.addr;
             }
 
-            // clang-format off
-            GetEmitter()->emitIns_Call(callType,
-                                       methHnd,
-                                       INDEBUG_LDISASM_COMMA(nullptr)
-                                       addr,
-                                       0,                                                      // argSize
-                                       EA_UNKNOWN                                              // retSize
-                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),        // secondRetSize
-                                       gcInfo.gcVarPtrSetCur,
-                                       gcInfo.gcRegGCrefSetCur,
-                                       gcInfo.gcRegByrefSetCur,
-                                       DebugInfo(),
-                                       indCallReg, REG_NA, 0, 0,  /* ireg, xreg, xmul, disp */
-                                       true /* isJump */
-            );
-            // clang-format on
+            params.isJump = true;
+            genEmitCallWithCurrentGC(params);
         }
 #if FEATURE_FASTTAILCALL
         else

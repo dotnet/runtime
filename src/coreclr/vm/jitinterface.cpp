@@ -7555,6 +7555,13 @@ static void getMethodInfoHelper(
             {
                 fILIntrinsic = getILIntrinsicImplementationForActivator(ftn, methInfo, &localSig);
             }
+            else if (CoreLibBinder::IsClass(pMT, CLASS__INSTANCE_CALLI_HELPER))
+            {
+                // We can ignore the existing header, since we are going to generate a new one.
+                cxt.Header = NULL;
+
+                ftn->GenerateFunctionPointerCall(&cxt.TransientResolver, &cxt.Header);
+            }
         }
 
         scopeHnd = cxt.HasTransientMethodDetails()
