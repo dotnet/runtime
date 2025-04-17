@@ -32,9 +32,13 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SlhDsaAlgorithm.SlhDsaShake256f,
         ];
 
-        internal static byte[] IetfSlhDsaSha2_128sPublicKey => field ??= Convert.FromBase64String(@"
+        internal static byte[] IetfSlhDsaSha2_128sPublicKeyPkcs8 => field ??= Convert.FromBase64String(@"
             MDAwCwYJYIZIAWUDBAMUAyEAK4EJ7Hd8qk4fAkzPz5SX2ZGAUJKA9CVq8rB6+AKJ
             tJQ=");
+
+        internal static byte[] IetfSlhDsaSha2_128sPublicKeyValue => field ??= (
+            "2B8109EC777CAA4E1F024CCFCF9497D9" +
+            "9180509280F4256AF2B07AF80289B494").HexToByteArray();
 
         internal static byte[] IetfSlhDsaSha2_128sPrivateKeyPkcs8 => field ??= Convert.FromBase64String(@"
             MFICAQAwCwYJYIZIAWUDBAMUBECiJjvKRYYINlIxYASVI9YhZ3+tkNUetgZ6Mn4N
@@ -45,6 +49,39 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             "677FAD90D51EB6067A327E0D1E64A501" +
             "2B8109EC777CAA4E1F024CCFCF9497D9" +
             "9180509280F4256AF2B07AF80289B494").HexToByteArray();
+
+        // Generated using openssl CLI.
+        //
+        // Generate private key pem:
+        // > openssl genpkey -algorithm "SLH-DSA-SHA2-128f" > private.pem
+        //
+        // Get secret key:
+        // > cat private.pem | openssl asn1parse -offset 18 | cut -d':' -f4
+        //
+        // Get base64 encoded DER private key info:
+        // > cat private.pem | openssl pkey -outform DER | base64 -w64
+        //
+        // Get base64 encoded DER public key info:
+        // > cat private.pem | openssl pkey -outform DER -pubout | base64 -w64
+        //
+        // Get base64 encoded encrypted private key info:
+        // > cat private.pem | openssl pkey -outform DER -aes-256-cbc | base64 -w64
+        public record SlhDsaGeneratedKeyData(
+            string Id,
+            SlhDsaAlgorithm Algorithm,
+            string SecretKeyHex,
+            string PrivateKeyPkcs8Base64,
+            string PublicKeyPkcs8Base64,
+            string EncryptedPrivateKeyPkcs8Base64,
+            string EncryptionPassword,
+            PbeParameters EncryptionParameters)
+        {
+            public byte[] SecretKey => SecretKeyHex.HexToByteArray();
+            public byte[] PublicKey => SecretKey[(Algorithm.SecretKeySizeInBytes/2)..];
+            public byte[] PrivateKeyPkcs8 => Convert.FromBase64String(PrivateKeyPkcs8Base64);
+            public byte[] PublicKeyPkcs8 => Convert.FromBase64String(PublicKeyPkcs8Base64);
+
+        }
 
         public record SlhDsaKeyGenTestVector(
             int TestCaseId,

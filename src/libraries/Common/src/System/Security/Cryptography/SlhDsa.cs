@@ -275,9 +275,9 @@ namespace System.Security.Cryptography
         public string ExportSubjectPublicKeyInfoPem()
         {
             ThrowIfDisposed();
-
             AsnWriter writer = ExportSubjectPublicKeyInfoCore();
-            return GetEncodedPemString(writer, PemLabels.SpkiPublicKey);
+            // SPKI does not contain sensitive data.
+            return EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
         }
 
         /// <summary>
@@ -436,7 +436,6 @@ namespace System.Security.Cryptography
             }
             catch (ArgumentException ae)
             {
-                // TODO is this the right exception message?
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
             }
             finally
@@ -449,8 +448,7 @@ namespace System.Security.Cryptography
         ///   Exports the current key in a PEM-encoded representation of the PKCS#8 PrivateKeyInfo format.
         /// </summary>
         /// <returns>
-        ///   A string containing the PEM-encoded representation of the PKCS#8 PrivateKeyInfo
-        ///   representation of the public-key portion of this key.
+        ///   A string containing the PEM-encoded representation of the PKCS#8 PrivateKeyInfo.
         /// </returns>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -461,8 +459,7 @@ namespace System.Security.Cryptography
         public string ExportPkcs8PrivateKeyPem()
         {
             ThrowIfDisposed();
-
-            throw new NotImplementedException("The PKCS#8 format is still under debate");
+            return ExportPkcs8PrivateKeyCallback(static pkcs8 => PemEncoding.WriteString(PemLabels.Pkcs8PrivateKey, pkcs8));
         }
 
         /// <summary>
@@ -701,7 +698,8 @@ namespace System.Security.Cryptography
 
             try
             {
-                return GetEncodedPemString(writer, PemLabels.EncryptedPkcs8PrivateKey);
+                // Skip clear since the data is already encrypted.
+                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: true);
             }
             finally
             {
@@ -747,7 +745,8 @@ namespace System.Security.Cryptography
 
             try
             {
-                return GetEncodedPemString(writer, PemLabels.EncryptedPkcs8PrivateKey);
+                // Skip clear since the data is already encrypted.
+                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
             }
             finally
             {
@@ -861,16 +860,16 @@ namespace System.Security.Cryptography
                         AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
 
-                        SlhDsaAlgorithm algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(spki.Algorithm.Algorithm);
+                        SlhDsaAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
 
-                        if (spki.Algorithm.Parameters.HasValue)
+                        try
                         {
-                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                            spki.Algorithm.Encode(writer);
-                            throw Helpers.CreateAlgorithmUnknownException(writer);
+                            return ImportSlhDsaPublicKey(algorithm, spki.SubjectPublicKey.Span);
                         }
-
-                        return SlhDsaImplementation.ImportPublicKey(algorithm, spki.SubjectPublicKey.Span);
+                        catch (ArgumentException ae)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
+                        }
                     }
                 }
             }
@@ -911,7 +910,8 @@ namespace System.Security.Cryptography
                 source,
                 (ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn algId, out SlhDsa ret) =>
                 {
-                    SlhDsaAlgorithm info = SlhDsaAlgorithm.GetAlgorithmFromOid(algId.Algorithm);
+                    SlhDsaAlgorithm info = GetAlgorithmIdentifier(in algId);
+
                     try
                     {
                         ret = ImportSlhDsaSecretKey(info, key.Span);
@@ -961,8 +961,13 @@ namespace System.Security.Cryptography
         ///     The algorithm-specific import failed.
         ///   </para>
         /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports SLH-DSA.
+        /// </exception>
         public static SlhDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
         {
+            ThrowIfTrailingData(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1001,8 +1006,13 @@ namespace System.Security.Cryptography
         ///     The algorithm-specific import failed.
         ///   </para>
         /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports SLH-DSA.
+        /// </exception>
         public static SlhDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
         {
+            ThrowIfTrailingData(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1031,13 +1041,30 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
         /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///   are found, an exception is raised to prevent importing a key when the key is ambiguous.
+        ///   </para>
+        ///   <para>
+        ///   This method supports the following PEM labels:
+        ///   <list type="bullet">
+        ///     <item><description>PUBLIC KEY</description></item>
+        ///     <item><description>PRIVATE KEY</description></item>
+        ///   </list>
+        ///   </para>
+        /// </remarks>
         public static SlhDsa ImportFromPem(ReadOnlySpan<char> source)
         {
             ThrowIfNotSupported();
 
-            // TODO: Match the behavior of ECDsa.ImportFromPem.
-            // Double-check that the base64-decoded data has no trailing contents.
-            throw new NotImplementedException();
+            return PemKeyHelpers.ImportFactoryPem<SlhDsa>(source, label =>
+                label switch
+                {
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    _ => null,
+                });
         }
 
         /// <summary>
@@ -1254,22 +1281,29 @@ namespace System.Security.Cryptography
 
             try
             {
-                Span<byte> keySpan = rented.AsSpan(0, Algorithm.PublicKeySizeInBytes);
-                ExportSlhDsaPublicKey(keySpan);
+                ExportSlhDsaPublicKey(rented);
 
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-                using (writer.PushSequence())
+                SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
                 {
-                    using (writer.PushSequence())
+                    Algorithm = new AlgorithmIdentifierAsn
                     {
-                        writer.WriteObjectIdentifier(Algorithm.Oid);
-                    }
+                        Algorithm = Algorithm.Oid,
+                        Parameters = default(ReadOnlyMemory<byte>?),
+                    },
+                    SubjectPublicKey = rented.AsMemory(0, Algorithm.PublicKeySizeInBytes),
+                };
 
-                    writer.WriteBitString(keySpan);
-                }
-
+                // The ASN.1 overhead of a SubjectPublicKeyInfo encoding an encapsulation key is 18 bytes.
+                // Round it off to 32. This checked operation should never throw because the inputs are not
+                // user provided.
+                int capacity = checked(32 + Algorithm.PublicKeySizeInBytes);
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
+                spki.Encode(writer);
                 return writer;
+            }
+            catch (ArgumentException ae)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
             }
             finally
             {
@@ -1372,12 +1406,24 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static string GetEncodedPemString(AsnWriter writer, string label)
+        private static string EncodeAsnWriterToPem(string label, AsnWriter writer, bool clear = true)
         {
 #if NET10_0_OR_GREATER
-            return writer.Encode(label, static (l, span) => PemEncoding.WriteString(l, span));
+            return writer.Encode(label, static (label, span) => PemEncoding.WriteString(label, span));
 #else
-            throw new NotImplementedException();
+            int length = writer.GetEncodedLength();
+            byte[] rent = CryptoPool.Rent(length);
+
+            try
+            {
+                int written = writer.Encode(rent);
+                Debug.Assert(written == length);
+                return PemEncoding.WriteString(label, rent.AsSpan(0, written));
+            }
+            finally
+            {
+                CryptoPool.Return(rent, clear ? length : 0);
+            }
 #endif
         }
 

@@ -87,5 +87,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportPkcs8PrivateKey(tempBuffer, out _));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportSubjectPublicKeyInfo([], out _));
         }
+
+        protected static string WritePem(string label, byte[] contents)
+        {
+            string base64 = Convert.ToBase64String(contents, Base64FormattingOptions.InsertLineBreaks);
+            return $"-----BEGIN {label}-----\n{base64}\n-----END {label}-----";
+        }
     }
 }

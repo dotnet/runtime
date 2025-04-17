@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.Runtime.Interop;
 using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
@@ -28,10 +29,19 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportSlhDsaSecretKey(algorithm, new byte[secretKeySize - 1]));
             AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportSlhDsaSecretKey(algorithm, new byte[secretKeySize + 1]));
             AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportSlhDsaSecretKey(algorithm, []));
-            AssertExtensions.Throws<ArgumentException>("source", static () => SlhDsa.ImportPkcs8PrivateKey([]));
+            AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromPem([]));
 
             // TODO add remaining imports
         }
+
+        // TODO Test following cases:
+        // <exception cref="ArgumentException">
+        //   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
+        //   <para>-or-</para>
+        //   <para><paramref name="source" /> contains multiple PEM-encoded SLH-DSA keys.</para>
+        //   <para>-or-</para>
+        //   <para><paramref name="source" /> contains no PEM-encoded SLH-DSA keys.</para>
+        // </exception>
 
         [ConditionalTheory(typeof(SlhDsaTestData), nameof(SlhDsaTestData.IsNotSupported))]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
@@ -89,6 +99,41 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes];
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey));
             AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, secretKey);
+        }
+
+        [Fact]
+        public void ImportPkcs8PublicKeyIetf()
+        {
+            using SlhDsa slhDsa = SlhDsa.ImportSubjectPublicKeyInfo(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyPkcs8);
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
+
+            byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes];
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes, slhDsa.ExportSlhDsaPublicKey(secretKey));
+            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, secretKey);
+        }
+
+        [Fact]
+        public void ImportPemPrivateKeyIetf()
+        {
+            string pem = WritePem("PRIVATE KEY", SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8);
+            using SlhDsa slhDsa = SlhDsa.ImportFromPem(pem);
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
+
+            byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes];
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey));
+            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, secretKey);
+        }
+
+        [Fact]
+        public void ImportPemPublicKeyIetf()
+        {
+            string pem = WritePem("PUBLIC KEY", SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyPkcs8);
+            using SlhDsa slhDsa = SlhDsa.ImportFromPem(pem);
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
+
+            byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes];
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes, slhDsa.ExportSlhDsaPublicKey(secretKey));
+            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, secretKey);
         }
 
         protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) =>
