@@ -1763,7 +1763,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         if (addr != nullptr)
         {
             // If addr is not NULL, it must contain JALR's offset, which is set to the lower 12 bits of address.
-            assert(id->fitsInSmallCns((size_t)addr));
             id->idSmallCns((size_t)addr);
         }
         assert(xreg == REG_NA);
