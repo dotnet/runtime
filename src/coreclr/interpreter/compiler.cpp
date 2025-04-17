@@ -3449,17 +3449,7 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
     printf("\n");
 }
 
-#if !defined(_MSC_VER)
-#if !defined(__cdecl)
-#if defined(__i386__)
-#define __cdecl __attribute__((cdecl))
-#else
-#define __cdecl
-#endif
-#endif
-#endif
-
-extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line)
+extern "C" void assertAbort(const char* why, const char* file, unsigned line)
 {
     if (gInterpJitInfoTls) {
         if (!gInterpJitInfoTls->doAssert(file, line, why))

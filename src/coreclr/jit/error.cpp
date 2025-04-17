@@ -258,7 +258,7 @@ LogEnv::LogEnv(ICorJitInfo* aCompHnd)
 }
 
 /*****************************************************************************/
-extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line)
+extern "C" void assertAbort(const char* why, const char* file, unsigned line)
 {
     const char* msg       = why;
     LogEnv*     env       = JitTls::GetLogEnv();
