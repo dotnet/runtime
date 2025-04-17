@@ -781,7 +781,7 @@ namespace System.Text
 
         public override int GetHashCode() => Value;
 
-#if !MICROSOFT_BCL_MEMORY
+#if SYSTEM_PRIVATE_CORELIB
         /// <summary>
         /// Gets the <see cref="Rune"/> which begins at index <paramref name="index"/> in
         /// string <paramref name="input"/>.
@@ -852,7 +852,7 @@ namespace System.Text
             return (int)returnValue;
         }
 
-#if !MICROSOFT_BCL_MEMORY
+#if SYSTEM_PRIVATE_CORELIB
         // returns a negative number on failure
         private static int ReadRuneFromString(string input, int index)
         {
@@ -1132,7 +1132,7 @@ namespace System.Text
             return false;
         }
 
-#if !MICROSOFT_BCL_MEMORY
+#if SYSTEM_PRIVATE_CORELIB
         /// <summary>
         /// Attempts to get the <see cref="Rune"/> which begins at index <paramref name="index"/> in
         /// string <paramref name="input"/>.

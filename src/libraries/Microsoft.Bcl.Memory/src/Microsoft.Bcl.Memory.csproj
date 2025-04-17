@@ -5,7 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);MICROSOFT_BCL_MEMORY</DefineConstants>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides Base64Url, Utf8, Index and Range types support for .NET Framework and .NET Standard.</PackageDescription>
+    <PackageDescription>Provides Base64Url, Utf8, Index, and Range types support for .NET Framework and .NET Standard.</PackageDescription>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->

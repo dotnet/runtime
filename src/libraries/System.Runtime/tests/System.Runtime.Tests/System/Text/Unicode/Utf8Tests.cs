@@ -75,33 +75,17 @@ namespace System.Text.Unicode.Tests
             }
             return result;
 
-            static int FromHex(char c)
-            {
-                if (c >= '0' && c <= '9')
-                {
-                    return c - '0';
-                }
-                else if (c >= 'a' && c <= 'f')
-                {
-                    return c - 'a' + 10;
-                }
-                else
-                {
-                    return c - 'A' + 10;
-                }
-            }
+            static int FromHex(char c) =>
+                c >= '0' && c <= '9' ? c - '0' :
+                c >= 'a' && c <= 'f' ? c - 'a' + 10 :
+                c - 'A' + 10;
 #endif
         }
 
         // !! IMPORTANT !!
         // Don't delete this implementation, as we use it as a reference to make sure the framework's
         // transcoding logic is correct.
-#if NET
-        public
-#else
-        private
-#endif
-            static byte[] ToUtf8(Rune rune)
+        private static byte[] ToUtf8(Rune rune)
         {
             Assert.True(Rune.IsValid(rune.Value), $"Rune with value U+{(uint)rune.Value:X4} is not well-formed.");
 

@@ -9,15 +9,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Text.Unicode
 {
-#if SYSTEM_PRIVATE_CORELIB || MICROSOFT_BCL_MEMORY
     /// <summary>
-    /// Provides methods for transcoding between UTF-8 and UTF-16.
+    /// Provides static methods that convert chunked data between UTF-8 and UTF-16 encodings.
     /// </summary>
-    public
-#else
-    internal
-#endif
-        static class Utf8
+    public static class Utf8
     {
         /*
          * OperationStatus-based APIs for transcoding of chunked data.
