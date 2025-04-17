@@ -506,7 +506,14 @@ typedef enum
      * have an extra pointer which points at an interior pointer into the first object.
      *
      */
-    HNDTYPE_WEAK_INTERIOR_POINTER = 10
+    HNDTYPE_WEAK_INTERIOR_POINTER = 10,
+
+    /*
+     * CROSSREFERENCE HANDLES
+     *
+     * Crossreference handles are used to track the lifetime of an object in another VM heap.
+     */
+    HNDTYPE_CROSSREFERENCE = 11
 } HandleType;
 
 typedef enum
