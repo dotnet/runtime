@@ -224,6 +224,10 @@ namespace System.Collections.Generic
         private static bool IsEmptyArray (Entry[] entries) =>
             (entries.Length == 1) && (entries == EmptyArrays.Entries);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsEmptyArray (int[] buckets) =>
+            (buckets.Length == 1) && (buckets == EmptyArrays.Buckets);
+
         /// <summary>
         /// Gets the total numbers of elements the internal data structure can hold without resizing.
         /// </summary>
@@ -404,9 +408,9 @@ namespace System.Collections.Generic
 
             info.AddValue(VersionName, _version);
             info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<TKey>));
-            info.AddValue(HashSizeName, _buckets == null ? 0 : _buckets.Length); // This is the length of the bucket array
+            info.AddValue(HashSizeName, IsEmptyArray(_buckets) ? 0 : _buckets.Length); // This is the length of the bucket array
 
-            if (_buckets != null)
+            if (!IsEmptyArray(_buckets))
             {
                 var array = new KeyValuePair<TKey, TValue>[Count];
                 CopyTo(array, 0);
