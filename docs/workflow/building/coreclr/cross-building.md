@@ -174,7 +174,9 @@ docker run --rm \
 
 ### Building CoreCLR with Bootstrapping
 
-CoreCLR builds a few tools, namely crossgen2 and ilc, using NativeAOT (or single file where NativeAOT is not supported). However, due to the slowness of debug builds, the build defaults to using a "Last Known Good" version of NativeAOT to actually build and ship the tools by default. This "Last Known Good" version comes from the .NET SDK referenced in the global.json file. The runtime's build scripts provide an additional set of options to build with the live NativeAOT version instead of the "Last Known Good" version. This is useful for testing changes to NativeAOT or the tools that are built with it, and is required for building those tools for target platforms that are not known to the "Last Known Good" version of NativeAOT, such as FreeBSD, community architectures, or non-portable builds of .NET.
+CoreCLR builds a few tools, including NativeAOT compiler itself, using NativeAOT (or single file where NativeAOT is not supported). The build defaults to using a "Last Known Good" version of NativeAOT to build the tools. This "Last Known Good" version comes from the .NET SDK referenced in the global.json file. This default was chosen for a good local build experience of most repo contributors. Building with live NativeAOT version would make the local build longer and it would make debugging local changes that impact NativeAOT compiler complicated.
+
+The runtime's build scripts provide an additional set of options to build with the live NativeAOT version instead of the "Last Known Good" version. This is useful for testing changes to NativeAOT or the tools that are built with it, and is required for building those tools for target platforms that are not known to the "Last Known Good" version of NativeAOT, such as FreeBSD, community architectures, or non-portable builds of .NET.
 
 To build the bootstrap subset of the runtime repo, you can build the `bootstrap` subset. To use the bootstrap components in the runtime repo build, you can pass the `--use-bootstrap` argument to the build script. This will use the bootstrap components instead of the "Last Known Good" version of NativeAOT.
 
