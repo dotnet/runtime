@@ -4,6 +4,8 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -131,8 +133,98 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.GetModuleByAddress(ulong address, /*IXCLRDataModule*/ void** mod)
         => _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
 
+    // internal class EnumMethodInstances
+    // {
+    //     private readonly Target _target;
+    //     public EnumMethodInstances(Target target)
+    //     {
+    //         _target = target;
+
+    //     }
+
+    //     public int Start(TargetPointer methodDesc, IXCLRDataAppDomain* appDomain)
+    //     {
+    //         if (!HasClassOrMethodInstantiation(methodDesc) && !HasNativeCodeAnyVersion(methodDesc))
+    //         {
+    //             return HResults.S_FALSE;
+    //         }
+
+    //         Console.WriteLine((nint)appDomain);
+
+    //         return HResults.S_OK;
+    //     }
+
+    //     private bool HasNativeCodeAnyVersion(TargetPointer methodDesc)
+    //     {
+    //         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+    //         ICodeVersions cv = _target.Contracts.CodeVersions;
+
+    //         MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDesc);
+    //         TargetCodePointer pcode = rts.GetNativeCode(mdHandle);
+
+    //         if (pcode == TargetCodePointer.Null)
+    //         {
+    //             NativeCodeVersionHandle nativeCodeVersion = cv.GetActiveNativeCodeVersion(methodDesc);
+    //             if (nativeCodeVersion.Valid)
+    //             {
+    //                 pcode = cv.GetNativeCode(nativeCodeVersion);
+    //             }
+    //         }
+
+    //         return pcode != TargetCodePointer.Null;
+    //     }
+
+    //     private bool HasClassOrMethodInstantiation(TargetPointer mdAddr)
+    //     {
+    //         return HasClassInstantiation(mdAddr) || HasMethodInstantiation(mdAddr);
+    //     }
+
+    //     private bool HasClassInstantiation(TargetPointer mdAddr)
+    //     {
+    //         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+    //         MethodDescHandle md = rts.GetMethodDescHandle(mdAddr);
+    //         TargetPointer mtAddr = rts.GetMethodTable(md);
+    //         TypeHandle mt = rts.GetTypeHandle(mtAddr);
+    //         return !rts.GetInstantiation(mt).IsEmpty;
+    //     }
+
+    //     private bool HasMethodInstantiation(TargetPointer mdAddr)
+    //     {
+    //         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+    //         MethodDescHandle md = rts.GetMethodDescHandle(mdAddr);
+
+    //         if (rts.IsGenericMethodDefinition(md)) return true;
+    //         return !rts.GetGenericMethodInstantiation(md).IsEmpty;
+    //     }
+    // }
+
     int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ulong address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
-        => _legacyProcess is not null ? _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, handle) : HResults.E_NOTIMPL;
+    {
+        // int hr = HResults.S_OK;
+        // try
+        // {
+        //     *handle = 0;
+        //     hr = HResults.S_FALSE;
+
+        //     IExecutionManager eman = _target.Contracts.ExecutionManager;
+        //     if (eman.GetCodeBlockHandle(address) is CodeBlockHandle cbh && eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
+        //     {
+        //         // EnumMethodInstances emi = new(methodDesc, appDomain != null ? (IXCLRDataAppDomain*)appDomain : null);
+        //         // GCHandle gcHandle = GCHandle.Alloc(emi);
+        //         // *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
+
+        //     }
+        // }
+        // catch (System.Exception ex)
+        // {
+        //     hr = ex.HResult;
+        // }
+        return _legacyProcess is not null ? _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, handle) : HResults.E_NOTIMPL;
+
+        //return hr;
+    }
 
     int IXCLRDataProcess.EnumMethodInstanceByAddress(ulong* handle, /*IXCLRDataMethodInstance*/ void** method)
         => _legacyProcess is not null ? _legacyProcess.EnumMethodInstanceByAddress(handle, method) : HResults.E_NOTIMPL;
