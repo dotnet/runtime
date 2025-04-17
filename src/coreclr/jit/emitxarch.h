@@ -43,7 +43,7 @@ inline static bool isHighGPReg(regNumber reg)
 #ifdef TARGET_AMD64
     // TODO-apx: the definition here is incorrect, we will need to revisit this after we extend the register definition.
     //           for now, we can simply use REX2 as REX.
-    return ((reg >= REG_R16) && (reg <= REG_R23));
+    return ((reg >= REG_R16) && (reg <= REG_R31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended regs are not available.
     return false;
