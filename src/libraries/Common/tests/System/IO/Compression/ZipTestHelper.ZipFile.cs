@@ -265,15 +265,6 @@ public partial class ZipFileTestBase : FileCleanupTestBase
         }
     }
 
-    public static IEnumerable<object[]> Get_ExtractOutOfRoot_Data()
-    {
-        foreach (bool async in _bools)
-        {
-            yield return new object[] { "../Foo", async };
-            yield return new object[] { "../Barbell", async };
-        }
-    }
-
     public static IEnumerable<object[]> Get_Unix_ZipWithInvalidFileNames_Data()
     {
         foreach (bool async in _bools)

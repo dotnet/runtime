@@ -91,19 +91,35 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
     }
 
     [Theory]
-    [MemberData(nameof(Get_ExtractOutOfRoot_Data))]
-    public async Task ExtractOutOfRoot(string entryName, bool async)
+    [InlineData("../Foo")]
+    [InlineData("../Barbell")]
+    public void ExtractOutOfRoot(string entryName)
     {
-        FileStream source = new(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, bufferSize: 4096, useAsync: async);
-
-        ZipArchive archive = await CreateZipArchive(async, source, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null);
-        ZipArchiveEntry entry = archive.CreateEntry(entryName);
-        await DisposeZipArchive(async, archive);
+        using FileStream source = new(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite);
+        using (ZipArchive archive = new(source, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            ZipArchiveEntry entry = archive.CreateEntry(entryName);
+        }
 
         DirectoryInfo destination = Directory.CreateDirectory(Path.Combine(GetTestFilePath(), "Bar"));
         source.Position = 0;
-        await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, source, destination.FullName));
-        await DisposeStream(async, source);
+        Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(source, destination.FullName));
+    }
+
+    [Theory]
+    [InlineData("../Foo")]
+    [InlineData("../Barbell")]
+    public async Task ExtractOutOfRoot_Async(string entryName)
+    {
+        using FileStream source = new(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite);
+        await using (ZipArchive archive = await ZipArchive.CreateAsync(source, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null))
+        {
+            ZipArchiveEntry entry = archive.CreateEntry(entryName);
+        }
+
+        DirectoryInfo destination = Directory.CreateDirectory(Path.Combine(GetTestFilePath(), "Bar"));
+        source.Position = 0;
+        await Assert.ThrowsAsync<IOException>(() => ZipFile.ExtractToDirectoryAsync(source, destination.FullName));
     }
 
     /// <summary>
