@@ -249,7 +249,16 @@ CDAC_TYPE_INDETERMINATE(Assembly)
 #ifdef FEATURE_COLLECTIBLE_TYPES
 CDAC_TYPE_FIELD(Assembly, /*uint8*/, IsCollectible, cdac_data<Assembly>::IsCollectible)
 #endif
+CDAC_TYPE_FIELD(Assembly, /*pointer*/, Module, cdac_data<Assembly>::Module)
+CDAC_TYPE_FIELD(Assembly, /*pointer*/, Error, cdac_data<Assembly>::Error)
+CDAC_TYPE_FIELD(Assembly, /*uint32*/, NotifyFlags, cdac_data<Assembly>::NotifyFlags)
+CDAC_TYPE_FIELD(Assembly, /*uint32*/, Level, cdac_data<Assembly>::Level)
 CDAC_TYPE_END(Assembly)
+
+CDAC_TYPE_BEGIN(LoaderAllocator)
+CDAC_TYPE_INDETERMINATE(LoaderAllocator)
+CDAC_TYPE_FIELD(LoaderAllocator, /*uint32*/, ReferenceCount, cdac_data<LoaderAllocator>::ReferenceCount)
+CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
@@ -293,9 +302,9 @@ CDAC_TYPE_END(ArrayListBase)
 
 CDAC_TYPE_BEGIN(ArrayListBlock)
 CDAC_TYPE_INDETERMINATE(ArrayListBlock)
-CDAC_TYPE_FIELD(ArrayListBlock, /*pointer*/, Next, cdac_data<ArrayListBlock>::Next)
-CDAC_TYPE_FIELD(ArrayListBlock, /*uint32*/, Size, cdac_data<ArrayListBlock>::Size)
-CDAC_TYPE_FIELD(ArrayListBlock, /*pointer*/, ArrayStart, cdac_data<ArrayListBlock>::ArrayStart)
+CDAC_TYPE_FIELD(ArrayListBlock, /*pointer*/, Next, cdac_data<ArrayListBase>::Next)
+CDAC_TYPE_FIELD(ArrayListBlock, /*uint32*/, Size, cdac_data<ArrayListBase>::Size)
+CDAC_TYPE_FIELD(ArrayListBlock, /*pointer*/, ArrayStart, cdac_data<ArrayListBase>::ArrayStart)
 CDAC_TYPE_END(ArrayListBlock)
 
 // RuntimeTypeSystem
@@ -832,6 +841,7 @@ CDAC_GLOBAL_STRING(Architecture, riscv64)
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
+CDAC_GLOBAL_POINTER(SystemDomain, &SystemDomain::m_pSystemDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
