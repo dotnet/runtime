@@ -478,7 +478,10 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     case    HNDTYPE_STRONG:
 #ifdef FEATURE_SIZED_REF_HANDLES
     case    HNDTYPE_SIZEDREF:
-#endif
+#endif // FEATURE_SIZED_REF_HANDLES
+#ifdef FEATURE_GCBRIDGE
+    case    HNDTYPE_CROSSREFERENCE:
+#endif // FEATURE_GCBRIDGE
         break;
 
     case    HNDTYPE_PINNED:
@@ -572,6 +575,7 @@ static const uint32_t s_rgTypeFlags[] =
     HNDF_EXTRAINFO, // HNDTYPE_SIZEDREF
     HNDF_EXTRAINFO, // HNDTYPE_WEAK_NATIVE_COM
     HNDF_EXTRAINFO, // HNDTYPE_WEAK_INTERIOR_POINTER
+    HNDF_EXTRAINFO, // HNDTYPE_CROSSREFERENCE
 };
 
 int getNumberOfSlots()
@@ -1614,6 +1618,9 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
+#ifdef FEATURE_GCBRIDGE
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // perform a multi-type scan that updates pointers
@@ -1679,7 +1686,10 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_GCBRIDGE
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     uint32_t flags = HNDGCF_NORMAL;
@@ -1804,7 +1814,10 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_GCBRIDGE
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // perform a multi-type scan that ages the handles
@@ -1861,7 +1874,10 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
 #endif
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_GCBRIDGE
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // reset the ages of these handles
@@ -1917,7 +1933,10 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_SIZEDREF,
 #endif
         HNDTYPE_DEPENDENT,
-        HNDTYPE_WEAK_INTERIOR_POINTER
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_GCBRIDGE
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // verify these handles
