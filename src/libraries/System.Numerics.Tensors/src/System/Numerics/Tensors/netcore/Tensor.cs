@@ -1340,7 +1340,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                T[] values = tensor.IsPinned ? GC.AllocateArray<T>((int)tensor._flattenedLength) : (new T[tensor._flattenedLength]);
+                T[] values = tensor.IsPinned ? GC.AllocateArray<T>((int)tensor.FlattenedLength) : (new T[tensor.FlattenedLength]);
                 nint[] lengths = new nint[tensor.Rank];
                 Tensor<T> outTensor;
                 TensorSpan<T> ospan;
@@ -1352,7 +1352,7 @@ namespace System.Numerics.Tensors
                     int[] tempPermutation = new int[tensor.Rank];
                     for (int i = 0; i < tensor.Rank; i++)
                     {
-                        lengths[i] = tensor._lengths[tensor.Rank - 1 - i];
+                        lengths[i] = tensor.Lengths[tensor.Rank - 1 - i];
                         tempPermutation[i] = tensor.Rank - 1 - i;
                     }
 
@@ -1393,7 +1393,7 @@ namespace System.Numerics.Tensors
                     permutedIndices = stackalloc nint[outTensor.Rank];
                 }
 
-                for (int i = 0; i < tensor._flattenedLength; i++)
+                for (int i = 0; i < tensor.FlattenedLength; i++)
                 {
                     TensorHelpers.PermuteIndices(indexes, permutedIndices, permutation);
                     ospan[permutedIndices] = ispan[indexes];
@@ -1477,7 +1477,7 @@ namespace System.Numerics.Tensors
             else
                 strides = TensorSpanHelpers.CalculateStrides(arrLengths);
 
-            return new Tensor<T>(tensor._values, arrLengths, strides, tensor._start);
+            return new Tensor<T>(tensor._values, tensor._start, arrLengths, strides);
         }
 
         /// <summary>
@@ -1547,7 +1547,7 @@ namespace System.Numerics.Tensors
             else
                 strides = TensorSpanHelpers.CalculateStrides(arrLengths);
 
-            TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, arrLengths, strides, tensor._shape.LinearLength);
+            TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, arrLengths, strides);
             return output;
         }
 
@@ -1616,7 +1616,7 @@ namespace System.Numerics.Tensors
             else
                 strides = TensorSpanHelpers.CalculateStrides(arrLengths);
 
-            ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref tensor._reference, arrLengths, strides, tensor._shape.LinearLength);
+            ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, arrLengths, strides);
             return output;
         }
         #endregion
@@ -1923,19 +1923,19 @@ namespace System.Numerics.Tensors
             for (int i = 0; i < outputs.Length; i++)
             {
                 T[] values = new T[(int)totalToCopy];
-                outputs[i] = new Tensor<T>(values, newShape, memoryOffset: 0);
+                outputs[i] = Create(values, start: 0, newShape, strides: []);
                 oIndices.Clear();
                 iIndices.Clear();
 
                 iIndices[(int)dimension] = i;
                 ReadOnlyTensorSpan<T> islice = tensor.Slice(tensor.Lengths);
-                TensorSpan<T> oslice = outputs[i].AsTensorSpan().Slice(outputs[i]._lengths);
+                TensorSpan<T> oslice = outputs[i].AsTensorSpan().Slice(outputs[i].Lengths);
 
                 nint copiedValues = 0;
                 while (copiedValues < totalToCopy)
                 {
                     TensorSpanHelpers.Memmove(ref Unsafe.Add(ref oslice._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, outputs[0].Strides, outputs[0].Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    TensorSpanHelpers.AdjustIndexes((int)dimension, 1, oIndices, outputs[i]._lengths);
+                    TensorSpanHelpers.AdjustIndexes((int)dimension, 1, oIndices, outputs[i].Lengths);
                     TensorSpanHelpers.AdjustIndexes((int)dimension - 1, 1, iIndices, tensor.Lengths);
                     copiedValues += copyLength;
                 }
@@ -2005,7 +2005,7 @@ namespace System.Numerics.Tensors
                 strides = TensorSpanHelpers.CalculateStrides(lengths);
             }
 
-            return new Tensor<T>(tensor._values, lengths, strides, tensor._start);
+            return new Tensor<T>(tensor._values, tensor._start, lengths, strides);
         }
 
         /// <summary>
@@ -2061,7 +2061,7 @@ namespace System.Numerics.Tensors
                 strides = TensorSpanHelpers.CalculateStrides(lengths);
             }
 
-            return new TensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape.LinearLength);
+            return new TensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, lengths, strides);
         }
 
         /// <summary>
@@ -2117,7 +2117,7 @@ namespace System.Numerics.Tensors
                 strides = TensorSpanHelpers.CalculateStrides(lengths);
             }
 
-            return new ReadOnlyTensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape.LinearLength);
+            return new ReadOnlyTensorSpan<T>(ref tensor._reference, tensor._shape.LinearLength, lengths, strides);
         }
         #endregion
 
@@ -2143,7 +2143,7 @@ namespace System.Numerics.Tensors
 
             for (int i = 1; i < tensors.Length; i++)
             {
-                if (!TensorShape.AreLengthsTheSame<T>(tensors[0], tensors[i]))
+                if (!TensorShape.AreLengthsTheSame(tensors[0].Lengths, tensors[i].Lengths))
                     ThrowHelper.ThrowArgument_StackShapesNotSame();
             }
 
@@ -2181,7 +2181,7 @@ namespace System.Numerics.Tensors
 
             for (int i = 1; i < tensors.Length; i++)
             {
-                if (!TensorShape.AreLengthsTheSame<T>(tensors[0], tensors[i]))
+                if (!TensorShape.AreLengthsTheSame(tensors[0].Lengths, tensors[i].Lengths))
                     ThrowHelper.ThrowArgument_StackShapesNotSame();
             }
 
@@ -2345,11 +2345,11 @@ namespace System.Numerics.Tensors
             if (dimension < 0)
                 dimension = tensor.Rank - dimension;
 
-            Span<nint> lengths = tensor._lengths.Length + 1 <= TensorShape.MaxInlineRank ?
-                stackalloc nint[tensor._lengths.Length + 1] :
-                new nint[tensor._lengths.Length + 1];
-            tensor._lengths.AsSpan(0, dimension).CopyTo(lengths);
-            tensor._lengths.AsSpan(dimension).CopyTo(lengths.Slice(dimension + 1));
+            Span<nint> lengths = tensor.Lengths.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Lengths.Length + 1] :
+                new nint[tensor.Lengths.Length + 1];
+            tensor.Lengths.AsSpan(0, dimension).CopyTo(lengths);
+            tensor.Lengths.AsSpan(dimension).CopyTo(lengths.Slice(dimension + 1));
             lengths[dimension] = 1;
 
             Span<nint> strides = tensor.Strides.Length + 1 <= TensorShape.MaxInlineRank ?
