@@ -257,7 +257,7 @@ namespace System.Numerics.Tensors
             var sb = new StringBuilder($"System.Numerics.Tensors.Tensor<{typeof(T).Name}>[{_shape}]");
 
             sb.AppendLine("{");
-            ((ReadOnlyTensorSpan<T>)AsTensorSpan()).ToString(sb, maximumLengths);
+            Tensor.ToString(AsReadOnlyTensorSpan(), maximumLengths, sb);
             sb.AppendLine("}");
 
             return sb.ToString();
