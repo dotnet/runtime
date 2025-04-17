@@ -1437,6 +1437,18 @@ namespace System.IO.Compression
                 throw new NotSupportedException(SR.ReadingNotSupported);
             }
 
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                ThrowIfDisposed();
+                throw new NotSupportedException(SR.ReadingNotSupported);
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                ThrowIfDisposed();
+                throw new NotSupportedException(SR.ReadingNotSupported);
+            }
+
             public override long Seek(long offset, SeekOrigin origin)
             {
                 ThrowIfDisposed();
