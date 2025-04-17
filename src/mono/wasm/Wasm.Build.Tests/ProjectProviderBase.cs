@@ -487,14 +487,16 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
-    private BootJsonData GetBootJson(string bootJsonPath)
+    public BootJsonData GetBootJson(string bootJsonPath)
     {
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
         return ParseBootData(bootJsonPath);
     }
 
-    private string GetBootConfigPath(string binFrameworkDir, string bootConfigFileName)
+    public string GetBootConfigPath(string binFrameworkDir, string? bootConfigFileName = null)
     {
+        bootConfigFileName ??= "dotnet.js";
+
         if (bootConfigFileName.EndsWith(".js"))
         {
             string bootFileNameWithoutExtension = Path.GetFileNameWithoutExtension(bootConfigFileName);
@@ -517,7 +519,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
         EnsureProjectDirIsSet();
-        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName ?? "dotnet.js");
+        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
