@@ -374,6 +374,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (IsFingerprintingEnabled)
         {
             string bootJsonPath = Path.Combine(paths.BinFrameworkDir, "dotnet.boot.js");
+            if (!File.Exists(bootJsonPath))
+                bootJsonPath = Path.Combine(paths.BinFrameworkDir, "dotnet.js"); // inline boot config
+
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             var keysToUpdate = new List<string>();
             var updates = new List<(string oldKey, string newKey, (string fullPath, bool unchanged) value)>();
