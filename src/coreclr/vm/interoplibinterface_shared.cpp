@@ -154,3 +154,93 @@ void Interop::OnAfterGCScanRoots(_In_ bool isConcurrent)
         ObjCMarshalNative::AfterRefCountedHandleCallbacks();
 #endif // FEATURE_OBJCMARSHAL
 }
+
+#ifdef FEATURE_GCBRIDGE
+
+namespace
+{
+    Volatile<BOOL> g_GCBridgeActive = FALSE;
+
+    void ReleaseGCBridgeArgumentsWorker(
+        _In_ size_t sccsLen,
+        _In_ StronglyConnectedComponent* sccs,
+        _In_ ComponentCrossReference* ccrs)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        // Memory was allocated for the collections by the GC.
+        // See callers of GCToEEInterface::TriggerGCBridge().
+
+        // Free memory in each of the SCCs
+        for (size_t i = 0; i < sccsLen; i++)
+        {
+            free(sccs[i].Context);
+        }
+        free(sccs);
+        free(ccrs);
+    }
+}
+
+void Interop::TriggerGCBridge(
+    _In_ size_t sccsLen,
+    _In_ StronglyConnectedComponent* sccs,
+    _In_ size_t ccrsLen,
+    _In_ ComponentCrossReference* ccrs)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (g_GCBridgeActive)
+    {
+        // Release the memory allocated since the GCBridge
+        // is already running and we're not passing them to it.
+        ReleaseGCBridgeArgumentsWorker(sccsLen, sccs, ccrs);
+        return;
+    }
+
+    bool gcBridgeTriggered;
+
+#ifdef FEATURE_JAVAMARSHAL
+    gcBridgeTriggered = JavaNative::TriggerGCBridge(sccsLen, sccs, ccrsLen, ccrs);
+#endif // FEATURE_JAVAMARSHAL
+
+    if (!gcBridgeTriggered)
+    {
+        // Release the memory allocated since the GCBridge
+        // wasn't trigger for some reason.
+        ReleaseGCBridgeArgumentsWorker(sccsLen, sccs, ccrs);
+        return;
+    }
+
+    // Mark the GCBridge as active.
+    g_GCBridgeActive = TRUE;
+}
+
+void Interop::ReleaseGCBridgeArguments(
+    _In_ size_t sccsLen,
+    _In_ StronglyConnectedComponent* sccs,
+    _In_ ComponentCrossReference* ccrs)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(g_GCBridgeActive);
+
+    // Mark the GCBridge as inactive.
+    // This much be synchronized with the GC so switch to cooperative mode.
+    {
+        GCX_COOP();
+        g_GCBridgeActive = FALSE;
+    }
+
+    ReleaseGCBridgeArgumentsWorker(sccsLen, sccs, ccrs);
+}
+
+#endif // FEATURE_GCBRIDGE

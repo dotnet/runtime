@@ -30449,6 +30449,9 @@ void gc_heap::mark_phase (int condemned_gen_number)
     mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
+    // TODO
+    // Scan the set of dead bridge objects, construct SCC graph, pass it over to java marshal
+
 #ifdef MULTIPLE_HEAPS
     dprintf(3, ("Joining for short weak handle scan"));
     gc_t_join.join(this, gc_join_null_dead_short_weak);

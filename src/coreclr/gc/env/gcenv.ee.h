@@ -39,6 +39,8 @@ public:
     // Promote refcounted handle callback
     static bool RefCountedHandleCallbacks(Object * pObject);
 
+    static void TriggerGCBridge(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs);
+
     // Sync block cache management
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
     static void SyncBlockCacheDemote(int max_gen);
