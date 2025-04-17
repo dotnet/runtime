@@ -398,7 +398,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         //
 
         push_nonvol_reg rbp
-        alloc_stack     0x10 // TODO: Why do we need this to make throw-in-filter work
 
         // Restore RBP
         mov     rbp, rsi
@@ -407,7 +406,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         // Invoke the filter funclet
         call    rdx
 
-        free_stack     0x10
         pop_nonvol_reg rbp
         ret
 NESTED_END CallEHFilterFunclet, _TEXT
