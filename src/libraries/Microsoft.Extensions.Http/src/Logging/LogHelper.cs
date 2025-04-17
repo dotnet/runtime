@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Http.Logging
@@ -15,7 +10,6 @@ namespace Microsoft.Extensions.Http.Logging
     internal static class LogHelper
     {
         private static readonly LogDefineOptions s_skipEnabledCheckLogDefineOptions = new LogDefineOptions() { SkipEnabledCheck = true };
-        private static readonly bool s_disableUriRedaction = GetDisableUriRedactionSettingValue();
 
         private static class EventIds
         {
@@ -71,33 +65,12 @@ namespace Microsoft.Extensions.Http.Logging
             EventIds.PipelineFailed,
             "HTTP request failed after {ElapsedMilliseconds}ms");
 
-        private static bool GetDisableUriRedactionSettingValue()
-        {
-            if (AppContext.TryGetSwitch("System.Net.Http.DisableUriRedaction", out bool value))
-            {
-                return value;
-            }
-
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION");
-
-            if (bool.TryParse(envVar, out value))
-            {
-                return value;
-            }
-            else if (uint.TryParse(envVar, out uint intVal))
-            {
-                return intVal != 0;
-            }
-
-            return false;
-        }
-
         public static void LogRequestStart(this ILogger logger, HttpRequestMessage request, Func<string, bool> shouldRedactHeaderValue)
         {
             // We check here to avoid allocating in the GetRedactedUriString call unnecessarily
             if (logger.IsEnabled(LogLevel.Information))
             {
-                _requestStart(logger, request.Method, GetRedactedUriString(request.RequestUri), null);
+                _requestStart(logger, request.Method, UriRedactionHelper.GetRedactedUriString(request.RequestUri), null);
             }
 
             if (logger.IsEnabled(LogLevel.Trace))
@@ -131,7 +104,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         public static IDisposable? BeginRequestPipelineScope(this ILogger logger, HttpRequestMessage request, out string? formattedUri)
         {
-            formattedUri = GetRedactedUriString(request.RequestUri);
+            formattedUri = UriRedactionHelper.GetRedactedUriString(request.RequestUri);
             return _beginRequestPipelineScope(logger, request.Method, formattedUri);
         }
 
@@ -167,49 +140,5 @@ namespace Microsoft.Extensions.Http.Logging
 
         public static void LogRequestPipelineFailed(this ILogger logger, TimeSpan duration, HttpRequestException exception) =>
             _requestPipelineFailed(logger, duration.TotalMilliseconds, exception);
-
-        internal static string? GetRedactedUriString(Uri? uri)
-        {
-            if (uri is null)
-            {
-                return null;
-            }
-
-            if (s_disableUriRedaction)
-            {
-                return uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString();
-            }
-
-            if (!uri.IsAbsoluteUri)
-            {
-                // We cannot guarantee the redaction of UserInfo for relative Uris without implementing some subset of Uri parsing in this package.
-                // To avoid this, we redact the whole Uri. Seeing a relative Uri in LoggingHttpMessageHandler or LoggingScopeHttpMessageHandler
-                // requires a custom handler chain with custom expansion logic implemented by the user's HttpMessageHandler.
-                // In such advanced scenarios we recommend users to log the Uri in their handler.
-                return "*";
-            }
-
-            string pathAndQuery = uri.PathAndQuery;
-            int queryIndex = pathAndQuery.IndexOf('?');
-
-            bool redactQuery = queryIndex >= 0 && // Query is present.
-                queryIndex < pathAndQuery.Length - 1; // Query is not empty.
-
-            return (redactQuery, uri.IsDefaultPort) switch
-            {
-                (true, true) => $"{uri.Scheme}://{uri.Host}{GetPath(pathAndQuery, queryIndex)}*",
-                (true, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{GetPath(pathAndQuery, queryIndex)}*",
-                (false, true) => $"{uri.Scheme}://{uri.Host}{pathAndQuery}",
-                (false, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{pathAndQuery}"
-            };
-
-#if NET
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static ReadOnlySpan<char> GetPath(string pathAndQuery, int queryIndex) => pathAndQuery.AsSpan(0, queryIndex + 1);
-#else
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static string GetPath(string pathAndQuery, int queryIndex) => pathAndQuery.Substring(0, queryIndex + 1);
-#endif
-        }
     }
 }
