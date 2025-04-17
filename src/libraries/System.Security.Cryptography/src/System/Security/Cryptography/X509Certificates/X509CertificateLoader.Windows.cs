@@ -300,7 +300,7 @@ namespace System.Security.Cryptography.X509Certificates
             if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
             {
                 pfxCertStoreFlags &= ~Interop.Crypt32.PfxCertStoreFlags.PKCS12_PREFER_CNG_KSP;
-                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | Interop.Crypt32.PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
+                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.PKCS12_NAMED_NO_PERSIST_KEY | Interop.Crypt32.PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | Interop.Crypt32.PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
             }
 
             // In .NET Framework loading a PFX then adding the key to the Windows Certificate Store would

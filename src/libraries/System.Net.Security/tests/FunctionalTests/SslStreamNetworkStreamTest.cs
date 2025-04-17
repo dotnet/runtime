@@ -938,7 +938,7 @@ namespace System.Net.Security.Tests
                 TargetHost = "localhost",
             };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, useTrust ? null : clientChain, offline:true, trust);
+            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, useTrust ? null : clientChain, offline: true, trust);
 
             await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
 
@@ -952,10 +952,10 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task SslStream_EphemeralKey_Throws()
+        public async Task SslStream_EphemeralKey_DoesNotThrow()
         {
-            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
-            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_EphemeralKey_DoesNotThrow), ephemeralKey: true);
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_DoesNotThrow));
 
             var clientOptions = new SslClientAuthenticationOptions()
             {
@@ -969,21 +969,25 @@ namespace System.Net.Security.Tests
             };
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
-
-            Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-            Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-
-            AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(() => t2);
-            Assert.Contains("ephemeral", e.Message);
-            server.Dispose();
-            await Assert.ThrowsAsync<IOException>(() => t1);
-            client.Dispose();
-
-            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
-            serverCertificate.Dispose();
-            foreach (X509Certificate c in chain)
+            try
             {
-                c.Dispose();
+                using (client)
+                using (server)
+                {
+                    Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                    Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+                }
+            }
+            finally
+            {
+                TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_DoesNotThrow));
+                serverCertificate.Dispose();
+                foreach (X509Certificate c in chain)
+                {
+                    c.Dispose();
+                }
             }
         }
 
