@@ -126,8 +126,8 @@
                                                  .Replace('{CoreCLRCrossILCompilerDir}', '$(CoreCLRCrossILCompilerDir)')
                                                  .Replace('{CoreCLRAotSdkDir}', '$(CoreCLRAotSdkDir)')
                                                  .Replace('{NativeSanitizersTargets}', '$(RepositoryEngineeringDir)nativeSanitizers.targets')
-                                                 .Replace('{AppHostSourcePath}', '$(LocalAppHostPath)')
-                                                 .Replace('{SingleFileHostSourcePath}', '$(LocalSingleFileHostPath)')
+                                                 .Replace('{LocalAppHostPath}', '$(LocalAppHostPath)')
+                                                 .Replace('{LocalSingleFileHostPath}', '$(LocalSingleFileHostPath)')
                                                  .Replace('{SanitizerRuntimeFolder}', '$(DotNetHostBinDir)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile);
