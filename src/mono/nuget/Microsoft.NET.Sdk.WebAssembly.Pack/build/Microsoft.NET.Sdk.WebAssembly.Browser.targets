@@ -455,15 +455,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       $(GenerateHtmlAssetPlaceholdersBuildStaticWebAssetsDependsOn)
     </GenerateHtmlAssetPlaceholdersBuildStaticWebAssetsDependsOn>
     <GenerateHtmlAssetPlaceholdersPublishStaticWebAssetsDependsOn>
-      AddWasmPreloadPropertiesForPublish;
+      _AddWasmPreloadPropertiesForPublish;
       $(GenerateHtmlAssetPlaceholdersPublishStaticWebAssetsDependsOn)
     </GenerateHtmlAssetPlaceholdersPublishStaticWebAssetsDependsOn>
   </PropertyGroup>
 
   <Target Name="_WasmConfigurePreload">
-    <PropertyGroup>
-      <_WasmPreloadScripts>;dotnet.js</_WasmPreloadScripts>
-    </PropertyGroup>
     <ItemGroup>
       <AppendPreloadRelPreloadProperty Include="Append">
         <UpdateTarget>Property</UpdateTarget>
@@ -497,18 +494,14 @@ Copyright (c) .NET Foundation. All rights reserved.
       </AppendGroupWebAssemblyProperty>
       
       <!-- Label=Include matches endpoints with fingerprint; Label=Exclude matches endpoints without fingerprint -->
-      <!-- TODO MF: Check for OverrideHtmlAssetPlaceholders might not be accurate -->
-      <_WasmPreloadEndpointFilter Include="Property" Name="Label" Mode="Include" Condition="'$(_WasmFingerprintAssets)' == 'true' and ('$(StaticWebAssetProjectMode)' == 'Default' or '$(OverrideHtmlAssetPlaceholders)' == 'true')" />
+      <_WasmPreloadEndpointFilter Include="Property" Name="Label" Mode="Include" Condition="'$(_WasmFingerprintAssets)' == 'true' and ('$(StaticWebAssetProjectMode)' == 'Default' or '$(_WasmFingerprintDotnetJs)' == 'true')" />
       <_WasmPreloadEndpointFilter Include="Property" Name="Label" Mode="Exclude" Condition="'@(_WasmPreloadEndpointFilter)' == ''" />
     </ItemGroup>
   </Target>
 
   <Target Name="_AddWasmPreloadBuildProperties" DependsOnTargets="_WasmConfigurePreload;_AddWasmStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
-    <PropertyGroup>
-      <_WasmPreloadBuildScripts>$(_WasmPreloadScripts);$(_WasmBootConfigFileName);</_WasmPreloadBuildScripts>
-    </PropertyGroup>
     <ItemGroup>
-      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Publish' and $(_WasmPreloadBuildScripts.Contains(';%(FileName)%(Extension);'))" />
+      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == 'dotnet.js'" />
     </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
@@ -531,13 +524,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <StaticWebAssetEndpoint Include="@(_UpdatedWasmPreloadBuildAssetEndpoint)" />
     </ItemGroup>
   </Target>
-  <Target Name="AddWasmPreloadPropertiesForPublish" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
-    <PropertyGroup>
-      <_WasmPreloadPublishScripts>$(_WasmPreloadScripts);$(_WasmPublishBootConfigFileName);</_WasmPreloadPublishScripts>
-    </PropertyGroup>
+  <Target Name="_AddWasmPreloadPropertiesForPublish" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
     <ItemGroup>
-      <!-- TODO MF: Publish assets has already hard fingerprint -->
-      <_WasmPreloadPublishScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Build' and $(_WasmPreloadPublishScripts.Contains(';%(FileName)%(Extension);'))" />
+      <_WasmPreloadPublishScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Build' and '%(FileName)%(Extension)' == 'dotnet.js')" />
     </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
