@@ -65,7 +65,7 @@
 
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.Diagnostics.ActivitySource.IsSupported"
-                                        Condition="'$(ActivitySourceSupport)' == 'false'"
+                                        Condition="'$(ActivitySourceSupport)' != ''"
                                         Value="$(ActivitySourceSupport)"
                                         Trim="true" />
     <RuntimeHostConfigurationOption Include="System.Net.Http.WasmEnableStreamingResponse"

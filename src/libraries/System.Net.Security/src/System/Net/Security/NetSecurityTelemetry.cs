@@ -19,24 +19,10 @@ namespace System.Net.Security
         private const string ActivitySourceName = "Experimental.System.Net.Security";
         private const string ActivityName = ActivitySourceName + ".TlsHandshake";
 
-        private static readonly ActivitySource? s_activitySource;
+        private static readonly ActivitySource? s_activitySource = IsActivitySourceSupported ? new ActivitySource(string.Empty) : null;
 
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
         public static readonly NetSecurityTelemetry Log = new NetSecurityTelemetry();
-
-#pragma warning disable CA1810 // remove the explicit static constructor
-        static NetSecurityTelemetry()
-        {
-            if (IsActivitySourceSupported)
-            {
-                s_activitySource = new ActivitySource(ActivitySourceName);
-            }
-            else
-            {
-                s_activitySource = null;
-            }
-        }
-#pragma warning restore CA1810 // remove the explicit static constructor
 
         private IncrementingPollingCounter? _tlsHandshakeRateCounter;
         private PollingCounter? _totalTlsHandshakesCounter;

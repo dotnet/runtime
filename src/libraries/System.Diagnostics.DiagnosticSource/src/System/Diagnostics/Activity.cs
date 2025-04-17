@@ -59,7 +59,7 @@ namespace System.Diagnostics
         private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = [];
         private static readonly IEnumerable<ActivityLink> s_emptyLinks = [];
         private static readonly IEnumerable<ActivityEvent> s_emptyEvents = [];
-        private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
+        private static readonly ActivitySource? s_defaultSource = ActivitySource.IsSupported ? new ActivitySource(string.Empty) : null;
         private static readonly AsyncLocal<Activity?> s_current = new AsyncLocal<Activity?>();
 
         private const byte ActivityTraceFlagsIsSet = 0b_1_0000000; // Internal flag to indicate if flags have been set
@@ -451,7 +451,14 @@ namespace System.Diagnostics
         /// <param name="operationName">Operation's name <see cref="OperationName"/></param>
         public Activity(string operationName)
         {
-            Source = s_defaultSource;
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+            else
+            {
+                Source = s_defaultSource!;
+            }
             // Allow data by default in the constructor to keep the compatibility.
             IsAllDataRequested = true;
 
@@ -483,6 +490,11 @@ namespace System.Diagnostics
         /// <param name="value">The tag value mapped to the input key</param>
         public Activity AddTag(string key, object? value)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
 
             if (_tags != null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp), null) != null)
@@ -507,6 +519,11 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetTag(string key, object? value)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
 
             if (_tags != null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp, set: true), null) != null)
@@ -526,7 +543,7 @@ namespace System.Diagnostics
         {
             if (!ActivitySource.IsSupported)
             {
-                return this;
+                throw new NotSupportedException("Linked away");
             }
 
             if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
@@ -554,6 +571,10 @@ namespace System.Diagnostics
         /// </remarks>
         public Activity AddException(Exception exception, in TagList tags = default, DateTimeOffset timestamp = default)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
             if (exception == null)
             {
                 throw new ArgumentNullException(nameof(exception));
@@ -619,7 +640,7 @@ namespace System.Diagnostics
         {
             if (!ActivitySource.IsSupported)
             {
-                return this;
+                throw new NotSupportedException("Linked away");
             }
 
             if (_links != null || Interlocked.CompareExchange(ref _links, new DiagLinkedList<ActivityLink>(link), null) != null)
@@ -641,6 +662,11 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity AddBaggage(string key, string? value)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
 
             if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new BaggageLinkedList(kvp), null) != null)
@@ -665,6 +691,11 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetBaggage(string key, string? value)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
 
             if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new BaggageLinkedList(kvp, set: true), null) != null)
@@ -686,6 +717,11 @@ namespace System.Diagnostics
         /// <param name="parentId">The id of the parent operation.</param>
         public Activity SetParentId(string parentId)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+
             if (_id != null || _spanId != null)
             {
                 // Cannot set the parent on already started Activity.
@@ -716,6 +752,11 @@ namespace System.Diagnostics
         /// </summary>
         public Activity SetParentId(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags activityTraceFlags = ActivityTraceFlags.None)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+
             if (_id != null || _spanId != null)
             {
                 // Cannot set the parent on already started Activity.
@@ -746,6 +787,11 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetStartTime(DateTime startTimeUtc)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+
             if (startTimeUtc.Kind != DateTimeKind.Utc)
             {
                 NotifyError(new InvalidOperationException(SR.StartTimeNotUtc));
@@ -766,6 +812,11 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         public Activity SetEndTime(DateTime endTimeUtc)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+
             if (endTimeUtc.Kind != DateTimeKind.Utc)
             {
                 NotifyError(new InvalidOperationException(SR.EndTimeNotUtc));
@@ -799,6 +850,11 @@ namespace System.Diagnostics
         /// <seealso cref="SetStartTime(DateTime)"/>
         public Activity Start()
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+
             // Has the ID already been set (have we called Start()).
             if (_id != null || _spanId != null)
             {
@@ -855,6 +911,11 @@ namespace System.Diagnostics
         /// <seealso cref="SetEndTime(DateTime)"/>
         public void Stop()
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
+
             if (_id == null && _spanId == null)
             {
                 NotifyError(new InvalidOperationException(SR.ActivityNotStarted));
@@ -1187,6 +1248,10 @@ namespace System.Diagnostics
                                         IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime,
                                         ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat, string? traceState)
         {
+            if (!ActivitySource.IsSupported)
+            {
+                throw new NotSupportedException("Linked away");
+            }
             Activity activity = new Activity(name);
 
             activity.Source = source;

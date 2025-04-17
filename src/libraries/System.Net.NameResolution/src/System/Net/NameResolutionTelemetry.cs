@@ -165,26 +165,11 @@ namespace System.Net
 
         private const string ActivitySourceName = "Experimental.System.Net.NameResolution";
         private const string ActivityName = ActivitySourceName + ".DnsLookup";
-        private static readonly ActivitySource? s_activitySource;
+        private static readonly ActivitySource? s_activitySource = IsActivitySourceSupported ? new ActivitySource(string.Empty) : null;
 
         // _startingTimestamp == 0 means NameResolutionTelemetry and NameResolutionMetrics are both disabled.
         private readonly long _startingTimestamp;
         private readonly Activity? _activity;
-
-
-#pragma warning disable CA2207 // remove the explicit static constructor
-        static NameResolutionActivity()
-        {
-            if (IsActivitySourceSupported)
-            {
-                s_activitySource = new ActivitySource(ActivitySourceName);
-            }
-            else
-            {
-                s_activitySource = null;
-            }
-        }
-#pragma warning restore CA2207 // remove the explicit static constructor
 
         public NameResolutionActivity(object hostNameOrAddress, long startingTimestamp)
         {

@@ -33,12 +33,12 @@ namespace System.Net.Http
 
             long startingTimestamp = Stopwatch.GetTimestamp();
 
-            using Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.IsActivitySourceSupported ? ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(pool.OriginAuthority) : null;
+            using Activity? waitForConnectionActivity = GlobalHttpSettings.ActivitySource.IsSupported ? ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(pool.OriginAuthority) : null;
             try
             {
                 return await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ConnectionSetupDistributedTracing.IsActivitySourceSupported && waitForConnectionActivity is not null)
+            catch (Exception ex) when (GlobalHttpSettings.ActivitySource.IsSupported && waitForConnectionActivity is not null)
             {
                 ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, ex);
                 throw;

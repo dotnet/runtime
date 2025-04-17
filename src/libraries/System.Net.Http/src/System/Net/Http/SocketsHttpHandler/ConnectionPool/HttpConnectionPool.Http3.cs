@@ -90,7 +90,7 @@ namespace System.Net.Http
                     long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && Settings._metrics!.RequestsQueueDuration.Enabled)
                         ? Stopwatch.GetTimestamp()
                         : 0;
-                    Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.IsActivitySourceSupported ? ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(authority) : null;
+                    Activity? waitForConnectionActivity = GlobalHttpSettings.ActivitySource.IsSupported ? ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(authority) : null;
 
                     if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out http3ConnectionWaiter))
                     {
@@ -98,7 +98,7 @@ namespace System.Net.Http
                         {
                             connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                         }
-                        catch (Exception ex) when (ConnectionSetupDistributedTracing.IsActivitySourceSupported && waitForConnectionActivity is not null)
+                        catch (Exception ex) when (GlobalHttpSettings.ActivitySource.IsSupported && waitForConnectionActivity is not null)
                         {
                             ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, ex);
                             waitForConnectionActivity?.Stop();
@@ -269,7 +269,7 @@ namespace System.Net.Http
             {
                 if (TryGetHttp3Authority(queueItem.Request, out authority, out Exception? reasonException))
                 {
-                    if (ConnectionSetupDistributedTracing.IsActivitySourceSupported)
+                    if (GlobalHttpSettings.ActivitySource.IsSupported)
                     {
                         connectionSetupActivity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(isSecure: true, authority);
                     }
@@ -281,7 +281,7 @@ namespace System.Net.Http
                         await quicConnection.DisposeAsync().ConfigureAwait(false);
                         throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
                     }
-                    if (ConnectionSetupDistributedTracing.IsActivitySourceSupported && connectionSetupActivity is not null) ConnectionSetupDistributedTracing.StopConnectionSetupActivity(connectionSetupActivity, null, quicConnection.RemoteEndPoint);
+                    if (GlobalHttpSettings.ActivitySource.IsSupported && connectionSetupActivity is not null) ConnectionSetupDistributedTracing.StopConnectionSetupActivity(connectionSetupActivity, null, quicConnection.RemoteEndPoint);
                     connection.InitQuicConnection(quicConnection, connectionSetupActivity);
                 }
                 else if (reasonException is not null)
@@ -298,7 +298,7 @@ namespace System.Net.Http
                 // On success path connectionSetupActivity is stopped before calling InitQuicConnection().
                 // This assertion makes sure that InitQuicConnection() does not throw unexpectedly.
                 Debug.Assert(connectionSetupActivity?.IsStopped is not true);
-                if (ConnectionSetupDistributedTracing.IsActivitySourceSupported && connectionSetupActivity is not null) ConnectionSetupDistributedTracing.StopConnectionSetupActivity(connectionSetupActivity, connectionException, null);
+                if (GlobalHttpSettings.ActivitySource.IsSupported && connectionSetupActivity is not null) ConnectionSetupDistributedTracing.StopConnectionSetupActivity(connectionSetupActivity, connectionException, null);
 
                 // If the connection hasn't been initialized with QuicConnection, get rid of it.
                 connection?.Dispose();

@@ -17,23 +17,9 @@ namespace System.Net.Sockets
 
         private const string ActivitySourceName = "Experimental.System.Net.Sockets";
         private const string ConnectActivityName = ActivitySourceName + ".Connect";
-        private static readonly ActivitySource? s_connectActivitySource;
+        private static readonly ActivitySource? s_connectActivitySource = IsActivitySourceSupported ? new ActivitySource(string.Empty) : null;
 
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
-
-#pragma warning disable CA1810 // remove the explicit static constructor
-        static SocketsTelemetry()
-        {
-            if (IsActivitySourceSupported)
-            {
-                s_connectActivitySource = new ActivitySource(ActivitySourceName);
-            }
-            else
-            {
-                s_connectActivitySource = null;
-            }
-        }
-#pragma warning restore CA1810 // remove the explicit static constructor
 
         private PollingCounter? _currentOutgoingConnectAttemptsCounter;
         private PollingCounter? _outgoingConnectionsEstablishedCounter;

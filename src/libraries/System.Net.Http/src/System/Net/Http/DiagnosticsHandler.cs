@@ -16,29 +16,11 @@ namespace System.Net.Http
     internal sealed class DiagnosticsHandler : HttpMessageHandlerStage
     {
         private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
-        internal static readonly ActivitySource? s_activitySource;
+        internal static readonly ActivitySource? s_activitySource = GlobalHttpSettings.ActivitySource.IsSupported ? new ActivitySource(string.Empty) : null;
 
         private readonly HttpMessageHandler _innerHandler;
         private readonly DistributedContextPropagator _propagator;
         private readonly HeaderDescriptor[]? _propagatorFields;
-
-        [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
-        private static bool IsActivitySourceSupported { get; } = InitializeIsActivitySourceSupported();
-        private static bool InitializeIsActivitySourceSupported() => AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
-
-#pragma warning disable CA1810 // remove the explicit static constructor
-        static DiagnosticsHandler()
-        {
-            if (IsActivitySourceSupported)
-            {
-                s_activitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.RequestNamespace);
-            }
-            else
-            {
-                s_activitySource = null;
-            }
-        }
-#pragma warning restore CA1810 // remove the explicit static constructor
 
         public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {
@@ -67,14 +49,14 @@ namespace System.Net.Http
         {
             // check if there is a parent Activity or if someone listens to "System.Net.Http" ActivitySource or "HttpHandlerDiagnosticListener" DiagnosticListener.
             return Activity.Current != null ||
-                   (IsActivitySourceSupported && s_activitySource!.HasListeners()) ||
+                   (GlobalHttpSettings.ActivitySource.IsSupported && s_activitySource!.HasListeners()) ||
                    s_diagnosticListener.IsEnabled();
         }
 
         private static Activity? StartActivity(HttpRequestMessage request)
         {
             Activity? activity = null;
-            if (IsActivitySourceSupported && s_activitySource!.HasListeners())
+            if (GlobalHttpSettings.ActivitySource.IsSupported && s_activitySource!.HasListeners())
             {
                 activity = s_activitySource.StartActivity(DiagnosticsHandlerLoggingStrings.RequestActivityName, ActivityKind.Client);
             }
@@ -126,7 +108,7 @@ namespace System.Net.Http
             Guid loggingRequestId = Guid.Empty;
             Activity? activity = StartActivity(request);
 
-            if (IsActivitySourceSupported && activity is not null)
+            if (GlobalHttpSettings.ActivitySource.IsSupported && activity is not null)
             {
                 // https://github.com/open-telemetry/semantic-conventions/blob/release/v1.23.x/docs/http/http-spans.md#name
                 activity.DisplayName = HttpMethod.GetKnownMethod(request.Method.Method)?.Method ?? "HTTP";
@@ -168,7 +150,7 @@ namespace System.Net.Http
                         timestamp));
             }
 
-            if (IsActivitySourceSupported && activity is not null)
+            if (GlobalHttpSettings.ActivitySource.IsSupported && activity is not null)
             {
                 InjectHeaders(activity, request);
             }
@@ -207,7 +189,7 @@ namespace System.Net.Http
             finally
             {
                 // Always stop activity if it was started.
-                if (IsActivitySourceSupported && activity is not null)
+                if (GlobalHttpSettings.ActivitySource.IsSupported && activity is not null)
                 {
                     activity.SetEndTime(DateTime.UtcNow);
 

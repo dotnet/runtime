@@ -11,6 +11,14 @@ namespace System.Net.Http
     /// </summary>
     internal static class GlobalHttpSettings
     {
+        internal static class ActivitySource
+        {
+            [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
+            public static bool IsSupported { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+                "System.Diagnostics.ActivitySource.IsSupported",
+                true);
+        }
+
         internal static class DiagnosticsHandler
         {
             [FeatureSwitchDefinition("System.Net.Http.EnableActivityPropagation")]
