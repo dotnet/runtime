@@ -474,10 +474,10 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenFixedLengthEntryHeaderFieldChanged_Data()
         {
-            yield return new object[] { 49, 1, 1, };
-            yield return new object[] { 40, 3, 2, };
-            yield return new object[] { 30, 5, 3, };
-            yield return new object[] { 0, 8, 1, };
+            yield return [ 49, 1, 1, ];
+            yield return [ 40, 3, 2, ];
+            yield return [ 30, 5, 3, ];
+            yield return [ 0, 8, 1, ];
         }
 
         [Theory]
@@ -657,9 +657,9 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_PerformMinimalWritesWithDataAndHeaderChanges_Data()
         {
-            yield return new object[] { 0, 0 };
-            yield return new object[] { 20, 40 };
-            yield return new object[] { 30, 10 };
+            yield return [ 0, 0 ];
+            yield return [ 20, 40 ];
+            yield return [ 30, 10 ];
         }
 
         [Theory]
@@ -914,11 +914,11 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenEntriesModifiedAndDeleted_Data()
         {
-            yield return new object[] { -1, 40 };
-            yield return new object[] { -1, 49 };
-            yield return new object[] { -1, 0 };
-            yield return new object[] { 42, 40 };
-            yield return new object[] { 38, 40 };
+            yield return [ -1, 40 ];
+            yield return [ -1, 49 ];
+            yield return [ -1, 0 ];
+            yield return [ 42, 40 ];
+            yield return [ 38, 40 ];
         }
 
         [Theory]
@@ -1109,10 +1109,10 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenEntriesModifiedAndAdded_Data()
         {
-            yield return new object[] { 1 };
-            yield return new object[] { 5 };
-            yield return new object[] { 10 };
-            yield return new object[] { 12 };
+            yield return [ 1 ];
+            yield return [ 5 ];
+            yield return [ 10 ];
+            yield return [ 12 ];
         }
 
         [Theory]
