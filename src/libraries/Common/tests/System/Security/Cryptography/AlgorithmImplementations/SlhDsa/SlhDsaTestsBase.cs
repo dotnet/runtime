@@ -16,7 +16,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         protected abstract SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         protected abstract SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
 
-
         protected static void ExerciseSuccessfulVerify(SlhDsa slhDsa, byte[] data, byte[] signature, byte[] context)
         {
             AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, context));
