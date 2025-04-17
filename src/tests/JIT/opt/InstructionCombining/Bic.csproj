@@ -8,7 +8,7 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="BitwiseClearShift.cs">
+    <Compile Include="Bic.cs">
       <HasDisasmCheck>true</HasDisasmCheck>
     </Compile>
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
