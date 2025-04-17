@@ -166,6 +166,14 @@ namespace System.Numerics.Tensors
         TSelf Slice(params scoped ReadOnlySpan<NRange> range);
 
         /// <summary>
+        /// Slices the tensor along the specified dimension at the specified index.
+        /// </summary>
+        /// <param name="dimension">The dimension to slice along.</param>
+        /// <param name="index">The index into the dimension to return.</param>
+        /// <returns>The tensor sliced to the given <paramref name="dimension"/> and <paramref name="index"/>.</returns>
+        TSelf SliceAlongDimension(int dimension, nint index);
+
+        /// <summary>
         /// Tries to copy the tensor to the specified destination. The destination tensor must be equal to or larger than the source tensor.
         /// </summary>
         /// <param name="destination">The destination span where the data should be copied to.</param>

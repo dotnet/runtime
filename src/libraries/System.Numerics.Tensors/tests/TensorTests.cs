@@ -1947,6 +1947,429 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void TensorSelectScalarTest()
+        {
+            // 2d Tensor
+            var tensor = Tensor.Create(new int[] { 1, 2, 3, 4, 5, 6 }, new nint[] { 2, 3 });
+            Tensor<int> result = tensor.Select(Tensor.Sum);
+
+            Assert.Equal(1, result.Rank);
+            Assert.Equal(2, result.Lengths[0]);
+            Assert.Equal(6, result[0]);
+            Assert.Equal(15, result[1]);
+
+            // Make sure null throws
+            Assert.Throws<ArgumentNullException>(() => tensor.Select((Tensor.TensorScalarSelector<int>)null));
+
+            // Make sure empty throws
+            Assert.Throws<ArgumentOutOfRangeException>(() => Tensor<int>.Empty.Select(Tensor.Sum));
+
+            // Make sure invalid dimensions throws
+            Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Select(Tensor.Sum, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Select(Tensor.Sum, 10));
+
+            // 1d Tensor
+            tensor = Tensor.Create(new int[] { 1, 2, 3, 4}, new nint[] { 4 });
+            result = tensor.Select(Tensor.Sum);
+
+            Assert.Equal(1, result.Rank);
+            Assert.Equal(4, result.Lengths[0]);
+            Assert.Equal(1, result[0]);
+            Assert.Equal(2, result[1]);
+            Assert.Equal(3, result[2]);
+            Assert.Equal(4, result[3]);
+
+            // 3d Tensor, dim 0
+            tensor = Tensor.Create(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 });
+            result = tensor.Select(Tensor.Sum);
+
+            Assert.Equal(1, result.Rank);
+            Assert.Equal(2, result.Lengths[0]);
+            Assert.Equal(10, result[0]);
+            Assert.Equal(26, result[1]);
+
+            // 3d Tensor, dim 1
+            tensor = Tensor.Create(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 });
+            result = tensor.Select(Tensor.Sum, 1);
+
+            Assert.Equal(1, result.Rank);
+            Assert.Equal(4, result.Lengths[0]);
+            Assert.Equal(3, result[0]);
+            Assert.Equal(7, result[1]);
+            Assert.Equal(11, result[2]);
+            Assert.Equal(15, result[3]);
+
+
+            // 3d Tensor, dim 2
+            tensor = Tensor.Create(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 });
+            result = tensor.Select(Tensor.Sum, 2);
+
+            Assert.Equal(1, result.Rank);
+            Assert.Equal(8, result.Lengths[0]);
+            Assert.Equal(1, result[0]);
+            Assert.Equal(2, result[1]);
+            Assert.Equal(3, result[2]);
+            Assert.Equal(4, result[3]);
+            Assert.Equal(5, result[4]);
+            Assert.Equal(6, result[5]);
+            Assert.Equal(7, result[6]);
+            Assert.Equal(8, result[7]);
+        }
+
+        [Fact]
+        public static void TensorSelectTest()
+        {
+            // 2d Tensor
+            var tensor = Tensor.Create(new float[] { 1, 2, 3, 4, 5, 6 }, new nint[] { 2, 3 });
+            Tensor<float> result = tensor.Select(Tensor.SoftMax);
+
+            Assert.Equal(2, result.Rank);
+            Assert.Equal(2, result.Lengths[0]);
+            Assert.Equal(3, result.Lengths[1]);
+
+            // Make sure null throws
+            Assert.Throws<ArgumentNullException>(() => tensor.Select((Tensor.TensorScalarSelector<float>)null));
+
+            // Make sure empty throws
+            Assert.Throws<ArgumentOutOfRangeException>(() => Tensor<int>.Empty.Select(Tensor.Sum));
+
+            // Make sure invalid dimensions throws
+            Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Select(Tensor.Sum, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Select(Tensor.Sum, 10));
+
+            // 1d Tensor
+            tensor = Tensor.Create(new float[] { 1, 2, 3, 4 }, new nint[] { 4 });
+            result = tensor.Select(Tensor.SoftMax);
+
+            Assert.Equal(1, result.Rank);
+            Assert.Equal(4, result.Lengths[0]);
+
+            // 3d Tensor, dim 0
+            tensor = Tensor.Create(new float[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 });
+            result = tensor.Select(Tensor.SoftMax);
+
+            Assert.Equal(3, result.Rank);
+            Assert.Equal(2, result.Lengths[0]);
+            Assert.Equal(2, result.Lengths[1]);
+            Assert.Equal(2, result.Lengths[2]);
+
+            // 3d Tensor, dim 1
+            tensor = Tensor.Create(new float[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 });
+            result = tensor.Select(Tensor.SoftMax, 1);
+
+            Assert.Equal(2, result.Rank);
+            Assert.Equal(4, result.Lengths[0]);
+            Assert.Equal(2, result.Lengths[1]);
+
+
+            // 3d Tensor, dim 2
+            tensor = Tensor.Create(new float[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 });
+            result = tensor.Select(Tensor.Sum, 2);
+
+            Assert.Equal(1, result.Rank);
+            Assert.Equal(8, result.Lengths[0]);
+        }
+
+        [Fact]
+        public static void TensorDimensionsTest()
+        {
+            Span<int> values = [1, 2, 3, 4, 5, 6];
+            Span<int> ints = new int[3];
+            var tensor = new Tensor<int>(new int[] { 1, 2, 3, 4, 5, 6 }, new nint[] { 2, 3 }, 0);
+
+            // Make sure Dimensions returns the right values with the basic foreach
+            int index = 0;
+            foreach (var item in tensor.Dimensions)
+            {
+                Assert.Equal(2, item.Rank);
+                item.FlattenTo(ints);
+                Assert.Equal(values.Slice(index, 3), ints);
+                index += 3;
+            }
+
+            // Get an enum for dimension 1
+            var enumerator = tensor.Dimensions.GetEnumerator(1);
+            index = 0;
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(values[index++], enumerator.Current[0]);
+            }
+
+            // Make sure Dimensions.Count returns the right value
+            Assert.Equal(2, tensor.Dimensions.Count);
+
+            // Make sure Dimensions Enumerator ToArray returns the right values
+            var slices = tensor.Dimensions.ToArray();
+            ints = new int[3];
+            Assert.Equal(2, slices.Length);
+            slices[0].AsTensorSpan().FlattenTo(ints);
+            Assert.Equal(new int[] { 1, 2, 3 }, ints);
+            slices[1].AsTensorSpan().FlattenTo(ints);
+            Assert.Equal(new int[] { 4, 5, 6 }, ints);
+
+            // Now try a 3d tensor
+            values = [1, 2, 3, 4, 5, 6, 7, 8];
+            ints = new int[4];
+            tensor = new Tensor<int>(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 }, 0);
+
+            index = 0;
+            foreach (var item in tensor.Dimensions)
+            {
+                Assert.Equal(3, item.Rank);
+                item.FlattenTo(ints);
+                Assert.Equal(values.Slice(index, 4), ints);
+                index += 4;
+            }
+
+            // Get an enum for dimension 1
+            enumerator = tensor.Dimensions.GetEnumerator(1);
+            index = 0;
+            ints = new int[2];
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(2, enumerator.Current.Rank);
+                enumerator.Current.FlattenTo(ints);
+                Assert.Equal(values.Slice(index, 2), ints);
+                index += 2;
+            }
+
+            // Get an enum for dimension 2
+            enumerator = tensor.Dimensions.GetEnumerator(2);
+            index = 0;
+            ints = new int[1];
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(1, enumerator.Current.Rank);
+                enumerator.Current.FlattenTo(ints);
+                Assert.Equal(values.Slice(index, 1), ints);
+                index += 1;
+            }
+
+            // Make sure reset works
+            enumerator.Reset();
+            index = 0;
+            ints = new int[1];
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(1, enumerator.Current.Rank);
+                enumerator.Current.FlattenTo(ints);
+                Assert.Equal(values.Slice(index, 1), ints);
+                index += 1;
+            }
+
+            // Make sure you can't add dimensions
+            Assert.Throws<NotSupportedException>(() => tensor.Dimensions.Add(tensor));
+
+            // Make sure you can't clear
+            Assert.Throws<NotSupportedException>(() => tensor.Dimensions.Clear());
+
+            // Make sure you can't remove dimensions
+            Assert.Throws<NotSupportedException>(() => tensor.Dimensions.Remove(tensor));
+
+            tensor = new Tensor<int>(new int[] { 1, 2, 3, 4, 5, 6 }, new nint[] { 2, 3 }, 0);
+            // Null copy to throws
+            Assert.Throws<ArgumentNullException>(() => tensor.Dimensions.CopyTo(null, 0));
+
+            // Index out of range throws.
+            var array = new Tensor<int>[2];
+            Assert.Throws<IndexOutOfRangeException>(() => tensor.Dimensions.CopyTo(array, -1));
+            Assert.Throws<IndexOutOfRangeException>(() => tensor.Dimensions.CopyTo(array, 3));
+
+            // Make sure ArgumentException is thrown if array is not large enough.
+            array = new Tensor<int>[1];
+            Assert.Throws<ArgumentException>(() => tensor.Dimensions.CopyTo(array, 0));
+
+            // Make sure it works if the array is large enough.
+            array = new Tensor<int>[3];
+            tensor.Dimensions.CopyTo(array, 1);
+            Assert.Null(array[0]);
+            ints = new int[3];
+            array[1].AsTensorSpan().FlattenTo(ints);
+            Assert.Equal(new int[] { 1, 2, 3 }, ints);
+            array[2].AsTensorSpan().FlattenTo(ints);
+            Assert.Equal(new int[] { 4, 5, 6 }, ints);
+
+
+        }
+
+        [Fact]
+        public static void TensorSliceAlongDimensionTest()
+        {
+            var tensor = new Tensor<int>(new int[] { 1, 2 }, new nint[] { 2 }, 0);
+            // get a 1 slice from a 2 tensor.
+            var slice = tensor.SliceAlongDimension(0, 0);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(1, slice[0]);
+
+            slice = tensor.SliceAlongDimension(0, 1);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(2, slice[0]);
+
+            tensor = new Tensor<int>(new int[] { 1, 2, 3, 4, 5, 6 }, new nint[] { 2, 3 }, 0);
+            Span<int> ints = new int[3];
+
+            // get a 1 x 3 slice from a 2 x 3 tensor.
+            slice = tensor.SliceAlongDimension(0, 1);
+            Assert.Equal(new nint[] { 1, 3 }, slice.Lengths.ToArray());
+            slice.FlattenTo(ints);
+            Assert.Equal(new int[] { 4, 5, 6 }, ints);
+
+            slice = tensor.SliceAlongDimension(0, 0);
+            Assert.Equal(new nint[] { 1, 3 }, slice.Lengths.ToArray());
+            slice.FlattenTo(ints);
+            Assert.Equal(new int[] { 1, 2, 3 }, ints);
+
+            // get a 1 slice from a 2 x 3 tensor
+
+            slice = tensor.SliceAlongDimension(1, 0);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(1, slice[0]);
+            slice = tensor.SliceAlongDimension(1, 1);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(2, slice[0]);
+            slice = tensor.SliceAlongDimension(1, 2);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(3, slice[0]);
+            slice = tensor.SliceAlongDimension(1, 3);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(4, slice[0]);
+            slice = tensor.SliceAlongDimension(1, 4);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(5, slice[0]);
+            slice = tensor.SliceAlongDimension(1, 5);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(6, slice[0]);
+
+            // Now make sure it works with 3+ dimensions.
+            tensor = new Tensor<int>(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new nint[] { 2, 2, 2 }, 0);
+            ints = new int[4];
+            // get a 1 x 2 x 2 slice from a 2 x 2 x 2 tensor.
+            slice = tensor.SliceAlongDimension(0, 1);
+            Assert.Equal(new nint[] { 1, 2, 2 }, slice.Lengths.ToArray());
+            slice.FlattenTo(ints);
+            Assert.Equal(new int[] { 5, 6, 7, 8 }, ints);
+
+            slice = tensor.SliceAlongDimension(0, 0);
+            Assert.Equal(new nint[] { 1, 2, 2 }, slice.Lengths.ToArray());
+            slice.FlattenTo(ints);
+            Assert.Equal(new int[] { 1, 2, 3, 4 }, ints);
+
+            // get a 1 x 2 slice from a 2 x 2 x 2 tensor.
+            slice = tensor.SliceAlongDimension(1, 0);
+            Assert.Equal(new nint[] { 1, 2 }, slice.Lengths.ToArray());
+            slice.FlattenTo(ints.Slice(0, 2));
+            Assert.Equal(new int[] { 1, 2 }, ints.Slice(0, 2));
+
+            slice = tensor.SliceAlongDimension(1, 1);
+            Assert.Equal(new nint[] { 1, 2 }, slice.Lengths.ToArray());
+            slice.FlattenTo(ints.Slice(0, 2));
+            Assert.Equal(new int[] { 3, 4 }, ints.Slice(0, 2));
+
+            slice = tensor.SliceAlongDimension(1, 2);
+            Assert.Equal(new nint[] { 1, 2 }, slice.Lengths.ToArray());
+            slice.FlattenTo(ints.Slice(0, 2));
+            Assert.Equal(new int[] { 5, 6 }, ints.Slice(0, 2));
+
+            slice = tensor.SliceAlongDimension(1, 3);
+            Assert.Equal(new nint[] { 1, 2 }, slice.Lengths.ToArray());
+            slice.FlattenTo(ints.Slice(0, 2));
+            Assert.Equal(new int[] { 7, 8 }, ints.Slice(0, 2));
+
+            // get a 1 slice from a 2 x 2 x 2 tensor.
+            slice = tensor.SliceAlongDimension(2, 0);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(1, slice[0]);
+
+            slice = tensor.SliceAlongDimension(2, 1);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(2, slice[0]);
+
+            slice = tensor.SliceAlongDimension(2, 2);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(3, slice[0]);
+
+            slice = tensor.SliceAlongDimension(2, 3);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(4, slice[0]);
+
+            slice = tensor.SliceAlongDimension(2, 4);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(5, slice[0]);
+
+            slice = tensor.SliceAlongDimension(2, 5);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(6, slice[0]);
+
+            slice = tensor.SliceAlongDimension(2, 6);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(7, slice[0]);
+
+            slice = tensor.SliceAlongDimension(2, 7);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(8, slice[0]);
+
+            // Cant slice along a dimension that is not there or on indexes that don't exist.
+            tensor = new Tensor<int>(new int[] { 1, 2, 3, 4, 5, 6 }, new nint[] { 2, 3 }, 0);
+            Assert.Throws<IndexOutOfRangeException>(() => tensor.SliceAlongDimension(-1, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => tensor.SliceAlongDimension(2, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => tensor.SliceAlongDimension(0, 2));
+            Assert.Throws<IndexOutOfRangeException>(() => tensor.SliceAlongDimension(0, -1));
+
+            // Cant slice along a dimension for an empty tensor.
+            tensor = Tensor<int>.Empty;
+            Assert.Throws<IndexOutOfRangeException>(() => tensor.SliceAlongDimension(0, 0));
+
+            tensor = Tensor.Create([1, 2], [2, 2], [0, 1]);
+            slice = tensor.SliceAlongDimension(0, 0);
+            Assert.Equal(new nint[] { 1, 2 }, slice.Lengths.ToArray());
+            Assert.Equal(1, slice[0, 0]);
+            Assert.Equal(2, slice[0, 1]);
+
+            slice = tensor.SliceAlongDimension(0, 1);
+            Assert.Equal(new nint[] { 1, 2 }, slice.Lengths.ToArray());
+            Assert.Equal(1, slice[0, 0]);
+            Assert.Equal(2, slice[0, 1]);
+
+            tensor = Tensor.Create([1], [2, 2], [0, 0]);
+            slice = tensor.SliceAlongDimension(0, 0);
+            Assert.Equal(new nint[] { 1, 2 }, slice.Lengths.ToArray());
+            Assert.Equal(1, slice[0, 0]);
+            Assert.Equal(1, slice[0, 1]);
+
+            slice = tensor.SliceAlongDimension(0, 1);
+            Assert.Equal(new nint[] { 1, 2 }, slice.Lengths.ToArray());
+            Assert.Equal(1, slice[0, 0]);
+            Assert.Equal(1, slice[0, 1]);
+
+            tensor = Tensor.Create([1, 1, 2, 2, 3, 3, 4, 4], [2, 2], [4, 2]);
+            slice = tensor.SliceAlongDimension(0, 0);
+            Assert.Equal(new nint[] { 1, 2 }, slice.Lengths.ToArray());
+            Assert.Equal(1, slice[0, 0]);
+            Assert.Equal(2, slice[0, 1]);
+
+            slice = tensor.SliceAlongDimension(0, 1);
+            Assert.Equal(new nint[] { 1, 2 }, slice.Lengths.ToArray());
+            Assert.Equal(3, slice[0, 0]);
+            Assert.Equal(4, slice[0, 1]);
+
+            slice = tensor.SliceAlongDimension(1, 0);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(1, slice[0]);
+
+            slice = tensor.SliceAlongDimension(1, 1);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(2, slice[0]);
+
+            slice = tensor.SliceAlongDimension(1, 2);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(3, slice[0]);
+
+            slice = tensor.SliceAlongDimension(1, 3);
+            Assert.Equal(new nint[] { 1 }, slice.Lengths.ToArray());
+            Assert.Equal(4, slice[0]);
+        }
+
+        [Fact]
         public static void TensorSliceTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];

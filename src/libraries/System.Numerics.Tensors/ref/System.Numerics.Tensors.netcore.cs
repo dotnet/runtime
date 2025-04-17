@@ -87,6 +87,7 @@ namespace System.Numerics.Tensors
         TSelf Slice(params scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndex);
         TSelf Slice(params scoped System.ReadOnlySpan<System.Buffers.NRange> range);
         TSelf Slice(params scoped System.ReadOnlySpan<nint> start);
+        TSelf SliceAlongDimension(int dimension, nint index);
         bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination);
         bool TryFlattenTo(scoped System.Span<T> destination);
     }
@@ -133,6 +134,7 @@ namespace System.Numerics.Tensors
         public ReadOnlyTensorSpan(T[]? array) { throw null; }
         public ReadOnlyTensorSpan(T[]? array, System.Index startIndex, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
         public ReadOnlyTensorSpan(T[]? array, int start, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
+        public System.Numerics.Tensors.ReadOnlyTensorSpan<T>.DimensionCollection Dimensions { get { throw null; } }
         public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> Empty { get { throw null; } }
         public nint FlattenedLength { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
@@ -168,6 +170,29 @@ namespace System.Numerics.Tensors
         public bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
         public void FlattenTo(scoped System.Span<T> destination) { throw null; }
+        public ref partial struct DimensionCollection
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public int Count { get { throw null; } }
+            public bool IsReadOnly { get { throw null; } }
+            public bool IsSynchronized { get { throw null; } }
+            public void Add(System.Numerics.Tensors.ReadOnlyTensorSpan<T> item) { }
+            public void Clear() { }
+            public bool Contains(System.Numerics.Tensors.ReadOnlyTensorSpan<T> item) { throw null; }
+            public System.Numerics.Tensors.ReadOnlyTensorSpan<T>.DimensionCollection.Enumerator GetEnumerator() { throw null; }
+            public System.Numerics.Tensors.ReadOnlyTensorSpan<T>.DimensionCollection.Enumerator GetEnumerator(int index) { throw null; }
+            public bool Remove(System.Numerics.Tensors.ReadOnlyTensorSpan<T> item) { throw null; }
+            public ref partial struct Enumerator
+            {
+                private object _dummy;
+                private int _dummyPrimitive;
+                public System.Numerics.Tensors.ReadOnlyTensorSpan<T> Current { get { throw null; } }
+                public void Dispose() { }
+                public bool MoveNext() { throw null; }
+                public void Reset() { }
+            }
+        }
         public ref partial struct Enumerator
         {
             private object _dummy;
@@ -474,6 +499,8 @@ namespace System.Numerics.Tensors
         public static System.Numerics.Tensors.Tensor<T> Round<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, System.MidpointRounding mode) where T : System.Numerics.IFloatingPoint<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Round<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, System.MidpointRounding mode, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IFloatingPoint<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Round<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IFloatingPoint<T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> Select<T>(this System.Numerics.Tensors.Tensor<T> tensor, System.Numerics.Tensors.Tensor.TensorScalarSelector<T> func, int dimension = 0) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> Select<T>(this System.Numerics.Tensors.Tensor<T> tensor, System.Numerics.Tensors.Tensor.TensorSelector<T> func, int dimension = 0) { throw null; }
         public static bool SequenceEqual<T>(this scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> other) where T : System.IEquatable<T>? { throw null; }
         public static bool SequenceEqual<T>(this scoped in System.Numerics.Tensors.TensorSpan<T> tensor, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> other) where T : System.IEquatable<T>? { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> SetSlice<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> values, params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
@@ -518,6 +545,7 @@ namespace System.Numerics.Tensors
         public static string ToString<T>(this in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public static string ToString<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor, params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public static string ToString<T>(this System.Numerics.Tensors.Tensor<T> tensor, params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> ToTensor<T>(this System.Collections.Generic.IEnumerable<System.Numerics.Tensors.Tensor<T>> source) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> TrailingZeroCount<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IBinaryInteger<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> TrailingZeroCount<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBinaryInteger<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Transpose<T>(System.Numerics.Tensors.Tensor<T> tensor) { throw null; }
@@ -533,6 +561,8 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Xor<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Xor<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Xor<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
+        public delegate T TensorScalarSelector<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor);
+        public delegate System.Numerics.Tensors.Tensor<T> TensorSelector<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor);
     }
     public static partial class TensorPrimitives
     {
@@ -785,6 +815,7 @@ namespace System.Numerics.Tensors
         public TensorSpan(T[]? array) { throw null; }
         public TensorSpan(T[]? array, System.Index startIndex, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
         public TensorSpan(T[]? array, int start, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
+        public System.Numerics.Tensors.TensorSpan<T>.DimensionCollection Dimensions { get { throw null; } }
         public static System.Numerics.Tensors.TensorSpan<T> Empty { get { throw null; } }
         public nint FlattenedLength { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
@@ -822,6 +853,29 @@ namespace System.Numerics.Tensors
         public override string ToString() { throw null; }
         public bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
+        public ref partial struct DimensionCollection
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public int Count { get { throw null; } }
+            public bool IsReadOnly { get { throw null; } }
+            public bool IsSynchronized { get { throw null; } }
+            public void Add(System.Numerics.Tensors.TensorSpan<T> item) { }
+            public void Clear() { }
+            public bool Contains(System.Numerics.Tensors.TensorSpan<T> item) { throw null; }
+            public System.Numerics.Tensors.TensorSpan<T>.DimensionCollection.Enumerator GetEnumerator() { throw null; }
+            public System.Numerics.Tensors.TensorSpan<T>.DimensionCollection.Enumerator GetEnumerator(int index) { throw null; }
+            public bool Remove(System.Numerics.Tensors.TensorSpan<T> item) { throw null; }
+            public ref partial struct Enumerator
+            {
+                private object _dummy;
+                private int _dummyPrimitive;
+                public System.Numerics.Tensors.ReadOnlyTensorSpan<T> Current { get { throw null; } }
+                public void Dispose() { }
+                public bool MoveNext() { throw null; }
+                public void Reset() { }
+            }
+        }
         public ref partial struct Enumerator
         {
             private object _dummy;
@@ -834,6 +888,7 @@ namespace System.Numerics.Tensors
     public sealed partial class Tensor<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Numerics.Tensors.IReadOnlyTensor, System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>, System.Numerics.Tensors.ITensor, System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>
     {
         internal Tensor() { }
+        public System.Numerics.Tensors.Tensor<T>.DimensionCollection Dimensions { get { throw null; } }
         public static System.Numerics.Tensors.Tensor<T> Empty { get { throw null; } }
         public nint FlattenedLength { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
@@ -881,6 +936,7 @@ namespace System.Numerics.Tensors
         public System.Numerics.Tensors.Tensor<T> Slice(params scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndex) { throw null; }
         public System.Numerics.Tensors.Tensor<T> Slice(params scoped System.ReadOnlySpan<System.Buffers.NRange> start) { throw null; }
         public System.Numerics.Tensors.Tensor<T> Slice(params scoped System.ReadOnlySpan<nint> start) { throw null; }
+        public System.Numerics.Tensors.Tensor<T> SliceAlongDimension(int dimension, nint index) { throw null; }
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -892,5 +948,33 @@ namespace System.Numerics.Tensors
         public string ToString(params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
+        public sealed partial class DimensionCollection : System.Collections.Generic.ICollection<System.Numerics.Tensors.Tensor<T>>, System.Collections.Generic.IEnumerable<System.Numerics.Tensors.Tensor<T>>, System.Collections.Generic.IReadOnlyCollection<System.Numerics.Tensors.Tensor<T>>, System.Collections.ICollection, System.Collections.IEnumerable
+        {
+            internal DimensionCollection() { }
+            public int Count { get { throw null; } }
+            public bool IsReadOnly { get { throw null; } }
+            public bool IsSynchronized { get { throw null; } }
+            public object SyncRoot { get { throw null; } }
+            public void Add(System.Numerics.Tensors.Tensor<T> item) { }
+            public void Clear() { }
+            public bool Contains(System.Numerics.Tensors.Tensor<T> item) { throw null; }
+            public void CopyTo(System.Array array, int index) { }
+            public void CopyTo(System.Numerics.Tensors.Tensor<T>[] array, int index) { }
+            public System.Numerics.Tensors.Tensor<T>.DimensionCollection.Enumerator GetEnumerator(int index = 0) { throw null; }
+            public bool Remove(System.Numerics.Tensors.Tensor<T> item) { throw null; }
+            System.Collections.Generic.IEnumerator<System.Numerics.Tensors.Tensor<T>> System.Collections.Generic.IEnumerable<System.Numerics.Tensors.Tensor<T>>.GetEnumerator() { throw null; }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+            public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Numerics.Tensors.Tensor<T>>, System.Collections.IEnumerator, System.IDisposable
+            {
+                private object _dummy;
+                private int _dummyPrimitive;
+                public System.Numerics.Tensors.Tensor<T> Current { get { throw null; } }
+                System.Numerics.Tensors.Tensor<T> System.Collections.Generic.IEnumerator<System.Numerics.Tensors.Tensor<T>>.Current { get { throw null; } }
+                object? System.Collections.IEnumerator.Current { get { throw null; } }
+                public void Dispose() { }
+                public bool MoveNext() { throw null; }
+                public void Reset() { }
+            }
+        }
     }
 }
