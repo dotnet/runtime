@@ -36,7 +36,7 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- dotnet/roslyn-analyzers dependencies -->
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>10.0.0-preview.25127.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>10.0.0-preview.25217.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- dotnet/roslyn dependencies -->
     <MicrosoftCodeAnalysisAnalyzersVersion>3.12.0-beta1.25216.17</MicrosoftCodeAnalysisAnalyzersVersion>
     <!--
@@ -164,18 +164,18 @@
     <MicrosoftDotNetCilStripSourcesVersion>10.0.0-beta.25126.1</MicrosoftDotNetCilStripSourcesVersion>
     <MicrosoftNETHostModelTestDataVersion>10.0.0-beta.25126.1</MicrosoftNETHostModelTestDataVersion>
     <!-- xharness dependencies -->
-    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>10.0.0-prerelease.25211.1</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>10.0.0-prerelease.25211.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
-    <MicrosoftDotNetXHarnessCLIVersion>10.0.0-prerelease.25211.1</MicrosoftDotNetXHarnessCLIVersion>
+    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>10.0.0-prerelease.25214.3</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>10.0.0-prerelease.25214.3</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
+    <MicrosoftDotNetXHarnessCLIVersion>10.0.0-prerelease.25214.3</MicrosoftDotNetXHarnessCLIVersion>
     <!-- hotreload-utils dependencies -->
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.25126.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <!-- dotnet-optimization dependencies -->
-    <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.25212.3</optimizationwindows_ntx64MIBCRuntimeVersion>
-    <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.25212.3</optimizationwindows_ntx86MIBCRuntimeVersion>
-    <optimizationwindows_ntarm64MIBCRuntimeVersion>1.0.0-prerelease.25212.3</optimizationwindows_ntarm64MIBCRuntimeVersion>
-    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.25212.3</optimizationlinuxx64MIBCRuntimeVersion>
-    <optimizationlinuxarm64MIBCRuntimeVersion>1.0.0-prerelease.25212.3</optimizationlinuxarm64MIBCRuntimeVersion>
-    <optimizationPGOCoreCLRVersion>1.0.0-prerelease.25212.3</optimizationPGOCoreCLRVersion>
+    <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.25216.3</optimizationwindows_ntx64MIBCRuntimeVersion>
+    <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.25216.3</optimizationwindows_ntx86MIBCRuntimeVersion>
+    <optimizationwindows_ntarm64MIBCRuntimeVersion>1.0.0-prerelease.25216.3</optimizationwindows_ntarm64MIBCRuntimeVersion>
+    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.25216.3</optimizationlinuxx64MIBCRuntimeVersion>
+    <optimizationlinuxarm64MIBCRuntimeVersion>1.0.0-prerelease.25216.3</optimizationlinuxarm64MIBCRuntimeVersion>
+    <optimizationPGOCoreCLRVersion>1.0.0-prerelease.25216.3</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderVersion>2.0.0</MicrosoftDiaSymReaderVersion>
     <MicrosoftDiaSymReaderNativeVersion>17.10.0-beta1.24272.1</MicrosoftDiaSymReaderNativeVersion>

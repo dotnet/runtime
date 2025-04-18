@@ -144,9 +144,9 @@ EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle);
 Internal function to get the octet string parameter from the given EVP_PKEY.
 */
 int32_t EvpPKeyGetKeyOctetStringParam(const EVP_PKEY* pKey,
-    const char* name,
-    uint8_t* destination,
-    int32_t destinationLength);
+                                      const char* name,
+                                      uint8_t* destination,
+                                      int32_t destinationLength);
 
 /*
 Internal function to determine if an EVP_PKEY has a given octet string property.

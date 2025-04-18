@@ -29,9 +29,6 @@ namespace System.Security.Cryptography
         protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
-        protected override void ExportSlhDsaPrivateSeedCore(Span<byte> destination) =>
-            throw new PlatformNotSupportedException();
-
         internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
@@ -39,9 +36,6 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
 
         internal static partial SlhDsa ImportSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
-            throw new PlatformNotSupportedException();
-
-        internal static partial SlhDsa ImportSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
     }
 }

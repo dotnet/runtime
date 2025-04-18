@@ -4668,9 +4668,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     case CorInfoType::CORINFO_TYPE_SHORT:
                     case CorInfoType::CORINFO_TYPE_USHORT:
+                    {
                         retNode = gtNewCastNode(TYP_INT, gtNewOperNode(GT_BSWAP16, TYP_INT, impPopStack().val), false,
                                                 callType);
                         break;
+                    }
 
                     case CorInfoType::CORINFO_TYPE_INT:
                     case CorInfoType::CORINFO_TYPE_UINT:
@@ -10772,19 +10774,22 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         {
             namespaceName += 1;
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (strcmp(namespaceName, "Buffers.Binary") == 0)
             {
                 if (strcmp(className, "BinaryPrimitives") == 0)
                 {
                     if (strcmp(methodName, "ReverseEndianness") == 0)
                     {
-                        result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
+                        RISCV64_ONLY(if (compOpportunisticallyDependsOn(InstructionSet_Zbb)))
+                        {
+                            result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
+                        }
                     }
                 }
             }
             else
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                 if (strcmp(namespaceName, "Collections.Generic") == 0)
                 {
                     if (strcmp(className, "Comparer`1") == 0)
