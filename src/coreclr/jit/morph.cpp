@@ -3186,7 +3186,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 #endif
     bool groupArrayRefWithIndex = false;
-#if defined(TARGET_RISCV64) || defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64)
     groupArrayRefWithIndex = true;
 
     // Don't use 3) for structs to reduce number of size regressions
