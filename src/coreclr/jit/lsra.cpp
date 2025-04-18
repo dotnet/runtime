@@ -572,7 +572,8 @@ static const regMaskTP LsraLimitUpperSimdSet =
     (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 |
      RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31);
 static const regMaskTP LsraLimitExtGprSet =
-    (RBM_R16 | RBM_R17 | RBM_R18 | RBM_R19 | RBM_R20 | RBM_R21 | RBM_R22 | RBM_R23 | RBM_ETW_FRAMED_EBP);
+    (RBM_R16 | RBM_R17 | RBM_R18 | RBM_R19 | RBM_R20 | RBM_R21 | RBM_R22 | RBM_R23 | RBM_R24 | RBM_R25 | RBM_R26 |
+     RBM_R27 | RBM_R28 | RBM_R29 | RBM_R30 | RBM_R31 | RBM_ETW_FRAMED_EBP);
 #elif defined(TARGET_ARM)
 // On ARM, we may need two registers to set up the target register for a virtual call, so we need
 // to have at least the maximum number of arg registers, plus 2.
@@ -4285,7 +4286,7 @@ void LinearScan::resetAllRegistersState()
     clearAllNextIntervalRef();
     clearAllSpillCost();
 
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT;)
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
 #ifdef DEBUG
@@ -4293,6 +4294,7 @@ void LinearScan::resetAllRegistersState()
         assert(assignedInterval == nullptr || assignedInterval->isConstant);
 #endif
         physRegRecord->assignedInterval = nullptr;
+        reg                             = physRegRecord->nextRegNum;
     }
 }
 
@@ -4895,12 +4897,13 @@ void LinearScan::allocateRegistersMinimal()
     clearAllNextIntervalRef();
     clearAllSpillCost();
 
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT;)
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
         updateNextFixedRefDispatch(physRegRecord, physRegRecord->firstRefPosition, killHead);
         assert(physRegRecord->assignedInterval == nullptr);
+        reg = physRegRecord->nextRegNum;
     }
 
 #ifdef DEBUG
@@ -5558,7 +5561,7 @@ void LinearScan::allocateRegisters()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     resetRegState();
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT;)
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
@@ -5584,6 +5587,7 @@ void LinearScan::allocateRegisters()
             clearNextIntervalRef(reg, physRegRecord->registerType);
             clearSpillCost(reg, physRegRecord->registerType);
         }
+        reg = physRegRecord->nextRegNum;
     }
 
 #ifdef DEBUG
@@ -7877,7 +7881,7 @@ void LinearScan::resolveRegisters()
     // are encountered.
     if (localVarsEnregistered)
     {
-        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT;)
         {
             RegRecord* physRegRecord    = getRegisterRecord(reg);
             Interval*  assignedInterval = physRegRecord->assignedInterval;
@@ -7888,6 +7892,7 @@ void LinearScan::resolveRegisters()
             }
             physRegRecord->assignedInterval  = nullptr;
             physRegRecord->recentRefPosition = nullptr;
+            reg                              = physRegRecord->nextRegNum;
         }
 
         // Clear "recentRefPosition" for lclVar intervals
@@ -11802,17 +11807,18 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 //
 void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
 {
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT;)
     {
-        regMaskTP regMask = genRegMask(reg);
+        regMaskTP  regMask       = genRegMask(reg);
+        RegRecord* physRegRecord = getRegisterRecord(reg);
         // If this isn't available or if it's still waiting to be freed (i.e. it was in
         // delayRegsToFree and so now it's in regsToFree), then skip it.
         if ((regMask & allAvailableRegs & ~regsToFree).IsEmpty())
         {
+            reg = physRegRecord->nextRegNum;
             continue;
         }
-        RegRecord* physRegRecord    = getRegisterRecord(reg);
-        Interval*  assignedInterval = physRegRecord->assignedInterval;
+        Interval* assignedInterval = physRegRecord->assignedInterval;
         if (assignedInterval != nullptr)
         {
             bool         isAssignedReg     = (assignedInterval->physReg == reg);
@@ -11823,6 +11829,7 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
             {
                 if (recentRefPosition->refType == RefTypeExpUse)
                 {
+                    reg = physRegRecord->nextRegNum;
                     // We don't update anything on these, as they're just placeholders to extend the
                     // lifetime.
                     continue;
@@ -11831,6 +11838,7 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
                 // For copyReg or moveReg, we don't have anything further to assert.
                 if (recentRefPosition->copyReg || recentRefPosition->moveReg)
                 {
+                    reg = physRegRecord->nextRegNum;
                     continue;
                 }
                 assert(assignedInterval->isConstant == isRegConstant(reg, assignedInterval->registerType));
@@ -11898,6 +11906,9 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
         {
             reg = REG_NEXT(reg);
         }
+        reg = REG_NEXT(reg);
+#else
+        reg = physRegRecord->nextRegNum;
 #endif
     }
 }
