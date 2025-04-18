@@ -29,9 +29,9 @@ namespace System.Linq
             IAsyncEnumerable<TSecond> second,
             Func<TFirst, TSecond, TResult> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<TResult>() :
@@ -73,9 +73,9 @@ namespace System.Linq
             IAsyncEnumerable<TSecond> second,
             Func<TFirst, TSecond, CancellationToken, ValueTask<TResult>> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<TResult>() :
@@ -110,8 +110,8 @@ namespace System.Linq
             this IAsyncEnumerable<TFirst> first,
             IAsyncEnumerable<TSecond> second)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
 
             return
                 first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<(TFirst, TSecond)>() :
@@ -149,9 +149,9 @@ namespace System.Linq
             IAsyncEnumerable<TSecond> second,
             IAsyncEnumerable<TThird> third)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(third);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(third);
 
             return
                 first.IsKnownEmpty() || second.IsKnownEmpty() || third.IsKnownEmpty() ? Empty<(TFirst, TSecond, TThird)>() :
