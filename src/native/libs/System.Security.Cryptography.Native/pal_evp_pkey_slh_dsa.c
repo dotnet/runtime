@@ -2,47 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_evp_pkey.h"
-#include "pal_evp_pkey_ml_dsa.h"
+#include "pal_evp_pkey_slh_dsa.h"
 #include "pal_utilities.h"
 #include "openssl.h"
 #include <assert.h>
 
-int32_t CryptoNative_MLDsaGetPalId(const EVP_PKEY* pKey, int32_t* mldsaId)
-{
-#ifdef NEED_OPENSSL_3_0
-    assert(pKey && mldsaId);
-
-    if (API_EXISTS(EVP_PKEY_is_a))
-    {
-        ERR_clear_error();
-
-        if (EVP_PKEY_is_a(pKey, "ML-DSA-44"))
-        {
-            *mldsaId = PalMLDsaId_MLDsa44;
-        }
-        else if (EVP_PKEY_is_a(pKey, "ML-DSA-65"))
-        {
-            *mldsaId = PalMLDsaId_MLDsa65;
-        }
-        else if (EVP_PKEY_is_a(pKey, "ML-DSA-87"))
-        {
-            *mldsaId = PalMLDsaId_MLDsa87;
-        }
-        else
-        {
-            *mldsaId = PalMLDsaId_Unknown;
-        }
-
-        return 1;
-    }
-#endif
-
-    (void)pKey;
-    *mldsaId = PalMLDsaId_Unknown;
-    return 0;
-}
-
-EVP_PKEY* CryptoNative_MLDsaGenerateKey(const char* keyType, uint8_t* seed, int32_t seedLen)
+EVP_PKEY* CryptoNative_SlhDsaGenerateKey(const char* keyType)
 {
 #if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
     if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
@@ -52,11 +17,6 @@ EVP_PKEY* CryptoNative_MLDsaGenerateKey(const char* keyType, uint8_t* seed, int3
     }
 
     ERR_clear_error();
-
-    if (seed && seedLen != 32)
-    {
-        return NULL;
-    }
 
     EVP_PKEY_CTX* pctx = EVP_PKEY_CTX_new_from_name(NULL, keyType, NULL);
     EVP_PKEY* pkey = NULL;
@@ -69,20 +29,6 @@ EVP_PKEY* CryptoNative_MLDsaGenerateKey(const char* keyType, uint8_t* seed, int3
     if (EVP_PKEY_keygen_init(pctx) <= 0)
     {
         goto done;
-    }
-
-    if (seed)
-    {
-        OSSL_PARAM params[] =
-        {
-            OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_ML_DSA_SEED, (void*)seed, Int32ToSizeT(seedLen)),
-            OSSL_PARAM_construct_end(),
-        };
-
-        if (EVP_PKEY_CTX_set_params(pctx, params) <= 0)
-        {
-            goto done;
-        }
     }
 
     if (EVP_PKEY_keygen(pctx, &pkey) != 1 && pkey != NULL)
@@ -100,23 +46,22 @@ done:
     return pkey;
 #else
     (void)keyType;
-    (void)seed;
-    (void)seedLen;
     return NULL;
 #endif
 }
 
-int32_t CryptoNative_MLDsaSignPure(EVP_PKEY *pkey,
-                                   void* extraHandle,
-                                   uint8_t* msg, int32_t msgLen,
-                                   uint8_t* context, int32_t contextLen,
-                                   uint8_t* destination, int32_t destinationLen)
+int32_t CryptoNative_SlhDsaSignPure(EVP_PKEY *pkey,
+                                    void* extraHandle,
+                                    uint8_t* msg, int32_t msgLen,
+                                    uint8_t* context, int32_t contextLen,
+                                    uint8_t* destination, int32_t destinationLen)
 {
+
     assert(pkey);
     assert(msgLen >= 0);
     assert(contextLen >= 0);
     assert(destination);
-    assert(destinationLen >= 2420 /* ML-DSA-44 signature size */);
+    assert(destinationLen >= 7856 /* SLH-DSA-SHA2-128s/SLH-DSA-SHAKE-128s signature size */);
 
 #if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
     if (!API_EXISTS(EVP_PKEY_sign_message_init) ||
@@ -185,16 +130,16 @@ done:
 #endif
 }
 
-int32_t CryptoNative_MLDsaVerifyPure(EVP_PKEY *pkey,
-                                     void* extraHandle,
-                                     uint8_t* msg, int32_t msgLen,
-                                     uint8_t* context, int32_t contextLen,
-                                     uint8_t* sig, int32_t sigLen)
+int32_t CryptoNative_SlhDsaVerifyPure(EVP_PKEY *pkey,
+                                      void* extraHandle,
+                                      uint8_t* msg, int32_t msgLen,
+                                      uint8_t* context, int32_t contextLen,
+                                      uint8_t* sig, int32_t sigLen)
 {
     assert(pkey);
     assert(msgLen >= 0);
     assert(sig);
-    assert(sigLen >= 2420 /* ML-DSA-44 signature size */);
+    assert(sigLen >= 7856 /* SLH-DSA-SHA2-128s/SLH-DSA-SHAKE-128s signature size */);
     assert(contextLen >= 0);
 
 #if defined(NEED_OPENSSL_3_0) && HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
@@ -250,17 +195,86 @@ done:
 #endif
 }
 
-int32_t CryptoNative_MLDsaExportSecretKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
+int32_t CryptoNative_SlhDsaExportSecretKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
 {
     return EvpPKeyGetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PRIV_KEY, destination, destinationLength);
 }
 
-int32_t CryptoNative_MLDsaExportSeed(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
-{
-    return EvpPKeyGetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_ML_DSA_SEED, destination, destinationLength);
-}
-
-int32_t CryptoNative_MLDsaExportPublicKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
+int32_t CryptoNative_SlhDsaExportPublicKey(const EVP_PKEY* pKey, uint8_t* destination, int32_t destinationLength)
 {
     return EvpPKeyGetKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PUB_KEY, destination, destinationLength);
+}
+
+int32_t CryptoNative_SlhDsaGetPalId(const EVP_PKEY* pKey, int32_t* slhDsaTypeId)
+{
+#ifdef NEED_OPENSSL_3_0
+    assert(pKey && slhDsaTypeId);
+
+    if (API_EXISTS(EVP_PKEY_is_a))
+    {
+        ERR_clear_error();
+
+        // This conditional chain seems unavoidable. If there are multiple synonyms for a given key,
+        // then the provider determines which one will be returned from EVP_PKEY_get0_type_name.
+        // We use EVP_PKEY_is_a here instead to avoid this issue.
+        if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-128s"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Sha2_128s;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-128s"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Shake128s;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-128f"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Sha2_128f;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-128f"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Shake128f;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-192s"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Sha2_192s;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-192s"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Shake192s;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-192f"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Sha2_192f;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-192f"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Shake192f;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-256s"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Sha2_256s;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-256s"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Shake256s;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHA2-256f"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Sha2_256f;
+        }
+        else if (EVP_PKEY_is_a(pKey, "SLH-DSA-SHAKE-256f"))
+        {
+            *slhDsaTypeId = PalSlhDsaId_Shake256f;
+        }
+        else
+        {
+            *slhDsaTypeId = PalSlhDsaId_Unknown;
+        }
+
+        return 1;
+    }
+#endif
+
+    (void)pKey;
+    *slhDsaTypeId = PalSlhDsaId_Unknown;
+    return 0;
 }
