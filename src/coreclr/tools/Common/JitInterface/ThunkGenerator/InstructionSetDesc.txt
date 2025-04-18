@@ -164,6 +164,8 @@ implication        ,X86   ,PCLMULQDQ_V256       ,AVX
 implication        ,X86   ,PCLMULQDQ_V512       ,PCLMULQDQ_V256
 implication        ,X86   ,PCLMULQDQ_V512       ,AVX512F
 implication        ,X86   ,AVXVNNI              ,AVX2
+implication        ,X86   ,AVXVNNIINT8          ,AVX2
+implication        ,X86   ,AVXVNNIINT16         ,AVX2
 implication        ,X86   ,X86Serialize         ,X86Base
 implication        ,X86   ,GFNI                 ,SSE41
 implication        ,X86   ,GFNI_V256            ,GFNI
