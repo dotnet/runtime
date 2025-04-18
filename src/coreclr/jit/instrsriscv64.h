@@ -269,12 +269,27 @@ INST(ctz,           "ctz",            0,   0x60101013)
 INST(ctzw,          "ctzw",           0,   0x6010101b)
 INST(cpop,          "cpop",           0,   0x60201013)
 INST(cpopw,         "cpopw",          0,   0x6020101b)
+INST(sext_b,        "sext.b",         0,   0x60401013)
+INST(sext_h,        "sext.h",         0,   0x60501013)
+INST(zext_h,        "zext.h",         0,   0x0800403b)
+INST(rev8,          "rev8",           0,   0x6b805013)
 
 //// R_R_R
+INST(rol,           "rol",            0,   0x60001033)
+INST(rolw,          "rolw",           0,   0x6000103b)
+INST(ror,           "ror",            0,   0x60005033)
+INST(rorw,          "rorw",           0,   0x6000503b)
+INST(xnor,          "xnor",           0,   0x40004033)
+INST(orn,           "orn",            0,   0x40006033)
+INST(andn,          "andn",           0,   0x40007033)
 INST(min,           "min",            0,   0x0a004033)
 INST(minu,          "minu",           0,   0x0a005033)
 INST(max,           "max",            0,   0x0a006033)
 INST(maxu,          "maxu",           0,   0x0a007033)
+
+//// R_R_I
+INST(rori,          "rori",           0,   0x60005013)
+INST(roriw,         "roriw",          0,   0x6000501b)
 
 // clang-format on
 /*****************************************************************************/

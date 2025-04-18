@@ -261,7 +261,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSZ:
         case GT_ROR:
         case GT_ROL:
-            if (tree->OperIs(GT_ROR, GT_ROL))
+            if (tree->OperIs(GT_ROR, GT_ROL) && !compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
                 buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
             buildInternalRegisterUses();
