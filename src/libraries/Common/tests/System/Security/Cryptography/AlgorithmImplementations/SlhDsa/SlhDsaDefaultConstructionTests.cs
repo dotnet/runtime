@@ -28,6 +28,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportSlhDsaSecretKey(algorithm, new byte[secretKeySize - 1]));
             AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportSlhDsaSecretKey(algorithm, new byte[secretKeySize + 1]));
             AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportSlhDsaSecretKey(algorithm, []));
+            AssertExtensions.Throws<ArgumentException>("source", static () => SlhDsa.ImportPkcs8PrivateKey([]));
 
             // TODO add remaining imports
         }
@@ -77,6 +78,17 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
 
             Assert.Equal(typeof(SlhDsa), keyType);
+        }
+
+        [Fact]
+        public void ImportPkcs8PrivateKeyIetf()
+        {
+            using SlhDsa slhDsa = SlhDsa.ImportPkcs8PrivateKey(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8);
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
+
+            byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes];
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey));
+            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, secretKey);
         }
 
         protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) =>

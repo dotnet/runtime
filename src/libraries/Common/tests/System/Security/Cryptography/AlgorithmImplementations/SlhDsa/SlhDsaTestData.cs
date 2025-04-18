@@ -32,6 +32,20 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SlhDsaAlgorithm.SlhDsaShake256f,
         ];
 
+        internal static byte[] IetfSlhDsaSha2_128sPublicKey => field ??= Convert.FromBase64String(@"
+            MDAwCwYJYIZIAWUDBAMUAyEAK4EJ7Hd8qk4fAkzPz5SX2ZGAUJKA9CVq8rB6+AKJ
+            tJQ=");
+
+        internal static byte[] IetfSlhDsaSha2_128sPrivateKeyPkcs8 => field ??= Convert.FromBase64String(@"
+            MFICAQAwCwYJYIZIAWUDBAMUBECiJjvKRYYINlIxYASVI9YhZ3+tkNUetgZ6Mn4N
+            HmSlASuBCex3fKpOHwJMz8+Ul9mRgFCSgPQlavKwevgCibSU");
+
+        internal static byte[] IetfSlhDsaSha2_128sPrivateKeyValue => field ??= (
+            "A2263BCA45860836523160049523D621" +
+            "677FAD90D51EB6067A327E0D1E64A501" +
+            "2B8109EC777CAA4E1F024CCFCF9497D9" +
+            "9180509280F4256AF2B07AF80289B494").HexToByteArray();
+
         public record SlhDsaKeyGenTestVector(
             int TestCaseId,
             SlhDsaAlgorithm Algorithm,

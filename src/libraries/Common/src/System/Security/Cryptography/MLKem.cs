@@ -865,7 +865,7 @@ namespace System.Security.Cryptography
         ///   using a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
-        ///   The password to use when encrypting the key material.
+        ///   The bytes to use as a password when encrypting the key material.
         /// </param>
         /// <param name="pbeParameters">
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
