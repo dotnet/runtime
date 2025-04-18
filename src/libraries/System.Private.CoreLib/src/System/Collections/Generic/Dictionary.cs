@@ -17,10 +17,8 @@ namespace System.Collections.Generic
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback where TKey : notnull
     {
-        private static class EmptyArrays {
-            public static readonly int[] Buckets = new int[1];
-            public static readonly Entry[] Entries = new Entry[1];
-        }
+        private static int[]? EmptyBuckets;
+        private static Entry[]? EmptyEntries;
 
         // constants for serialization
         private const string VersionName = "Version"; // Do not rename (binary serialization)
@@ -42,6 +40,14 @@ namespace System.Collections.Generic
         private ValueCollection? _values;
         private const int StartOfFreeList = -3;
 
+        private static int[] GetEmptyBuckets () =>
+            EmptyBuckets ??= new int[1];
+
+#pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>()
+        private static Entry[] GetEmptyEntries () =>
+            EmptyEntries ??= new Entry[0];
+#pragma warning restore CA1825
+
         public Dictionary() : this(0, null) { }
 
         public Dictionary(int capacity) : this(capacity, null) { }
@@ -56,8 +62,8 @@ namespace System.Collections.Generic
             }
 
             // HACK: Satisfy nullability analyzer
-            _buckets = EmptyArrays.Buckets;
-            _entries = EmptyArrays.Entries;
+            _buckets = GetEmptyBuckets();
+            _entries = GetEmptyEntries();
 
             if (capacity > 0)
             {
@@ -191,9 +197,8 @@ namespace System.Collections.Generic
         [EditorBrowsable(EditorBrowsableState.Never)]
         protected Dictionary(SerializationInfo info, StreamingContext context)
         {
-            // HACK: Satisfy nullability analyzer
-            _buckets = EmptyArrays.Buckets;
-            _entries = EmptyArrays.Entries;
+            _buckets = GetEmptyBuckets();
+            _entries = GetEmptyEntries();
 
             // We can't do anything with the keys and values until the entire graph has been deserialized
             // and we have a resonable estimate that GetHashCode is not going to fail.  For the time being,
@@ -219,24 +224,16 @@ namespace System.Collections.Generic
 
         public int Count => _count - _freeCount;
 
-        // HACK: Try to avoid fetching the static field unless we know we need it
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsEmptyArray (Entry[] entries) =>
-            (entries.Length == 1) && (entries == EmptyArrays.Entries);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsEmptyArray (int[] buckets) =>
-            (buckets.Length == 1) && (buckets == EmptyArrays.Buckets);
+            (buckets == EmptyBuckets);
 
         /// <summary>
         /// Gets the total numbers of elements the internal data structure can hold without resizing.
         /// </summary>
         public int Capacity {
             get {
-                Entry[] entries = _entries;
-                if (IsEmptyArray(entries))
-                    return 0;
-                return entries.Length;
+                return _entries.Length;
             }
         }
 
@@ -425,10 +422,6 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            // Necessary because some tests check whether we call GetHashCode when empty
-            if (_count == 0)
-                goto ReturnNotFound;
-
             ref Entry entry = ref Unsafe.NullRef<Entry>();
             IEqualityComparer<TKey>? comparer = _comparer;
             if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
@@ -516,8 +509,8 @@ namespace System.Collections.Generic
     #if TARGET_64BIT
                 _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)1);
     #endif
-                _buckets = EmptyArrays.Buckets;
-                _entries = EmptyArrays.Entries;
+                _buckets = GetEmptyBuckets();
+                _entries = GetEmptyEntries();
             } else {
                 size = HashHelpers.GetPrime(capacity);
                 int[] buckets = new int[size];
@@ -543,7 +536,7 @@ namespace System.Collections.Generic
         private Entry[] GetMutableEntries()
         {
             Entry[] entries = _entries;
-            if (IsEmptyArray(entries))
+            if (entries.Length < 1)
             {
                 Initialize(1);
                 return _entries;
@@ -843,10 +836,6 @@ namespace System.Collections.Generic
             {
                 Dictionary<TKey, TValue> dictionary = Dictionary;
                 IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
-
-                // Necessary for certain tests to pass because they track how many times we call GetHashCode
-                if (dictionary._count <= 0)
-                    goto ReturnNotFound;
 
                 ref Entry entry = ref Unsafe.NullRef<Entry>();
                 uint hashCode = (uint)comparer.GetHashCode(key);
@@ -1262,8 +1251,8 @@ namespace System.Collections.Generic
             }
             else
             {
-                _buckets = EmptyArrays.Buckets;
-                _entries = EmptyArrays.Entries;
+                _buckets = GetEmptyBuckets();
+                _entries = GetEmptyEntries();
             }
 
             _version = realVersion;
@@ -1276,7 +1265,7 @@ namespace System.Collections.Generic
         {
             // Value types never rehash
             Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType);
-            Debug.Assert((newSize >= _entries.Length) || IsEmptyArray(_entries));
+            Debug.Assert(newSize >= _entries.Length);
 
             Entry[] entries = new Entry[newSize];
 
@@ -1571,7 +1560,7 @@ namespace System.Collections.Generic
             }
 
             Entry[] entries = _entries;
-            int currentCapacity = IsEmptyArray(entries) ? 0 : entries.Length;
+            int currentCapacity = entries.Length;
             if (currentCapacity >= capacity)
             {
                 return currentCapacity;
@@ -1579,7 +1568,7 @@ namespace System.Collections.Generic
 
             _version++;
 
-            if (IsEmptyArray(entries))
+            if (entries.Length == 0)
             {
                 return Initialize(capacity);
             }
@@ -1620,7 +1609,7 @@ namespace System.Collections.Generic
 
             int newSize = HashHelpers.GetPrime(capacity);
             Entry[] oldEntries = _entries;
-            int currentCapacity = IsEmptyArray(oldEntries) ? 0 : oldEntries.Length;
+            int currentCapacity = oldEntries.Length;
             if (newSize >= currentCapacity)
             {
                 return;
