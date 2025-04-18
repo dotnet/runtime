@@ -165,6 +165,9 @@
     </Exec>
 
     <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems). The Command %(TestConsoleApps.TestCommand) return a non-success exit code $(ExecutionExitCode)." ContinueOnError="ErrorAndContinue" />
+ 
+    <!-- remove test project dir to save disk space if the test was successful -->
+    <RemoveDir Condition="'$(ExecutionExitCode)' == '100'" Directories="%(TestConsoleApps.ProjectDir)"  />
   </Target>
 
   <Target Name="Build" DependsOnTargets="ExecuteApplications" />
