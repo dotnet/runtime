@@ -12,48 +12,46 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        // Must be kept in sync with PalMLDsaId in native shim.
+        internal enum PalMLDsaAlgorithmId
+        {
+            Unknown = 0,
+            MLDsa44 = 1,
+            MLDsa65 = 2,
+            MLDsa87 = 3,
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_MLDsaGetPalId(
+            SafeEvpPKeyHandle mldsa,
+            out PalMLDsaAlgorithmId mldsaId);
+
+        internal static PalMLDsaAlgorithmId MLDsaGetPalId(SafeEvpPKeyHandle key)
+        {
+            const int Success = 1;
+            const int Fail = 0;
+            int result = CryptoNative_MLDsaGetPalId(key, out PalMLDsaAlgorithmId mldsaId);
+
+            return result switch
+            {
+                Success => mldsaId,
+                Fail => throw CreateOpenSslCryptographicException(),
+                int other => throw FailThrow(other),
+            };
+
+            static Exception FailThrow(int result)
+            {
+                Debug.Fail($"Unexpected return value {result} from {nameof(CryptoNative_MLDsaGetPalId)}.");
+                return new CryptographicException();
+            }
+        }
+
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_MLDsaGenerateKey(string keyType, ReadOnlySpan<byte> seed, int seedLength);
 
         internal static SafeEvpPKeyHandle MLDsaGenerateKey(string algorithmName, ReadOnlySpan<byte> seed)
         {
             SafeEvpPKeyHandle handle = CryptoNative_MLDsaGenerateKey(algorithmName, seed, seed.Length);
-            Debug.Assert(handle != null, "handle != null");
-
-            if (handle.IsInvalid)
-            {
-                Exception ex = Interop.Crypto.CreateOpenSslCryptographicException();
-                handle.Dispose();
-                throw ex;
-            }
-
-            return handle;
-        }
-
-        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
-        private static partial SafeEvpPKeyHandle CryptoNative_MLDsaImportSecretKey(string keyType, ReadOnlySpan<byte> sk, int skLength);
-
-        internal static SafeEvpPKeyHandle MLDsaImportSecretKey(string algorithmName, ReadOnlySpan<byte> sk)
-        {
-            SafeEvpPKeyHandle? handle = CryptoNative_MLDsaImportSecretKey(algorithmName, sk, sk.Length);
-            Debug.Assert(handle != null, "handle != null");
-
-            if (handle.IsInvalid)
-            {
-                Exception ex = Interop.Crypto.CreateOpenSslCryptographicException();
-                handle.Dispose();
-                throw ex;
-            }
-
-            return handle;
-        }
-
-        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
-        private static partial SafeEvpPKeyHandle CryptoNative_MLDsaImportPublicKey(string keyType, ReadOnlySpan<byte> pk, int pkLength);
-
-        internal static SafeEvpPKeyHandle MLDsaImportPublicKey(string algorithmName, ReadOnlySpan<byte> pk)
-        {
-            SafeEvpPKeyHandle handle = CryptoNative_MLDsaImportPublicKey(algorithmName, pk, pk.Length);
             Debug.Assert(handle != null, "handle != null");
 
             if (handle.IsInvalid)
@@ -80,7 +78,7 @@ internal static partial class Interop
             Span<byte> destination)
         {
             int ret = CryptoNative_MLDsaSignPure(
-                pkey, pkey.ExtraHandle,
+                pkey, GetExtraHandle(pkey),
                 msg, msg.Length,
                 context, context.Length,
                 destination, destination.Length);
@@ -105,7 +103,7 @@ internal static partial class Interop
             ReadOnlySpan<byte> signature)
         {
             int ret = CryptoNative_MLDsaVerifyPure(
-                pkey, pkey.ExtraHandle,
+                pkey, GetExtraHandle(pkey),
                 msg, msg.Length,
                 context, context.Length,
                 signature, signature.Length);

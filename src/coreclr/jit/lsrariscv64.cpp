@@ -261,7 +261,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSZ:
         case GT_ROR:
         case GT_ROL:
-            if (tree->OperIs(GT_ROR, GT_ROL))
+            if (tree->OperIs(GT_ROR, GT_ROL) && !compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
                 buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
             buildInternalRegisterUses();
@@ -361,6 +361,18 @@ int LinearScan::BuildNode(GenTree* tree)
                 case NI_System_Math_Sqrt:
                     assert(op1->TypeIs(tree->TypeGet()));
                     assert(varTypeIsFloating(tree));
+                    break;
+
+                // Integer Min/Max
+                case NI_System_Math_Min:
+                case NI_System_Math_Max:
+                case NI_System_Math_MinUnsigned:
+                case NI_System_Math_MaxUnsigned:
+                    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                    assert(op2 != nullptr);
+                    assert(op2->TypeIs(tree->TypeGet()));
+                    assert(op1->TypeIs(tree->TypeGet()));
+                    assert(tree->TypeIs(TYP_I_IMPL));
                     break;
 
                 // Operand and its result must be integers
