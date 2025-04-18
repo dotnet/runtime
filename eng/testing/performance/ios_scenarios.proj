@@ -33,19 +33,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) .app Size$(RunConfigsString)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(runtimeType) .app Size$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -rf $HELIX_CORRELATION_PAYLOAD/iosHelloWorld ./app;$(Python) pre.py --name app</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - iOS HelloWorld $(RuntimeType) Zip Size$(RunConfigsString)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld $(runtimeType) Zip Size$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/iOSSampleApp.zip .;$(Python) pre.py --name iOSSampleApp.zip</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <XHarnessAppBundleToTest Include="Device Startup - iOS $(RuntimeType) HelloWorld$(RunConfigsString)">
+    <XHarnessAppBundleToTest Include="Device Startup - iOS $(runtimeType) HelloWorld$(RunConfigsString)">
       <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
       <WorkItemTimeout>00:15:00</WorkItemTimeout>
       <TestTarget>ios-device</TestTarget>
@@ -71,7 +71,7 @@
         ]]>
       </CustomCommands>
     </XHarnessAppBundleToTest>
-    <HelixWorkItem Include="Build Time - iOS $(RuntimeType) HelloWorld$(RunConfigsString)" Condition="'$(RuntimeType)' == 'iOSMono'">
+    <HelixWorkItem Include="Build Time - iOS $(runtimeType) HelloWorld$(RunConfigsString)" Condition="'$(runtimeType)' == 'iOSMono'">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldBinlog/msbuild.binlog .</PreCommands>
       <Command>$(Python) test.py devicebuild --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs) --binlog-path ./msbuild.binlog</Command>

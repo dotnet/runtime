@@ -39,7 +39,7 @@
       <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroid.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="Build Time - Android HelloWorld" Condition="'$(RuntimeType)' == 'AndroidMono'">
+    <HelixWorkItem Include="Build Time - Android HelloWorld" Condition="'$(runtimeType)' == 'AndroidMono'">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloandroid;copy %HELIX_WORKITEM_ROOT%\androidHelloWorldBinlog\msbuild.binlog .</PreCommands>
       <Command>$(Python) test.py devicebuild --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs) --binlog-path ./msbuild.binlog</Command>
