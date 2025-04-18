@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <LibraryName>zlib-ng</LibraryName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CMakeArg Include="-DBUILD_SHARED_LIBS=0" />
+    <CMakeArg Include="-DZLIB_COMPAT=1" />
+    <CMakeArg Include="-DZLIB_ENABLE_TESTS=0" />
+    <CMakeArg Include="-DZLIBNG_ENABLE_TESTS=0" />
+    <CMakeArg Include="-DZ_PREFIX=1" />
+    <!-- TODO: Turn back on when Linux kernels with proper RISC-V extension detection (>= 6.5) are more commonplace -->
+    <CMakeArg Include="-DWITH_RVV=0" />
+    <!-- TODO: We don't support ARMv6 and the check works incorrectly when compiling for ARMv7 w/ Thumb instruction set -->
+    <CMakeArg Include="-DWITH_ARMV6=0" />
+    <!-- The checks for NEON_AVAILABLE and NEON_HAS_LD4 work incorrectly when compiling for arm32. -->
+    <CMakeArg Include="-DWITH_ARMV8=1" Condition="'$(TargetsLinux)' == 'true' and '$(TargetArchitecture)' == 'arm'" />
+    <!-- 'aligned_alloc' is not available in browser/wasi, yet it is set by zlib-ng/CMakeLists.txt. -->
+    <CMakeArg Include="-DHAVE_ALIGNED_ALLOC=0" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
+    <CFlag Include="/W3" Condition="'$(HostOS)' == 'windows'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(HostOS)' == 'windows'">
+    <CFlag Include="/W3" />
+    <CFlag Include="/wd4127" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(HostOS)' != 'windows'">
+    <CFlag Include="-Wno-unused-command-line-argument" />
+    <CFlag Include="-Wno-logical-op-parentheses" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
+    <CFlag Include="-pthread" />
+    <LDFlag Include="-pthread" />
+  </ItemGroup>
+</Project>
