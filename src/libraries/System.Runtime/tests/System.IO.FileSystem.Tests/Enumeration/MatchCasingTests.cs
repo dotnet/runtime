@@ -13,7 +13,7 @@ namespace System.IO.Tests.Enumeration
         [Fact]
         public void EnumerationOptionsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetPaths(GetTestFilePath(), "file*", null));
+            AssertExtensions.Throws<ArgumentNullException>("enumerationOptions", () => GetPaths(GetTestFilePath(), "file*", null));
         }
 
         [Fact]
