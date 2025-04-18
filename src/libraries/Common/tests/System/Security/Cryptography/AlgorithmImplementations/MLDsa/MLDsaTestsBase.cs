@@ -51,6 +51,29 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void GenerateSignVerifyEmptyMessageNoContext(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa mldsa = GenerateKey(algorithm);
+            byte[] signature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
+            Assert.Equal(signature.Length, mldsa.SignData([], signature));
+
+            ExerciseSuccessfulVerify(mldsa, [], signature, []);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public void GenerateSignVerifyEmptyMessageWithContext(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa mldsa = GenerateKey(algorithm);
+            byte[] context = [1, 1, 3, 5, 6];
+            byte[] signature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
+            Assert.Equal(signature.Length, mldsa.SignData([], signature, context));
+
+            ExerciseSuccessfulVerify(mldsa, [], signature, context);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignExportPublicVerifyWithPublicOnly(MLDsaAlgorithm algorithm)
         {
             byte[] publicKey;
@@ -200,9 +223,24 @@ namespace System.Security.Cryptography.Tests
         protected static void ExerciseSuccessfulVerify(MLDsa mldsa, byte[] data, byte[] signature, byte[] context)
         {
             AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature, context));
-            data[0] ^= 1;
-            AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, context));
-            data[0] ^= 1;
+
+            if (data.Length > 0)
+            {
+                AssertExtensions.FalseExpression(mldsa.VerifyData([], signature, context));
+                AssertExtensions.FalseExpression(mldsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
+
+                data[0] ^= 1;
+                AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, context));
+                data[0] ^= 1;
+            }
+            else
+            {
+                AssertExtensions.TrueExpression(mldsa.VerifyData([], signature, context));
+                AssertExtensions.TrueExpression(mldsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
+
+                AssertExtensions.FalseExpression(mldsa.VerifyData([0], signature, context));
+                AssertExtensions.FalseExpression(mldsa.VerifyData([1, 2, 3], signature, context));
+            }
 
             signature[0] ^= 1;
             AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, context));
@@ -211,6 +249,7 @@ namespace System.Security.Cryptography.Tests
             if (context.Length > 0)
             {
                 AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, []));
+                AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
 
                 context[0] ^= 1;
                 AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, context));
@@ -218,6 +257,9 @@ namespace System.Security.Cryptography.Tests
             }
             else
             {
+                AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature, []));
+                AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
+
                 AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, [0]));
                 AssertExtensions.FalseExpression(mldsa.VerifyData(data, signature, [1, 2, 3]));
             }

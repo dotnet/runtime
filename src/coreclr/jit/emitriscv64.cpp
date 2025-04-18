@@ -650,7 +650,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins || INS_sext_w == ins || (INS_clz <= ins && ins <= INS_cpopw))
+    if (INS_mov == ins || INS_sext_w == ins || (INS_clz <= ins && ins <= INS_rev8))
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -728,7 +728,7 @@ void emitter::emitIns_R_R_I(
 
     if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
         (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
-        INS_flw == ins)
+        INS_flw == ins || INS_rori == ins || INS_roriw == ins)
     {
         assert(isGeneralRegister(reg2));
         code |= (reg1 & 0x1f) << 7; // rd
@@ -827,7 +827,7 @@ void emitter::emitIns_R_R_R(
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
-        (INS_min <= ins && ins <= INS_maxu))
+        (INS_rol <= ins && ins <= INS_maxu))
     {
 #ifdef DEBUG
         switch (ins)
@@ -915,6 +915,13 @@ void emitter::emitIns_R_R_R(
             case INS_amomaxu_w:
             case INS_amomaxu_d:
 
+            case INS_rol:
+            case INS_rolw:
+            case INS_ror:
+            case INS_rorw:
+            case INS_xnor:
+            case INS_orn:
+            case INS_andn:
             case INS_min:
             case INS_minu:
             case INS_max:
@@ -3843,16 +3850,17 @@ void emitter::emitDispInsName(
                 case 0x1:
                 {
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
-                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV64
+                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV6
                     switch (funct6)
                     {
                         case 0b011000:
                         {
-                            static const char* names[] = {"clz", "ctz", "cpop"};
+                            static const char* names[] = {"clz", "ctz", "cpop", nullptr, "sext.b", "sext.h"};
                             // shift amount is treated as additional funct opcode
-                            if (shamt >= ARRAY_SIZE(names))
+                            if (shamt >= ARRAY_SIZE(names) || shamt == 3)
                                 return emitDispIllegalInstruction(code);
 
+                            assert(names[shamt] != nullptr);
                             printLength  = printf("%s", names[shamt]);
                             hasImmediate = false;
                             break;
@@ -3874,21 +3882,41 @@ void emitter::emitDispInsName(
                     printLength = printf("sltiu");
                     break;
                 case 0x4: // XORI
-                    printLength = printf("xori");
+                    if (imm12 == -1)
+                    {
+                        printLength  = printf("not");
+                        hasImmediate = false;
+                    }
+                    else
+                    {
+                        printLength = printf("xori");
+                    }
                     break;
                 case 0x5: // SRLI & SRAI
                 {
-                    static constexpr unsigned kLogicalShiftFunct6    = 0b000000;
-                    static constexpr unsigned kArithmeticShiftFunct6 = 0b010000;
-
-                    unsigned funct6         = (imm12 >> 6) & 0x3f;
-                    bool     isLogicalShift = funct6 == kLogicalShiftFunct6;
-                    if ((!isLogicalShift) && (funct6 != kArithmeticShiftFunct6))
-                    {
-                        return emitDispIllegalInstruction(code);
-                    }
-                    printLength = printf(isLogicalShift ? "srli" : "srai");
+                    unsigned funct6 = (imm12 >> 6) & 0x3f;
                     imm12 &= 0x3f; // 6BITS for SHAMT in RISCV64
+                    switch (funct6)
+                    {
+                        case 0b000000:
+                            printLength = printf("srli");
+                            break;
+                        case 0b010000:
+                            printLength = printf("srai");
+                            break;
+                        case 0b011000:
+                            printLength = printf("rori");
+                            break;
+                        case 0b011010:
+                            if (imm12 != 0b111000) // shift amount is treated as additional funct opcode
+                                return emitDispIllegalInstruction(code);
+
+                            printLength  = printf("rev8");
+                            hasImmediate = false;
+                            break;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
                 }
                 break;
                 case 0x6: // ORI
@@ -3969,21 +3997,21 @@ void emitter::emitDispInsName(
                     return;
                 case 0x5: // SRLIW & SRAIW
                 {
-                    static constexpr unsigned kLogicalShiftFunct7    = 0b0000000;
-                    static constexpr unsigned kArithmeticShiftFunct7 = 0b0100000;
-
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
-                    if (funct7 == kLogicalShiftFunct7)
+                    imm12 &= 0x1f; // 5BITS for SHAMT in RISCV64
+                    switch (funct7)
                     {
-                        printf("srliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
-                    }
-                    else if (funct7 == kArithmeticShiftFunct7)
-                    {
-                        printf("sraiw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
-                    }
-                    else
-                    {
-                        emitDispIllegalInstruction(code);
+                        case 0b0000000:
+                            printf("srliw          %s, %s, %d\n", rd, rs1, imm12);
+                            return;
+                        case 0b0100000:
+                            printf("sraiw          %s, %s, %d\n", rd, rs1, imm12);
+                            return;
+                        case 0b0110000:
+                            printf("roriw          %s, %s, %d\n", rd, rs1, imm12);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
                     }
                 }
                     return;
@@ -4038,8 +4066,17 @@ void emitter::emitDispInsName(
                         case 0x0: // SUB
                             printf("sub            %s, %s, %s\n", rd, rs1, rs2);
                             return;
+                        case 0x4: // XNOR
+                            printf("xnor           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
                         case 0x5: // SRA
                             printf("sra            %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x6: // ORN
+                            printf("orn            %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x7: // ANDN
+                            printf("andn           %s, %s, %s\n", rd, rs1, rs2);
                             return;
                         default:
                             return emitDispIllegalInstruction(code);
@@ -4076,6 +4113,19 @@ void emitter::emitDispInsName(
                             return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0110000:
+                    switch (opcode3)
+                    {
+                        case 0b001:
+                            printf("rol            %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0b101:
+                            printf("ror            %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                    return;
                 case 0b0000101:
                 {
                     if ((opcode3 >> 2) != 1) // clmul[h] unsupported
@@ -4093,9 +4143,10 @@ void emitter::emitDispInsName(
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 12) & 0x7;
+            unsigned int rs2Num  = (code >> 20) & 0x1f;
             const char*  rd      = RegNames[(code >> 7) & 0x1f];
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            const char*  rs2     = RegNames[(code >> 20) & 0x1f];
+            const char*  rs2     = RegNames[rs2Num];
 
             switch (opcode2)
             {
@@ -4150,6 +4201,28 @@ void emitter::emitDispInsName(
                             return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0110000:
+                    switch (opcode3)
+                    {
+                        case 0b001:
+                            printf("rolw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0b101:
+                            printf("rorw          %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                    return;
+                case 0b0000100:
+                    // Currently only zext.h for this opcode2.
+                    // Note: zext.h is encoded as a pseudo for 'packw rd, rs1, zero' which is not in Zbb.
+                    if (opcode3 != 0b100 || rs2Num != REG_ZERO)
+                        return emitDispIllegalInstruction(code);
+
+                    printf("zext.h         %s, %s\n", rd, rs1);
+                    return;
+
                 default:
                     return emitDispIllegalInstruction(code);
             }
@@ -5325,7 +5398,9 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             case GT_AND:
             case GT_AND_NOT:
             case GT_OR:
+            case GT_OR_NOT:
             case GT_XOR:
+            case GT_XOR_NOT:
             {
                 emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
 
