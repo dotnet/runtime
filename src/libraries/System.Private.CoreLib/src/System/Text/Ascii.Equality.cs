@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Text
@@ -525,7 +526,7 @@ namespace System.Text
                 else if (PackedSimd.IsSupported)
                 {
                     Vector128<byte> vec = Vector128.CreateScalarUnsafe(Unsafe.ReadUnaligned<long>(ref ptr)).AsByte();
-                    return PackeSimd.ZeroExtendWideningLower(vec);
+                    return PackedSimd.ZeroExtendWideningLower(vec);
                 }
                 else
                 {
