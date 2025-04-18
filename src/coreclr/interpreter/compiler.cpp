@@ -882,37 +882,38 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
         GcSlotFlags flags;
         switch (pVar->interpType) {
             case InterpTypeO:
-                flags = (GcSlotFlags)(pVar->global ? GC_SLOT_UNTRACKED : 0);
+                flags = (GcSlotFlags)0;
                 break;
             case InterpTypeByRef:
-                flags = (GcSlotFlags)(pVar->global ? GC_SLOT_UNTRACKED | GC_SLOT_INTERIOR : GC_SLOT_INTERIOR);
+                flags = (GcSlotFlags)GC_SLOT_INTERIOR;
                 break;
             default:
                 continue;
         }
 
+        if (pVar->global)
+            flags = (GcSlotFlags)(flags | GC_SLOT_UNTRACKED);
+
         uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
-        if (slotsByOffset[slotIndex] == ((GcSlotId)-1))
+        uint8_t allocateNewSlot = slotsByOffset[slotIndex] == ((GcSlotId)-1);
+        if (allocateNewSlot)
         {
             // Important to pass GC_xxx_REL, the default is broken due to GET_CALLER_SP being unimplemented
             slotsByOffset[slotIndex] = gcInfoEncoder->GetStackSlotId(pVar->offset, flags, GC_FRAMEREG_REL);
-            INTERP_DUMP(
-                "Allocated gcinfo slot %u for %s%svar #%d at offset %d\n",
-                slotsByOffset[slotIndex], pVar->global ? "global " : "",
-                pVar->interpType == InterpTypeByRef ? "byref " : "",
-                i, pVar->offset
-            );
         }
         else
         {
-            INTERP_DUMP(
-                "Reused gcinfo slot %u for %s%svar #%d at offset %d\n",
-                slotsByOffset[slotIndex], pVar->global ? "global " : "",
-                pVar->interpType == InterpTypeByRef ? "byref " : "",
-                i, pVar->offset
-            );
             assert(!pVar->global);
         }
+
+        INTERP_DUMP(
+            "%s gcinfo slot %u for %s%svar #%d at offset %d\n",
+            allocateNewSlot ? "Allocated" : "Reused",
+            slotsByOffset[slotIndex],
+            pVar->global ? "global " : "",
+            pVar->interpType == InterpTypeByRef ? "byref " : "",
+            i, pVar->offset
+        );
     }
 
     gcInfoEncoder->FinalizeSlotIds();
