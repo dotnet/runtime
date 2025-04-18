@@ -6,7 +6,7 @@ using System.IO;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-internal class TargetStream(Target target, ulong startPosition, long size) : Stream
+internal sealed class TargetStream(Target target, ulong startPosition, long size) : Stream
 {
     private readonly ulong _startPosition = startPosition;
     private long _offset;
