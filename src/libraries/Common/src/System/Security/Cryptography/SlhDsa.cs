@@ -66,17 +66,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Throws <see cref="ObjectDisposedException" /> if the current instance is disposed.
         /// </summary>
-        protected void ThrowIfDisposed()
-        {
-#if NET
-            ObjectDisposedException.ThrowIf(_disposed, typeof(SlhDsa));
-#else
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(typeof(SlhDsa).FullName);
-            }
-#endif
-        }
+        protected void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(SlhDsa));
 
         /// <summary>
         ///   Gets a value indicating whether the current platform supports SLH-DSA.
