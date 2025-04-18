@@ -24,7 +24,6 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test;
 
 public class EmitterTests
 {
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task TestEmitterWithCustomValidator()
     {
@@ -65,7 +64,6 @@ public class EmitterTests
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task PotentiallyMissingAttributes()
     {
@@ -96,7 +94,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.PotentiallyMissingEnumerableValidation.Id, diagnostics[1].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task IgnoredStaticMembers()
     {
@@ -132,7 +129,6 @@ public class EmitterTests
         Assert.Empty(d);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ValidationAttributeOnStaticMember()
     {
@@ -172,7 +168,6 @@ public class EmitterTests
         Assert.All(d, x => Assert.Equal(DiagnosticSeverity.Warning, x.DefaultSeverity));
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task CircularTypeReferences()
     {
@@ -194,7 +189,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.CircularTypeReferences.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task InvalidValidatorInterface()
     {
@@ -226,7 +220,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.DoesntImplementIValidateOptions.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NotValidator()
     {
@@ -257,7 +250,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.DoesntImplementIValidateOptions.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ValidatorAlreadyImplementValidateFunction()
     {
@@ -296,7 +288,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NullValidator()
     {
@@ -328,7 +319,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NullValidatorType.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NoSimpleValidatorConstructor()
     {
@@ -366,7 +356,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.ValidatorsNeedSimpleConstructor.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NoStaticValidator()
     {
@@ -387,7 +376,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.CantBeStaticClass.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task BogusModelType()
     {
@@ -402,7 +390,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task CantValidateOpenGenericMembers()
     {
@@ -434,7 +421,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.CantUseWithGenericTypes.Id, diagnostics[2].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ClosedGenerics()
     {
@@ -471,7 +457,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NoEligibleMember.Id, diagnostics[3].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NoEligibleMembers()
     {
@@ -504,7 +489,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NoEligibleMembersFromValidator.Id, diagnostics[1].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task AlreadyImplemented()
     {
@@ -528,7 +512,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceInfoWhenTheClassHasABaseClass()
     {
@@ -554,7 +537,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceInfoWhenTransitiveClassHasABaseClass()
     {
@@ -621,7 +603,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NoEligibleMember.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldProduceWarningWhenTheClassHasNoEligibleMembers()
     {
@@ -667,7 +648,6 @@ public class EmitterTests
         Assert.Equal("SYSLIB1206", diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceErrorWhenMultipleValidationAnnotationsExist()
     {
@@ -688,7 +668,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceErrorWhenDataTypeAttributesAreUsed()
     {
@@ -723,7 +702,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceErrorWhenConstVariableIsUsedAsAttributeArgument()
     {
@@ -745,7 +723,6 @@ public class EmitterTests
     }
 
     // Testing on all existing & eligible annotations extending ValidationAttribute that aren't used above
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceAnyMessagesWhenExistingValidationsArePlaced()
     {
@@ -786,7 +763,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceErrorWhenPropertiesAreUsedAsAttributeArgument()
     {
@@ -807,7 +783,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldSkipWhenOptionsValidatorAttributeDoesNotExist()
     {
@@ -828,7 +803,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldSkipAtrributeWhenAttributeSymbolCannotBeFound()
     {
@@ -851,7 +825,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldSkipAtrributeWhenAttributeSymbolIsNotBasedOnValidationAttribute()
     {
@@ -874,7 +847,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldAcceptAtrributeWhenAttributeIsInDifferentNamespace()
     {
@@ -901,7 +873,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldHandleAtrributePropertiesOtherThanString()
     {
@@ -936,7 +907,6 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldStoreFloatValuesCorrectly()
     {
@@ -968,7 +938,6 @@ public class EmitterTests
         }
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task MultiModelValidatorGeneratesOnlyOnePartialTypeBlock()
     {
@@ -1018,7 +987,6 @@ public class EmitterTests
         Assert.Equal(3, validateMethodDeclarations.Length);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task CircularTypeReferencesInEnumeration()
     {
@@ -1040,7 +1008,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.CircularTypeReferences.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NotValidatorInEnumeration()
     {
@@ -1071,7 +1038,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.DoesntImplementIValidateOptions.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NullValidatorInEnumeration()
     {
@@ -1103,7 +1069,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NullValidatorType.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NoSimpleValidatorConstructorInEnumeration()
     {
@@ -1471,7 +1436,6 @@ public class EmitterTests
         Assert.DoesNotContain("Timeout", generatedSource);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task CantValidateOpenGenericMembersInEnumeration()
     {
@@ -1503,7 +1467,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.CantUseWithGenericTypes.Id, diagnostics[2].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ClosedGenericsInEnumeration()
     {
@@ -1535,7 +1498,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NoEligibleMember.Id, diagnostics[2].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NotEnumerable()
     {
@@ -1557,7 +1519,6 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NotEnumerableType.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task LanguageVersionTest()
     {
@@ -1860,7 +1821,6 @@ string lengthAttribute = "";
         // Console.WriteLine(emittedSource);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task UsingInterfaceAsPropertyTypeForLengthAttributesTests()
     {
@@ -1905,7 +1865,6 @@ string lengthAttribute = "";
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task OptionsExtendingSystemClassTest()
     {
