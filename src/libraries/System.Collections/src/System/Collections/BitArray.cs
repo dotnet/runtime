@@ -837,7 +837,7 @@ namespace System.Collections
                 Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
                 Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
 
-                if (Avx512F.IsSupported && (uint)m_length >= Vector512<byte>.Count)
+                if (Avx512BW.IsSupported && (uint)m_length >= Vector512<byte>.Count)
                 {
                     Vector256<byte> upperShuffleMask_CopyToBoolArray256 = Vector256.Create(0x04040404_04040404, 0x05050505_05050505,
                                                                                              0x06060606_06060606, 0x07070707_07070707).AsByte();
