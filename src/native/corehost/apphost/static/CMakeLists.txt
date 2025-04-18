@@ -214,6 +214,10 @@ else()
 
 endif()
 
+LIST(APPEND NATIVE_LIBS
+    gcinfo
+)
+
 if(CLR_CMAKE_TARGET_APPLE)
     LIST(APPEND NATIVE_LIBS
         System.Security.Cryptography.Native.Apple-Static
