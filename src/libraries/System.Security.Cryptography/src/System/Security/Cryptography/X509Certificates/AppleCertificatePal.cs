@@ -151,7 +151,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public byte[] KeyAlgorithmParameters
+        public byte[]? KeyAlgorithmParameters
         {
             get
             {
@@ -362,6 +362,23 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(!publicKey.IsInvalid);
 
             return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(publicKey, privateKey);
+        }
+
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            // MLDsa is not supported on Apple platforms.
+            return null;
+        }
+
+        public MLKem? GetMLKemPrivateKey()
+        {
+            // MLKem is not supported on Apple platforms.
+            return null;
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)

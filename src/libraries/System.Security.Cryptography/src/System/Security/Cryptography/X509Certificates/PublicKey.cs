@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -14,12 +16,12 @@ namespace System.Security.Cryptography.X509Certificates
         private readonly Oid _oid;
         private AsymmetricAlgorithm? _key;
 
-        public PublicKey(Oid oid, AsnEncodedData parameters, AsnEncodedData keyValue)
+        public PublicKey(Oid oid, AsnEncodedData? parameters, AsnEncodedData keyValue)
             : this(oid, parameters, keyValue, skipCopy: false)
         {
         }
 
-        internal PublicKey(Oid oid, AsnEncodedData parameters, AsnEncodedData keyValue, bool skipCopy)
+        internal PublicKey(Oid oid, AsnEncodedData? parameters, AsnEncodedData keyValue, bool skipCopy)
         {
             _oid = oid;
 
@@ -30,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
             else
             {
-                EncodedParameters = new AsnEncodedData(parameters);
+                EncodedParameters = parameters is null ? null : new AsnEncodedData(parameters);
                 EncodedKeyValue = new AsnEncodedData(keyValue);
             }
         }
@@ -51,13 +53,33 @@ namespace System.Security.Cryptography.X509Certificates
         /// <see cref="AsymmetricAlgorithm.ExportSubjectPublicKeyInfo" /> has not been overridden
         /// in a derived class.
         /// </exception>
-        public PublicKey(AsymmetricAlgorithm key)
+        public PublicKey(AsymmetricAlgorithm key) : this(key.ExportSubjectPublicKeyInfo())
         {
-            byte[] subjectPublicKey = key.ExportSubjectPublicKeyInfo();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PublicKey" /> class
+        /// using SubjectPublicKeyInfo from an <see cref="MLKem" />.
+        /// </summary>
+        /// <param name="key">
+        /// An <c>MLKem</c> key to obtain the SubjectPublicKeyInfo from.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        /// The SubjectPublicKeyInfo could not be decoded. The
+        /// <see cref="MLKem.ExportSubjectPublicKeyInfo" /> must return a
+        /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public PublicKey(MLKem key) : this(key.ExportSubjectPublicKeyInfo())
+        {
+        }
+
+        private PublicKey(byte[] subjectPublicKeyInfo)
+        {
             DecodeSubjectPublicKeyInfo(
-                subjectPublicKey,
+                subjectPublicKeyInfo,
                 out Oid localOid,
-                out AsnEncodedData localParameters,
+                out AsnEncodedData? localParameters,
                 out AsnEncodedData localKeyValue);
 
             _oid = localOid;
@@ -70,7 +92,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public AsnEncodedData EncodedKeyValue { get; }
 
-        public AsnEncodedData EncodedParameters { get; }
+        public AsnEncodedData? EncodedParameters { get; }
 
         [Obsolete(Obsoletions.PublicKeyPropertyMessage, DiagnosticId = Obsoletions.PublicKeyPropertyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AsymmetricAlgorithm Key
@@ -83,7 +105,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         case Oids.Rsa:
                         case Oids.Dsa:
-                            _key = X509Pal.Instance.DecodePublicKey(_oid, EncodedKeyValue.RawData, EncodedParameters.RawData, null);
+                            _key = X509Pal.Instance.DecodePublicKey(_oid, EncodedKeyValue.RawData, EncodedParameters?.RawData, null);
                             break;
 
                         default:
@@ -146,7 +168,7 @@ namespace System.Security.Cryptography.X509Certificates
             int read = DecodeSubjectPublicKeyInfo(
                 source,
                 out Oid localOid,
-                out AsnEncodedData localParameters,
+                out AsnEncodedData? localParameters,
                 out AsnEncodedData localKeyValue);
 
             bytesRead = read;
@@ -272,6 +294,52 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        /// <summary>
+        ///   Gets the <see cref="MLKem" /> public key, or <see langword="null" />
+        ///   if the key is not an ML-KEM key.
+        /// </summary>
+        /// <returns>
+        ///   The public key, or <see langword="null" /> if the key is not an ML-KEM key.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The object represents an ML-KEM public key, but the platform does not support the algorithm.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The key contents are corrupt or could not be read successfully.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [UnsupportedOSPlatform("browser")]
+        public MLKem? GetMLKemPublicKey()
+        {
+            if (MLKemAlgorithm.FromOid(_oid.Value) is null)
+                return null;
+
+            return EncodeSubjectPublicKeyInfo().Encode(MLKem.ImportSubjectPublicKeyInfo);
+        }
+
+        /// <summary>
+        ///   Gets the <see cref="MLDsa"/> public key, or <see langword="null" />
+        ///   if the key is not an ML-DSA key.
+        /// </summary>
+        /// <returns>
+        ///   The public key, or <see langword="null"/> if the key is not an ML-DSA key.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The object represents an ML-DSA public key, but the platform does not support the algorithm.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The key contents are corrupt or could not be read successfully.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [UnsupportedOSPlatform("browser")]
+        public MLDsa? GetMLDsaPublicKey()
+        {
+            if (MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(_oid.Value) is null)
+                return null;
+
+            return EncodeSubjectPublicKeyInfo().Encode(MLDsa.ImportSubjectPublicKeyInfo);
+        }
+
         internal AsnWriter EncodeSubjectPublicKeyInfo()
         {
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
@@ -279,7 +347,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Algorithm = new AlgorithmIdentifierAsn
                 {
                     Algorithm = _oid.Value ?? string.Empty,
-                    Parameters = EncodedParameters.RawData,
+                    Parameters = EncodedParameters?.RawData.ToNullableMemory(),
                 },
                 SubjectPublicKey = EncodedKeyValue.RawData,
             };
@@ -292,7 +360,7 @@ namespace System.Security.Cryptography.X509Certificates
         private static unsafe int DecodeSubjectPublicKeyInfo(
             ReadOnlySpan<byte> source,
             out Oid oid,
-            out AsnEncodedData parameters,
+            out AsnEncodedData? parameters,
             out AsnEncodedData keyValue)
         {
             fixed (byte* ptr = &MemoryMarshal.GetReference(source))
@@ -323,7 +391,7 @@ namespace System.Security.Cryptography.X509Certificates
             DecodeSubjectPublicKeyInfo(
                 ref spki,
                 out Oid oid,
-                out AsnEncodedData parameters,
+                out AsnEncodedData? parameters,
                 out AsnEncodedData keyValue);
 
             return new PublicKey(oid, parameters, keyValue, skipCopy: true);
@@ -332,13 +400,16 @@ namespace System.Security.Cryptography.X509Certificates
         private static void DecodeSubjectPublicKeyInfo(
             ref SubjectPublicKeyInfoAsn spki,
             out Oid oid,
-            out AsnEncodedData parameters,
+            out AsnEncodedData? parameters,
             out AsnEncodedData keyValue)
         {
             oid = new Oid(spki.Algorithm.Algorithm, null);
-            parameters = new AsnEncodedData(spki.Algorithm.Parameters.GetValueOrDefault().Span);
             keyValue = new AsnEncodedData(spki.SubjectPublicKey.Span);
+            parameters = spki.Algorithm.Parameters switch
+            {
+                ReadOnlyMemory<byte> algParameters => new AsnEncodedData(algParameters.Span),
+                _ => null,
+            };
         }
-
     }
 }

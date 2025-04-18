@@ -10,6 +10,25 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 // This file contains managed declarations for the IXCLRData interfaces.
 // See src/coreclr/inc/xclrdata.idl
 
+internal struct CLRDataModuleExtent
+{
+    public ulong /* CLRDATA_ADDRESS */ baseAddress;
+    public uint length;
+    public uint /* CLRDataModuleExtentType */ type;
+}
+
+internal struct DacpGetModuleData
+{
+    public uint IsDynamic;
+    public uint IsInMemory;
+    public uint IsFileLayout;
+    public ulong /* CLRDATA_ADDRESS */ PEAssembly; // Actually the module address in .NET 9+
+    public ulong /* CLRDATA_ADDRESS */ LoadedPEAddress;
+    public ulong LoadedPESize;
+    public ulong /* CLRDATA_ADDRESS */ InMemoryPdbAddress;
+    public ulong InMemoryPdbSize;
+}
+
 [GeneratedComInterface]
 [Guid("88E32849-0A0A-4cb0-9022-7CD2E9E139E2")]
 internal unsafe partial interface IXCLRDataModule

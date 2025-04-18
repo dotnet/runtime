@@ -593,7 +593,7 @@ private:
     friend Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
 #endif
 #ifdef FEATURE_EH_FUNCLETS
-    friend class ExceptionTracker;
+    friend struct ExInfo;
 #endif
 #if defined(DACCESS_COMPILE)
     friend class DacDbiInterfaceImpl;
@@ -729,6 +729,9 @@ public:
 #elif defined(TARGET_RISCV64)
             Object** firstIntReg = (Object**)&this->GetContext()->Gp;
             Object** lastIntReg  = (Object**)&this->GetContext()->T6;
+#elif defined(TARGET_WASM)
+            Object** firstIntReg = nullptr;
+            Object** lastIntReg  = nullptr;
 #else
             _ASSERTE(!"nyi for platform");
 #endif
@@ -742,6 +745,14 @@ public:
 
 protected:
     PTR_CONTEXT m_Regs;
+
+    friend struct cdac_data<ResumableFrame>;
+};
+
+template<>
+struct cdac_data<ResumableFrame>
+{
+    static constexpr size_t TargetContextPtr = offsetof(ResumableFrame, m_Regs);
 };
 
 
@@ -1011,6 +1022,16 @@ public:
     }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
+
+    friend struct ::cdac_data<FaultingExceptionFrame>;
+};
+
+template<>
+struct cdac_data<FaultingExceptionFrame>
+{
+#ifdef FEATURE_EH_FUNCLETS
+    static constexpr size_t TargetContext = offsetof(FaultingExceptionFrame, m_ctx);
+#endif // FEATURE_EH_FUNCLETS
 };
 
 #ifdef FEATURE_EH_FUNCLETS
@@ -1028,6 +1049,10 @@ public:
     SoftwareExceptionFrame() : Frame(FrameIdentifier::SoftwareExceptionFrame) {
         LIMITED_METHOD_CONTRACT;
     }
+
+#ifdef TARGET_X86
+    void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
+#endif
 #endif
 
     TADDR GetReturnAddressPtr_Impl()
@@ -1036,8 +1061,10 @@ public:
         return PTR_HOST_MEMBER_TADDR(SoftwareExceptionFrame, this, m_ReturnAddress);
     }
 
+#ifndef DACCESS_COMPILE
     void Init();
     void InitAndLink(Thread *pThread);
+#endif
 
     Interception GetInterception_Impl()
     {
@@ -1152,6 +1179,14 @@ public:
 
         return m_showFrame;
     }
+
+    friend struct cdac_data<FuncEvalFrame>;
+};
+
+template<>
+struct cdac_data<FuncEvalFrame>
+{
+    static constexpr size_t DebuggerEvalPtr = offsetof(FuncEvalFrame, m_pDebuggerEval);
 };
 
 typedef DPTR(FuncEvalFrame) PTR_FuncEvalFrame;
@@ -1669,8 +1704,15 @@ public:
 #endif
         return dac_cast<PTR_VOID>(p);
     }
+
+    friend struct cdac_data<FramedMethodFrame>;
 };
 
+template<>
+struct cdac_data<FramedMethodFrame>
+{
+    static constexpr size_t TransitionBlockPtr = offsetof(FramedMethodFrame, m_pTransitionBlock);
+};
 
 #ifdef FEATURE_COMINTEROP
 
@@ -1963,6 +2005,15 @@ protected:
     TADDR               m_ReturnAddress;
     PTR_Thread          m_Thread;
     DPTR(HijackArgs)    m_Args;
+
+    friend struct ::cdac_data<HijackFrame>;
+};
+
+template<>
+struct cdac_data<HijackFrame>
+{
+    static constexpr size_t ReturnAddress = offsetof(HijackFrame, m_ReturnAddress);
+    static constexpr size_t HijackArgsPtr = offsetof(HijackFrame, m_Args);
 };
 
 #endif // FEATURE_HIJACK
@@ -2548,8 +2599,12 @@ struct ReversePInvokeFrame
 {
     Thread* currentThread;
     MethodDesc* pMD;
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     FrameHandlerExRecord record;
+#else
+    EXCEPTION_REGISTRATION_RECORD m_ExReg;
+#endif
 #endif
 };
 
@@ -2819,35 +2874,40 @@ public:
 #endif
 };
 
-#ifdef _DEBUG
-// We use IsProtectedByGCFrame to check if some OBJECTREF pointers are protected
-// against GC. That function doesn't know if a byref is from managed stack thus
-// protected by JIT. AssumeByrefFromJITStackFrame is used to bypass that check if an
-// OBJECTRef pointer is passed from managed code to an FCall and it's in stack.
+#ifdef FEATURE_INTERPRETER
+struct InterpMethodContextFrame;
+typedef DPTR(struct InterpMethodContextFrame) PTR_InterpMethodContextFrame;
 
-typedef DPTR(class AssumeByrefFromJITStackFrame) PTR_AssumeByrefFromJITStackFrame;
+typedef DPTR(class InterpreterFrame) PTR_InterpreterFrame;
 
-class AssumeByrefFromJITStackFrame : public Frame
+class InterpreterFrame : public FramedMethodFrame
 {
 public:
 #ifndef DACCESS_COMPILE
-    AssumeByrefFromJITStackFrame(OBJECTREF *pObjRef) : Frame(FrameIdentifier::AssumeByrefFromJITStackFrame)
+    InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
+        : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
+        m_pTopInterpMethodContextFrame(pContextFrame)
     {
-        m_pObjRef      = pObjRef;
+        WRAPPER_NO_CONTRACT;
+        Push();
     }
-#endif
 
-    BOOL Protects_Impl(OBJECTREF *ppORef)
+    void SetTopInterpMethodContextFrame(InterpMethodContextFrame* pTopInterpMethodContextFrame)
     {
-        LIMITED_METHOD_CONTRACT;
-        return ppORef == m_pObjRef;
+        m_pTopInterpMethodContextFrame = pTopInterpMethodContextFrame;
     }
+
+#endif // DACCESS_COMPILE
+    PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
 
 private:
-    OBJECTREF *m_pObjRef;
-}; //AssumeByrefFromJITStackFrame
+    // The last known topmost interpreter frame in the InterpExecMethod belonging to
+    // this InterpreterFrame.
+    PTR_InterpMethodContextFrame m_pTopInterpMethodContextFrame;
+    
+};
 
-#endif //_DEBUG
+#endif // FEATURE_INTERPRETER
 
 //------------------------------------------------------------------------
 // These macros GC-protect OBJECTREF pointers on the EE's behalf.
@@ -2919,8 +2979,7 @@ private:
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
                         FALSE);                                         \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_BEGIN_THREAD(pThread, ObjRefStruct)           do {    \
                 GCFrame __gcframe(                                      \
@@ -2928,16 +2987,14 @@ private:
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
                         FALSE);                                         \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_ARRAY_BEGIN(ObjRefArray,cnt) do {                     \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefArray),                     \
                         cnt * sizeof(ObjRefArray) / sizeof(OBJECTREF),  \
                         FALSE);                                         \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_BEGININTERIOR(ObjRefStruct)           do {            \
                 /* work around Wsizeof-pointer-div warning as we */     \
@@ -2947,20 +3004,18 @@ private:
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         subjectSize/sizeof(OBJECTREF),                  \
                         TRUE);                                          \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_BEGININTERIOR_ARRAY(ObjRefArray,cnt) do {             \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefArray),                     \
                         cnt,                                            \
                         TRUE);                                          \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 
 #define GCPROTECT_END()                                                 \
-                DEBUG_ASSURE_NO_RETURN_END(GCPROTECT) }                 \
+                }                                                       \
                 } while(0)
 
 
@@ -2976,27 +3031,6 @@ private:
 
 
 #define ASSERT_ADDRESS_IN_STACK(address) _ASSERTE (Thread::IsAddressInCurrentStack (address));
-
-#if defined (_DEBUG) && !defined (DACCESS_COMPILE)
-#define ASSUME_BYREF_FROM_JIT_STACK_BEGIN(__objRef)                                      \
-                /* make sure we are only called inside an FCall */                       \
-                if (__me == 0) {};                                                       \
-                /* make sure the address is in stack. If the address is an interior */   \
-                /*pointer points to GC heap, the FCall still needs to protect it explicitly */             \
-                ASSERT_ADDRESS_IN_STACK (__objRef);                                      \
-                do {                                                                     \
-                AssumeByrefFromJITStackFrame __dummyAssumeByrefFromJITStackFrame ((__objRef));       \
-                __dummyAssumeByrefFromJITStackFrame.Push ();                                  \
-                /* work around unreachable code warning */                               \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GC_PROTECT)
-
-#define ASSUME_BYREF_FROM_JIT_STACK_END()                                          \
-                DEBUG_ASSURE_NO_RETURN_END(GC_PROTECT) }                                            \
-                __dummyAssumeByrefFromJITStackFrame.Pop(); } while(0)
-#else //defined (_DEBUG) && !defined (DACCESS_COMPILE)
-#define ASSUME_BYREF_FROM_JIT_STACK_BEGIN(__objRef)
-#define ASSUME_BYREF_FROM_JIT_STACK_END()
-#endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
 
 void ComputeCallRefMap(MethodDesc* pMD,
                        GCRefMapBuilder * pBuilder,

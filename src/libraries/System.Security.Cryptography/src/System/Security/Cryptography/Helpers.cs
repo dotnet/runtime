@@ -455,5 +455,15 @@ namespace Internal.Cryptography
                 throw new ArgumentException(SR.Argument_PasswordNullChars, nameof(password));
             }
         }
+
+        internal static ReadOnlyMemory<byte>? ToNullableMemory(this byte[]? array)
+        {
+            if (array is null)
+            {
+                return default(ReadOnlyMemory<byte>?);
+            }
+
+            return array;
+        }
     }
 }

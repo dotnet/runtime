@@ -189,7 +189,9 @@ public:
     {
         TSF_Unknown             = 0x00000000,       // Threads are created in this state
         TSF_Attached            = 0x00000001,       // Thread was inited by first U->M transition on this thread
-        TSF_Detached            = 0x00000002,       // Thread was detached by DllMain
+                                                    // ...Prior to setting this bit the state is TSF_Unknown.
+        TSF_Detached            = 0x00000002,       // Thread was detached and no longer can run managed code.
+                                                    // ...TSF_Attached is cleared when TSF_Detached is set.
         TSF_SuppressGcStress    = 0x00000008,       // Do not allow gc stress on this thread, used in DllMain
                                                     // ...and on the Finalizer thread
         TSF_DoNotTriggerGc      = 0x00000010,       // Do not allow hijacking of this thread, also intended to

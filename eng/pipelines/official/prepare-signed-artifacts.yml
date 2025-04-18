@@ -1,0 +1,73 @@
+parameters:
+  - name: logArtifactName
+    type: string
+    default: 'Logs-PrepareSignedArtifacts_Attempt$(System.JobAttempt)'
+  - name: buildStage
+    type: stage
+
+jobs:
+- template: /eng/common/templates-official/job/job.yml
+  parameters:
+    name: 'PrepareSignedArtifacts'
+    displayName: 'Prepare Signed Artifacts'
+
+    pool:
+      name: $(DncEngInternalBuildPool)
+      demands: ImageOverride -equals 1es-windows-2022
+
+    # Double the default timeout.
+    timeoutInMinutes: 240
+
+    workspace:
+      clean: all
+
+    enableMicrobuild: true
+
+    variables:
+      - name: '_SignType'
+        value: $[ coalesce(variables.OfficialSignType, 'real') ]
+      
+    templateContext:
+      inputs:
+      - input: checkout
+        repository: self
+        clean: true
+        fetchDepth: 20
+      - ${{ each job in parameters.buildStage.jobs }}:
+        # Source Build publishes itself, so we don't need to publish it
+        - ${{ if notIn(job.job, 'Source_Build_Linux_x64')}}:
+          - input: pipelineArtifact
+            artifactName: ${{ job.job }}_Artifacts
+            targetPath: $(Build.SourcesDirectory)\artifacts
+            itemPattern: |
+              **/*
+              !_manifest/**/*
+      outputs:
+      - output: pipelineArtifact
+        displayName: 'Publish BuildLogs'
+        condition: succeededOrFailed()
+        targetPath: '$(Build.StagingDirectory)\BuildLogs'
+        artifactName: ${{ parameters.logArtifactName }}
+    
+    steps:
+    - script: >-
+        build.cmd -restore -sign -publish -ci -configuration Release
+        /p:RestoreToolsetOnly=true
+        /p:OfficialBuildId=$(Build.BuildNumber)
+        /p:SignType=$(_SignType)
+        /p:DotNetSignType=$(_SignType)
+        /p:DotNetPublishUsingPipelines=true
+        /p:DotNetFinalPublish=true
+        /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
+      displayName: Prepare artifacts and upload to build
+    
+    - task: CopyFiles@2
+      displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: |
+          **/*.log
+          **/*.binlog
+        TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+      continueOnError: true
+      condition: succeededOrFailed()

@@ -46,7 +46,7 @@ try {
             }
         })
         .withModuleConfig({
-            configSrc: "./blazor.boot.json",
+            configSrc: "./dotnet.boot.js",
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');

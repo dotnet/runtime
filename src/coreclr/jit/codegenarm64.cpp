@@ -1390,7 +1390,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->HasFlag(BBF_FUNCLET_BEG));
+    assert(compiler->bbIsFuncletBeg(block));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -2253,8 +2253,18 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
                                                insFlags flags DEBUGARG(size_t targetHandle)
                                                    DEBUGARG(GenTreeFlags gtFlags))
 {
-    instGen_Set_Reg_To_Imm(size, dstReg, imm);
-    GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+    // If the imm values < 12 bits, we can use a single "add rsvd, reg2, #imm".
+    // Otherwise, use "mov rsvd, #imm", followed up "add rsvd, reg2, rsvd".
+
+    if (imm < 4096)
+    {
+        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, dstReg, baseReg, imm);
+    }
+    else
+    {
+        instGen_Set_Reg_To_Imm(size, dstReg, imm);
+        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+    }
 }
 
 //  move an immediate value into an integer register
@@ -5147,6 +5157,23 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// genCompareImmAndJump: Generates code for a compare-and-branch between a register and
+//                       immediate value.
+//
+// The implementation tries to use cb(n)z wherever possible. Otherwise it will
+// fall back to a default cmp/b.cc sequence.
+//
+// Arguments:
+//    cond - The condition code to test (EQ/NE).
+//    reg  - The register to compare.
+//    compareImm - The immediate value to compare against.
+//    emitAttr - The size of the comparison.
+//    target - The branch target for when the check passes.
+//
+// Return Value:
+//    None
+//
 void CodeGen::genCompareImmAndJump(
     GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target)
 {
@@ -5158,13 +5185,6 @@ void CodeGen::genCompareImmAndJump(
         // We can use cbz/cbnz
         instruction ins = (cond == GenCondition::EQ) ? INS_cbz : INS_cbnz;
         GetEmitter()->emitIns_J_R(ins, size, target, reg);
-    }
-    else if (isPow2(compareImm))
-    {
-        // We can use tbz/tbnz
-        instruction ins = (cond == GenCondition::EQ) ? INS_tbz : INS_tbnz;
-        int         imm = genLog2((size_t)compareImm);
-        GetEmitter()->emitIns_J_R_I(ins, size, target, reg, imm);
     }
     else
     {
@@ -5297,14 +5317,14 @@ bool CodeGen::IsSaveFpLrWithAllCalleeSavedRegisters() const
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
-    void* addr  = nullptr;
     void* pAddr = nullptr;
 
-    emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
-    addr                           = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
-    regNumber callTarget           = REG_NA;
+    EmitCallParams params;
+    params.callType   = EC_FUNC_TOKEN;
+    params.addr       = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
+    regMaskTP killSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    if (addr == nullptr)
+    if (params.addr == nullptr)
     {
         // This is call to a runtime helper.
         // adrp x, [reloc:rel page addr]
@@ -5320,37 +5340,33 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         }
 
         regMaskTP callTargetMask = genRegMask(callTargetReg);
-        regMaskTP callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-        // assert that all registers in callTargetMask are in the callKillSet
-        noway_assert((callTargetMask & callKillSet) == callTargetMask);
-
-        callTarget = callTargetReg;
+        noway_assert((callTargetMask & killSet) == callTargetMask);
 
         if (compiler->opts.compReloc)
         {
             // adrp + add with relocations will be emitted
-            GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget,
+            GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTargetReg,
                                        (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
                                            DEBUGARG(GTF_ICON_METHOD_HDL));
         }
         else
         {
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTarget, (ssize_t)addr);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTargetReg, (ssize_t)pAddr);
         }
-        GetEmitter()->emitIns_R_R(INS_ldr, EA_PTRSIZE, callTarget, callTarget);
-        callType = emitter::EC_INDIR_R;
+        GetEmitter()->emitIns_R_R(INS_ldr, EA_PTRSIZE, callTargetReg, callTargetReg);
+
+        params.callType = EC_INDIR_R;
+        params.ireg     = callTargetReg;
     }
 
-    GetEmitter()->emitIns_Call(callType, compiler->eeFindHelper(helper), INDEBUG_LDISASM_COMMA(nullptr) addr, argSize,
-                               retSize, EA_UNKNOWN, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur, DebugInfo(), callTarget, /* ireg */
-                               REG_NA, 0, 0,                                     /* xreg, xmul, disp */
-                               false                                             /* isJump */
-    );
+    params.methHnd = compiler->eeFindHelper(helper);
+    params.argSize = argSize;
+    params.retSize = retSize;
 
-    regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
-    regSet.verifyRegistersUsed(killMask);
+    genEmitCallWithCurrentGC(params);
+
+    regSet.verifyRegistersUsed(killSet);
 }
 
 #ifdef FEATURE_SIMD
