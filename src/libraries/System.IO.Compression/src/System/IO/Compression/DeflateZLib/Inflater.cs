@@ -3,9 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Security;
 
 namespace System.IO.Compression
 {
@@ -14,15 +12,15 @@ namespace System.IO.Compression
     /// </summary>
     internal sealed class Inflater : IDisposable
     {
-        private const int MinWindowBits = -15;              // WindowBits must be between -8..-15 to ignore the header, 8..15 for
-        private const int MaxWindowBits = 47;               // zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
+        private const int MinWindowBits = -15;                      // WindowBits must be between -8..-15 to ignore the header, 8..15 for
+        private const int MaxWindowBits = 47;                       // zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
 
-        private bool _nonEmptyInput;                        // Whether there is any non empty input
-        private bool _finished;                             // Whether the end of the stream has been reached
-        private bool _isDisposed;                           // Prevents multiple disposals
-        private readonly int _windowBits;                   // The WindowBits parameter passed to Inflater construction
-        private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
-        private MemoryHandle _inputBufferHandle;            // The handle to the buffer that provides input to _zlibStream
+        private bool _nonEmptyInput;                                // Whether there is any non empty input
+        private bool _finished;                                     // Whether the end of the stream has been reached
+        private bool _isDisposed;                                   // Prevents multiple disposals
+        private readonly int _windowBits;                           // The WindowBits parameter passed to Inflater construction
+        private readonly ZLibNative.ZLibStreamHandle _zlibStream;   // The handle to the primary underlying zlib stream
+        private MemoryHandle _inputBufferHandle;                    // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
 
@@ -34,12 +32,46 @@ namespace System.IO.Compression
         internal Inflater(int windowBits, long uncompressedSize = -1)
         {
             Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
+
+            ZLibNative.ZLibStreamHandle? zlibStream = null;
+            ZLibNative.ErrorCode error;
+
             _finished = false;
             _nonEmptyInput = false;
             _isDisposed = false;
             _windowBits = windowBits;
-            InflateInit(windowBits);
             _uncompressedSize = uncompressedSize;
+
+            try
+            {
+                error = ZLibNative.CreateZLibStreamForInflate(out zlibStream, windowBits);
+
+                _zlibStream = zlibStream;
+            }
+            catch (Exception exception) // could not load the ZLib dll
+            {
+                zlibStream?.Dispose();
+                GC.SuppressFinalize(this);
+                throw new ZLibException(SR.ZLibErrorDLLLoadError, exception);
+            }
+
+            switch (error)
+            {
+                case ZLibNative.ErrorCode.Ok:           // Successful initialization
+                    return;
+
+                case ZLibNative.ErrorCode.MemError:     // Not enough memory
+                    throw new ZLibException(SR.ZLibErrorNotEnoughMemory, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
+
+                case ZLibNative.ErrorCode.VersionError: //zlib library is incompatible with the version assumed
+                    throw new ZLibException(SR.ZLibErrorVersionMismatch, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
+
+                case ZLibNative.ErrorCode.StreamError:  // Parameters are invalid
+                    throw new ZLibException(SR.ZLibErrorIncorrectInitParameters, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
+
+                default:
+                    throw new ZLibException(SR.ZLibErrorUnexpected, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
+            }
         }
 
         public int AvailableOutput => (int)_zlibStream.AvailOut;
@@ -229,48 +261,6 @@ namespace System.IO.Compression
         ~Inflater()
         {
             Dispose(false);
-        }
-
-        /// <summary>
-        /// Creates the ZStream that will handle inflation.
-        /// </summary>
-        [MemberNotNull(nameof(_zlibStream))]
-        private void InflateInit(int windowBits)
-        {
-            Debug.Assert(_zlibStream is null);
-
-            ZLibNative.ZLibStreamHandle? zlibStream = null;
-            ZLibNative.ErrorCode error;
-            try
-            {
-                error = ZLibNative.CreateZLibStreamForInflate(out zlibStream, windowBits);
-
-                _zlibStream = zlibStream;
-            }
-            catch (Exception exception) // could not load the ZLib dll
-            {
-                zlibStream?.Dispose();
-                GC.SuppressFinalize(this);
-                throw new ZLibException(SR.ZLibErrorDLLLoadError, exception);
-            }
-
-            switch (error)
-            {
-                case ZLibNative.ErrorCode.Ok:           // Successful initialization
-                    return;
-
-                case ZLibNative.ErrorCode.MemError:     // Not enough memory
-                    throw new ZLibException(SR.ZLibErrorNotEnoughMemory, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-
-                case ZLibNative.ErrorCode.VersionError: //zlib library is incompatible with the version assumed
-                    throw new ZLibException(SR.ZLibErrorVersionMismatch, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-
-                case ZLibNative.ErrorCode.StreamError:  // Parameters are invalid
-                    throw new ZLibException(SR.ZLibErrorIncorrectInitParameters, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-
-                default:
-                    throw new ZLibException(SR.ZLibErrorUnexpected, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-            }
         }
 
         /// <summary>
