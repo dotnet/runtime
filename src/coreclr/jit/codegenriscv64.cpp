@@ -1187,7 +1187,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
-// Generate code for ADD, SUB, MUL, AND, AND_NOT, OR and XOR
+// Generate code for ADD, SUB, MUL, AND, AND_NOT, OR, OR_NOT, XOR, and XOR_NOT
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
@@ -1195,7 +1195,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     regNumber        targetReg = treeNode->GetRegNum();
     emitter*         emit      = GetEmitter();
 
-    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
+    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_OR_NOT, GT_XOR, GT_XOR_NOT));
 
     GenTree*    op1 = treeNode->gtGetOp1();
     GenTree*    op2 = treeNode->gtGetOp2();
@@ -1827,7 +1827,25 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 //
 void CodeGen::genCodeForBswap(GenTree* tree)
 {
-    NYI_RISCV64("genCodeForBswap-----unimplemented on RISCV64 yet----");
+    assert(tree->OperIs(GT_BSWAP, GT_BSWAP16));
+    var_types type = tree->gtGetOp1()->TypeGet();
+    emitAttr  size = emitTypeSize(type);
+    regNumber dest = tree->GetRegNum();
+    regNumber src  = genConsumeReg(tree->gtGetOp1());
+
+    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+    emitter& emit = *GetEmitter();
+    emit.emitIns_R_R(INS_rev8, size, dest, src);
+    if (size < EA_PTRSIZE)
+    {
+        int shiftAmount = tree->OperIs(GT_BSWAP16) ? 48 : 32;
+        // TODO: we need to right-shift the byte-reversed register anyway. Remove the cast (in Lowering::LowerCast?)
+        // wrapping GT_BSWAP16 and pass the exact destination type here, so that this codegen could leave the register
+        // properly extended.
+        emit.emitIns_R_R_I(INS_srli, size, dest, dest, shiftAmount);
+    }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -2637,7 +2655,9 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             case GT_AND_NOT:
-                NYI_RISCV64("GT_AND_NOT-----unimplemented/unused on RISCV64 yet----");
+                assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                assert(!isImmed(treeNode));
+                ins = INS_andn;
                 break;
 
             case GT_OR:
@@ -2650,6 +2670,12 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 {
                     ins = INS_or;
                 }
+                break;
+
+            case GT_OR_NOT:
+                assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                assert(!isImmed(treeNode));
+                ins = INS_orn;
                 break;
 
             case GT_LSH:
@@ -2747,6 +2773,12 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 {
                     ins = INS_xor;
                 }
+                break;
+
+            case GT_XOR_NOT:
+                assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                assert(!isImmed(treeNode));
+                ins = INS_xnor;
                 break;
 
             default:
@@ -4301,6 +4333,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_XOR:
         case GT_AND:
         case GT_AND_NOT:
+        case GT_OR_NOT:
+        case GT_XOR_NOT:
             assert(varTypeIsIntegralOrI(treeNode));
 
             FALLTHROUGH;
@@ -5336,48 +5370,81 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTree* operand = tree->gtGetOp1();
     GenTree* shiftBy = tree->gtGetOp2();
 
+    unsigned immWidth = emitter::getBitWidth(size); // For RISCV64, immWidth will be set to 32 or 64
+
     if (tree->OperIs(GT_ROR, GT_ROL))
     {
-        regNumber tempReg  = internalRegisters.GetSingle(tree);
-        unsigned  immWidth = emitter::getBitWidth(size); // For RISCV64, immWidth will be set to 32 or 64
-        if (!shiftBy->IsCnsIntOrI())
+        if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
         {
-            regNumber shiftRight = tree->OperIs(GT_ROR) ? shiftBy->GetRegNum() : tempReg;
-            regNumber shiftLeft  = tree->OperIs(GT_ROR) ? tempReg : shiftBy->GetRegNum();
-            GetEmitter()->emitIns_R_R_I(INS_addi, size, tempReg, REG_R0, immWidth);
-            GetEmitter()->emitIns_R_R_R(INS_sub, size, tempReg, tempReg, shiftBy->GetRegNum());
-            if (size == EA_8BYTE)
+            bool is4 = (size == EA_4BYTE);
+            bool isR = tree->OperIs(GT_ROR);
+            if (!shiftBy->IsCnsIntOrI())
             {
-                GetEmitter()->emitIns_R_R_R(INS_srl, size, REG_RA, operand->GetRegNum(), shiftRight);
-                GetEmitter()->emitIns_R_R_R(INS_sll, size, tempReg, operand->GetRegNum(), shiftLeft);
+                instruction ins;
+                if (isR)
+                {
+                    ins = is4 ? INS_rorw : INS_ror;
+                }
+                else
+                {
+                    ins = is4 ? INS_rolw : INS_rol;
+                }
+                GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
             }
             else
             {
-                GetEmitter()->emitIns_R_R_R(INS_srlw, size, REG_RA, operand->GetRegNum(), shiftRight);
-                GetEmitter()->emitIns_R_R_R(INS_sllw, size, tempReg, operand->GetRegNum(), shiftLeft);
+                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+                assert(shiftByImm < immWidth);
+                if (!isR)
+                {
+                    shiftByImm = immWidth - shiftByImm;
+                }
+                instruction ins = is4 ? INS_roriw : INS_rori;
+                GetEmitter()->emitIns_R_R_I(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
             }
         }
         else
         {
-            unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
-            if (shiftByImm >= 32 && shiftByImm < 64)
+            regNumber tempReg = internalRegisters.GetSingle(tree);
+            if (!shiftBy->IsCnsIntOrI())
             {
-                immWidth = 64;
-            }
-            unsigned shiftRight = tree->OperIs(GT_ROR) ? shiftByImm : immWidth - shiftByImm;
-            unsigned shiftLeft  = tree->OperIs(GT_ROR) ? immWidth - shiftByImm : shiftByImm;
-            if ((shiftByImm >= 32 && shiftByImm < 64) || size == EA_8BYTE)
-            {
-                GetEmitter()->emitIns_R_R_I(INS_srli, size, REG_RA, operand->GetRegNum(), shiftRight);
-                GetEmitter()->emitIns_R_R_I(INS_slli, size, tempReg, operand->GetRegNum(), shiftLeft);
+                regNumber shiftRight = tree->OperIs(GT_ROR) ? shiftBy->GetRegNum() : tempReg;
+                regNumber shiftLeft  = tree->OperIs(GT_ROR) ? tempReg : shiftBy->GetRegNum();
+                GetEmitter()->emitIns_R_R_I(INS_addi, size, tempReg, REG_R0, immWidth);
+                GetEmitter()->emitIns_R_R_R(INS_sub, size, tempReg, tempReg, shiftBy->GetRegNum());
+                if (size == EA_8BYTE)
+                {
+                    GetEmitter()->emitIns_R_R_R(INS_srl, size, REG_RA, operand->GetRegNum(), shiftRight);
+                    GetEmitter()->emitIns_R_R_R(INS_sll, size, tempReg, operand->GetRegNum(), shiftLeft);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(INS_srlw, size, REG_RA, operand->GetRegNum(), shiftRight);
+                    GetEmitter()->emitIns_R_R_R(INS_sllw, size, tempReg, operand->GetRegNum(), shiftLeft);
+                }
             }
             else
             {
-                GetEmitter()->emitIns_R_R_I(INS_srliw, size, REG_RA, operand->GetRegNum(), shiftRight);
-                GetEmitter()->emitIns_R_R_I(INS_slliw, size, tempReg, operand->GetRegNum(), shiftLeft);
+                unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+                if (shiftByImm >= 32 && shiftByImm < 64)
+                {
+                    immWidth = 64;
+                }
+                unsigned shiftRight = tree->OperIs(GT_ROR) ? shiftByImm : immWidth - shiftByImm;
+                unsigned shiftLeft  = tree->OperIs(GT_ROR) ? immWidth - shiftByImm : shiftByImm;
+                if ((shiftByImm >= 32 && shiftByImm < 64) || size == EA_8BYTE)
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_srli, size, REG_RA, operand->GetRegNum(), shiftRight);
+                    GetEmitter()->emitIns_R_R_I(INS_slli, size, tempReg, operand->GetRegNum(), shiftLeft);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_srliw, size, REG_RA, operand->GetRegNum(), shiftRight);
+                    GetEmitter()->emitIns_R_R_I(INS_slliw, size, tempReg, operand->GetRegNum(), shiftLeft);
+                }
             }
+            GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), REG_RA, tempReg);
         }
-        GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), REG_RA, tempReg);
     }
     else
     {
@@ -5392,7 +5459,6 @@ void CodeGen::genCodeForShift(GenTree* tree)
             unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
 
             // should check shiftByImm for riscv64-ins.
-            unsigned immWidth = emitter::getBitWidth(size); // For RISCV64, immWidth will be set to 32 or 64
             shiftByImm &= (immWidth - 1);
 
             if (ins == INS_slliw && shiftByImm >= 32)
@@ -6329,28 +6395,37 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
                 if (desc.ExtendSrcSize() == 1)
                 {
-                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 8);
-                    emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 64 - 8);
+                    emit->emitIns_R_R_I(INS_andi, EA_PTRSIZE, dstReg, srcReg, 0xff);
+                    break;
                 }
-                else
-                {
-
-                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 16);
-                    emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 64 - 16);
-                }
-                break;
+                FALLTHROUGH;
             case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
-                if (desc.ExtendSrcSize() == 1)
+            {
+                bool isSignExtend = (desc.ExtendKind() == GenIntCastDesc::SIGN_EXTEND_SMALL_INT);
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
                 {
-                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 8);
-                    emit->emitIns_R_R_I(INS_srai, EA_PTRSIZE, dstReg, dstReg, 64 - 8);
+                    instruction extend = INS_none;
+                    bool        isHalf = (desc.ExtendSrcSize() == 2);
+                    if (isSignExtend)
+                    {
+                        extend = isHalf ? INS_sext_h : INS_sext_b;
+                    }
+                    else
+                    {
+                        assert(isHalf);
+                        extend = INS_zext_h;
+                    }
+                    emit->emitIns_R_R(extend, EA_PTRSIZE, dstReg, srcReg);
                 }
                 else
                 {
-                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 16);
-                    emit->emitIns_R_R_I(INS_srai, EA_PTRSIZE, dstReg, dstReg, 64 - 16);
+                    instruction shiftRight  = isSignExtend ? INS_srai : INS_srli;
+                    unsigned    shiftAmount = 64 - desc.ExtendSrcSize() * 8;
+                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, shiftAmount);
+                    emit->emitIns_R_R_I(shiftRight, EA_PTRSIZE, dstReg, dstReg, shiftAmount);
                 }
                 break;
+            }
 
             case GenIntCastDesc::ZERO_EXTEND_INT:
 
