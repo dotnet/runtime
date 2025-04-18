@@ -1339,6 +1339,22 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     goto DONE_ASSERTION;
                 }
 
+                case GT_CALL:
+                {
+                    if (optLocalAssertionProp)
+                    {
+                        GenTreeCall* const call = op2->AsCall();
+                        if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(call->GetHelperNum()))
+                        {
+                            assertion.assertionKind  = OAK_NOT_EQUAL;
+                            assertion.op2.kind       = O2K_CONST_INT;
+                            assertion.op2.u1.iconVal = 0;
+                            goto DONE_ASSERTION;
+                        }
+                    }
+                    break;
+                }
+
                 default:
                     break;
             }
