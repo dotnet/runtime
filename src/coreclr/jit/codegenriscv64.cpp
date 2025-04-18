@@ -6176,18 +6176,37 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // For fast tailcall we have already consumed the target. We ensure in
         // RA that the target was allocated into a volatile register that will
         // not be messed up by epilog sequence.
-        if (!call->IsFastTailCall())
+        if (!call->IsFastTailCall() && !target->isContainedIntOrIImmed())
         {
             genConsumeReg(target);
+        }
+
+        regNumber targetReg;
+        ssize_t   jalrOffset = 0;
+
+        if (target->isContainedIntOrIImmed())
+        {
+            // Load upper (64-12) bits to a temporary register. Lower 12 bits will be put inside JALR's instruction as
+            // offset.
+            targetReg   = internalRegisters.GetSingle(call);
+            ssize_t imm = target->AsIntCon()->IconValue();
+            jalrOffset  = (imm << (64 - 12)) >> (64 - 12);
+            imm -= jalrOffset;
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, targetReg, imm);
+        }
+        else
+        {
+            targetReg = target->GetRegNum();
         }
 
         // We have already generated code for gtControlExpr evaluating it into a register.
         // We just need to emit "call reg" in this case.
         //
-        assert(genIsValidIntReg(target->GetRegNum()));
+        assert(genIsValidIntReg(targetReg));
 
         params.callType = EC_INDIR_R;
-        params.ireg     = target->GetRegNum();
+        params.ireg     = targetReg;
+        params.addr     = (jalrOffset == 0) ? nullptr : (void*)jalrOffset; // We use addr to pass offset value
 
         genEmitCallWithCurrentGC(params);
     }

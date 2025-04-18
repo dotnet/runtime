@@ -957,6 +957,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
             }
             assert(ctrlExprCandidates != RBM_NONE);
         }
+
+        // In case ctrlExpr is a contained constant, we need a register to store the value.
+        if (ctrlExpr->isContainedIntOrIImmed())
+        {
+            buildInternalIntRegisterDefForNode(call);
+        }
     }
     else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
@@ -994,7 +1000,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     srcCount += BuildCallArgUses(call);
 
-    if (ctrlExpr != nullptr)
+    if (ctrlExpr != nullptr && !ctrlExpr->isContainedIntOrIImmed())
     {
         BuildUse(ctrlExpr, ctrlExprCandidates);
         srcCount++;
