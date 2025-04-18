@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Threading;
 
@@ -10,9 +11,13 @@ namespace System.Net.Sockets
     [EventSource(Name = "System.Net.Sockets")]
     internal sealed class SocketsTelemetry : EventSource
     {
+        [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
+        private static bool IsActivitySourceSupported { get; } = InitializeIsActivitySourceSupported();
+        private static bool InitializeIsActivitySourceSupported() => AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
+
         private const string ActivitySourceName = "Experimental.System.Net.Sockets";
         private const string ConnectActivityName = ActivitySourceName + ".Connect";
-        private static readonly ActivitySource s_connectActivitySource = new ActivitySource(ActivitySourceName);
+        private static readonly ActivitySource? s_connectActivitySource = IsActivitySourceSupported ? new ActivitySource(string.Empty) : null;
 
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
@@ -91,7 +96,7 @@ namespace System.Net.Sockets
             }
 
             Activity? activity = null;
-            if (s_connectActivitySource.HasListeners())
+            if (IsActivitySourceSupported && s_connectActivitySource!.HasListeners())
             {
                 Activity? activityToReset = keepActivityCurrent ? Activity.Current : null;
                 activity = s_connectActivitySource.StartActivity(ConnectActivityName);
@@ -102,7 +107,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (activity is not null)
+            if (IsActivitySourceSupported && activity is not null)
             {
                 if (endPoint is IPEndPoint ipEndPoint)
                 {
@@ -147,7 +152,7 @@ namespace System.Net.Sockets
             long newCount = Interlocked.Decrement(ref _currentOutgoingConnectAttempts);
             Debug.Assert(newCount >= 0);
 
-            if (activity is not null)
+            if (IsActivitySourceSupported && activity is not null)
             {
                 if (error != SocketError.Success)
                 {

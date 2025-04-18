@@ -557,7 +557,7 @@ namespace System.Net.Http
             Exception? exception = null;
             TransportContext? transportContext = null;
 
-            Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, OriginAuthority);
+            Activity? activity = GlobalHttpSettings.ActivitySource.IsSupported ? ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, OriginAuthority) : null;
 
             try
             {
@@ -624,14 +624,14 @@ namespace System.Net.Http
                     stream = sslStream;
                 }
             }
-            catch (Exception ex) when (activity is not null)
+            catch (Exception ex) when (GlobalHttpSettings.ActivitySource.IsSupported && activity is not null)
             {
                 exception = ex;
                 throw;
             }
             finally
             {
-                if (activity is not null)
+                if (GlobalHttpSettings.ActivitySource.IsSupported && activity is not null)
                 {
                     ConnectionSetupDistributedTracing.StopConnectionSetupActivity(activity, exception, remoteEndPoint);
                 }

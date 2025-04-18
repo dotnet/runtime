@@ -71,7 +71,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
             while (startIdx < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[startIdx]))
                 startIdx++;
 
-            if (IsActivitySourceEntry(filterAndPayloadSpecs, startIdx, endIdx))
+            if (ActivitySource.IsSupported && IsActivitySourceEntry(filterAndPayloadSpecs, startIdx, endIdx))
             {
                 activitySourceSpecList = CreateActivitySourceTransform(eventSource, filterAndPayloadSpecs, startIdx, endIdx, activitySourceSpecList);
             }
@@ -85,7 +85,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
                 break;
         }
 
-        DsesActivitySourceListener? activitySourceListener = activitySourceSpecList != null
+        DsesActivitySourceListener? activitySourceListener = ActivitySource.IsSupported && activitySourceSpecList != null
             ? DsesActivitySourceListener.Create(eventSource, activitySourceSpecList)
             : null;
 

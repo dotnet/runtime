@@ -2427,7 +2427,7 @@ namespace System.Diagnostics.Tests
         {
             Activity activity = new Activity("testLinksActivity");
 
-            Assert.Equal("[]", activity.Links.ToString());
+            Assert.Equal("System.Diagnostics.ActivityLink[]", activity.Links.ToString());
 
             activity.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded), new ActivityTagsCollection { ["alk1"] = "alv1", ["alk2"] = "alv2", ["alk3"] = null }));
             activity.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None)));
@@ -2477,7 +2477,7 @@ namespace System.Diagnostics.Tests
         {
             Activity activity = new Activity("testLinksActivity");
 
-            Assert.Equal("[]", activity.Events.ToString());
+            Assert.Equal("System.Diagnostics.ActivityEvent[]", activity.Events.ToString());
 
             activity.AddEvent(new ActivityEvent("TestEvent1", DateTime.UtcNow, new ActivityTagsCollection { { "E11", "EV1" }, { "E12", "EV2" } }));
             activity.AddEvent(new ActivityEvent("TestEvent2", DateTime.UtcNow.AddSeconds(10), new ActivityTagsCollection { { "E21", "EV21" }, { "E22", "EV22" } }));

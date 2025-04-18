@@ -20,6 +20,11 @@ internal sealed class DsesActivitySourceListener : IDisposable
         DiagnosticSourceEventSource eventSource,
         DsesFilterAndTransform activitySourceSpecs)
     {
+        if (!ActivitySource.IsSupported)
+        {
+            throw new NotSupportedException("Linked away");
+        }
+
         var listener = new DsesActivitySourceListener(eventSource);
 
         listener.NormalizeActivitySourceSpecsList(activitySourceSpecs);

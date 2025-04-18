@@ -12,10 +12,14 @@ namespace System.Net.Security
     [EventSource(Name = "System.Net.Security")]
     internal sealed class NetSecurityTelemetry : EventSource
     {
+        [FeatureSwitchDefinition("System.Diagnostics.ActivitySource.IsSupported")]
+        private static bool IsActivitySourceSupported { get; } = InitializeIsActivitySourceSupported();
+        private static bool InitializeIsActivitySourceSupported() => AppContext.TryGetSwitch("System.Diagnostics.ActivitySource.IsSupported", out bool isSupported) ? isSupported : true;
+
         private const string ActivitySourceName = "Experimental.System.Net.Security";
         private const string ActivityName = ActivitySourceName + ".TlsHandshake";
 
-        private static readonly ActivitySource s_activitySource = new ActivitySource(ActivitySourceName);
+        private static readonly ActivitySource? s_activitySource = IsActivitySourceSupported ? new ActivitySource(string.Empty) : null;
 
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
         public static readonly NetSecurityTelemetry Log = new NetSecurityTelemetry();
@@ -44,7 +48,7 @@ namespace System.Net.Security
         private long _sessionsOpenTls12;
         private long _sessionsOpenTls13;
 
-        public static bool AnyTelemetryEnabled() => Log.IsEnabled() || s_activitySource.HasListeners();
+        public static bool AnyTelemetryEnabled() => Log.IsEnabled() || (IsActivitySourceSupported && s_activitySource!.HasListeners());
 
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
@@ -315,8 +319,8 @@ namespace System.Net.Security
         [NonEvent]
         public static Activity? StartActivity(SslStream stream)
         {
-            using Activity? activity = s_activitySource.StartActivity(ActivityName);
-            if (activity is not null)
+            using Activity? activity = IsActivitySourceSupported ? s_activitySource!.StartActivity(ActivityName) : null;
+            if (IsActivitySourceSupported && activity is not null)
             {
                 activity.DisplayName = stream.IsServer ? "TLS server handshake" : $"TLS client handshake {stream.TargetHostName}";
                 if (activity.IsAllDataRequested && !stream.IsServer)

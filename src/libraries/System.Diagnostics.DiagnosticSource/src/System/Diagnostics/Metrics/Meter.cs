@@ -27,6 +27,9 @@ namespace System.Diagnostics.Metrics
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
 
+        [FeatureSwitchDefinition("System.Diagnostics.Tracing.EventSource.IsSupported")]
+        internal static bool IsEventSourceSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
+
         /// <summary>
         /// Initialize a new instance of the Meter using the <see cref="MeterOptions" />.
         /// </summary>
@@ -99,7 +102,10 @@ namespace System.Diagnostics.Metrics
             }
 
             // Ensure the metrics EventSource has been created in case we need to log this meter
-            GC.KeepAlive(MetricsEventSource.Log);
+            if (IsEventSourceSupported)
+            {
+                GC.KeepAlive(MetricsEventSource.Log);
+            }
         }
 
         /// <summary>

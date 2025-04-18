@@ -398,6 +398,12 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
   <!-- enables system events https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/diagnostics#observability-and-telemetry -->
   <!-- this is existing switch also on other targets -->
   <EventSourceSupport>true</EventSourceSupport>
+  
+  <!-- enables support for Activity, ActivitySource, ActivityListener -->
+  <ActivitySourceSupport>true</ActivitySourceSupport>
+
+  <!-- enables support for DiagnosticsHandler of HTTP client -->
+  <HttpActivityPropagationSupport>true</HttpActivityPropagationSupport>
 </PropertyGroup>
 ```
 
