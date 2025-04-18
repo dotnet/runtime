@@ -1533,6 +1533,58 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
 }
 #endif // FEATURE_SIZED_REF_HANDLES
 
+#ifdef FEATURE_GCBRIDGE
+
+uint8_t** g_bridgeObjectsToPromote = 0;
+size_t g_bridgeNumObjs = 0;
+
+void CALLBACK GetBridgeObjectsForProcessing(_UNCHECKED_OBJECTREF* pObjRef, uintptr_t* pExtraInfo, uintptr_t lp1, uintptr_t lp2)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Object** ppRef = (Object**)pObjRef;
+    if (!g_theGCHeap->IsPromoted(*ppRef))
+    {
+        // add to g_bridgeObjectsToPromote.
+    }
+}
+
+uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext* sc, size_t* numObjs)
+{
+    WRAPPER_NO_CONTRACT;
+
+    LOG((LF_GC | LF_CORPROF, LL_INFO10000, "Building bridge object graphs.\n"));
+    uint32_t flags = HNDGCF_NORMAL;
+    uint32_t type = HNDTYPE_CROSSREFERENCE;
+
+    HandleTableMap* walk = &g_HandleTableMap;
+    while (walk) {
+        for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i++)
+            if (walk->pBuckets[i] != NULL)
+            {
+                for (int uCPUindex = 0; uCPUindex < getNumberOfSlots(); uCPUindex++)
+                {
+                    HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
+                    if (hTable)
+                        // or have a local var for bridgeObjectsToPromote/size (instead of NULL) that's passed in as lp2
+                        HndScanHandlesForGC(hTable, GetBridgeObjectsForProcessing, uintptr_t(sc), NULL, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
+                }
+            }
+        walk = walk->pNext;
+    }
+
+    //
+    // Build graph here.
+    //
+    // The callee here will free the allocated memory.
+    GCToEEInterface::TriggerGCBridge(0, nullptr, 0, nullptr);
+
+    *numObjs = g_bridgeNumObjs;
+
+    return g_bridgeObjectsToPromote;
+}
+#endif //FEATURE_GCBRIDGE
+
 void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
     WRAPPER_NO_CONTRACT;

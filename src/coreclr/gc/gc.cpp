@@ -670,7 +670,8 @@ enum gc_join_stage
     // No longer in use but do not remove, see comments for this enum.
     gc_join_disable_software_write_watch = 38,
     gc_join_merge_temp_fl = 39,
-    gc_join_max = 40
+    gc_join_bridge_processing = 40,
+    gc_join_max = 41
 };
 
 enum gc_join_flavor
@@ -2715,6 +2716,11 @@ mark*       gc_heap::loh_pinned_queue = 0;
 
 BOOL        gc_heap::loh_compacted_p = FALSE;
 #endif //FEATURE_LOH_COMPACTION
+
+#ifdef FEATURE_GCBRIDGE
+uint8_t**   gc_heap::bridge_list = 0;
+size_t      gc_heap::num_bridge_objs = 0;
+#endif //FEATURE_GCBRIDGE
 
 #ifdef BACKGROUND_GC
 
@@ -30449,8 +30455,45 @@ void gc_heap::mark_phase (int condemned_gen_number)
     mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
-    // TODO
-    // Scan the set of dead bridge objects, construct SCC graph, pass it over to java marshal
+#ifdef FEATURE_GCBRIDGE
+    uint8_t** global_bridge_list = 0;
+    size_t total_num_bridge_objs = 0;
+
+#ifdef MULTIPLE_HEAPS
+    dprintf(3, ("Joining for short weak handle scan"));
+    gc_t_join.join(this, gc_join_bridge_processing);
+    if (gc_t_join.joined())
+    {
+#endif //MULTIPLE_HEAPS
+        global_bridge_list = GCScan::GcProcessBridgeObjects (condemned_gen_number, max_generation, &sc, &total_num_bridge_objs);
+
+        // divide this up between heaps, fill in each heap's bridge_list and num_bridge_objs.
+        for (int i = 0; i < n_heaps; i++)
+        {
+        }
+
+#ifdef MULTIPLE_HEAPS
+        dprintf (3, ("Starting all gc thread after bridge processing"));
+        gc_t_join.restart();
+    }
+#else //MULTIPLE_HEAPS
+    bridge_list = global_bridge_list;
+    num_bridge_objs = total_num_bridge_objs;
+#endif //MULTIPLE_HEAPS
+
+    {
+        // now actually mark these bridge objects
+        int thread = heap_number;
+        for (int obj_idx = 0; obj_idx < num_bridge_objs; obj_idx++)
+        {
+            mark_object_simple (&bridge_list[obj_idx] THREAD_NUMBER_ARG);
+        }
+
+        drain_mark_queue();
+        // using GC_ROOT_DH_HANDLES temporarily. add a new value for GC_ROOT_BRIDGE
+        fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
+    }
+#endif //FEATURE_GCBRIDGE
 
 #ifdef MULTIPLE_HEAPS
     dprintf(3, ("Joining for short weak handle scan"));
@@ -39182,6 +39225,10 @@ void gc_heap::background_mark_phase ()
 
     dprintf (2, ("after NR 1st Hov count: %zu", bgc_overflow_count));
     bgc_overflow_count = 0;
+
+#ifdef FEATURE_GCBRIDGE
+    // FIXME Bridge impl for BGC goes here.
+#endif //FEATURE_GCBRIDGE
 
 #ifdef MULTIPLE_HEAPS
     bgc_t_join.join(this, gc_join_null_dead_short_weak);
