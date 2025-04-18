@@ -868,23 +868,32 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 
     gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
 
-    uint32_t stackSlotCount = m_totalVarsStackSize / INTERP_STACK_SLOT_SIZE;
-    GcSlotId *slotsByOffset = (GcSlotId *)alloca(stackSlotCount * sizeof(GcSlotId));
+    uint32_t stackSlotCount = m_totalVarsStackSize / INTERP_STACK_SLOT_SIZE,
+        slotTableSize = stackSlotCount * sizeof(GcSlotId);
+    // [pObjects, pByrefs]
+    GcSlotId *slotTables[2] = {
+        (GcSlotId *)alloca(slotTableSize),
+        (GcSlotId *)alloca(slotTableSize)
+    };
     // 0 is a valid slot id so default-initialize all the slots to 0xFFFFFFFF
-    memset(slotsByOffset, 0xFF, stackSlotCount * sizeof(GcSlotId));
+    for (int i = 0; i < 2; i++)
+        memset(slotTables[i], 0xFF, slotTableSize);
 
     INTERP_DUMP("Allocating gcinfo slots for %u vars\n", m_varsSize);
 
     // Request slot IDs for all our vars, not just IL vars
     for (int i = 0; i < m_varsSize; i++)
     {
+        GcSlotId *slotTable;
         InterpVar *pVar = &m_pVars[i];
         GcSlotFlags flags;
         switch (pVar->interpType) {
             case InterpTypeO:
+                slotTable = slotTables[0];
                 flags = (GcSlotFlags)0;
                 break;
             case InterpTypeByRef:
+                slotTable = slotTables[1];
                 flags = (GcSlotFlags)GC_SLOT_INTERIOR;
                 break;
             default:
@@ -895,11 +904,11 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
             flags = (GcSlotFlags)(flags | GC_SLOT_UNTRACKED);
 
         uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
-        uint8_t allocateNewSlot = slotsByOffset[slotIndex] == ((GcSlotId)-1);
+        uint8_t allocateNewSlot = slotTable[slotIndex] == ((GcSlotId)-1);
         if (allocateNewSlot)
         {
-            // Important to pass GC_xxx_REL, the default is broken due to GET_CALLER_SP being unimplemented
-            slotsByOffset[slotIndex] = gcInfoEncoder->GetStackSlotId(pVar->offset, flags, GC_FRAMEREG_REL);
+            // Important to pass GC_FRAMEREG_REL, the default is broken due to GET_CALLER_SP being unimplemented
+            slotTable[slotIndex] = gcInfoEncoder->GetStackSlotId(pVar->offset, flags, GC_FRAMEREG_REL);
         }
         else
         {
@@ -909,7 +918,7 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
         INTERP_DUMP(
             "%s gcinfo slot %u for %s%svar #%d at offset %d\n",
             allocateNewSlot ? "Allocated" : "Reused",
-            slotsByOffset[slotIndex],
+            slotTable[slotIndex],
             pVar->global ? "global " : "",
             pVar->interpType == InterpTypeByRef ? "byref " : "",
             i, pVar->offset
@@ -930,17 +939,18 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
         if (pVar->global)
             continue;
 
+        GcSlotId *slotTable = pVar->interpType == InterpTypeByRef
+            ? slotTables[1] : slotTables[0];
         uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
-        GcSlotId slot = slotsByOffset[slotIndex];
-        if (slot == ((GcSlotId)-1))
-            continue;
+        GcSlotId slot = slotTable[slotIndex];
+        assert(slot != ((GcSlotId)-1));
         assert(pVar->liveStart);
         assert(pVar->liveEnd);
         uint32_t startOffset = ConvertOffset(GetLiveStartOffset(i)),
             endOffset = ConvertOffset(GetLiveEndOffset(i));
         INTERP_DUMP(
-            "Recording gcinfo slot %u live range for var #%d: [IR_%04x - IR_%04x] [%u - %u]\n",
-            slotsByOffset[slotIndex], i,
+            "Recording gcinfo slot %u live range for var #%d at offset %u: [IR_%04x - IR_%04x] [%u - %u]\n",
+            slotTable[slotIndex], i, pVar->offset,
             GetLiveStartOffset(i), GetLiveEndOffset(i),
             startOffset, endOffset
         );
