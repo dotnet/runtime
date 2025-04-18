@@ -251,6 +251,36 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			//
+			// GetInterfaces
+			//
+			case IntrinsicId.Type_GetInterfaces: {
+					if (instanceValue.IsEmpty ()) {
+						returnValue = MultiValueLattice.Top;
+						break;
+					}
+
+					var targetValue = _annotations.GetMethodThisParameterValue (calledMethod, DynamicallyAccessedMemberTypes.Interfaces);
+					foreach (var value in instanceValue.AsEnumerable ()) {
+						// Require Interfaces annotation
+						_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+
+						// Interfaces is transitive, so the return values will always have at least Interfaces annotation
+						DynamicallyAccessedMemberTypes returnMemberTypes = DynamicallyAccessedMemberTypes.Interfaces;
+
+						// Propagate All annotation across the call - All is a superset of Interfaces
+						if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers
+							&& valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.All)
+							returnMemberTypes = DynamicallyAccessedMemberTypes.All;
+
+						// We model this as if each individual element of the returned array was returned from the GetInterfaces method call.
+						// It makes diagnostics fall out nicer because we now know where the Type comes from and where to assign blame, should the requirements not match
+						AddReturnValue (new ArrayOfAnnotatedSystemTypeValue(_annotations.GetMethodReturnValue (calledMethod, isNewObj: false, returnMemberTypes)));
+					}
+				}
+				break;
+
+
+			//
 			// AssemblyQualifiedName
 			//
 			case IntrinsicId.Type_get_AssemblyQualifiedName: {

@@ -14,12 +14,23 @@ steps:
       SecretsFilter: ${{ join(',', parameters.certNames) }}
     displayName: 'Download secrets: Diagnostic Certificates'
 
-  - task: EsrpClientTool@2
-    displayName: Download ESRPClient
+  - task: NuGetCommand@2
+    displayName: Install ESRPClient Tool
+    inputs:
+      command: 'custom'
+      arguments: 'install microsoft.esrpclient
+                -Source https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+                -DependencyVersion Highest -OutputDirectory $(Build.StagingDirectory)'
 
   - powershell: |
       eng/pipelines/install-diagnostic-certs.ps1 "${{ join(',', parameters.certNames) }}"
-      $signArgs = '/p:DotNetEsrpToolPath=$(esrpclient.toolpath)\$(esrpclient.toolname)'
+      $esrpclient = Get-ChildItem -Path '$(Build.StagingDirectory)\microsoft.esrpclient*' -Filter esrpclient.exe -Recurse | Select-Object -First 1 | select -ExpandProperty FullName
+
+      if ($esrpclient -eq $null) {
+        throw "Failed to find esrpclient.exe in $(Build.StagingDirectory)"
+      }
+
+      $signArgs = "/p:DotNetEsrpToolPath=$esrpclient"
       echo "##vso[task.setvariable variable=_SignDiagnosticFilesArgs;]$signArgs"
     displayName: 'Install diagnostic certificates'
     workingDirectory: ${{ parameters.scriptRoot }}

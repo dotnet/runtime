@@ -212,6 +212,8 @@ protected:
 public:
     void genSpillVar(GenTree* tree);
 
+    void genEmitCallWithCurrentGC(EmitCallParams& callParams);
+
 protected:
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTarget = REG_NA);
 
@@ -548,32 +550,6 @@ protected:
     void genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed);
     void genProfilingLeaveCallback(unsigned helper);
 #endif // PROFILING_SUPPORTED
-
-    // clang-format off
-    void genEmitCall(int                   callType,
-                     CORINFO_METHOD_HANDLE methHnd,
-                     INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                     void*                 addr
-                     X86_ARG(int argSize),
-                     emitAttr              retSize
-                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                     const DebugInfo&      di,
-                     regNumber             base,
-                     bool                  isJump,
-                     bool                  noSafePoint = false);
-    // clang-format on
-
-    // clang-format off
-    void genEmitCallIndir(int                   callType,
-                          CORINFO_METHOD_HANDLE methHnd,
-                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                          GenTreeIndir*         indir
-                          X86_ARG(int argSize),
-                          emitAttr              retSize
-                          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          const DebugInfo&      di,
-                          bool                  isJump);
-    // clang-format on
 
     //
     // Epilog functions

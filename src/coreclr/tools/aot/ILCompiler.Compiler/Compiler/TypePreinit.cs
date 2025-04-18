@@ -10,6 +10,7 @@ using ILCompiler.DependencyAnalysis;
 
 using Internal.IL;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
@@ -41,6 +42,8 @@ namespace ILCompiler
         private readonly Dictionary<FieldDesc, Value> _fieldValues = new Dictionary<FieldDesc, Value>();
         private readonly Dictionary<string, StringInstance> _internedStrings = new Dictionary<string, StringInstance>();
         private readonly Dictionary<TypeDesc, RuntimeTypeValue> _internedTypes = new Dictionary<TypeDesc, RuntimeTypeValue>();
+        private readonly Dictionary<MetadataType, NestedPreinitResult> _nestedPreinitResults = new Dictionary<MetadataType, NestedPreinitResult>();
+        private readonly Dictionary<EcmaField, byte[]> _rvaFieldDatas = new Dictionary<EcmaField, byte[]>();
 
         private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
         {
@@ -107,6 +110,47 @@ namespace ILCompiler
             }
 
             return new PreinitializationInfo(type, status.FailureReason);
+        }
+
+        private bool TryGetNestedPreinitResult(MethodDesc callingMethod, MetadataType type, Stack<MethodDesc> recursionProtect, ref int instructionCounter, out NestedPreinitResult result)
+        {
+            if (!_nestedPreinitResults.TryGetValue(type, out result))
+            {
+                TypePreinit nestedPreinit = new TypePreinit(type, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations);
+                recursionProtect ??= new Stack<MethodDesc>();
+                recursionProtect.Push(callingMethod);
+
+                // Since we don't reset the instruction counter as we interpret the nested cctor,
+                // remember the instruction counter before we start interpreting so that we can subtract
+                // the instructions later when we convert object instances allocated in the nested
+                // cctor to foreign instances in the currently analyzed cctor.
+                // E.g. if the nested cctor allocates a new object at the beginning of the cctor,
+                // we should treat it as a ForeignTypeInstance with allocation site ID 0, not allocation
+                // site ID of `instructionCounter + 0`.
+                // We could also reset the counter, but we use the instruction counter as a complexity cutoff
+                // and resetting it would lead to unpredictable analysis durations.
+                int baseInstructionCounter = instructionCounter;
+                Status status = nestedPreinit.TryScanMethod(type.GetStaticConstructor(), null, recursionProtect, ref instructionCounter, out Value _);
+                if (!status.IsSuccessful)
+                {
+                    result = default;
+                    return false;
+                }
+                recursionProtect.Pop();
+
+                result = new NestedPreinitResult(nestedPreinit._fieldValues, baseInstructionCounter);
+
+                _nestedPreinitResults.Add(type, result);
+            }
+
+            return true;
+        }
+
+        private byte[] GetFieldRvaData(EcmaField field)
+        {
+            if (!_rvaFieldDatas.TryGetValue(field, out byte[] result))
+                _rvaFieldDatas.Add(field, result = field.GetFieldRvaData());
+            return result;
         }
 
         private Status TryScanMethod(MethodDesc method, Value[] parameters, Stack<MethodDesc> recursionProtect, ref int instructionCounter, out Value returnValue)
@@ -344,67 +388,6 @@ namespace ILCompiler
                         break;
 
                     case ILOpcode.ldsfld:
-                        {
-                            FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (!field.IsStatic || field.IsLiteral)
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
-                            if (field.IsThreadStatic || field.HasRva)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
-                            }
-
-                            if (field.OwningType == _type)
-                            {
-                                stack.PushFromLocation(field.FieldType, _fieldValues[field]);
-                            }
-                            else if (_readOnlyPolicy.IsReadOnly(field)
-                                && field.OwningType.HasStaticConstructor
-                                && _policy.CanPreinitialize(field.OwningType))
-                            {
-                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations);
-                                recursionProtect ??= new Stack<MethodDesc>();
-                                recursionProtect.Push(methodIL.OwningMethod);
-
-                                // Since we don't reset the instruction counter as we interpret the nested cctor,
-                                // remember the instruction counter before we start interpreting so that we can subtract
-                                // the instructions later when we convert object instances allocated in the nested
-                                // cctor to foreign instances in the currently analyzed cctor.
-                                // E.g. if the nested cctor allocates a new object at the beginning of the cctor,
-                                // we should treat it as a ForeignTypeInstance with allocation site ID 0, not allocation
-                                // site ID of `instructionCounter + 0`.
-                                // We could also reset the counter, but we use the instruction counter as a complexity cutoff
-                                // and resetting it would lead to unpredictable analysis durations.
-                                int baseInstructionCounter = instructionCounter;
-                                Status status = nestedPreinit.TryScanMethod(field.OwningType.GetStaticConstructor(), null, recursionProtect, ref instructionCounter, out Value _);
-                                if (!status.IsSuccessful)
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Nested cctor failed to preinit");
-                                }
-                                recursionProtect.Pop();
-                                Value value = nestedPreinit._fieldValues[field];
-                                if (value is BaseValueTypeValue)
-                                    stack.PushFromLocation(field.FieldType, value);
-                                else if (value is ReferenceTypeValue referenceType)
-                                    stack.PushFromLocation(field.FieldType, referenceType.ToForeignInstance(baseInstructionCounter, this));
-                                else
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-                            else if (_readOnlyPolicy.IsReadOnly(field)
-                                && !field.OwningType.HasStaticConstructor)
-                            {
-                                // (Effectively) read only field but no static constructor to set it: the value is default-initialized.
-                                stack.PushFromLocation(field.FieldType, NewUninitializedLocationValue(field.FieldType));
-                            }
-                            else
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Load from other non-initonly static");
-                            }
-                        }
-                        break;
-
                     case ILOpcode.ldsflda:
                         {
                             FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
@@ -413,28 +396,71 @@ namespace ILCompiler
                                 ThrowHelper.ThrowInvalidProgramException();
                             }
 
-                            if (field.OwningType != _type)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Address of other static");
-                            }
-
-                            if (field.IsThreadStatic || field.HasRva)
+                            if (field.IsThreadStatic)
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
-                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                            if (opcode != ILOpcode.ldsfld
+                                && _flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                             }
 
-                            Value fieldValue = _fieldValues[field];
-                            if (fieldValue == null || !fieldValue.TryCreateByRef(out Value byRefValue))
+                            Value fieldValue;
+                            if (field.HasRva)
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported byref");
+                                if (!field.IsInitOnly
+                                    || field.OwningType.HasStaticConstructor
+                                    || field.GetTypicalFieldDefinition() is not EcmaField ecmaField)
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported RVA static");
+                                }
+
+                                fieldValue = new ValueTypeValue(GetFieldRvaData(ecmaField));
+                            }
+                            else if (field.OwningType == _type)
+                            {
+                                fieldValue = _fieldValues[field];
+                            }
+                            else if (_readOnlyPolicy.IsReadOnly(field)
+                                && field.OwningType.HasStaticConstructor
+                                && _policy.CanPreinitialize(field.OwningType))
+                            {
+                                if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)field.OwningType, recursionProtect, ref instructionCounter, out NestedPreinitResult nestedPreinitResult))
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Nested cctor failed to preinit");
+                                }
+
+                                if (!nestedPreinitResult.TryGetFieldValue(this, field, out fieldValue))
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
+                            }
+                            else if (_readOnlyPolicy.IsReadOnly(field)
+                                && opcode != ILOpcode.ldsflda // We need to intern these for correctness in ldsfda scenarios
+                                && !field.OwningType.HasStaticConstructor)
+                            {
+                                // (Effectively) read only field but no static constructor to set it: the value is default-initialized.
+                                fieldValue = NewUninitializedLocationValue(field.FieldType);
+                            }
+                            else
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Load from other non-initonly static");
                             }
 
-                            stack.Push(StackValueKind.ByRef, byRefValue);
+                            if (opcode == ILOpcode.ldsfld)
+                            {
+                                stack.PushFromLocation(field.FieldType, fieldValue);
+                            }
+                            else
+                            {
+                                Debug.Assert(opcode == ILOpcode.ldsflda);
+                                if (fieldValue == null || !fieldValue.TryCreateByRef(out Value byRefValue))
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported byref");
+                                }
+
+                                stack.Push(StackValueKind.ByRef, byRefValue);
+                            }
                         }
                         break;
 
@@ -465,9 +491,13 @@ namespace ILCompiler
 
                             if (owningType.HasStaticConstructor
                                     && owningType != methodIL.OwningMethod.OwningType
+                                    && (method.Signature.IsStatic || method.IsConstructor || owningType.IsValueType || owningType.IsInterface) // ECMA-335 I.8.9.5
                                     && !((MetadataType)owningType).IsBeforeFieldInit)
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
+                                // Static constructor needs to execute before we do the call. If we can preinitialize, consider it executed,
+                                // otherwise there might be side effects we'd miss by letting this through.
+                                if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)owningType, recursionProtect, ref instructionCounter, out _))
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
                             }
 
                             if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(method))
@@ -523,7 +553,10 @@ namespace ILCompiler
                                     && owningType != methodIL.OwningMethod.OwningType
                                     && !((MetadataType)owningType).IsBeforeFieldInit)
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
+                                // Static constructor needs to execute before we do the call. If we can preinitialize, consider it executed,
+                                // otherwise there might be side effects we'd miss by letting this through.
+                                if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)owningType, recursionProtect, ref instructionCounter, out _))
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
                             }
 
                             if (!owningType.IsDefType)
@@ -561,12 +594,6 @@ namespace ILCompiler
 
                             AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
 
-                            if (!TryGetSpanElementType(owningType, isReadOnlySpan: true, out MetadataType readOnlySpanElementType)
-                                && !TryGetSpanElementType(owningType, isReadOnlySpan: false, out readOnlySpanElementType))
-                            {
-                                readOnlySpanElementType = null;
-                            }
-
                             Value instance;
                             if (owningType.IsDelegate)
                             {
@@ -598,38 +625,15 @@ namespace ILCompiler
 
                                 instance = new DelegateInstance(owningType, pointedMethod, firstParameter, allocSite);
                             }
-                            else if (readOnlySpanElementType != null && ctorSig.Length == 2 && ctorSig[0].IsByRef
-                                && ctorSig[1].IsWellKnownType(WellKnownType.Int32))
-                            {
-                                int length = ctorParameters[2].AsInt32();
-                                if (ctorParameters[1] is not ByRefValue byref)
-                                {
-                                    ThrowHelper.ThrowInvalidProgramException();
-                                    return default; // unreached
-                                }
-
-                                byte[] bytes = byref.PointedToBytes;
-                                int byteOffset = byref.PointedToOffset;
-                                int byteLength = length * readOnlySpanElementType.InstanceFieldSize.AsInt;
-
-                                if (bytes.Length - byteOffset < byteLength)
-                                    return Status.Fail(ctor, "Out of range memory access");
-
-                                instance = new ReadOnlySpanValue(readOnlySpanElementType, bytes, byteOffset, byteLength);
-                            }
-                            else if (readOnlySpanElementType != null && ctorSig.Length == 1 && ctorSig[0].IsArray
-                                && ctorParameters[1] is ArrayInstance spanArrayInstance
-                                && spanArrayInstance.TryGetReadOnlySpan(out ReadOnlySpanValue arraySpan))
-                            {
-                                instance = arraySpan;
-                            }
                             else
                             {
                                 if (owningType.IsValueType)
                                 {
-                                    instance = new ValueTypeValue(owningType);
-                                    bool byrefCreated = instance.TryCreateByRef(out ctorParameters[0]);
-                                    Debug.Assert(byrefCreated);
+                                    instance = NewUninitializedLocationValue(owningType);
+                                    if (!instance.TryCreateByRef(out ctorParameters[0]))
+                                    {
+                                        return Status.Fail(methodIL.OwningMethod, opcode, "Can't make `this`");
+                                    }
                                 }
                                 else
                                 {
@@ -691,14 +695,6 @@ namespace ILCompiler
 
                     case ILOpcode.localloc:
                         {
-                            // Localloc returns an unmanaged pointer to the allocated memory.
-                            // We can't model that in the interpreter memory model. However,
-                            // we can have a narrow path for a common pattern in Span construction:
-                            //
-                            // ldc.i4 X
-                            // localloc
-                            // ldc.i4 X
-                            // newobj instance void valuetype System.Span`1<Y>::.ctor(void*, int32)
                             StackEntry entry = stack.Pop();
                             long size = entry.ValueKind switch
                             {
@@ -712,31 +708,7 @@ namespace ILCompiler
                             if (size < 0 || size > 8192)
                                 return Status.Fail(methodIL.OwningMethod, ILOpcode.localloc);
 
-                            opcode = reader.ReadILOpcode();
-                            if (opcode < ILOpcode.ldc_i4_0 || opcode > ILOpcode.ldc_i4)
-                                return Status.Fail(methodIL.OwningMethod, ILOpcode.localloc);
-
-                            int maybeSpanLength = opcode switch
-                            {
-                                ILOpcode.ldc_i4_s => (sbyte)reader.ReadILByte(),
-                                ILOpcode.ldc_i4 => (int)reader.ReadILUInt32(),
-                                _ => opcode - ILOpcode.ldc_i4_0,
-                            };
-
-                            opcode = reader.ReadILOpcode();
-                            if (opcode != ILOpcode.newobj)
-                                return Status.Fail(methodIL.OwningMethod, ILOpcode.localloc);
-
-                            var ctorMethod = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (!TryGetSpanElementType(ctorMethod.OwningType, isReadOnlySpan: false, out MetadataType elementType)
-                                || ctorMethod.Signature.Length != 2
-                                || !ctorMethod.Signature[0].IsPointer
-                                || !ctorMethod.Signature[1].IsWellKnownType(WellKnownType.Int32)
-                                || maybeSpanLength * elementType.InstanceFieldSize.AsInt != size)
-                                return Status.Fail(methodIL.OwningMethod, ILOpcode.localloc);
-
-                            var instance = new ReadOnlySpanValue(elementType, new byte[size], index: 0, (int)size);
-                            stack.PushFromLocation(ctorMethod.OwningType, instance);
+                            stack.Push(StackValueKind.NativeInt, new ByRefValue(new byte[size], pointedToOffset: 0));
                         }
                         break;
 
@@ -755,11 +727,6 @@ namespace ILCompiler
                             if (field.FieldType.IsGCPointer && value != null)
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Reference field");
-                            }
-
-                            if (field.FieldType.IsByRef)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Byref field");
                             }
 
                             if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
@@ -1755,64 +1722,30 @@ namespace ILCompiler
                     case ILOpcode.ldind_u4:
                     case ILOpcode.ldind_i8:
                         {
-                            if (opcode == ILOpcode.ldobj)
+                            TypeDesc type = opcode switch
                             {
-                                TypeDesc type = methodIL.GetObject(reader.ReadILToken()) as TypeDesc;
-                                opcode = type.Category switch
-                                {
-                                    TypeFlags.SByte => ILOpcode.ldind_i1,
-                                    TypeFlags.Boolean or TypeFlags.Byte => ILOpcode.ldind_u1,
-                                    TypeFlags.Int16 => ILOpcode.ldind_i2,
-                                    TypeFlags.Char or TypeFlags.UInt16 => ILOpcode.ldind_u2,
-                                    TypeFlags.Int32 => ILOpcode.ldind_i4,
-                                    TypeFlags.UInt32 => ILOpcode.ldind_u4,
-                                    TypeFlags.Int64 or TypeFlags.UInt64 => ILOpcode.ldind_i8,
-                                    TypeFlags.Single => ILOpcode.ldind_r4,
-                                    TypeFlags.Double => ILOpcode.ldind_r8,
-                                    _ => ILOpcode.ldobj,
-                                };
-
-                                if (opcode == ILOpcode.ldobj)
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                                }
-                            }
+                                ILOpcode.ldind_i1 => context.GetWellKnownType(WellKnownType.SByte),
+                                ILOpcode.ldind_u1 => context.GetWellKnownType(WellKnownType.Byte),
+                                ILOpcode.ldind_i2 => context.GetWellKnownType(WellKnownType.Int16),
+                                ILOpcode.ldind_u2 => context.GetWellKnownType(WellKnownType.UInt16),
+                                ILOpcode.ldind_i4 => context.GetWellKnownType(WellKnownType.Int32),
+                                ILOpcode.ldind_u4 => context.GetWellKnownType(WellKnownType.UInt32),
+                                ILOpcode.ldind_i8 => context.GetWellKnownType(WellKnownType.Int64),
+                                _ /* ldobj */ => (TypeDesc)methodIL.GetObject(reader.ReadILToken()),
+                            };
 
                             StackEntry entry = stack.Pop();
-                            if (entry.Value is ByRefValue byRefVal)
+                            if (entry.ValueKind != StackValueKind.ByRef && entry.ValueKind != StackValueKind.NativeInt)
+                                ThrowHelper.ThrowInvalidProgramException();
+
+                            if (entry.Value is ByRefValueBase byRefVal
+                                && byRefVal.TryLoad(type, out Value dereferenced))
                             {
-                                switch (opcode)
-                                {
-                                    case ILOpcode.ldind_i1:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsSByte()));
-                                        break;
-                                    case ILOpcode.ldind_u1:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)byRefVal.DereferenceAsSByte()));
-                                        break;
-                                    case ILOpcode.ldind_i2:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsInt16()));
-                                        break;
-                                    case ILOpcode.ldind_u2:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)byRefVal.DereferenceAsInt16()));
-                                        break;
-                                    case ILOpcode.ldind_i4:
-                                    case ILOpcode.ldind_u4:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsInt32()));
-                                        break;
-                                    case ILOpcode.ldind_i8:
-                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(byRefVal.DereferenceAsInt64()));
-                                        break;
-                                    case ILOpcode.ldind_r4:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(byRefVal.DereferenceAsSingle()));
-                                        break;
-                                    case ILOpcode.ldind_r8:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(byRefVal.DereferenceAsDouble()));
-                                        break;
-                                }
+                                stack.PushFromLocation(type, dereferenced);
                             }
                             else
                             {
-                                ThrowHelper.ThrowInvalidProgramException();
+                                return Status.Fail(methodIL.OwningMethod, "Ldind from unsupported byref");
                             }
                         }
                         break;
@@ -1925,11 +1858,11 @@ namespace ILCompiler
             }
             else if (TryGetSpanElementType(locationType, isReadOnlySpan: true, out MetadataType readOnlySpanElementType))
             {
-                return new ReadOnlySpanValue(readOnlySpanElementType, Array.Empty<byte>(), 0, 0);
+                return new SpanValue(readOnlySpanElementType, Array.Empty<byte>(), 0, 0);
             }
             else if (TryGetSpanElementType(locationType, isReadOnlySpan: false, out MetadataType spanElementType))
             {
-                return new ReadOnlySpanValue(spanElementType, Array.Empty<byte>(), 0, 0);
+                return new SpanValue(spanElementType, Array.Empty<byte>(), 0, 0);
             }
             else if (VTableLikeStructValue.IsCompatible(locationType))
             {
@@ -1975,17 +1908,8 @@ namespace ILCompiler
                         byte[] rvaData = Internal.TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(createSpanEcmaField);
                         if (rvaData.Length % elementSize != 0)
                             return false;
-                        retVal = new ReadOnlySpanValue(elementType, rvaData, 0, rvaData.Length);
+                        retVal = new SpanValue(elementType, rvaData, 0, rvaData.Length);
                         return true;
-                    }
-                    return false;
-                case "get_Item":
-                    if (method.OwningType is MetadataType readonlySpanType
-                        && readonlySpanType.Name == "ReadOnlySpan`1" && readonlySpanType.Namespace == "System"
-                        && parameters[0] is ReadOnlySpanReferenceValue spanRef
-                        && parameters[1] is ValueTypeValue spanIndex)
-                    {
-                        return spanRef.TryAccessElement(spanIndex.AsInt32(), out retVal);
                     }
                     return false;
                 case "GetTypeFromHandle" when IsSystemType(method.OwningType)
@@ -2008,6 +1932,25 @@ namespace ILCompiler
                         && (parameters[0] is RuntimeTypeValue || parameters[1] is RuntimeTypeValue):
                     {
                         retVal = ValueTypeValue.FromSByte(parameters[0] == parameters[1] ? (sbyte)1 : (sbyte)0);
+                        return true;
+                    }
+                case "IsReferenceOrContainsReferences" when method.Instantiation.Length == 1
+                        && method.OwningType is MetadataType isReferenceOrContainsReferencesType
+                        && isReferenceOrContainsReferencesType.Name == "RuntimeHelpers" && isReferenceOrContainsReferencesType.Namespace == "System.Runtime.CompilerServices"
+                        && isReferenceOrContainsReferencesType.Module == method.Context.SystemModule:
+                    {
+                        bool result = method.Instantiation[0].IsGCPointer || (method.Instantiation[0] is DefType defType && defType.ContainsGCPointers);
+                        retVal = ValueTypeValue.FromSByte(result ? (sbyte)1 : (sbyte)0);
+                        return true;
+                    }
+                case "GetArrayDataReference" when method.Instantiation.Length == 1
+                        && method.OwningType is MetadataType getArrayDataReferenceType
+                        && getArrayDataReferenceType.Name == "MemoryMarshal" && getArrayDataReferenceType.Namespace == "System.Runtime.InteropServices"
+                        && getArrayDataReferenceType.Module == method.Context.SystemModule
+                        && parameters[0] is ArrayInstance arrayData
+                        && ((ArrayType)arrayData.Type).ElementType == method.Instantiation[0]:
+                    {
+                        retVal = arrayData.GetArrayData();
                         return true;
                     }
             }
@@ -2233,7 +2176,8 @@ namespace ILCompiler
                         return ValueTypeValue.FromSingle((float)popped.Value.AsDouble());
 
                     case StackValueKind.ByRef:
-                        if (!locationType.IsByRef)
+                        if (!locationType.IsByRef
+                            && locationType.Category is not TypeFlags.IntPtr and not TypeFlags.UIntPtr and not TypeFlags.Pointer and not TypeFlags.FunctionPointer)
                         {
                             ThrowHelper.ThrowInvalidProgramException();
                         }
@@ -2374,7 +2318,7 @@ namespace ILCompiler
                 InstanceBytes = new byte[type.GetElementSize().AsInt];
             }
 
-            private ValueTypeValue(byte[] bytes)
+            public ValueTypeValue(byte[] bytes)
             {
                 InstanceBytes = bytes;
             }
@@ -2600,6 +2544,22 @@ namespace ILCompiler
                     return false;
                 }
 
+                public override bool TryLoad(TypeDesc type, out Value value)
+                {
+                    if (!VTableLikeStructValue.IsCompatible(type)
+                        || type is not MetadataType mdType
+                        || mdType.InstanceFieldSize.AsInt > (_methods.Length - _index) * _pointerSize)
+                    {
+                        value = null;
+                        return false;
+                    }
+
+                    MethodDesc[] slots = new MethodDesc[GetFieldCount(mdType)];
+                    Array.Copy(_methods, _index, slots, 0, slots.Length);
+                    value = new VTableLikeStructValue(mdType, slots);
+                    return true;
+                }
+
                 public override Value Clone() => this; // The reference is immutable
 
                 private int GetFieldIndex(FieldDesc field)
@@ -2758,14 +2718,14 @@ namespace ILCompiler
             }
         }
 
-        private sealed class ReadOnlySpanValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        private sealed class SpanValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             private readonly MetadataType _elementType;
-            private readonly byte[] _bytes;
-            private readonly int _index;
-            private readonly int _length;
+            private byte[] _bytes;
+            private int _index;
+            private int _length;
 
-            public ReadOnlySpanValue(MetadataType elementType, byte[] bytes, int index, int length)
+            public SpanValue(MetadataType elementType, byte[] bytes, int index, int length)
             {
                 Debug.Assert(index <= bytes.Length);
                 Debug.Assert(length <= bytes.Length - index);
@@ -2796,85 +2756,90 @@ namespace ILCompiler
 
             public override Value Clone()
             {
-                // ReadOnlySpan is immutable and there's no way for the data to escape
-                return this;
+                return new SpanValue(_elementType, _bytes, _index, _length);
             }
 
             public override bool TryCreateByRef(out Value value)
             {
-                value = new ReadOnlySpanReferenceValue(_elementType, _bytes, _index, _length);
+                value = new SpanReferenceValue(this);
                 return true;
             }
-        }
 
-        private sealed class ReadOnlySpanReferenceValue : ByRefValueBase, IHasInstanceFields
-        {
-            private readonly MetadataType _elementType;
-            private readonly byte[] _bytes;
-            private readonly int _index;
-            private readonly int _length;
-
-            public ReadOnlySpanReferenceValue(MetadataType elementType, byte[] bytes, int index, int length)
+            private sealed class SpanReferenceValue : ByRefValueBase, IHasInstanceFields
             {
-                Debug.Assert(index <= bytes.Length);
-                Debug.Assert(length <= bytes.Length - index);
-                _elementType = elementType;
-                _bytes = bytes;
-                _index = index;
-                _length = length;
-            }
+                private readonly SpanValue _value;
 
-            public override bool TryCompareEquality(Value value, out bool result)
-            {
-                result = false;
-                return false;
-            }
+                public SpanReferenceValue(SpanValue value)
+                {
+                    _value = value;
+                }
 
-            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
-            {
-                throw new NotSupportedException();
-            }
-
-            public override bool GetRawData(NodeFactory factory, out object data)
-            {
-                data = null;
-                return false;
-            }
-
-            public bool TryAccessElement(int index, out Value value)
-            {
-                value = default;
-                int limit = _length / _elementType.InstanceFieldSize.AsInt;
-                if (index >= limit)
+                public override bool TryCompareEquality(Value value, out bool result)
+                {
+                    result = false;
                     return false;
+                }
 
-                value = new ByRefValue(_bytes, _index + index * _elementType.InstanceFieldSize.AsInt);
-                return true;
-            }
+                public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
+                {
+                    throw new NotSupportedException();
+                }
 
-            public bool TrySetField(FieldDesc field, Value value) => false;
+                public override bool GetRawData(NodeFactory factory, out object data)
+                {
+                    data = null;
+                    return false;
+                }
 
-            public Value GetField(FieldDesc field)
-            {
-                MetadataType elementType;
-                if (!TryGetSpanElementType(field.OwningType, isReadOnlySpan: true, out elementType)
-                    && !TryGetSpanElementType(field.OwningType, isReadOnlySpan: false, out elementType))
+                public bool TrySetField(FieldDesc field, Value value)
+                {
+                    MetadataType elementType;
+                    if (!TryGetSpanElementType(field.OwningType, isReadOnlySpan: true, out elementType)
+                        && !TryGetSpanElementType(field.OwningType, isReadOnlySpan: false, out elementType))
+                        return false;
+
+                    if (elementType != _value._elementType)
+                        return false;
+
+                    if (field.Name == "_length")
+                    {
+                        _value._length = value.AsInt32() * _value._elementType.InstanceFieldSize.AsInt;
+                        return true;
+                    }
+
+                    if (value is ByRefValue byref)
+                    {
+                        Debug.Assert(field.Name == "_reference");
+                        _value._bytes = byref.PointedToBytes;
+                        _value._index = byref.PointedToOffset;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                public Value GetField(FieldDesc field)
+                {
+                    MetadataType elementType;
+                    if (!TryGetSpanElementType(field.OwningType, isReadOnlySpan: true, out elementType)
+                        && !TryGetSpanElementType(field.OwningType, isReadOnlySpan: false, out elementType))
+                        ThrowHelper.ThrowInvalidProgramException();
+
+                    if (elementType != _value._elementType)
+                        ThrowHelper.ThrowInvalidProgramException();
+
+                    if (field.Name == "_length")
+                        return ValueTypeValue.FromInt32(_value._length / elementType.InstanceFieldSize.AsInt);
+
+                    Debug.Assert(field.Name == "_reference");
+                    return new ByRefValue(_value._bytes, _value._index);
+                }
+
+                public ByRefValueBase GetFieldAddress(FieldDesc field)
+                {
                     ThrowHelper.ThrowInvalidProgramException();
-
-                if (elementType != _elementType)
-                    ThrowHelper.ThrowInvalidProgramException();
-
-                if (field.Name == "_length")
-                    return ValueTypeValue.FromInt32(_length / _elementType.InstanceFieldSize.AsInt);
-
-                Debug.Assert(field.Name == "_reference");
-                return new ByRefValue(_bytes, _index);
-            }
-
-            public ByRefValueBase GetFieldAddress(FieldDesc field)
-            {
-                ThrowHelper.ThrowInvalidProgramException();
-                return null; // unreached
+                    return null; // unreached
+                }
             }
         }
 
@@ -2918,6 +2883,11 @@ namespace ILCompiler
         private abstract class ByRefValueBase : Value, INativeIntConvertibleValue
         {
             public virtual bool TryStore(Value value) => false;
+            public virtual bool TryLoad(TypeDesc type, out Value value)
+            {
+                value = null;
+                return false;
+            }
             public virtual bool TryInitialize(int size) => false;
         }
 
@@ -2978,6 +2948,21 @@ namespace ILCompiler
                 return true;
             }
 
+            public override bool TryLoad(TypeDesc type, out Value value)
+            {
+                if (!type.IsValueType
+                    || ((MetadataType)type).InstanceFieldSize.AsInt > PointedToBytes.Length - PointedToOffset)
+                {
+                    value = null;
+                    return false;
+                }
+
+                var result = new ValueTypeValue(type);
+                Array.Copy(PointedToBytes, PointedToOffset, result.InstanceBytes, 0, result.InstanceBytes.Length);
+                value = result;
+                return true;
+            }
+
             public override Value Clone() => this; // Immutable
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
@@ -2991,20 +2976,6 @@ namespace ILCompiler
                 data = null;
                 return false;
             }
-
-            private ReadOnlySpan<byte> AsExactByteCount(int count)
-            {
-                if (PointedToOffset + count > PointedToBytes.Length)
-                    ThrowHelper.ThrowInvalidProgramException();
-                return new ReadOnlySpan<byte>(PointedToBytes, PointedToOffset, count);
-            }
-
-            public sbyte DereferenceAsSByte() => (sbyte)AsExactByteCount(1)[0];
-            public short DereferenceAsInt16() => BitConverter.ToInt16(AsExactByteCount(2));
-            public int DereferenceAsInt32() => BitConverter.ToInt32(AsExactByteCount(4));
-            public long DereferenceAsInt64() => BitConverter.ToInt64(AsExactByteCount(8));
-            public float DereferenceAsSingle() => BitConverter.ToSingle(AsExactByteCount(4));
-            public double DereferenceAsDouble() => BitConverter.ToDouble(AsExactByteCount(8));
         }
 
         private abstract class ReferenceTypeValue : Value
@@ -3246,15 +3217,9 @@ namespace ILCompiler
                 builder.EmitBytes(_data);
             }
 
-            public bool TryGetReadOnlySpan(out ReadOnlySpanValue value)
+            public ByRefValue GetArrayData()
             {
-                if (((ArrayType)Type).ParameterType is MetadataType parameterType)
-                {
-                    value = new ReadOnlySpanValue(parameterType, _data, 0, _data.Length);
-                    return true;
-                }
-                value = null;
-                return false;
+                return new ByRefValue(_data, 0);
             }
 
             public bool IsKnownImmutable => _elementCount == 0;
@@ -3539,6 +3504,34 @@ namespace ILCompiler
             public static Status Fail(MethodDesc method, string detail)
             {
                 return new Status($"Method '{method}': {detail}");
+            }
+        }
+
+        private readonly struct NestedPreinitResult
+        {
+            private readonly Dictionary<FieldDesc, Value> _fieldValues;
+            private readonly int _baseInstructionCounter;
+
+            public NestedPreinitResult(Dictionary<FieldDesc, Value> fieldValues, int baseInstructionCounter)
+                => (_fieldValues, _baseInstructionCounter) = (fieldValues, baseInstructionCounter);
+
+            public bool TryGetFieldValue(TypePreinit context, FieldDesc field, out Value value)
+            {
+                Value fieldValue = _fieldValues[field];
+
+                if (fieldValue is ReferenceTypeValue referenceType)
+                {
+                    value = referenceType.ToForeignInstance(_baseInstructionCounter, context);
+                    return true;
+                }
+                else if (fieldValue is BaseValueTypeValue)
+                {
+                    value = fieldValue;
+                    return true;
+                }
+
+                value = null;
+                return false;
             }
         }
 

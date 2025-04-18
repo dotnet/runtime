@@ -5404,10 +5404,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_MaxMagnitude:
                         case NI_System_Math_MaxMagnitudeNumber:
                         case NI_System_Math_MaxNumber:
+                        case NI_System_Math_MaxUnsigned:
                         case NI_System_Math_Min:
                         case NI_System_Math_MinMagnitude:
                         case NI_System_Math_MinMagnitudeNumber:
                         case NI_System_Math_MinNumber:
+                        case NI_System_Math_MinUnsigned:
                         case NI_System_Math_Pow:
                         case NI_System_Math_Round:
                         case NI_System_Math_Sin:
@@ -5759,10 +5761,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     case NI_System_Math_MaxMagnitude:
                     case NI_System_Math_MaxMagnitudeNumber:
                     case NI_System_Math_MaxNumber:
+                    case NI_System_Math_MaxUnsigned:
                     case NI_System_Math_Min:
                     case NI_System_Math_MinMagnitude:
                     case NI_System_Math_MinMagnitudeNumber:
                     case NI_System_Math_MinNumber:
+                    case NI_System_Math_MinUnsigned:
                     {
                         level++;
                         break;
@@ -12761,6 +12765,9 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Math_MaxNumber:
                     printf(" maxNumber");
                     break;
+                case NI_System_Math_MaxUnsigned:
+                    printf(" maxUnsigned");
+                    break;
                 case NI_System_Math_Min:
                     printf(" min");
                     break;
@@ -12772,6 +12779,9 @@ void Compiler::gtDispTree(GenTree*                    tree,
                     break;
                 case NI_System_Math_MinNumber:
                     printf(" minNumber");
+                    break;
+                case NI_System_Math_MinUnsigned:
+                    printf(" minUnsigned");
                     break;
                 case NI_System_Math_Pow:
                     printf(" pow");
