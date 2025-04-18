@@ -1103,7 +1103,7 @@ TADDR IJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
     return funcletStartAddress;
 }
 
-BOOL IJitManager::IsFunclet(EECodeInfo * pCodeInfo)
+BOOL IJitManager::LazyIsFunclet(EECodeInfo * pCodeInfo)
 {
     CONTRACTL {
         NOTHROW;
@@ -1192,7 +1192,7 @@ EECodeGenManager::EECodeGenManager()
     m_cleanupList(NULL),
     // CRST_DEBUGGER_THREAD - We take this lock on debugger thread during EnC add method, among other things
     // CRST_TAKEN_DURING_SHUTDOWN - We take this lock during shutdown if ETW is on (to do rundown)
-    m_CodeHeapCritSec( CrstSingleUseLock, 
+    m_CodeHeapCritSec( CrstSingleUseLock,
                         CrstFlags(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD|CRST_TAKEN_DURING_SHUTDOWN)),
     m_storeRichDebugInfo(false)
 {
@@ -2156,6 +2156,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
         if (dwSize < SMALL_BLOCK_THRESHOLD)
             dwSize = 4 * SMALL_BLOCK_THRESHOLD;
         pMem = ExecutionManager::GetEEJitManager()->allocCodeFragmentBlock(dwSize, dwAlignment, m_pAllocator, m_kind);
+        ReportStubBlock(pMem, dwSize, m_kind);
     }
 
     SIZE_T dwExtra = (BYTE *)ALIGN_UP(pMem, dwAlignment) - (BYTE *)pMem;
@@ -2231,8 +2232,7 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 //**************************************************************************
 
 LoaderCodeHeap::LoaderCodeHeap(bool fMakeExecutable)
-    : m_LoaderHeap(NULL,                    // RangeList *pRangeList
-                   fMakeExecutable),
+    : m_LoaderHeap(fMakeExecutable),
     m_cbMinNextPad(0)
 {
     WRAPPER_NO_CONTRACT;
@@ -2500,7 +2500,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     }
     else
     {
-        pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMem(JUMP_ALLOCATE_SIZE);
+        pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMemForCode_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     }
 #else
     // Ensure that the heap has a reserved block of memory and so the GetReservedBytesFree()
@@ -3289,6 +3289,8 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
 
         _ASSERTE(IS_ALIGNED(blockWriterHolder.GetRW(), CODE_SIZE_ALIGN));
     }
+
+    ReportStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
 
     blockWriterHolder.GetRW()->m_next            = NULL;
     blockWriterHolder.GetRW()->m_used            = 0;
@@ -4290,7 +4292,17 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
 
 #ifdef FEATURE_EH_FUNCLETS
         // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
-        pCodeInfo->m_pFunctionEntry = NULL;
+        if (pCHdr->MayHaveFunclets())
+        {
+            // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
+            pCodeInfo->m_pFunctionEntry = NULL;
+            pCodeInfo->m_isFuncletCache = EECodeInfo::IsFuncletCache::NotSet;
+        }
+        else
+        {
+            pCodeInfo->m_pFunctionEntry = pCHdr->GetUnwindInfo(0);
+            pCodeInfo->m_isFuncletCache = EECodeInfo::IsFuncletCache::IsNotFunclet;
+        }
 #endif
     }
 
@@ -5139,11 +5151,11 @@ LPCWSTR ExecutionManager::GetJitName()
 {
     STANDARD_VM_CONTRACT;
 
-    LPCWSTR  pwzJitName = NULL;
-
     // Try to obtain a name for the jit library from the env. variable
-    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR *>(&pwzJitName)));
+    LPWSTR pwzJitNameMaybe = NULL;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, &pwzJitNameMaybe));
 
+    LPCWSTR  pwzJitName = pwzJitNameMaybe;
     if (NULL == pwzJitName)
     {
         pwzJitName = MAKEDLLNAME_W(W("clrjit"));
@@ -5162,11 +5174,11 @@ LPCWSTR ExecutionManager::GetInterpreterName()
 {
     STANDARD_VM_CONTRACT;
 
-    LPCWSTR  pwzInterpreterName = NULL;
-
     // Try to obtain a name for the jit library from the env. variable
-    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpreterName, const_cast<LPWSTR *>(&pwzInterpreterName)));
+    LPWSTR pwzInterpreterNameMaybe = NULL;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpreterName, &pwzInterpreterNameMaybe));
 
+    LPCWSTR pwzInterpreterName = pwzInterpreterNameMaybe;
     if (NULL == pwzInterpreterName)
     {
         pwzInterpreterName = MAKEDLLNAME_W(W("clrinterpreter"));
@@ -5689,7 +5701,7 @@ DONE:
     emitBackToBackJump(jumpStub, jumpStubRW, (void*) target);
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
+    PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE, PerfMapStubType::IndividualWithinBlock);
 #endif
 
     // We always add the new jumpstub to the jumpStubCache
@@ -6505,7 +6517,7 @@ DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToke
     return nFunclets;
 }
 
-BOOL ReadyToRunJitManager::IsFunclet(EECodeInfo* pCodeInfo)
+BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
 {
     CONTRACTL {
         NOTHROW;
@@ -6559,6 +6571,11 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     if (!pCodeInfo->IsFunclet())
         return FALSE;
 
+#ifdef TARGET_X86
+    // x86 doesn't use personality routines in unwind data, so we have to fallback to
+    // the slow implementation
+    return IJitManager::IsFilterFunclet(pCodeInfo);
+#else
     // Get address of the personality routine for the function being queried.
     SIZE_T size;
     PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &size);
@@ -6583,6 +6600,7 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     _ASSERTE(fRet == IJitManager::IsFilterFunclet(pCodeInfo));
 
     return fRet;
+#endif
 }
 
 #endif  // FEATURE_EH_FUNCLETS

@@ -4268,7 +4268,7 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
     CONTRACTL_END;
 
     LOG((LF_CORDB, LL_EVERYTHING, "DispatchNativeException was called\n"));
-    LOG((LF_CORDB, LL_INFO10000, "Native exception at 0x%p, code=0x%8x, context=0x%p, er=0x%p\n",
+    LOG((LF_CORDB, LL_INFO10000, "Native exception at %p, code=0x%8x, context=%p, er=%p\n",
          pException->ExceptionAddress, dwCode, pContext, pException));
 
 
@@ -4469,7 +4469,19 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
         ThisFunctionMayHaveTriggerAGC();
     }
 #endif
-
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    if (pCurThread->m_State & Thread::TS_SSToExitApcCall)
+    {
+        if (!CheckActivationSafePoint(GetIP(pContext)))
+        {
+            return FALSE;
+        }
+        pCurThread->SetThreadState(Thread::TS_SSToExitApcCallDone);
+        pCurThread->ResetThreadState(Thread::TS_SSToExitApcCall);
+        DebuggerController::UnapplyTraceFlag(pCurThread);
+        pCurThread->MarkForSuspensionAndWait(Thread::TS_DebugSuspendPending);
+    }
+#endif
 
 
     // Must restore the filter context. After the filter context is gone, we're
@@ -5926,7 +5938,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
 #ifdef TARGET_X86
     LOG((LF_CORDB,LL_INFO1000, "GetJitInfo for pc = 0x%x (addr of "
         "that value:0x%x)\n", (const BYTE*)(GetControlPC(&info->m_activeFrame.registers)),
-        info->m_activeFrame.registers.PCTAddr));
+        GetRegdisplayPCTAddr(&info->m_activeFrame.registers)));
 #endif
 
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and
@@ -6049,7 +6061,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     fCallingIntoFunclet = IsAddrWithinMethodIncludingFunclet(ji, info->m_activeFrame.md, walker.GetNextIP()) &&
                         ((CORDB_ADDRESS)(SIZE_T)walker.GetNextIP() != ji->m_addrOfCode);
 #endif
-                    // If we are stepping into a tail call that uses the StoreTailCallArgs 
+                    // If we are stepping into a tail call that uses the StoreTailCallArgs
                     // we need to enable the method enter, otherwise it will behave like a resume
                     if (in && IsTailCall(walker.GetNextIP(), info, TailCallFunctionType::StoreTailCallArgs))
                     {
@@ -7588,9 +7600,9 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
         // Sometimes we can get here with a callstack that is coming from an APC
         // this will disable the single stepping and incorrectly resume an app that the user
         // is stepping through.
-#ifdef FEATURE_THREAD_ACTIVATION        
+#ifdef FEATURE_THREAD_ACTIVATION
         if ((thread->m_State & Thread::TS_DebugWillSync) == 0)
-#endif   
+#endif // FEATURE_THREAD_ACTIVATION
         {
             DisableSingleStep();
         }
@@ -9204,7 +9216,7 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
     }
 
     // On WIN64, by the time we get here the DebuggerExState is gone already.
-    // ExceptionTrackers are cleaned up before we resume execution for a handled exception.
+    // ExInfos are cleaned up before we resume execution for a handled exception.
 #if !defined(FEATURE_EH_FUNCLETS)
     thread->GetExceptionState()->GetDebuggerState()->SetDebuggerInterceptContext(NULL);
 #endif // !FEATURE_EH_FUNCLETS

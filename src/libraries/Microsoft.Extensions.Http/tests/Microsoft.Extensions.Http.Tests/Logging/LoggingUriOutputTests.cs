@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
         public void GetRedactedUriString_RedactsUriByDefault(string original, string expected)
         {
             Uri? uri = original != null ? new Uri(original, UriKind.RelativeOrAbsolute) : null;
-            string? actual = LogHelper.GetRedactedUriString(uri);
+            string? actual = UriRedactionHelper.GetRedactedUriString(uri);
 
             Assert.Equal(expected, actual);
         }
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                 foreach (Uri uri in uris)
                 {
                     string? expected = uri != null ? uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString() : null;
-                    string? actual = LogHelper.GetRedactedUriString(uri);
+                    string? actual = UriRedactionHelper.GetRedactedUriString(uri);
                     Assert.Equal(expected, actual);
                 }
             }, queryRedactionDisabler).Dispose();

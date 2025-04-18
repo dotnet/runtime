@@ -381,11 +381,15 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 ```xml
 <PropertyGroup>
   <!-- enables diagnostic server -->
-  <!-- this is new switch -->
   <WasmPerfTracing>true</WasmPerfTracing>
 
-  <!-- enables perf instrumentation for sampling CPU profiler -->
-  <WasmPerfInstrumentation>true</WasmPerfInstrumentation>
+  <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  Only when WasmPerfInstrumentation is true
+  See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+  -->
+  <WasmPerfInstrumentation>N:Sample</WasmPerfInstrumentation>
+  <!-- alternatively all methods -->
+  <WasmPerfInstrumentation>all</WasmPerfInstrumentation>
 
   <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
   <!-- this is existing switch also on other targets -->
@@ -399,50 +403,36 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 
 `Timing-Allow-Origin` HTTP header allows for more precise time measurements.
 
+Then you can trigger collection of a trace from browser dev tools
+
+```js
+globalThis.getDotnetRuntime(0).collectGcDump()
+```
+
+The .nettrace file could be converted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
+```js
+globalThis.getDotnetRuntime(0).collectPerfCounters({durationSeconds: 60})
+```
+
+The counters could be opened in VS, `PerfView.exe` tools or via `dotnet-trace report xxx.nettrace topN -n 10`
+
+```js
+globalThis.getDotnetRuntime(0).collectCpuSamples({durationSeconds: 60})
+```
+
+The counters could be opened in VS or in `PerfView.exe`
+
+
 ### Profiling in the browser dev tools
 
 You can enable integration with the profiler in browser dev tools via following elements in your .csproj
 ```xml
 <PropertyGroup>
-  <WasmProfilers>browser;</WasmProfilers>
+  <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+  -->
+  <WasmProfilers>browser:callspec=N:Sample</WasmProfilers>
+  <!-- alternatively all methods -->
+  <WasmProfilers>browser:callspec=all</WasmProfilers>
 </PropertyGroup>
 ```
-
-### Log Profiling for Memory Troubleshooting
-
-You can enable integration with log profiler via following elements in your .csproj:
-
-```xml
-<PropertyGroup>
-  <WasmProfilers>log;</WasmProfilers>
-  <WasmBuildNative>true</WasmBuildNative>
-</PropertyGroup>
-```
-
-In simple browser template, you can add following to your `main.js`
-
-```javascript
-import { dotnet } from './dotnet.js'
-await dotnet.withConfig({
-    logProfilerOptions: {
-        takeHeapshot: "MyApp.Profiling::TakeHeapshot",
-        configuration: "log:alloc,output=output.mlpd"
-    }}).run();
-```
-
-In order to trigger a heap shot, add the following:
-
-```csharp
-namespace MyApp;
-
-class Profiling
-{
-    [JSExport]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TakeHeapshot() { }
-}
-```
-
-Invoke `MyApp.Profiling.TakeHeapshot()` from your code in order to create a memory heap shot and flush the contents of the profile to the VFS. Make sure to align the namespace and class of the `logProfilerOptions.takeHeapshot` with your class.
-
-You can download the mpld file to analyze it.
