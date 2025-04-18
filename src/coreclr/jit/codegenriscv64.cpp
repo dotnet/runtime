@@ -2775,6 +2775,30 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 }
                 break;
 
+            case GT_SH1ADD:
+                ins = INS_sh1add;
+                break;
+
+            case GT_SH2ADD:
+                ins = INS_sh2add;
+                break;
+
+            case GT_SH3ADD:
+                ins = INS_sh3add;
+                break;
+
+            case GT_SH1ADD_UW:
+                ins = INS_sh1add_uw;
+                break;
+
+            case GT_SH2ADD_UW:
+                ins = INS_sh2add_uw;
+                break;
+
+            case GT_SH3ADD_UW:
+                ins = INS_sh3add_uw;
+                break;
+
             case GT_XOR_NOT:
                 assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
                 assert(!isImmed(treeNode));
@@ -4584,6 +4608,23 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; these nodes are simply markers for debug info.
             break;
 
+        case GT_SH1ADD:
+        case GT_SH1ADD_UW:
+        case GT_SH2ADD:
+        case GT_SH2ADD_UW:
+        case GT_SH3ADD:
+        case GT_SH3ADD_UW:
+            genCodeForShxadd(treeNode->AsOp());
+            break;
+
+        case GT_ADD_UW:
+            genCodeForAddUw(treeNode->AsOp());
+            break;
+
+        case GT_SLLI_UW:
+            genCodeForSlliUw(treeNode->AsOp());
+            break;
+
         default:
         {
 #ifdef DEBUG
@@ -5624,7 +5665,16 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // dest = base + (index << scale)
         if (node->gtElemSize <= 64)
         {
-            genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
+            instruction shxaddIns = getShxaddVariant(scale, (genTypeSize(index) == 4));
+
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zba) && (shxaddIns != INS_none))
+            {
+                GetEmitter()->emitIns_R_R_R(shxaddIns, attr, node->GetRegNum(), index->GetRegNum(), base->GetRegNum());
+            }
+            else
+            {
+                genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
+            }
         }
         else
         {
@@ -6447,9 +6497,15 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             }
 
             case GenIntCastDesc::ZERO_EXTEND_INT:
-
-                emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 32);
-                emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 32);
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zba))
+                {
+                    emit->emitIns_R_R_R(INS_add_uw, EA_PTRSIZE, dstReg, srcReg, REG_R0);
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 32);
+                    emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 32);
+                }
                 break;
             case GenIntCastDesc::SIGN_EXTEND_INT:
                 emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, dstReg, srcReg, 0);
@@ -6735,6 +6791,83 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     }
 
     genProduceReg(lea);
+}
+
+instruction CodeGen::getShxaddVariant(int scale, bool useUnsignedVariant)
+{
+    if (useUnsignedVariant)
+    {
+        switch (scale)
+        {
+            case 1:
+                return INS_sh1add_uw;
+            case 2:
+                return INS_sh2add_uw;
+            case 3:
+                return INS_sh3add_uw;
+        }
+    }
+    else
+    {
+        switch (scale)
+        {
+            case 1:
+                return INS_sh1add;
+            case 2:
+                return INS_sh2add;
+            case 3:
+                return INS_sh3add;
+        }
+    }
+    return INS_none;
+}
+
+void CodeGen::genCodeForShxadd(GenTreeOp* tree)
+{
+    instruction ins = genGetInsForOper(tree);
+
+    assert(ins == INS_sh1add || ins == INS_sh2add || ins == INS_sh3add || ins == INS_sh1add_uw ||
+           ins == INS_sh2add_uw || ins == INS_sh3add_uw);
+
+    genConsumeOperands(tree);
+
+    emitAttr attr = emitActualTypeSize(tree);
+
+    GetEmitter()->emitIns_R_R_R(ins, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(), tree->gtOp2->GetRegNum());
+
+    genProduceReg(tree);
+}
+
+void CodeGen::genCodeForAddUw(GenTreeOp* tree)
+{
+    assert(tree->gtOper == GT_ADD_UW);
+
+    genConsumeOperands(tree);
+
+    emitAttr attr = emitActualTypeSize(tree);
+
+    GetEmitter()->emitIns_R_R_R(INS_add_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(),
+                                tree->gtOp2->GetRegNum());
+
+    genProduceReg(tree);
+}
+
+void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
+{
+    assert(tree->gtOper == GT_SLLI_UW);
+
+    genConsumeOperands(tree);
+
+    emitAttr attr    = emitActualTypeSize(tree);
+    GenTree* shiftBy = tree->gtOp2;
+
+    assert(shiftBy->IsCnsIntOrI());
+
+    unsigned shamt = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+
+    GetEmitter()->emitIns_R_R_I(INS_slli_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(), shamt);
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------

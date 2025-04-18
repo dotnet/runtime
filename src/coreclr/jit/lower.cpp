@@ -7204,6 +7204,21 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
     }
 #endif // TARGET_ARM64
 
+#ifdef TARGET_RISCV64
+    if (comp->compOpportunisticallyDependsOn(InstructionSet_Zba))
+    {
+        GenTree* next;
+        if (TryLowerShiftAddToShxadd(node, &next))
+        {
+            return next;
+        }
+        else if (TryLowerZextAddToAddUw(node, &next))
+        {
+            return next;
+        }
+    }
+#endif
+
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
@@ -7950,6 +7965,14 @@ void Lowering::LowerShift(GenTreeOp* shift)
                 MakeSrcContained(shift, cast);
             }
         }
+    }
+#endif
+
+#ifdef TARGET_RISCV64
+    if (comp->compOpportunisticallyDependsOn(InstructionSet_Zba))
+    {
+        GenTree* next;
+        TryLowerZextLeftShiftToSlliUw(shift, &next);
     }
 #endif
 }
