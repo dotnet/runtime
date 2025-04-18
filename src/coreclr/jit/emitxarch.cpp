@@ -327,6 +327,24 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
             return emitComp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
         }
 
+        case INS_vpdpwsud:
+        case INS_vpdpwsuds:
+        case INS_vpdpwusd:
+        case INS_vpdpwusds:
+        case INS_vpdpwuud:
+        case INS_vpdpwuuds:
+        case INS_vpdpbssd:
+        case INS_vpdpbssds:
+        case INS_vpdpbsud:
+        case INS_vpdpbsuds:
+        case INS_vpdpbuud:
+        case INS_vpdpbuuds:
+        {
+            // Evex versions of AvxVnniInt8 and AvxVnniInt16 will be supported
+            // with Avx10.2 ISA. 
+            return emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+        }
+
         default:
         {
             return HasEvexEncoding(ins);
