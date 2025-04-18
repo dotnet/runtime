@@ -280,9 +280,9 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     {
         MethodDesc* md;
         if (isValueTask)
-            md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_VALUETASK_RETURNING_THUNK_1);
+            md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_VALUETASK_RETURNING_THUNK_1);
         else
-            md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_TASK_RETURNING_THUNK_1);
+            md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_TASK_RETURNING_THUNK_1);
 
         md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
         finalizeTaskReturningThunkToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, md);
@@ -291,9 +291,9 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     {
         MethodDesc* md;
         if (isValueTask)
-            md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_VALUETASK_RETURNING_THUNK);
+            md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_VALUETASK_RETURNING_THUNK);
         else
-            md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
+            md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
         finalizeTaskReturningThunkToken = pCode->GetToken(md);
     }
     pCode->EmitLDLOC(continuationLocal);
