@@ -8,9 +8,8 @@ steps:
 # Build Android sample app
   - ${{ if eq(parameters.osGroup, 'android') }}:
     - ${{ if eq(parameters.runtimeType, 'mono') }}:
-      - script: |
-          make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=Mono > build.log
-          cat build.log
+      # Mono JIT Build
+      - script: make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=Mono
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
         displayName: Build HelloAndroid sample app RUNTIME_FLAVOR=Mono
       - task: PublishBuildArtifacts@1
@@ -18,13 +17,7 @@ steps:
         displayName: 'Publish binlog'
         inputs:
           pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
-          artifactName:  AndroidMonoArm64binlog
-      - task: PublishBuildArtifacts@1
-        condition: succeededOrFailed()
-        displayName: 'Publish build log'
-        inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/build.log
-          artifactName:  AndroidMonoArm64buildlog
+          artifactName:  AndroidMonoArm64BuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
@@ -38,10 +31,32 @@ steps:
         workingDirectory: $(Build.SourcesDirectory)/artifacts/bin
         displayName: clean bindir
 
+      # Mono AOT Build
+      - script: make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=Mono AOT=true
+        workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
+        displayName: Build HelloAndroid sample app RUNTIME_FLAVOR=Mono AOT=true
+      - task: PublishBuildArtifacts@1
+        condition: succeededOrFailed()
+        displayName: 'Publish binlog'
+        inputs:
+          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
+          artifactName:  AndroidMonoAOTArm64BuildLog
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          includeRootFolder: true
+          displayName: Android Sample App AOT Mono
+          artifactName: AndroidHelloWorldArm64MonoAOT
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+      - script: rm -r -f $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp
+        workingDirectory: $(Build.SourcesDirectory)/artifacts/bin
+        displayName: clean bindir
+
     - ${{ if eq(parameters.runtimeType, 'coreclr') }}:
-      - script: |
-          make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=CoreCLR > build.log
-          cat build.log
+      # CoreCLR JIT Build
+      - script: make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=CoreCLR
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
         displayName: Build HelloAndroid sample app RUNTIME_FLAVOR=CoreCLR
       - task: PublishBuildArtifacts@1
@@ -49,13 +64,7 @@ steps:
         displayName: 'Publish binlog'
         inputs:
           pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
-          artifactName:  AndroidCoreCLRArm64binlog
-      - task: PublishBuildArtifacts@1
-        condition: succeededOrFailed()
-        displayName: 'Publish build log'
-        inputs:
-          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/build.log
-          artifactName:  AndroidCoreCLRArm64buildlog
+          artifactName:  AndroidCoreCLRArm64BuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
           rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
@@ -69,10 +78,31 @@ steps:
         workingDirectory: $(Build.SourcesDirectory)/artifacts/bin
         displayName: clean bindir
 
+      # CoreCLR R2R build
+      - script: make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=CoreCLR R2R=true
+        workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
+        displayName: Build HelloAndroid sample app RUNTIME_FLAVOR=CoreCLR R2R=true
+      - task: PublishBuildArtifacts@1
+        condition: succeededOrFailed()
+        displayName: 'Publish binlog'
+        inputs:
+          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
+          artifactName:  AndroidCoreCLRR2RArm64BuildLog
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          includeRootFolder: true
+          displayName: Android Sample App R2R CoreCLR
+          artifactName: AndroidHelloWorldArm64CoreCLRR2R
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+      - script: rm -r -f $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp
+        workingDirectory: $(Build.SourcesDirectory)/artifacts/bin
+        displayName: clean bindir
+
   - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSMono')) }}:
-    - script: |
-        make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }} > build.log
-        cat build.log
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
@@ -82,13 +112,7 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-        artifactName:  iOSMonoArm64NoLLVMNoStripSymbolsbinlog
-    - task: PublishBuildArtifacts@1
-      condition: succeededOrFailed()
-      displayName: 'Publish build log'
-      inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/build.log
-        artifactName:  iOSMonoArm64NoLLVMNoStripSymbolsbuildlog
+        artifactName:  iOSMonoArm64NoLLVMNoStripSymbolsBuildLog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -100,9 +124,7 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
-    - script: |
-        make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }} > build.log
-        cat build.log
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
@@ -112,13 +134,7 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-        artifactName:  iOSMonoArm64NoLLVMStripSymbolsbinlog
-    - task: PublishBuildArtifacts@1
-      condition: succeededOrFailed()
-      displayName: 'Publish build log'
-      inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/build.log
-        artifactName:  iOSMonoArm64NoLLVMStripSymbolsbuildlog
+        artifactName:  iOSMonoArm64NoLLVMStripSymbolsBuildLog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -130,9 +146,7 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
-    - script: |
-        make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }} > build.log
-        cat build.log
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
@@ -142,13 +156,7 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-        artifactName:  iOSMonoArm64LLVMNoStripSymbolsbinlog
-    - task: PublishBuildArtifacts@1
-      condition: succeededOrFailed()
-      displayName: 'Publish build log'
-      inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/build.log
-        artifactName:  iOSMonoArm64LLVMNoStripSymbolsbuildlog
+        artifactName:  iOSMonoArm64LLVMNoStripSymbolsBuildLog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -160,9 +168,7 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
-    - script: |
-        make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }} > build.log
-        cat build.log
+    - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
@@ -172,13 +178,7 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
-        artifactName: iOSMonoArm64LLVMStripSymbolsbinlog
-    - task: PublishBuildArtifacts@1
-      condition: succeededOrFailed()
-      displayName: 'Publish build log'
-      inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/build.log
-        artifactName:  iOSMonoArm64LLVMStripSymbolsbuildlog
+        artifactName: iOSMonoArm64LLVMStripSymbolsBuildLog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -189,9 +189,7 @@ steps:
         archiveType: zip
 
   - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSNativeAOT')) }}:
-    - script: |
-        make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }} > build.log
-        cat build.log
+    - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT
@@ -201,13 +199,7 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/msbuild.binlog
-        artifactName: iOSNativeAOTArm64NoStripSymbolsbinlog
-    - task: PublishBuildArtifacts@1
-      condition: succeededOrFailed()
-      displayName: 'Publish build log'
-      inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/build.log
-        artifactName:  iOSNativeAOTArm64NoStripSymbolsbuildlog
+        artifactName: iOSNativeAOTArm64NoStripSymbolsBuildLog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
@@ -219,9 +211,7 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT
       displayName: Clean bindir
-    - script: |
-        make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }} > build.log
-        cat build.log
+    - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true HYBRID_GLOBALIZATION=${{ parameters.hybridGlobalization }}
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT
@@ -231,13 +221,7 @@ steps:
       displayName: 'Publish binlog'
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/msbuild.binlog
-        artifactName: iOSNativeAOTArm64StripSymbolsbinlog
-    - task: PublishBuildArtifacts@1
-      condition: succeededOrFailed()
-      displayName: 'Publish build log'
-      inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/build.log
-        artifactName:  iOSNativeAOTArm64StripSymbolsbuildlog
+        artifactName: iOSNativeAOTArm64StripSymbolsBuildLog
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
