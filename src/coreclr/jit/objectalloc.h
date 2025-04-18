@@ -190,8 +190,10 @@ private:
     bool         MorphAllocObjNodes();
     void         RewriteUses();
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
-    unsigned int MorphAllocObjNodeIntoStackAlloc(
-        GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
+    unsigned int MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj,
+                                                 ClassLayout*     layout,
+                                                 BasicBlock*      block,
+                                                 Statement*       stmt);
     unsigned int MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
                                                CORINFO_CLASS_HANDLE clsHnd,
                                                unsigned int         length,
@@ -229,6 +231,10 @@ private:
     void CloneAndSpecialize();
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
+
+    ClassLayout* GetBoxedLayout(ClassLayout* structLayout);
+    ClassLayout* GetNonGCLayout(ClassLayout* existingLayout);
+    ClassLayout* GetByrefLayout(ClassLayout* existingLayout);
 
 #ifdef DEBUG
     void DumpIndex(unsigned bvIndex);
