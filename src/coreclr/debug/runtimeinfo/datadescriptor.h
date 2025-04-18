@@ -98,6 +98,9 @@
 #ifndef CDAC_GLOBAL_POINTER
 #define CDAC_GLOBAL_POINTER(globalname,addr)
 #endif
+#ifndef CDAC_GLOBAL_STRING
+#define CDAC_GLOBAL_STRING(globalname,stringval)
+#endif
 #ifndef CDAC_GLOBALS_END
 #define CDAC_GLOBALS_END()
 #endif
@@ -165,13 +168,8 @@ CDAC_TYPE_END(Exception)
 
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
-#if FEATURE_EH_FUNCLETS
-CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExceptionTrackerBase, m_hThrowable))
-CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExceptionTrackerBase, m_pPrevNestedInfo))
-#else
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExInfo, m_hThrowable))
 CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
-#endif
 CDAC_TYPE_END(ExceptionInfo)
 
 
@@ -220,6 +218,7 @@ CDAC_TYPE_END(SyncTableEntry)
 CDAC_TYPE_BEGIN(Module)
 CDAC_TYPE_INDETERMINATE(Module)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_data<Module>::Assembly)
+CDAC_TYPE_FIELD(Module, /*pointer*/, PEAssembly, cdac_data<Module>::PEAssembly)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Base, cdac_data<Module>::Base)
 CDAC_TYPE_FIELD(Module, /*uint32*/, Flags, cdac_data<Module>::Flags)
 CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_data<Module>::LoaderAllocator)
@@ -227,6 +226,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_data<Module>::Dynamic
 CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
 CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ReadyToRunInfo, cdac_data<Module>::ReadyToRunInfo)
+CDAC_TYPE_FIELD(Module, /*pointer*/, GrowableSymbolStream, cdac_data<Module>::GrowableSymbolStream)
 
 CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_data<Module>::FieldDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_data<Module>::ManifestModuleReferencesMap)
@@ -250,6 +250,39 @@ CDAC_TYPE_INDETERMINATE(Assembly)
 CDAC_TYPE_FIELD(Assembly, /*uint8*/, IsCollectible, cdac_data<Assembly>::IsCollectible)
 #endif
 CDAC_TYPE_END(Assembly)
+
+CDAC_TYPE_BEGIN(PEAssembly)
+CDAC_TYPE_INDETERMINATE(PEAssembly)
+CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, PEImage, cdac_data<PEAssembly>::PEImage)
+CDAC_TYPE_END(PEAssembly)
+
+CDAC_TYPE_BEGIN(PEImage)
+CDAC_TYPE_INDETERMINATE(PEImage)
+CDAC_TYPE_FIELD(PEImage, /*pointer*/, LoadedImageLayout, cdac_data<PEImage>::LoadedImageLayout)
+CDAC_TYPE_FIELD(PEImage, /*ProbeExtensionResult*/, ProbeExtensionResult, cdac_data<PEImage>::ProbeExtensionResult)
+CDAC_TYPE_END(PEImage)
+
+CDAC_TYPE_BEGIN(PEImageLayout)
+CDAC_TYPE_FIELD(PEImageLayout, /*pointer*/, Base, cdac_data<PEImageLayout>::Base)
+CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Size, cdac_data<PEImageLayout>::Size)
+CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Flags, cdac_data<PEImageLayout>::Flags)
+CDAC_TYPE_END(PEImageLayout)
+
+CDAC_TYPE_BEGIN(CGrowableSymbolStream)
+CDAC_TYPE_INDETERMINATE(CGrowableSymbolStream)
+CDAC_TYPE_FIELD(CGrowableSymbolStream, /*pointer*/, Buffer, cdac_data<CGrowableStream>::Buffer)
+CDAC_TYPE_FIELD(CGrowableSymbolStream, /*uint32*/, Size, cdac_data<CGrowableStream>::Size)
+CDAC_TYPE_END(CGrowableSymbolStream)
+
+CDAC_TYPE_BEGIN(ProbeExtensionResult)
+CDAC_TYPE_INDETERMINATE(ProbeExtensionResult)
+CDAC_TYPE_FIELD(ProbeExtensionResult, /*int32*/, Type, offsetof(ProbeExtensionResult, Type))
+CDAC_TYPE_END(ProbeExtensionResult)
+
+CDAC_TYPE_BEGIN(AppDomain)
+CDAC_TYPE_INDETERMINATE(AppDomain)
+CDAC_TYPE_FIELD(AppDomain, /*pointer*/, RootAssembly, cdac_data<AppDomain>::RootAssembly)
+CDAC_TYPE_END(AppDomain)
 
 // RuntimeTypeSystem
 
@@ -757,6 +790,33 @@ CDAC_TYPE_END(CalleeSavedRegisters)
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
+
+#if defined(TARGET_UNIX)
+CDAC_GLOBAL_STRING(OperatingSystem, unix)
+#elif defined(TARGET_WINDOWS)
+CDAC_GLOBAL_STRING(OperatingSystem, windows)
+#else
+#error TARGET_{OS} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
+#endif
+
+#if defined(TARGET_X86)
+CDAC_GLOBAL_STRING(Architecture, x86)
+#elif defined(TARGET_AMD64)
+CDAC_GLOBAL_STRING(Architecture, x64)
+#elif defined(TARGET_ARM)
+CDAC_GLOBAL_STRING(Architecture, arm)
+#elif defined(TARGET_ARM64)
+CDAC_GLOBAL_STRING(Architecture, arm64)
+#elif defined(TARGET_LOONGARCH64)
+CDAC_GLOBAL_STRING(Architecture, loongarch64)
+#elif defined(TARGET_RISCV64)
+CDAC_GLOBAL_STRING(Architecture, riscv64)
+#else
+#error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
+#endif
+
+CDAC_GLOBAL_STRING(RID, RID_STRING)
+
 CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
@@ -831,4 +891,5 @@ CDAC_GLOBALS_END()
 #undef CDAC_GLOBALS_BEGIN
 #undef CDAC_GLOBAL
 #undef CDAC_GLOBAL_POINTER
+#undef CDAC_GLOBAL_STRING
 #undef CDAC_GLOBALS_END

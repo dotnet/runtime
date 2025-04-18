@@ -163,7 +163,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
-        if (buildOptions.BootConfigFileName != "dotnet.boot.js")
+        if (buildOptions.BootConfigFileName != null)
         {
             // Omit implicit default
             buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:WasmBootConfigFileName={buildOptions.BootConfigFileName}" };

@@ -1305,6 +1305,10 @@ namespace ILCompiler.Dataflow
                     {
                         MarkArrayValuesAsUnknown(arr, curBasicBlock);
                     }
+                    else if (v is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated)
+                    {
+                        arrayOfAnnotated.MarkModified();
+                    }
                 }
             }
         }
@@ -1354,6 +1358,10 @@ namespace ILCompiler.Dataflow
                         StoreMethodLocalValue(arrValue.IndexValues, ArrayValue.SanitizeArrayElementValue(valueToStore.Value), indexToStoreAtInt.Value, curBasicBlock, MaxTrackedArrayValues);
                     }
                 }
+                else if (array is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated)
+                {
+                    arrayOfAnnotated.MarkModified();
+                }
             }
         }
 
@@ -1366,13 +1374,27 @@ namespace ILCompiler.Dataflow
         {
             StackSlot indexToLoadFrom = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot arrayToLoadFrom = PopUnknown(currentStack, 1, methodBody, offset);
+
+            bool isByRef = opcode == ILOpcode.ldelema;
+
+            if (arrayToLoadFrom.Value.AsSingleValue() is ArrayOfAnnotatedSystemTypeValue arrayOfAnnotated)
+            {
+                if (isByRef)
+                {
+                    arrayOfAnnotated.MarkModified();
+                }
+                else if (!arrayOfAnnotated.IsModified)
+                {
+                    currentStack.Push(new StackSlot(arrayOfAnnotated.GetAnyElementValue()));
+                    return;
+                }
+            }
+
             if (arrayToLoadFrom.Value.AsSingleValue() is not ArrayValue arr)
             {
                 PushUnknown(currentStack);
                 return;
             }
-            // We don't yet handle arrays of references or pointers
-            bool isByRef = opcode == ILOpcode.ldelema;
 
             int? index = indexToLoadFrom.Value.AsConstInt();
             if (index == null)
