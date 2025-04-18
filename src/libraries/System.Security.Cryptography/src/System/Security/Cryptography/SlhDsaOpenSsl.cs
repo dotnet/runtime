@@ -7,28 +7,26 @@ using System.Runtime.Versioning;
 namespace System.Security.Cryptography
 {
     /// <summary>
-    ///   Represents an ML-KEM key backed by OpenSSL.
+    ///   Represents an SLH-DSA key backed by OpenSSL.
     /// </summary>
     /// <remarks>
     ///   <para>
-    ///     This algorithm is specified by FIPS-203.
+    ///     This algorithm is specified by FIPS-205.
     ///   </para>
     ///   <para>
-    ///     Developers are encouraged to program against the <c>MLKem</c> base class,
+    ///     Developers are encouraged to program against the <c>SlhDsa</c> base class,
     ///     rather than any specific derived class.
     ///     The derived classes are intended for interop with the underlying system
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-    public sealed partial class MLKemOpenSsl : MLKem
+    public sealed partial class SlhDsaOpenSsl : SlhDsa
     {
         private readonly SafeEvpPKeyHandle _key;
-        private readonly bool _hasSeed;
-        private readonly bool _hasDecapsulationKey;
 
         /// <summary>
-        ///   Initializes a new instance of the <see cref="MLKemOpenSsl" /> class from an existing OpenSSL key
+        ///   Initializes a new instance of the <see cref="SlhDsaOpenSsl" /> class from an existing OpenSSL key
         ///   represented as an <c>EVP_PKEY*</c>.
         /// </summary>
         /// <param name="pkeyHandle">
@@ -38,7 +36,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="pkeyHandle" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <para>The handle in <paramref name="pkeyHandle" /> is not recognized as an ML-KEM key.</para>
+        ///   <para>The handle in <paramref name="pkeyHandle" /> is not recognized as an SLH-DSA key.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while creating the algorithm instance.</para>
         /// </exception>
@@ -51,19 +49,12 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("osx")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
-        public MLKemOpenSsl(SafeEvpPKeyHandle pkeyHandle) : base(
-            AlgorithmFromHandle(pkeyHandle, out SafeEvpPKeyHandle upRefHandle, out bool hasSeed, out bool hasDecapsulationKey))
+        public SlhDsaOpenSsl(SafeEvpPKeyHandle pkeyHandle) : base(AlgorithmFromHandle(pkeyHandle, out SafeEvpPKeyHandle upRefHandle))
         {
             _key = upRefHandle;
-            _hasSeed = hasSeed;
-            _hasDecapsulationKey = hasDecapsulationKey;
         }
 
-        private static partial MLKemAlgorithm AlgorithmFromHandle(
-            SafeEvpPKeyHandle pkeyHandle,
-            out SafeEvpPKeyHandle upRefHandle,
-            out bool hasSeed,
-            out bool hasDecapsulationKey);
+        private static partial SlhDsaAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle);
 
         /// <summary>
         /// Gets a <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.
