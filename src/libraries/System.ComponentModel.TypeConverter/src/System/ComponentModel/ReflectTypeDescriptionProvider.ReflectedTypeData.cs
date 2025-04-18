@@ -547,22 +547,6 @@ namespace System.ComponentModel
 
                 return t;
             }
-
-            /// <summary>
-            /// Refreshes the contents of this type descriptor. This does not
-            /// actually requery, but it will clear our state so the next
-            /// query re-populates.
-            /// </summary>
-            internal void Refresh()
-            {
-                _attributes = null;
-                _events = null;
-                _properties = null;
-                _converter = null;
-                _editors = null;
-                _editorTypes = null;
-                _editorCount = 0;
-            }
         }
     }
 }

@@ -1413,16 +1413,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Refreshes the contents of this type descriptor. This does not
-        /// actually requery, but it will clear our state so the next
-        /// query re-populates.
+        /// Completely removed the reference to this type descriptor.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "ReflectedTypeData is not being created here, just checking if was already created.")]
-        internal void Refresh(Type type)
+        internal void Remove(Type type)
         {
-            ReflectedTypeData? td = GetTypeData(type, createIfNeeded: false);
-            td?.Refresh();
+            _typeData.TryRemove(type, out _);
         }
 
         /// <summary>
