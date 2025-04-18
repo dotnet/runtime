@@ -3156,7 +3156,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     // the partial byref will not point within the object, and thus not get updated correctly during a GC.
     // This is mostly a risk in fully-interruptible code regions.
 
-    // We can generate two types of trees for "addr":
+    // We can generate three types of trees for "addr":
     //
     //  1) "arrRef + (index + elemOffset)"
     //  2) "(arrRef + elemOffset) + index"
