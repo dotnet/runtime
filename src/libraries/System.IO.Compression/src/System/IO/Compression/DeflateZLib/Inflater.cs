@@ -115,7 +115,7 @@ namespace System.IO.Compression
                 // Before returning, make sure to release input buffer if necessary:
                 if (0 == _zlibStream.AvailIn && IsInputBufferHandleAllocated)
                 {
-                    DeallocateInputBufferHandle();
+                    DeallocateInputBufferHandle(resetStreamHandle: true);
                 }
             }
         }
@@ -206,10 +206,15 @@ namespace System.IO.Compression
             if (!_isDisposed)
             {
                 if (disposing)
+                {
                     _zlibStream.Dispose();
+                }
 
                 if (IsInputBufferHandleAllocated)
-                    DeallocateInputBufferHandle();
+                {
+                    // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of.)
+                    DeallocateInputBufferHandle(resetStreamHandle: false);
+                }
 
                 _isDisposed = true;
             }
@@ -232,13 +237,20 @@ namespace System.IO.Compression
         [MemberNotNull(nameof(_zlibStream))]
         private void InflateInit(int windowBits)
         {
+            Debug.Assert(_zlibStream is null);
+
+            ZLibNative.ZLibStreamHandle? zlibStream = null;
             ZLibNative.ErrorCode error;
             try
             {
-                error = ZLibNative.CreateZLibStreamForInflate(out _zlibStream, windowBits);
+                error = ZLibNative.CreateZLibStreamForInflate(out zlibStream, windowBits);
+
+                _zlibStream = zlibStream;
             }
             catch (Exception exception) // could not load the ZLib dll
             {
+                zlibStream?.Dispose();
+                GC.SuppressFinalize(this);
                 throw new ZLibException(SR.ZLibErrorDLLLoadError, exception);
             }
 
@@ -318,14 +330,17 @@ namespace System.IO.Compression
         /// <summary>
         /// Frees the GCHandle being used to store the input buffer
         /// </summary>
-        private void DeallocateInputBufferHandle()
+        private void DeallocateInputBufferHandle(bool resetStreamHandle)
         {
             Debug.Assert(IsInputBufferHandleAllocated);
 
             lock (SyncLock)
             {
-                _zlibStream.AvailIn = 0;
-                _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                if (resetStreamHandle)
+                {
+                    _zlibStream.AvailIn = 0;
+                    _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                }
                 _inputBufferHandle.Dispose();
             }
         }

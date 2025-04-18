@@ -32,13 +32,18 @@ namespace System.IO.Compression
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
 
+            ZLibNative.ZLibStreamHandle? zlibStream = null;
             ZErrorCode errC;
             try
             {
-                errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, compressionLevel, windowBits, memLevel, strategy);
+                errC = ZLibNative.CreateZLibStreamForDeflate(out zlibStream, compressionLevel, windowBits, memLevel, strategy);
+
+                _zlibStream = zlibStream;
             }
             catch (Exception cause)
             {
+                zlibStream?.Dispose();
+                GC.SuppressFinalize(this);
                 throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
             }
 
@@ -77,9 +82,12 @@ namespace System.IO.Compression
             if (!_isDisposed)
             {
                 if (disposing)
+                {
                     _zlibStream.Dispose();
+                }
 
-                DeallocateInputBufferHandle();
+                // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of.)
+                DeallocateInputBufferHandle(resetStreamHandle: false);
                 _isDisposed = true;
             }
         }
@@ -129,7 +137,7 @@ namespace System.IO.Compression
                 // Before returning, make sure to release input buffer if necessary:
                 if (0 == _zlibStream.AvailIn)
                 {
-                    DeallocateInputBufferHandle();
+                    DeallocateInputBufferHandle(resetStreamHandle: true);
                 }
             }
         }
@@ -179,12 +187,15 @@ namespace System.IO.Compression
             return ReadDeflateOutput(outputBuffer, ZFlushCode.SyncFlush, out bytesRead) == ZErrorCode.Ok;
         }
 
-        private void DeallocateInputBufferHandle()
+        private void DeallocateInputBufferHandle(bool resetStreamHandle)
         {
             lock (SyncLock)
             {
-                _zlibStream.AvailIn = 0;
-                _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                if (resetStreamHandle)
+                {
+                    _zlibStream.AvailIn = 0;
+                    _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                }
                 _inputBufferHandle.Dispose();
             }
         }
