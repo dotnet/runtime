@@ -887,7 +887,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 
                     dest = FPREG_Xstate_Egpr(native, &size);
                     _ASSERT(size == (sizeof(DWORD64) * 16));
-                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->Egpr16, sizeof(DWORD64) * 16);
+                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
                 }
 #endif //  !TARGET_OSX
             }
@@ -1243,7 +1243,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             {
                 src = FPREG_Xstate_Egpr(native, &size);
                 _ASSERT(size == (sizeof(DWORD64) * 16));
-                memcpy_s(&lpContext->Egpr16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
+                memcpy_s(&lpContext->R16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
 
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_APX;
             }
@@ -2204,13 +2204,24 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
     size_t copySize;
     if (ctx.ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
     {
+        // TODO-XArch-APX:
+        // After we introduced APX, the copySize calculation is not accurate here.
+        // We now have 4 cases:
+        // 1. hasApx && hasAvx512
+        // 2. hasApx && !hasAvx512 - this could be a rare case.
+        // 3. !hasApx && hasAvx512
+        // 4. !hasApx && !hasAvx512
+        // but the copied memory is supposed to be linear, 
+        // we cannot handle cases 2 or 3, depending on how we arrange the Context data structure.
+        
+        // Current implementation only takes care of case 1,3,4.
         if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
         {
             copySize = sizeof(CONTEXT);
         }
         else if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
         {
-            copySize = offsetof(CONTEXT, Egpr16);
+            copySize = offsetof(CONTEXT, R16);
         }
         else
         {
