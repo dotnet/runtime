@@ -693,16 +693,20 @@ DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,  
 #ifdef FEATURE_IJW
 DEFINE_METHOD(RUNTIME_HELPERS,      COPY_CONSTRUCT,         CopyConstruct, NoSig)
 #endif // FEATURE_IJW
-DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_CONTINUATION,        AllocContinuation, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_CONTINUATION_METHOD, AllocContinuationMethod, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_CONTINUATION_CLASS,  AllocContinuationClass, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_CONTINUATION_RESULT_BOX, AllocContinuationResultBox, SM_VoidPtr_RetObj)
-DEFINE_METHOD(RUNTIME_HELPERS,      FINALIZE_TASK_RETURNING_THUNK, FinalizeTaskReturningThunk, SM_Continuation_RetTask)
-DEFINE_METHOD(RUNTIME_HELPERS,      FINALIZE_TASK_RETURNING_THUNK_1, FinalizeTaskReturningThunk, GM_Continuation_RetTaskOfT)
-DEFINE_METHOD(RUNTIME_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK, FinalizeValueTaskReturningThunk, SM_Continuation_RetValueTask)
-DEFINE_METHOD(RUNTIME_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK_1, FinalizeValueTaskReturningThunk, GM_Continuation_RetValueTaskOfT)
+// TODO: Pending API review these are likely to move to AsyncHelpers.
+//       Not doing the move proactively, since it would require updating Roslyn compiler that we use.
 DEFINE_METHOD(RUNTIME_HELPERS,      UNSAFE_AWAIT_AWAITER_FROM_RUNTIME_ASYNC_1, UnsafeAwaitAwaiterFromRuntimeAsync, GM_T_RetVoid)
 DEFINE_METHOD(RUNTIME_HELPERS,      AWAIT_AWAITER_FROM_RUNTIME_ASYNC_1, AwaitAwaiterFromRuntimeAsync, GM_T_RetVoid)
+
+DEFINE_CLASS(ASYNC_HELPERS,       CompilerServices,          AsyncHelpers)
+DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION,        AllocContinuation, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION_METHOD, AllocContinuationMethod, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION_CLASS,  AllocContinuationClass, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION_RESULT_BOX, AllocContinuationResultBox, SM_VoidPtr_RetObj)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK, FinalizeTaskReturningThunk, SM_Continuation_RetTask)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK_1, FinalizeTaskReturningThunk, GM_Continuation_RetTaskOfT)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK, FinalizeValueTaskReturningThunk, SM_Continuation_RetValueTask)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK_1, FinalizeValueTaskReturningThunk, GM_Continuation_RetValueTaskOfT)
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)

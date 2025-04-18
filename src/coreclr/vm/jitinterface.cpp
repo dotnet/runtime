@@ -14796,7 +14796,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
             if (resultTypeHnd.IsValueType())
             {
                 // make a box and dup the ref
-                MethodDesc* md = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ALLOC_CONTINUATION_RESULT_BOX);
+                MethodDesc* md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__ALLOC_CONTINUATION_RESULT_BOX);
                 pCode->EmitLDC((DWORD_PTR)resultTypeHnd.AsMethodTable());
                 pCode->EmitCALL(pCode->GetToken(md), 1, 1);
                 pCode->EmitDUP();
