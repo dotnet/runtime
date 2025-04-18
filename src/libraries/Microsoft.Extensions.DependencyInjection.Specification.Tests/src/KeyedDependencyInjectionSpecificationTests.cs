@@ -713,6 +713,28 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ResolveRequiredKeyedServiceThrowsIfNotFound()
+        {
+            var serviceCollection = new ServiceCollection();
+            var provider = CreateServiceProvider(serviceCollection);
+            var serviceKey = new object();
+
+            InvalidOperationException e;
+
+            e = Assert.Throws<InvalidOperationException>(() => provider.GetRequiredKeyedService<IService>(serviceKey));
+            VerifyException();
+
+            e = Assert.Throws<InvalidOperationException>(() => provider.GetRequiredKeyedService(typeof(IService), serviceKey));
+            VerifyException();
+
+            void VerifyException()
+            {
+                Assert.Contains(nameof(IService), e.Message);
+                Assert.Contains(serviceKey.GetType().FullName, e.Message);
+            }
+        }
+
+        [Fact]
         public void ResolveKeyedServiceThrowsIfNotSupported()
         {
             var provider = new NonKeyedServiceProvider();
