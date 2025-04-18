@@ -22,6 +22,31 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class CompileFails
     {
+        [Fact]
+        public Task GenericDelegateParameterFails()
+        {
+            var src = """
+            using System;
+            using System.Runtime.InteropServices;
+
+            partial class Test
+            {
+                [LibraryImportAttribute("DoesNotExist")]
+                public static partial void Method1(Func<int, int> {|#0:f|});
+            }
+            """;
+
+
+            return VerifyCS.VerifySourceGeneratorAsync(
+                src,
+                new DiagnosticResult[]
+                {
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                        .WithLocation(0)
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "f")
+                });
+        }
+
         private static string ID(
             [CallerLineNumber] int lineNumber = 0,
             [CallerFilePath] string? filePath = null)
