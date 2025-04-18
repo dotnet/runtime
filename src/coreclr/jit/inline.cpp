@@ -803,7 +803,7 @@ void InlineResult::Report()
         // when there is a CALLEE FATAL observation. We want to make sure
         // not to block future inlines based on performance or throughput considerations.
         //
-        // Note fgPgoDyanmic (and hence dynamicPgo) is true iff TieredPGO is enabled globally.
+        // Note fgPgoDynamic (and hence dynamicPgo) is true iff TieredPGO is enabled globally.
         // In particular this value does not depend on the root method having PGO data.
         //
         if (dynamicPgo)
