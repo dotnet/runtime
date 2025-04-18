@@ -1352,7 +1352,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             switch (converter.ConverterStrategy)
             {
-                case ConverterStrategy.Value: return JsonTypeInfoKind.None;
+                case ConverterStrategy.SimpleValue: return JsonTypeInfoKind.None;
+                case ConverterStrategy.SegmentableValue: return JsonTypeInfoKind.None;
                 case ConverterStrategy.Object: return JsonTypeInfoKind.Object;
                 case ConverterStrategy.Enumerable: return JsonTypeInfoKind.Enumerable;
                 case ConverterStrategy.Dictionary: return JsonTypeInfoKind.Dictionary;
