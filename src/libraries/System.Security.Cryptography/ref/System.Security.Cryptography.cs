@@ -2853,7 +2853,6 @@ namespace System.Security.Cryptography
         public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public byte[] ExportPkcs8PrivateKey() { throw null; }
-        protected virtual byte[] ExportPkcs8PrivateKeyCore() { throw null; }
         public string ExportPkcs8PrivateKeyPem() { throw null; }
         public int ExportSlhDsaPublicKey(System.Span<byte> destination) { throw null; }
         protected abstract void ExportSlhDsaPublicKeyCore(System.Span<byte> destination);

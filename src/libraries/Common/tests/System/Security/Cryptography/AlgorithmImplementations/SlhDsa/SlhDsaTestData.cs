@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Text.Unicode;
 using Test.Cryptography;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
@@ -56,32 +58,371 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         // > openssl genpkey -algorithm "SLH-DSA-SHA2-128f" > private.pem
         //
         // Get secret key:
-        // > cat private.pem | openssl asn1parse -offset 18 | cut -d':' -f4
+        // > openssl asn1parse -in private.pem | tail -1 | cut -d':' -f4
         //
-        // Get base64 encoded DER private key info:
-        // > cat private.pem | openssl pkey -outform DER | base64 -w64
+        // Get base64 private key info:
+        // > openssl pkey -outform DER -in private.pem | base64 -w64
         //
-        // Get base64 encoded DER public key info:
-        // > cat private.pem | openssl pkey -outform DER -pubout | base64 -w64
+        // Get base64 public key info:
+        // > openssl pkey -outform DER -pubout -in private.pem | base64 -w64
         //
-        // Get base64 encoded encrypted private key info:
-        // > cat private.pem | openssl pkey -outform DER -aes-256-cbc | base64 -w64
-        public record SlhDsaGeneratedKeyData(
-            string Id,
+        // Get base64 encrypted private key info:
+        // > openssl pkcs8 -topk8 -outform DER -v2 "aes-192-cbc" -v2prf hmacWithSHA384 -iter 1000000 -in private.pem | base64 -w 64
+        public record SlhDsaGeneratedKeyInfo(
+            int Id,
             SlhDsaAlgorithm Algorithm,
             string SecretKeyHex,
-            string PrivateKeyPkcs8Base64,
-            string PublicKeyPkcs8Base64,
-            string EncryptedPrivateKeyPkcs8Base64,
+            string Pkcs8PrivateKeyBase64,
+            string Pkcs8PublicKeyBase64,
+            string Pkcs8EncryptedPrivateKeyBase64,
             string EncryptionPassword,
             PbeParameters EncryptionParameters)
         {
             public byte[] SecretKey => SecretKeyHex.HexToByteArray();
             public byte[] PublicKey => SecretKey[(Algorithm.SecretKeySizeInBytes/2)..];
-            public byte[] PrivateKeyPkcs8 => Convert.FromBase64String(PrivateKeyPkcs8Base64);
-            public byte[] PublicKeyPkcs8 => Convert.FromBase64String(PublicKeyPkcs8Base64);
+            public byte[] Pkcs8PrivateKey => Convert.FromBase64String(Pkcs8PrivateKeyBase64);
+            public byte[] Pkcs8PublicKey => Convert.FromBase64String(Pkcs8PublicKeyBase64);
+            public byte[] Pkcs8EncryptedPrivateKey => Convert.FromBase64String(Pkcs8EncryptedPrivateKeyBase64);
+            public byte[] EncryptionPasswordBytes => Encoding.UTF8.GetBytes(EncryptionPassword); // Assuming UTF-8 encoding
 
+            public override string ToString() =>
+                $"{nameof(SlhDsaGeneratedKeyInfo)} {{ {nameof(Id)} = {Id}, {nameof(Algorithm)} = \"{Algorithm.Name}\" }}";
         }
+
+        public static IEnumerable<object[]> GeneratedKeyInfosData =>
+            from info in GeneratedKeyInfosRaw
+            select new object[] { info };
+
+        public static IEnumerable<SlhDsaGeneratedKeyInfo> GeneratedKeyInfosRaw =
+        [
+            new(Id: 1,
+                SlhDsaAlgorithm.SlhDsaSha2_128s,
+                """
+                8BE8058E7FCC58681036A169D510C2A809336C723C89AA5525BD256B788EA809292559ECD7B7035AAFDE18D146CA4A41EC0049C22E0C1C8B3DF82EA50D24F4A5
+                """,
+                """
+                MFICAQAwCwYJYIZIAWUDBAMUBECL6AWOf8xYaBA2oWnVEMKoCTNscjyJqlUlvSVr
+                eI6oCSklWezXtwNar94Y0UbKSkHsAEnCLgwciz34LqUNJPSl
+                """,
+                """
+                MDAwCwYJYIZIAWUDBAMUAyEAKSVZ7Ne3A1qv3hjRRspKQewAScIuDByLPfgupQ0k
+                9KU=
+                """,
+                """
+                MIGjMEcGCSqGSIb3DQEFDTA6MCIGCSqGSIb3DQEFDDAVBBCvYEnQFzUG4ISCOj7P
+                58MzAgEBMBQGCCqGSIb3DQMHBAi+7I/oBcPxVwRYdVhqotOWLSMefOPezr1GAIPy
+                5kvHTQNZZZ3g0aFiavTgERj0AqoQdGX6ZCHw1rU0tc9bSITVprZFj1t/YY5ct/ZG
+                UC57RFKpyWANJtjMxWLyRRuUr14RCw==
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
+                    hashAlgorithm: HashAlgorithmName.SHA1,
+                    iterationCount: 1
+                )),
+            new(Id: 2,
+                SlhDsaAlgorithm.SlhDsaSha2_128f,
+                """
+                956375D8018454B884077259791F5CCDFCD7BE095125B79CBB0E5161D86D1F05C3042EA89752D45B3418893096C9D63D57DA5D1C99B13CF2FEA23868AA2B2C0F
+                """,
+                """
+                MFICAQAwCwYJYIZIAWUDBAMVBECVY3XYAYRUuIQHcll5H1zN/Ne+CVElt5y7DlFh
+                2G0fBcMELqiXUtRbNBiJMJbJ1j1X2l0cmbE88v6iOGiqKywP
+                """,
+                """
+                MDAwCwYJYIZIAWUDBAMVAyEAwwQuqJdS1Fs0GIkwlsnWPVfaXRyZsTzy/qI4aKor
+                LA8=
+                """,
+                """
+                MIHCMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBCudlo01LCO6Pe01Vfn
+                CNPmAgEKMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBB7xOP6sOwmgOPowEl1
+                uBl0BGDtcxXjNe8VYin+wa99L03xUHwKO5FRVTArRUFi0rUcWgAKKEeZ0gtDzS4k
+                VC1m1ByOpXEm7UAWiVQ0n7CtF7iZ7k/QxhGUaSz5MDFmpn5BshCRCAOE7IMGiHPP
+                6c+o0EA=
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes128Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA256,
+                    iterationCount: 10
+                )),
+            new(Id: 3,
+                SlhDsaAlgorithm.SlhDsaShake128s,
+                """
+                CE6C1CF4433F6135CBDF6077368E4BE87868EA72521D1ED4BB31B7C4D1193562558CD0548E55736462FBDB7F70C8CB7085AD803D92785F52201FFF22F8AEF1BE
+                """,
+                """
+                MFICAQAwCwYJYIZIAWUDBAMaBEDObBz0Qz9hNcvfYHc2jkvoeGjqclIdHtS7MbfE
+                0Rk1YlWM0FSOVXNkYvvbf3DIy3CFrYA9knhfUiAf/yL4rvG+
+                """,
+                """
+                MDAwCwYJYIZIAWUDBAMaAyEAVYzQVI5Vc2Ri+9t/cMjLcIWtgD2SeF9SIB//Iviu
+                8b4=
+                """,
+                """
+                MIHCMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBDIi1F9lzZdnc+rYfUR
+                +zFeAgFkMAwGCCqGSIb3DQIKBQAwHQYJYIZIAWUDBAEWBBDkbBHgqfkn1cWn9V1d
+                dsVeBGCe8/CQFWdOtBYYx5f4bO4aO97127RwnNVivXU6mTIuDgm/vNQgMVLbJEQR
+                yimNutFlMLldWHuEd9YnKa/0L+Qt6qQgUWzo3AJesyTV5hHGjrBt/DBwQf9Vhtv7
+                kW5tztE=
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes192Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA384,
+                    iterationCount: 100
+                )),
+            new(Id: 4,
+                SlhDsaAlgorithm.SlhDsaShake128f,
+                """
+                C8726A8DDA90E37DDB91FCFFAD68F784F5E99004E51329D42221E73F015D7CB16E0435E2830B013A78E3AFD8D84D3288F1E05D04948DE1D427D55DE2F4F505F8
+                """,
+                """
+                MFICAQAwCwYJYIZIAWUDBAMbBEDIcmqN2pDjfduR/P+taPeE9emQBOUTKdQiIec/
+                AV18sW4ENeKDCwE6eOOv2NhNMojx4F0ElI3h1CfVXeL09QX4
+                """,
+                """
+                MDAwCwYJYIZIAWUDBAMbAyEAbgQ14oMLATp446/Y2E0yiPHgXQSUjeHUJ9Vd4vT1
+                Bfg=
+                """,
+                """
+                MIHDMF8GCSqGSIb3DQEFDTBSMDEGCSqGSIb3DQEFDDAkBBC7vJhyZY52RcKufW0N
+                UIDvAgID6DAMBggqhkiG9w0CCwUAMB0GCWCGSAFlAwQBKgQQIzTr2UcMIVd+EbN7
+                PET8ZwRg7ZAQz+srp63OnidVg+hCfuHLVFvsT09b+c6Aj7Z03hPdgmtRUJ6sWMI0
+                xdFckbwJrSkuWQ+E+IUUFsirpY78ZFIn08BAe32w2/eEO+MWeWG+lg48ZPy1haCj
+                gNFq2RKi
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes256Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA512,
+                    iterationCount: 1000
+                )),
+            new(Id: 5,
+                SlhDsaAlgorithm.SlhDsaSha2_192s,
+                """
+                106BE87B4EC9D6F91DD8012240A5C40B6608C0B2C2F773C23E64F993703E3BC671ABFC4B5C039D9702BB13AAF291D39621E5322B912EBFA3D56EB27954FF90451E9BB9DBB1D91A6D06FA804E9F858048B442B4B773B769079A0DE8A6C84AEE8E
+                """,
+                """
+                MHICAQAwCwYJYIZIAWUDBAMWBGAQa+h7TsnW+R3YASJApcQLZgjAssL3c8I+ZPmT
+                cD47xnGr/EtcA52XArsTqvKR05Yh5TIrkS6/o9VusnlU/5BFHpu527HZGm0G+oBO
+                n4WASLRCtLdzt2kHmg3opshK7o4=
+                """,
+                """
+                MEAwCwYJYIZIAWUDBAMWAzEAIeUyK5Euv6PVbrJ5VP+QRR6budux2RptBvqATp+F
+                gEi0QrS3c7dpB5oN6KbISu6O
+                """,
+                """
+                MIHWMFEGCSqGSIb3DQEFDTBEMCMGCSqGSIb3DQEFDDAWBBCjJZVni66s9CoxfHco
+                ItUTAgInEDAdBglghkgBZQMEAQIEEDa3cL6bwJEgHoOsK84MDBwEgYCbnyWhJOqR
+                AmLMBvkxwdot9pBzHOh90nRM8oUn4pgtKjDDbvFnUhJ6dk6XsV5iIKPhC/WwkyS+
+                QglHCrh9xV7OKHAFIJxC+icJG0ixe+iMapiWzjeJHxdjfZkTskCbem/JCnnxjF24
+                ptdzRvLyxwchS0hKangD72wv2hXtpaHZhg==
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes128Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA1,
+                    iterationCount: 10000
+                )),
+            new(Id: 6,
+                SlhDsaAlgorithm.SlhDsaSha2_192f,
+                """
+                C7C4DC8E687FE97BF3E440FBB6ED9674C079178FBD702084184192B61FBC4921FD04B009115D08115FD60151C90AF49C3B0C3AD79C2882A12EF245AF945D75DCD473DA485287D9EA687BB54921B56B3CC93569399B0DF3F9A8A6FA65DE229BF4
+                """,
+                """
+                MHICAQAwCwYJYIZIAWUDBAMXBGDHxNyOaH/pe/PkQPu27ZZ0wHkXj71wIIQYQZK2
+                H7xJIf0EsAkRXQgRX9YBUckK9Jw7DDrXnCiCoS7yRa+UXXXc1HPaSFKH2epoe7VJ
+                IbVrPMk1aTmbDfP5qKb6Zd4im/Q=
+                """,
+                """
+                MEAwCwYJYIZIAWUDBAMXAzEAOww615wogqEu8kWvlF113NRz2khSh9nqaHu1SSG1
+                azzJNWk5mw3z+aim+mXeIpv0
+                """,
+                """
+                MIHlMGAGCSqGSIb3DQEFDTBTMDIGCSqGSIb3DQEFDDAlBBBazxBcogohP6gX2k9G
+                +vY8AgMBhqAwDAYIKoZIhvcNAgkFADAdBglghkgBZQMEARYEEFqKRfP/smigdWSH
+                gXZUKWYEgYA2xL5wEs5lRGcqLM5rW6n2SjNgqooPGUzEz+TTfM5GPmC/AR4QVmra
+                UirJzsLP1o2vdPQw51GzPzCqF8EoQDy1QkVD1alla0BqiKdBgrsPbQVek4Wjo3Zj
+                TurXgpCccZU49QIFpLwJdDZ6kZqr9YFPQ23SgKY4iRFeAtEYOzQcIA==
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes192Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA256,
+                    iterationCount: 100000
+                )),
+            new(Id: 7,
+                SlhDsaAlgorithm.SlhDsaShake192s,
+                """
+                A0D3D843650AA293099D92A85CAC5A3D942419C59D0610E10E641F8A2816EE37EAFCD2E0173CC053C7FA028D2748FDA3C102FE243922CFFC3C3C45631896F89FF82575A95792FF6BB4533882ADF2C8E072A2E2D948A710A47FA672330B14CC13
+                """,
+                """
+                MHICAQAwCwYJYIZIAWUDBAMcBGCg09hDZQqikwmdkqhcrFo9lCQZxZ0GEOEOZB+K
+                KBbuN+r80uAXPMBTx/oCjSdI/aPBAv4kOSLP/Dw8RWMYlvif+CV1qVeS/2u0UziC
+                rfLI4HKi4tlIpxCkf6ZyMwsUzBM=
+                """,
+                """
+                MEAwCwYJYIZIAWUDBAMcAzEAwQL+JDkiz/w8PEVjGJb4n/gldalXkv9rtFM4gq3y
+                yOByouLZSKcQpH+mcjMLFMwT
+                """,
+                """
+                MIHjMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBCNodq+89qQ+Wnh84XT
+                QCTQAgEBMAwGCCqGSIb3DQIKBQAwHQYJYIZIAWUDBAEqBBClDf0RuoSigLT+Cczo
+                xen1BIGAcozQxiugeQv0cK71gV9amWKKLvQ0CZym/HQdqOOGUa90x6qZ/PPaDrfT
+                NnZxfLDil0n8pkPLf1Cj0uzrRArrvHYg0KCCpeiQgo9q/CtXnNbDuGibeOquKuk8
+                BcGae/QmY0L/FjdtZV8gbaTIScYXtbqKVcT3A2D+YgCnHh1enEA=
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes256Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA384,
+                    iterationCount: 1
+                )),
+            new(Id: 8,
+                SlhDsaAlgorithm.SlhDsaShake192f,
+                """
+                A5EDF12EBF9B7085C1F09ED0BF60FC65812A4B462307C58026E5EB74785BBFD343E4ACEC9F13DB0B62377130407BE9D3CB217E50D8EACF9073A229720C6ADED3EAFD4C847CACE5016DA8A23889FC77A409767B4BDEC302821B2E680E2282197C
+                """,
+                """
+                MHICAQAwCwYJYIZIAWUDBAMdBGCl7fEuv5twhcHwntC/YPxlgSpLRiMHxYAm5et0
+                eFu/00PkrOyfE9sLYjdxMEB76dPLIX5Q2OrPkHOiKXIMat7T6v1MhHys5QFtqKI4
+                ifx3pAl2e0vewwKCGy5oDiKCGXw=
+                """,
+                """
+                MEAwCwYJYIZIAWUDBAMdAzEAyyF+UNjqz5BzoilyDGre0+r9TIR8rOUBbaiiOIn8
+                d6QJdntL3sMCghsuaA4ighl8
+                """,
+                """
+                MIHjMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBATQzAgoHAS3h2RPkQn
+                2TbwAgFkMAwGCCqGSIb3DQILBQAwHQYJYIZIAWUDBAECBBBQwoGzCEla9QEjAiAJ
+                fOjRBIGAaQ2oLAK5ecmSGJz1mU1TutPRaIduuKC7MCvKrCMHg+/g3vWKCRBKAWj4
+                gKW6f6gscqZHQF2W6jqH7+mdsbs6JL93WOoXoX3CiaFfyqKt6m9D4ootRrJwM+Z5
+                U+NgesSmipkAeXW2j4W3NxBeTJy0D2HmDYoobseXSMiSdQNvnQw=
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes128Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA512,
+                    iterationCount: 100
+                )),
+            new(Id: 9,
+                SlhDsaAlgorithm.SlhDsaSha2_256s,
+                """
+                A8FE7C507F8382FF5869AE0096120BE002527F203E7665F268DC295AE513E30E74D274ABC7394FD6DCF5FC0FC1C2454DB53EC8E4EFCC0F1AFB48932DC36A512F740749CFB9189E8BCC7C8C00AC6E3F6108F1E408BBF1EA43CCB9A76BCFCD20C374848D3DCBB386716FDDD404FBABE2302FCCE957AE053F636DDF385DB6F1250D
+                """,
+                """
+                MIGTAgEAMAsGCWCGSAFlAwQDGASBgKj+fFB/g4L/WGmuAJYSC+ACUn8gPnZl8mjc
+                KVrlE+MOdNJ0q8c5T9bc9fwPwcJFTbU+yOTvzA8a+0iTLcNqUS90B0nPuRiei8x8
+                jACsbj9hCPHkCLvx6kPMuadrz80gw3SEjT3Ls4Zxb93UBPur4jAvzOlXrgU/Y23f
+                OF228SUN
+                """,
+                """
+                MFAwCwYJYIZIAWUDBAMYA0EAdAdJz7kYnovMfIwArG4/YQjx5Ai78epDzLmna8/N
+                IMN0hI09y7OGcW/d1AT7q+IwL8zpV64FP2Nt3zhdtvElDQ==
+                """,
+                """
+                MIH2MFEGCSqGSIb3DQEFDTBEMCMGCSqGSIb3DQEFDDAWBBBbUw8TIria5X9svVdP
+                eIfJAgInEDAdBglghkgBZQMEARYEEC5WKDwQteQdhCOBs6p2WtQEgaDmxL8MnYfe
+                Egu+kVs2AzJS7r2k/aqF5eOeTqblZ635iqhzg53Mqa4kr+/oUu2jE3Kz8thevGNa
+                urgBqetWejb4Veu4g1/MHxrPp1x6cAZ8FrxS1Vt2969ONYhUeMYlWoRa1BqdM1Es
+                vnOjBI6rNUkH9pPTtkeU08T3x6mw/El5r5oGvcLmXSMRaKtjMP85fkesZBZ4uCED
+                RJMHPtoI+GZJ
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes192Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA1,
+                    iterationCount: 10000
+                )),
+            new(Id: 10,
+                SlhDsaAlgorithm.SlhDsaSha2_256f,
+                """
+                F59CF04EC5B2331F7ABB8DFB01CD5B53E543D2A7CC95A91713D4CBC970381A26FA87B5D266D42F4AE7F761D761606A227B0A52AA4860E58969946DA0B754710064726B6F65B9DFCB6222275546F3462618D360368823D25619E5E7D52CE4FCC14C7D530B15F1E1373288A493BFF1C7D4814DDC74F7CF0F21A509DAD4CD5517C9
+                """,
+                """
+                MIGTAgEAMAsGCWCGSAFlAwQDGQSBgPWc8E7FsjMferuN+wHNW1PlQ9KnzJWpFxPU
+                y8lwOBom+oe10mbUL0rn92HXYWBqInsKUqpIYOWJaZRtoLdUcQBkcmtvZbnfy2Ii
+                J1VG80YmGNNgNogj0lYZ5efVLOT8wUx9UwsV8eE3Moikk7/xx9SBTdx0988PIaUJ
+                2tTNVRfJ
+                """,
+                """
+                MFAwCwYJYIZIAWUDBAMZA0EAZHJrb2W538tiIidVRvNGJhjTYDaII9JWGeXn1Szk
+                /MFMfVMLFfHhNzKIpJO/8cfUgU3cdPfPDyGlCdrUzVUXyQ==
+                """,
+                """
+                MIIBBTBgBgkqhkiG9w0BBQ0wUzAyBgkqhkiG9w0BBQwwJQQQqeq71JYbqs/xO7es
+                /377AAIDD0JAMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBA/Cb/Rm7HqEnfO
+                qvtxeJBOBIGgu1pjBQPoT1SylVZLQ6p/h8v6ehle+LZDkNb/G7PDosVKV+7u//oL
+                E8FzEUfJtRXPc5vGFnaF9B9jGm9ritrECHfKP84piUJq6PPpOoitZzjC1l1vGIoq
+                Cy+JgPX1xkQokBc2r7yD0UVMmUaTv1/ePXw9xfnfOyslJ53a/rbahDFSPcOAyS5V
+                ddETtlKUJKnkIkjlf4n3HWvY9+QY9DrTlg==
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes256Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA256,
+                    iterationCount: 1000000
+                )),
+            new(Id: 11,
+                SlhDsaAlgorithm.SlhDsaShake256s,
+                """
+                19EDB4FAFD43F367E8F0DEE845EE7A995E89C2EB2772FCE499B07F6011AB41D65B37EABF740A3FB54D0CB9EC667FA982C8ED96F8212E9D9E3324F24947ED4F5074E15EAC2479AE77752EE1BF56992355B3B288612C7DC92EA21C33262DED9FDF4F5CF1AE43C1A543A3D66436E8613C363A13E9DCD72E8D8D04F6EFA7883B4E0C
+                """,
+                """
+                MIGTAgEAMAsGCWCGSAFlAwQDHgSBgBnttPr9Q/Nn6PDe6EXuepleicLrJ3L85Jmw
+                f2ARq0HWWzfqv3QKP7VNDLnsZn+pgsjtlvghLp2eMyTySUftT1B04V6sJHmud3Uu
+                4b9WmSNVs7KIYSx9yS6iHDMmLe2f309c8a5DwaVDo9ZkNuhhPDY6E+nc1y6NjQT2
+                76eIO04M
+                """,
+                """
+                MFAwCwYJYIZIAWUDBAMeA0EAdOFerCR5rnd1LuG/VpkjVbOyiGEsfckuohwzJi3t
+                n99PXPGuQ8GlQ6PWZDboYTw2OhPp3NcujY0E9u+niDtODA==
+                """,
+                """
+                MIIBBDBfBgkqhkiG9w0BBQ0wUjAxBgkqhkiG9w0BBQwwJAQQ9ngt/vOwBdtTFgG8
+                omBG3wICJxAwDAYIKoZIhvcNAgoFADAdBglghkgBZQMEAQIEELIA8nGvLXrva2Lb
+                k8IxrjcEgaC7+VQ2Z5wbOAWI5cwj72kA1yMtDfWAyLRU74G9yNJVndokuatvyGg6
+                6PE8D4SLg829Z6lbZn+RM6VcPp5PG9gRJr6jGxG34MkDBJTu5E/Jkhv/y/mDFOv1
+                40qHKvMCNgv8RKMxXNkAI/0/H9oz9PKWL4cLMxFi0ncAtMaprKSNG6J1Mj72B7s8
+                SOFEvJf2tKImeHrBXWvoAbaqxW1NZsGB
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes128Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA384,
+                    iterationCount: 10000
+                )),
+            new(Id: 12,
+                SlhDsaAlgorithm.SlhDsaShake256f,
+                """
+                679F95617555A08D4D33F9B8F2318A0F5FEFF5DBC7C1BBA9443322D1C31D5F2629D0EF42780175ECA249DBF4F6F1C0D50918BF3C531DD91FA2516AE580B3B15E493D4E90E1E1B151A994E6775B65A61F74F3A7BA1EBF5FE443CF12640A40915F048F6D6FFA4E3E84E3B4429F088CFF1D03923B7124336DA3A89F5CA633894449
+                """,
+                """
+                MIGTAgEAMAsGCWCGSAFlAwQDHwSBgGeflWF1VaCNTTP5uPIxig9f7/Xbx8G7qUQz
+                ItHDHV8mKdDvQngBdeyiSdv09vHA1QkYvzxTHdkfolFq5YCzsV5JPU6Q4eGxUamU
+                5ndbZaYfdPOnuh6/X+RDzxJkCkCRXwSPbW/6Tj6E47RCnwiM/x0DkjtxJDNto6if
+                XKYziURJ
+                """,
+                """
+                MFAwCwYJYIZIAWUDBAMfA0EAST1OkOHhsVGplOZ3W2WmH3Tzp7oev1/kQ88SZApA
+                kV8Ej21v+k4+hOO0Qp8IjP8dA5I7cSQzbaOon1ymM4lESQ==
+                """,
+                """
+                MIIBAzBeBgkqhkiG9w0BBQ0wUTAwBgkqhkiG9w0BBQwwIwQQ5phYfICMXEV+pEzo
+                d/mPJgIBZDAMBggqhkiG9w0CCwUAMB0GCWCGSAFlAwQBFgQQ0o0F96FTQYR5lMAc
+                nBbOgASBoLqf4xBytOmT8W+z4/9c9X06q7BAeN2Lm8JBe/FDp4MFT1pWPGoQvGrF
+                uT7uyTRGsLL8Ohd57lijCZfKncqFjwFx4kKbBZwBD9iTGOdBPU1gvDWHGywvsey4
+                Uws3rdORat2BF/SUWVeaVttNi2j/yXK8OHnbGzQ9zRSAMdkwix36PWlcZ8ZApOi0
+                KhQ7zwyVNerJOPbqecZHZ+VOuBuobJs=
+                """,
+                "PLACEHOLDER",
+                new PbeParameters(
+                    encryptionAlgorithm: PbeEncryptionAlgorithm.Aes192Cbc,
+                    hashAlgorithm: HashAlgorithmName.SHA512,
+                    iterationCount: 100
+                )),
+        ];
 
         public record SlhDsaKeyGenTestVector(
             int TestCaseId,
@@ -101,7 +442,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             public override string ToString() => $"{nameof(SlhDsaKeyGenTestVector)} {{ {nameof(TestCaseId)} = {TestCaseId}, {nameof(Algorithm)} = \"{Algorithm.Name}\" }}";
         }
-
 
         // The vectors below are generated from the NIST ACVP projections.
         // https://github.com/usnistgov/ACVP-Server/blob/85f8742965b2691862079172982683757d8d91db/gen-val/json-files/SLH-DSA-keyGen-FIPS205/internalProjection.json

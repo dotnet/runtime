@@ -5,15 +5,8 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
-
-#pragma warning disable CA1510, CA1513
-
-// The type being internal is making unused parameter warnings fire for
-// not-implemented methods. Suppress those warnings.
-#pragma warning disable IDE0060
 
 namespace System.Security.Cryptography
 {
@@ -55,13 +48,11 @@ namespace System.Security.Cryptography
             Algorithm = algorithm;
         }
 
-        protected void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(typeof(MLDsa).FullName);
-            }
-        }
+
+        /// <summary>
+        ///   Throws <see cref="ObjectDisposedException" /> if the current instance is disposed.
+        /// </summary>
+        protected void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(MLDsa));
 
         /// <summary>
         ///   Gets a value indicating whether the current platform supports ML-DSA.
@@ -489,7 +480,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
@@ -547,7 +538,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
@@ -1332,20 +1323,6 @@ namespace System.Security.Cryptography
             {
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
             }
-        }
-
-        private static void ThrowIfNull(
-            [NotNull] object? argument,
-            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
-        {
-#if NET
-            ArgumentNullException.ThrowIfNull(argument, paramName);
-#else
-            if (argument is null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
-#endif
         }
     }
 }

@@ -215,6 +215,15 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void ImportSubjectPublicKeyInfo_TrailingData()
+        {
+            // Extra byte at the end of the SPKI
+            byte[] spki = new byte[MLKemTestData.IetfMlKem512Spki.Length + 1];
+            MLKemTestData.IetfMlKem512Spki.AsSpan().CopyTo(spki);
+            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(spki));
+        }
+
+        [Fact]
         public static void ImportPkcs8PrivateKey_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>

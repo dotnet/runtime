@@ -21,6 +21,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 ExportSlhDsaPublicKeyCoreHook = _ => Assert.Fail(),
                 ExportSlhDsaSecretKeyCoreHook = _ => Assert.Fail(),
+                TryExportPkcs8PrivateKeyCoreHook = (destination, out bytesWritten) =>
+                {
+                    Assert.Fail();
+                    bytesWritten = 0;
+                    return false;
+                },
                 SignDataCoreHook = (_, _, _) => Assert.Fail(),
                 VerifyDataCoreHook = (_, _, _) => { Assert.Fail(); return default; },
             };
@@ -31,28 +37,23 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
         }
 
-#if NETFRAMEWORK
         internal delegate void ExportSlhDsaPublicKeyCoreAction(Span<byte> s);
         public ExportSlhDsaPublicKeyCoreAction ExportSlhDsaPublicKeyCoreHook { get; set; } = _ => { };
         internal delegate void ExportSlhDsaSecretKeyCoreAction(Span<byte> s);
         public ExportSlhDsaSecretKeyCoreAction ExportSlhDsaSecretKeyCoreHook { get; set; } = _ => { };
+        internal delegate bool TryExportPkcs8PrivateKeyCoreFunc(Span<byte> destination, out int bytesWritten);
+        public TryExportPkcs8PrivateKeyCoreFunc TryExportPkcs8PrivateKeyCoreHook { get; set; } = (_, out bytesWritten) => { bytesWritten = 0; return false; };
         internal delegate void SignDataCoreAction(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> s);
         public SignDataCoreAction SignDataCoreHook { get; set; } = (_, _, _) => { };
         internal delegate bool VerifyDataCoreFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
         public VerifyDataCoreFunc VerifyDataCoreHook { get; set; } = (_, _, _) => false;
         internal delegate void DisposeAction(bool disposing);
         public DisposeAction DisposeHook { get; set; } = _ => { };
-#else
-        public Action<Span<byte>> ExportSlhDsaPublicKeyCoreHook { get; set; } = _ => { };
-        public Action<Span<byte>> ExportSlhDsaSecretKeyCoreHook { get; set; } = _ => { };
-        public Action<ReadOnlySpan<byte>, ReadOnlySpan<byte>, Span<byte>> SignDataCoreHook { get; set; } = (_, _, _) => { };
-        public Func<ReadOnlySpan<byte>, ReadOnlySpan<byte>, ReadOnlySpan<byte>, bool> VerifyDataCoreHook { get; set; } = (_, _, _) => false;
-        public Action<bool> DisposeHook { get; set; } = _ => { };
-#endif
 
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) => ExportSlhDsaPublicKeyCoreHook(destination);
 
         protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) => ExportSlhDsaSecretKeyCoreHook(destination);
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) => TryExportPkcs8PrivateKeyCoreHook(destination, out bytesWritten);
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) => SignDataCoreHook(data, context, destination);
 

@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(ApiWithDestinationSpanTestData))]
-        public static void CallsExportSlhDsaPublicKeyCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
+        public static void ExportSlhDsaPublicKey_CallsCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(ApiWithDestinationSpanTestData))]
-        public static void CallsExportSlhDsaSecretKeyCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
+        public static void ExportSlhDsaSecretKey_CallsCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(ApiWithDestinationSpanTestData))]
-        public static void CallsSignDataCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
+        public static void SignData_CallsCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void CallsVerifyDataCore(SlhDsaAlgorithm algorithm)
+        public static void VerifyData_CallsCore(SlhDsaAlgorithm algorithm)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void CallsVirtualDispose(SlhDsaAlgorithm algorithm)
+        public static void Dispose_CallsVirtual(SlhDsaAlgorithm algorithm)
         {
             SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.CreateOverriddenCoreMethodsFail(algorithm);
             bool disposeCalled = false;
@@ -158,7 +158,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             slhDsa.Dispose();
             slhDsa.Dispose();
         }
-
         protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) =>
             SlhDsaMockImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 

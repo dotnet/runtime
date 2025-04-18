@@ -526,7 +526,6 @@ namespace System.Security.Cryptography.Tests
             return buffer.AsSpan(0, written).ToArray();
         }
 
-
         private static void Tamper(Span<byte> buffer)
         {
             buffer[buffer.Length - 1] ^= 0xFF;

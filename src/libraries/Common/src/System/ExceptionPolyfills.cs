@@ -26,21 +26,19 @@ namespace System
 
         extension(ObjectDisposedException)
         {
-            [StackTraceHidden]
             public static void ThrowIf([DoesNotReturnIf(true)] bool condition, object instance)
             {
                 if (condition)
                 {
-                    ThrowHelper.ThrowObjectDisposedException(instance);
+                    ThrowObjectDisposedException(instance);
                 }
             }
 
-            [StackTraceHidden]
             public static void ThrowIf([DoesNotReturnIf(true)] bool condition, Type type)
             {
                 if (condition)
                 {
-                    ThrowHelper.ThrowObjectDisposedException(type);
+                    ThrowObjectDisposedException(type);
                 }
             }
         }

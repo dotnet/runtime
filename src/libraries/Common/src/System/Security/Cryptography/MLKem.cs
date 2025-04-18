@@ -865,7 +865,7 @@ namespace System.Security.Cryptography
         ///   using a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
-        ///   The bytes to use as a password when encrypting the key material.
+        ///   The password to use when encrypting the key material.
         /// </param>
         /// <param name="pbeParameters">
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
@@ -1170,6 +1170,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
+            ThrowIfTrailingData(source);
             ThrowIfNotSupported();
 
             unsafe
