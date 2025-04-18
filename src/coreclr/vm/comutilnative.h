@@ -101,7 +101,7 @@ struct GCGenerationInfo
 };
 
 #include "pshpack4.h"
-class GCMemoryInfoData : public Object
+struct GCMemoryInfoData
 {
 public:
     UINT64 highMemLoadThresholdBytes;
@@ -131,14 +131,6 @@ public:
 };
 #include "poppack.h"
 
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<GCMemoryInfoData> GCMEMORYINFODATA;
-typedef REF<GCMemoryInfoData> GCMEMORYINFODATAREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef GCMemoryInfoData * GCMEMORYINFODATA;
-typedef GCMemoryInfoData * GCMEMORYINFODATAREF;
-#endif // USE_CHECKED_OBJECTREFS
-
 using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
 
 struct GCHeapHardLimitInfo
@@ -166,7 +158,7 @@ public:
     static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
     static FCDECL0(INT64,   GetTotalPauseDuration);
-    static FCDECL2(void,    GetMemoryInfo, Object* objUNSAFE, int kind);
+    static FCDECL2(void,    GetMemoryInfo, GCMemoryInfoData* pData, int kind);
     static FCDECL0(UINT32,  GetMemoryLoad);
     static FCDECL0(int,     GetGcLatencyMode);
     static FCDECL1(int,     SetGcLatencyMode, int newLatencyMode);

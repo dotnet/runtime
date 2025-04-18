@@ -54,7 +54,7 @@ namespace System
     };
 
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class GCMemoryInfoData
+    internal struct GCMemoryInfoData
     {
         internal long _highMemoryLoadThresholdBytes;
         internal long _totalAvailableMemoryBytes;
