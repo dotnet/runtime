@@ -4122,6 +4122,20 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             }
 #endif
         }
+        else if (andOp2->IsIntegralConst() && GenTree::Compare(andOp2, op2))
+        {
+            //
+            // Transform EQ|NE(AND(x, y), y) into EQ|NE(AND(NOT(x), y), 0) when y is a constant.
+            //
+
+            GenTree* notNode               = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
+            cmp->gtGetOp1()->AsOp()->gtOp1 = notNode;
+            BlockRange().InsertAfter(andOp1, notNode);
+            op2->BashToZeroConst(op2->TypeGet());
+
+            andOp1   = notNode;
+            op2Value = 0;
+        }
     }
 
 #ifdef TARGET_XARCH
