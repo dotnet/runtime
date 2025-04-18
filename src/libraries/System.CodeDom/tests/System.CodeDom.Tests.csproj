@@ -114,7 +114,4 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="..\src\System.CodeDom.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />
-  </ItemGroup>
 </Project>
