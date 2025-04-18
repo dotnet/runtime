@@ -160,6 +160,8 @@ public class InterpreterTest
         if (sum != 33)
             return false;
 
+        ref int str_a = ref str.str.a;
+
         System.GC.Collect();
 
         staticObj = obj;
@@ -171,10 +173,13 @@ public class InterpreterTest
         if (sum != 33)
             return false;
 
-        WriteInt(ref str.str.a, 11);
+        WriteInt(ref str_a, 11);
         WriteInt(ref staticObj.str.a, 22);
-        sum = ReadInt(ref str.str.a) + ReadInt(ref staticObj.str.a);
+        sum = ReadInt(ref str_a) + ReadInt(ref staticObj.str.a);
         if (sum != 33)
+            return false;
+
+        if (str_a != str.str.a)
             return false;
 
         return true;

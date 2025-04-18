@@ -879,27 +879,36 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     for (int i = 0; i < m_varsSize; i++)
     {
         InterpVar *pVar = &m_pVars[i];
-        if (pVar->interpType != InterpTypeO)
-            continue;
+        GcSlotFlags flags;
+        switch (pVar->interpType) {
+            case InterpTypeO:
+                flags = (GcSlotFlags)(pVar->global ? GC_SLOT_UNTRACKED : 0);
+                break;
+            case InterpTypeByRef:
+                flags = (GcSlotFlags)(pVar->global ? GC_SLOT_UNTRACKED | GC_SLOT_INTERIOR : GC_SLOT_INTERIOR);
+                break;
+            default:
+                continue;
+        }
 
-        // Globals are untracked and shouldn't need liveness ranges recorded in the info
-        GcSlotFlags flags = (GcSlotFlags)(pVar->global ? GC_SLOT_UNTRACKED : 0);
         uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
         if (slotsByOffset[slotIndex] == ((GcSlotId)-1))
         {
             // Important to pass GC_xxx_REL, the default is broken due to GET_CALLER_SP being unimplemented
             slotsByOffset[slotIndex] = gcInfoEncoder->GetStackSlotId(pVar->offset, flags, GC_FRAMEREG_REL);
             INTERP_DUMP(
-                "Allocated gcinfo slot %u for %svar #%d at offset %d\n",
+                "Allocated gcinfo slot %u for %s%svar #%d at offset %d\n",
                 slotsByOffset[slotIndex], pVar->global ? "global " : "",
+                pVar->interpType == InterpTypeByRef ? "byref " : "",
                 i, pVar->offset
             );
         }
         else
         {
             INTERP_DUMP(
-                "Reused gcinfo slot %u for %svar #%d at offset %d\n",
+                "Reused gcinfo slot %u for %s%svar #%d at offset %d\n",
                 slotsByOffset[slotIndex], pVar->global ? "global " : "",
+                pVar->interpType == InterpTypeByRef ? "byref " : "",
                 i, pVar->offset
             );
             assert(!pVar->global);
@@ -913,7 +922,7 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     {
         InterpVar *pVar = &m_pVars[i];
         // Even if we have a gc slot for this offset, this var might not be an object reference
-        if (pVar->interpType != InterpTypeO)
+        if ((pVar->interpType != InterpTypeO) && (pVar->interpType != InterpTypeByRef))
             continue;
         // We don't need to report liveness ranges for untracked vars, the gc info decoder will report them
         //  unconditionally.
