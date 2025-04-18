@@ -36,7 +36,7 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- dotnet/roslyn-analyzers dependencies -->
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>10.0.0-preview.25127.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>10.0.0-preview.25217.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- dotnet/roslyn dependencies -->
     <MicrosoftCodeAnalysisAnalyzersVersion>3.12.0-beta1.25214.5</MicrosoftCodeAnalysisAnalyzersVersion>
     <!--
