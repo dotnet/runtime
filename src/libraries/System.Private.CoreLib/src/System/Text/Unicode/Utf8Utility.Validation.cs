@@ -26,8 +26,9 @@ namespace System.Text.Unicode
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
             Debug.Assert(pInputBuffer != null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
 
+            // TODO: Migrate to byref
             // First, try to drain off as many ASCII bytes as we can from the beginning.
-            nuint numAsciiBytesCounted = Ascii.GetIndexOfFirstNonAsciiByte(pInputBuffer, (uint)inputLength);
+            nuint numAsciiBytesCounted = Ascii.GetIndexOfFirstNonAsciiByte(ref Unsafe.AsRef<byte>(pInputBuffer), (uint)inputLength);
             pInputBuffer += numAsciiBytesCounted;
 
             // Quick check - did we just end up consuming the entire input buffer?
