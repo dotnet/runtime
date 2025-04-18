@@ -706,6 +706,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         // - GT_LCL_ADDR is a stack addr mode.
         MakeSrcContained(indirNode, addr);
     }
+    else if (addr->IsCnsIntOrI() && !addr->AsIntCon()->ImmedValNeedsReloc(comp))
+    {
+        MakeSrcContained(indirNode, addr);
+    }
 }
 
 //------------------------------------------------------------------------
