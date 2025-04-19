@@ -597,9 +597,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public static BootJsonData ParseBootData(string bootConfigPath)
     {
         string jsonContent = GetBootJsonContent(bootConfigPath);
-        BootJsonData config = JsonSerializer.Deserialize<BootJsonData>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        BootJsonData? config = JsonSerializer.Deserialize<BootJsonData>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         Assert.NotNull(config);
-        return config;
+        return config!;
     }
 
     public static string GetBootJsonContent(string bootConfigPath)
