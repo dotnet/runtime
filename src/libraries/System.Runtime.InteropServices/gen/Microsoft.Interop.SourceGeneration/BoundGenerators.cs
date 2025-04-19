@@ -94,7 +94,7 @@ namespace Microsoft.Interop
                     {
                         managedExceptionInfo = managedExceptionInfo with
                         {
-                            MarshallingAttributeInfo = comExceptionMarshalling.CreateSpecificMarshallingInfo(overlappedMarshaller.NativeType)
+                            MarshallingAttributeInfo = ComExceptionMarshalling.CreateSpecificMarshallingInfo(overlappedMarshaller.NativeType)
                         };
                     }
                 }

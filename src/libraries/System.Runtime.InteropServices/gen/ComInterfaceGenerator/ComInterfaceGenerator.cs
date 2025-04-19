@@ -106,7 +106,7 @@ namespace Microsoft.Interop
                     return new ComMethodContext(
                         data.Method,
                         data.OwningInterface,
-                        CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.OwningInterface.Info.Type, data.OwningInterface.Info.ExceptionToUnmanagedMarshallerQualifiedName, ct));
+                        CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.OwningInterface.Info.Type, ct));
                 }).WithTrackingName(StepNames.CalculateStubInformation);
 
             var interfaceAndMethodsContexts = comMethodContexts
@@ -245,7 +245,7 @@ namespace Microsoft.Interop
                 || typeName.Equals("hresult", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, string? exceptionToUnmanagedMarshallerQualifiedName, CancellationToken ct)
+        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             INamedTypeSymbol? lcidConversionAttrType = environment.LcidConversionAttrType;
@@ -389,6 +389,22 @@ namespace Microsoft.Interop
 
             var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com);
 
+            MarshallingInfo exceptionMarshallingInfo;
+
+            if (generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller is not null)
+            {
+                exceptionMarshallingInfo = CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
+                    environment.Compilation.GetTypeByMetadataName(TypeNames.System_Exception),
+                    generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller,
+                    generatedComAttribute,
+                    environment.Compilation,
+                    generatorDiagnostics);
+            }
+            else
+            {
+                exceptionMarshallingInfo = new ComExceptionMarshalling();
+            }
+
             return new IncrementalMethodStubGenerationContext(
                 signatureContext,
                 containingSyntaxContext,
@@ -396,7 +412,7 @@ namespace Microsoft.Interop
                 locations,
                 callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
                 virtualMethodIndexData,
-                new ComExceptionMarshalling(exceptionToUnmanagedMarshallerQualifiedName),
+                exceptionMarshallingInfo,
                 environment.EnvironmentFlags,
                 owningInterface,
                 declaringType,

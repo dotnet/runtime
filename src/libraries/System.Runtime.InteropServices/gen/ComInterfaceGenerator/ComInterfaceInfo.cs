@@ -29,7 +29,6 @@ namespace Microsoft.Interop
         public ComInterfaceOptions Options { get; init; }
         public Location DiagnosticLocation { get; init; }
         public bool IsExternallyDefined { get; init; }
-        public string? ExceptionToUnmanagedMarshallerQualifiedName { get; init; }
 
         private ComInterfaceInfo(
             ManagedTypeInfo type,
@@ -40,8 +39,7 @@ namespace Microsoft.Interop
             ContainingSyntax containingSyntax,
             Guid interfaceId,
             ComInterfaceOptions options,
-            Location diagnosticLocation,
-            string? exceptionToUnmanagedMarshallerFullyQualifiedName)
+            Location diagnosticLocation)
         {
             Type = type;
             ThisInterfaceKey = thisInterfaceKey;
@@ -52,7 +50,6 @@ namespace Microsoft.Interop
             InterfaceId = interfaceId;
             Options = options;
             DiagnosticLocation = diagnosticLocation;
-            ExceptionToUnmanagedMarshallerQualifiedName = exceptionToUnmanagedMarshallerFullyQualifiedName;
         }
 
         public static DiagnosticOrInterfaceInfo From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, StubEnvironment env, CancellationToken _)
@@ -97,7 +94,7 @@ namespace Microsoft.Interop
             if (!OptionsAreValid(symbol, syntax, interfaceAttributeData, baseAttributeData, out DiagnosticInfo? optionsDiagnostic))
                 return DiagnosticOrInterfaceInfo.From(optionsDiagnostic);
 
-            if (!ExceptionToUnmanagedMarshallerIsValid(syntax, interfaceAttributeData, out string? exceptionToUnmanagedMarshallerFullyQualifiedName, out DiagnosticInfo? exceptionToUnmanagedMarshallerDiagnostic))
+            if (!ExceptionToUnmanagedMarshallerIsValid(syntax, interfaceAttributeData, out DiagnosticInfo? exceptionToUnmanagedMarshallerDiagnostic))
                 return DiagnosticOrInterfaceInfo.From(exceptionToUnmanagedMarshallerDiagnostic);
 
             InterfaceInfo info = (
@@ -110,8 +107,7 @@ namespace Microsoft.Interop
                     new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
                     guid ?? Guid.Empty,
                     interfaceAttributeData.Options,
-                    syntax.Identifier.GetLocation(),
-                    exceptionToUnmanagedMarshallerFullyQualifiedName),
+                    syntax.Identifier.GetLocation()),
                 symbol);
 
             // Now that we've validated all of our requirements, we will check for some non-blocking scenarios
@@ -145,11 +141,6 @@ namespace Microsoft.Interop
             return DiagnosticOrInterfaceInfo.From(info);
         }
 
-        internal static readonly SymbolDisplayFormat QualifiedNameOnlyFormat =
-            new SymbolDisplayFormat(
-                globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
-                typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
-
         public static ImmutableArray<InterfaceInfo> CreateInterfaceInfoForBaseInterfacesInOtherCompilations(
             INamedTypeSymbol symbol)
         {
@@ -165,7 +156,6 @@ namespace Microsoft.Interop
                 var thisSymbol = baseSymbol;
                 TryGetBaseComInterface(thisSymbol, null, out baseSymbol, out _);
                 var interfaceAttributeData = GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(thisSymbol);
-                string? exceptionToUnmanagedMarshallerQualifiedName = interfaceAttributeData.ExceptionToUnmanagedMarshaller?.ToDisplayString(QualifiedNameOnlyFormat);
                 builder.Add((
                     new ComInterfaceInfo(
                         ManagedTypeInfo.CreateTypeInfoForTypeSymbol(thisSymbol),
@@ -176,8 +166,7 @@ namespace Microsoft.Interop
                         default,
                         Guid.Empty,
                         interfaceAttributeData.Options,
-                        Location.None,
-                        exceptionToUnmanagedMarshallerQualifiedName)
+                        Location.None)
                     {
                         IsExternallyDefined = true
                     },
@@ -302,7 +291,6 @@ namespace Microsoft.Interop
         private static bool ExceptionToUnmanagedMarshallerIsValid(
             InterfaceDeclarationSyntax syntax,
             GeneratedComInterfaceCompilationData attrSymbolInfo,
-            out string? exceptionToUnmanagedMarshallerFullyQualifiedName,
             [NotNullWhen(false)] out DiagnosticInfo? exceptionToUnmanagedMarshallerDiagnostic)
         {
             GeneratedComInterfaceData attrInfo = GeneratedComInterfaceData.From(attrSymbolInfo);
@@ -315,17 +303,8 @@ namespace Microsoft.Interop
                         syntax.Identifier.GetLocation(),
                         attrInfo.ExceptionToUnmanagedMarshaller.FullTypeName.Replace(TypeNames.GlobalAlias, ""),
                         details);
-                    exceptionToUnmanagedMarshallerFullyQualifiedName = null;
                     return false;
                 }
-                else
-                {
-                    exceptionToUnmanagedMarshallerFullyQualifiedName = exceptionToUnmanagedMarshallerType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                }
-            }
-            else
-            {
-                exceptionToUnmanagedMarshallerFullyQualifiedName = null;
             }
             exceptionToUnmanagedMarshallerDiagnostic = null;
             return true;

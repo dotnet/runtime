@@ -343,7 +343,7 @@ namespace Microsoft.Interop
 
             if (virtualMethodIndexData.ExceptionMarshalling == ExceptionMarshalling.Com)
             {
-                return new ComExceptionMarshalling(null);
+                return new ComExceptionMarshalling();
             }
             if (virtualMethodIndexData.ExceptionMarshalling == ExceptionMarshalling.Custom)
             {
