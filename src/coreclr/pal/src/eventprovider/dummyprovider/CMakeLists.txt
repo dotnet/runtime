@@ -40,3 +40,7 @@ set_target_properties(eventprovider PROPERTIES LINKER_LANGUAGE CXX)
 
 # Install the static eventprovider library
 install(TARGETS eventprovider DESTINATION lib)
+
+if(CLR_CMAKE_HOST_ANDROID)
+    install_clr(TARGETS eventprovider DESTINATIONS . sharedFramework)
+endif()

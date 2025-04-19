@@ -120,11 +120,6 @@ public partial class ApkBuilder
             throw new ArgumentException($"Using DiagnosticPorts targeting Mono requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
         }
 
-        if (IsCoreCLR && StaticLinkedRuntime)
-        {
-            throw new ArgumentException("Static linking is not supported for CoreCLR runtime");
-        }
-
         AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
         if (string.IsNullOrEmpty(MinApiLevel))
@@ -263,6 +258,10 @@ public partial class ApkBuilder
             {
                 runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
             }
+            else if (StaticLinkedRuntime && IsCoreCLR)
+            {
+                runtimeLib = Path.Combine(AppDir, "libcoreclr_static.a");
+            }
             else if (IsCoreCLR)
             {
                 runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
@@ -277,7 +276,7 @@ public partial class ApkBuilder
                 nativeLibraries += $"{runtimeLib}{Environment.NewLine}";
             }
 
-            if (StaticLinkedRuntime)
+            if (StaticLinkedRuntime && IsMono)
             {
                 string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
 
@@ -311,6 +310,21 @@ public partial class ApkBuilder
                 // due to circular dependency.
                 nativeLibraries += $"    {runtimeLib}{Environment.NewLine}";
             }
+        }
+
+        if (StaticLinkedRuntime && IsCoreCLR)
+        {
+            string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
+                .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            foreach (string lib in staticLibs)
+            {
+                nativeLibraries += $"    {lib}{Environment.NewLine}";
+            }
+
+            nativeLibraries += $"    libc++abi.a{Environment.NewLine}";
+            nativeLibraries += $"    libc++_static.a{Environment.NewLine}";
         }
 
         StringBuilder extraLinkerArgs = new StringBuilder();
@@ -401,7 +415,8 @@ public partial class ApkBuilder
             envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
         }
 
-        string jniLibraryName = (IsLibraryMode) ? ProjectName! : "System.Security.Cryptography.Native.Android";
+        string jniLibraryName = (IsLibraryMode) ? ProjectName! :
+            (StaticLinkedRuntime && IsCoreCLR) ? "monodroid" : "System.Security.Cryptography.Native.Android";
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
             .Replace("%JNI_LIBRARY_NAME%", jniLibraryName)
@@ -458,7 +473,9 @@ public partial class ApkBuilder
                     excludedLibs.Add("libmscordaccore.so");
                 }
             }
-            dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
+
+            if (!StaticLinkedRuntime)
+                dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
         }
 
         // add all *.so files to lib/%abi%/

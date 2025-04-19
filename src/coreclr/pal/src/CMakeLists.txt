@@ -361,3 +361,6 @@ endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
 install_clr (TARGETS coreclrpal DESTINATIONS lib)
+if(CLR_CMAKE_HOST_ANDROID)
+    install_clr(TARGETS coreclrpal DESTINATIONS . sharedFramework)
+endif()

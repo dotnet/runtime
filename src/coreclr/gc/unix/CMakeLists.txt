@@ -11,3 +11,7 @@ set(GC_PAL_SOURCES
     cgroup.cpp)
 
 add_library(gc_pal STATIC ${GC_PAL_SOURCES} ${VERSION_FILE_PATH})
+
+if(CLR_CMAKE_HOST_ANDROID)
+    install_clr(TARGETS gc_pal DESTINATIONS . sharedFramework)
+endif()
