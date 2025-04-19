@@ -62,16 +62,15 @@ public class DllImportSearchPathsTest
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
-    public static void AssemblyDirectory_Fallback_Found()
+    public static void AssemblyDirectory_NoFallback_NotFound()
     {
         string currentDirectory = Environment.CurrentDirectory;
         try
         {
             Environment.CurrentDirectory = Subdirectory;
 
-            // Library should not be found in the assembly directory, but should fall back to the default OS search which includes CWD on Windows
-            int sum = NativeLibraryPInvoke.Sum_Copy(1, 2);
-            Assert.Equal(3, sum);
+            // Library should not be found in the assembly directory and should not fall back to the default OS search
+            Assert.Throws<DllNotFoundException>(() => NativeLibraryPInvoke.Sum_Copy(1, 2));
         }
         finally
         {
@@ -149,10 +148,8 @@ public class NativeLibraryPInvokeAot
         => NativeSum(a, b);
 
     // For NativeAOT, validate the case where the native library is next to the AOT application.
-    // The passing of DllImportSearchPath.System32 is done to ensure on Windows the runtime won't fallback
-    // and try to search the application directory by default.
     [DllImport(NativeLibraryToLoad.Name + "-in-native")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
     static extern int NativeSum(int arg1, int arg2);
 }
 
