@@ -238,15 +238,26 @@ namespace
                     PtrToArgSlot(typeStringLen)
                 };
                 targetType = (MethodTable*)getMethodTableFromTypeString.Call_RetI(args);
+
+                if (targetType == NULL)
+                    ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
+
+                // Future versions of the runtime may support
+                // UnsafeAccessorTypeAttribute on value types.
+                if (targetType->IsValueType())
+                    ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE_VALUETYPE);
+
+                // If the type is collectible create a reference between the loader
+                // allocators. See RuntimeType.GetMethodTableFromTypeString().
+                if (targetType->Collectible())
+                {
+                    if (!cxt.Declaration->GetAssembly()->IsCollectible())
+                        COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
+
+                    PTR_LoaderAllocator typeLoaderAllocator = targetType->GetLoaderAllocator();
+                    cxt.Declaration->GetLoaderAllocator()->EnsureReference(typeLoaderAllocator);
+                }
             }
-
-            if (targetType == NULL)
-                ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
-
-            // Future versions of the runtime may support
-            // UnsafeAccessorTypeAttribute on value types.
-            if (targetType->IsValueType())
-                ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE_VALUETYPE);
 
             USHORT seq;
             DWORD attr;

@@ -1752,8 +1752,10 @@ namespace System
         {
             string typeNameMaybe = new((sbyte*)utf8TypeString, 0, utf8TypeStringLen);
             RuntimeType type = (RuntimeType)Type.GetType(typeNameMaybe, throwOnError: true)!;
-            // [TODO] Figured out how to ensure the lifetime of the type is long enough
-            // to use the method table pointer.
+
+            // See VM logic for UnsafeAccessorTypeAttribute. If this type is collectible, a connection
+            // will be made between this type and the assembly declaring the UnsafeAccessorAttribute
+            // method.
             return (IntPtr)type.GetNativeTypeHandle().AsMethodTable();
         }
 
