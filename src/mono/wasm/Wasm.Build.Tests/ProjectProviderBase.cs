@@ -495,6 +495,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public string GetBootConfigPath(string binFrameworkDir, string? bootConfigFileName = null)
     {
+        string[] allDotnetFiles = [
+            "dotnet.runtime",
+            "dotnet.native",
+            "dotnet.native.worker",
+            "dotnet.diagnostics"
+        ];
+
         bootConfigFileName ??= "dotnet.js";
 
         if (bootConfigFileName.EndsWith(".js"))
@@ -503,7 +510,20 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             string bootFileExtension = Path.GetExtension(bootConfigFileName);
             string? fingerprintedBootJsonPath = Directory
                 .EnumerateFiles(binFrameworkDir)
-                .FirstOrDefault(f => Path.GetFileName(f).StartsWith(bootFileNameWithoutExtension) && Path.GetExtension(f) == bootFileExtension);
+                .FirstOrDefault(f =>
+                {
+                    if (Path.GetExtension(f) != bootFileExtension)
+                        return false;
+
+                    string fileName = Path.GetFileName(f);
+                    if (!fileName.StartsWith(bootFileNameWithoutExtension))
+                        return false;
+                    
+                    if (allDotnetFiles.Except(bootFileNameWithoutExtension).Any(a => fileName.StartsWith(a)))
+                        return false;
+
+                    return true;
+                });
             
             if (fingerprintedBootJsonPath == null)
                 throw new XunitException($"Could not find boot config '{bootConfigFileName}' with fingerprint in '{binFrameworkDir}'");
