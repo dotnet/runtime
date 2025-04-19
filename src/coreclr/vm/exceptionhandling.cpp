@@ -3246,7 +3246,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #endif // HOST_WINDOWS
 
 #if defined(HOST_AMD64)
-        ULONG64* returnAddress = (ULONG64*)targetSp;
+        ULONG64* returnAddress = (ULONG64*)(targetSp - 8);
         *returnAddress = pvRegDisplay->pCurrentContext->Rip;
 #ifdef HOST_WINDOWS
         if (targetSSP != 0)
