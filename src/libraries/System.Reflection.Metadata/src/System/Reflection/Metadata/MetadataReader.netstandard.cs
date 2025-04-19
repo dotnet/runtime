@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection.PortableExecutable;
@@ -45,6 +46,15 @@ namespace System.Reflection.Metadata
             return assemblyName;
         }
 
+        internal AssemblyNameInfo GetAssemblyNameInfo(StringHandle nameHandle, Version version, StringHandle cultureHandle, BlobHandle publicKeyOrTokenHandle, AssemblyFlags flags)
+        {
+            string name = GetString(nameHandle);
+            string? cultureName = !cultureHandle.IsNil ? GetString(cultureHandle) : null;
+            ImmutableArray<byte> publicKeyOrToken = !publicKeyOrTokenHandle.IsNil ? GetBlobContent(publicKeyOrTokenHandle) : default;
+
+            return new AssemblyNameInfo(name, version, cultureName, GetAssemblyNameFlags(flags), publicKeyOrToken);
+        }
+
         /// <summary>
         /// Gets the <see cref="AssemblyName"/> for a given file.
         /// </summary>
@@ -86,6 +96,62 @@ namespace System.Reflection.Metadata
                     MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
                     AssemblyName assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
                     return assemblyName;
+                }
+                finally
+                {
+                    peReader?.Dispose();
+                    accessor?.Dispose();
+                    mappedFile?.Dispose();
+                    fileStream?.Dispose();
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new BadImageFormatException(ex.Message, assemblyFile, ex);
+            }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="AssemblyNameInfo"/> for a given file.
+        /// </summary>
+        /// <param name="assemblyFile">The path for the assembly which <see cref="AssemblyNameInfo"/> is to be returned.</param>
+        /// <returns>An <see cref="AssemblyNameInfo"/> that represents the given <paramref name="assemblyFile"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="assemblyFile"/> is null.</exception>
+        /// <exception cref="ArgumentException">If <paramref name="assemblyFile"/> is invalid.</exception>
+        /// <exception cref="FileNotFoundException">If <paramref name="assemblyFile"/> is not found.</exception>
+        /// <exception cref="BadImageFormatException">If <paramref name="assemblyFile"/> is not a valid assembly.</exception>
+        public static unsafe AssemblyNameInfo GetAssemblyNameInfo(string assemblyFile)
+        {
+            if (assemblyFile is null)
+            {
+                Throw.ArgumentNull(nameof(assemblyFile));
+            }
+
+            FileStream? fileStream = null;
+            MemoryMappedFile? mappedFile = null;
+            MemoryMappedViewAccessor? accessor = null;
+            PEReader? peReader = null;
+
+            try
+            {
+                try
+                {
+                    // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
+                    fileStream = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false);
+                    if (fileStream.Length == 0)
+                    {
+                        throw new BadImageFormatException(SR.PEImageDoesNotHaveMetadata, assemblyFile);
+                    }
+
+                    mappedFile = MemoryMappedFile.CreateFromFile(
+                        fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
+                    accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+
+                    SafeMemoryMappedViewHandle? safeBuffer = accessor.SafeMemoryMappedViewHandle;
+                    peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
+                    MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
+                    AssemblyNameInfo assemblyNameInfo = mdReader.GetAssemblyDefinition().GetAssemblyNameInfo();
+                    return assemblyNameInfo;
                 }
                 finally
                 {

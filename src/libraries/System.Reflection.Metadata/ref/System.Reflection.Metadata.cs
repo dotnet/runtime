@@ -100,6 +100,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle PublicKey { get { throw null; } }
         public System.Version Version { get { throw null; } }
+        public System.Reflection.Metadata.AssemblyNameInfo GetAssemblyNameInfo() { throw null; }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
         public System.Reflection.Metadata.DeclarativeSecurityAttributeHandleCollection GetDeclarativeSecurityAttributes() { throw null; }
     }
@@ -166,6 +167,7 @@ namespace System.Reflection.Metadata
         public string Name { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<byte> PublicKeyOrToken { get { throw null; } }
         public System.Version? Version { get { throw null; } }
+        public static System.Reflection.Metadata.AssemblyNameInfo GetAssemblyNameInfo(string assemblyFile) { throw null; }
         public static System.Reflection.Metadata.AssemblyNameInfo Parse(System.ReadOnlySpan<char> assemblyName) { throw null; }
         public System.Reflection.AssemblyName ToAssemblyName() { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> assemblyName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Reflection.Metadata.AssemblyNameInfo? result) { throw null; }
@@ -180,6 +182,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle PublicKeyOrToken { get { throw null; } }
         public System.Version Version { get { throw null; } }
+        public System.Reflection.Metadata.AssemblyNameInfo GetAssemblyNameInfo() { throw null; }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     public readonly partial struct AssemblyReferenceHandle : System.IEquatable<System.Reflection.Metadata.AssemblyReferenceHandle>
@@ -1678,6 +1681,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.AssemblyDefinition GetAssemblyDefinition() { throw null; }
         public System.Reflection.Metadata.AssemblyFile GetAssemblyFile(System.Reflection.Metadata.AssemblyFileHandle handle) { throw null; }
         public static System.Reflection.AssemblyName GetAssemblyName(string assemblyFile) { throw null; }
+        public static System.Reflection.Metadata.AssemblyNameInfo GetAssemblyNameInfo(string assemblyFile) { throw null; }
         public System.Reflection.Metadata.AssemblyReference GetAssemblyReference(System.Reflection.Metadata.AssemblyReferenceHandle handle) { throw null; }
         public byte[] GetBlobBytes(System.Reflection.Metadata.BlobHandle handle) { throw null; }
         public System.Collections.Immutable.ImmutableArray<byte> GetBlobContent(System.Reflection.Metadata.BlobHandle handle) { throw null; }
