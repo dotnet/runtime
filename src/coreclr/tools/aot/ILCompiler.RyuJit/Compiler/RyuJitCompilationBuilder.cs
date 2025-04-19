@@ -17,6 +17,8 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
+        private ReadyToRunMethodLayoutAlgorithm _methodLayoutAlgorithm;
+        private ReadyToRunFileLayoutAlgorithm _fileLayoutAlgorithm;
         private ILProvider _ilProvider = new NativeAotILProvider();
         private ProfileDataManager _profileDataManager;
         private string _jitPath;
@@ -36,6 +38,13 @@ namespace ILCompiler
         public RyuJitCompilationBuilder UseJitPath(string jitPath)
         {
             _jitPath = jitPath;
+            return this;
+        }
+
+        public RyuJitCompilationBuilder FileLayoutAlgorithms(ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm, ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm)
+        {
+            _methodLayoutAlgorithm = methodLayoutAlgorithm;
+            _fileLayoutAlgorithm = fileLayoutAlgorithm;
             return this;
         }
 
@@ -126,7 +135,21 @@ namespace ILCompiler
 
             JitConfigProvider.Initialize(_context.Target, jitFlagBuilder.ToArray(), _ryujitOptions, _jitPath);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(CompilerComparer.Instance));
-            return new RyuJitCompilation(graph, factory, _compilationRoots, _ilProvider, _debugInformationProvider, _logger, _inliningPolicy ?? _compilationGroup, _instructionSetSupport, _profileDataManager, _methodImportationErrorProvider, _readOnlyFieldPolicy, options, _parallelism);
+            return new RyuJitCompilation(graph,
+                factory,
+                _compilationRoots,
+                _ilProvider,
+                _debugInformationProvider,
+                _logger,
+                _inliningPolicy ?? _compilationGroup,
+                _instructionSetSupport,
+                _profileDataManager,
+                _methodImportationErrorProvider,
+                _readOnlyFieldPolicy,
+                options,
+                _methodLayoutAlgorithm,
+                _fileLayoutAlgorithm,
+                _parallelism);
         }
     }
 }

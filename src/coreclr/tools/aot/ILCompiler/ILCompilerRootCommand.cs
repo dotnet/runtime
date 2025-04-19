@@ -27,6 +27,10 @@ namespace ILCompiler
             new("--optimize-time", "--Ot") { Description = "Enable optimizations, favor code speed" };
         public Option<string[]> MibcFilePaths { get; } =
             new("--mibc", "-m") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Mibc file(s) for profile guided optimization" };
+        public Option<ReadyToRunMethodLayoutAlgorithm> MethodLayout { get; } =
+            new("--method-layout") { CustomParser = MakeReadyToRunMethodLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunMethodLayoutAlgorithm, Description = "Layout algorithm used by profile-driven optimization for arranging methods in a file.", HelpName = "arg" };
+        public Option<ReadyToRunFileLayoutAlgorithm> FileLayout { get; } =
+            new("--file-layout") { CustomParser = MakeReadyToRunFileLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunFileLayoutAlgorithm, Description = "Layout algorithm used by profile-driven optimization for arranging non-method contents in a file.", HelpName = "arg" };
         public Option<string[]> SatelliteFilePaths { get; } =
             new("--satellite") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Satellite assemblies associated with inputs/references" };
         public Option<bool> EnableDebugInfo { get; } =
@@ -187,6 +191,8 @@ namespace ILCompiler
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
             Options.Add(MibcFilePaths);
+            Options.Add(MethodLayout);
+            Options.Add(FileLayout);
             Options.Add(SatelliteFilePaths);
             Options.Add(EnableDebugInfo);
             Options.Add(UseDwarf5);
@@ -409,6 +415,36 @@ namespace ILCompiler
                 parallelism = Math.Min(4, parallelism);
 
             return parallelism;
+        }
+
+        private static ReadyToRunMethodLayoutAlgorithm MakeReadyToRunMethodLayoutAlgorithm(ArgumentResult result)
+        {
+            if (result.Tokens.Count == 0)
+                return ReadyToRunMethodLayoutAlgorithm.DefaultSort;
+
+            return result.Tokens[0].Value.ToLowerInvariant() switch
+            {
+                "defaultsort" => ReadyToRunMethodLayoutAlgorithm.DefaultSort,
+                "exclusiveweight" => ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight,
+                "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
+                "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
+                "pettishansen" => ReadyToRunMethodLayoutAlgorithm.PettisHansen,
+                "random" => ReadyToRunMethodLayoutAlgorithm.Random,
+                _ => throw new CommandLineException(result.Tokens[0].Value)
+            };
+        }
+
+        private static ReadyToRunFileLayoutAlgorithm MakeReadyToRunFileLayoutAlgorithm(ArgumentResult result)
+        {
+            if (result.Tokens.Count == 0)
+                return ReadyToRunFileLayoutAlgorithm.DefaultSort;
+
+            return result.Tokens[0].Value.ToLowerInvariant() switch
+            {
+                "defaultsort" => ReadyToRunFileLayoutAlgorithm.DefaultSort,
+                "methodorder" => ReadyToRunFileLayoutAlgorithm.MethodOrder,
+                _ => throw new CommandLineException(result.Tokens[0].Value)
+            };
         }
 
 #if DEBUG

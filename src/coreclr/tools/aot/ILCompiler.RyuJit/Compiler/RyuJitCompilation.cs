@@ -25,6 +25,7 @@ namespace ILCompiler
         private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corinfos = new ConditionalWeakTable<Thread, CorInfoImpl>();
         internal readonly RyuJitCompilationOptions _compilationOptions;
         private readonly ProfileDataManager _profileDataManager;
+        private readonly ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
         private readonly ReadOnlyFieldPolicy _readOnlyFieldPolicy;
         private readonly int _parallelism;
@@ -44,6 +45,8 @@ namespace ILCompiler
             MethodImportationErrorProvider errorProvider,
             ReadOnlyFieldPolicy readOnlyFieldPolicy,
             RyuJitCompilationOptions options,
+            ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
+            ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
             int parallelism)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, inliningPolicy, logger)
         {
@@ -57,6 +60,8 @@ namespace ILCompiler
             _readOnlyFieldPolicy = readOnlyFieldPolicy;
 
             _parallelism = parallelism;
+
+            _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileDataManager, nodeFactory);
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
@@ -88,6 +93,8 @@ namespace ILCompiler
         {
             _dependencyGraph.ComputeMarkedNodes();
             var nodes = _dependencyGraph.MarkedNodeList;
+
+            nodes = _fileLayoutOptimizer.ApplyProfilerGuidedMethodSort(nodes);
 
             NodeFactory.SetMarkingComplete();
 
