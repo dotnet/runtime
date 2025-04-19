@@ -159,20 +159,51 @@ public static unsafe class UnsafeAccessorsTestsTypes
         extern static ref readonly object CallField2(TargetClass tgt);
     }
 
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetClass")]
+    [return: UnsafeAccessorType("PrivateLib.Class1, PrivateLib")]
+    extern static object CallGetClass([UnsafeAccessorType("PrivateLib.Class1, PrivateLib")] object a);
+
     [Fact]
-    public static void Verify_Type_FromPrivateLib()
+    public static void Verify_Type_CallPrivateLibMethods()
     {
-        Console.WriteLine($"Running {nameof(Verify_Type_FromPrivateLib)}");
+        Console.WriteLine($"Running {nameof(Verify_Type_CallPrivateLibMethods)}");
 
-        Assert.Equal("PrivateLib.Class1", CallGetClass(null).GetType().FullName);
-        Assert.Equal("System.Collections.Generic.List`1[[PrivateLib.Class1, PrivateLib, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]", CallGetListOfClass(null).GetType().FullName);
+        {
+            object class1 = CreateClass();
+            Assert.Equal("PrivateLib.Class1", class1.GetType().FullName);
+        }
 
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetClass")]
+        {
+            object class1 = CallGetClass(null);
+            Assert.Equal("PrivateLib.Class1", class1.GetType().FullName);
+            object listClass1 = CallGetListOfClass(class1);
+            Assert.Equal("System.Collections.Generic.List`1[[PrivateLib.Class1, PrivateLib, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]", listClass1.GetType().FullName);
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType("PrivateLib.Class1, PrivateLib")]
-        extern static object CallGetClass([UnsafeAccessorType("PrivateLib.Class1, PrivateLib")] object a);
+        extern static object CreateClass();
 
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetListOfClass")]
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetListOfClass")]
         [return: UnsafeAccessorType("System.Collections.Generic.List`1[[PrivateLib.Class1, PrivateLib]]")]
         extern static object CallGetListOfClass([UnsafeAccessorType("PrivateLib.Class1, PrivateLib")] object a);
+    }
+
+    [Fact]
+    public static void Verify_Type_GetPrivateLibFields()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Type_GetPrivateLibFields)}");
+
+        object class1 = CallGetClass(null);
+        Assert.Equal("PrivateLib.Class1", class1.GetType().FullName);
+
+        Assert.Equal(123, GetStaticField(null));
+        Assert.Equal(456, GetInstanceField(class1));
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "StaticField")]
+        extern static ref int GetStaticField([UnsafeAccessorType("PrivateLib.Class1, PrivateLib")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "InstanceField")]
+        extern static ref int GetInstanceField([UnsafeAccessorType("PrivateLib.Class1, PrivateLib")] object a);
     }
 }

@@ -10,12 +10,22 @@ namespace PrivateLib
 {
     class Class1
     {
-        public static Class1 GetClass()
+        static int StaticField;
+        int InstanceField = 456;
+
+        static Class1()
+        {
+            StaticField = 123;
+        }
+
+        Class1() { }
+
+        static Class1 GetClass()
         {
             return new Class1();
         }
 
-        public static List<Class1> GetListOfClass()
+        List<Class1> GetListOfClass()
         {
             return new List<Class1>();
         }
