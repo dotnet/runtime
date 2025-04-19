@@ -28,7 +28,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     {
         var result = new SortedDictionary<string, bool>()
         {
-            { "dotnet.js", false },
+            { "dotnet.js", true },
             { "dotnet.js.map", false },
             { "dotnet.native.js", true },
             { "dotnet.native.js.symbols", false },
@@ -41,7 +41,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         };
 
         if (assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js") ?? false)
-            result[assertOptions.BuildOptions.BootConfigFileName] = false;
+            result[assertOptions.BuildOptions.BootConfigFileName] = true;
 
         return result;
     }

@@ -373,7 +373,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (IsFingerprintingEnabled)
         {
-            string bootJsonPath = Path.Combine(paths.BinFrameworkDir, "dotnet.boot.js");
+            string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.boot.js");
             if (!File.Exists(bootJsonPath))
                 bootJsonPath = Path.Combine(paths.BinFrameworkDir, "dotnet.js"); // inline boot config
 
@@ -487,16 +487,59 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
-    private BootJsonData GetBootJson(string bootJsonPath)
+    public BootJsonData GetBootJson(string bootJsonPath)
     {
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
         return ParseBootData(bootJsonPath);
     }
 
+    public string GetBootConfigPath(string binFrameworkDir, string? bootConfigFileName = null)
+    {
+        string[] allDotnetFiles = [
+            "dotnet.runtime",
+            "dotnet.native",
+            "dotnet.native.worker",
+            "dotnet.diagnostics"
+        ];
+
+        bootConfigFileName ??= "dotnet.js";
+
+        if (bootConfigFileName.EndsWith(".js"))
+        {
+            string bootFileNameWithoutExtension = Path.GetFileNameWithoutExtension(bootConfigFileName);
+            string bootFileExtension = Path.GetExtension(bootConfigFileName);
+            string? fingerprintedBootJsonPath = Directory
+                .EnumerateFiles(binFrameworkDir)
+                .FirstOrDefault(f =>
+                {
+                    if (Path.GetExtension(f) != bootFileExtension)
+                        return false;
+
+                    string fileName = Path.GetFileName(f);
+                    if (!fileName.StartsWith(bootFileNameWithoutExtension))
+                        return false;
+                    
+                    if (allDotnetFiles.Except([bootFileNameWithoutExtension]).Any(a => fileName.StartsWith(a)))
+                        return false;
+
+                    return true;
+                });
+            
+            if (fingerprintedBootJsonPath == null)
+                throw new XunitException($"Could not find boot config '{bootConfigFileName}' with fingerprint in '{binFrameworkDir}'");
+
+            return fingerprintedBootJsonPath;
+        }
+        else
+        {
+            return Path.Combine(binFrameworkDir, bootConfigFileName);
+        }
+    }
+
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
         EnsureProjectDirIsSet();
-        string bootJsonPath = Path.Combine(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName ?? "dotnet.js");
+        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
@@ -573,6 +616,21 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public static BootJsonData ParseBootData(string bootConfigPath)
     {
+        string jsonContent = GetBootJsonContent(bootConfigPath);
+        try
+        {
+            BootJsonData? config = JsonSerializer.Deserialize<BootJsonData>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            Assert.NotNull(config);
+            return config!;
+        }
+        catch (JsonException e)
+        {
+            throw new XunitException($"Parsing config failed{Environment.NewLine}{Environment.NewLine}{jsonContent}", e);
+        }
+    }
+
+    public static string GetBootJsonContent(string bootConfigPath)
+    {
         string startComment = "/*json-start*/";
         string endComment = "/*json-end*/";
 
@@ -584,27 +642,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             // boot.js
             int startJsonIndex = startCommentIndex + startComment.Length;
             string jsonContent = moduleContent.Substring(startJsonIndex, endCommentIndex - startJsonIndex);
-            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
-            ms.Position = 0;
-            return LoadConfig(ms);
-        }
-        else
-        {
-            using FileStream stream = File.OpenRead(bootConfigPath);
-            stream.Position = 0;
-            return LoadConfig(stream);
+            return jsonContent;
         }
 
-        static BootJsonData LoadConfig(Stream stream)
-        {
-            var serializer = new DataContractJsonSerializer(
-                typeof(BootJsonData),
-                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
-
-            var config = (BootJsonData?)serializer.ReadObject(stream);
-            Assert.NotNull(config);
-            return config;
-        }
+        return moduleContent;
     }
 
     private void AssertFileNames(IEnumerable<string> expected, IEnumerable<string> actual)
