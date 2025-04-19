@@ -23,7 +23,6 @@ namespace System.Xml.Xsl.XsltOld
         // storage for the functions
         private static readonly Hashtable s_FunctionTable = CreateFunctionTable();
         private static readonly IXsltContextFunction s_FuncNodeSet = new FuncNodeSet();
-        private const string f_NodeSet = "node-set";
 
         internal XsltCompileContext(InputScopeManager manager, Processor processor) : base(/*dummy*/false)
         {
@@ -222,7 +221,7 @@ namespace System.Xml.Xsl.XsltOld
             else
             {
                 string ns = this.LookupNamespace(prefix);
-                if (ns == XmlReservedNs.NsMsxsl && name == f_NodeSet)
+                if (ns == XmlReservedNs.NsMsxsl && name == XsltFunctionNames.NodeSet)
                 {
                     func = s_FuncNodeSet;
                 }
@@ -444,7 +443,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (ns == XmlReservedNs.NsMsxsl)
             {
-                return name == f_NodeSet;
+                return name == XsltFunctionNames.NodeSet;
             }
             else if (ns.Length == 0)
             {
@@ -453,8 +452,8 @@ namespace System.Xml.Xsl.XsltOld
                     case "last":
                     case "position":
                     case "name":
-                    case "namespace-uri":
-                    case "local-name":
+                    case XsltFunctionNames.NamespaceUri:
+                    case XsltFunctionNames.LocalName:
                     case "count":
                     case "id":
                     case "string":
@@ -472,7 +471,7 @@ namespace System.Xml.Xsl.XsltOld
                     case "true":
                     case "false":
                     case "lang":
-                    case "number":
+                    case XsltFunctionNames.Number:
                     case "sum":
                     case "floor":
                     case "ceiling":
