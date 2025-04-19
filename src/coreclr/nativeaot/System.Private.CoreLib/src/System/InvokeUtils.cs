@@ -161,23 +161,23 @@ namespace System
                     switch (dstType)
                     {
                         case EETypeElementType.Single:
-                            Unsafe.As<byte, float>(ref dstValue) = srcValue;
+                            Unsafe.WriteUnaligned(ref dstValue, (float)srcValue);
                             break;
                         case EETypeElementType.Double:
-                            Unsafe.As<byte, double>(ref dstValue) = srcValue;
+                            Unsafe.WriteUnaligned(ref dstValue, (double)srcValue);
                             break;
                         case EETypeElementType.Char:
                         case EETypeElementType.Int16:
                         case EETypeElementType.UInt16:
-                            Unsafe.As<byte, short>(ref dstValue) = srcValue;
+                            Unsafe.WriteUnaligned(ref dstValue, (short)srcValue);
                             break;
                         case EETypeElementType.Int32:
                         case EETypeElementType.UInt32:
-                            Unsafe.As<byte, int>(ref dstValue) = srcValue;
+                            Unsafe.WriteUnaligned(ref dstValue, (int)srcValue);
                             break;
                         case EETypeElementType.Int64:
                         case EETypeElementType.UInt64:
-                            Unsafe.As<byte, long>(ref dstValue) = srcValue;
+                            Unsafe.WriteUnaligned(ref dstValue, (long)srcValue);
                             break;
                         default:
                             Debug.Fail("Expected to be unreachable");
@@ -189,19 +189,19 @@ namespace System
                     switch (dstType)
                     {
                         case EETypeElementType.Int16:
-                            Unsafe.As<byte, short>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (short)(sbyte)srcValue);
                             break;
                         case EETypeElementType.Int32:
-                            Unsafe.As<byte, int>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (int)(sbyte)srcValue);
                             break;
                         case EETypeElementType.Int64:
-                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (long)(sbyte)srcValue);
                             break;
                         case EETypeElementType.Single:
-                            Unsafe.As<byte, float>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (float)(sbyte)srcValue);
                             break;
                         case EETypeElementType.Double:
-                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (double)(sbyte)srcValue);
                             break;
                         default:
                             Debug.Fail("Expected to be unreachable");
@@ -214,22 +214,22 @@ namespace System
                     switch (dstType)
                     {
                         case EETypeElementType.Single:
-                            Unsafe.As<byte, float>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (float)Unsafe.ReadUnaligned<ushort>(ref srcValue));
                             break;
                         case EETypeElementType.Double:
-                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (double)Unsafe.ReadUnaligned<ushort>(ref srcValue));
                             break;
                         case EETypeElementType.UInt16:
                         case EETypeElementType.Char:
-                            Unsafe.As<byte, ushort>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (char)Unsafe.ReadUnaligned<ushort>(ref srcValue));
                             break;
                         case EETypeElementType.Int32:
                         case EETypeElementType.UInt32:
-                            Unsafe.As<byte, uint>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (uint)Unsafe.ReadUnaligned<ushort>(ref srcValue));
                             break;
                         case EETypeElementType.Int64:
                         case EETypeElementType.UInt64:
-                            Unsafe.As<byte, ulong>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (ulong)Unsafe.ReadUnaligned<ushort>(ref srcValue));
                             break;
                         default:
                             Debug.Fail("Expected to be unreachable");
@@ -241,16 +241,16 @@ namespace System
                     switch (dstType)
                     {
                         case EETypeElementType.Int32:
-                            Unsafe.As<byte, int>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (int)Unsafe.ReadUnaligned<short>(ref srcValue));
                             break;
                         case EETypeElementType.Int64:
-                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (long)Unsafe.ReadUnaligned<short>(ref srcValue));
                             break;
                         case EETypeElementType.Single:
-                            Unsafe.As<byte, float>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (float)Unsafe.ReadUnaligned<short>(ref srcValue));
                             break;
                         case EETypeElementType.Double:
-                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (double)Unsafe.ReadUnaligned<short>(ref srcValue));
                             break;
                         default:
                             Debug.Fail("Expected to be unreachable");
@@ -262,13 +262,13 @@ namespace System
                     switch (dstType)
                     {
                         case EETypeElementType.Int64:
-                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, int>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (long)Unsafe.ReadUnaligned<int>(ref srcValue));
                             break;
                         case EETypeElementType.Single:
-                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, int>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (float)Unsafe.ReadUnaligned<int>(ref srcValue));
                             break;
                         case EETypeElementType.Double:
-                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, int>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (double)Unsafe.ReadUnaligned<int>(ref srcValue));
                             break;
                         default:
                             Debug.Fail("Expected to be unreachable");
@@ -281,13 +281,13 @@ namespace System
                     {
                         case EETypeElementType.Int64:
                         case EETypeElementType.UInt64:
-                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, uint>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (ulong)Unsafe.ReadUnaligned<uint>(ref srcValue));
                             break;
                         case EETypeElementType.Single:
-                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, uint>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (float)Unsafe.ReadUnaligned<uint>(ref srcValue));
                             break;
                         case EETypeElementType.Double:
-                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, uint>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (double)Unsafe.ReadUnaligned<uint>(ref srcValue));
                             break;
                         default:
                             Debug.Fail("Expected to be unreachable");
@@ -299,10 +299,10 @@ namespace System
                     switch (dstType)
                     {
                         case EETypeElementType.Single:
-                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, long>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (float)Unsafe.ReadUnaligned<long>(ref srcValue));
                             break;
                         case EETypeElementType.Double:
-                            Unsafe.As<byte, double>(ref dstValue) = (double)Unsafe.As<byte, long>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (double)Unsafe.ReadUnaligned<long>(ref srcValue));
                             break;
                         default:
                             Debug.Fail("Expected to be unreachable");
@@ -314,10 +314,10 @@ namespace System
                     switch (dstType)
                     {
                         case EETypeElementType.Single:
-                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, ulong>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (float)Unsafe.ReadUnaligned<ulong>(ref srcValue));
                             break;
                         case EETypeElementType.Double:
-                            Unsafe.As<byte, double>(ref dstValue) = (double)Unsafe.As<byte, ulong>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (double)Unsafe.ReadUnaligned<ulong>(ref srcValue));
                             break;
                         default:
                             Debug.Fail("Expected to be unreachable");
@@ -329,7 +329,7 @@ namespace System
                     switch (dstType)
                     {
                         case EETypeElementType.Double:
-                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, float>(ref srcValue);
+                            Unsafe.WriteUnaligned(ref dstValue, (double)Unsafe.ReadUnaligned<float>(ref srcValue));
                             break;
                         default:
                             Debug.Fail("Expected to be unreachable");
