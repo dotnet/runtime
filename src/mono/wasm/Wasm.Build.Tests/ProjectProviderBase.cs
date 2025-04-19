@@ -373,10 +373,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (IsFingerprintingEnabled)
         {
-            string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.boot.js");
-            if (!File.Exists(bootJsonPath))
-                bootJsonPath = Path.Combine(paths.BinFrameworkDir, "dotnet.js"); // inline boot config
-
+            string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.js");
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             var keysToUpdate = new List<string>();
             var updates = new List<(string oldKey, string newKey, (string fullPath, bool unchanged) value)>();
@@ -570,8 +567,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var knownSet = GetAllKnownDotnetFilesToFingerprintMap(options);
         foreach (string expectedFilename in expected)
         {
-            // FIXME: Find a systematic solution for skipping dotnet.js & dotnet.boot.js from boot json check
-            if (expectedFilename == "dotnet.js" || expectedFilename == "dotnet.boot.js" || Path.GetExtension(expectedFilename) == ".map")
+            // FIXME: Find a systematic solution for skipping dotnet.js from boot json check
+            if (expectedFilename == "dotnet.js" || Path.GetExtension(expectedFilename) == ".map")
                 continue;
 
             bool expectFingerprint = knownSet[expectedFilename];
