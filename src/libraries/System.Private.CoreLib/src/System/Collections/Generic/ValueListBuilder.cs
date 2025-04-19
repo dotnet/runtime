@@ -165,6 +165,16 @@ namespace System.Collections.Generic
             if (toReturn != null)
             {
                 _arrayFromPool = null;
+
+#if NET || NETSTANDARD2_1_OR_GREATER
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+#else
+                if (!typeof(T).IsPrimitive)
+#endif
+                {
+                    Array.Clear(toReturn, 0, _pos);
+                }
+
                 ArrayPool<T>.Shared.Return(toReturn);
             }
         }
@@ -200,6 +210,15 @@ namespace System.Collections.Generic
             _span = _arrayFromPool = array;
             if (toReturn != null)
             {
+#if NET || NETSTANDARD2_1_OR_GREATER
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+#else
+                if (!typeof(T).IsPrimitive)
+#endif
+                {
+                    Array.Clear(toReturn, 0, _pos);
+                }
+
                 ArrayPool<T>.Shared.Return(toReturn);
             }
         }
