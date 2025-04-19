@@ -519,7 +519,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                     if (!fileName.StartsWith(bootFileNameWithoutExtension))
                         return false;
                     
-                    if (allDotnetFiles.Except(bootFileNameWithoutExtension).Any(a => fileName.StartsWith(a)))
+                    if (allDotnetFiles.Except([bootFileNameWithoutExtension]).Any(a => fileName.StartsWith(a)))
                         return false;
 
                     return true;
