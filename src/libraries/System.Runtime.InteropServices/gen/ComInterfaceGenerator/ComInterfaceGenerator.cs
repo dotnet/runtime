@@ -389,6 +389,22 @@ namespace Microsoft.Interop
 
             var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com);
 
+            MarshallingInfo exceptionMarshallingInfo;
+
+            if (generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller is not null)
+            {
+                exceptionMarshallingInfo = CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
+                    environment.Compilation.GetTypeByMetadataName(TypeNames.System_Exception),
+                    generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller,
+                    generatedComAttribute,
+                    environment.Compilation,
+                    generatorDiagnostics);
+            }
+            else
+            {
+                exceptionMarshallingInfo = new ComExceptionMarshalling();
+            }
+
             return new IncrementalMethodStubGenerationContext(
                 signatureContext,
                 containingSyntaxContext,
@@ -396,7 +412,7 @@ namespace Microsoft.Interop
                 locations,
                 callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
                 virtualMethodIndexData,
-                new ComExceptionMarshalling(),
+                exceptionMarshallingInfo,
                 environment.EnvironmentFlags,
                 owningInterface,
                 declaringType,
