@@ -596,6 +596,14 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public static BootJsonData ParseBootData(string bootConfigPath)
     {
+        string jsonContent = GetBootJsonContent(bootConfigPath);
+        BootJsonData config = JsonSerializer.Deserialize<BootJsonData>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(config);
+        return config;
+    }
+
+    public static string GetBootJsonContent(string bootConfigPath)
+    {
         string startComment = "/*json-start*/";
         string endComment = "/*json-end*/";
 
@@ -607,27 +615,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             // boot.js
             int startJsonIndex = startCommentIndex + startComment.Length;
             string jsonContent = moduleContent.Substring(startJsonIndex, endCommentIndex - startJsonIndex);
-            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
-            ms.Position = 0;
-            return LoadConfig(ms);
-        }
-        else
-        {
-            using FileStream stream = File.OpenRead(bootConfigPath);
-            stream.Position = 0;
-            return LoadConfig(stream);
+            return jsonContent;
         }
 
-        static BootJsonData LoadConfig(Stream stream)
-        {
-            var serializer = new DataContractJsonSerializer(
-                typeof(BootJsonData),
-                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
-
-            var config = (BootJsonData?)serializer.ReadObject(stream);
-            Assert.NotNull(config);
-            return config;
-        }
+        return moduleContent;
     }
 
     private void AssertFileNames(IEnumerable<string> expected, IEnumerable<string> actual)
