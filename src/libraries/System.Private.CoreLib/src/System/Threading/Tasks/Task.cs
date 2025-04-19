@@ -6267,9 +6267,17 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
-            List<Task<TResult>> taskList = new List<Task<TResult>>();
-            foreach (Task<TResult> task in tasks)
+            using var enumerator = tasks.GetEnumerator();
+
+            if (!enumerator.MoveNext())
             {
+                return new Task<TResult[]>(false, [], TaskCreationOptions.None, default);
+            }
+
+            var taskList = new List<Task<TResult>>();
+            do
+            {
+                var task = enumerator.Current;
                 if (task is null)
                 {
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
@@ -6277,10 +6285,10 @@ namespace System.Threading.Tasks
 
                 taskList.Add(task);
             }
+            while (enumerator.MoveNext());
 
-            return taskList.Count == 0 ?
-                new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default) :
-                new WhenAllPromise<TResult>(taskList.ToArray());
+
+            return new WhenAllPromise<TResult>([.. taskList]);
         }
 
         /// <summary>
