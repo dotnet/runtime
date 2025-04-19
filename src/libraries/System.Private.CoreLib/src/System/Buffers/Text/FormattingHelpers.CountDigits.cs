@@ -24,8 +24,7 @@ namespace System.Buffers.Text
             ];
             Debug.Assert(log2ToPow10.Length == 64);
 
-            // TODO: Replace with log2ToPow10[BitOperations.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed
-            nint elementOffset = Unsafe.Add(ref MemoryMarshal.GetReference(log2ToPow10), BitOperations.Log2(value));
+            nint elementOffset = log2ToPow10[(int)ulong.Log2(value)];
 
             // Read the associated power of 10.
             ReadOnlySpan<ulong> powersOf10 =
@@ -102,8 +101,7 @@ namespace System.Buffers.Text
             ];
             Debug.Assert(table.Length == 32, "Every result of uint.Log2(value) needs a long entry in the table.");
 
-            // TODO: Replace with table[uint.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed
-            long tableValue = Unsafe.Add(ref MemoryMarshal.GetReference(table), uint.Log2(value));
+            long tableValue = table[(int)uint.Log2(value)];
             return (int)((value + tableValue) >> 32);
         }
 
