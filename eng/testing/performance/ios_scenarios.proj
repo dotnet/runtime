@@ -71,7 +71,7 @@
         ]]>
       </CustomCommands>
     </XHarnessAppBundleToTest>
-    <HelixWorkItem Include="Build Time - iOS $(runtimeType) HelloWorld$(RunConfigsString)" Condition="'$(runtimeType)' == 'iOSMono'">
+    <HelixWorkItem Include="Build Time - iOS $(runtimeType) HelloWorld$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldBinlog/msbuild.binlog .</PreCommands>
       <Command>$(Python) test.py devicebuild --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs) --binlog-path ./msbuild.binlog</Command>
