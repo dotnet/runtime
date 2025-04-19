@@ -16,11 +16,11 @@
 #define INTEGER_REGISTER_SIZE (8)
 #define ARGUMENT_REGISTERS_SIZE (COUNT_ARG_REGISTERS * INTEGER_REGISTER_SIZE)
 
-// Largest return block is 4 doubles
-#define RETURN_BLOCK_SIZE (32)
+// Largest return block is 2 doubles
+#define RETURN_BLOCK_SIZE (16)
 
 #define COUNT_FLOAT_ARG_REGISTERS (8)
-#define FLOAT_REGISTER_SIZE (16)
+#define FLOAT_REGISTER_SIZE (8)
 #define FLOAT_ARG_REGISTERS_SIZE (COUNT_FLOAT_ARG_REGISTERS * FLOAT_REGISTER_SIZE)
 
 #define PUSHED_RA_SIZE (8)
@@ -59,15 +59,15 @@
 //
 // Frame layout is:
 //
-//  {StackPassedArgs}                           ChildSP+0F0     CallerSP+000
-//  {IntArgRegs (a0-a7) (0x40 bytes)}           ChildSP+0B0     CallerSP-040
-//  {ReturnBlock (0x20 bytes)}                  ChildSP+090     CallerSP-060
+//  {StackPassedArgs}                           ChildSP+0A0     CallerSP+000
+//  {IntArgRegs (a0-a7) (0x40 bytes)}           ChildSP+060     CallerSP-040
+//  {ReturnBlock (0x10 bytes)}                  ChildSP+050     CallerSP-050
 //   -- The base address of the Return block is the TransitionBlock pointer, the floating point args are
 //      in the neg space of the TransitionBlock pointer.  Note that the callee has knowledge of the exact
 //      layout of all pieces of the frame that lie at or above the pushed floating point registers.
-//  {FpArgRegs (f0-f7) (0x80 bytes)}            ChildSP+010     CallerSP-0E0
-//  {PushedRA}                                  ChildSP+008     CallerSP-0E8
-//  {PushedFP}                                  ChildSP+000     CallerSP-0F0
+//  {FpArgRegs (f0-f7) (0x40 bytes)}            ChildSP+010     CallerSP-090
+//  {PushedRA}                                  ChildSP+008     CallerSP-098
+//  {PushedFP}                                  ChildSP+000     CallerSP-0A0
 //
 // NOTE: If the frame layout ever changes, the C++ UniversalTransitionStackFrame structure
 // must be updated as well.
