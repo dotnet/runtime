@@ -2119,6 +2119,45 @@ PTR_InterpMethodContextFrame InterpreterFrame::GetTopInterpMethodContextFrame()
     return pFrame;
 }
 
+void InterpreterFrame::SetContextToInterpMethodContextFrame(T_CONTEXT * pContext)
+{
+    // Save the registers we reuse for interpreter stack frames. We need the original values 
+    // to resume after catch.
+    m_interpExecMethodIP = (TADDR)::GetIP(pContext);
+    m_interpExecMethodSP = (TADDR)::GetSP(pContext);
+    m_interpExecMethodFP = (TADDR)::GetFP(pContext);
+    m_interpExecMethodFirstArgReg = (TADDR)::GetFirstArgReg(pContext);
+    PTR_InterpMethodContextFrame pFrame = GetTopInterpMethodContextFrame();
+    SetIP(pContext, (TADDR)pFrame->ip);
+    SetSP(pContext, dac_cast<TADDR>(pFrame));
+    SetFP(pContext, (TADDR)pFrame->pStack);
+    SetFirstArgReg(pContext, (TADDR)this);
+}
+
+void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+    RestoreInterpExecMethodContext(pRD->pCurrentContext);
+    SyncRegDisplayToCurrentContext(pRD);
+    TransitionFrame::UpdateRegDisplay_Impl(pRD, updateFloats);
+}
+
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::ExceptionUnwind_Impl()
+{
+    WRAPPER_NO_CONTRACT;
+    InterpThreadContext *pThreadContext = InterpGetThreadContext();
+    InterpMethodContextFrame *pInterpMethodContextFrame = m_pTopInterpMethodContextFrame;
+    // Find the bottom-most InterpMethodContextFrame belonging to the current InterpreterFrame and
+    // reset the stack pointer in the InterpThreadContext to it. This effectively unwinds
+    // the interpreter stack.
+    while (pInterpMethodContextFrame->pParent != NULL)
+    {
+        pInterpMethodContextFrame = pInterpMethodContextFrame->pParent;
+    }
+    pThreadContext->pStackPointer = pInterpMethodContextFrame->pStack;
+}
+#endif // !DACCESS_COMPILE
+
 #endif // FEATURE_INTERPRETER
 
 #ifndef DACCESS_COMPILE
