@@ -352,8 +352,8 @@ bool Thread::DetectHandleILStubsForDebugger()
 }
 
 #ifndef _MSC_VER
-__thread ThreadLocalInfo gCurrentThreadInfo;
-#endif
+thread_local ThreadLocalInfo t_CurrentThreadInfo;
+#endif // _MSC_VER
 
 #ifndef DACCESS_COMPILE
 
@@ -361,8 +361,8 @@ void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
-    Thread* origThread = gCurrentThreadInfo.m_pThread;
-    gCurrentThreadInfo.m_pThread = t;
+    Thread* origThread = t_CurrentThreadInfo.m_pThread;
+    t_CurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
         _ASSERTE(origThread == NULL);
@@ -380,7 +380,7 @@ void SetThread(Thread* t)
 #endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
-    gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
+    t_CurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
 }
 
 BOOL Thread::Alert ()
@@ -1159,12 +1159,12 @@ void InitThreadManager()
 #ifndef TARGET_UNIX
     _ASSERTE(GetThreadNULLOk() == NULL);
 
-    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo);
+    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo);
 
     _ASSERTE(offsetOfCurrentThreadInfo < 0x8000);
     _ASSERTE(_tls_index < 0x10000);
 
-    // Save gCurrentThreadInfo location for debugger
+    // Save t_CurrentThreadInfo location for debugger
     SetIlsIndex((DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000));
 
     _ASSERTE(g_TrapReturningThreads == 0);
