@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Configuration;
 using System.IO;
 using System.Reflection;
@@ -33,7 +34,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void RuntimeFilterChange()
@@ -94,7 +95,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             mySource.Close();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void Refresh_RemoveSwitch()
@@ -135,7 +136,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void Refresh_ChangeSwitch()
@@ -161,7 +162,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             mySource.Close();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void Refresh_RemoveSource()
@@ -195,7 +196,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             mySourceToBeRemoved.Close();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void ConfigWithEvents_RuntimeListener()
@@ -262,7 +263,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void AllTypes()
@@ -307,7 +308,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             Assert.IsType<EventTypeFilter>(filter_eventTypeFilter.Listeners[1].Filter);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void Switch_MissingValue_Throws()
@@ -318,7 +319,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             Assert.Contains("'value'", e.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
         public void UnsupportedAttribute_Throws()

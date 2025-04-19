@@ -2311,6 +2311,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 #endif
     [ActiveIssue("34072", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/96799", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("Not allowed if IsSingleFile", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public static void Xml_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);

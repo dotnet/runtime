@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <ParallelizeAssembly>false</ParallelizeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'">
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
