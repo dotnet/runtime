@@ -405,7 +405,11 @@ struct HijackArgs
     DWORD Esi;
     DWORD Ebx;
     DWORD Edx;
-    DWORD Ecx;
+    union
+    {
+        DWORD Ecx;
+        size_t AsyncRet;
+    };
     union
     {
         DWORD Eax;

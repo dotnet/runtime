@@ -884,22 +884,19 @@ DelayLoad_Helper\suffix:
 // ------------------------------------------------------------------
 // Hijack function for functions which return a value type
         NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-        PROLOG_PUSH "{r0,r4-r11,lr}"
+        // saving r1 as well, as it can have partial return value when return is > 32 bits
+        PROLOG_PUSH "{r0,r1,r2,r4-r11,lr}"
 
         PROLOG_VPUSH "{d0-d3}"    // saving as d0-d3 can have the floating point return value
-        PROLOG_PUSH "{r1}"        // saving as r1 can have partial return value when return is > 32 bits
-        alloc_stack 4             // 8 byte align
 
         CHECK_STACK_ALIGNMENT
 
-        add r0, sp, #40
+        add r0, sp, #32
         bl C_FUNC(OnHijackWorker)
 
-        free_stack 4
-        EPILOG_POP "{r1}"
         EPILOG_VPOP "{d0-d3}"
 
-        EPILOG_POP "{r0,r4-r11,pc}"
+        EPILOG_POP "{r0,r1,r2,r4-r11,pc}"
         NESTED_END OnHijackTripThread, _TEXT
 #endif
 

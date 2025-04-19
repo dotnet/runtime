@@ -930,6 +930,9 @@ namespace System.Runtime.CompilerServices
             Debug.Assert((BaseSize - (nuint)(2 * sizeof(IntPtr)) == GetNumInstanceFieldBytes()));
             return BaseSize - (uint)(2 * sizeof(IntPtr));
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern IntPtr GetLoaderAllocatorHandle();
     }
 
     // Subset of src\vm\typedesc.h
@@ -963,7 +966,7 @@ namespace System.Runtime.CompilerServices
         {
             fixed (byte* p = &staticsPtr)
             {
-                 return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
+                return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
             }
         }
 
@@ -1150,8 +1153,8 @@ namespace System.Runtime.CompilerServices
                 CastResult.CanCast => true,
                 CastResult.CannotCast => false,
 
-                 // Reflection allows T to be cast to Nullable<T>.
-                 // See ObjIsInstanceOfCore()
+                // Reflection allows T to be cast to Nullable<T>.
+                // See ObjIsInstanceOfCore()
                 _ => CanCastToWorker(srcTH, destTH, nullableCast: true)
             };
         }
