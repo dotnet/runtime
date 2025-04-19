@@ -507,4 +507,57 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     jmp METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
+; This helper enables us to call into a funclet after restoring Fp register
+NESTED_ENTRY CallEHFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = PC to invoke
+        ; R8 = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        push_nonvol_reg rbp
+        alloc_stack     20h ; argument scratch space for the call
+        END_PROLOGUE
+
+        ; Restore RBP
+        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
+        ; Save the SP of this function.
+        mov     [r9], rsp
+        ; Invoke the funclet
+        call    rdx
+
+        add     rsp, 20h
+        pop     rbp
+        ret
+NESTED_END CallEHFunclet, _TEXT
+
+; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
+; frame pointer for accessing the locals in the parent method.
+NESTED_ENTRY CallEHFilterFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = RBP of main function
+        ; R8 = PC to invoke
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        push_nonvol_reg rbp
+        alloc_stack     20h ; argument scratch space for the call
+        END_PROLOGUE
+
+        ; Save the SP of this function
+        mov     [r9], rsp
+        ; Restore RBP to match main function RBP
+        mov     rbp, rdx
+        ; Invoke the filter funclet
+        call    r8
+
+        add     rsp, 20h
+        pop     rbp
+        ret
+NESTED_END CallEHFilterFunclet, _TEXT
+
         end

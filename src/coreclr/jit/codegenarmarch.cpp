@@ -4641,8 +4641,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // 5. We allocate the frame here; no further changes to SP are allowed (except in the body, for localloc).
     //
     // For functions with GS and localloc, we change the frame so the frame pointer and LR are saved at the top
-    // of the frame, just under the varargs registers (if any). Note that the funclet frames must follow the same
-    // rule, and both main frame and funclet frames (if any) must put PSPSym in the same offset from Caller-SP.
+    // of the frame, just under the varargs registers (if any).
     // Since this frame type is relatively rare, we force using it via stress modes, for additional coverage.
     //
     // The frames look like the following (simplified to only include components that matter for establishing the
@@ -4659,8 +4658,6 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
     //      |    MonitorAcquired    | // 8 bytes; for synchronized methods
-    //      |-----------------------|
-    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|
@@ -4692,8 +4689,6 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
     //      |    MonitorAcquired    | // 8 bytes; for synchronized methods
-    //      |-----------------------|
-    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|

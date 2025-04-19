@@ -347,11 +347,11 @@
 
 // Where is the exception object on entry to the handler block?
 #ifdef UNIX_AMD64_ABI
-  #define REG_EXCEPTION_OBJECT     REG_ESI
-  #define RBM_EXCEPTION_OBJECT     RBM_ESI
+  #define REG_EXCEPTION_OBJECT     REG_EDI
+  #define RBM_EXCEPTION_OBJECT     RBM_EDI
 #else // !UNIX_AMD64_ABI
-  #define REG_EXCEPTION_OBJECT     REG_EDX
-  #define RBM_EXCEPTION_OBJECT     RBM_EDX
+  #define REG_EXCEPTION_OBJECT     REG_ECX
+  #define RBM_EXCEPTION_OBJECT     RBM_ECX
 #endif // !UNIX_AMD64_ABI
 
   #define REG_JUMP_THUNK_PARAM     REG_EAX

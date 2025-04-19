@@ -3099,9 +3099,8 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 
         dwResumePC = exInfo->m_frameIter.m_crawl.GetCodeManager()->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
 
-#ifdef USE_FUNCLET_CALL_HELPER
         FixContext(pvRegDisplay->pCurrentContext);
-#endif
+
         // Profiler, debugger and ETW events
         exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
         SetIP(pvRegDisplay->pCurrentContext, dwResumePC);
@@ -3246,7 +3245,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #endif // HOST_WINDOWS
 
 #if defined(HOST_AMD64)
-        ULONG64* returnAddress = (ULONG64*)targetSp;
+        ULONG64* returnAddress = (ULONG64*)(targetSp - 8);
         *returnAddress = pvRegDisplay->pCurrentContext->Rip;
 #ifdef HOST_WINDOWS
         if (targetSSP != 0)
