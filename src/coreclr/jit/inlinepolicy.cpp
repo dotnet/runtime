@@ -1341,6 +1341,10 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_ArgUnboxExact++;
             break;
 
+        case InlineObservation::CALLEE_MAY_RETURN_SMALL_ARRAY:
+            m_MayReturnSmallArray = true;
+            break;
+
         default:
             DefaultPolicy::NoteBool(obs, value);
             break;
@@ -1776,6 +1780,12 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         }
     }
 
+    if (m_MayReturnSmallArray)
+    {
+        multiplier += 4.0;
+        JITDUMP("\nInline candidate may return small known-size array.  Multiplier increased to %g.", multiplier);
+    }
+
     if (m_HasProfileWeights)
     {
         // There are cases when Profile Data can be misleading or polluted:
@@ -1889,6 +1899,7 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_IsCallsiteInNoReturnRegion)
     XATTR_B(m_HasProfileWeights)
     XATTR_B(m_InsideThrowBlock)
+    XATTR_B(m_MayReturnSmallArray)
 }
 #endif
 
