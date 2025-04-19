@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+#include "gcinfoencoder.h"
 #include "interpreter.h"
 
 #include <inttypes.h>
+
+#include <new> // for std::bad_alloc
 
 static const StackType g_stackTypeFromInterpType[] =
 {
@@ -31,9 +34,55 @@ static const InterpType g_interpTypeFromStackType[] =
     InterpTypeI,        // F
 };
 
+// Used by assertAbort
+thread_local ICorJitInfo* gInterpJitInfoTls = nullptr;
+
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
 
-// FIXME Use specific allocators for their intended purpose
+/*****************************************************************************/
+void DECLSPEC_NORETURN Interp_NOMEM()
+{
+    throw std::bad_alloc();
+}
+
+// GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
+class InterpIAllocator : public IAllocator
+{
+    InterpCompiler *m_pCompiler;
+
+public:
+    InterpIAllocator(InterpCompiler *compiler)
+        : m_pCompiler(compiler)
+    {
+    }
+
+    // Allocates a block of memory at least `sz` in size.
+    virtual void* Alloc(size_t sz) override
+    {
+        return m_pCompiler->AllocMethodData(sz);
+    }
+
+    // Allocates a block of memory at least `elems * elemSize` in size.
+    virtual void* ArrayAlloc(size_t elems, size_t elemSize) override
+    {
+        // Ensure that elems * elemSize does not overflow.
+        if (elems > (SIZE_MAX / elemSize))
+        {
+            Interp_NOMEM();
+        }
+
+        return m_pCompiler->AllocMethodData(elems * elemSize);
+    }
+
+    // Frees the block of memory pointed to by p.
+    virtual void Free(void* p) override
+    {
+        // Interpreter-FIXME: m_pCompiler->FreeMethodData
+        free(p);
+    }
+};
+
+// Interpreter-FIXME Use specific allocators for their intended purpose
 // Allocator for data that is kept alive throughout application execution,
 // being freed only if the associated method gets freed.
 void* InterpCompiler::AllocMethodData(size_t numBytes)
@@ -777,7 +826,10 @@ void InterpCompiler::EmitCode()
         for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
         {
             if (InterpOpIsEmitNop(ins->opcode))
+            {
+                ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
                 continue;
+            }
 
             ip = EmitCodeIns(ip, ins, &relocs);
         }
@@ -807,6 +859,114 @@ void InterpCompiler::EmitCode()
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
 }
 
+void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
+{
+#ifdef FEATURE_INTERPRETER
+    InterpIAllocator* pAllocator = new (this) InterpIAllocator(this);
+    InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
+    assert(gcInfoEncoder);
+
+    gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
+
+    uint32_t stackSlotCount = m_totalVarsStackSize / INTERP_STACK_SLOT_SIZE,
+        slotTableSize = stackSlotCount * sizeof(GcSlotId);
+    // [pObjects, pByrefs]
+    GcSlotId *slotTables[2] = {
+        (GcSlotId *)alloca(slotTableSize),
+        (GcSlotId *)alloca(slotTableSize)
+    };
+    // 0 is a valid slot id so default-initialize all the slots to 0xFFFFFFFF
+    for (int i = 0; i < 2; i++)
+        memset(slotTables[i], 0xFF, slotTableSize);
+
+    INTERP_DUMP("Allocating gcinfo slots for %u vars\n", m_varsSize);
+
+    // Request slot IDs for all our vars, not just IL vars
+    for (int i = 0; i < m_varsSize; i++)
+    {
+        GcSlotId *slotTable;
+        InterpVar *pVar = &m_pVars[i];
+        GcSlotFlags flags;
+        switch (pVar->interpType) {
+            case InterpTypeO:
+                slotTable = slotTables[0];
+                flags = (GcSlotFlags)0;
+                break;
+            case InterpTypeByRef:
+                slotTable = slotTables[1];
+                flags = (GcSlotFlags)GC_SLOT_INTERIOR;
+                break;
+            default:
+                continue;
+        }
+
+        if (pVar->global)
+            flags = (GcSlotFlags)(flags | GC_SLOT_UNTRACKED);
+
+        uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
+        uint8_t allocateNewSlot = slotTable[slotIndex] == ((GcSlotId)-1);
+        if (allocateNewSlot)
+        {
+            // Important to pass GC_FRAMEREG_REL, the default is broken due to GET_CALLER_SP being unimplemented
+            slotTable[slotIndex] = gcInfoEncoder->GetStackSlotId(pVar->offset, flags, GC_FRAMEREG_REL);
+        }
+        else
+        {
+            assert(!pVar->global);
+        }
+
+        INTERP_DUMP(
+            "%s gcinfo slot %u for %s%svar #%d at offset %d\n",
+            allocateNewSlot ? "Allocated" : "Reused",
+            slotTable[slotIndex],
+            pVar->global ? "global " : "",
+            pVar->interpType == InterpTypeByRef ? "byref " : "",
+            i, pVar->offset
+        );
+    }
+
+    gcInfoEncoder->FinalizeSlotIds();
+
+    // Now that slot IDs are finalized we want to record live ranges for every var that isn't global
+    for (int i = 0; i < m_varsSize; i++)
+    {
+        InterpVar *pVar = &m_pVars[i];
+        // Even if we have a gc slot for this offset, this var might not be an object reference
+        if ((pVar->interpType != InterpTypeO) && (pVar->interpType != InterpTypeByRef))
+            continue;
+        // We don't need to report liveness ranges for untracked vars, the gc info decoder will report them
+        //  unconditionally.
+        if (pVar->global)
+            continue;
+
+        GcSlotId *slotTable = pVar->interpType == InterpTypeByRef
+            ? slotTables[1] : slotTables[0];
+        uint32_t slotIndex = pVar->offset / INTERP_STACK_SLOT_SIZE;
+        GcSlotId slot = slotTable[slotIndex];
+        assert(slot != ((GcSlotId)-1));
+        assert(pVar->liveStart);
+        assert(pVar->liveEnd);
+        uint32_t startOffset = ConvertOffset(GetLiveStartOffset(i)),
+            endOffset = ConvertOffset(GetLiveEndOffset(i));
+        INTERP_DUMP(
+            "Recording gcinfo slot %u live range for var #%d at offset %u: [IR_%04x - IR_%04x] [%u - %u]\n",
+            slotTable[slotIndex], i, pVar->offset,
+            GetLiveStartOffset(i), GetLiveEndOffset(i),
+            startOffset, endOffset
+        );
+        gcInfoEncoder->SetSlotState(startOffset, slot, GC_SLOT_LIVE);
+        gcInfoEncoder->SetSlotState(endOffset, slot, GC_SLOT_DEAD);
+    }
+
+    gcInfoEncoder->Build();
+
+    // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
+    gcInfoEncoder->Emit();
+
+    fflush(stdout);
+#endif
+}
+
 InterpMethod* InterpCompiler::CreateInterpMethod()
 {
     int numDataItems = m_dataItems.GetSize();
@@ -829,6 +989,9 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
 {
+    // Fill in the thread-local used for assertions
+    gInterpJitInfoTls = compHnd;
+
     m_methodHnd = methodInfo->ftn;
     m_compScopeHnd = methodInfo->scope;
     m_compHnd = compHnd;
@@ -1501,6 +1664,15 @@ bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SI
             {
                 AddIns(INTOP_NOP);
                 m_pStackPointer--;
+                return true;
+            }
+        }
+        else if (className && !strcmp(className, "GC"))
+        {
+            if (methodName && !strcmp(methodName, "Collect"))
+            {
+                AddIns(INTOP_GC_COLLECT);
+                // Not reducing the stack pointer because we expect the version with no arguments
                 return true;
             }
         }
@@ -3363,4 +3535,18 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
 
     PrintInsData(NULL, insOffset, ip, opcode);
     printf("\n");
+}
+
+extern "C" void assertAbort(const char* why, const char* file, unsigned line)
+{
+    if (gInterpJitInfoTls) {
+        if (!gInterpJitInfoTls->doAssert(file, line, why))
+            return;
+    }
+
+#ifdef _MSC_VER
+    __debugbreak();
+#else // _MSC_VER
+    __builtin_trap();
+#endif // _MSC_VER
 }
