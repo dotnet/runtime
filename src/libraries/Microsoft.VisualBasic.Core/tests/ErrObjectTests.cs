@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Microsoft.VisualBasic.CompilerServices;
 using System;
 using Xunit;
@@ -11,6 +12,7 @@ namespace Microsoft.VisualBasic.Tests
     {
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/14854", TestRuntimes.Mono)]
+        [ActiveIssue("Not allowed if SingleFileHost", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         public void Clear()
         {
             ProjectData.ClearProjectError();

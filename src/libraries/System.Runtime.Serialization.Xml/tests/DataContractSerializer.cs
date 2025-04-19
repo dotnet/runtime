@@ -1123,6 +1123,7 @@ public static partial class DataContractSerializerTests
     [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
 #endif
     [ActiveIssue("34072", TestRuntimes.Mono)]
+    [ActiveIssue("Now allowed if IsSingleFile", typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public static void DCS_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: false, out var weakRef);
@@ -1142,6 +1143,7 @@ public static partial class DataContractSerializerTests
     [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
 #endif
     [ActiveIssue("34072", TestRuntimes.Mono)]
+    [ActiveIssue("Now allowed if IsSingleFile", typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public static void DCS_CollectionTypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: true, out var weakRef);

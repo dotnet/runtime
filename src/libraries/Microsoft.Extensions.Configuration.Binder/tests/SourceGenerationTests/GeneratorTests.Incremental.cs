@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
@@ -12,6 +13,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
+        [ActiveIssue("Not allowed if SingleFileHost", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         public sealed class IncrementalTests
         {
             [Fact]

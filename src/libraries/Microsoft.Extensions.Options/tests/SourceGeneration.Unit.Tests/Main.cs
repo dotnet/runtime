@@ -568,7 +568,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     [InlineData("bool")]
     [InlineData("int")]
     [InlineData("double")]
@@ -623,7 +623,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NoEligibleMembersFromValidator.Id, diagnostics[0].Id);
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     [InlineData("private")]
     [InlineData("protected")]
     public async Task ShouldProduceWarningWhenTheClassMembersAreInaccessible(string accessModifier)
@@ -1252,7 +1252,7 @@ public class EmitterTests
         File.Delete(assemblyPath); // cleanup
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     [InlineData(LanguageVersion.Preview)]
     [InlineData(LanguageVersion.CSharp11)]
     [InlineData(LanguageVersion.CSharp10)]
@@ -1576,7 +1576,7 @@ public class EmitterTests
         Assert.Equal(0, diags.Length);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNetCore))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles), nameof(PlatformDetection.IsNetCore))]
     public async Task DataAnnotationAttributesWithParams()
     {
         var (diagnostics, generatedSources) = await RunGenerator(@"""
@@ -1709,7 +1709,7 @@ public class EmitterTests
         return result;
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     [InlineData(LanguageVersion.CSharp10)]
     [InlineData(LanguageVersion.CSharp11)]
     public async Task GeneratedAttributesTest(LanguageVersion languageVersion)
