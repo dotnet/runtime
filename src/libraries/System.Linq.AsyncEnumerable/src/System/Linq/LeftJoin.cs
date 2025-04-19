@@ -35,11 +35,11 @@ namespace System.Linq
             Func<TOuter, TInner?, TResult> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(outer);
-            ThrowHelper.ThrowIfNull(inner);
-            ThrowHelper.ThrowIfNull(outerKeySelector);
-            ThrowHelper.ThrowIfNull(innerKeySelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 outer.IsKnownEmpty() ? Empty<TResult>() :
@@ -106,11 +106,11 @@ namespace System.Linq
             Func<TOuter, TInner?, CancellationToken, ValueTask<TResult>> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(outer);
-            ThrowHelper.ThrowIfNull(inner);
-            ThrowHelper.ThrowIfNull(outerKeySelector);
-            ThrowHelper.ThrowIfNull(innerKeySelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 outer.IsKnownEmpty() ? Empty<TResult>() :

@@ -909,10 +909,10 @@ namespace ILCompiler
             return true;
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new Crossgen2RootCommand(args)
+            new CommandLineConfiguration(new Crossgen2RootCommand(args)
                 .UseVersion()
                 .UseExtendedHelp(Crossgen2RootCommand.GetExtendedHelp))
             {
