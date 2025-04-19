@@ -15,6 +15,7 @@ namespace Microsoft.Interop
     internal sealed record GeneratedComInterfaceData : InteropAttributeData
     {
         public ComInterfaceOptions Options { get; init; }
+        public ManagedTypeInfo? ExceptionToUnmanagedMarshaller { get; init; }
         public static GeneratedComInterfaceData From(GeneratedComInterfaceCompilationData generatedComInterfaceAttr)
             => new GeneratedComInterfaceData() with
             {
@@ -24,7 +25,10 @@ namespace Microsoft.Interop
                 StringMarshallingCustomType = generatedComInterfaceAttr.StringMarshallingCustomType is not null
                     ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(generatedComInterfaceAttr.StringMarshallingCustomType)
                     : null,
-                Options = generatedComInterfaceAttr.Options
+                Options = generatedComInterfaceAttr.Options,
+                ExceptionToUnmanagedMarshaller = generatedComInterfaceAttr.ExceptionToUnmanagedMarshaller is not null
+                    ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(generatedComInterfaceAttr.ExceptionToUnmanagedMarshaller)
+                    : null,
             };
     }
 
@@ -35,6 +39,7 @@ namespace Microsoft.Interop
     internal sealed record GeneratedComInterfaceCompilationData : InteropAttributeCompilationData
     {
         public ComInterfaceOptions Options { get; init; } = ComInterfaceOptions.ManagedObjectWrapper | ComInterfaceOptions.ComObjectWrapper;
+        public INamedTypeSymbol? ExceptionToUnmanagedMarshaller { get; init; }
 
         public static bool TryGetGeneratedComInterfaceAttributeFromInterface(INamedTypeSymbol interfaceSymbol, [NotNullWhen(true)] out AttributeData? generatedComInterfaceAttribute)
         {
@@ -68,6 +73,17 @@ namespace Microsoft.Interop
                 generatedComInterfaceAttributeData = generatedComInterfaceAttributeData with
                 {
                     Options = (ComInterfaceOptions)options.Value
+                };
+            }
+            if (args.TryGetValue(nameof(ExceptionToUnmanagedMarshaller), out TypedConstant exceptionToUnmanagedMarshaller))
+            {
+                if (exceptionToUnmanagedMarshaller.Value is not INamedTypeSymbol)
+                {
+                    return null;
+                }
+                generatedComInterfaceAttributeData = generatedComInterfaceAttributeData with
+                {
+                    ExceptionToUnmanagedMarshaller = (INamedTypeSymbol)exceptionToUnmanagedMarshaller.Value
                 };
             }
             return generatedComInterfaceAttributeData;

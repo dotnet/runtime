@@ -106,7 +106,7 @@ namespace Microsoft.Interop
                     return new ComMethodContext(
                         data.Method,
                         data.OwningInterface,
-                        CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.OwningInterface.Info.Type, ct));
+                        CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.OwningInterface.Info.Type, data.OwningInterface.Info.ExceptionToUnmanagedMarshallerQualifiedName, ct));
                 }).WithTrackingName(StepNames.CalculateStubInformation);
 
             var interfaceAndMethodsContexts = comMethodContexts
@@ -245,7 +245,7 @@ namespace Microsoft.Interop
                 || typeName.Equals("hresult", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
+        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, string? exceptionToUnmanagedMarshallerQualifiedName, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             INamedTypeSymbol? lcidConversionAttrType = environment.LcidConversionAttrType;
@@ -396,7 +396,7 @@ namespace Microsoft.Interop
                 locations,
                 callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
                 virtualMethodIndexData,
-                new ComExceptionMarshalling(),
+                new ComExceptionMarshalling(exceptionToUnmanagedMarshallerQualifiedName),
                 environment.EnvironmentFlags,
                 owningInterface,
                 declaringType,

@@ -916,4 +916,7 @@
   <data name="BaseInterfaceDefinedInOtherAssemblyTitle" xml:space="preserve">
     <value>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</value>
   </data>
+  <data name="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode" xml:space="preserve">
+    <value>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</value>
+  </data>
 </root>

@@ -84,7 +84,7 @@ namespace Microsoft.Interop
                     overlappedMarshaller = nativeParamMarshallers.FirstOrDefault(e => e.TypeInfo.NativeIndex == managedExceptionInfo.NativeIndex);
                 }
 
-                if (managedExceptionInfo.MarshallingAttributeInfo is ComExceptionMarshalling)
+                if (managedExceptionInfo.MarshallingAttributeInfo is ComExceptionMarshalling comExceptionMarshalling)
                 {
                     if (overlappedMarshaller is null)
                     {
@@ -94,7 +94,7 @@ namespace Microsoft.Interop
                     {
                         managedExceptionInfo = managedExceptionInfo with
                         {
-                            MarshallingAttributeInfo = ComExceptionMarshalling.CreateSpecificMarshallingInfo(overlappedMarshaller.NativeType)
+                            MarshallingAttributeInfo = comExceptionMarshalling.CreateSpecificMarshallingInfo(overlappedMarshaller.NativeType)
                         };
                     }
                 }
