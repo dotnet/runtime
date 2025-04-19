@@ -420,33 +420,6 @@ ClassLayout* Compiler::typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsig
     return typGetCustomLayout(b);
 }
 
-ClassLayout* Compiler::typGetNonGCLayout(ClassLayout* layout)
-{
-    assert(layout->HasGCPtr());
-    ClassLayoutBuilder b(this, layout->GetSize());
-    b.CopyPaddingFrom(0, layout);
-
-#ifdef DEBUG
-    b.CopyNameFrom(layout, "[nongc] ");
-#endif
-
-    return typGetCustomLayout(b);
-}
-
-ClassLayout* Compiler::typGetByrefLayout(ClassLayout* layout)
-{
-    assert(layout->HasGCPtr());
-    ClassLayoutBuilder b(this, layout->GetSize());
-    b.CopyPaddingFrom(0, layout);
-    b.CopyGCInfoFromMakeByref(0, layout);
-
-#ifdef DEBUG
-    b.CopyNameFrom(layout, "[byref] ");
-#endif
-
-    return typGetCustomLayout(b);
-}
-
 #ifdef DEBUG
 //------------------------------------------------------------------------
 // CopyNameFrom: Copy layout names, with optional prefix.
@@ -462,21 +435,17 @@ void ClassLayoutBuilder::CopyNameFrom(ClassLayout* layout, const char* prefix)
 
     if (prefix != nullptr)
     {
-        char* newName      = nullptr;
-        char* newShortName = nullptr;
+        const char* newName      = nullptr;
+        const char* newShortName = nullptr;
 
         if (layoutName != nullptr)
         {
-            size_t len = strlen(prefix) + strlen(layoutName) + 1;
-            newName    = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
-            sprintf_s(newName, len, "%s%s", prefix, layoutShortName);
+            newName = m_compiler->printfAlloc("%s%.100s", prefix, layoutName);
         }
 
         if (layoutShortName != nullptr)
         {
-            size_t len   = strlen(prefix) + strlen(layoutName) + 1;
-            newShortName = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
-            sprintf_s(newShortName, len, "%s%s", prefix, layoutShortName);
+            newShortName = m_compiler->printfAlloc("%s%.100s", prefix, layoutShortName);
         }
 
         SetName(newName, newShortName);
@@ -708,8 +677,8 @@ const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
 // AreCompatible: check if 2 layouts are the same for copying.
 //
 // Arguments:
-//    layout1 - the first layout (copy destination)
-//    layout2 - the second layout (copy source)
+//    layout1 - the first layout
+//    layout2 - the second layout
 //
 // Return value:
 //    true if compatible, false otherwise.
@@ -773,8 +742,6 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
         return true;
     }
 
-    assert(clsHnd1 != NO_CLASS_HANDLE);
-    assert(clsHnd2 != NO_CLASS_HANDLE);
     assert(layout1->HasGCPtr() && layout2->HasGCPtr());
 
     if (layout1->GetGCPtrCount() != layout2->GetGCPtrCount())
@@ -815,16 +782,13 @@ bool ClassLayout::CanAssignFrom(const ClassLayout* layout)
         return true;
     }
 
-    // Do the normal compatibility check first, when possible to do so.
+    // Do the normal compatibility check first
     //
-    if ((IsCustomLayout() == layout->IsCustomLayout()) || (!HasGCPtr() && !layout->HasGCPtr()))
-    {
-        const bool areCompatible = AreCompatible(this, layout);
+    const bool areCompatible = AreCompatible(this, layout);
 
-        if (areCompatible)
-        {
-            return true;
-        }
+    if (areCompatible)
+    {
+        return true;
     }
 
     // Must be same size
@@ -1083,34 +1047,6 @@ void ClassLayoutBuilder::CopyGCInfoFrom(unsigned offset, ClassLayout* layout)
         for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
         {
             SetGCPtr(startSlot + slot, layout->GetGCPtr(slot));
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// CopyInfoGCFromMakeByref: Copy GC pointers from another layout,and change
-//   all gc references to be TYP_BYREF (TYPE_GC_BYREF)
-//
-// Arguments:
-//   offset      - Offset in this builder to start copy information into.
-//   layout      - Layout to get information from.
-//
-void ClassLayoutBuilder::CopyGCInfoFromMakeByref(unsigned offset, ClassLayout* layout)
-{
-    assert(offset + layout->GetSize() <= m_size);
-
-    if (layout->GetGCPtrCount() > 0)
-    {
-        assert(offset % TARGET_POINTER_SIZE == 0);
-        unsigned startSlot = offset / TARGET_POINTER_SIZE;
-        for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
-        {
-            CorInfoGCType gcType = layout->GetGCPtr(slot);
-            if (gcType == TYPE_GC_REF)
-            {
-                gcType = TYPE_GC_BYREF;
-            }
-            SetGCPtr(startSlot + slot, gcType);
         }
     }
 }

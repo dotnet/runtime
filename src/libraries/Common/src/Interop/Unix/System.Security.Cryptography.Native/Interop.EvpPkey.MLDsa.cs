@@ -64,42 +64,6 @@ internal static partial class Interop
             return handle;
         }
 
-        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
-        private static partial SafeEvpPKeyHandle CryptoNative_MLDsaImportSecretKey(string keyType, ReadOnlySpan<byte> sk, int skLength);
-
-        internal static SafeEvpPKeyHandle MLDsaImportSecretKey(string algorithmName, ReadOnlySpan<byte> sk)
-        {
-            SafeEvpPKeyHandle? handle = CryptoNative_MLDsaImportSecretKey(algorithmName, sk, sk.Length);
-            Debug.Assert(handle != null, "handle != null");
-
-            if (handle.IsInvalid)
-            {
-                Exception ex = Interop.Crypto.CreateOpenSslCryptographicException();
-                handle.Dispose();
-                throw ex;
-            }
-
-            return handle;
-        }
-
-        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
-        private static partial SafeEvpPKeyHandle CryptoNative_MLDsaImportPublicKey(string keyType, ReadOnlySpan<byte> pk, int pkLength);
-
-        internal static SafeEvpPKeyHandle MLDsaImportPublicKey(string algorithmName, ReadOnlySpan<byte> pk)
-        {
-            SafeEvpPKeyHandle handle = CryptoNative_MLDsaImportPublicKey(algorithmName, pk, pk.Length);
-            Debug.Assert(handle != null, "handle != null");
-
-            if (handle.IsInvalid)
-            {
-                Exception ex = Interop.Crypto.CreateOpenSslCryptographicException();
-                handle.Dispose();
-                throw ex;
-            }
-
-            return handle;
-        }
-
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaSignPure(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
