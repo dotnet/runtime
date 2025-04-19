@@ -597,9 +597,16 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public static BootJsonData ParseBootData(string bootConfigPath)
     {
         string jsonContent = GetBootJsonContent(bootConfigPath);
-        BootJsonData? config = JsonSerializer.Deserialize<BootJsonData>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        Assert.NotNull(config);
-        return config!;
+        try
+        {
+            BootJsonData? config = JsonSerializer.Deserialize<BootJsonData>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            Assert.NotNull(config);
+            return config!;
+        }
+        catch (JsonException e)
+        {
+            throw new XunitException($"Parsing config failed{Environment.NewLine}{Environment.NewLine}{jsonContent}", e);
+        }
     }
 
     public static string GetBootJsonContent(string bootConfigPath)
