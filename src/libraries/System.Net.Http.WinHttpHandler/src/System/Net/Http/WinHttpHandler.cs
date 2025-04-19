@@ -594,10 +594,7 @@ namespace System.Net.Http
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request is null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             Uri? requestUri = request.RequestUri;
             if (requestUri is null || !requestUri.IsAbsoluteUri)

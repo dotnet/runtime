@@ -19,7 +19,7 @@ namespace System.IO.Compression.Tests
             await Assert.ThrowsAsync<ArgumentNullException>(() => CallZipFileExtensionsExtractToDirectory(async, archive, null));
             await CallZipFileExtensionsExtractToDirectory(async, archive, tempFolder);
 
-            DirsEqual(tempFolder, zfolder("normal"));
+            await DirsEqual(tempFolder, zfolder("normal"));
 
             await DisposeZipArchive(async, archive);
         }

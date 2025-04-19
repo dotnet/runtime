@@ -75,10 +75,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static byte[] Encode(string documentDescription)
         {
-            if (documentDescription is null)
-            {
-                throw new ArgumentNullException(nameof(documentDescription));
-            }
+            ArgumentNullException.ThrowIfNull(documentDescription);
 
             byte[] octets = documentDescription.UnicodeToOctetString();
             return PkcsHelpers.EncodeOctetString(octets);

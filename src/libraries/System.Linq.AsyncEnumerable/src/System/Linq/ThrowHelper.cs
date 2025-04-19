@@ -8,17 +8,6 @@ namespace System.Linq
 {
     internal static class ThrowHelper
     {
-        internal static void ThrowIfNull([NotNull] object? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
-        {
-            if (argument is null)
-            {
-                ThrowArgumentNullException(paramName);
-            }
-
-            [DoesNotReturn]
-            static void ThrowArgumentNullException(string? paramName) => throw new ArgumentNullException(paramName);
-        }
-
         internal static void ThrowIfNegative(int value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
         {
             if (value < 0)

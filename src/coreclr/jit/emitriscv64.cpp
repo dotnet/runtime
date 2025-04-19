@@ -728,7 +728,7 @@ void emitter::emitIns_R_R_I(
 
     if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
         (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
-        INS_flw == ins || INS_rori == ins || INS_roriw == ins)
+        INS_flw == ins || INS_slli_uw == ins || INS_rori == ins || INS_roriw == ins)
     {
         assert(isGeneralRegister(reg2));
         code |= (reg1 & 0x1f) << 7; // rd
@@ -827,7 +827,7 @@ void emitter::emitIns_R_R_R(
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
-        (INS_rol <= ins && ins <= INS_maxu))
+        (INS_sh1add <= ins && ins <= INS_sh3add_uw) || (INS_rol <= ins && ins <= INS_maxu))
     {
 #ifdef DEBUG
         switch (ins)
@@ -914,6 +914,14 @@ void emitter::emitIns_R_R_R(
             case INS_amominu_d:
             case INS_amomaxu_w:
             case INS_amomaxu_d:
+
+            case INS_sh1add:
+            case INS_sh2add:
+            case INS_sh3add:
+            case INS_add_uw:
+            case INS_sh1add_uw:
+            case INS_sh2add_uw:
+            case INS_sh3add_uw:
 
             case INS_rol:
             case INS_rolw:
@@ -1620,7 +1628,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     assert(params.callType < EC_COUNT);
     assert((params.callType != EC_FUNC_TOKEN) ||
            (params.ireg == REG_NA && params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
-    assert(params.callType < EC_INDIR_R || params.addr == NULL);
+    assert(params.callType < EC_INDIR_R || params.addr == nullptr || isValidSimm12((ssize_t)params.addr));
     assert(params.callType != EC_INDIR_R ||
            (params.ireg < REG_COUNT && params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
 
@@ -1726,7 +1734,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     // INS_OPTS_C: placeholders.  1/2/4-ins:
     //   if (callType == EC_INDIR_R)
-    //      jalr REG_R0/REG_RA, ireg, 0   <---- 1-ins
+    //      jalr REG_R0/REG_RA, ireg, offset   <---- 1-ins
     //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
     //     if reloc:
     //             //pc + offset_38bits       # only when reloc.
@@ -1750,6 +1758,12 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         regNumber reg_jalr = params.isJump ? REG_R0 : REG_RA;
         id->idReg4(reg_jalr);
         id->idReg3(params.ireg); // NOTE: for EC_INDIR_R, using idReg3.
+        id->idSmallCns(0);       // SmallCns will contain JALR's offset.
+        if (params.addr != nullptr)
+        {
+            // If addr is not NULL, it must contain JALR's offset, which is set to the lower 12 bits of address.
+            id->idSmallCns((size_t)params.addr);
+        }
         assert(params.xreg == REG_NA);
 
         id->idCodeSize(4);
@@ -1853,10 +1867,12 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
     assert(id->idIns() == INS_jalr);
     if (id->idIsCallRegPtr())
     { // EC_INDIR_R
+        ssize_t offset = id->idSmallCns();
+        assert(isValidSimm12(offset));
         code = emitInsCode(id->idIns());
         code |= (code_t)id->idReg4() << 7;
         code |= (code_t)id->idReg3() << 15;
-        // the offset default is 0;
+        code |= (code_t)offset << 20;
         emitOutput_Instr(dst, code);
     }
     else if (id->idIsReloc())
@@ -3970,28 +3986,36 @@ void emitter::emitDispInsName(
                         emitDispImmediate(imm12, !willPrintLoadImmValue);
                     }
                     return;
-                case 0x1:
+                case 0x1: // SLLIW, SLLI.UW, CLZW, CTZW, & CPOPW
                 {
+                    static constexpr unsigned kSlliwFunct7  = 0b0000000;
+                    static constexpr unsigned kSlliUwFunct6 = 0b000010;
+
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
-                    unsigned shamt  = imm12 & 0x1f; // 5 BITS for SHAMT in RISCV64
-                    switch (funct7)
+                    unsigned funct6 = (imm12 >> 6) & 0x3f;
+                    // SLLIW's instruction code's upper 7 bits have to be equal to zero
+                    if (funct7 == kSlliwFunct7)
                     {
-                        case 0b0110000:
-                        {
-                            static const char* names[] = {"clzw ", "ctzw ", "cpopw"};
-                            // shift amount is treated as funct additional opcode bits
-                            if (shamt >= ARRAY_SIZE(names))
-                                return emitDispIllegalInstruction(code);
-
-                            printf("%s          %s, %s\n", names[shamt], rd, rs1);
-                            return;
-                        }
-                        case 0b0000000:
-                            printf("slliw          %s, %s, %d\n", rd, rs1, shamt);
-                            return;
-
-                        default:
+                        printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
+                    }
+                    // SLLI.UW's instruction code's upper 6 bits have to be equal to 0b000010
+                    else if (funct6 == kSlliUwFunct6)
+                    {
+                        printf("slli.uw        %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
+                    }
+                    else if (funct7 == 0b0110000)
+                    {
+                        static const char* names[] = {"clzw ", "ctzw ", "cpopw"};
+                        // shift amount is treated as funct additional opcode bits
+                        unsigned shamt = imm12 & 0x1f; // 5 BITS for SHAMT in RISCV64
+                        if (shamt >= ARRAY_SIZE(names))
                             return emitDispIllegalInstruction(code);
+
+                        printf("%s          %s, %s\n", names[shamt], rd, rs1);
+                    }
+                    else
+                    {
+                        emitDispIllegalInstruction(code);
                     }
                 }
                     return;
@@ -4113,6 +4137,20 @@ void emitter::emitDispInsName(
                             return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0010000:
+                    switch (opcode3)
+                    {
+                        case 0x2: // SH1ADD
+                            printf("sh1add         %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x4: // SH2ADD
+                            printf("sh2add         %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x6: // SH3ADD
+                            printf("sh3add         %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                    }
+                    return;
                 case 0b0110000:
                     switch (opcode3)
                     {
@@ -4201,6 +4239,22 @@ void emitter::emitDispInsName(
                             return emitDispIllegalInstruction(code);
                     }
                     return;
+                case 0b0010000:
+                    switch (opcode3)
+                    {
+                        case 0x2: // SH1ADD.UW
+                            printf("sh1add.uw      %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x4: // SH2ADD.UW
+                            printf("sh2add.uw      %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x6: // SH3ADD.UW
+                            printf("sh3add.uw      %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                    return;
                 case 0b0110000:
                     switch (opcode3)
                     {
@@ -4215,12 +4269,28 @@ void emitter::emitDispInsName(
                     }
                     return;
                 case 0b0000100:
-                    // Currently only zext.h for this opcode2.
-                    // Note: zext.h is encoded as a pseudo for 'packw rd, rs1, zero' which is not in Zbb.
-                    if (opcode3 != 0b100 || rs2Num != REG_ZERO)
-                        return emitDispIllegalInstruction(code);
+                    switch (opcode3)
+                    {
+                        case 0b000: // ZEXT.W & ADD.UW
+                            if (rs2Num == REG_ZERO)
+                            {
+                                printf("zext.w         %s, %s\n", rd, rs1);
+                            }
+                            else
+                            {
+                                printf("add.uw         %s, %s, %s\n", rd, rs1, rs2);
+                            }
+                            return;
+                        case 0b100: // ZEXT.H
+                            // Note: zext.h is encoded as a pseudo for 'packw rd, rs1, zero' which is not in Zbb.
+                            if (rs2Num != REG_ZERO)
+                                return emitDispIllegalInstruction(code);
 
-                    printf("zext.h         %s, %s\n", rd, rs1);
+                            printf("zext.h         %s, %s\n", rd, rs1);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
                     return;
 
                 default:
@@ -4923,7 +4993,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_LCL_ADDR, GT_LEA));
+        assert(addr->OperIs(GT_LCL_ADDR, GT_LEA, GT_CNS_INT));
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -5080,6 +5150,17 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 {
                     emitIns_R_S(ins, attr, dataReg, lclNum, offset);
                 }
+            }
+            else if (addr->OperIs(GT_CNS_INT))
+            {
+                assert(memBase == indir->Addr());
+                ssize_t cns = addr->AsIntCon()->IconValue();
+
+                ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+                cns -= off;
+
+                emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
+                emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
             }
             else if (isValidSimm12(offset))
             {
