@@ -667,6 +667,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         throw new NotImplementedException();
     }
 
+    public string GetObjDir(Configuration config, string framework, string? projectDir = null)
+    {
+        EnsureProjectDirIsSet();
+        return Path.Combine(projectDir ?? ProjectDir!, "obj", config.ToString(), framework);
+    }
+
     [MemberNotNull(nameof(ProjectDir))]
     protected void EnsureProjectDirIsSet()
     {
