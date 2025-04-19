@@ -291,6 +291,8 @@ ExceptionFlags* ThreadExceptionState::GetFlags()
 #if !defined(DACCESS_COMPILE)
 
 #ifdef DEBUGGING_SUPPORTED
+static DebuggerExState   s_emptyDebuggerExState;
+
 DebuggerExState*    ThreadExceptionState::GetDebuggerState()
 {
 #ifdef FEATURE_EH_FUNCLETS
@@ -301,18 +303,27 @@ DebuggerExState*    ThreadExceptionState::GetDebuggerState()
     else
     {
         _ASSERTE(!"unexpected use of GetDebuggerState() when no exception in flight");
-#if defined(_MSC_VER)
-        #pragma warning(disable : 4640)
-#endif
-        static DebuggerExState   m_emptyDebuggerExState;
-
-#if defined(_MSC_VER)
-        #pragma warning(default : 4640)
-#endif
-        return &m_emptyDebuggerExState;
+        return &s_emptyDebuggerExState;
     }
 #else // FEATURE_EH_FUNCLETS
     return &(m_currentExInfo.m_DebuggerExState);
+#endif // FEATURE_EH_FUNCLETS
+}
+
+void ThreadExceptionState::SetDebuggerIndicatedFramePointer(LPVOID indicatedFramePointer)
+{
+    WRAPPER_NO_CONTRACT;
+#ifdef FEATURE_EH_FUNCLETS
+    if (m_pCurrentTracker)
+    {
+        m_pCurrentTracker->m_DebuggerExState.SetDebuggerIndicatedFramePointer(indicatedFramePointer);
+    }
+    else
+    {
+        _ASSERTE(!"unexpected use of SetDebuggerIndicatedFramePointer() when no exception in flight");
+    }
+#else // FEATURE_EH_FUNCLETS
+    m_currentExInfo.m_DebuggerExState.SetDebuggerIndicatedFramePointer(indicatedFramePointer);
 #endif // FEATURE_EH_FUNCLETS
 }
 

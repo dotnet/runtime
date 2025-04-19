@@ -1095,12 +1095,29 @@ BOOL Module::IsRuntimeWrapExceptionsStatusComputed()
     return (m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS);
 }
 
+BOOL Module::IsRuntimeWrapExceptionsDuringEH()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    // This method assumes that the runtime wrap exceptions status has already been computed.
+    // IsRuntimeWrapExceptionsStatusComputed() returns TRUE before calling this method, but
+    // that should be done as part of Module activation, so we shouldn't need to worry about that.
+    _ASSERTE(IsRuntimeWrapExceptionsStatusComputed());
+    return (m_dwPersistedFlags & WRAP_EXCEPTIONS) != 0;
+}
+
 BOOL Module::IsRuntimeWrapExceptions()
 {
     CONTRACTL
     {
         NOTHROW;
-        if (IsRuntimeWrapExceptionsStatusComputed()) GC_NOTRIGGER; else GC_TRIGGERS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END

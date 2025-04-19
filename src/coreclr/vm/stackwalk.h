@@ -616,13 +616,13 @@ public:
         CONTRACTL
         {
             MODE_ANY;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
             NOTHROW;
         }
         CONTRACTL_END
 
 #if defined(FEATURE_EH_FUNCLETS) && !defined(DACCESS_COMPILE)
-        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptions();
+        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptionsDuringEH();
 #endif // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE
     }
 
