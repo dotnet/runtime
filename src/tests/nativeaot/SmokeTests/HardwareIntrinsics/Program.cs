@@ -63,8 +63,12 @@ unsafe class Program
         bool? ExpectedBmi1 = false;
         bool? ExpectedBmi2 = false;
         bool? ExpectedAvxVnni = false;
+        bool? ExpectedAvxVnniInt8 = false;
+        bool? ExpectedAvxVnniInt16 = false;
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx10v2 = false;
+        bool? ExpectedAvx10v2V512 = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
@@ -91,8 +95,12 @@ unsafe class Program
         bool? ExpectedBmi1 = false;
         bool? ExpectedBmi2 = false;
         bool? ExpectedAvxVnni = false;
+        bool? ExpectedAvxVnniInt8 = false;
+        bool? ExpectedAvxVnniInt16 = false;
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx10v2 = false;
+        bool? ExpectedAvx10v2V512 = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
@@ -119,8 +127,12 @@ unsafe class Program
         bool? ExpectedBmi1 = null;
         bool? ExpectedBmi2 = null;
         bool? ExpectedAvxVnni = false; // TODO: Fix once opportunistic Avx2 is allowed
+        bool? ExpectedAvxVnniInt8 = false; // TODO: Fix once opportunistic Avx2 is allowed
+        bool? ExpectedAvxVnniInt16 = false; // TODO: Fix once opportunistic Avx2 is allowed
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx10v2 = false;
+        bool? ExpectedAvx10v2V512 = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
@@ -147,8 +159,12 @@ unsafe class Program
         bool? ExpectedBmi1 = null;
         bool? ExpectedBmi2 = null;
         bool? ExpectedAvxVnni = null;
+        bool? ExpectedAvxVnniInt8 = null;
+        bool? ExpectedAvxVnniInt16 = null;
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx10v2 = false;
+        bool? ExpectedAvx10v2V512 = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
@@ -175,13 +191,49 @@ unsafe class Program
         bool? ExpectedBmi1 = null;
         bool? ExpectedBmi2 = null;
         bool? ExpectedAvxVnni = null;
+        bool? ExpectedAvxVnniInt8 = null;
+        bool? ExpectedAvxVnniInt16 = null;
         bool? ExpectedAvx10v1 = null;
         bool? ExpectedAvx10v1V512 = null;
+        bool? ExpectedAvx10v2 = null;
+        bool? ExpectedAvx10v2V512 = null;
         bool? ExpectedAvx512F = true;
         bool? ExpectedAvx512BW = true;
         bool? ExpectedAvx512CD = true;
         bool? ExpectedAvx512DQ = true;
         bool? ExpectedAvx512Vbmi = null;
+        bool? ExpectedX86Serialize = null;
+        bool? ExpectedGfni = null;
+        bool? ExpectedGfniV256 = null;
+        bool? ExpectedGfniV512 = null;
+#elif AVX10v2_INTRINSICS
+        bool? ExpectedSse3 = true;
+        bool? ExpectedSsse3 = true;
+        bool? ExpectedAes = null;
+        bool? ExpectedLzcnt = null;
+        bool? ExpectedPclmulqdq = null;
+        bool? ExpectedPclmulqdqV256 = null;
+        bool? ExpectedPclmulqdqV512 = null;
+        bool? ExpectedSse41 = true;
+        bool? ExpectedSse42 = true;
+        bool? ExpectedPopcnt = null;
+        bool? ExpectedAvx = true;
+        bool? ExpectedAvx2 = true;
+        bool? ExpectedFma = true;
+        bool? ExpectedBmi1 = null;
+        bool? ExpectedBmi2 = null;
+        bool? ExpectedAvxVnni = null;
+        bool? ExpectedAvxVnniInt8 = true;
+        bool? ExpectedAvxVnniInt16 = true;
+        bool? ExpectedAvx10v1 = true;
+        bool? ExpectedAvx10v1V512 = true;
+        bool? ExpectedAvx10v2 = true;
+        bool? ExpectedAvx10v2V512 = true;
+        bool? ExpectedAvx512F = true;
+        bool? ExpectedAvx512BW = true;
+        bool? ExpectedAvx512CD = true;
+        bool? ExpectedAvx512DQ = true;
+        bool? ExpectedAvx512Vbmi = true;
         bool? ExpectedX86Serialize = null;
         bool? ExpectedGfni = null;
         bool? ExpectedGfniV256 = null;
@@ -260,11 +312,23 @@ unsafe class Program
         Check("AvxVnni", ExpectedAvxVnni, &AvxVnniIsSupported, AvxVnni.IsSupported, () => AvxVnni.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<byte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
         Check("AvxVnni.X64", ExpectedAvxVnni, &AvxVnniX64IsSupported, AvxVnni.X64.IsSupported, null);
 
+        Check("AvxVnniInt8", ExpectedAvxVnniInt8, &AvxVnniInt8IsSupported, AvxVnniInt8.IsSupported, () => AvxVnniInt8.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<sbyte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
+        Check("AvxVnniInt8.X64", ExpectedAvxVnniInt8, &AvxVnniInt8X64IsSupported, AvxVnniInt8.X64.IsSupported, null);
+
+        Check("AvxVnniInt16", ExpectedAvxVnniInt16, &AvxVnniInt16IsSupported, AvxVnniInt16.IsSupported, () => AvxVnniInt16.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<short>.Zero, Vector128<ushort>.Zero).Equals(Vector128<int>.Zero));
+        Check("AvxVnniInt16.X64", ExpectedAvxVnniInt16, &AvxVnniInt16X64IsSupported, AvxVnniInt16.X64.IsSupported, null);
+
         Check("Avx10v1", ExpectedAvx10v1, &Avx10v1IsSupported, Avx10v1.IsSupported, () => Avx10v1.Abs(Vector128<long>.Zero).Equals(Vector128<ulong>.Zero));
         Check("Avx10v1.X64", ExpectedAvx10v1, &Avx10v1X64IsSupported, Avx10v1.X64.IsSupported, null);
 
         Check("Avx10v1.V512", ExpectedAvx10v1V512, &Avx10v1V512IsSupported, Avx10v1.V512.IsSupported, () => Avx10v1.V512.Abs(Vector512<long>.Zero).Equals(Vector512<ulong>.Zero));
         Check("Avx10v1.V512.X64", ExpectedAvx10v1V512, &Avx10v1V512X64IsSupported, Avx10v1.V512.X64.IsSupported, null);
+
+        Check("Avx10v2", ExpectedAvx10v2, &Avx10v2IsSupported, Avx10v2.IsSupported, () => Avx10v2.MinMax(Vector128<double>.Zero, Vector128<double>.Zero, 0x00).Equals(Vector128<double>.Zero));
+        Check("Avx10v2.X64", ExpectedAvx10v2, &Avx10v2X64IsSupported, Avx10v2.X64.IsSupported, null);
+
+        Check("Avx10v2.V512", ExpectedAvx10v2V512, &Avx10v2V512IsSupported, Avx10v2.V512.IsSupported, () => Avx10v2.V512.MinMax(Vector512<double>.Zero, Vector512<double>.Zero, 0x00).Equals(Vector512<double>.Zero));
+        Check("Avx10v2.V512.X64", ExpectedAvx10v2V512, &Avx10v2V512X64IsSupported, Avx10v2.V512.X64.IsSupported, null);
 
         Check("Avx512F", ExpectedAvx512F, &Avx512FIsSupported, Avx512F.IsSupported, () => Avx512F.Abs(Vector512<int>.Zero).Equals(Vector512<uint>.Zero));
         Check("Avx512F.VL", ExpectedAvx512F, &Avx512FVLIsSupported, Avx512F.VL.IsSupported, null);
@@ -334,10 +398,18 @@ unsafe class Program
     static bool PopcntX64IsSupported() => Popcnt.X64.IsSupported;
     static bool AvxVnniIsSupported() => AvxVnni.IsSupported;
     static bool AvxVnniX64IsSupported() => AvxVnni.X64.IsSupported;
+    static bool AvxVnniInt8IsSupported() => AvxVnniInt8.IsSupported;
+    static bool AvxVnniInt8X64IsSupported() => AvxVnniInt8.X64.IsSupported;
+    static bool AvxVnniInt16IsSupported() => AvxVnniInt16.IsSupported;
+    static bool AvxVnniInt16X64IsSupported() => AvxVnniInt16.X64.IsSupported;
     static bool Avx10v1IsSupported() => Avx10v1.IsSupported;
     static bool Avx10v1X64IsSupported() => Avx10v1.X64.IsSupported;
     static bool Avx10v1V512IsSupported() => Avx10v1.V512.IsSupported;
     static bool Avx10v1V512X64IsSupported() => Avx10v1.V512.X64.IsSupported;
+    static bool Avx10v2IsSupported() => Avx10v2.IsSupported;
+    static bool Avx10v2X64IsSupported() => Avx10v2.X64.IsSupported;
+    static bool Avx10v2V512IsSupported() => Avx10v2.V512.IsSupported;
+    static bool Avx10v2V512X64IsSupported() => Avx10v2.V512.X64.IsSupported;
     static bool Avx512FIsSupported() => Avx512F.IsSupported;
     static bool Avx512FVLIsSupported() => Avx512F.VL.IsSupported;
     static bool Avx512FX64IsSupported() => Avx512F.X64.IsSupported;

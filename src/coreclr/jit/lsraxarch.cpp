@@ -2740,6 +2740,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_AVXVNNI_MultiplyWideningAndAdd:
             case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+            case NI_EVEX_MultiplyWideningAndAddSByteSByte:
+            case NI_EVEX_MultiplyWideningAndAddSByteByte:
+            case NI_EVEX_MultiplyWideningAndAddByteByte:
+            case NI_EVEX_MultiplyWideningAndAddSByteSByteSaturate:
+            case NI_EVEX_MultiplyWideningAndAddSByteByteSaturate:
+            case NI_EVEX_MultiplyWideningAndAddByteByteSaturate:
+            case NI_EVEX_MultiplyWideningAndAddInt16UInt16:
+            case NI_EVEX_MultiplyWideningAndAddUInt16UInt16:
+            case NI_EVEX_MultiplyWideningAndAddUInt16Int16:
+            case NI_EVEX_MultiplyWideningAndAddInt16UInt16Saturate:
+            case NI_EVEX_MultiplyWideningAndAddUInt16UInt16Saturate:
+            case NI_EVEX_MultiplyWideningAndAddUInt16Int16Saturate:
             {
                 assert(numArgs == 3);
 

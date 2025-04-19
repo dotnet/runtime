@@ -126,6 +126,8 @@ static bool IsFMAInstruction(instruction ins);
 static bool IsPermuteVar2xInstruction(instruction ins);
 static bool IsKMOVInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
+static bool IsAVXVNNIINT8Instruction(instruction ins);
+static bool IsAVXVNNIINT16Instruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
 static bool IsKInstructionWithLBit(instruction ins);

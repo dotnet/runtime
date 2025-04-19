@@ -35,6 +35,8 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_Vpclmulqdq = 0x200000,
     XArchIntrinsicConstants_Avx10v2 = 0x400000,
     XArchIntrinsicConstants_Gfni = 0x800000,
+    XArchIntrinsicConstants_AvxVnniInt8 = 0x01000000,
+    XArchIntrinsicConstants_AvxVnniInt16 = 0x02000000,
 };
 #endif // HOST_X86 || HOST_AMD64
 
