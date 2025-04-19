@@ -65,7 +65,8 @@ namespace
         GenerationContext(UnsafeAccessorKind kind, MethodDesc* pMD)
             : Kind{ kind }
             , Declaration{ pMD }
-            , DeclarationSig{ pMD }
+            , DeclarationSig{ pMD->GetSigPointer() }
+            , DeclarationMetaSig{ pMD }
             , TargetTypeSig{}
             , TargetType{}
             , IsTargetStatic{ false }
@@ -75,7 +76,9 @@ namespace
 
         UnsafeAccessorKind Kind;
         MethodDesc* Declaration;
-        MetaSig DeclarationSig;
+        SigPointer DeclarationSig;  // This is the official declaration signature. It may be modified
+                                    // to include the UnsafeAccessorTypeAttribute types.
+        MetaSig DeclarationMetaSig;
         SigPointer TargetTypeSig;
         TypeHandle TargetType;
         bool IsTargetStatic;
@@ -83,8 +86,189 @@ namespace
         FieldDesc* TargetField;
     };
 
+    void UpdateDeclarationSigWithTypes(GenerationContext& cxt, uint32_t translationsCount, MethodTable** translations)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(cxt.Declaration != NULL);
+        _ASSERTE(translationsCount != 0);
+        _ASSERTE(translations != NULL);
+
+        //
+        // Parsing the signature follows details defined in ECMA-335 - II.23.2.1
+        //
+
+        // Read the current signature and copy it, updating the
+        // types for the parameters that had UnsafeAccessorTypeAttribute.
+        SigPointer origSig = cxt.Declaration->GetSigPointer();
+
+        // We're going to be modifying the signature and we will be inserting
+        // ELEMENT_TYPE_INTERNAL instances. This will add an additional pointer
+        // size for each discovered attribute.
+        SigBuilder newSig;
+
+        uint32_t callConvDecl;
+        IfFailThrow(origSig.GetCallingConvInfo(&callConvDecl));
+        newSig.AppendByte((BYTE)(callConvDecl & IMAGE_CEE_CS_CALLCONV_MASK));
+
+        uint32_t declGenericCount = 0;
+        if (callConvDecl & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        {
+            IfFailThrow(origSig.GetData(&declGenericCount));
+            newSig.AppendData(declGenericCount);
+        }
+
+        uint32_t declArgCount;
+        IfFailThrow(origSig.GetData(&declArgCount));
+        newSig.AppendData(declArgCount);
+
+        _ASSERTE(declArgCount + 1 == translationsCount);
+
+        // Now we can copy over the return type and arguments.
+        // The format for the return type is the same as the arguments,
+        // except return parameters can be ELEMENT_TYPE_VOID.
+        for (uint32_t i = 0; i < translationsCount; ++i)
+        {
+            // Copy over any modopts or modreqs.
+            origSig.CopyModOptsReqs(&newSig);
+
+            MethodTable* newType = translations[i];
+            if (newType == NULL)
+            {
+                // Copy the original parameter and continue.
+                origSig.CopyExactlyOne(&newSig);
+                continue;
+            }
+
+            // We have a new type to insert. We need to update this parameter.
+            CorElementType currTypeElem;
+            IfFailThrow(origSig.GetElemType(&currTypeElem));
+            if (currTypeElem == ELEMENT_TYPE_BYREF)
+            {
+                newSig.AppendElementType(currTypeElem);
+                IfFailThrow(origSig.GetElemType(&currTypeElem));
+            }
+
+            // Validate the parameter resolves correctly. There is only one acceptable mappings:
+            //     ELEMENT_TYPE_OBJECT - if new type is a reference type.
+            _ASSERTE(!newType->IsValueType());
+            CorElementType expectedType = ELEMENT_TYPE_OBJECT;
+
+            if (expectedType != currTypeElem)
+                ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
+
+            // Append the new type to the signature.
+            newSig.AppendElementType(ELEMENT_TYPE_INTERNAL);
+            newSig.AppendPointer(newType);
+        }
+
+        // Create a copy of the new signature and store it on the context.
+        DWORD newSigLen;
+        void* newSigRaw = newSig.GetSignature((DWORD*)&newSigLen);
+
+        // Allocate the signature memory on the loader allocator associated
+        // with the declaration method.
+        void* newSigAlloc = cxt.Declaration->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(newSigLen));
+        memcpy(newSigAlloc, newSigRaw, newSigLen);
+
+        // Update the declaration signature with the new signature.
+        cxt.DeclarationSig = SigPointer{ (PCCOR_SIGNATURE)newSigAlloc, newSigLen };
+        SigTypeContext tmpContext( cxt.Declaration );
+        cxt.DeclarationMetaSig = MetaSig{ (PCCOR_SIGNATURE)newSigAlloc, newSigLen, cxt.Declaration->GetModule(), &tmpContext };
+    }
+
+    void ProcessUnsafeAccessorTypeAttributes(GenerationContext& cxt)
+    {
+        STANDARD_VM_CONTRACT;
+
+        // Acquire attribute name to search for.
+        const char* typeAttrName = GetWellKnownAttributeName(WellKnownAttribute::UnsafeAccessorTypeAttribute);
+
+        uint32_t attrCount = 0;
+
+        // Allocate memory to store the updated types.
+        NewArrayHolder<MethodTable*> heapAlloc;
+        MethodTable* stackAlloc[12]; // Use the stack alloc the majority of the time.
+        MethodTable** translations = stackAlloc;
+
+        // Determine the max parameter count. +1 for the return value, which is always index zero.
+        const uint32_t totalParamCount = cxt.DeclarationMetaSig.NumFixedArgs() + 1;
+
+        // Inspect all parameters to the declaration method for UnsafeAccessorTypeAttribute.
+        IMDInternalImport *pInternalImport = cxt.Declaration->GetModule()->GetMDImport();
+        HENUMInternalHolder hEnumParams(pInternalImport);
+        hEnumParams.EnumInit(mdtParamDef, cxt.Declaration->GetMemberDef());
+        mdParamDef currParamDef = mdParamDefNil;
+        while (hEnumParams.EnumNext(&currParamDef))
+        {
+            const void *pData;
+            ULONG cbData;
+            HRESULT hr = IfFailThrow(pInternalImport->GetCustomAttributeByName(currParamDef, typeAttrName, &pData, &cbData));
+            if (hr != S_OK)
+                continue;
+
+            // The first time we find an attribute, we need to initialize
+            // the translations array and might need to allocate a larger array
+            // to store the translations.
+            if (attrCount == 0)
+            {
+                if (totalParamCount > ARRAY_SIZE(stackAlloc))
+                {
+                    heapAlloc = new MethodTable*[totalParamCount];
+                    translations = heapAlloc;
+                }
+                memset(translations, 0, sizeof(translations[0]) * totalParamCount);
+            }
+
+            // Parse the attribute data.
+            CustomAttributeParser cap(pData, cbData);
+            IfFailThrow(cap.ValidateProlog());
+            LPCUTF8 typeString;
+            ULONG typeStringLen;
+            IfFailThrow(cap.GetNonNullString(&typeString, &typeStringLen));
+
+            // Pass the string in the attribute to Type.GetType(String) and attempt to load the type.
+            MethodTable* targetType = NULL;
+            {
+                GCX_COOP();
+                MethodDescCallSite getMethodTableFromTypeString(METHOD__CLASS__GET_METHODTABLE_FROM_TYPE_STRING);
+
+                ARG_SLOT args[] =
+                {
+                    PtrToArgSlot(typeString),
+                    PtrToArgSlot(typeStringLen)
+                };
+                targetType = (MethodTable*)getMethodTableFromTypeString.Call_RetI(args);
+            }
+
+            if (targetType == NULL)
+                ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
+
+            // Future versions of the runtime may support
+            // UnsafeAccessorTypeAttribute on value types.
+            if (targetType->IsValueType())
+                ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE_VALUETYPE);
+
+            USHORT seq;
+            DWORD attr;
+            LPCSTR paramName;
+            IfFailThrow(pInternalImport->GetParamDefProps(currParamDef, &seq, &attr, &paramName));
+
+            if (seq >= totalParamCount)
+                ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
+
+            // Store the MethodTable for the loaded type at the sequence number for the parameter.
+            translations[seq] = targetType;
+            attrCount++;
+        }
+
+        // Update the declaration signatures if any instances of UnsafeAccessorTypeAttribute were found.
+        if (attrCount != 0)
+            UpdateDeclarationSigWithTypes(cxt, totalParamCount, translations);
+    }
+
     TypeHandle ValidateTargetType(TypeHandle targetTypeMaybe, CorElementType targetFromSig)
     {
+        STANDARD_VM_CONTRACT;
         TypeHandle targetType = targetTypeMaybe.IsByRef()
             ? targetTypeMaybe.GetTypeParam()
             : targetTypeMaybe;
@@ -113,7 +297,7 @@ namespace
 
         PCCOR_SIGNATURE pSig1;
         DWORD cSig1;
-        cxt.Declaration->GetSig(&pSig1, &cSig1);
+        cxt.DeclarationSig.GetSignature(&pSig1, &cSig1);
         PCCOR_SIGNATURE pEndSig1 = pSig1 + cSig1;
         ModuleBase* pModule1 = cxt.Declaration->GetModule();
         const Substitution* pSubst1 = NULL;
@@ -364,7 +548,7 @@ namespace
 
         PCCOR_SIGNATURE pSig1;
         DWORD cSig1;
-        cxt.Declaration->GetSig(&pSig1, &cSig1);
+        cxt.DeclarationSig.GetSignature(&pSig1, &cSig1);
         PCCOR_SIGNATURE pEndSig1 = pSig1 + cSig1;
         ModuleBase* pModule1 = cxt.Declaration->GetModule();
         const Substitution* pSubst1 = NULL;
@@ -496,7 +680,7 @@ namespace
 
         ILStubLinker sl(
             cxt.Declaration->GetModule(),
-            cxt.Declaration->GetSignature(),
+            cxt.Declaration->GetSignature(), // Must be the MethodDesc's declaration signature, not the DeclarationSig field.
             &genericContext,
             cxt.TargetMethod,
             (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE);
@@ -508,13 +692,13 @@ namespace
         // used to look up the target member to access and ignored
         // during dispatch.
         UINT beginIndex = cxt.IsTargetStatic ? 1 : 0;
-        UINT stubArgCount = cxt.DeclarationSig.NumFixedArgs();
+        UINT stubArgCount = cxt.DeclarationMetaSig.NumFixedArgs();
         for (UINT i = beginIndex; i < stubArgCount; ++i)
             pCode->EmitLDARG(i);
 
         // Provide access to the target member
         UINT targetArgCount = stubArgCount - beginIndex;
-        UINT targetRetCount = cxt.DeclarationSig.IsReturnTypeVoid() ? 0 : 1;
+        UINT targetRetCount = cxt.DeclarationMetaSig.IsReturnTypeVoid() ? 0 : 1;
         switch (cxt.Kind)
         {
         case UnsafeAccessorKind::Constructor:
@@ -701,6 +885,9 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
 
     GenerationContext context{ kind, this };
 
+    // Parse the signature and check for instances of UnsafeAccessorTypeAttribute.
+    ProcessUnsafeAccessorTypeAttributes(context);
+
     // Parse the signature to determine the type to use:
     //  * Constructor access - examine the return type
     //  * Instance member access - examine type of first parameter
@@ -709,17 +896,17 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     CorElementType retCorType;
     TypeHandle firstArgType;
     CorElementType firstArgCorType = ELEMENT_TYPE_END;
-    retCorType = context.DeclarationSig.GetReturnType();
-    retType = context.DeclarationSig.GetRetTypeHandleThrowing();
-    UINT argCount = context.DeclarationSig.NumFixedArgs();
+    retCorType = context.DeclarationMetaSig.GetReturnType();
+    retType = context.DeclarationMetaSig.GetRetTypeHandleThrowing();
+    UINT argCount = context.DeclarationMetaSig.NumFixedArgs();
     if (argCount > 0)
     {
-        context.DeclarationSig.NextArg();
+        context.DeclarationMetaSig.NextArg();
 
         // Get the target type signature and resolve to a type handle.
-        context.TargetTypeSig = context.DeclarationSig.GetArgProps();
+        context.TargetTypeSig = context.DeclarationMetaSig.GetArgProps();
         (void)context.TargetTypeSig.PeekElemType(&firstArgCorType);
-        firstArgType = context.DeclarationSig.GetLastTypeHandleThrowing();
+        firstArgType = context.DeclarationMetaSig.GetLastTypeHandleThrowing();
     }
 
     // Using the kind type, perform the following:
@@ -732,13 +919,13 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         // we don't know the type to construct.
         // Types should not be parameterized (that is, byref).
         // The name is defined by the runtime and should be empty.
-        if (context.DeclarationSig.IsReturnTypeVoid() || retType.IsByRef() || !name.IsEmpty())
+        if (context.DeclarationMetaSig.IsReturnTypeVoid() || retType.IsByRef() || !name.IsEmpty())
         {
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }
 
         // Get the target type signature from the return type.
-        context.TargetTypeSig = context.DeclarationSig.GetReturnProps();
+        context.TargetTypeSig = context.DeclarationMetaSig.GetReturnProps();
         context.TargetType = ValidateTargetType(retType, retCorType);
         if (!TrySetTargetMethod(context, ".ctor"))
             MemberLoader::ThrowMissingMethodException(context.TargetType.AsMethodTable(), ".ctor");
@@ -768,7 +955,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     case UnsafeAccessorKind::Field:
     case UnsafeAccessorKind::StaticField:
         // Field access requires a single argument for target type and a return type.
-        if (argCount != 1 || firstArgType.IsNull() || context.DeclarationSig.IsReturnTypeVoid())
+        if (argCount != 1 || firstArgType.IsNull() || context.DeclarationMetaSig.IsReturnTypeVoid())
         {
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
         }

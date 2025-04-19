@@ -129,6 +129,8 @@ public:
 
         void ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
         void ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
+        void CopyModOptsReqs(SigBuilder * pSigBuilder);
+        void CopyExactlyOne(SigBuilder * pSigBuilder);
         void CopySignature(Module* pSigModule, SigBuilder * pSigBuilder, BYTE additionalCallConv);
 
     //=========================================================================

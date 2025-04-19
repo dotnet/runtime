@@ -387,6 +387,47 @@ void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *
     }
 }
 
+void SigPointer::CopyModOptsReqs(SigBuilder * pSigBuilder)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    CorElementType typ;
+    IfFailThrow(PeekElemType(&typ));
+    if (typ == ELEMENT_TYPE_CMOD_REQD || typ == ELEMENT_TYPE_CMOD_OPT)
+    {
+        // Skip the custom modifier
+        IfFailThrow(GetByte(NULL));
+
+        // Get the encoded token.
+        uint32_t token;
+        IfFailThrow(GetToken(&token));
+
+        // Append the custom modifier and encoded token to the signature.
+        pSigBuilder->AppendElementType(typ);
+        pSigBuilder->AppendToken(token);
+    }
+}
+
+void SigPointer::CopyExactlyOne(SigBuilder* pSigBuilder)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    intptr_t beginExactlyOne = (intptr_t)m_ptr;
+    IfFailThrow(SkipExactlyOne());
+    intptr_t endExactlyOne = (intptr_t)m_ptr;
+    pSigBuilder->AppendBlob((const PVOID)(beginExactlyOne), endExactlyOne - beginExactlyOne);
+}
+
 void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE additionalCallConv)
 {
     CONTRACTL
@@ -3905,6 +3946,38 @@ MetaSig::CompareElementType(
                         tkOther,
                         ClassLoader::ReturnNullIfNotFound,
                         ClassLoader::FailIfUninstDefOrRef);
+
+                    return (hInternal == hOtherType);
+                }
+                case ELEMENT_TYPE_GENERICINST:
+                {
+                    // Due to how SigPointer works, we need to fiddle with the signature pointer
+                    // to get the ELEMENT_TYPE_GENERICINST element type back in the stream.
+                    // Since we know the size of the element type, we can just subtract one byte from the
+                    // signature pointer to get the correct value.
+                    PCCOR_SIGNATURE genericInstSig;
+                    uint32_t genericInstSigLen;
+                    if (Type1 == ELEMENT_TYPE_INTERNAL)
+                    {
+                        const BYTE* sigRaw = (const BYTE*)pSig2;
+                        genericInstSig = (PCCOR_SIGNATURE)(sigRaw - 1);
+                        genericInstSigLen = (uint32_t)((intptr_t)pEndSig2 - (intptr_t)genericInstSig);
+                    }
+                    else
+                    {
+                        const BYTE* sigRaw = (const BYTE*)pSig1;
+                        genericInstSig = (PCCOR_SIGNATURE)(sigRaw - 1);
+                        genericInstSigLen = (uint32_t)((intptr_t)pEndSig1 - (intptr_t)genericInstSig);
+                    }
+                    // Assert we are in the same state as before.
+                    _ASSERTE(*genericInstSig == ELEMENT_TYPE_GENERICINST);
+
+                    SigPointer inst{ genericInstSig, genericInstSigLen };
+
+                    SigTypeContext dummyContext;
+                    TypeHandle hOtherType = inst.GetTypeHandleThrowing(
+                        pOtherModule,
+                        &dummyContext);
 
                     return (hInternal == hOtherType);
                 }

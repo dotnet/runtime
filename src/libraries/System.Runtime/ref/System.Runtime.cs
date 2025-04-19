@@ -14009,6 +14009,12 @@ namespace System.Runtime.CompilerServices
         Field = 3,
         StaticField = 4,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple=false, Inherited=false)]
+    public sealed partial class UnsafeAccessorTypeAttribute : System.Attribute
+    {
+        public UnsafeAccessorTypeAttribute(string typeName) { }
+        public string TypeName { get { throw null; } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class UnsafeValueTypeAttribute : System.Attribute
     {
