@@ -432,6 +432,11 @@
         <target state="translated">'StringMarshalling' 和 'StringMarshallingCustomType' 的設定必須和基底 COM 介面相符。</target>
         <note />
       </trans-unit>
+      <trans-unit id="GenericDelegatesNotSupported">
+        <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
+        <target state="new">Marshalling a generic delegate is not supported. Consider using a function pointer instead.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
         <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
         <target state="translated">封送處理器類型必須是封閉式泛型或具有與受控類型相同的泛型參數數目，因此發出的程式碼可以使用特定的具現化。</target>
