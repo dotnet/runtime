@@ -33,56 +33,5 @@ namespace Microsoft.Interop
             details = null;
             return true;
         }
-
-        /// <summary>
-        /// Gets the fully qualified metadata name for a given symbol.
-        /// </summary>
-        /// <param name="symbol">The input <see cref="ITypeSymbol"/> instance.</param>
-        public static string GetFullyQualifiedMetadataName(this ITypeSymbol symbol)
-        {
-            StringBuilder builder = new();
-
-            static void BuildFrom(ISymbol? symbol, StringBuilder builder)
-            {
-                switch (symbol)
-                {
-                    // Namespaces that are nested also append a leading '.'
-                    case INamespaceSymbol { ContainingNamespace.IsGlobalNamespace: false }:
-                        BuildFrom(symbol.ContainingNamespace, builder);
-                        builder.Append('.');
-                        builder.Append(symbol.MetadataName);
-                        break;
-
-                    // Other namespaces (ie. the one right before global) skip the leading '.'
-                    case INamespaceSymbol { IsGlobalNamespace: false }:
-                        builder.Append(symbol.MetadataName);
-                        break;
-
-                    // Types with no namespace just have their metadata name directly written
-                    case ITypeSymbol { ContainingSymbol: INamespaceSymbol { IsGlobalNamespace: true } }:
-                        builder.Append(symbol.MetadataName);
-                        break;
-
-                    // Types with a containing non-global namespace also append a leading '.'
-                    case ITypeSymbol { ContainingSymbol: INamespaceSymbol namespaceSymbol }:
-                        BuildFrom(namespaceSymbol, builder);
-                        builder.Append('.');
-                        builder.Append(symbol.MetadataName);
-                        break;
-
-                    // Nested types append a leading '+'
-                    case ITypeSymbol { ContainingSymbol: ITypeSymbol typeSymbol }:
-                        BuildFrom(typeSymbol, builder);
-                        builder.Append('+');
-                        builder.Append(symbol.MetadataName);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            BuildFrom(symbol, builder);
-            return builder.ToString();
-        }
     }
 }
