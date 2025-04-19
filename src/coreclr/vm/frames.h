@@ -1041,8 +1041,8 @@ typedef DPTR(class SoftwareExceptionFrame) PTR_SoftwareExceptionFrame;
 class SoftwareExceptionFrame : public Frame
 {
     TADDR                           m_ReturnAddress;
-    T_CONTEXT                       m_Context;
     T_KNONVOLATILE_CONTEXT_POINTERS m_ContextPointers;
+    T_CONTEXT                       m_Context;
 
 public:
 #ifndef DACCESS_COMPILE
