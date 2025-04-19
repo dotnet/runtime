@@ -15,7 +15,6 @@ namespace Microsoft.Interop
     internal sealed record GeneratedComInterfaceData : InteropAttributeData
     {
         public ComInterfaceOptions Options { get; init; }
-        public ManagedTypeInfo? ExceptionToUnmanagedMarshaller { get; init; }
         public static GeneratedComInterfaceData From(GeneratedComInterfaceCompilationData generatedComInterfaceAttr)
             => new GeneratedComInterfaceData() with
             {
@@ -26,9 +25,6 @@ namespace Microsoft.Interop
                     ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(generatedComInterfaceAttr.StringMarshallingCustomType)
                     : null,
                 Options = generatedComInterfaceAttr.Options,
-                ExceptionToUnmanagedMarshaller = generatedComInterfaceAttr.ExceptionToUnmanagedMarshaller is not null
-                    ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(generatedComInterfaceAttr.ExceptionToUnmanagedMarshaller)
-                    : null,
             };
     }
 

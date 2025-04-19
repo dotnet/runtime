@@ -293,7 +293,6 @@ namespace Microsoft.Interop
             GeneratedComInterfaceCompilationData attrSymbolInfo,
             [NotNullWhen(false)] out DiagnosticInfo? exceptionToUnmanagedMarshallerDiagnostic)
         {
-            GeneratedComInterfaceData attrInfo = GeneratedComInterfaceData.From(attrSymbolInfo);
             if (attrSymbolInfo.ExceptionToUnmanagedMarshaller is INamedTypeSymbol exceptionToUnmanagedMarshallerType)
             {
                 if (!exceptionToUnmanagedMarshallerType.IsAccessibleFromFileScopedClass(out var details))
@@ -301,7 +300,7 @@ namespace Microsoft.Interop
                     exceptionToUnmanagedMarshallerDiagnostic = DiagnosticInfo.Create(
                         GeneratorDiagnostics.ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode,
                         syntax.Identifier.GetLocation(),
-                        attrInfo.ExceptionToUnmanagedMarshaller.FullTypeName.Replace(TypeNames.GlobalAlias, ""),
+                        exceptionToUnmanagedMarshallerType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace(TypeNames.GlobalAlias, ""),
                         details);
                     return false;
                 }
