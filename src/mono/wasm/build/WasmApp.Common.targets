@@ -718,7 +718,7 @@
       DisableParallelAot="$(DisableParallelAot)"
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"
-      UseDwarfDebug="$(WasmNativeDebugSymbols)"
+      UseDwarfDebug="false"
       LLVMPath="$(_WasmLLVMPathForAOT)"
       CollectTrimmingEligibleMethods="$(WasmStripILAfterAOT)"
       TrimmingEligibleMethodsOutputDirectory="$(_WasmIntermediateOutputPath)tokens"
