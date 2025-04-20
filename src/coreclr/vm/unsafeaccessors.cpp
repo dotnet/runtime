@@ -230,8 +230,6 @@ namespace
             StackSString typeStringUtf8{ SString::Utf8, typeString, typeStringLen };
 
             // Pass the string in the attribute to similar logic as Type.GetType(String).
-            // If the type is collectible we need to create a reference between the requesting
-            // assembly and type. See RuntimeType.GetMethodTableFromTypeString().
             // The below API creates a dependency between the returned type and the requesting
             // assembly for the purposes of lifetime tracking of collectible types.
             TypeHandle typeHandle = TypeName::GetTypeReferencedByCustomAttribute(
