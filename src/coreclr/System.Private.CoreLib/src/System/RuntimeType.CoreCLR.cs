@@ -1747,18 +1747,6 @@ namespace System
 
         #region Internal
 
-        [RequiresUnreferencedCode("The target type might not exist")]
-        internal static unsafe IntPtr GetMethodTableFromTypeString(void* utf8TypeString, int utf8TypeStringLen)
-        {
-            string typeNameMaybe = new((sbyte*)utf8TypeString, 0, utf8TypeStringLen);
-            RuntimeType type = (RuntimeType)Type.GetType(typeNameMaybe, throwOnError: true)!;
-
-            // See VM logic for UnsafeAccessorTypeAttribute. If this type is collectible, a connection
-            // will be made between this type and the assembly declaring the UnsafeAccessorAttribute
-            // method.
-            return (IntPtr)type.GetNativeTypeHandle().AsMethodTable();
-        }
-
         // Returns the type from which the current type directly inherits from (without reflection quirks).
         // The parent type is null for interfaces, pointers, byrefs and generic parameters.
         internal unsafe RuntimeType? GetParentType()

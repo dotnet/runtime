@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "customattribute.h"
+#include "typeparse.h"
 
 namespace
 {
@@ -226,38 +227,24 @@ namespace
             ULONG typeStringLen;
             IfFailThrow(cap.GetNonNullString(&typeString, &typeStringLen));
 
-            // Pass the string in the attribute to Type.GetType(String) and attempt to load the type.
-            MethodTable* targetType = NULL;
-            {
-                GCX_COOP();
-                MethodDescCallSite getMethodTableFromTypeString(METHOD__CLASS__GET_METHODTABLE_FROM_TYPE_STRING);
+            StackSString typeStringUtf8{ SString::Utf8, typeString, typeStringLen };
 
-                ARG_SLOT args[] =
-                {
-                    PtrToArgSlot(typeString),
-                    PtrToArgSlot(typeStringLen)
-                };
-                targetType = (MethodTable*)getMethodTableFromTypeString.Call_RetI(args);
+            // Pass the string in the attribute to similar logic as Type.GetType(String).
+            // If the type is collectible we need to create a reference between the requesting
+            // assembly and type. See RuntimeType.GetMethodTableFromTypeString().
+            // The below API creates a dependency between the returned type and the requesting
+            // assembly for the purposes of lifetime tracking of collectible types.
+            TypeHandle typeHandle = TypeName::GetTypeReferencedByCustomAttribute(
+                typeStringUtf8.GetUnicode(),
+                cxt.Declaration->GetAssembly());
+            _ASSERTE(!typeHandle.IsNull());
 
-                if (targetType == NULL)
-                    ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
+            MethodTable* targetType = typeHandle.AsMethodTable();
 
-                // Future versions of the runtime may support
-                // UnsafeAccessorTypeAttribute on value types.
-                if (targetType->IsValueType())
-                    ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE_VALUETYPE);
-
-                // If the type is collectible create a reference between the loader
-                // allocators. See RuntimeType.GetMethodTableFromTypeString().
-                if (targetType->Collectible())
-                {
-                    if (!cxt.Declaration->GetAssembly()->IsCollectible())
-                        COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
-
-                    PTR_LoaderAllocator typeLoaderAllocator = targetType->GetLoaderAllocator();
-                    cxt.Declaration->GetLoaderAllocator()->EnsureReference(typeLoaderAllocator);
-                }
-            }
+            // Future versions of the runtime may support
+            // UnsafeAccessorTypeAttribute on value types.
+            if (targetType->IsValueType())
+                ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE_VALUETYPE);
 
             USHORT seq;
             DWORD attr;
