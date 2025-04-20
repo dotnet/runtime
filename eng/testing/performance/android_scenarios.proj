@@ -41,7 +41,7 @@
     </HelixWorkItem>
     <HelixWorkItem Include="Build Time - Android HelloWorld">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>cd $(ScenarioDirectory)helloandroid;copy %HELIX_WORKITEM_ROOT%\androidHelloWorldBinlog\msbuild.binlog .</PreCommands>
+      <PreCommands>cd $(ScenarioDirectory)helloandroid;copy %HELIX_WORKITEM_ROOT%\androidHelloWorldBinlog\*\msbuild.binlog .</PreCommands>
       <Command>$(Python) test.py devicebuild --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs) --binlog-path ./msbuild.binlog</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
