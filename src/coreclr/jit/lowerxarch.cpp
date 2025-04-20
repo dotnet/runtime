@@ -3875,6 +3875,28 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                 }
 
                 assert(varTypeIsMask(condition));
+
+                // The TernaryLogic node normalizes small SIMD base types on import. To optimize
+                // to BlendVariableMask, we need to "un-normalize". We no longer have the original
+                // base type, so we use the mask base type instead.
+                NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+                assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId));
+
+                // The condition mask element size is expected to be the same size as the TernaryLogic
+                // node element size, unless the condition element size is short, in which case the
+                // TernaryLogic node element size would have been normalized.
+                // However, there is code, such as for double->int conversions, that generates a 'double'
+                // base type mask for a TernaryLogic node with base type 'int'. That works because it only
+                // cares about the '0' elem, as the result will be cast to scalar.
+                var_types conditionBaseType = condition->AsHWIntrinsic()->GetSimdBaseType();
+                uint32_t  conditionElemSize = genTypeSize(conditionBaseType);
+                uint32_t  elemSize          = genTypeSize(simdBaseType);
+                if (varTypeIsSmall(conditionBaseType) && (conditionElemSize < elemSize))
+                {
+                    CorInfoType simdBaseJitTypeCondition = condition->AsHWIntrinsic()->GetSimdBaseJitType();
+                    node->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitTypeCondition);
+                }
+
                 node->ResetHWIntrinsicId(NI_EVEX_BlendVariableMask, comp, selectFalse, selectTrue, condition);
                 BlockRange().Remove(op4);
                 break;
