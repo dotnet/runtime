@@ -169,13 +169,15 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
         return true;
     }
 
+#ifdef DECODE_OLD_FORMATS
     // Decode the offset to the PSPSym.
     // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before any stack allocation on X64 (InitialSP).
-    if (m_headerFlags & GC_INFO_HAS_PSP_SYM)
+    if (Version() < 4 && (m_headerFlags & GC_INFO_HAS_PSP_SYM))
     {
         m_PSPSymStackSlot = GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::PSP_SYM_STACK_SLOT_ENCBASE));
     }
     else
+#endif
     {
         m_PSPSymStackSlot = NO_PSP_SYM;
     }
