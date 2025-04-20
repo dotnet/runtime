@@ -236,6 +236,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(GetValidNames))]
+        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
         public void Ctor_ValidName(string name)
         {
             bool createdNew;
@@ -386,6 +387,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(NamePrefixes_MemberData))]
+        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
         public void NameOptionsApiCompatibilityTest(string namePrefix)
         {
             string name = Guid.NewGuid().ToString("N");
@@ -447,6 +449,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(NamePrefixAndOptionsCompatibilityTest_MemberData))]
+        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
         public void NamePrefixAndOptionsCompatibilityTest(bool currentUserOnly, bool currentSessionOnly, string namePrefix)
         {
             string name = namePrefix + Guid.NewGuid().ToString("N");
@@ -478,6 +481,7 @@ namespace System.Threading.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Windows Nano Server and Server Core apparently use the same namespace for the Local\ and Global\ prefixes
         [MemberData(nameof(NameNamespaceTests_MemberData))]
+        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
         public void NameNamespaceTest(
             bool create_currentUserOnly,
             bool create_currentSessionOnly,
@@ -592,6 +596,7 @@ namespace System.Threading.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(AbandonExisting_MemberData))]
+        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
         public void AbandonExisting(
             string name,
             WaitHandleWaitType waitType,
@@ -845,6 +850,7 @@ namespace System.Threading.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/96191", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
         public void NamedMutex_ThreadExitDisposeRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
@@ -906,6 +912,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");

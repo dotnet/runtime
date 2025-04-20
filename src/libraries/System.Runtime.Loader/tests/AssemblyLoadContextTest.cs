@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -106,7 +107,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Throws<FileNotFoundException>(() => loadContext.LoadFromAssemblyName(asmName));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Corelib does not exist on disc for Browser builds")]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
