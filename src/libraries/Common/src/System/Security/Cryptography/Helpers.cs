@@ -113,17 +113,48 @@ namespace Internal.Cryptography
             };
         }
 
+        internal static bool HashAlgorithmRequired(string? keyAlgorithm)
+        {
+            // This list could either be written as "ML-DSA and friends return false",
+            // or "RSA and friends return true".
+            //
+            // The consequences of returning true is that the hashAlgorithm parameter
+            // gets pre-validated to not be null or empty, which means false positives
+            // impact new ML-DSA-like algorithms.
+            //
+            // The consequences of returning false is that the hashAlgorithm parameter
+            // is not pre-validated.  That just means that in a false negative the user
+            // gets probably the same exception, but from a different callstack.
+            //
+            // False positives or negatives are not possible with the simple Build that takes
+            // only an X509Certificate2, as we control the destiny there entirely, it's only
+            // for the power user scenario of the X509SignatureGenerator that this is a concern.
+            //
+            // Since the false-positive is worse than the false-negative, the list is written
+            // as explicit-true, implicit-false.
+            return keyAlgorithm switch
+            {
+                Oids.Rsa or
+                Oids.RsaPss or
+                Oids.EcPublicKey or
+                Oids.Dsa => true,
+                _ => false,
+            };
+        }
+
         internal static CryptographicException CreateAlgorithmUnknownException(AsnWriter encodedId)
         {
 #if NET10_0_OR_GREATER
-            return encodedId.Encode(static encoded =>
-                new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encoded))));
+            return encodedId.Encode(static encoded => CreateAlgorithmUnknownException(Convert.ToHexString(encoded)));
 #else
-            return new CryptographicException(
-                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier,
-                HexConverter.ToString(encodedId.Encode(), HexConverter.Casing.Upper)));
+            return CreateAlgorithmUnknownException(HexConverter.ToString(encodedId.Encode(), HexConverter.Casing.Upper));
 #endif
+        }
+
+        internal static CryptographicException CreateAlgorithmUnknownException(string algorithmId)
+        {
+            throw new CryptographicException(
+                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, algorithmId));
         }
     }
 }

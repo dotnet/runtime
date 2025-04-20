@@ -4,6 +4,33 @@
 using System;
 using System.Runtime.CompilerServices;
 
+public interface ITest
+{
+    public int VirtualMethod();
+}
+
+public class BaseClass : ITest
+{
+    public int NonVirtualMethod()
+    {
+        return 0xbaba;
+    }
+
+    public virtual int VirtualMethod()
+    {
+        return 0xbebe;
+    }
+}
+
+public class DerivedClass : BaseClass
+{
+    public override int VirtualMethod()
+    {
+        return 0xdede;
+    }
+
+}
+
 public struct MyStruct
 {
     public int a;
@@ -69,6 +96,10 @@ public class InterpreterTest
 //            Environment.FailFast(null);
 //        if (!TestSpecialFields())
 //            Environment.FailFast(null);
+        if (!TestFloat())
+            Environment.FailFast(null);
+//        if (!TestVirtual())
+//          Environment.FailFast(null);
     }
 
     public static int Mul4(int a, int b, int c, int d)
@@ -184,6 +215,49 @@ public class InterpreterTest
         if (sum != 33)
             return false;
 
+        return true;
+    }
+
+    public static bool TestFloat()
+    {
+        float f1 = 14554.9f;
+        float f2 = 12543.4f;
+
+        float sum = f1 + f2;
+
+        if ((sum - 27098.3) > 0.001 || (sum - 27098.3) < -0.001)
+            return false;
+
+        double d1 = 14554.9;
+        double d2 = 12543.4;
+
+        double diff = d1 - d2;
+
+        if ((diff - 2011.5) > 0.001 || (diff - 2011.5) < -0.001)
+            return false;
+
+        return true;
+    }
+
+    public static bool TestVirtual()
+    {
+        BaseClass bc = new DerivedClass();
+        ITest itest = bc;
+
+        if (bc.NonVirtualMethod() != 0xbaba)
+            return false;
+        if (bc.VirtualMethod() != 0xdede)
+            return false;
+        if (itest.VirtualMethod() != 0xdede)
+            return false;
+        bc = new BaseClass();
+        itest = bc;
+        if (bc.NonVirtualMethod() != 0xbaba)
+            return false;
+        if (bc.VirtualMethod() != 0xbebe)
+            return false;
+        if (itest.VirtualMethod() != 0xbebe)
+            return false;
         return true;
     }
 }
