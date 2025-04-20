@@ -104,7 +104,7 @@ Async calling convention adds an extra `Continuation` parameter and an extra ret
 
 The `Continuation` is a managed object and needs to be tracked accordingly. The GC info includes the continuation result as live at Async call sites.
 
-### Returning `Continuaton`
+### Returning `Continuation`
 To return `Continuation` we use a volatile/calee-trash register that cannot be used to return the actual result.
 
 | arch | `REG_ASYNC_CONTINUATION_RET` |
@@ -115,7 +115,7 @@ To return `Continuation` we use a volatile/calee-trash register that cannot be u
 | arm64  | x2  |
 | risc-v  | a2  |
 
-### Passing `Continuaton` argument
+### Passing `Continuation` argument
 The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present.
 
 ```
