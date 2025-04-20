@@ -2890,7 +2890,6 @@ private:
         else
         {
             return (curInsIG->igFlags & IGF_EXTEND) &&
-                   ((curInsIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)) == 0) &&
                    ((prevInsIG->igFlags & IGF_NOGCINTERRUPT) == (curInsIG->igFlags & IGF_NOGCINTERRUPT));
         }
     }
