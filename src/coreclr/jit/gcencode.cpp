@@ -3749,15 +3749,6 @@ public:
         }
     }
 
-    void SetPSPSymStackSlot(INT32 spOffsetPSPSym)
-    {
-        m_gcInfoEncoder->SetPSPSymStackSlot(spOffsetPSPSym);
-        if (m_doLogging)
-        {
-            printf("Set PSPSym stack slot to %d.\n", spOffsetPSPSym);
-        }
-    }
-
     void SetGenericsInstContextStackSlot(INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type)
     {
         m_gcInfoEncoder->SetGenericsInstContextStackSlot(spOffsetGenericsContext, type);
