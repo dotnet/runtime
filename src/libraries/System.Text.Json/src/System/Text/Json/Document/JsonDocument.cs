@@ -103,10 +103,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteTo(Utf8JsonWriter writer)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             RootElement.WriteTo(writer);
         }

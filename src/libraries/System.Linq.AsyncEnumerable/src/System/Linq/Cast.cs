@@ -24,7 +24,7 @@ namespace System.Linq
         public static IAsyncEnumerable<TResult> Cast<TResult>( // satisfies the C# query-expression pattern
             this IAsyncEnumerable<object?> source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :

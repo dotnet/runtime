@@ -102,9 +102,6 @@
   <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
     <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
   </data>
-  <data name="Argument_PrivateSeedWrongSizeForAlgorithm" xml:space="preserve">
-    <value>The private seed is not the correct size for the indicated algorithm.</value>
-  </data>
   <data name="Argument_PublicKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The public key is not the correct size for the indicated algorithm.</value>
   </data>

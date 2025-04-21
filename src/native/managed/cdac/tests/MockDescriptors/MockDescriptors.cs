@@ -129,12 +129,15 @@ internal partial class MockDescriptors
         Fields =
         [
             new(nameof(Data.Module.Assembly), DataType.pointer),
-            new(nameof(Data.Module.Flags), DataType.uint32),
+            new(nameof(Data.Module.PEAssembly), DataType.pointer),
             new(nameof(Data.Module.Base), DataType.pointer),
+            new(nameof(Data.Module.Flags), DataType.uint32),
             new(nameof(Data.Module.LoaderAllocator), DataType.pointer),
             new(nameof(Data.Module.DynamicMetadata), DataType.pointer),
             new(nameof(Data.Module.Path), DataType.pointer),
             new(nameof(Data.Module.FileName), DataType.pointer),
+            new(nameof(Data.Module.ReadyToRunInfo), DataType.pointer),
+            new(nameof(Data.Module.GrowableSymbolStream), DataType.pointer),
             new(nameof(Data.Module.FieldDefToDescMap), DataType.pointer),
             new(nameof(Data.Module.ManifestModuleReferencesMap), DataType.pointer),
             new(nameof(Data.Module.MemberRefToDescMap), DataType.pointer),
@@ -142,7 +145,6 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.TypeDefToMethodTableMap), DataType.pointer),
             new(nameof(Data.Module.TypeRefToMethodTableMap), DataType.pointer),
             new(nameof(Data.Module.MethodDefToILCodeVersioningStateMap), DataType.pointer),
-            new(nameof(Data.Module.ReadyToRunInfo), DataType.pointer),
         ]
     };
 
