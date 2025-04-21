@@ -948,7 +948,7 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
     } CONTRACTL_END;
 
     // Don't add usage of this field.  This is only temporary.
-    // See ExceptionTracker::InitializeCrawlFrame() for more information.
+    // See ExInfo::InitializeCrawlFrame() for more information.
     if (!pRD->IsCallerSPValid)
     {
         ExecutionManager::GetDefaultCodeManager()->EnsureCallerContextIsValid(pRD, NULL);

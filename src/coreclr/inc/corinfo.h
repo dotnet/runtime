@@ -2481,14 +2481,6 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    // Get a representation for a stack-allocated boxed value type.
-    //
-    // This differs from getTypeForBox in that it includes an explicit field
-    // for the method table pointer.
-    virtual CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
-            CORINFO_CLASS_HANDLE        cls
-            ) = 0;
-
     // returns the correct box helper for a particular class.  Note
     // that if this returns CORINFO_HELP_BOX, the JIT can assume
     // 'standard' boxing (allocate object and copy), and optimize

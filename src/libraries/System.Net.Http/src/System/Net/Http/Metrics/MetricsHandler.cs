@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +18,8 @@ namespace System.Net.Http.Metrics
 
         public MetricsHandler(HttpMessageHandler innerHandler, IMeterFactory? meterFactory, out Meter meter)
         {
+            Debug.Assert(GlobalHttpSettings.MetricsHandler.IsGloballyEnabled);
+
             _innerHandler = innerHandler;
 
             meter = meterFactory?.Create("System.Net.Http") ?? SharedMeter.Instance;
@@ -49,6 +52,8 @@ namespace System.Net.Http.Metrics
 
         private async ValueTask<HttpResponseMessage> SendAsyncWithMetrics(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            Debug.Assert(GlobalHttpSettings.MetricsHandler.IsGloballyEnabled);
+
             (long startTimestamp, bool recordCurrentRequests) = RequestStart(request);
             HttpResponseMessage? response = null;
             Exception? exception = null;
