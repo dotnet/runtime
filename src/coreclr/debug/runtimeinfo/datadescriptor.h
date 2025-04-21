@@ -227,6 +227,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
 CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ReadyToRunInfo, cdac_data<Module>::ReadyToRunInfo)
 CDAC_TYPE_FIELD(Module, /*pointer*/, GrowableSymbolStream, cdac_data<Module>::GrowableSymbolStream)
+CDAC_TYPE_FIELD(Module, /*pointer*/, AvailableTypeParams, offsetof(Module, m_pAvailableParamTypes))
 
 CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_data<Module>::FieldDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_data<Module>::ManifestModuleReferencesMap)
@@ -807,6 +808,14 @@ CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Lr, offsetof(CalleeSavedRegiste
 
 #endif // Platform switch
 CDAC_TYPE_END(CalleeSavedRegisters)
+
+CDAC_TYPE_BEGIN(EETypeHashTable)
+CDAC_TYPE_INDETERMINATE(EETypeHashTable)
+CDAC_TYPE_FIELD(EETypeHashTable, /*pointer*/, Buckets, cdac_data<EETypeHashTable>::Buckets)
+CDAC_TYPE_FIELD(EETypeHashTable, /*uint32*/, Count, cdac_data<EETypeHashTable>::Count)
+CDAC_TYPE_FIELD(EETypeHashTable, /*pointer*/, VolatileEntryValue, cdac_data<EETypeHashTable>::VolatileEntryValue)
+CDAC_TYPE_FIELD(EETypeHashTable, /*pointer*/, VolatileEntryNextEntry, cdac_data<EETypeHashTable>::VolatileEntryNextEntry)
+CDAC_TYPE_END(EETypeHashTable)
 
 CDAC_TYPES_END()
 
