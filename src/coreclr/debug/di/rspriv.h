@@ -11228,11 +11228,7 @@ public:
     DbgRSThread();
 
     // The TLS slot that we'll put this thread object in.
-#ifndef __GNUC__
-    static __declspec(thread) DbgRSThread* t_pCurrent;
-#else  // !__GNUC__
-    static __thread DbgRSThread* t_pCurrent;
-#endif // !__GNUC__
+    static thread_local DbgRSThread* t_pCurrent;
 
     static LONG s_Total; // Total count of thread objects
 
