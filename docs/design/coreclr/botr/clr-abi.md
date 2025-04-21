@@ -352,9 +352,9 @@ When an exception occurs, the VM is invoked to do some processing. If the except
 
 The VM sets the frame register to be the same as the parent function. This allows the funclets to access local variables using frame-relative addresses.
 
-On CoreCLR/AMD64, all other register values that existed at the exception point in the corresponding "try" region are trashed on entry to the funclet. That is, the only registers that have known values are those of the funclet parameters and the frame register.
+For filter funclets and on CoreCLR/AMD64 for all funclets, all other register values that existed at the exception point in the corresponding "try" region are trashed on entry to the funclet. That is, the only registers that have known values are those of the funclet parameters and the frame register.
 
-On all other platforms and NativeAOT/AMD64, all non-volatile registers are restored to their values at the exception point.
+For other funclets on all platforms except CoreCLR/AMD64, all non-volatile registers are restored to their values at the exception point. The JIT codegen [does not take advantage of it currently](https://github.com/dotnet/runtime/pull/114630#issuecomment-2810210759).
 
 ### Registers on return from a funclet
 
