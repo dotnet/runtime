@@ -188,6 +188,20 @@ internal readonly struct Loader_1 : ILoader
         return true;
     }
 
+    List<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        List<TargetPointer> typeParams = [];
+
+        if (module.AvailableTypeParams == TargetPointer.Null)
+            return typeParams;
+
+        EETypeHashTable typeHashTable = _target.ProcessedData.GetOrAdd<EETypeHashTable>(module.AvailableTypeParams);
+        typeParams.AddRange(typeHashTable.Entries);
+
+        return typeParams;
+    }
+
     bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);

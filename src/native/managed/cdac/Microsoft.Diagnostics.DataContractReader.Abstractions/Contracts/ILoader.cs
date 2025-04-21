@@ -87,6 +87,7 @@ public interface ILoader : IContract
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
+    List<TargetPointer> GetAvailableTypeParams(ModuleHandle handle) => throw new NotImplementedException();
 
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();

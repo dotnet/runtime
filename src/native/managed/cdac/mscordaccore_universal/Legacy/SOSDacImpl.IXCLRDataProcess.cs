@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -133,94 +134,118 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.GetModuleByAddress(ulong address, /*IXCLRDataModule*/ void** mod)
         => _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
 
-    // internal class EnumMethodInstances
-    // {
-    //     private readonly Target _target;
-    //     public EnumMethodInstances(Target target)
-    //     {
-    //         _target = target;
+    internal class EnumMethodInstances
+    {
+        private readonly Target _target;
+        public EnumMethodInstances(Target target)
+        {
+            _target = target;
 
-    //     }
+        }
 
-    //     public int Start(TargetPointer methodDesc, IXCLRDataAppDomain* appDomain)
-    //     {
-    //         if (!HasClassOrMethodInstantiation(methodDesc) && !HasNativeCodeAnyVersion(methodDesc))
-    //         {
-    //             return HResults.S_FALSE;
-    //         }
+        public int Start(TargetPointer methodDesc, TargetPointer appDomain)
+        {
+            ILoader loader = _target.Contracts.Loader;
 
-    //         Console.WriteLine((nint)appDomain);
+            if (appDomain == TargetPointer.Null)
+            {
+                TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+                appDomain = _target.ReadPointer(appDomainPointer);
+            }
 
-    //         return HResults.S_OK;
-    //     }
+            if (!HasClassOrMethodInstantiation(methodDesc) && !HasNativeCodeAnyVersion(methodDesc))
+            {
+                return HResults.S_FALSE;
+            }
 
-    //     private bool HasNativeCodeAnyVersion(TargetPointer methodDesc)
-    //     {
-    //         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-    //         ICodeVersions cv = _target.Contracts.CodeVersions;
+            List<Contracts.ModuleHandle> modules = loader.GetAssemblies(
+                appDomain,
+                AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
 
-    //         MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDesc);
-    //         TargetCodePointer pcode = rts.GetNativeCode(mdHandle);
+            foreach (Contracts.ModuleHandle moduleHandle in modules)
+            {
+                List<TargetPointer> typeParams = loader.GetAvailableTypeParams(moduleHandle);
+                foreach (TargetPointer type in typeParams)
+                {
+                    Console.WriteLine(type);
+                }
+            }
 
-    //         if (pcode == TargetCodePointer.Null)
-    //         {
-    //             NativeCodeVersionHandle nativeCodeVersion = cv.GetActiveNativeCodeVersion(methodDesc);
-    //             if (nativeCodeVersion.Valid)
-    //             {
-    //                 pcode = cv.GetNativeCode(nativeCodeVersion);
-    //             }
-    //         }
+            // for each module find available type params
+            // for each module get inst method hash table
 
-    //         return pcode != TargetCodePointer.Null;
-    //     }
+            return HResults.S_OK;
+        }
 
-    //     private bool HasClassOrMethodInstantiation(TargetPointer mdAddr)
-    //     {
-    //         return HasClassInstantiation(mdAddr) || HasMethodInstantiation(mdAddr);
-    //     }
+        private bool HasNativeCodeAnyVersion(TargetPointer methodDesc)
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            ICodeVersions cv = _target.Contracts.CodeVersions;
 
-    //     private bool HasClassInstantiation(TargetPointer mdAddr)
-    //     {
-    //         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDesc);
+            TargetCodePointer pcode = rts.GetNativeCode(mdHandle);
 
-    //         MethodDescHandle md = rts.GetMethodDescHandle(mdAddr);
-    //         TargetPointer mtAddr = rts.GetMethodTable(md);
-    //         TypeHandle mt = rts.GetTypeHandle(mtAddr);
-    //         return !rts.GetInstantiation(mt).IsEmpty;
-    //     }
+            if (pcode == TargetCodePointer.Null)
+            {
+                NativeCodeVersionHandle nativeCodeVersion = cv.GetActiveNativeCodeVersion(methodDesc);
+                if (nativeCodeVersion.Valid)
+                {
+                    pcode = cv.GetNativeCode(nativeCodeVersion);
+                }
+            }
 
-    //     private bool HasMethodInstantiation(TargetPointer mdAddr)
-    //     {
-    //         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            return pcode != TargetCodePointer.Null;
+        }
 
-    //         MethodDescHandle md = rts.GetMethodDescHandle(mdAddr);
+        private bool HasClassOrMethodInstantiation(TargetPointer mdAddr)
+        {
+            return HasClassInstantiation(mdAddr) || HasMethodInstantiation(mdAddr);
+        }
 
-    //         if (rts.IsGenericMethodDefinition(md)) return true;
-    //         return !rts.GetGenericMethodInstantiation(md).IsEmpty;
-    //     }
-    // }
+        private bool HasClassInstantiation(TargetPointer mdAddr)
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+            MethodDescHandle md = rts.GetMethodDescHandle(mdAddr);
+            TargetPointer mtAddr = rts.GetMethodTable(md);
+            TypeHandle mt = rts.GetTypeHandle(mtAddr);
+            return !rts.GetInstantiation(mt).IsEmpty;
+        }
+
+        private bool HasMethodInstantiation(TargetPointer mdAddr)
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+            MethodDescHandle md = rts.GetMethodDescHandle(mdAddr);
+
+            if (rts.IsGenericMethodDefinition(md)) return true;
+            return !rts.GetGenericMethodInstantiation(md).IsEmpty;
+        }
+    }
 
     int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ulong address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
     {
-        // int hr = HResults.S_OK;
-        // try
-        // {
-        //     *handle = 0;
-        //     hr = HResults.S_FALSE;
+        int hr = HResults.S_OK;
+        try
+        {
+            *handle = 0;
+            hr = HResults.S_FALSE;
 
-        //     IExecutionManager eman = _target.Contracts.ExecutionManager;
-        //     if (eman.GetCodeBlockHandle(address) is CodeBlockHandle cbh && eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
-        //     {
-        //         // EnumMethodInstances emi = new(methodDesc, appDomain != null ? (IXCLRDataAppDomain*)appDomain : null);
-        //         // GCHandle gcHandle = GCHandle.Alloc(emi);
-        //         // *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+            if (eman.GetCodeBlockHandle(address) is CodeBlockHandle cbh && eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
+            {
 
-        //     }
-        // }
-        // catch (System.Exception ex)
-        // {
-        //     hr = ex.HResult;
-        // }
+                EnumMethodInstances emi = new(_target);
+                emi.Start(methodDesc, (ulong)appDomain);
+                // GCHandle gcHandle = GCHandle.Alloc(emi);
+                // *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
+
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
         return _legacyProcess is not null ? _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, handle) : HResults.E_NOTIMPL;
 
         //return hr;
