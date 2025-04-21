@@ -6112,7 +6112,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         assert(ins == INS_movbe || ins == INS_movbe_apx);
 #else
         assert(ins == INS_movbe);
-#endif 
+#endif
         data = data->gtGetOp1();
     }
 
@@ -21987,7 +21987,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 #ifdef TARGET_AMD64
         case INS_movbe_apx:
 #endif
-        if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;

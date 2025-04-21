@@ -765,7 +765,7 @@ void CodeGen::genCodeForBswap(GenTree* tree)
         instruction ins = INS_movbe;
 #ifdef TARGET_AMD64
         bool needsEvex = false;
-        
+
         if (GetEmitter()->IsExtendedGPReg(tree->GetRegNum()))
         {
             needsEvex = true;
@@ -781,8 +781,8 @@ void CodeGen::genCodeForBswap(GenTree* tree)
             {
                 needsEvex = true;
             }
-        } 
-        
+        }
+
         ins = needsEvex ? INS_movbe_apx : INS_movbe;
 #endif
         GetEmitter()->emitInsBinary(ins, emitTypeSize(operand), tree, operand);
@@ -5718,7 +5718,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                 if (data->OperIs(GT_BSWAP, GT_BSWAP16))
                 {
                     ins = INS_movbe;
-#ifdef TARGET_AMD64 
+#ifdef TARGET_AMD64
                     bool needsEvex = false;
                     if (GetEmitter()->IsExtendedGPReg(data->gtGetOp1()->GetRegNum()))
                     {
@@ -7374,7 +7374,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         //   addsd    xmm0, xmm0
         //.LABEL
         //
-        regNumber argReg  = treeNode->gtGetOp1()->GetRegNum();
+        regNumber argReg = treeNode->gtGetOp1()->GetRegNum();
         // Get the APXIncompatible register first
         regNumber tmpReg2 = internalRegisters.Extract(treeNode);
         // tmpReg1 can be EGPR
