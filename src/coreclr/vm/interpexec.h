@@ -7,6 +7,7 @@
 #include "../interpreter/interpretershared.h"
 
 #define INTERP_STACK_SIZE 1024*1024
+#define INTERP_STACK_FRAGMENT_SIZE 4096
 
 struct StackVal
 {
@@ -42,6 +43,33 @@ struct InterpMethodContextFrame
 #endif // DACCESS_COMPILE
 };
 
+struct FrameDataFragment {
+    // Memory region for this fragment
+    uint8_t *start, *end;
+    // Current allocation pointer within this fragment
+    uint8_t *pos;
+    // Pointer to the next fragment
+    FrameDataFragment *next;
+};
+
+struct FrameDataInfo {
+    // Pointer to the frame that this info is associated with
+    InterpreterFrame *frame;
+    // Pointers for restoring the localloc memory:
+    // frag - the current allocation fragment at frame entry
+    // pos - the fragment pointer at frame entry
+    // When the frame returns, we use these to roll back any local allocations
+    FrameDataFragment *frag;
+    uint8_t *pos;
+};
+
+struct FrameDataAllocator {
+    FrameDataFragment *first, *current;
+    FrameDataInfo *infos;
+    int infos_len;
+    int infos_capacity;
+};
+
 struct InterpThreadContext
 {
     int8_t *pStackStart;
@@ -52,6 +80,9 @@ struct InterpThreadContext
     // stack pointer. It is needed when re-entering interp, to know from which address we can start using
     // stack, and also needed for the GC to be able to scan the stack.
     int8_t *pStackPointer;
+
+    // This is an allocator for the dynamic stack memory
+    FrameDataAllocator frameDataAllocator;
 };
 
 InterpThreadContext* InterpGetThreadContext();

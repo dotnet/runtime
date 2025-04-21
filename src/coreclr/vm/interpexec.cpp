@@ -11,6 +11,110 @@ typedef void* (*HELPER_FTN_PP)(void*);
 
 thread_local InterpThreadContext *t_pThreadContext = NULL;
 
+FrameDataFragment *frame_data_new_fragment(size_t size)
+{
+    if (size < INTERP_STACK_FRAGMENT_SIZE)
+        size = INTERP_STACK_FRAGMENT_SIZE;
+
+    FrameDataFragment *frag = (FrameDataFragment*)malloc(sizeof(FrameDataFragment) + size);
+    if (!frag) return NULL;
+
+    frag->start = (uint8_t*)(frag + 1);
+    frag->end = frag->start + size;
+    frag->pos = frag->start;
+    frag->next = NULL;
+    return frag;
+}
+
+void frame_data_allocator_init(FrameDataAllocator *allocator, size_t size)
+{
+    allocator->first = frame_data_new_fragment(size);
+    assert(allocator->first && "Failed to allocate initial fragment");
+    allocator->current = allocator->first;
+    allocator->infos = NULL;
+    allocator->infos_len = 0;
+    allocator->infos_capacity = 0;
+}
+
+void frame_data_fragment_free(FrameDataFragment *frag)
+{
+    while (frag) {
+        FrameDataFragment *next = frag->next;
+        free(frag);
+        frag = next;
+    }
+}
+
+void frame_data_allocator_destroy(FrameDataAllocator *allocator)
+{
+    assert (allocator->current == allocator->first && allocator->current->pos == allocator->current->start);
+    frame_data_fragment_free(allocator->first);
+
+    free(allocator->infos);
+    allocator->first = allocator->current = NULL;
+    allocator->infos = NULL;
+    allocator->infos_len = allocator->infos_capacity = 0;
+}
+
+void frame_data_push_info(FrameDataAllocator *allocator, InterpreterFrame *frame)
+{
+    if (allocator->infos_len == allocator->infos_capacity) {
+        int new_capacity = allocator->infos_capacity == 0 ? 8 : allocator->infos_capacity * 2;
+        allocator->infos = (FrameDataInfo*)realloc(allocator->infos, new_capacity * sizeof(FrameDataInfo));
+        assert(allocator->infos && "Failed to reallocate frame info");
+        allocator->infos_capacity = new_capacity;
+    }
+
+    FrameDataInfo *info = &allocator->infos[allocator->infos_len++];
+    info->frame = frame;
+    info->frag = allocator->current;
+    info->pos = allocator->current->pos;
+}
+
+void *frame_data_alloc(FrameDataAllocator *allocator, InterpreterFrame *frame, size_t size)
+{
+
+    if (!allocator->infos_len || (allocator->infos_len > 0 && allocator->infos[allocator->infos_len - 1].frame != frame))
+    {
+        frame_data_push_info(allocator, frame);
+    }
+
+    uint8_t *pos = allocator->current->pos;
+
+    if (pos + size > allocator->current->end) {
+        if (allocator->current->next && ((allocator->current->next->start + size) <= allocator->current->next->end))
+        {
+            allocator->current = allocator->current->next;
+            pos = allocator->current->pos = allocator->current->start;
+        }
+        else
+        {
+            frame_data_fragment_free(allocator->current->next);
+            FrameDataFragment *new_frag = frame_data_new_fragment(size);
+            assert(new_frag && "Failed to allocate new fragment");
+            allocator->current->next = new_frag;
+            allocator->current = new_frag;
+
+            pos = new_frag->pos;
+        }
+    }
+
+    void *result = (void*)pos;
+    allocator->current->pos = (uint8_t *)(pos + size);
+    return result;
+}
+
+void frame_data_pop_info(FrameDataAllocator *allocator, InterpreterFrame *pFrame)
+{
+    int top = allocator->infos_len - 1;
+    if (top >= 0 && allocator->infos[top].frame == pFrame)
+    {
+        FrameDataInfo *info = &allocator->infos[--allocator->infos_len];
+        allocator->current = info->frag;
+        allocator->current->pos = info->pos;
+    }
+}
+
 InterpThreadContext* InterpGetThreadContext()
 {
     InterpThreadContext *threadContext = t_pThreadContext;
@@ -21,6 +125,7 @@ InterpThreadContext* InterpGetThreadContext()
         // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
         threadContext->pStackStart = threadContext->pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
         threadContext->pStackEnd = threadContext->pStackStart + INTERP_STACK_SIZE;
+        frame_data_allocator_init(&threadContext->frameDataAllocator, INTERP_STACK_FRAGMENT_SIZE);
 
         t_pThreadContext = threadContext;
         return threadContext;
@@ -42,19 +147,6 @@ static void InterpBreakpoint()
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 // TODO once we have basic EH support
 #define NULL_CHECK(o)
-
-void* frame_data_allocator_alloc(InterpThreadContext *pThreadContext, int8_t** stack, int size) {
-    void* res = NULL;
-    if (*stack + size <= (int8_t*)pThreadContext->pStackEnd) {
-        res = *stack;
-        *stack += size;
-    } else {
-        // Add stack fragments
-        assert(0 && "Stack overflow in frame_data_allocator_alloc");
-    }
-
-    return res;
-}
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
 {
@@ -596,7 +688,53 @@ MAIN_LOOP:
                 LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) * LOCAL_VAR(ip[3], double);
                 ip += 4;
                 break;
+            case INTOP_MUL_OVF_I4:
+            {
+                int32_t i1 = LOCAL_VAR(ip[2], int32_t);
+                int32_t i2 = LOCAL_VAR(ip[3], int32_t);
+                int32_t i3;
+                if (__builtin_mul_overflow(i1, i2, &i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], int32_t) = i3;
+                ip += 4;
+                break;
+            }
 
+            case INTOP_MUL_OVF_I8:
+            {
+                int64_t i1 = LOCAL_VAR(ip[2], int64_t);
+                int64_t i2 = LOCAL_VAR(ip[3], int64_t);
+                int64_t i3;
+                if (__builtin_mul_overflow(i1, i2, &i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], int64_t) = i3;
+                ip += 4;
+                break;
+            }
+
+            case INTOP_MUL_OVF_UN_I4:
+            {
+                uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
+                uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
+                uint32_t i3;
+                if (__builtin_mul_overflow(i1, i2, &i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], uint32_t) = i3;
+                ip += 4;
+                break;
+            }
+
+            case INTOP_MUL_OVF_UN_I8:
+            {
+                uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
+                uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
+                uint64_t i3;
+                if (__builtin_mul_overflow(i1, i2, &i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], uint64_t) = i3;
+                ip += 4;
+                break;
+            }
             case INTOP_DIV_I4:
             {
                 int32_t i1 = LOCAL_VAR(ip[2], int32_t);
@@ -1092,13 +1230,11 @@ CALL_INTERP_SLOT:
                 int32_t len = LOCAL_VAR(ip[2], int32_t);
                 void* mem;
 
-                if (len > 0) {
-                    mem = frame_data_allocator_alloc(pThreadContext, &stack, len);
-
-                    // if (pMethod->initLocals) {
-                    //     memset(mem, 0, len);
-                    // }
-                } else {
+                if (len > 0)
+                {
+                    mem = frame_data_alloc(&pThreadContext->frameDataAllocator, (InterpreterFrame*)pFrame, ALIGN_UP(len, INTERP_STACK_ALIGNMENT));
+                } else
+                {
                     mem = NULL;
                 }
                 LOCAL_VAR(ip[1], void*) = mem;
@@ -1115,6 +1251,8 @@ CALL_INTERP_SLOT:
     }
 
 EXIT_FRAME:
+
+    frame_data_pop_info(&pThreadContext->frameDataAllocator, (InterpreterFrame*)pFrame);
     if (pFrame->pParent && pFrame->pParent->ip)
     {
         // Return to the main loop after a non-recursive interpreter call
@@ -1129,6 +1267,7 @@ EXIT_FRAME:
         goto MAIN_LOOP;
     }
 
+    frame_data_allocator_destroy(&pThreadContext->frameDataAllocator);
     pThreadContext->pStackPointer = pFrame->pStack;
 }
 
