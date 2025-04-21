@@ -1572,10 +1572,10 @@ public:
 protected:
     // For reflection emit modules we set this flag when we emit the attribute, and always consider
     // the current setting of the flag to be set.
-    void SetRuntimeMarshallingEnabledCached_ForReflectionEmitModules()
+    void SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules()
     {
         LIMITED_METHOD_CONTRACT;
-        m_dwPersistedFlags |= RUNTIME_MARSHALLING_ENABLED_IS_CACHED;
+        m_dwPersistedFlags |= COMPUTED_WRAP_EXCEPTIONS;
     }
 public:
 

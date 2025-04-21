@@ -3763,7 +3763,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, pPEAssembly));
 
     pModule->DoInit(pamTracker, szName);
-    pModule->SetRuntimeMarshallingEnabledCached_ForReflectionEmitModules();
+    pModule->SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules();
 
     RETURN pModule.Extract();
 }
