@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices
             {
                 searchPath = GetDllImportSearchPath(assembly, out userSpecifiedSearchFlags);
             }
-            return LoadLibraryByName(libraryName, assembly, userSpecifiedSearchFlags, searchPath.Value, throwOnError);
+            return LoadLibraryByName(libraryName, assembly, userSpecifiedSearchFlags, searchPath!.Value, throwOnError);
         }
 
         private static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, bool userSpecifiedSearchFlags, DllImportSearchPath searchPath, bool throwOnError)
