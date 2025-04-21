@@ -2540,9 +2540,9 @@ namespace System.Numerics.Tensors
                 where T : INumber<T>
             {
                 Span<T> output = RentedBuffer<T>.Create(shape.Rank, out rentedBuffer);
-                linearOffset = -shape.Strides[^1];
+                linearOffset = !shape.IsEmpty ? (-shape.Strides[^1]) : 0;
 
-                output[shape.Rank - 1] = T.CreateChecked(-1);
+                output[^1] = T.CreateChecked(-1);
                 return output;
             }
 

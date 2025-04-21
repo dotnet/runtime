@@ -396,7 +396,9 @@ namespace System.Numerics.Tensors
                 _tensor = tensor;
                 _indexes = new nint[tensor.Rank];
 
-                _linearOffset = tensor._start;
+                _indexes[^1] = -1;
+
+                _linearOffset = tensor._start - (!tensor.IsEmpty ? tensor.Strides[^1] : 0);
                 _itemsEnumerated = -1;
             }
 
@@ -421,7 +423,9 @@ namespace System.Numerics.Tensors
             public void Reset()
             {
                 Array.Clear(_indexes);
-                _linearOffset = _tensor._start;
+                _indexes[^1] = -1;
+
+                _linearOffset = _tensor._start - (!_tensor.IsEmpty ? _tensor.Strides[^1] : 0);
                 _itemsEnumerated = -1;
             }
 

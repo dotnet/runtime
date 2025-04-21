@@ -469,7 +469,9 @@ namespace System.Numerics.Tensors
                 _span = span;
                 _indexes = new nint[span.Rank];
 
-                _linearOffset = 0;
+                _indexes[^1] = -1;
+
+                _linearOffset = 0 - (!span.IsEmpty ? span.Strides[^1] : 0);
                 _itemsEnumerated = -1;
             }
 
@@ -494,7 +496,9 @@ namespace System.Numerics.Tensors
             public void Reset()
             {
                 Array.Clear(_indexes);
-                _linearOffset = 0;
+                _indexes[^1] = -1;
+
+                _linearOffset = 0 - (!_span.IsEmpty ? _span.Strides[^1] : 0);
                 _itemsEnumerated = -1;
             }
 

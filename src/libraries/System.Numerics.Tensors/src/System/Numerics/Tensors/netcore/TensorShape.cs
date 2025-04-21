@@ -169,13 +169,17 @@ namespace System.Numerics.Tensors
                     flattenedLength = checked(flattenedLength * length);
                 }
 
+                // Once we've finished computing everything physically present in the input
+                // we need to ensure that the linearLength is greater than the flattenedLength
+                // as this ensures that lengths is in range of the backing buffer
+
                 if (linearLength == -1)
                 {
                     linearLength = flattenedLength;
                 }
                 else
                 {
-                    ArgumentOutOfRangeException.ThrowIfNotEqual(linearLength, flattenedLength);
+                    ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, flattenedLength);
                 }
 
                 // When no strides are specified, the way we construct them makes it so that the
@@ -204,6 +208,8 @@ namespace System.Numerics.Tensors
 
                 int i = 0;
 
+                nint minimumLinearLength = 1;
+
                 while (i < destinationLinearRankOrder.Length)
                 {
                     int rankIndex = destinationLinearRankOrder.Length - (i + 1);
@@ -230,12 +236,27 @@ namespace System.Numerics.Tensors
                         break;
                     }
 
-                    destinationLengths[linearRankIndex] = length;
-                    destinationStrides[linearRankIndex] = flattenedLength;
+                    if (stride < minimumLinearLength)
+                    {
+                        // The next stride needs to be at least as big as the
+                        // previous stride times the dimension length, otherwise
+                        // the linear rank ordering is incorrect
+                        ThrowHelper.ThrowArgument_InvalidTensorShape();
+                    }
 
+                    destinationLengths[linearRankIndex] = length;
+                    destinationStrides[linearRankIndex] = stride;
+
+                    minimumLinearLength = checked(stride * length);
                     flattenedLength = checked(flattenedLength * length);
+
                     i++;
                 }
+
+                // Once we've finished computing everything physically present in the input
+                // we need to ensure that the linearLength is greater than the flattenedLength
+                // and the minimumLinearLength. The first case ensures that lengths is in range
+                // of the backing buffer while the second case ensures that strides is in range.
 
                 if (linearLength == -1)
                 {
@@ -243,8 +264,9 @@ namespace System.Numerics.Tensors
                 }
                 else
                 {
-                    ArgumentOutOfRangeException.ThrowIfNotEqual(linearLength, flattenedLength);
+                    ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, flattenedLength);
                 }
+                ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, minimumLinearLength);
 
                 while (i < destinationLinearRankOrder.Length)
                 {
@@ -268,7 +290,7 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            Debug.Assert((flattenedLength % linearLength) == 0);
+            Debug.Assert((linearLength == 0) || ((flattenedLength % linearLength) == 0));
 
             _flattenedLength = flattenedLength;
             _linearLength = linearLength;
@@ -278,7 +300,7 @@ namespace System.Numerics.Tensors
 
         private TensorShape(nint flattenedLength, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, scoped ReadOnlySpan<int> linearRankOrder, int rank)
         {
-            Debug.Assert((flattenedLength % linearLength) == 0);
+            Debug.Assert((linearLength == 0) || ((flattenedLength % linearLength) == 0));
 
             Debug.Assert(lengths.Length == rank);
             Debug.Assert(strides.Length == rank);
@@ -583,46 +605,42 @@ namespace System.Numerics.Tensors
             if (array is not null)
             {
                 nint linearLength = (nint)array.LongLength;
+                int rank = array.Rank;
 
-                if (linearLength != 0)
+                nint[]? lengthsArray = null;
+                InlineBuffer<nint> lengthsBuffer;
+                scoped Span<nint> lengths;
+
+                if (rank > MaxInlineRank)
                 {
-                    int rank = array.Rank;
-
-                    nint[]? lengthsArray = null;
-                    InlineBuffer<nint> lengthsBuffer;
-                    scoped Span<nint> lengths;
-
-                    if (rank > MaxInlineRank)
-                    {
-                        lengthsArray = ArrayPool<nint>.Shared.Rent(rank);
-                        lengths = lengthsArray.AsSpan(0, rank);
-                    }
-                    else
-                    {
-                        Unsafe.SkipInit(out lengthsBuffer);
-                        lengths = ((Span<nint>)lengthsBuffer)[..rank];
-                    }
-
-                    for (int i = 0; i < rank; i++)
-                    {
-                        lengths[i] = array.GetLength(i);
-                    }
-
-                    TensorShape result = new TensorShape(
-                        flattenedLength: linearLength,
-                        linearLength,
-                        lengths,
-                        strides: [],
-                        linearRankOrder: [],
-                        rank
-                    );
-
-                    if (lengthsArray is not null)
-                    {
-                        ArrayPool<nint>.Shared.Return(lengthsArray);
-                    }
-                    return result;
+                    lengthsArray = ArrayPool<nint>.Shared.Rent(rank);
+                    lengths = lengthsArray.AsSpan(0, rank);
                 }
+                else
+                {
+                    Unsafe.SkipInit(out lengthsBuffer);
+                    lengths = ((Span<nint>)lengthsBuffer)[..rank];
+                }
+
+                for (int i = 0; i < rank; i++)
+                {
+                    lengths[i] = array.GetLength(i);
+                }
+
+                TensorShape result = new TensorShape(
+                    flattenedLength: linearLength,
+                    linearLength,
+                    lengths,
+                    strides: [],
+                    linearRankOrder: [],
+                    rank
+                );
+
+                if (lengthsArray is not null)
+                {
+                    ArrayPool<nint>.Shared.Return(lengthsArray);
+                }
+                return result;
             }
             return default;
         }
@@ -646,81 +664,78 @@ namespace System.Numerics.Tensors
 
                 nint linearLength = (nint)array.LongLength;
 
-                if (linearLength != 0)
+                if (lengths.Length == 0)
                 {
-                    if (lengths.Length == 0)
+                    // When no lengths are specified we need to retrieve them from the array
+                    // since that has the expected shape. We don't need to validate the strides
+                    // however as that will be done by the TensorShape constructor.
+
+                    if (rank > MaxInlineRank)
                     {
-                        // When no lengths are specified we need to retrieve them from the array
-                        // since that has the expected shape. We don't need to validate the strides
-                        // however as that will be done by the TensorShape constructor.
-
-                        if (rank > MaxInlineRank)
-                        {
-                            intermediateLengthsArray = ArrayPool<nint>.Shared.Rent(rank);
-                            intermediateLengths = intermediateLengthsArray.AsSpan(0, rank);
-                        }
-                        else
-                        {
-                            Unsafe.SkipInit(out intermediateLengthsBuffer);
-                            intermediateLengths = ((Span<nint>)intermediateLengthsBuffer)[..rank];
-                        }
-
-                        for (int i = 0; i < rank; i++)
-                        {
-                            intermediateLengths[i] = array.GetLength(i);
-                        }
-
-                        lengths = intermediateLengths;
+                        intermediateLengthsArray = ArrayPool<nint>.Shared.Rent(rank);
+                        intermediateLengths = intermediateLengthsArray.AsSpan(0, rank);
+                    }
+                    else
+                    {
+                        Unsafe.SkipInit(out intermediateLengthsBuffer);
+                        intermediateLengths = ((Span<nint>)intermediateLengthsBuffer)[..rank];
                     }
 
-                    if (start.Length != 0)
+                    for (int i = 0; i < rank; i++)
                     {
-                        // In the case a starting index is specified, we need to compute the linear
-                        // index that is the actual starting position. Additionally, if no lengths
-                        // were specified we want to adjust the lengths computed from the array to
-                        // ensure they remain correct. However, we don't validate or adjust the lengths
-                        // if they were user specified as we expect them to already be correct. This
-                        // is because we allow users to do a "reshape" as part of construction and so
-                        // the lengths and strides can mismatch what the underlying multidimensional
-                        // array may have itself.
-
-                        nint stride = 1;
-
-                        for (int i = 0; i < start.Length; i++)
-                        {
-                            int index = start.Length - (i + 1);
-                            int offset = start[index];
-                            int length = array.GetLength(index);
-
-                            if ((offset < 0) || (offset > length))
-                            {
-                                ThrowHelper.ThrowArgument_StartIndexOutOfBounds();
-                            }
-
-                            computedOffset += (offset * stride);
-                            stride *= length;
-
-                            if (intermediateLengths.Length != 0)
-                            {
-                                intermediateLengths[index] -= offset;
-                            }
-                        }
+                        intermediateLengths[i] = array.GetLength(i);
                     }
 
-                    if ((computedOffset < 0) || (computedOffset > linearLength))
-                    {
-                        ThrowHelper.ThrowArgument_StartIndexOutOfBounds();
-                    }
-
-                    TensorShape result = new TensorShape(linearLength - computedOffset, lengths, strides, linearRankOrder: []);
-
-                    if (intermediateLengthsArray is not null)
-                    {
-                        ArrayPool<nint>.Shared.Return(intermediateLengthsArray);
-                    }
-                    linearOffset = computedOffset;
-                    return result;
+                    lengths = intermediateLengths;
                 }
+
+                if (start.Length != 0)
+                {
+                    // In the case a starting index is specified, we need to compute the linear
+                    // index that is the actual starting position. Additionally, if no lengths
+                    // were specified we want to adjust the lengths computed from the array to
+                    // ensure they remain correct. However, we don't validate or adjust the lengths
+                    // if they were user specified as we expect them to already be correct. This
+                    // is because we allow users to do a "reshape" as part of construction and so
+                    // the lengths and strides can mismatch what the underlying multidimensional
+                    // array may have itself.
+
+                    nint stride = 1;
+
+                    for (int i = 0; i < start.Length; i++)
+                    {
+                        int index = start.Length - (i + 1);
+                        int offset = start[index];
+                        int length = array.GetLength(index);
+
+                        if ((offset < 0) || (offset > length))
+                        {
+                            ThrowHelper.ThrowArgument_StartIndexOutOfBounds();
+                        }
+
+                        computedOffset += (offset * stride);
+                        stride *= length;
+
+                        if (intermediateLengths.Length != 0)
+                        {
+                            intermediateLengths[index] -= offset;
+                        }
+                    }
+                }
+
+                if ((computedOffset < 0) || (computedOffset > linearLength))
+                {
+                    ThrowHelper.ThrowArgument_StartIndexOutOfBounds();
+                }
+
+                TensorShape result = new TensorShape(linearLength - computedOffset, lengths, strides, linearRankOrder: []);
+
+                if (intermediateLengthsArray is not null)
+                {
+                    ArrayPool<nint>.Shared.Return(intermediateLengthsArray);
+                }
+                linearOffset = computedOffset;
+                return result;
             }
             else if (start.Length != 0)
             {
@@ -746,18 +761,14 @@ namespace System.Numerics.Tensors
             if (array is not null)
             {
                 int linearLength = array.Length;
-
-                if (linearLength != 0)
-                {
-                    return new TensorShape(
-                        flattenedLength: linearLength,
-                        linearLength,
-                        lengths: [linearLength],
-                        strides: [1],
-                        linearRankOrder: [0],
-                        rank: 1
-                    );
-                }
+                return new TensorShape(
+                    flattenedLength: linearLength,
+                    linearLength,
+                    lengths: [linearLength],
+                    strides: [1],
+                    linearRankOrder: [0],
+                    rank: 1
+                );
             }
             return default;
         }
@@ -767,11 +778,7 @@ namespace System.Numerics.Tensors
             if (array is not null)
             {
                 int linearLength = array.Length;
-
-                if (linearLength != 0)
-                {
-                    return new TensorShape(linearLength, lengths, strides: [], linearRankOrder: []);
-                }
+                return new TensorShape(linearLength, lengths, strides: [], linearRankOrder: []);
             }
 
             if (lengths.Length != 0)
@@ -786,11 +793,7 @@ namespace System.Numerics.Tensors
             if (array is not null)
             {
                 int linearLength = array.Length;
-
-                if (linearLength != 0)
-                {
-                    return new TensorShape(linearLength, lengths, strides, linearRankOrder: []);
-                }
+                return new TensorShape(linearLength, lengths, strides, linearRankOrder: []);
             }
 
             if ((lengths.Length != 0) || (strides.Length != 0))
@@ -812,11 +815,7 @@ namespace System.Numerics.Tensors
                 }
 
                 linearLength -= start;
-
-                if (linearLength != 0)
-                {
-                    return new TensorShape(linearLength, lengths, strides, linearRankOrder: []);
-                }
+                return new TensorShape(linearLength, lengths, strides, linearRankOrder: []);
             }
             else if (start != 0)
             {
@@ -842,11 +841,7 @@ namespace System.Numerics.Tensors
                 }
 
                 linearLength -= start;
-
-                if (linearLength != 0)
-                {
-                    return new TensorShape(linearLength, lengths, strides, linearRankOrder);
-                }
+                return new TensorShape(linearLength, lengths, strides, linearRankOrder);
             }
             else if (start != 0)
             {
@@ -864,17 +859,14 @@ namespace System.Numerics.Tensors
         {
             if (!Unsafe.IsNullRef(ref reference))
             {
-                if (linearLength != 0)
-                {
-                    return new TensorShape(
-                        flattenedLength: linearLength,
-                        linearLength,
-                        lengths: [linearLength],
-                        strides: [1],
-                        linearRankOrder: [0],
-                        rank: 1
-                    );
-                }
+                return new TensorShape(
+                    flattenedLength: linearLength,
+                    linearLength,
+                    lengths: [linearLength],
+                    strides: [1],
+                    linearRankOrder: [0],
+                    rank: 1
+                );
             }
             else if (linearLength != 0)
             {
@@ -893,10 +885,7 @@ namespace System.Numerics.Tensors
         {
             if (!Unsafe.IsNullRef(ref reference))
             {
-                if (linearLength != 0)
-                {
-                    return new TensorShape(linearLength, lengths, strides, linearRankOrder);
-                }
+                return new TensorShape(linearLength, lengths, strides, linearRankOrder);
             }
             else if (linearLength != 0)
             {
