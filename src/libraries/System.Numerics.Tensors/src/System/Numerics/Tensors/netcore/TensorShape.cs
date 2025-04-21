@@ -143,6 +143,7 @@ namespace System.Numerics.Tensors
             }
 
             nint flattenedLength = 1;
+            nint minimumLinearLength = 0;
 
             if (strides.Length == 0)
             {
@@ -165,27 +166,23 @@ namespace System.Numerics.Tensors
                         ThrowHelper.ThrowArgument_LengthIsNegative();
                     }
 
+                    nint stride = flattenedLength;
+
+                    if (length > 1)
+                    {
+                        minimumLinearLength = checked(stride * length);
+                    }
+                    else
+                    {
+                        stride = 0;
+                        _tensorFlags |= TensorFlags.IsBroadcast;
+                    }
+
                     destinationLengths[linearRankIndex] = length;
-                    destinationStrides[linearRankIndex] = flattenedLength;
+                    destinationStrides[linearRankIndex] = stride;
 
                     flattenedLength = checked(flattenedLength * length);
                 }
-
-                // This path cannot have any broadcasting, so once we've finished computing
-                // everything physically present in the input we need to ensure that the
-                // linearLength is greater than or equal to the flattenedLength which ensures
-                // that lengths is in range of the backing buffer.
-
-                if (linearLength != -1)
-                {
-                    ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, flattenedLength);
-                }
-                linearLength = flattenedLength;
-
-                // When no strides are specified, the way we construct them makes it so that the
-                // underlying memory is contiguous and dense. This means that we can set the flag
-                // to indicate that the tensor is contiguous and dense without any further checks.
-                _tensorFlags |= TensorFlags.IsContiguousAndDense;
             }
             else if (strides.Length != lengths.Length)
             {
@@ -206,10 +203,7 @@ namespace System.Numerics.Tensors
                 // n+1. This makes it convenient to support implicit broadcasting where higher dimensions
                 // aren't actually stored in memory.
 
-                int i = 0;
-                nint minimumLinearLength = 1;
-
-                while (i < destinationLinearRankOrder.Length)
+                for (int i = 0; i < destinationLinearRankOrder.Length; i++)
                 {
                     int rankIndex = destinationLinearRankOrder.Length - (i + 1);
                     int linearRankIndex = destinationLinearRankOrder[rankIndex];
@@ -237,6 +231,14 @@ namespace System.Numerics.Tensors
                             ThrowHelper.ThrowArgument_InvalidTensorShape();
                         }
 
+                        if (length <= 1)
+                        {
+                            // We require the stride to be zero if the dimension length
+                            // is 0 or 1, as this is necessary for indexing with broadcast to
+                            // work as expected.
+                            ThrowHelper.ThrowArgument_InvalidTensorShape();
+                        }
+
                         minimumLinearLength = checked(stride * length);
                     }
                     else
@@ -248,25 +250,31 @@ namespace System.Numerics.Tensors
                     destinationStrides[linearRankIndex] = stride;
 
                     flattenedLength = checked(flattenedLength * length);
-                    i++;
                 }
-
-                // This path can have broadcasting, so once we've finished computing
-                // everything physically present in the input we need to ensure that the
-                // linearLength is greater than or equal to the minimumLinearLength which
-                // ensures that lengths and strides are in range of the backing buffer.
-
-                if (linearLength != -1)
-                {
-                    ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, minimumLinearLength);
-                }
-                linearLength = minimumLinearLength;
             }
 
-            Debug.Assert((linearLength == 0) || ((flattenedLength % linearLength) == 0));
+            // Once we've finished computing everything physically present in the input
+            // we need to ensure that the linearLength is greater than or equal to the
+            // minimumLinearLength so that lengths is in range of the backing buffer and
+            // so that we can support broadcasting for anything that was length 1.
+
+            if (linearLength != -1)
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, minimumLinearLength);
+            }
+
+            if (flattenedLength == minimumLinearLength)
+            {
+                // When the flattenedLength and minimumLinearLength are the same, then the
+                // underlying buffer is "contiguous and dense" which allows various other
+                // optimizations to be utilized when processing the tensor.
+                _tensorFlags |= TensorFlags.IsContiguousAndDense;
+            }
+
+            Debug.Assert((minimumLinearLength == 0) || ((flattenedLength % minimumLinearLength) == 0));
 
             _flattenedLength = flattenedLength;
-            _linearLength = linearLength;
+            _linearLength = minimumLinearLength;
 
             _rank = rank;
         }
