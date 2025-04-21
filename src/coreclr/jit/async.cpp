@@ -228,6 +228,19 @@ void AsyncLiveness::GetLiveLocals(jitstd::vector<LiveLocalInfo>& liveLocals, uns
 // Returns:
 //   Suitable phase status.
 //
+// Remarks:
+//   This transformation creates the state machine structure of the async
+//   function. After each async call a check for whether that async call
+//   suspended is inserted. If the check passes a continuation is allocated
+//   into which the live state is stored. The continuation is returned back to
+//   the caller to indicate that now this function also suspended.
+//
+//   Associated with each suspension point is also resumption IR. The
+//   resumption IR restores all live state from the continuation object. IR is
+//   inserted at the beginning of the function to dispatch on the continuation
+//   (if one is present), which each suspension point having an associated
+//   state number that can be switched over.
+//
 PhaseStatus Compiler::TransformAsync()
 {
     assert(compIsAsync());
@@ -729,9 +742,9 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 //   STORE_LCL_VAR/STORE_LCL_FLD that follows the call node.
 //
 // Parameters:
-//   block        - The block containing the async call
-//   call         - The async call
-//   life         - Liveness information about live locals
+//   block - The block containing the async call
+//   call  - The async call
+//   life  - Liveness information about live locals
 //
 // Returns:
 //   Information about the definition after canonicalization.
