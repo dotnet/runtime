@@ -126,8 +126,7 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
         // frame pointer for accessing the locals in the parent method.
         NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
-        PROLOG_PUSH  "{r7, lr}"
-        PROLOG_STACK_SAVE r7
+        PROLOG_PUSH  "{r11, lr}"
 
         // On entry:
         //
@@ -143,6 +142,6 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
         // Invoke the filter funclet
         blx r2
 
-        EPILOG_POP   "{r7, pc}"
+        EPILOG_POP   "{r11, pc}"
 
         NESTED_END CallEHFilterFunclet, _TEXT
