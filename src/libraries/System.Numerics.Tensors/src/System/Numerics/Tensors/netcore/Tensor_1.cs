@@ -399,7 +399,7 @@ namespace System.Numerics.Tensors
                 _indexes[^1] = -1;
 
                 _linearOffset = tensor._start - (!tensor.IsEmpty ? tensor.Strides[^1] : 0);
-                _itemsEnumerated = -1;
+                _itemsEnumerated = 0;
             }
 
             /// <inheritdoc cref="IEnumerator{T}.Current" />
@@ -426,7 +426,7 @@ namespace System.Numerics.Tensors
                 _indexes[^1] = -1;
 
                 _linearOffset = _tensor._start - (!_tensor.IsEmpty ? _tensor.Strides[^1] : 0);
-                _itemsEnumerated = -1;
+                _itemsEnumerated = 0;
             }
 
             //
