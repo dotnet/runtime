@@ -667,5 +667,85 @@ namespace System.Formats.Tar.Tests
             // The last byte should be a null character
             Assert.Equal(octalSizeBytes, buffer.Take(octalSizeBytes.Length).ToArray());
         }
+
+        [Fact]
+        public void ATime_CTime_Epochs_ShouldBeNulls()
+        {
+            // The GNU format sets the access and change times to nulls when they are set to the unix epoch.
+
+            using MemoryStream ms = new();
+
+            using (TarWriter writer = new(ms, TarEntryFormat.Gnu, leaveOpen: true))
+            {
+                // Should not be "0" characters, but null characters
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName)
+                {
+                    AccessTime = DateTimeOffset.UnixEpoch,
+                    ChangeTime = DateTimeOffset.UnixEpoch
+                };
+                writer.WriteEntry(entry);
+            }
+            ms.Position = 0;
+
+            // Publicly they should be the unix epoch
+            using (TarReader reader = new(ms, leaveOpen: true))
+            {
+                GnuTarEntry entry = reader.GetNextEntry() as GnuTarEntry;
+                Assert.NotNull(entry);
+                Assert.Equal(DateTimeOffset.UnixEpoch, entry.AccessTime);
+                Assert.Equal(DateTimeOffset.UnixEpoch, entry.ChangeTime);
+            }
+
+            ValidateATimeAndCTimeBytes(ms);
+        }
+
+        [Fact]
+        public async Task ATime_CTime_Epochs_ShouldBeNulls_Async()
+        {
+            await using MemoryStream ms = new();
+
+            await using (TarWriter writer = new(ms, TarEntryFormat.Gnu, leaveOpen: true))
+            {
+                // Should not be "0" characters, but null characters
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName)
+                {
+                    AccessTime = DateTimeOffset.UnixEpoch,
+                    ChangeTime = DateTimeOffset.UnixEpoch
+                };
+                await writer.WriteEntryAsync(entry);
+            }
+            ms.Position = 0;
+
+            // Publicly they should be the unix epoch
+            await using (TarReader reader = new(ms, leaveOpen: true))
+            {
+                GnuTarEntry entry = await reader.GetNextEntryAsync() as GnuTarEntry;
+                Assert.NotNull(entry);
+                Assert.Equal(DateTimeOffset.UnixEpoch, entry.AccessTime);
+                Assert.Equal(DateTimeOffset.UnixEpoch, entry.ChangeTime);
+            }
+
+            ValidateATimeAndCTimeBytes(ms);
+        }
+
+        private void ValidateATimeAndCTimeBytes(MemoryStream ms)
+        {
+            // internally, atime and ctime should be nulls
+
+            // name, mode, uid, gid, size, mtime, checksum, typeflag, linkname, magic, uname, gname, devmajor, devminor,
+            // atime, ctime
+            int aTimeStart = 100 + 8 + 8 + 8 + 12 + 12 + 8 + 1 + 100 + 8 + 32 + 32 + 8 + 8;
+            int cTimeStart = aTimeStart + 12;
+            byte[] buffer = new byte[12]; // atime and ctime are 12 bytes in length
+
+            ms.Seek(aTimeStart, SeekOrigin.Begin);
+            ms.Read(buffer);
+
+            Assert.All(buffer, b => Assert.Equal(0, b)); // All should be nulls
+
+            ms.Seek(cTimeStart, SeekOrigin.Begin);
+            ms.Read(buffer);
+            Assert.All(buffer, b => Assert.Equal(0, b)); // All should be nulls
+        }
     }
 }

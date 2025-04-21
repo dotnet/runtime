@@ -1132,6 +1132,11 @@ namespace System.Formats.Tar
         // Writes the specified DateTimeOffset's Unix time seconds, and returns its checksum.
         private int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination)
         {
+            if (timestamp == DateTimeOffset.UnixEpoch)
+            {
+                return 0;
+            }
+
             long unixTimeSeconds = timestamp.ToUnixTimeSeconds();
             return FormatNumeric(unixTimeSeconds, destination);
         }
