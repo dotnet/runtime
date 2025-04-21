@@ -74,7 +74,7 @@ public static unsafe class UnsafeAccessorsTestsTypes
     {
         Console.WriteLine($"Running {nameof(Verify_Type_InvalidArgument)}");
 
-        Assert.Throws<COMException>(() => CallStaticMethod1(null));
+        AssertExtensions.ThrowsAny<COMException, InvalidProgramException>(() => CallStaticMethod1(null));
         Assert.Throws<TypeLoadException>(() => CallStaticMethod2(null));
         Assert.Throws<NotSupportedException>(() => CallStaticMethod3(null));
 

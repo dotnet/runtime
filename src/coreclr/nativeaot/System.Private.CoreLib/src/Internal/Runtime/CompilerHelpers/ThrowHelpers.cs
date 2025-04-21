@@ -115,5 +115,12 @@ namespace Internal.Runtime.CompilerHelpers
         {
             throw new NotSupportedException(SR.NotSupported_InlineArrayEqualsGetHashCode);
         }
+
+        [DoesNotReturn]
+        [DebuggerHidden]
+        internal static void ThrowNotSupportedException()
+        {
+            throw new NotSupportedException(SR.NotSupported_InlineArrayEqualsGetHashCode);
+        }
     }
 }

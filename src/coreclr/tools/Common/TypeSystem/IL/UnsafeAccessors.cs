@@ -40,15 +40,21 @@ namespace Internal.IL
                 Declaration = method
             };
 
-            MethodSignature sig = method.Signature;
-            TypeDesc retType = sig.ReturnType;
-            TypeDesc firstArgType = null;
-            if (sig.Length > 0)
+            SetTargetResult result;
+
+            result = TrySetTargetMethodSignature(ref context);
+            if (result is not SetTargetResult.Success)
             {
-                firstArgType = sig[0];
+                return GenerateAccessorSpecificFailure(ref context, name, result, isSignatureLoad: true);
             }
 
-            SetTargetResult result;
+            TypeDesc retType = context.DeclarationSignature.ReturnType;
+
+            TypeDesc firstArgType = null;
+            if (context.DeclarationSignature.Length > 0)
+            {
+                firstArgType = context.DeclarationSignature[0];
+            }
 
             // Using the kind type, perform the following:
             //  1) Validate the basic type information from the signature.
@@ -110,7 +116,7 @@ namespace Internal.IL
                 case UnsafeAccessorKind.Field:
                 case UnsafeAccessorKind.StaticField:
                     // Field access requires a single argument for target type and a return type.
-                    if (sig.Length != 1 || retType.IsVoid)
+                    if (context.DeclarationSignature.Length != 1 || retType.IsVoid)
                     {
                         return GenerateAccessorBadImageFailure(method);
                     }
@@ -209,6 +215,7 @@ namespace Internal.IL
         {
             public UnsafeAccessorKind Kind;
             public EcmaMethod Declaration;
+            public MethodSignature DeclarationSignature;
             public TypeDesc TargetType;
             public bool IsTargetStatic;
             public MethodDesc TargetMethod;
@@ -241,7 +248,7 @@ namespace Internal.IL
 
         private static bool DoesMethodMatchUnsafeAccessorDeclaration(ref GenerationContext context, MethodDesc method, bool ignoreCustomModifiers)
         {
-            MethodSignature declSig = context.Declaration.Signature;
+            MethodSignature declSig = context.DeclarationSignature;
             MethodSignature maybeSig = method.Signature;
 
             // Check if we need to also validate custom modifiers.
@@ -249,14 +256,14 @@ namespace Internal.IL
             if (!ignoreCustomModifiers)
             {
                 // Compare any unmanaged callconv and custom modifiers on the signatures.
-                // We treat unmanaged calling conventions at the same level of precedance
+                // We treat unmanaged calling conventions at the same level of precedence
                 // as custom modifiers, eventhough they are normally bits in a signature.
-                ReadOnlySpan<EmbeddedSignatureDataKind> kinds = new EmbeddedSignatureDataKind[]
-                {
+                ReadOnlySpan<EmbeddedSignatureDataKind> kinds =
+                [
                     EmbeddedSignatureDataKind.UnmanagedCallConv,
                     EmbeddedSignatureDataKind.RequiredCustomModifier,
                     EmbeddedSignatureDataKind.OptionalCustomModifier
-                };
+                ];
 
                 var declData = declSig.GetEmbeddedSignatureData(kinds) ?? Array.Empty<EmbeddedSignatureData>();
                 var maybeData = maybeSig.GetEmbeddedSignatureData(kinds) ?? Array.Empty<EmbeddedSignatureData>();
@@ -405,6 +412,7 @@ namespace Internal.IL
             Missing,
             Ambiguous,
             Invalid,
+            NotSupported
         }
 
         private static SetTargetResult TrySetTargetMethod(ref GenerationContext context, string name, bool ignoreCustomModifiers = true)
@@ -494,6 +502,103 @@ namespace Internal.IL
             return SetTargetResult.Missing;
         }
 
+        private static SetTargetResult TrySetTargetMethodSignature(ref GenerationContext context)
+        {
+            EcmaMethod method = context.Declaration;
+            MetadataReader reader = method.MetadataReader;
+            MethodDefinition methodDef = reader.GetMethodDefinition(method.Handle);
+            ParameterHandleCollection parameters = methodDef.GetParameters();
+
+            MethodSignature originalSignature = method.Signature;
+
+            MethodSignatureBuilder updatedSignature = new MethodSignatureBuilder(originalSignature);
+
+            foreach (ParameterHandle parameterHandle in parameters)
+            {
+                Parameter parameter = reader.GetParameter(parameterHandle);
+                CustomAttribute? unsafeAccessorTypeAttribute = null;
+                foreach (CustomAttributeHandle customAttributeHandle in parameter.GetCustomAttributes())
+                {
+                    reader.GetAttributeNamespaceAndName(customAttributeHandle, out StringHandle namespaceName, out StringHandle name);
+                    if (reader.StringComparer.Equals(namespaceName, "System.Runtime.CompilerServices")
+                        && reader.StringComparer.Equals(name, "UnsafeAccessorTypeAttribute"))
+                    {
+                        unsafeAccessorTypeAttribute = reader.GetCustomAttribute(customAttributeHandle);
+                        break;
+                    }
+                }
+
+                if (unsafeAccessorTypeAttribute is null)
+                {
+                    continue;
+                }
+
+                if (parameter.SequenceNumber > originalSignature.Length)
+                {
+                    return SetTargetResult.Invalid;
+                }
+
+                bool isReturnValue = parameter.SequenceNumber == 0;
+
+                TypeDesc initialType = isReturnValue ? originalSignature.ReturnType : originalSignature[parameter.SequenceNumber - 1];
+
+                bool initialTypeIsByRef = initialType.IsByRef;
+
+                if (initialTypeIsByRef)
+                {
+                    // We need to strip the byref off the type to get the
+                    // underlying type for the parameter.
+                    initialType = ((ParameterizedType)initialType).ParameterType;
+                }
+
+                if (initialType != method.Context.GetWellKnownType(WellKnownType.Object))
+                {
+                    // Illegal argument type for UnsafeAccessorTypeAttribute target
+                    return SetTargetResult.Invalid;
+                }
+
+                CustomAttributeValue<TypeDesc> decoded = unsafeAccessorTypeAttribute.Value.DecodeValue(
+                    new CustomAttributeTypeProvider(method.Module));
+
+                if (decoded.FixedArguments[0].Value is not string replacementTypeName)
+                {
+                    return SetTargetResult.Invalid;
+                }
+
+                TypeDesc replacementType = method.Module.GetTypeByCustomAttributeTypeName(replacementTypeName, throwIfNotFound: false);
+
+                if (replacementType is null)
+                {
+                    return SetTargetResult.Missing;
+                }
+
+                // Future versions of the runtime may support
+                // UnsafeAccessorTypeAttribute on value types.
+                if (replacementType.IsValueType)
+                {
+                    return SetTargetResult.NotSupported;
+                }
+
+                if (initialTypeIsByRef)
+                {
+                    // We need to reapply the byref to the type.
+                    replacementType = method.Context.GetByRefType(replacementType);
+                }
+
+                if (isReturnValue)
+                {
+                    updatedSignature.ReturnType = replacementType;
+                }
+                else
+                {
+                    updatedSignature[parameter.SequenceNumber - 1] = replacementType;
+                }
+            }
+
+            context.DeclarationSignature = updatedSignature.ToSignature();
+            return SetTargetResult.Success;
+        }
+
         private static MethodIL GenerateAccessor(ref GenerationContext context)
         {
             ILEmitter emit = new ILEmitter();
@@ -504,7 +609,7 @@ namespace Internal.IL
             // used to look up the target member to access and ignored
             // during dispatch.
             int beginIndex = context.IsTargetStatic ? 1 : 0;
-            int stubArgCount = context.Declaration.Signature.Length;
+            int stubArgCount = context.DeclarationSignature.Length;
             for (int i = beginIndex; i < stubArgCount; ++i)
             {
                 codeStream.EmitLdArg(i);
@@ -543,7 +648,7 @@ namespace Internal.IL
             return emit.Link(context.Declaration);
         }
 
-        private static MethodIL GenerateAccessorSpecificFailure(ref GenerationContext context, string name, SetTargetResult result)
+        private static MethodIL GenerateAccessorSpecificFailure(ref GenerationContext context, string name, SetTargetResult result, bool isSignatureLoad = false)
         {
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
@@ -562,6 +667,15 @@ namespace Internal.IL
             {
                 codeStream.EmitLdc((int)ExceptionStringID.InvalidProgramDefault);
                 thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
+            }
+            else if (result is SetTargetResult.NotSupported)
+            {
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException");
+            }
+            else if (isSignatureLoad)
+            {
+                Debug.Assert(result is SetTargetResult.Missing);
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowUnavailableType");
             }
             else
             {
