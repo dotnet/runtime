@@ -199,16 +199,16 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
-      <!-- true = boot config will have hard fingerprint; false = boot config will have soft fingerprint -->
-      <_WasmFingerprintBootConfig Condition="'$(_WasmInlineBootConfig)' == 'true'">$(_WasmFingerprintDotnetJs)</_WasmFingerprintBootConfig>
-      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(WasmFingerprintBootConfig)</_WasmFingerprintBootConfig>
-      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintBootConfig>
-      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
       <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true' and '$(_WasmInlineBootConfig)' == 'true'">dotnet.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true'">dotnet.boot.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == ''">blazor.boot.json</_WasmBootConfigFileName>
       <_WasmPublishBootConfigFileName>publish.$(_WasmBootConfigFileName)</_WasmPublishBootConfigFileName>
+      <!-- true = boot config will have hard fingerprint; false = boot config will have soft fingerprint -->
+      <_WasmFingerprintBootConfig Condition="'$(_WasmInlineBootConfig)' == 'true'">$(_WasmFingerprintDotnetJs)</_WasmFingerprintBootConfig>
+      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(WasmFingerprintBootConfig)</_WasmFingerprintBootConfig>
+      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''and $(_WasmBootConfigFileName.EndsWith('.js'))">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintBootConfig>
+      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
       <_WasmPreloadAssets>$(WasmPreloadAssets)</_WasmPreloadAssets>
       <_WasmPreloadAssets Condition="'$(_WasmPreloadAssets)' == ''">true</_WasmPreloadAssets>
 
