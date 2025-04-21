@@ -38,17 +38,17 @@ namespace System.Numerics.Tensors
         ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan();
 
         /// <summary>Creates a new readonly tensor span over a portion of the tensor starting at a specified position to the end of the tensor.</summary>
-        /// <param name="start">The initial index from which the tensor will be converted.</param>
+        /// <param name="startIndexes">The initial indexes from which the tensor will be converted.</param>
         /// <returns>The readonly tensor span representation of the tensor.</returns>
-        ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<nint> start);
+        ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<nint> startIndexes);
 
         /// <inheritdoc cref="AsReadOnlyTensorSpan(ReadOnlySpan{nint})" />
-        ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NIndex> startIndex);
+        ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NIndex> startIndexes);
 
         /// <summary>Creates a new readonly tensor span over a portion of the tensor defined by the specified range.</summary>
-        /// <param name="range">The range of the tensor to convert.</param>
+        /// <param name="ranges">The ranges of the tensor to convert.</param>
         /// <returns>The readonly tensor span representation of the tensor.</returns>
-        ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NRange> range);
+        ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NRange> ranges);
 
         /// <summary>Copies the contents of the tensor into a destination tensor span.</summary>
         /// <param name="destination">The destination tensor span.</param>
@@ -68,19 +68,19 @@ namespace System.Numerics.Tensors
         ref readonly T GetPinnableReference();
 
         /// <summary>Forms a slice out of the current tensor that begins at a specified index.</summary>
-        /// <param name="start">The indexes at which to begin the slice.</param>
-        /// <returns>A tensor that consists of all elements of the current tensor from <paramref name="start" /> to the end of the tensor.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="start" /> is greater than the number of items in the tensor.</exception>
-        TSelf Slice(params scoped ReadOnlySpan<nint> start);
+        /// <param name="startIndexes">The indexes at which to begin the slice.</param>
+        /// <returns>A tensor that consists of all elements of the current tensor from <paramref name="startIndexes" /> to the end of the tensor.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndexes" /> is greater than the number of items in the tensor.</exception>
+        TSelf Slice(params scoped ReadOnlySpan<nint> startIndexes);
 
         /// <inheritdoc cref="Slice(ReadOnlySpan{nint})" />
-        TSelf Slice(params scoped ReadOnlySpan<NIndex> startIndex);
+        TSelf Slice(params scoped ReadOnlySpan<NIndex> startIndexes);
 
         /// <summary>Gets a slice out of the current tensor that contains a specified range.</summary>
-        /// <param name="range">The range of which to slice.</param>
-        /// <returns>A tensor that consists of all elements of the current tensor in <paramref name="range" />.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="range" /> is larger than the tensor.</exception>
-        TSelf Slice(params scoped ReadOnlySpan<NRange> range);
+        /// <param name="ranges">The range of which to slice.</param>
+        /// <returns>A tensor that consists of all elements of the current tensor in <paramref name="ranges" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="ranges" /> is larger than the tensor.</exception>
+        TSelf Slice(params scoped ReadOnlySpan<NRange> ranges);
 
         /// <summary>Attempts to copy the contents of this tensor into a destination tensor span and returns a value to indicate whether or not the operation succeeded.</summary>
         /// <param name="destination">The target of the copy operation.</param>

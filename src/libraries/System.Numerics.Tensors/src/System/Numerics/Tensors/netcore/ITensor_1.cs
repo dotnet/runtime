@@ -62,27 +62,27 @@ namespace System.Numerics.Tensors
         new ref T this[params scoped ReadOnlySpan<NIndex> indexes] { get; }
 
         /// <summary>Gets or sets a slice out of the current tensor that contains a specified range.</summary>
-        /// <param name="range">The range of which to slice.</param>
-        /// <returns>A tensor that consists of all elements of the current tensor in <paramref name="range" />.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="range" /> is larger than the tensor.</exception>
-        new TSelf this[params scoped ReadOnlySpan<NRange> range] { get; set; }
+        /// <param name="ranges">The range of which to slice.</param>
+        /// <returns>A tensor that consists of all elements of the current tensor in <paramref name="ranges" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="ranges" /> is larger than the tensor.</exception>
+        new TSelf this[params scoped ReadOnlySpan<NRange> ranges] { get; set; }
 
         /// <summary>Creates a new tensor span over the tensor.</summary>
         /// <returns>The tensor span representation of the tensor.</returns>
         TensorSpan<T> AsTensorSpan();
 
         /// <summary>Creates a new tensor span over a portion of the tensor starting at a specified position to the end of the tensor.</summary>
-        /// <param name="start">The initial index from which the tensor will be converted.</param>
+        /// <param name="startIndexes">The initial indexes from which the tensor will be converted.</param>
         /// <returns>The tensor span representation of the tensor.</returns>
-        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<nint> start);
+        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<nint> startIndexes);
 
         /// <inheritdoc cref="AsTensorSpan(ReadOnlySpan{nint})" />
-        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NIndex> startIndex);
+        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NIndex> startIndexes);
 
         /// <summary>Creates a new tensor span over a portion of the tensor defined by the specified range.</summary>
-        /// <param name="range">The range of the tensor to convert.</param>
+        /// <param name="ranges">The ranges of the tensor to convert.</param>
         /// <returns>The tensor span representation of the tensor.</returns>
-        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NRange> range);
+        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NRange> ranges);
 
         /// <inheritdoc cref="ITensor.Fill(object)" />
         void Fill(T value);

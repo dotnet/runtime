@@ -1372,7 +1372,7 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorTransposeTests()
         {
             Tensor<float> t0 = Tensor.Create<float>((Enumerable.Range(0, 4).Select(i => (float)i)), lengths: [2, 2]);
-            var t1 = Tensor.PermuteDimensions(t0);
+            var t1 = t0.PermuteDimensions([]);
 
             Assert.Equal(0, t1[0, 0]);
             Assert.Equal(2, t1[0, 1]);
@@ -1380,7 +1380,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(3, t1[1, 1]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 6).Select(i => (float)i)), lengths: [2, 3]);
-            t1 = Tensor.PermuteDimensions(t0);
+            t1 = t0.PermuteDimensions([]);
 
             Assert.Equal(3, t1.Lengths[0]);
             Assert.Equal(2, t1.Lengths[1]);
@@ -1392,7 +1392,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(5, t1[2, 1]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 6).Select(i => (float)i)), lengths: [1, 2, 3]);
-            t1 = Tensor.PermuteDimensions(t0);
+            t1 = t0.PermuteDimensions([]);
 
             Assert.Equal(3, t1.Lengths[0]);
             Assert.Equal(2, t1.Lengths[1]);
@@ -1405,7 +1405,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(5, t1[2, 1, 0]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), lengths: [2, 2, 3]);
-            t1 = Tensor.PermuteDimensions(t0);
+            t1 = t0.PermuteDimensions([]);
 
             Assert.Equal(3, t1.Lengths[0]);
             Assert.Equal(2, t1.Lengths[1]);
@@ -1424,7 +1424,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(11, t1[2, 1, 1]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), lengths: [2, 2, 3]);
-            t1 = Tensor.PermuteDimensions(t0, 1, 2, 0);
+            t1 = t0.PermuteDimensions([1, 2, 0]);
 
             Assert.Equal(2, t1.Lengths[0]);
             Assert.Equal(3, t1.Lengths[1]);
