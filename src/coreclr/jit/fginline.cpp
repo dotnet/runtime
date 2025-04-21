@@ -2002,12 +2002,8 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 //    newStmt   - updated with the new statement
 //    callDI    - debug info for the call
 //
-void Compiler::fgInsertInlineeArgument(InlineInfo*       inlineInfo,
-                                       const InlArgInfo& argInfo,
-                                       BasicBlock*       block,
-                                       Statement**       afterStmt,
-                                       Statement**       newStmt,
-                                       const DebugInfo&  callDI)
+void Compiler::fgInsertInlineeArgument(
+    const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI)
 {
     const bool argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
     CallArg*   arg            = argInfo.arg;
@@ -2253,7 +2249,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         }
 
         assert(argInfo != nullptr);
-        fgInsertInlineeArgument(inlineInfo, *argInfo, block, &afterStmt, &newStmt, callDI);
+        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
     }
 
     // Add the CCTOR check if asked for.
