@@ -6075,53 +6075,6 @@ CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBox(CORINFO_CLASS_HANDLE  cls)
 }
 
 /***********************************************************************/
-// Get a representation for a stack-allocated boxed value type
-//
-CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_CLASS_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle VMClsHnd(cls);
-    if (Nullable::IsNullableType(VMClsHnd))
-    {
-        VMClsHnd = VMClsHnd.AsMethodTable()->GetInstantiation()[0];
-    }
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (VMClsHnd.RequiresAlign8())
-    {
-        // TODO: Maybe handle 32 bit platforms with 8 byte alignments
-        result = NULL;
-    }
-    else
-#endif
-    {
-        Instantiation boxedFieldsInst(&VMClsHnd, 1);
-        TypeHandle stackAllocatedBox = CoreLibBinder::GetClass(CLASS__STACKALLOCATEDBOX);
-        TypeHandle stackAllocatedBoxInst = stackAllocatedBox.Instantiate(boxedFieldsInst);
-        result = static_cast<CORINFO_CLASS_HANDLE>(stackAllocatedBoxInst.AsPtr());
-
-#ifdef _DEBUG
-        FieldDesc* pValueFD = CoreLibBinder::GetField(FIELD__STACKALLOCATEDBOX__VALUE);
-        DWORD index = pValueFD->GetApproxEnclosingMethodTable()->GetIndexForFieldDesc(pValueFD);
-        _ASSERTE(stackAllocatedBoxInst.GetMethodTable()->GetFieldDescByIndex(index)->GetOffset() == TARGET_POINTER_SIZE);
-#endif
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/***********************************************************************/
 // see code:Nullable#NullableVerification
 CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
