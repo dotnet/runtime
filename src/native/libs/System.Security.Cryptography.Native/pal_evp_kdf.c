@@ -7,6 +7,8 @@
 
 #include <assert.h>
 
+#define HKDF_MAX_PARAMETERS 6
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
 void CryptoNative_EvpKdfFree(EVP_KDF* kdf)
@@ -202,7 +204,7 @@ static int32_t HkdfCore(
         size_t keyLengthT = Int32ToSizeT(keyLength);
         size_t destinationLengthT = Int32ToSizeT(destinationLength);
 
-        OSSL_PARAM params[6] = {{0}};
+        OSSL_PARAM params[HKDF_MAX_PARAMETERS] = {{0}};
         int i = 0;
         params[i++] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, (void*)key, keyLengthT);
         params[i++] = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, algorithm, 0);
@@ -220,7 +222,8 @@ static int32_t HkdfCore(
         }
 
         params[i++] = OSSL_PARAM_construct_int(OSSL_KDF_PARAM_MODE, &operation);
-        params[i++] = OSSL_PARAM_construct_end();
+        params[i] = OSSL_PARAM_construct_end();
+        assert(i < HKDF_MAX_PARAMETERS);
 
         if (EVP_KDF_derive(ctx, destination, destinationLengthT, params) <= 0)
         {
