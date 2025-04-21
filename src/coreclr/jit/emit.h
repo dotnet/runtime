@@ -799,7 +799,7 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:         38 bits
-        // amd64:       38 bits
+        // amd64:       26 bits
         // arm:         32 bits
         // arm64:       46 bits
         // loongarch64: 28 bits
@@ -888,7 +888,7 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:         49 bits
-        // amd64:       49 bits
+        // amd64:       51 bits
         // arm:         48 bits
         // arm64:       55 bits
         // loongarch64: 46 bits
@@ -941,7 +941,7 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
         // x86:         55/51 bits
-        // amd64:       56/51 bits
+        // amd64:       58/53 bits
         // arm:         54/50 bits
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
