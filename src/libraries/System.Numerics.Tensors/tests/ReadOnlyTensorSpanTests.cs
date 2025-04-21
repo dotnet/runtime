@@ -50,7 +50,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, spanInt.Strides[0]);
             Assert.Equal(1, spanInt.Strides[1]);
             // Make sure it still throws on index 0, 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => {
+            Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new ReadOnlyTensorSpan<int>(b);
                 var x = spanInt[0, 0];
             });
@@ -72,25 +72,25 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(91, spanInt[0, 0]);
             Assert.Equal(92, spanInt[0, 1]);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<IndexOutOfRangeException>(() =>
             {
                 var spanInt = new ReadOnlyTensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
                 var x = spanInt[1, 1];
             });
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<IndexOutOfRangeException>(() =>
             {
                 var spanInt = new ReadOnlyTensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
                 var x = spanInt[0, -1];
             });
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<IndexOutOfRangeException>(() =>
             {
                 var spanInt = new ReadOnlyTensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
                 var x = spanInt[-1, 0];
             });
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<IndexOutOfRangeException>(() =>
             {
                 var spanInt = new ReadOnlyTensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
                 var x = spanInt[1, 0];
@@ -259,7 +259,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, spanInt.FlattenedLength);
             Assert.Equal(1, spanInt.Strides[0]);
             // Make sure it still throws on index 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => {
+            Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new ReadOnlyTensorSpan<int>(b);
                 var x = spanInt[0];
             });
@@ -289,12 +289,12 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(91, spanInt[0, 0]);
             Assert.Equal(92, spanInt[0, 1]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => {
+            Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new ReadOnlyTensorSpan<int>(a, 0, [1, 2], default);
                 var x = spanInt[1, 1];
             });
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => {
+            Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new ReadOnlyTensorSpan<int>(a, 0, [1, 2], default);
                 var x = spanInt[1, 0];
             });
@@ -437,13 +437,13 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(91, spanInt[0, 0]);
             Assert.Equal(92, spanInt[0, 1]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => {
+            Assert.Throws<IndexOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
                 var spanInt = new ReadOnlyTensorSpan<int>(a, [1, 2], default);
                 var x = spanInt[1, 1];
             });
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => {
+            Assert.Throws<IndexOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
                 var spanInt = new ReadOnlyTensorSpan<int>(a, [1, 2], default);
                 var x = spanInt[1, 0];
@@ -607,7 +607,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(2, spanInt.Lengths[1]);
                 Assert.Equal(91, spanInt[0, 0]);
                 Assert.Equal(92, spanInt[0, 1]);
-                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                Assert.Throws<IndexOutOfRangeException>(() =>
                 {
                     Span<int> a = [91, 92, -93, 94];
                     fixed (int* p = a)
@@ -617,7 +617,7 @@ namespace System.Numerics.Tensors.Tests
                     }
                 });
 
-                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                Assert.Throws<IndexOutOfRangeException>(() =>
                 {
                     Span<int> a = [91, 92, -93, 94];
                     fixed (int* p = a)
@@ -1056,7 +1056,7 @@ namespace System.Numerics.Tensors.Tests
 
             sp = spanInt.Slice(0..1, 0..1);
             Assert.Equal(1, sp[0, 0]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => a.AsTensorSpan([3, 3]).Slice(0..1, 0..1)[0, 1]);
+            Assert.Throws<IndexOutOfRangeException>(() => a.AsTensorSpan([3, 3]).Slice(0..1, 0..1)[0, 1]);
             slice = [1];
             results = new int[1];
             sp.FlattenTo(results);

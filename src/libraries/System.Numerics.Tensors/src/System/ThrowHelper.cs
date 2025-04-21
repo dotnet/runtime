@@ -31,7 +31,7 @@ namespace System
 
         public static void ThrowIfArrayTypeMismatch<T>(Array? array)
         {
-            if ((array is not null) && (array.GetType() != typeof(T[])))
+            if ((array is not null) && (array.GetType().GetElementType() != typeof(T)))
             {
                 ThrowArrayTypeMismatchException();
             }

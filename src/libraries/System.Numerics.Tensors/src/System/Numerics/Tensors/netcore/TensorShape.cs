@@ -1023,9 +1023,8 @@ namespace System.Numerics.Tensors
 
                 if ((offset < 0) || (offset >= previousLength))
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                    ThrowHelper.ThrowIndexOutOfRangeException();
                 }
-
                 return offset;
             }
 
@@ -1044,9 +1043,8 @@ namespace System.Numerics.Tensors
 
                 if ((offset < 0) || (offset >= previousLength))
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                    ThrowHelper.ThrowIndexOutOfRangeException();
                 }
-
                 return offset;
             }
 
