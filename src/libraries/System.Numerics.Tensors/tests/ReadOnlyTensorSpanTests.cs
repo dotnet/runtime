@@ -48,7 +48,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, spanInt.Lengths[1]);
             Assert.Equal(0, spanInt.FlattenedLength);
             Assert.Equal(0, spanInt.Strides[0]);
-            Assert.Equal(1, spanInt.Strides[1]);
+            Assert.Equal(0, spanInt.Strides[1]);
             // Make sure it still throws on index 0, 0
             Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new ReadOnlyTensorSpan<int>(b);
@@ -270,7 +270,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, spanInt.Rank);
             Assert.Equal(0, spanInt.Lengths[0]);
             Assert.Equal(0, spanInt.FlattenedLength);
-            Assert.Equal(1, spanInt.Strides[0]);
+            Assert.Equal(0, spanInt.Strides[0]);
 
             // Make sure 2D array works
             spanInt = new ReadOnlyTensorSpan<int>(a, 0, [2,2], default);
@@ -777,11 +777,11 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, spanInt.Lengths[4]);
             Assert.Equal(6, spanInt.Lengths[5]);
             Assert.Equal(6, spanInt.Strides.Length);
-            Assert.Equal(6, spanInt.Strides[0]);
-            Assert.Equal(6, spanInt.Strides[1]);
-            Assert.Equal(6, spanInt.Strides[2]);
-            Assert.Equal(6, spanInt.Strides[3]);
-            Assert.Equal(6, spanInt.Strides[4]);
+            Assert.Equal(0, spanInt.Strides[0]);
+            Assert.Equal(0, spanInt.Strides[1]);
+            Assert.Equal(0, spanInt.Strides[2]);
+            Assert.Equal(0, spanInt.Strides[3]);
+            Assert.Equal(0, spanInt.Strides[4]);
             Assert.Equal(1, spanInt.Strides[5]);
             Assert.Equal(91, spanInt[0, 0, 0, 0, 0, 0]);
             Assert.Equal(92, spanInt[0, 0, 0, 0, 0, 1]);
@@ -803,11 +803,11 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, spanInt.Lengths[4]);
             Assert.Equal(3, spanInt.Lengths[5]);
             Assert.Equal(6, spanInt.Strides.Length);
-            Assert.Equal(12, spanInt.Strides[0]);
+            Assert.Equal(0, spanInt.Strides[0]);
             Assert.Equal(6, spanInt.Strides[1]);
             Assert.Equal(3, spanInt.Strides[2]);
-            Assert.Equal(3, spanInt.Strides[3]);
-            Assert.Equal(3, spanInt.Strides[4]);
+            Assert.Equal(0, spanInt.Strides[3]);
+            Assert.Equal(0, spanInt.Strides[4]);
             Assert.Equal(1, spanInt.Strides[5]);
             Assert.Equal(91, spanInt[0, 0, 0, 0, 0, 0]);
             Assert.Equal(92, spanInt[0, 0, 0, 0, 0, 1]);
