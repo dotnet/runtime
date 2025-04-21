@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;
+namespace Microsoft.Diagnostics.CDac.Tests.ContractDescriptor;
 
 public unsafe class TargetTests
 {

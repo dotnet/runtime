@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName Condition="'$(TargetsWindows)' != 'true'">lib$(MSBuildProjectName)</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
+    <RootNamespace>Microsoft.Diagnostics.CDac</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Do not produce a public package. This ships as part of the runtime -->
@@ -23,7 +23,7 @@
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
   </ItemGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.CDac.Tests" />
   </ItemGroup>
   <ItemGroup>
     <InstallRuntimeComponentDestination Include="." />
@@ -44,7 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" />
+    <ProjectReference Include="..\Microsoft.Diagnostics.CDac\Microsoft.Diagnostics.CDac.csproj" />
   </ItemGroup>
 
 </Project>

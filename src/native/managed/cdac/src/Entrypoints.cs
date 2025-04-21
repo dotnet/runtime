@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.CDac.Legacy;
 
-namespace Microsoft.Diagnostics.DataContractReader;
+namespace Microsoft.Diagnostics.CDac;
 
 internal static class Entrypoints
 {

@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices.Marshalling;
 
-namespace Microsoft.Diagnostics.DataContractReader.Legacy;
+namespace Microsoft.Diagnostics.CDac.Legacy;
 
 [GeneratedComClass]
 internal sealed unsafe partial class ClrDataTask : IXCLRDataTask

@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-namespace Microsoft.Diagnostics.DataContractReader.Legacy;
+namespace Microsoft.Diagnostics.CDac.Legacy;
 
 [GeneratedComClass]
 internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRDataModule, IXCLRDataModule2

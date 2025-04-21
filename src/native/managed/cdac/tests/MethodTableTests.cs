@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
+using Microsoft.Diagnostics.CDac.Contracts;
+using Microsoft.Diagnostics.CDac.RuntimeTypeSystemHelpers;
 using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.CDac.Tests;
 
 using MockRTS = MockDescriptors.RuntimeTypeSystem;
 

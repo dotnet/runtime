@@ -4,9 +4,9 @@
 using Moq;
 using Xunit;
 
-using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.CDac.Contracts;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.CDac.Tests;
 
 public unsafe class ThreadTests
 {

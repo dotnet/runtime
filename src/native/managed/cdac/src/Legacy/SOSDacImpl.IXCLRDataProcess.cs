@@ -5,7 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-namespace Microsoft.Diagnostics.DataContractReader.Legacy;
+namespace Microsoft.Diagnostics.CDac.Legacy;
 
 /// <summary>
 /// Implementation of IXCLRDataProcess* interfaces intended to be passed out to consumers

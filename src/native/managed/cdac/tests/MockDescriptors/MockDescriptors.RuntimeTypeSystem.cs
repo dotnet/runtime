@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.CDac.Contracts;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.CDac.Tests;
 
 internal partial class MockDescriptors
 {

@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Diagnostics.DataContractReader.Legacy;
+namespace Microsoft.Diagnostics.CDac.Legacy;
 
 /// <summary>
 /// Implementation of ICLRDataEnumMemoryRegions interface intended to be passed out to consumers

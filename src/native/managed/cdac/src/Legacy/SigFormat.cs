@@ -5,9 +5,9 @@ using System;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.CDac.Contracts;
 
-namespace Microsoft.Diagnostics.DataContractReader.Legacy
+namespace Microsoft.Diagnostics.CDac.Legacy
 {
     internal static class SigFormat
     {

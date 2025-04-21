@@ -9,10 +9,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
-using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.CDac.Contracts;
+using Microsoft.Diagnostics.CDac.Contracts.Extensions;
 
-namespace Microsoft.Diagnostics.DataContractReader.Legacy;
+namespace Microsoft.Diagnostics.CDac.Legacy;
 
 /// <summary>
 /// Implementation of ISOSDacInterface* interfaces intended to be passed out to consumers

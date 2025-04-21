@@ -4,12 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.CDac.Contracts;
+using Microsoft.Diagnostics.CDac.Contracts.Extensions;
 using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.CDac.Tests;
 
 using MockReJIT = MockDescriptors.ReJIT;
 

@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;
+namespace Microsoft.Diagnostics.CDac.Tests.ContractDescriptor;
 
 internal class ContractDescriptorBuilder : MockMemorySpace.Builder
 {

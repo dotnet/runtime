@@ -5,7 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-namespace Microsoft.Diagnostics.DataContractReader.Legacy;
+namespace Microsoft.Diagnostics.CDac.Legacy;
 
 // This file contains managed declarations for the SOS-DAC interfaces.
 // See src/coreclr/inc/sospriv.idl

@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
+using Microsoft.Diagnostics.CDac.RuntimeTypeSystemHelpers;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.CDac.Tests;
 
 internal partial class MockDescriptors
 {

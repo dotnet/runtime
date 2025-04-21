@@ -475,7 +475,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdactests+'))">
-    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\Microsoft.Diagnostics.CDac.Tests.csproj" Test="true" Category="tools"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">

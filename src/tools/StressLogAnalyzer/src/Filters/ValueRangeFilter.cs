@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Diagnostics.DataContractReader;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.CDac;
+using Microsoft.Diagnostics.CDac.Contracts;
 
 namespace StressLogAnalyzer.Filters;
 

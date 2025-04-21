@@ -3,12 +3,12 @@
 
 using System;
 using System.Linq;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
+using Microsoft.Diagnostics.CDac.Contracts;
+using Microsoft.Diagnostics.CDac.RuntimeTypeSystemHelpers;
 using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.Tests;
+namespace Microsoft.Diagnostics.CDac.Tests;
 
 public class TypeDescTests
 {
