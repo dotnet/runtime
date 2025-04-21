@@ -5,6 +5,8 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
+using static System.Numerics.Tensors.TensorOperation;
 
 namespace System.Numerics.Tensors
 {
@@ -13,7 +15,7 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, T>(in TensorSpan<T> x)
             where TOperation : TensorOperation.IOperation<T>
         {
-            scoped Span<nint> indexes = RentedBuffer.Create(x.Rank, out nint linearOffset, out RentedBuffer rentedBuffer);
+            scoped Span<nint> indexes = RentedBuffer.Create(x.Rank, out nint linearOffset, out RentedBuffer<nint> rentedBuffer);
 
             for (nint i = 0; i < x.FlattenedLength; i++)
             {
@@ -31,8 +33,8 @@ namespace System.Numerics.Tensors
         {
             bool result = false;
 
-            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
-            scoped Span<nint> yIndexes = RentedBuffer.Create(y.Rank, out nint yLinearOffset, out RentedBuffer yRentedBuffer);
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
+            scoped Span<nint> yIndexes = RentedBuffer.Create(y.Rank, out nint yLinearOffset, out RentedBuffer<nint> yRentedBuffer);
             ref readonly TensorShape destinationShape = ref (x._shape.FlattenedLength > y._shape.FlattenedLength ? ref x._shape : ref y._shape);
 
             for (nint i = 0; i < x.FlattenedLength; i++)
@@ -63,7 +65,7 @@ namespace System.Numerics.Tensors
         {
             bool result = false;
 
-            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
 
             for (nint i = 0; i < x.FlattenedLength; i++)
             {
@@ -89,7 +91,7 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, TArg, TResult>(in TensorSpan<TResult> destination, TArg scalar)
             where TOperation : TensorOperation.IUnaryOperation_Scalar<TArg, TResult>
         {
-            scoped Span<nint> indexes = RentedBuffer.Create(destination.Rank, out nint linearOffset, out RentedBuffer rentedBuffer);
+            scoped Span<nint> indexes = RentedBuffer.Create(destination.Rank, out nint linearOffset, out RentedBuffer<nint> rentedBuffer);
 
             for (nint i = 0; i < destination.FlattenedLength; i++)
             {
@@ -106,8 +108,8 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in TensorSpan<TResult> destination)
             where TOperation : TensorOperation.IUnaryOperation_Tensor<TArg, TResult>
         {
-            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
-            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, out nint destinationLinearOffset, out RentedBuffer destinationRentedBuffer);
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
+            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, out nint destinationLinearOffset, out RentedBuffer<nint> destinationRentedBuffer);
 
             for (nint i = 0; i < destination.FlattenedLength; i++)
             {
@@ -128,7 +130,7 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in Span<TResult> destination)
             where TOperation : TensorOperation.IUnaryOperation_Tensor<TArg, TResult>
         {
-            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
             nint destinationIndex = -1;
 
             for (nint i = 0; i < destination.Length; i++)
@@ -148,7 +150,7 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, ref TResult destination)
             where TOperation : TensorOperation.IUnaryReduction_Tensor<TArg, TResult>
         {
-            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
 
             for (nint i = 0; i < x.FlattenedLength; i++)
             {
@@ -166,9 +168,9 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlyTensorSpan<TArg> y, in TensorSpan<TResult> destination)
             where TOperation : TensorOperation.IBinaryOperation_Tensor_Tensor<TArg, TResult>
         {
-            scoped Span<nint> xIndexes = RentedBuffer.Create(destination.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
-            scoped Span<nint> yIndexes = RentedBuffer.Create(destination.Rank, out nint yLinearOffset, out RentedBuffer yRentedBuffer);
-            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, out nint destinationLinearOffset, out RentedBuffer destinationRentedBuffer);
+            scoped Span<nint> xIndexes = RentedBuffer.Create(destination.Rank, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
+            scoped Span<nint> yIndexes = RentedBuffer.Create(destination.Rank, out nint yLinearOffset, out RentedBuffer<nint> yRentedBuffer);
+            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, out nint destinationLinearOffset, out RentedBuffer<nint> destinationRentedBuffer);
 
             for (nint i = 0; i < destination.FlattenedLength; i++)
             {
@@ -191,8 +193,8 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlyTensorSpan<TArg> y, ref TResult result)
             where TOperation : TensorOperation.IBinaryOperation_Tensor_Tensor<TArg, TResult>
         {
-            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
-            scoped Span<nint> yIndexes = RentedBuffer.Create(y.Rank, out nint yLinearOffset, out RentedBuffer yRentedBuffer);
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
+            scoped Span<nint> yIndexes = RentedBuffer.Create(y.Rank, out nint yLinearOffset, out RentedBuffer<nint> yRentedBuffer);
             ref readonly TensorShape destinationShape = ref (x._shape.FlattenedLength > y._shape.FlattenedLength ? ref x._shape : ref y._shape);
 
             nint loopCount = Math.Max(x.FlattenedLength, y.FlattenedLength);
@@ -224,8 +226,8 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, T1Arg, T2, TResult>(in ReadOnlyTensorSpan<T1Arg> x, T2 y, in TensorSpan<TResult> destination)
             where TOperation : TensorOperation.IBinaryOperation_Tensor_Scalar<T1Arg, T2, TResult>
         {
-            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
-            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, out nint destinationLinearOffset, out RentedBuffer destinationRentedBuffer);
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
+            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, out nint destinationLinearOffset, out RentedBuffer<nint> destinationRentedBuffer);
 
             for (nint i = 0; i < destination.FlattenedLength; i++)
             {
@@ -246,8 +248,8 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, TArg, TResult>(TArg x, in ReadOnlyTensorSpan<TArg> y, in TensorSpan<TResult> destination)
             where TOperation : TensorOperation.IBinaryOperation_Scalar_Tensor<TArg, TArg, TResult>
         {
-            scoped Span<nint> xIndexes = RentedBuffer.Create(y.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
-            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, out nint destinationLinearOffset, out RentedBuffer destinationRentedBuffer);
+            scoped Span<nint> xIndexes = RentedBuffer.Create(y.Rank, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
+            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, out nint destinationLinearOffset, out RentedBuffer<nint> destinationRentedBuffer);
 
             for (nint i = 0; i < destination.FlattenedLength; i++)
             {
@@ -268,7 +270,7 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, T1Arg, T2, TResult>(in ReadOnlyTensorSpan<T1Arg> x, T2 y, ref TResult result)
             where TOperation : TensorOperation.IBinaryOperation_Tensor_Scalar<T1Arg, T2, TResult>
         {
-            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer xRentedBuffer);
+            scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
 
             for (nint i = 0; i < x.FlattenedLength; i++)
             {
@@ -2534,21 +2536,34 @@ namespace System.Numerics.Tensors
             static abstract void Invoke(ReadOnlySpan<T> x, ref TResult destination);
         }
 
-        private ref struct RentedBuffer : IDisposable
+        internal readonly struct RentedBuffer
         {
-            private nint[]? _array;
-            private TensorShape.InlineBuffer<nint> _inline;
-
-            public static Span<nint> Create(int rank, out nint linearOffset, [UnscopedRef] out RentedBuffer rentedBuffer)
+            public static Span<T> Create<T>(int rank, out nint linearOffset, [UnscopedRef] out RentedBuffer<T> rentedBuffer)
+                where T : INumber<T>
             {
+                Span<T> output = RentedBuffer<T>.Create(rank, out rentedBuffer);
                 linearOffset = 0;
 
+                output[rank - 1] = T.CreateChecked(-1);
+                return output;
+            }
+
+            public static Span<T> CreateUninitialized<T>(int rank, [UnscopedRef] out RentedBuffer<T> rentedBuffer)
+                => RentedBuffer<T>.Create(rank, out rentedBuffer);
+        }
+
+        internal ref struct RentedBuffer<T> : IDisposable
+        {
+            private T[]? _array;
+            private TensorShape.InlineBuffer<T> _inline;
+
+            public static Span<T> Create(int rank, [UnscopedRef] out RentedBuffer<T> rentedBuffer)
+            {
                 if (rank > TensorShape.MaxInlineRank)
                 {
-                    rentedBuffer._array = ArrayPool<nint>.Shared.Rent(rank);
+                    rentedBuffer._array = ArrayPool<T>.Shared.Rent(rank);
                     Unsafe.SkipInit(out rentedBuffer._inline);
 
-                    rentedBuffer._array[rank - 1] = -1;
                     return rentedBuffer._array.AsSpan(0, rank);
                 }
                 else
@@ -2556,8 +2571,7 @@ namespace System.Numerics.Tensors
                     rentedBuffer._array = null;
                     rentedBuffer._inline = default;
 
-                    rentedBuffer._inline[rank - 1] = -1;
-                    return ((Span<nint>)rentedBuffer._inline)[..rank];
+                    return ((Span<T>)rentedBuffer._inline)[..rank];
                 }
             }
 
@@ -2565,7 +2579,7 @@ namespace System.Numerics.Tensors
             {
                 if (_array is not null)
                 {
-                    ArrayPool<nint>.Shared.Return(_array);
+                    ArrayPool<T>.Shared.Return(_array);
                     _array = null;
                 }
             }

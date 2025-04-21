@@ -120,6 +120,12 @@ namespace System.Numerics.Tensors
             _reference = ref data;
         }
 
+        internal TensorSpan(ref T data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, scoped ReadOnlySpan<int> linearRankOrder)
+        {
+            _shape = TensorShape.Create(ref data, dataLength, lengths, strides, linearRankOrder);
+            _reference = ref data;
+        }
+
         internal TensorSpan(ref T reference, scoped in TensorShape shape)
         {
             _reference = ref reference;

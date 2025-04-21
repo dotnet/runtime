@@ -31,6 +31,13 @@ namespace System.Numerics.Tensors
     // strides and the backing memory form a strict relationship that is validated by the
     // public constructors.
 
+    [Flags]
+    internal enum TensorFlags : uint
+    {
+        None = 0,
+        IsContiguousAndDense = 1
+    }
+
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal readonly struct TensorShape : IEquatable<TensorShape>
     {
@@ -54,7 +61,8 @@ namespace System.Numerics.Tensors
         private readonly InlineBuffer<nint> _inlineStrides;         // 4x8 bytes (32)
         private readonly InlineBuffer<int>  _inlineLinearRankOrder; // 4x4 bytes (16)
 
-        private readonly int _rank;                                 // 4 bytes
+        private readonly int _rank;
+        private readonly TensorFlags _tensorFlags;                  // 4 bytes
 
         private TensorShape(nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, scoped ReadOnlySpan<int> linearRankOrder)
         {
@@ -136,7 +144,7 @@ namespace System.Numerics.Tensors
 
             if (strides.Length == 0)
             {
-                // When no strides is specified, we need to computing them based on the given
+                // When no strides are specified, we need to computing them based on the given
                 // rank order. We use destinationLinearRankOrder here to ensure that we have a
                 // correct order even if no rank order was specified by the user.
                 //
@@ -160,6 +168,11 @@ namespace System.Numerics.Tensors
                     destinationLengths[linearRankIndex] = length;
                     destinationStrides[linearRankIndex] = flattenedLength;
                 }
+
+                // When no strides are specified, the way we construct them makes it so that the
+                // underlying memory is contiguous and dense. This means that we can set the flag
+                // to indicate that the tensor is contiguous and dense without any further checks.
+                _tensorFlags |= TensorFlags.IsContiguousAndDense;
             }
             else if (strides.Length != lengths.Length)
             {
@@ -297,6 +310,8 @@ namespace System.Numerics.Tensors
 
             _rank = rank;
         }
+
+        public bool IsContiguousAndDense => (_tensorFlags & TensorFlags.IsContiguousAndDense) != 0;
 
         public nint FlattenedLength => _flattenedLength;
 
@@ -767,6 +782,36 @@ namespace System.Numerics.Tensors
             return default;
         }
 
+        public static TensorShape Create<T>(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, scoped ReadOnlySpan<int> linearRankOrder)
+        {
+            if (array is not null)
+            {
+                int linearLength = array.Length;
+
+                if ((start < 0) || (start > linearLength))
+                {
+                    ThrowHelper.ThrowArgument_StartIndexOutOfBounds();
+                }
+
+                linearLength -= start;
+
+                if (linearLength != 0)
+                {
+                    return new TensorShape(linearLength, lengths, strides, linearRankOrder);
+                }
+            }
+            else if (start != 0)
+            {
+                ThrowHelper.ThrowArgument_StartIndexOutOfBounds();
+            }
+
+            if ((lengths.Length != 0) || (strides.Length != 0))
+            {
+                ThrowHelper.ThrowArgument_InvalidTensorShape();
+            }
+            return default;
+        }
+
         public static TensorShape Create<T>(ref T reference, nint linearLength)
         {
             if (!Unsafe.IsNullRef(ref reference))
@@ -791,12 +836,15 @@ namespace System.Numerics.Tensors
         }
 
         public static TensorShape Create<T>(ref T reference, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+            => Create(ref reference, linearLength, lengths, strides, linearRankOrder: []);
+
+        public static TensorShape Create<T>(ref T reference, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, scoped ReadOnlySpan<int> linearRankOrder)
         {
             if (!Unsafe.IsNullRef(ref reference))
             {
                 if (linearLength != 0)
                 {
-                    return new TensorShape(linearLength, lengths, strides, linearRankOrder: []);
+                    return new TensorShape(linearLength, lengths, strides, linearRankOrder);
                 }
             }
             else if (linearLength != 0)
