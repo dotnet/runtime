@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
             // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
             // If so, use that value.
             bool userSpecifiedSearchFlags = searchPath.HasValue;
-            if (!searchPath.HasValue)
+            if (!userSpecifiedSearchFlags)
             {
                 searchPath = GetDllImportSearchPath(assembly, out userSpecifiedSearchFlags);
             }

@@ -901,7 +901,7 @@ retry_with_libcoreclr:
 			mono_custom_attrs_free (cinfo);
 	}
 	gboolean user_specified_flags = flags >= 0;
-	if (flags < 0)
+	if (!user_specified_flags)
 		flags = DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY;
 	module = netcore_lookup_native_library (alc, image, new_scope, user_specified_flags, flags);
 
