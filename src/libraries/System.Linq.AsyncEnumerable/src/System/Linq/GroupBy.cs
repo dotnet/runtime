@@ -29,8 +29,8 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? Empty<IGrouping<TKey, TSource>>() :
@@ -66,8 +66,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? Empty<IGrouping<TKey, TSource>>() :
@@ -111,9 +111,9 @@ namespace System.Linq
             Func<TSource, TElement> elementSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(elementSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(elementSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<IGrouping<TKey, TElement>>() :
@@ -158,9 +158,9 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TElement>> elementSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(elementSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(elementSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<IGrouping<TKey, TElement>>() :
@@ -204,9 +204,9 @@ namespace System.Linq
             Func<TKey, IEnumerable<TSource>, TResult> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -253,9 +253,9 @@ namespace System.Linq
             Func<TKey, IEnumerable<TSource>, CancellationToken, ValueTask<TResult>> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -305,10 +305,10 @@ namespace System.Linq
             Func<TKey, IEnumerable<TElement>, TResult> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(elementSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(elementSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -359,10 +359,10 @@ namespace System.Linq
             Func<TKey, IEnumerable<TElement>, CancellationToken, ValueTask<TResult>> resultSelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(elementSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(elementSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :

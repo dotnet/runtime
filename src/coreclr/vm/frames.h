@@ -593,7 +593,7 @@ private:
     friend Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
 #endif
 #ifdef FEATURE_EH_FUNCLETS
-    friend class ExceptionTracker;
+    friend struct ExInfo;
 #endif
 #if defined(DACCESS_COMPILE)
     friend class DacDbiInterfaceImpl;
@@ -2599,8 +2599,12 @@ struct ReversePInvokeFrame
 {
     Thread* currentThread;
     MethodDesc* pMD;
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     FrameHandlerExRecord record;
+#else
+    EXCEPTION_REGISTRATION_RECORD m_ExReg;
+#endif
 #endif
 };
 
@@ -2869,6 +2873,41 @@ public:
     }
 #endif
 };
+
+#ifdef FEATURE_INTERPRETER
+struct InterpMethodContextFrame;
+typedef DPTR(struct InterpMethodContextFrame) PTR_InterpMethodContextFrame;
+
+typedef DPTR(class InterpreterFrame) PTR_InterpreterFrame;
+
+class InterpreterFrame : public FramedMethodFrame
+{
+public:
+#ifndef DACCESS_COMPILE
+    InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
+        : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
+        m_pTopInterpMethodContextFrame(pContextFrame)
+    {
+        WRAPPER_NO_CONTRACT;
+        Push();
+    }
+
+    void SetTopInterpMethodContextFrame(InterpMethodContextFrame* pTopInterpMethodContextFrame)
+    {
+        m_pTopInterpMethodContextFrame = pTopInterpMethodContextFrame;
+    }
+
+#endif // DACCESS_COMPILE
+    PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
+
+private:
+    // The last known topmost interpreter frame in the InterpExecMethod belonging to
+    // this InterpreterFrame.
+    PTR_InterpMethodContextFrame m_pTopInterpMethodContextFrame;
+    
+};
+
+#endif // FEATURE_INTERPRETER
 
 //------------------------------------------------------------------------
 // These macros GC-protect OBJECTREF pointers on the EE's behalf.

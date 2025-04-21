@@ -89,6 +89,10 @@ void Compiler::fgCreateNewInitBB()
             block->setBBProfileWeight(entryWeight);
         }
     }
+    else
+    {
+        block->inheritWeight(fgFirstBB);
+    }
 
     // The new scratch bb will fall through to the old first bb
     FlowEdge* const edge = fgAddRefPred(fgFirstBB, block);
@@ -368,6 +372,19 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex)
                   (succCount - succIndex - 1) * sizeof(FlowEdge*));
     }
 
+    // Recompute the likelihoods of the block's other successor edges.
+    const weight_t removedLikelihood = succEdge->getLikelihood();
+    const unsigned newSuccCount      = succCount - 1;
+
+    for (unsigned i = 0; i < newSuccCount; i++)
+    {
+        // If we removed all of the flow out of 'block', distribute flow among the remaining edges evenly.
+        const weight_t currLikelihood = succTab[i]->getLikelihood();
+        const weight_t newLikelihood =
+            (removedLikelihood == 1.0) ? (1.0 / newSuccCount) : (currLikelihood / (1.0 - removedLikelihood));
+        succTab[i]->setLikelihood(min(1.0, newLikelihood));
+    }
+
 #ifdef DEBUG
     // We only expect to see a successor once in the table.
     for (unsigned i = succIndex; i < (succCount - 1); i++)
@@ -425,6 +442,19 @@ void Compiler::fgRemoveEhfSuccessor(FlowEdge* succEdge)
             }
 #endif // DEBUG
         }
+    }
+
+    // Recompute the likelihoods of the block's other successor edges.
+    const weight_t removedLikelihood = succEdge->getLikelihood();
+    const unsigned newSuccCount      = succCount - 1;
+
+    for (unsigned i = 0; i < newSuccCount; i++)
+    {
+        // If we removed all of the flow out of 'block', distribute flow among the remaining edges evenly.
+        const weight_t currLikelihood = succTab[i]->getLikelihood();
+        const weight_t newLikelihood =
+            (removedLikelihood == 1.0) ? (1.0 / newSuccCount) : (currLikelihood / (1.0 - removedLikelihood));
+        succTab[i]->setLikelihood(min(1.0, newLikelihood));
     }
 
     assert(found);
@@ -5216,68 +5246,6 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
     // Set to retless flag to avoid future asserts.
     bCallFinally->SetFlags(BBF_RETLESS_CALL);
     block->SetKind(BBJ_ALWAYS);
-}
-
-//------------------------------------------------------------------------
-// fgConnectFallThrough: fix flow from a block that previously had a fall through
-//
-// Arguments:
-//   bSrc - source of fall through
-//   bDst - target of fall through
-//
-// Returns:
-//   Newly inserted block after bSrc that jumps to bDst,
-//   or nullptr if bSrc already falls through to bDst
-//
-BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
-{
-    assert(bSrc != nullptr);
-    assert(fgPredsComputed);
-    BasicBlock* jmpBlk = nullptr;
-
-    /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
-
-    if (bSrc->KindIs(BBJ_COND) && bSrc->FalseTargetIs(bDst) && !bSrc->NextIs(bDst))
-    {
-        // Add a new block after bSrc which jumps to 'bDst'
-        jmpBlk                  = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
-        FlowEdge* const oldEdge = bSrc->GetFalseEdge();
-
-        // Access the likelihood of oldEdge before
-        // it gets reset by SetTargetEdge below.
-        //
-        FlowEdge* const newEdge = fgAddRefPred(jmpBlk, bSrc, oldEdge);
-        fgReplacePred(oldEdge, jmpBlk);
-        jmpBlk->SetTargetEdge(oldEdge);
-        assert(jmpBlk->TargetIs(bDst));
-        bSrc->SetFalseEdge(newEdge);
-
-        // When adding a new jmpBlk we will set the bbWeight and bbFlags
-        //
-        if (fgHaveProfileWeights())
-        {
-            jmpBlk->setBBProfileWeight(newEdge->getLikelyWeight());
-        }
-        else
-        {
-            // We set the bbWeight to the smaller of bSrc->bbWeight or bDst->bbWeight
-            if (bSrc->bbWeight < bDst->bbWeight)
-            {
-                jmpBlk->bbWeight = bSrc->bbWeight;
-                jmpBlk->CopyFlags(bSrc, BBF_RUN_RARELY);
-            }
-            else
-            {
-                jmpBlk->bbWeight = bDst->bbWeight;
-                jmpBlk->CopyFlags(bDst, BBF_RUN_RARELY);
-            }
-        }
-
-        JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n", jmpBlk->GetTarget()->bbNum,
-                bSrc->bbNum);
-    }
-
-    return jmpBlk;
 }
 
 //------------------------------------------------------------------------

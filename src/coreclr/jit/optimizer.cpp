@@ -2379,11 +2379,11 @@ PhaseStatus Compiler::optOptimizeFlow()
 
     bool modified = fgUpdateFlowGraph(/* doTailDuplication */ true);
 
-    // Skipping fgExpandRarelyRunBlocks when we have PGO data incurs diffs if the profile is inconsistent,
-    // as it will propagate missing profile weights throughout the flowgraph.
-    // Running profile synthesis beforehand should get rid of these diffs.
     // TODO: Always rely on profile synthesis to identify cold blocks.
-    modified |= fgExpandRarelyRunBlocks();
+    if (!fgIsUsingProfileWeights())
+    {
+        modified |= fgExpandRarelyRunBlocks();
+    }
 
     // Run branch optimizations for non-handler blocks.
     assert(!fgFuncletsCreated);
