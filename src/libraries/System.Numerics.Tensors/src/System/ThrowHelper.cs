@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -29,6 +30,14 @@ namespace System
             throw new ArgumentException(SR.Argument_InputAndDestinationSpanMustNotOverlap, "destination");
 
         public static void ThrowIfArrayTypeMismatch<T>(Array? array)
+        {
+            if ((array is not null) && (array.GetType() != typeof(T[])))
+            {
+                ThrowArrayTypeMismatchException();
+            }
+        }
+
+        public static void ThrowIfArrayTypeMismatch<T>(T[]? array)
         {
             if ((array is not null) && !typeof(T).IsValueType && (array.GetType() != typeof(T[])))
             {
@@ -71,7 +80,7 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_LengthIsNegativeOrZero()
+        public static void ThrowArgument_LengthIsNegative()
         {
             throw new ArgumentOutOfRangeException();
         }

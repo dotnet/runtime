@@ -35,7 +35,8 @@ namespace System.Numerics.Tensors
     internal enum TensorFlags : uint
     {
         None = 0,
-        IsContiguousAndDense = 1
+        IsContiguousAndDense = (1 << 0),
+        IsBroadcast = (1 << 1),
     }
 
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
@@ -73,6 +74,7 @@ namespace System.Numerics.Tensors
                 lengths = [linearLength];
                 rank = 1;
             }
+            Debug.Assert(rank >= 1);
 
             scoped Span<nint> destinationLengths;
             scoped Span<nint> destinationStrides;
@@ -158,9 +160,9 @@ namespace System.Numerics.Tensors
                     int linearRankIndex = destinationLinearRankOrder[rankIndex];
                     nint length = lengths[linearRankIndex];
 
-                    if (length <= 0)
+                    if (length < 0)
                     {
-                        ThrowHelper.ThrowArgument_LengthIsNegativeOrZero();
+                        ThrowHelper.ThrowArgument_LengthIsNegative();
                     }
 
                     destinationLengths[linearRankIndex] = length;
@@ -169,18 +171,16 @@ namespace System.Numerics.Tensors
                     flattenedLength = checked(flattenedLength * length);
                 }
 
-                // Once we've finished computing everything physically present in the input
-                // we need to ensure that the linearLength is greater than the flattenedLength
-                // as this ensures that lengths is in range of the backing buffer
+                // This path cannot have any broadcasting, so once we've finished computing
+                // everything physically present in the input we need to ensure that the
+                // linearLength is greater than or equal to the flattenedLength which ensures
+                // that lengths is in range of the backing buffer.
 
-                if (linearLength == -1)
-                {
-                    linearLength = flattenedLength;
-                }
-                else
+                if (linearLength != -1)
                 {
                     ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, flattenedLength);
                 }
+                linearLength = flattenedLength;
 
                 // When no strides are specified, the way we construct them makes it so that the
                 // underlying memory is contiguous and dense. This means that we can set the flag
@@ -207,7 +207,6 @@ namespace System.Numerics.Tensors
                 // aren't actually stored in memory.
 
                 int i = 0;
-
                 nint minimumLinearLength = 1;
 
                 while (i < destinationLinearRankOrder.Length)
@@ -216,9 +215,9 @@ namespace System.Numerics.Tensors
                     int linearRankIndex = destinationLinearRankOrder[rankIndex];
                     nint length = lengths[linearRankIndex];
 
-                    if (length <= 0)
+                    if (length < 0)
                     {
-                        ThrowHelper.ThrowArgument_LengthIsNegativeOrZero();
+                        ThrowHelper.ThrowArgument_LengthIsNegative();
                     }
 
                     nint stride = strides[linearRankIndex];
@@ -228,66 +227,40 @@ namespace System.Numerics.Tensors
                         ThrowHelper.ThrowArgument_StrideIsNegative();
                     }
 
-                    if (stride == 0)
+                    if (stride != 0)
                     {
-                        // We end up handling i twice due to the break here
-                        // but this shouldn't be significant and makes it
-                        // easier to ensure that the flattened length is correct.
-                        break;
-                    }
+                        if (stride < minimumLinearLength)
+                        {
+                            // The next stride needs to be at least as big as the
+                            // previous stride times the dimension length, otherwise
+                            // the linear rank ordering is incorrect
+                            ThrowHelper.ThrowArgument_InvalidTensorShape();
+                        }
 
-                    if (stride < minimumLinearLength)
+                        minimumLinearLength = checked(stride * length);
+                    }
+                    else
                     {
-                        // The next stride needs to be at least as big as the
-                        // previous stride times the dimension length, otherwise
-                        // the linear rank ordering is incorrect
-                        ThrowHelper.ThrowArgument_InvalidTensorShape();
+                        _tensorFlags |= TensorFlags.IsBroadcast;
                     }
 
                     destinationLengths[linearRankIndex] = length;
                     destinationStrides[linearRankIndex] = stride;
 
-                    minimumLinearLength = checked(stride * length);
-                    flattenedLength = checked(flattenedLength * length);
-
-                    i++;
-                }
-
-                // Once we've finished computing everything physically present in the input
-                // we need to ensure that the linearLength is greater than the flattenedLength
-                // and the minimumLinearLength. The first case ensures that lengths is in range
-                // of the backing buffer while the second case ensures that strides is in range.
-
-                if (linearLength == -1)
-                {
-                    linearLength = flattenedLength;
-                }
-                else
-                {
-                    ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, flattenedLength);
-                }
-                ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, minimumLinearLength);
-
-                while (i < destinationLinearRankOrder.Length)
-                {
-                    int rankIndex = destinationLinearRankOrder.Length - (i + 1);
-                    int linearRankIndex = destinationLinearRankOrder[rankIndex];
-                    nint length = lengths[linearRankIndex];
-
-                    if (length <= 0)
-                    {
-                        ThrowHelper.ThrowArgument_LengthIsNegativeOrZero();
-                    }
-
-                    nint stride = strides[linearRankIndex];
-                    ArgumentOutOfRangeException.ThrowIfNotEqual(stride, 0);
-
-                    destinationLengths[linearRankIndex] = length;
-                    destinationStrides[linearRankIndex] = 0;
-
                     flattenedLength = checked(flattenedLength * length);
                     i++;
                 }
+
+                // This path can have broadcasting, so once we've finished computing
+                // everything physically present in the input we need to ensure that the
+                // linearLength is greater than or equal to the minimumLinearLength which
+                // ensures that lengths and strides are in range of the backing buffer.
+
+                if (linearLength != -1)
+                {
+                    ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, minimumLinearLength);
+                }
+                linearLength = minimumLinearLength;
             }
 
             Debug.Assert((linearLength == 0) || ((flattenedLength % linearLength) == 0));
@@ -339,6 +312,8 @@ namespace System.Numerics.Tensors
 
             _rank = rank;
         }
+
+        public bool IsBroadcast => (_tensorFlags & TensorFlags.IsBroadcast) != 0;
 
         public bool IsContiguousAndDense => (_tensorFlags & TensorFlags.IsContiguousAndDense) != 0;
 
@@ -628,12 +603,10 @@ namespace System.Numerics.Tensors
                 }
 
                 TensorShape result = new TensorShape(
-                    flattenedLength: linearLength,
                     linearLength,
                     lengths,
                     strides: [],
-                    linearRankOrder: [],
-                    rank
+                    linearRankOrder: []
                 );
 
                 if (lengthsArray is not null)

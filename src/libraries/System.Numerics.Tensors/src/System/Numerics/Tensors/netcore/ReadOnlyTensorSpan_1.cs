@@ -472,7 +472,7 @@ namespace System.Numerics.Tensors
                 _indexes[^1] = -1;
 
                 _linearOffset = 0 - (!span.IsEmpty ? span.Strides[^1] : 0);
-                _itemsEnumerated = -1;
+                _itemsEnumerated = 0;
             }
 
             /// <summary>Gets the element at the current position of the enumerator.</summary>
@@ -499,7 +499,7 @@ namespace System.Numerics.Tensors
                 _indexes[^1] = -1;
 
                 _linearOffset = 0 - (!_span.IsEmpty ? _span.Strides[^1] : 0);
-                _itemsEnumerated = -1;
+                _itemsEnumerated = 0;
             }
 
             //
