@@ -49,10 +49,7 @@ namespace System.Security.Cryptography
         /// </param>
         protected MLDsa(MLDsaAlgorithm algorithm)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             Algorithm = algorithm;
         }
@@ -709,10 +706,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa GenerateKey(MLDsaAlgorithm algorithm)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             ThrowIfNotSupported();
             return MLDsaImplementation.GenerateKeyImpl(algorithm);
@@ -1032,10 +1026,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PublicKeySizeInBytes)
             {
@@ -1073,10 +1064,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.SecretKeySizeInBytes)
             {
@@ -1114,10 +1102,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
             {

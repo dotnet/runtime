@@ -54,6 +54,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     stack = pFrame->pStack;
 
     int32_t returnOffset, callArgsOffset, methodSlot;
+    const int32_t *targetIp;
 
 MAIN_LOOP:
     while (true)
@@ -972,6 +973,35 @@ MAIN_LOOP:
                 ip += 5;
                 break;
             }
+            case INTOP_CALLVIRT:
+            {
+                returnOffset = ip[1];
+                callArgsOffset = ip[2];
+                methodSlot = ip[3];
+
+                MethodDesc *pMD = (MethodDesc*)pMethod->pDataItems[methodSlot];
+
+                OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset, OBJECTREF);
+                NULL_CHECK(*pThisArg);
+
+                // Interpreter-TODO
+                // This needs to be optimized, not operating at MethodDesc level, rather with ftnptr
+                // slots containing the interpreter IR pointer
+                pMD = pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
+
+                PCODE code = pMD->GetNativeCode();
+                if (!code)
+                {
+                    pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+                    GCX_PREEMP();
+                    pMD->PrepareInitialCode(CallerGCMode::Coop);
+                    code = pMD->GetNativeCode();
+                }
+                targetIp = (const int32_t*)code;
+                ip += 4;
+                // Interpreter-TODO unbox if target method class is valuetype
+                goto CALL_TARGET_IP;
+            }
 
             case INTOP_CALL:
             {
@@ -981,7 +1011,7 @@ MAIN_LOOP:
 
                 ip += 4;
 CALL_INTERP_SLOT:
-                const int32_t *targetIp;
+                {
                 size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
                 if (targetMethod & INTERP_METHOD_DESC_TAG)
                 {
@@ -1012,7 +1042,8 @@ CALL_INTERP_SLOT:
                     // for interpreter call or normal pointer for JIT/R2R call.
                     targetIp = (const int32_t*)targetMethod;
                 }
-
+                }
+CALL_TARGET_IP:
                 // Save current execution state for when we return from called method
                 pFrame->ip = ip;
 
