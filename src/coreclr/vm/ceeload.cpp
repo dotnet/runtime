@@ -1092,44 +1092,48 @@ BOOL Module::IsRuntimeWrapExceptions()
 
     if (!(IsRuntimeWrapExceptionsStatusComputed()))
     {
-        HRESULT hr;
-        BOOL fRuntimeWrapExceptions = FALSE;
-
-        IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
-
-        mdToken token;
-        IfFailGo(mdImport->GetAssemblyFromScope(&token));
-
-        const BYTE *pVal;
-        ULONG       cbVal;
-
-        hr = mdImport->GetCustomAttributeByName(token,
-                        RUNTIMECOMPATIBILITY_TYPE,
-                        (const void**)&pVal, &cbVal);
-
-        // Parse the attribute
-        if (hr == S_OK)
-        {
-            CustomAttributeParser ca(pVal, cbVal);
-            CaNamedArg namedArgs[1] = {{0}};
-
-            // First, the void constructor:
-            IfFailGo(ParseKnownCaArgs(ca, NULL, 0));
-
-            // Then, find the named argument
-            namedArgs[0].InitBoolField("WrapNonExceptionThrows");
-
-            IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
-
-            if (namedArgs[0].val.boolean)
-                fRuntimeWrapExceptions = TRUE;
-        }
-ErrExit:
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
-            (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
+        UpdateCachedIsRuntimeWrapExceptions();
     }
-
     return !!(m_dwPersistedFlags & WRAP_EXCEPTIONS);
+}
+
+void Module::UpdateCachedIsRuntimeWrapExceptions()
+{
+    HRESULT hr;
+    BOOL fRuntimeWrapExceptions = FALSE;
+
+    IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
+
+    mdToken token;
+    IfFailGo(mdImport->GetAssemblyFromScope(&token));
+
+    const BYTE *pVal;
+    ULONG       cbVal;
+
+    hr = mdImport->GetCustomAttributeByName(token,
+                    RUNTIMECOMPATIBILITY_TYPE,
+                    (const void**)&pVal, &cbVal);
+
+    // Parse the attribute
+    if (hr == S_OK)
+    {
+        CustomAttributeParser ca(pVal, cbVal);
+        CaNamedArg namedArgs[1] = {{0}};
+
+        // First, the void constructor:
+        IfFailGo(ParseKnownCaArgs(ca, NULL, 0));
+
+        // Then, find the named argument
+        namedArgs[0].InitBoolField("WrapNonExceptionThrows");
+
+        IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
+
+        if (namedArgs[0].val.boolean)
+            fRuntimeWrapExceptions = TRUE;
+    }
+ErrExit:
+    InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
+        (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
 }
 
 BOOL Module::IsRuntimeMarshallingEnabled()
@@ -3756,6 +3760,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, pPEAssembly));
 
     pModule->DoInit(pamTracker, szName);
+    pModule->SetRuntimeMarshallingEnabledCached_ForReflectionEmitModules();
 
     RETURN pModule.Extract();
 }
