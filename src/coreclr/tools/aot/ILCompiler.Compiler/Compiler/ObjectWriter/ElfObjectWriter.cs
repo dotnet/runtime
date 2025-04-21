@@ -575,7 +575,7 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitSectionsAndLayout()
         {
             SectionWriter commentSectionWriter = GetOrCreateSection(CommentSection);
-            commentSectionWriter.WriteUtf8String($".NET AOT {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion}");
+            commentSectionWriter.WriteUtf8String($".NET: ilc {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion}");
 
             if (_machine == EM_ARM)
             {

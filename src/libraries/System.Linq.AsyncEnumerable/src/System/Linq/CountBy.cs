@@ -25,8 +25,8 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, int>>() :
@@ -35,35 +35,29 @@ namespace System.Linq
             static async IAsyncEnumerable<KeyValuePair<TKey, int>> Impl(
                 IAsyncEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer, [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> enumerator = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
                 {
-                    if (await enumerator.MoveNextAsync().ConfigureAwait(false))
+                    Dictionary<TKey, int> countsBy = new(keyComparer);
+                    do
                     {
-                        Dictionary<TKey, int> countsBy = new(keyComparer);
-                        do
-                        {
-                            TSource value = enumerator.Current;
-                            TKey key = keySelector(value);
+                        TSource value = e.Current;
+                        TKey key = keySelector(value);
 
 #if NET
-                            ref int currentCount = ref CollectionsMarshal.GetValueRefOrAddDefault(countsBy, key, out _);
-                            checked { currentCount++; }
+                        ref int currentCount = ref CollectionsMarshal.GetValueRefOrAddDefault(countsBy, key, out _);
+                        checked { currentCount++; }
 #else
-                            countsBy[key] = countsBy.TryGetValue(key, out int currentCount) ? checked(currentCount + 1) : 1;
+                        countsBy[key] = countsBy.TryGetValue(key, out int currentCount) ? checked(currentCount + 1) : 1;
 #endif
-                        }
-                        while (await enumerator.MoveNextAsync().ConfigureAwait(false));
-
-                        foreach (KeyValuePair<TKey, int> countBy in countsBy)
-                        {
-                            yield return countBy;
-                        }
                     }
-                }
-                finally
-                {
-                    await enumerator.DisposeAsync().ConfigureAwait(false);
+                    while (await e.MoveNextAsync());
+
+                    foreach (KeyValuePair<TKey, int> countBy in countsBy)
+                    {
+                        yield return countBy;
+                    }
                 }
             }
         }
@@ -82,8 +76,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, int>>() :
@@ -92,35 +86,29 @@ namespace System.Linq
             static async IAsyncEnumerable<KeyValuePair<TKey, int>> Impl(
                 IAsyncEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask<TKey>> keySelector, IEqualityComparer<TKey>? keyComparer, [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> enumerator = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
                 {
-                    if (await enumerator.MoveNextAsync().ConfigureAwait(false))
+                    Dictionary<TKey, int> countsBy = new(keyComparer);
+                    do
                     {
-                        Dictionary<TKey, int> countsBy = new(keyComparer);
-                        do
-                        {
-                            TSource value = enumerator.Current;
-                            TKey key = await keySelector(value, cancellationToken).ConfigureAwait(false);
+                        TSource value = e.Current;
+                        TKey key = await keySelector(value, cancellationToken);
 
 #if NET
-                            ref int currentCount = ref CollectionsMarshal.GetValueRefOrAddDefault(countsBy, key, out _);
-                            checked { currentCount++; }
+                        ref int currentCount = ref CollectionsMarshal.GetValueRefOrAddDefault(countsBy, key, out _);
+                        checked { currentCount++; }
 #else
-                            countsBy[key] = countsBy.TryGetValue(key, out int currentCount) ? checked(currentCount + 1) : 1;
+                        countsBy[key] = countsBy.TryGetValue(key, out int currentCount) ? checked(currentCount + 1) : 1;
 #endif
-                        }
-                        while (await enumerator.MoveNextAsync().ConfigureAwait(false));
-
-                        foreach (KeyValuePair<TKey, int> countBy in countsBy)
-                        {
-                            yield return countBy;
-                        }
                     }
-                }
-                finally
-                {
-                    await enumerator.DisposeAsync().ConfigureAwait(false);
+                    while (await e.MoveNextAsync());
+
+                    foreach (KeyValuePair<TKey, int> countBy in countsBy)
+                    {
+                        yield return countBy;
+                    }
                 }
             }
         }

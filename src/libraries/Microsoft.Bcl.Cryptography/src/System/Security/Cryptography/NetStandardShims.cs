@@ -114,6 +114,7 @@ namespace System.Security.Cryptography
         }
     }
 
+#if !NETSTANDARD2_1_OR_GREATER
     internal static class CryptographicOperations
     {
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -146,18 +147,5 @@ namespace System.Security.Cryptography
             return accum == 0;
         }
     }
-}
-
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    internal sealed class CallerArgumentExpressionAttribute : Attribute
-    {
-        public CallerArgumentExpressionAttribute(string parameterName)
-        {
-            ParameterName = parameterName;
-        }
-
-        public string ParameterName { get; }
-    }
+#endif
 }
