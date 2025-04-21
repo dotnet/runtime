@@ -18,14 +18,15 @@
         ori  $a3, $sp, 0
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
+        // Total stack: 0xC0 (0x68+0x58)
         .if \exceptionType == HARDWARE_EXCEPTION
-            addi.d  $sp, $sp, -0x50
-            .cfi_adjust_cfa_offset  0x50
+            addi.d  $sp, $sp, -0x58
+            .cfi_adjust_cfa_offset  0x58
             st.d  $a3, $sp, 0      // a3 is the SP and a1 is the IP of the fault site
             st.d  $a1, $sp, 8
         .else
-            PROLOG_STACK_ALLOC  0x50
-            .cfi_adjust_cfa_offset  0x50
+            PROLOG_STACK_ALLOC  0x58
+            .cfi_adjust_cfa_offset  0x58
             st.d  $a3, $sp, 0      // a3 is the SP and ra is the IP of the fault site
             st.d  $ra, $sp, 8
         .endif
@@ -37,7 +38,9 @@
         fst.d  $f29, $sp, 0x38
         fst.d  $f30, $sp, 0x40
         fst.d  $f31, $sp, 0x48
-        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x70
+        // Slot at $sp+0x50 is alignment padding
+
+        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x68
         st.d  $zero, $sp, 0x10 // locations reserved for return value, not used for exception handling
         st.d  $zero, $sp, 0x18
         PROLOG_SAVE_REG_PAIR  23, 24, 0x20

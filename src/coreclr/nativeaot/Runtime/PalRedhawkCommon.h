@@ -109,14 +109,13 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t  R30;
     uintptr_t  R31;
 
-    uintptr_t  __explicit_padding__;
-
     uintptr_t  SP;
     uintptr_t  IP;
 
     uint64_t      F[32 - 24]; // Only the F registers F24..F31 need to be preserved
                               // (F0-F23 are not preserved according to the ABI spec).
 
+    uintptr_t  __explicit_padding__;
 
     uintptr_t GetIp() const { return IP; }
     uintptr_t GetSp() const { return SP; }
