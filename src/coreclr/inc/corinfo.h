@@ -991,6 +991,8 @@ struct CORINFO_SIG_INFO
     unsigned            totalILArgs()       { return (numArgs + (hasImplicitThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
+    // TODO-Async: Unify with VM
+    bool                isAsyncCall()       { return false; }
 };
 
 struct CORINFO_METHOD_INFO
@@ -1686,6 +1688,42 @@ struct CORINFO_EE_INFO
     CORINFO_RUNTIME_ABI targetAbi;
 
     CORINFO_OS  osType;
+};
+
+enum CorInfoContinuationFlags
+{
+    // Whether or not the continuation expects the result to be boxed and
+    // placed in the GCData array at index 0. Not set if the callee is void.
+    CORINFO_CONTINUATION_RESULT_IN_GCDATA = 1,
+    // If this bit is set the continuation resumes inside a try block and thus
+    // if an exception is being propagated, needs to be resumed. The exception
+    // should be placed at index 0 or 1 depending on whether the continuation
+    // also expects a result.
+    CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
+    // If this bit is set the continuation has an OSR IL offset saved in the
+    // beginning of 'Data'.
+    CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
+};
+
+struct CORINFO_ASYNC_INFO
+{
+    // Class handle for System.Runtime.CompilerServices.Continuation
+    CORINFO_CLASS_HANDLE continuationClsHnd;
+    // 'Next' field
+    CORINFO_FIELD_HANDLE continuationNextFldHnd;
+    // 'Resume' field
+    CORINFO_FIELD_HANDLE continuationResumeFldHnd;
+    // 'State' field
+    CORINFO_FIELD_HANDLE continuationStateFldHnd;
+    // 'Flags' field
+    CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
+    // 'Data' field
+    CORINFO_FIELD_HANDLE continuationDataFldHnd;
+    // 'GCData' field
+    CORINFO_FIELD_HANDLE continuationGCDataFldHnd;
+    // Whether or not the continuation needs to be allocated through the
+    // helper that also takes a method handle
+    bool continuationsNeedMethodHandle;
 };
 
 // Flags passed from JIT to runtime.

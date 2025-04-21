@@ -238,6 +238,8 @@ private:
         // call PatchpointForced(ilOffset)
         //
         GenTree*     ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        // TODO: Unify with VM
+        const CorInfoHelpFunc CORINFO_HELP_PATCHPOINT_FORCED = CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT;
         GenTreeCall* helperCall = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
 
         compiler->fgNewStmtAtEnd(block, helperCall);

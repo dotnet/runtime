@@ -273,7 +273,8 @@ PhaseStatus AsyncTransformation::Run()
     // Ask the VM to create a resumption stub for this specific version of the
     // code. It is stored in the continuation as a function pointer, so we need
     // the fixed entry point here.
-    m_resumeStub = m_comp->info.compCompHnd->getAsyncResumptionStub();
+    // TODO: Get once VM changes are merged
+    // m_resumeStub = m_comp->info.compCompHnd->getAsyncResumptionStub();
     m_comp->info.compCompHnd->getFunctionFixedEntryPoint(m_resumeStub, false, &m_resumeStubLookup);
 
     m_returnedContinuationVar = m_comp->lvaGrabTemp(false DEBUGARG("returned continuation"));
@@ -281,7 +282,8 @@ PhaseStatus AsyncTransformation::Run()
     m_newContinuationVar                                  = m_comp->lvaGrabTemp(false DEBUGARG("new continuation"));
     m_comp->lvaGetDesc(m_newContinuationVar)->lvType      = TYP_REF;
 
-    m_comp->info.compCompHnd->getAsyncInfo(&m_asyncInfo);
+    // TODO-Async: Unify with VM
+    //m_comp->info.compCompHnd->getAsyncInfo(&m_asyncInfo);
 
 #ifdef JIT32_GCENCODER
     // Due to a hard cap on epilogs we need a shared return here.
@@ -922,16 +924,22 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness& lif
 
     if (methodHandleArg != nullptr)
     {
+        // TODO-Async: Unify with VM
+        const CorInfoHelpFunc CORINFO_HELP_ALLOC_CONTINUATION_METHOD = CORINFO_HELP_UNDEF;
         return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION_METHOD, TYP_REF, prevContinuation,
                                            gcRefsCountNode, dataSizeNode, methodHandleArg);
     }
 
     if (classHandleArg != nullptr)
     {
+        // TODO-Async: Unify with VM
+        const CorInfoHelpFunc CORINFO_HELP_ALLOC_CONTINUATION_CLASS = CORINFO_HELP_UNDEF;
         return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION_CLASS, TYP_REF, prevContinuation,
                                            gcRefsCountNode, dataSizeNode, classHandleArg);
     }
 
+    // TODO-Async: Unify with VM
+    const CorInfoHelpFunc CORINFO_HELP_ALLOC_CONTINUATION = CORINFO_HELP_UNDEF;
     return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF, prevContinuation, gcRefsCountNode,
                                        dataSizeNode);
 }
@@ -1430,6 +1438,9 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     LIR::AsRange(resumeBB).InsertAtEnd(exception, null, neNull, jtrue);
 
     exception                     = m_comp->gtNewLclVarNode(exceptionLclNum, TYP_REF);
+
+    // TODO-Async: Unify with VM
+    const CorInfoHelpFunc CORINFO_HELP_THROWEXACT = CORINFO_HELP_UNDEF;
     GenTreeCall* rethrowException = m_comp->gtNewHelperCallNode(CORINFO_HELP_THROWEXACT, TYP_VOID, exception);
 
     m_comp->compCurBB = rethrowExceptionBB;
@@ -1906,6 +1917,9 @@ void AsyncTransformation::CreateResumptionSwitch()
         LIR::AsRange(checkILOffsetBB).InsertAtEnd(ilOffset, zero, geZero, jtrue);
 
         ilOffset                = m_comp->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
+
+        // TODO-Async: Unify with VM
+        const CorInfoHelpFunc CORINFO_HELP_PATCHPOINT_FORCED = CORINFO_HELP_UNDEF;
         GenTreeCall* callHelper = m_comp->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffset);
         callHelper->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
 
