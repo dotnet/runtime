@@ -38,8 +38,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
+    // The CallTarget is always in range on LA64.
     // TODO-LOONGARCH64-CQ: using B/BL for optimization.
-    return false;
+    return true;
 }
 
 //------------------------------------------------------------------------

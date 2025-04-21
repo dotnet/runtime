@@ -792,15 +792,38 @@ void InlineResult::Report()
         // IS_NOINLINE, then we've uncovered a reason why this method
         // can't ever be inlined. Update the callee method attributes
         // so that future inline attempts for this callee fail faster.
-
+        //
         InlineObservation obs = m_Policy->GetObservation();
 
-        if ((m_Callee != nullptr) && (obs != InlineObservation::CALLEE_IS_NOINLINE))
+        bool report     = (m_Callee != nullptr);
+        bool suppress   = (obs == InlineObservation::CALLEE_IS_NOINLINE);
+        bool dynamicPgo = m_RootCompiler->fgPgoDynamic;
+
+        // If dynamic pgo is active, only propagate noinline back to metadata
+        // when there is a CALLEE FATAL observation. We want to make sure
+        // not to block future inlines based on performance or throughput considerations.
+        //
+        // Note fgPgoDynamic (and hence dynamicPgo) is true iff TieredPGO is enabled globally.
+        // In particular this value does not depend on the root method having PGO data.
+        //
+        if (dynamicPgo)
         {
-            JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, InlGetObservationString(obs));
+            InlineTarget target = InlGetTarget(obs);
+            InlineImpact impact = InlGetImpact(obs);
+            suppress            = (target != InlineTarget::CALLEE) || (impact != InlineImpact::FATAL);
+        }
+
+        if (report && !suppress)
+        {
+            JITDUMP("\nINLINER: Marking %s as NOINLINE (observation %s)\n", callee, InlGetObservationString(obs));
 
             COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
             comp->setMethodAttribs(m_Callee, CORINFO_FLG_BAD_INLINEE);
+        }
+        else if (suppress)
+        {
+            JITDUMP("\nINLINER: Not marking %s NOINLINE; %s (observation %s)\n", callee,
+                    dynamicPgo ? "pgo active" : "already known", InlGetObservationString(obs));
         }
     }
 

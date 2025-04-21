@@ -1,8 +1,7 @@
-using System.Diagnostics.CodeAnalysis;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Numerics;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Wasm;
 using System.Tests;
@@ -84,19 +83,38 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             Assert.Equal(Vector128.Create(4.0f, 9.0f, 16.0f, 25.0f), floorResult);
         }
 
+
         [Fact]
         public unsafe void LoadStoreTest()
         {
-            int[] values = new int[] { 1, 2, 3, 4 };
+            int[] values = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
             fixed (int* ptr = values)
             {
                 var loaded = PackedSimd.LoadVector128(ptr);
-                Assert.Equal(Vector128.Create(1, 2, 3, 4), loaded);
+                var loaded2 = PackedSimd.LoadVector128(ptr + 4);
 
-                int[] storeTarget = new int[4];
+                Assert.Equal(Vector128.Create(1, 2, 3, 4), loaded);
+                Assert.Equal(Vector128.Create(5, 6, 7, 8), loaded2);
+
+                var vl = Vector128.LoadUnsafe(ref values[0], (nuint)0);
+                var vl2 = Vector128.LoadUnsafe(ref values[0], (nuint)4);
+                Assert.Equal(loaded, vl);
+                Assert.Equal(loaded2, vl2);
+
+                vl = Vector128.Load(ptr);
+                vl2 = Vector128.Load(ptr + 4);
+                Assert.Equal(loaded, vl);
+                Assert.Equal(loaded2, vl2);
+
+                Assert.Equal(Vector128.Create(1, 2, 3, 4), loaded);
+                Assert.Equal(Vector128.Create(5, 6, 7, 8), loaded2);
+
+
+                int[] storeTarget = new int[8];
                 fixed (int* storePtr = storeTarget)
                 {
                     PackedSimd.Store(storePtr, loaded);
+                    PackedSimd.Store(storePtr + 4, loaded2);
                     Assert.Equal(values, storeTarget);
                 }
             }
@@ -378,6 +396,35 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [Fact]
+        public unsafe void SplatTypes()
+        {
+            Assert.Equal(Vector128.Create(2.5f, 2.5f, 2.5f, 2.5f), PackedSimd.Splat(2.5f));
+            Assert.Equal(Vector128.Create(-2, -2, -2, -2), PackedSimd.Splat(-2));
+            Assert.Equal(Vector128.Create(2U, 2U, 2U, 2U), PackedSimd.Splat(2U));
+            Assert.Equal(Vector128.Create(2.5, 2.5), PackedSimd.Splat(2.5));
+            Assert.Equal(Vector128.Create(-2L, -2L), PackedSimd.Splat(-2L));
+            Assert.Equal(Vector128.Create(2UL, 2UL), PackedSimd.Splat(2UL));
+            Assert.Equal(Vector128.Create(
+                (byte)2, (byte)2, (byte)2, (byte)2,
+                (byte)2, (byte)2, (byte)2, (byte)2,
+                (byte)2, (byte)2, (byte)2, (byte)2,
+                (byte)2, (byte)2, (byte)2, (byte)2), PackedSimd.Splat((byte)2));
+            Assert.Equal(Vector128.Create(
+                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
+                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
+                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
+                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2), PackedSimd.Splat((sbyte)-2));
+            Assert.Equal(Vector128.Create(
+                (short)-2, (short)-2, (short)-2, (short)-2,
+                (short)-2, (short)-2, (short)-2, (short)-2), PackedSimd.Splat((short)-2));
+            Assert.Equal(Vector128.Create(
+                (ushort)2, (ushort)2, (ushort)2, (ushort)2,
+                (ushort)2, (ushort)2, (ushort)2, (ushort)2), PackedSimd.Splat((ushort)2));
+            Assert.Equal(Vector128.Create([(nint)2, (nint)2, (nint)2, (nint)2]), PackedSimd.Splat((nint)2));
+            Assert.Equal(Vector128.Create([(nuint)2, (nuint)2, (nuint)2, (nuint)2]), PackedSimd.Splat((nuint)2));
+        }
+
+        [Fact]
         public unsafe void LoadScalarAndSplatInfinityTest()
         {
             float fInf = float.PositiveInfinity;
@@ -519,6 +566,50 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
 
             Assert.Equal(Vector128.Create([(nuint)64, unchecked((nuint)(-64)), (nuint)128, unchecked((nuint)(-128))]), leftShift);
             Assert.Equal(Vector128.Create([(nuint)4, (nuint)1073741820, (nuint)8, (nuint)1073741816]), rightShiftLogical);
+        }
+
+        [Fact]
+        public unsafe void ConvertNarrowingSaturateSignedTest()
+        {
+            var v1 = Vector128.Create(32767, 32768, -32768, -32769);
+            var v2 = Vector128.Create(100, 200, -100, -200);
+
+            var result = PackedSimd.ConvertNarrowingSaturateSigned(v1, v2);
+
+            Assert.Equal(Vector128.Create((short)32767, (short)32767, (short)-32768, (short)-32768, (short)100, (short)200, (short)-100, (short)-200), result);
+        }
+
+        [Fact]
+        public unsafe void ConvertNarrowingSaturateUnsignedTest()
+        {
+            var v1 = Vector128.Create(65535, 65536, -1, -100);
+            var v2 = Vector128.Create(100, 200, 300, 400);
+
+            var result = PackedSimd.ConvertNarrowingSaturateUnsigned(v1, v2);
+
+            Assert.Equal(Vector128.Create((ushort)65535, (ushort)65535, (ushort)0, (ushort)0, (ushort)100, (ushort)200, (ushort)300, (ushort)400), result);
+        }
+
+        [Fact]
+        public unsafe void BitmaskTest()
+        {
+            var v1 = Vector128.Create((byte)0b00000001, (byte)0b00000010, (byte)0b00000100, (byte)0b00001000,
+                                       (byte)0b00010000, (byte)0b00100000, (byte)0b01000000, (byte)0b10000000,
+                                       (byte)0b00000001, (byte)0b00000010, (byte)0b00000100, (byte)0b00001000,
+                                    (byte)0b00010000, (byte)0b10100000, (byte)0b01000000, (byte)0b10000000);
+
+            var v2 = Vector128.Create((ushort)0b1100001001100001, (ushort)0b0000000000000010, (ushort)0b0000000000000100, (ushort)0b0000000000001000,
+                                       (ushort)0b0000000000010000, (ushort)0b0000000000100000, (ushort)0b0000000001000000, (ushort)0b0000000010000000);
+
+            var v3 = Vector128.Create(0b10000000000000000000000000000001, 0b00000000000111111000000000000010,
+                                   0b00000000000000000000000000000100, 0b10000000000000000000000000001000);
+
+            var bitmask1 = PackedSimd.Bitmask(v1);
+            var bitmask2 = PackedSimd.Bitmask(v2);
+            var bitmask3 = PackedSimd.Bitmask(v3);
+            Assert.Equal(0b1010000010000000, bitmask1);
+            Assert.Equal(0b1, bitmask2);
+            Assert.Equal(0b1001, bitmask3);
         }
     }
 }
