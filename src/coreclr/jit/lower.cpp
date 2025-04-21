@@ -5450,7 +5450,7 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
             {
                 JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
                         Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
-                node->AsCall()->gtIsAsyncCall = true;
+                node->AsCall()->SetIsAsync();
             }
 
             BlockRange().Remove(asyncCont);

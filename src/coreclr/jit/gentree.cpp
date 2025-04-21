@@ -2282,7 +2282,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
 //
 bool GenTreeCall::IsAsync() const
 {
-    return gtIsAsyncCall;
+    return (gtCallMoreFlags & GTF_CALL_M_ASYNC) != 0;
 }
 
 //-------------------------------------------------------------------------
@@ -8324,7 +8324,6 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtRetClsHnd     = nullptr;
     node->gtControlExpr   = nullptr;
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
-    node->gtIsAsyncCall   = false;
     INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     node->gtInlineInfoCount = 0;
 
@@ -9938,9 +9937,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
 
     copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
 
-    copy->gtIsAsyncCall = tree->gtIsAsyncCall;
-    copy->gtCallType    = tree->gtCallType;
-    copy->gtReturnType  = tree->gtReturnType;
+    copy->gtCallType   = tree->gtCallType;
+    copy->gtReturnType = tree->gtReturnType;
 
 #if FEATURE_MULTIREG_RET
     copy->gtReturnTypeDesc = tree->gtReturnTypeDesc;

@@ -714,7 +714,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        call->AsCall()->gtIsAsyncCall = true;
+        call->AsCall()->SetIsAsync();
     }
 
     // Now create the argument list.
