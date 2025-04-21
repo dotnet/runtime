@@ -483,7 +483,7 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            return 0;
+            return -strides[^1];
         }
 
         // can shape2 turn into shape1
