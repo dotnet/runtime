@@ -178,25 +178,25 @@ namespace System.Numerics.Tensors
         public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan() => new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_values), _start), in _shape);
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.AsReadOnlyTensorSpan(ReadOnlySpan{nint})" />
-        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<nint> start) => AsReadOnlyTensorSpan().Slice(start);
+        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<nint> startIndexes) => AsReadOnlyTensorSpan().Slice(startIndexes);
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.AsReadOnlyTensorSpan(ReadOnlySpan{NIndex})" />
-        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NIndex> startIndex) => AsReadOnlyTensorSpan().Slice(startIndex);
+        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NIndex> startIndexes) => AsReadOnlyTensorSpan().Slice(startIndexes);
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.AsReadOnlyTensorSpan(ReadOnlySpan{NRange})" />
-        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NRange> range) => AsReadOnlyTensorSpan().Slice(range);
+        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NRange> ranges) => AsReadOnlyTensorSpan().Slice(ranges);
 
         /// <inheritdoc cref="ITensor{TSelf, T}.AsTensorSpan()" />
         public TensorSpan<T> AsTensorSpan() => new TensorSpan<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_values), _start), in _shape);
 
         /// <inheritdoc cref="ITensor{TSelf, T}.AsTensorSpan(ReadOnlySpan{nint})" />
-        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<nint> start) => AsTensorSpan().Slice(start);
+        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<nint> startIndexes) => AsTensorSpan().Slice(startIndexes);
 
         /// <inheritdoc cref="ITensor{TSelf, T}.AsTensorSpan(ReadOnlySpan{NIndex})" />
-        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NIndex> startIndex) => AsTensorSpan().Slice(startIndex);
+        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NIndex> startIndexes) => AsTensorSpan().Slice(startIndexes);
 
         /// <inheritdoc cref="ITensor{TSelf, T}.AsTensorSpan(ReadOnlySpan{NRange})" />
-        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NRange> range) => AsTensorSpan().Slice(range);
+        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NRange> ranges) => AsTensorSpan().Slice(ranges);
 
         /// <inheritdoc cref="ITensor.Clear()" />
         public unsafe void Clear() => AsTensorSpan().Clear();
@@ -223,7 +223,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Gets an enumerator for the readonly tensor.</summary>
-        public IEnumerator<T> GetEnumerator() => new Enumerator(this);
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <inheritdoc cref="ITensor{TSelf, T}.GetPinnableReference()" />
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -243,9 +243,9 @@ namespace System.Numerics.Tensors
         }
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Slice(ReadOnlySpan{nint})" />
-        public Tensor<T> Slice(params ReadOnlySpan<nint> start)
+        public Tensor<T> Slice(params ReadOnlySpan<nint> startIndexes)
         {
-            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNInt, nint>(start, out nint linearOffset);
+            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNInt, nint>(startIndexes, out nint linearOffset);
 
             // The source tensor can have no more than int.MaxValue elements so linearOffset will always be in range of int.
             Debug.Assert((int)(linearOffset) == linearOffset);
@@ -259,9 +259,9 @@ namespace System.Numerics.Tensors
         }
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Slice(ReadOnlySpan{NIndex})" />
-        public Tensor<T> Slice(params ReadOnlySpan<NIndex> startIndex)
+        public Tensor<T> Slice(params ReadOnlySpan<NIndex> startIndexes)
         {
-            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNIndex, NIndex>(startIndex, out nint linearOffset);
+            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNIndex, NIndex>(startIndexes, out nint linearOffset);
 
             // The source tensor can have no more than int.MaxValue elements so linearOffset will always be in range of int.
             Debug.Assert((int)(linearOffset) == linearOffset);
@@ -275,9 +275,9 @@ namespace System.Numerics.Tensors
         }
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Slice(ReadOnlySpan{NRange})" />
-        public Tensor<T> Slice(params ReadOnlySpan<NRange> range)
+        public Tensor<T> Slice(params ReadOnlySpan<NRange> ranges)
         {
-            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNRange, NRange>(range, out nint linearOffset);
+            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNRange, NRange>(ranges, out nint linearOffset);
 
             // The source tensor can have no more than int.MaxValue elements so linearOffset will always be in range of int.
             Debug.Assert((int)(linearOffset) == linearOffset);
@@ -383,7 +383,8 @@ namespace System.Numerics.Tensors
 
         static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.Create<T>(lengths, strides, pinned);
 
-        private struct Enumerator : IEnumerator<T>
+        /// <summary>Enumerates the elements of a tensor.</summary>
+        public struct Enumerator : IEnumerator<T>
         {
             private readonly Tensor<T> _tensor;
             private nint[] _indexes;
@@ -400,7 +401,7 @@ namespace System.Numerics.Tensors
             }
 
             /// <inheritdoc cref="IEnumerator{T}.Current" />
-            public readonly T Current => Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_tensor._values), _linearOffset);
+            public readonly ref T Current => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_tensor._values), _linearOffset);
 
             /// <inheritdoc cref="IEnumerator.MoveNext()" />
             public bool MoveNext()
@@ -435,6 +436,12 @@ namespace System.Numerics.Tensors
             //
 
             readonly object? IEnumerator.Current => Current;
+
+            //
+            // IEnumerator<T>
+            //
+
+            readonly T IEnumerator<T>.Current => Current;
         }
     }
 }

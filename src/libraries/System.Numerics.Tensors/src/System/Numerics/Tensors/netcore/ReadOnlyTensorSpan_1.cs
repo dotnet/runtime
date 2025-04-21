@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Microsoft.VisualBasic;
-using static System.Numerics.Tensors.TensorOperation;
 
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
 
@@ -401,9 +401,9 @@ namespace System.Numerics.Tensors
         }
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Slice(ReadOnlySpan{nint})" />
-        public ReadOnlyTensorSpan<T> Slice(params scoped ReadOnlySpan<nint> start)
+        public ReadOnlyTensorSpan<T> Slice(params scoped ReadOnlySpan<nint> startIndexes)
         {
-            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNInt, nint>(start, out nint linearOffset);
+            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNInt, nint>(startIndexes, out nint linearOffset);
             return new ReadOnlyTensorSpan<T>(
                 ref Unsafe.Add(ref _reference, linearOffset),
                 shape
@@ -411,9 +411,9 @@ namespace System.Numerics.Tensors
         }
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Slice(ReadOnlySpan{NIndex})" />
-        public ReadOnlyTensorSpan<T> Slice(params scoped ReadOnlySpan<NIndex> startIndex)
+        public ReadOnlyTensorSpan<T> Slice(params scoped ReadOnlySpan<NIndex> startIndexes)
         {
-            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNIndex, NIndex>(startIndex, out nint linearOffset);
+            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNIndex, NIndex>(startIndexes, out nint linearOffset);
             return new ReadOnlyTensorSpan<T>(
                 ref Unsafe.Add(ref _reference, linearOffset),
                 shape
@@ -421,9 +421,9 @@ namespace System.Numerics.Tensors
         }
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Slice(ReadOnlySpan{NRange})" />
-        public ReadOnlyTensorSpan<T> Slice(params scoped ReadOnlySpan<NRange> range)
+        public ReadOnlyTensorSpan<T> Slice(params scoped ReadOnlySpan<NRange> ranges)
         {
-            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNRange, NRange>(range, out nint linearOffset);
+            TensorShape shape = _shape.Slice<TensorShape.GetOffsetAndLengthForNRange, NRange>(ranges, out nint linearOffset);
             return new ReadOnlyTensorSpan<T>(
                 ref Unsafe.Add(ref _reference, linearOffset),
                 shape
@@ -457,7 +457,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Enumerates the elements of a tensor span.</summary>
-        public ref struct Enumerator
+        public ref struct Enumerator : IEnumerator<T>
         {
             private readonly ReadOnlyTensorSpan<T> _span;
             private nint[] _indexes;
@@ -497,6 +497,24 @@ namespace System.Numerics.Tensors
                 _linearOffset = 0;
                 _itemsEnumerated = -1;
             }
+
+            //
+            // IDisposable
+            //
+
+            void IDisposable.Dispose() { }
+
+            //
+            // IEnumerator
+            //
+
+            readonly object? IEnumerator.Current => Current;
+
+            //
+            // IEnumerator<T>
+            //
+
+            readonly T IEnumerator<T>.Current => Current;
         }
     }
 }

@@ -339,7 +339,7 @@ namespace System.Numerics.Tensors
         /// Creates a <see cref="Tensor{T}"/> and initializes it with random data in a gaussian normal distribution.
         /// </summary>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
-        public static Tensor<T> CreateAndFillGaussianNormalDistribution<T>(params scoped ReadOnlySpan<nint> lengths)
+        public static Tensor<T> CreateAndFillGaussianNormalDistribution<T>(scoped ReadOnlySpan<nint> lengths)
             where T : IFloatingPoint<T>
         {
             return CreateAndFillGaussianNormalDistribution<T>(Random.Shared, lengths);
@@ -350,7 +350,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="random"></param>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
-        public static Tensor<T> CreateAndFillGaussianNormalDistribution<T>(Random random, params scoped ReadOnlySpan<nint> lengths)
+        public static Tensor<T> CreateAndFillGaussianNormalDistribution<T>(Random random, scoped ReadOnlySpan<nint> lengths)
             where T : IFloatingPoint<T>
         {
             Tensor<T> tensor = CreateUninitialized<T>(lengths);
@@ -363,7 +363,7 @@ namespace System.Numerics.Tensors
         /// Creates a <see cref="Tensor{T}"/> and initializes it with random data uniformly distributed.
         /// </summary>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
-        public static Tensor<T> CreateAndFillUniformDistribution<T>(params scoped ReadOnlySpan<nint> lengths)
+        public static Tensor<T> CreateAndFillUniformDistribution<T>(scoped ReadOnlySpan<nint> lengths)
             where T : IFloatingPoint<T>
         {
             return CreateAndFillUniformDistribution<T>(Random.Shared, lengths);
@@ -374,7 +374,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="random"></param>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
-        public static Tensor<T> CreateAndFillUniformDistribution<T>(Random random, params scoped ReadOnlySpan<nint> lengths)
+        public static Tensor<T> CreateAndFillUniformDistribution<T>(Random random, scoped ReadOnlySpan<nint> lengths)
             where T : IFloatingPoint<T>
         {
             Tensor<T> tensor = CreateUninitialized<T>(lengths);
@@ -1356,7 +1356,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensor">Input <see cref="Tensor{T}"/></param>
         /// <param name="dimensions"><see cref="ReadOnlySpan{T}"/> with the new axis ordering.</param>
-        public static Tensor<T> PermuteDimensions<T>(this Tensor<T> tensor, params ReadOnlySpan<int> dimensions)
+        public static Tensor<T> PermuteDimensions<T>(this Tensor<T> tensor, ReadOnlySpan<int> dimensions)
         {
             if (tensor.Rank == 1)
             {
@@ -1410,7 +1410,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensor"><see cref="Tensor{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static Tensor<T> Reshape<T>(this Tensor<T> tensor, params ReadOnlySpan<nint> lengths)
+        public static Tensor<T> Reshape<T>(this Tensor<T> tensor, ReadOnlySpan<nint> lengths)
         {
             if (tensor.Lengths.SequenceEqual(lengths))
                 return tensor;
@@ -1482,7 +1482,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensor"><see cref="TensorSpan{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static TensorSpan<T> Reshape<T>(in this TensorSpan<T> tensor, params scoped ReadOnlySpan<nint> lengths)
+        public static TensorSpan<T> Reshape<T>(in this TensorSpan<T> tensor, scoped ReadOnlySpan<nint> lengths)
         {
             if (tensor.Lengths.SequenceEqual(lengths))
                 return tensor;
@@ -1558,7 +1558,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensor"><see cref="TensorSpan{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static ReadOnlyTensorSpan<T> Reshape<T>(in this ReadOnlyTensorSpan<T> tensor, params scoped ReadOnlySpan<nint> lengths)
+        public static ReadOnlyTensorSpan<T> Reshape<T>(in this ReadOnlyTensorSpan<T> tensor, scoped ReadOnlySpan<nint> lengths)
         {
             if (tensor.Lengths.SequenceEqual(lengths))
                 return tensor;
@@ -1792,9 +1792,9 @@ namespace System.Numerics.Tensors
 
                 while (copiedValues < tensor.FlattenedLength)
                 {
-                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref destination._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, tensor.Strides, tensor.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    TensorSpanHelpers.AdjustIndexes((int)dimension, 1, oIndices, tensor.Lengths);
-                    TensorSpanHelpers.AdjustIndexesDown((int)dimension, 1, iIndices, tensor.Lengths);
+                    // TensorSpanHelpers.Memmove(ref Unsafe.Add(ref destination._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, tensor.Strides, tensor.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
+                    // TensorSpanHelpers.AdjustIndexes((int)dimension, 1, oIndices, tensor.Lengths);
+                    // TensorSpanHelpers.AdjustIndexesDown((int)dimension, 1, iIndices, tensor.Lengths);
                     copiedValues += copyLength;
                 }
 
@@ -2186,7 +2186,7 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
         /// <returns>A <see cref="string"/> representation of the <paramref name="tensor"/></returns>
-        public static string ToString<T>(this in TensorSpan<T> tensor, params ReadOnlySpan<nint> maximumLengths)
+        public static string ToString<T>(this in TensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths)
             => tensor.AsReadOnlyTensorSpan().ToString(maximumLengths);
 
         /// <summary>
@@ -2195,7 +2195,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="T"></typeparam>
         /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        public static string ToString<T>(this in ReadOnlyTensorSpan<T> tensor, params ReadOnlySpan<nint> maximumLengths)
+        public static string ToString<T>(this in ReadOnlyTensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths)
         {
             if (maximumLengths.Length != tensor.Rank)
             {
@@ -2269,7 +2269,7 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">The <see cref="Span{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
         /// <returns>A <see cref="string"/> representation of the <paramref name="tensor"/></returns>
-        public static string ToString<T>(this Tensor<T> tensor, params ReadOnlySpan<nint> maximumLengths)
+        public static string ToString<T>(this Tensor<T> tensor, ReadOnlySpan<nint> maximumLengths)
             => tensor.AsReadOnlyTensorSpan().ToString(maximumLengths);
 
         #endregion
@@ -4138,9 +4138,14 @@ namespace System.Numerics.Tensors
         /// <summary>Searches for the largest number in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
         public static T Max<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>, IMinMaxValue<T>
+            where T : INumber<T>
         {
-            T result = T.MinValue;
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            T result = x._reference;
             TensorOperation.Invoke<TensorOperation.Max<T>, T, T>(x, ref result);
             return result;
         }
@@ -4149,7 +4154,7 @@ namespace System.Numerics.Tensors
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> Max<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : INumber<T>, IMinMaxValue<T>
+            where T : INumber<T>
         {
             TensorOperation.ValidateCompatibility(in x, in y, out Tensor<T> output);
             TensorOperation.Invoke<TensorOperation.Max<T>, T, T>(x, y, output);
@@ -4198,7 +4203,12 @@ namespace System.Numerics.Tensors
         public static T MaxMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            T result = T.AdditiveIdentity;
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            T result = x._reference;
             TensorOperation.Invoke<TensorOperation.MaxMagnitude<T>, T, T>(x, ref result);
             return result;
         }
@@ -4256,7 +4266,12 @@ namespace System.Numerics.Tensors
         public static T MaxMagnitudeNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumberBase<T>
         {
-            T result = T.AdditiveIdentity;
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            T result = x._reference;
             TensorOperation.Invoke<TensorOperation.MaxMagnitudeNumber<T>, T, T>(x, ref result);
             return result;
         }
@@ -4312,9 +4327,14 @@ namespace System.Numerics.Tensors
         /// <summary>Searches for the largest number in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
         public static T MaxNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>, IMinMaxValue<T>
+            where T : INumber<T>
         {
-            T result = T.MinValue;
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            T result = x._reference;
             TensorOperation.Invoke<TensorOperation.MaxNumber<T>, T, T>(x, ref result);
             return result;
         }
@@ -4370,9 +4390,14 @@ namespace System.Numerics.Tensors
         /// <summary>Searches for the largest number in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
         public static T Min<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>, IMinMaxValue<T>
+            where T : INumber<T>
         {
-            T result = T.MaxValue;
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            T result = x._reference;
             TensorOperation.Invoke<TensorOperation.Min<T>, T, T>(x, ref result);
             return result;
         }
@@ -4430,7 +4455,12 @@ namespace System.Numerics.Tensors
         public static T MinMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            T result = T.AdditiveIdentity;
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            T result = x._reference;
             TensorOperation.Invoke<TensorOperation.MinMagnitude<T>, T, T>(x, ref result);
             return result;
         }
@@ -4488,7 +4518,12 @@ namespace System.Numerics.Tensors
         public static T MinMagnitudeNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumberBase<T>
         {
-            T result = T.AdditiveIdentity;
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            T result = x._reference;
             TensorOperation.Invoke<TensorOperation.MinMagnitudeNumber<T>, T, T>(x, ref result);
             return result;
         }
@@ -4544,9 +4579,14 @@ namespace System.Numerics.Tensors
         /// <summary>Searches for the largest number in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
         public static T MinNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : INumber<T>, IMinMaxValue<T>
+            where T : INumber<T>
         {
-            T result = T.MaxValue;
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            T result = x._reference;
             TensorOperation.Invoke<TensorOperation.MinNumber<T>, T, T>(x, ref result);
             return result;
         }
