@@ -296,7 +296,7 @@ PhaseStatus AsyncTransformation::Run()
     m_comp->lvaGetDesc(m_newContinuationVar)->lvType      = TYP_REF;
 
     // TODO-Async: Unify with VM
-    //m_comp->info.compCompHnd->getAsyncInfo(&m_asyncInfo);
+    // m_comp->info.compCompHnd->getAsyncInfo(&m_asyncInfo);
 
 #ifdef JIT32_GCENCODER
     // Due to a hard cap on epilogs we need a shared return here.
@@ -1450,11 +1450,11 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     GenTree* jtrue     = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
     LIR::AsRange(resumeBB).InsertAtEnd(exception, null, neNull, jtrue);
 
-    exception                     = m_comp->gtNewLclVarNode(exceptionLclNum, TYP_REF);
+    exception = m_comp->gtNewLclVarNode(exceptionLclNum, TYP_REF);
 
     // TODO-Async: Unify with VM
     const CorInfoHelpFunc CORINFO_HELP_THROWEXACT = CORINFO_HELP_UNDEF;
-    GenTreeCall* rethrowException = m_comp->gtNewHelperCallNode(CORINFO_HELP_THROWEXACT, TYP_VOID, exception);
+    GenTreeCall*          rethrowException = m_comp->gtNewHelperCallNode(CORINFO_HELP_THROWEXACT, TYP_VOID, exception);
 
     m_comp->compCurBB = rethrowExceptionBB;
     m_comp->fgMorphTree(rethrowException);
@@ -1929,7 +1929,7 @@ void AsyncTransformation::CreateResumptionSwitch()
         GenTree* jtrue  = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, geZero);
         LIR::AsRange(checkILOffsetBB).InsertAtEnd(ilOffset, zero, geZero, jtrue);
 
-        ilOffset                = m_comp->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
+        ilOffset = m_comp->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
 
         // TODO-Async: Unify with VM
         const CorInfoHelpFunc CORINFO_HELP_PATCHPOINT_FORCED = CORINFO_HELP_UNDEF;
