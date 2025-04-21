@@ -163,10 +163,10 @@ namespace System.Numerics.Tensors
                         ThrowHelper.ThrowArgument_LengthIsNegativeOrZero();
                     }
 
-                    flattenedLength = checked(flattenedLength * length);
-
                     destinationLengths[linearRankIndex] = length;
                     destinationStrides[linearRankIndex] = flattenedLength;
+
+                    flattenedLength = checked(flattenedLength * length);
                 }
 
                 // When no strides are specified, the way we construct them makes it so that the
@@ -221,11 +221,10 @@ namespace System.Numerics.Tensors
                         break;
                     }
 
-                    flattenedLength = checked(flattenedLength * length);
-
                     destinationLengths[linearRankIndex] = length;
                     destinationStrides[linearRankIndex] = flattenedLength;
 
+                    flattenedLength = checked(flattenedLength * length);
                     i++;
                 }
 
@@ -252,11 +251,10 @@ namespace System.Numerics.Tensors
                     nint stride = strides[linearRankIndex];
                     ArgumentOutOfRangeException.ThrowIfNotEqual(stride, 0);
 
-                    flattenedLength = checked(flattenedLength * length);
-
                     destinationLengths[linearRankIndex] = length;
                     destinationStrides[linearRankIndex] = 0;
 
+                    flattenedLength = checked(flattenedLength * length);
                     i++;
                 }
             }
