@@ -1076,6 +1076,9 @@ BOOL Module::IsRuntimeWrapExceptionsDuringEH()
     }
     CONTRACTL_END
 
+    // This method assumes that the runtime wrap exceptions status has already been computed.
+    // IsRuntimeWrapExceptionsStatusComputed() returns TRUE before calling this method, but
+    // that should be done as part of Module activation, so we shouldn't need to worry about that.
     _ASSERTE(IsRuntimeWrapExceptionsStatusComputed());
     return (m_dwPersistedFlags & WRAP_EXCEPTIONS) != 0;
 }

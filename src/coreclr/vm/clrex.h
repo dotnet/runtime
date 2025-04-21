@@ -58,7 +58,12 @@ class StackTraceInfo
 {
     struct StackTraceArrayProtect
     {
+        // Stores the current stack trace array. This array may be accessed by multiple threads
+        // during exception handling, and needs to be protected from concurrent modifications.
         StackTraceArray m_pStackTraceArray;
+        
+        // Used as a temporary buffer when resizing the stack trace array.
+        // This allows atomic replacement of the original array with the newly sized array.
         StackTraceArray m_pStackTraceArrayNew;
     };
     static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
