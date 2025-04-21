@@ -189,6 +189,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
     call->gtCallMoreFlags = GTF_CALL_M_EMPTY;
     INDEBUG(call->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     call->gtControlExpr = nullptr;
+    call->gtIsAsyncCall = false;
     call->ClearInlineInfo();
 #ifdef UNIX_X86_ABI
     call->gtFlags |= GTF_CALL_POP_ARGS;
@@ -709,6 +710,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "VarArgsCookie";
         case WellKnownArg::InstParam:
             return "InstParam";
+        case WellKnownArg::AsyncContinuation:
+            return "AsyncContinuation";
         case WellKnownArg::RetBuffer:
             return "RetBuffer";
         case WellKnownArg::PInvokeFrame:
@@ -4489,6 +4492,12 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 #endif
+
+    if (compIsAsync() != call->IsAsync())
+    {
+        failTailCall("Caller and callee do not agree on async-ness");
+        return nullptr;
+    }
 
     // We have to ensure to pass the incoming retValBuf as the
     // outgoing one. Using a temp will not do as this function will

@@ -4563,6 +4563,7 @@ enum class WellKnownArg : unsigned
     ThisPointer,
     VarArgsCookie,
     InstParam,
+    AsyncContinuation,
     RetBuffer,
     PInvokeFrame,
     WrapperDelegateCell,
@@ -4741,6 +4742,7 @@ class CallArgs
 #endif
     bool m_hasThisPointer           : 1;
     bool m_hasRetBuffer             : 1;
+    bool m_hasAsyncContinuation     : 1;
     bool m_isVarArgs                : 1;
     bool m_abiInformationDetermined : 1;
     bool m_hasAddedFinalArgs        : 1;
@@ -4788,6 +4790,7 @@ public:
     CallArg* InsertAfter(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertAfterUnchecked(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertInstParam(Compiler* comp, GenTree* node);
+    CallArg* InsertAsyncContinuationParam(Compiler* comp, GenTree* node);
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void     PushLateBack(CallArg* arg);
     void     Remove(CallArg* arg);
@@ -4815,6 +4818,7 @@ public:
     // clang-format off
     bool HasThisPointer() const { return m_hasThisPointer; }
     bool HasRetBuffer() const { return m_hasRetBuffer; }
+    bool HasAsyncContinuation() const { return m_hasAsyncContinuation; }
     bool IsVarArgs() const { return m_isVarArgs; }
     void SetIsVarArgs() { m_isVarArgs = true; }
     void ClearIsVarArgs() { m_isVarArgs = false; }
@@ -5018,6 +5022,8 @@ struct GenTreeCall final : public GenTree
         gtReturnTypeDesc.Reset();
 #endif
     }
+
+    bool IsAsync() const;
 
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.
@@ -5588,6 +5594,7 @@ struct GenTreeCall final : public GenTree
     var_types        gtReturnType : 5; // exact return type
 
     uint8_t gtInlineInfoCount; // number of inline candidates for the given call
+    bool    gtIsAsyncCall;
 
     CORINFO_CLASS_HANDLE gtRetClsHnd; // The return type handle of the call if it is a struct; always available
     union

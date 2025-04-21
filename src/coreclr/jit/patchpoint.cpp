@@ -235,11 +235,10 @@ private:
 
         // Add helper call
         //
-        // call PartialCompilationPatchpointHelper(ilOffset)
+        // call PatchpointForced(ilOffset)
         //
         GenTree*     ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTreeCall* helperCall =
-            compiler->gtNewHelperCallNode(CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT, TYP_VOID, ilOffsetNode);
+        GenTreeCall* helperCall = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
 
         compiler->fgNewStmtAtEnd(block, helperCall);
     }

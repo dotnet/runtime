@@ -1214,6 +1214,7 @@ protected:
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
 #endif // SWIFT_SUPPORT
+    void genCodeForAsyncContinuation(GenTree* tree);
     void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
     void genCodeForReuseVal(GenTree* treeNode);
@@ -1346,6 +1347,8 @@ protected:
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     void genReturn(GenTree* treeNode);
+    void genReturnSuspend(GenTreeUnOp* treeNode);
+    void genMarkReturnGCInfo();
 
 #ifdef SWIFT_SUPPORT
     void genSwiftErrorReturn(GenTree* treeNode);

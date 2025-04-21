@@ -2449,7 +2449,18 @@ PhaseStatus Compiler::fgAddInternal()
         }
         else
         {
-            merger.SetMaxReturns(MergedReturns::ReturnCountHardLimit);
+            unsigned limit = MergedReturns::ReturnCountHardLimit;
+#ifdef JIT32_GCENCODER
+            // For the jit32 GC encoder the limit is an actual hard limit. In
+            // async functions we will be introducing another return during
+            // the async transformation, so make sure there's a free epilog
+            // for it.
+            if (compIsAsync())
+            {
+                limit--;
+            }
+#endif
+            merger.SetMaxReturns(limit);
         }
     }
 

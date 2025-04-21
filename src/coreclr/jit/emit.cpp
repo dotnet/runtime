@@ -3573,7 +3573,8 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
                                                  regMaskTP        gcrefRegs,
                                                  regMaskTP        byrefRegs,
                                                  emitAttr retSizeIn
-                                                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
+                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                                                 bool hasAsyncRet)
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
@@ -3597,7 +3598,8 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
         (argCnt > ID_MAX_SMALL_CNS) || // too many args
         (argCnt < 0)                   // caller pops arguments
                                        // There is a second ref/byref return register.
-        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)))
+        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)) ||
+        hasAsyncRet)
     {
         instrDescCGCA* id;
 
@@ -3614,6 +3616,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 #if MULTIREG_HAS_SECOND_GC_RET
         emitSetSecondRetRegGCType(id, secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
+        id->hasAsyncContinuationRet(hasAsyncRet);
 
         return id;
     }
@@ -3657,7 +3660,8 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
                                                  regMaskTP        gcrefRegs,
                                                  regMaskTP        byrefRegs,
                                                  emitAttr retSizeIn
-                                                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
+                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                                                 bool hasAsyncRet)
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
@@ -3677,7 +3681,8 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
         (argCnt > ID_MAX_SMALL_CNS) ||           // too many args
         (argCnt < 0)                             // caller pops arguments
                                                  // There is a second ref/byref return register.
-        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)))
+        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)) ||
+        hasAsyncRet)
     {
         instrDescCGCA* id = emitAllocInstrCGCA(retSize);
 
@@ -3694,6 +3699,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
 #if MULTIREG_HAS_SECOND_GC_RET
         emitSetSecondRetRegGCType(id, secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
+        id->hasAsyncContinuationRet(hasAsyncRet);
 
         return id;
     }
