@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.VisualBasic;
 using static System.Numerics.Tensors.TensorOperation;
 
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
@@ -40,6 +41,30 @@ namespace System.Numerics.Tensors
                        : ref Unsafe.NullRef<T>();
         }
 
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], ReadOnlySpan{nint})" />
+        /// <exception cref="ArrayTypeMismatchException"><paramref name="array"/> is covariant and its type is not exactly T[].</exception>
+        public TensorSpan(T[]? array, scoped ReadOnlySpan<nint> lengths)
+        {
+            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array);
+
+            _shape = TensorShape.Create(array, lengths);
+            _reference = ref (array is not null)
+                       ? ref MemoryMarshal.GetArrayDataReference(array)
+                       : ref Unsafe.NullRef<T>();
+        }
+
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], ReadOnlySpan{nint}, ReadOnlySpan{nint})" />
+        /// <exception cref="ArrayTypeMismatchException"><paramref name="array"/> is covariant and its type is not exactly T[].</exception>
+        public TensorSpan(T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+        {
+            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array);
+
+            _shape = TensorShape.Create(array, lengths, strides);
+            _reference = ref (array is not null)
+                       ? ref MemoryMarshal.GetArrayDataReference(array)
+                       : ref Unsafe.NullRef<T>();
+        }
+
         /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], int, ReadOnlySpan{nint}, ReadOnlySpan{nint})" />
         /// <exception cref="ArrayTypeMismatchException"><paramref name="array"/> is covariant and its type is not exactly T[].</exception>
         public TensorSpan(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
@@ -57,6 +82,14 @@ namespace System.Numerics.Tensors
         {
             ref T reference = ref MemoryMarshal.GetReference(span);
             _shape = TensorShape.Create(ref reference, span.Length);
+            _reference = ref reference;
+        }
+
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(ReadOnlySpan{T}, ReadOnlySpan{nint})" />
+        public TensorSpan(Span<T> span, scoped ReadOnlySpan<nint> lengths)
+        {
+            ref T reference = ref MemoryMarshal.GetReference(span);
+            _shape = TensorShape.Create(ref reference, span.Length, lengths);
             _reference = ref reference;
         }
 
@@ -96,7 +129,15 @@ namespace System.Numerics.Tensors
         [CLSCompliant(false)]
         public unsafe TensorSpan(T* data, nint dataLength)
         {
-            _shape = TensorShape.Create<T>(data, dataLength);
+            _shape = TensorShape.Create(data, dataLength);
+            _reference = ref Unsafe.AsRef<T>(data);
+        }
+
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T*, nint, ReadOnlySpan{nint})" />
+        [CLSCompliant(false)]
+        public unsafe TensorSpan(T* data, nint dataLength, scoped ReadOnlySpan<nint> lengths)
+        {
+            _shape = TensorShape.Create(data, dataLength, lengths);
             _reference = ref Unsafe.AsRef<T>(data);
         }
 
@@ -104,13 +145,19 @@ namespace System.Numerics.Tensors
         [CLSCompliant(false)]
         public unsafe TensorSpan(T* data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
-            _shape = TensorShape.Create<T>(data, dataLength, lengths, strides);
+            _shape = TensorShape.Create(data, dataLength, lengths, strides);
             _reference = ref Unsafe.AsRef<T>(data);
         }
 
         internal TensorSpan(ref T data, nint dataLength)
         {
             _shape = TensorShape.Create(ref data, dataLength);
+            _reference = ref data;
+        }
+
+        internal TensorSpan(ref T data, nint dataLength, scoped ReadOnlySpan<nint> lengths)
+        {
+            _shape = TensorShape.Create(ref data, dataLength, lengths);
             _reference = ref data;
         }
 
@@ -153,6 +200,8 @@ namespace System.Numerics.Tensors
 
         /// <inheritdoc cref="IReadOnlyTensor.FlattenedLength" />
         public nint FlattenedLength => _shape.FlattenedLength;
+
+        internal bool IsContiguousAndDense => _shape.IsContiguousAndDense;
 
         /// <inheritdoc cref="IReadOnlyTensor.IsEmpty" />
         public bool IsEmpty => _shape.IsEmpty;

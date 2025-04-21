@@ -28,6 +28,15 @@ namespace System.Numerics.Tensors
         internal readonly int _start;
         internal readonly bool _isPinned;
 
+        internal Tensor(scoped ReadOnlySpan<nint> lengths, bool pinned)
+        {
+            _shape = TensorShape.Create(lengths);
+            _values = GC.AllocateArray<T>(checked((int)(_shape.LinearLength)), pinned);
+
+            _start = 0;
+            _isPinned = pinned;
+        }
+
         internal Tensor(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
             _shape = TensorShape.Create(lengths, strides);
@@ -40,6 +49,24 @@ namespace System.Numerics.Tensors
         internal Tensor(T[]? array)
         {
             _shape = TensorShape.Create(array);
+            _values = (array is not null) ? array : [];
+
+            _start = 0;
+            _isPinned = false;
+        }
+
+        internal Tensor(T[]? array, scoped ReadOnlySpan<nint> lengths)
+        {
+            _shape = TensorShape.Create(array, lengths);
+            _values = (array is not null) ? array : [];
+
+            _start = 0;
+            _isPinned = false;
+        }
+
+        internal Tensor(T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+        {
+            _shape = TensorShape.Create(array, lengths, strides);
             _values = (array is not null) ? array : [];
 
             _start = 0;
@@ -62,6 +89,17 @@ namespace System.Numerics.Tensors
 
             _start = start;
             _isPinned = false;
+        }
+
+        internal Tensor(T[] array, in TensorShape shape, bool isPinned)
+        {
+            ThrowHelper.ThrowIfArrayTypeMismatch<T>(array);
+
+            _shape = shape;
+            _values = array;
+
+            _start = 0;
+            _isPinned = isPinned;
         }
 
         internal Tensor(T[] array, int start, in TensorShape shape, bool isPinned)
@@ -105,6 +143,8 @@ namespace System.Numerics.Tensors
 
         /// <inheritdoc cref="IReadOnlyTensor.FlattenedLength" />
         public nint FlattenedLength => _shape.FlattenedLength;
+
+        internal bool IsContiguousAndDense => _shape.IsContiguousAndDense;
 
         /// <inheritdoc cref="IReadOnlyTensor.IsEmpty" />
         public bool IsEmpty => _shape.IsEmpty;

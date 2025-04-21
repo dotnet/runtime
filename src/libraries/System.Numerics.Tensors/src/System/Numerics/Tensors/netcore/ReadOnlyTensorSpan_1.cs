@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.VisualBasic;
 using static System.Numerics.Tensors.TensorOperation;
 
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
@@ -37,6 +38,46 @@ namespace System.Numerics.Tensors
         public ReadOnlyTensorSpan(T[]? array)
         {
             _shape = TensorShape.Create(array);
+            _reference = ref (array is not null)
+                       ? ref MemoryMarshal.GetArrayDataReference(array)
+                       : ref Unsafe.NullRef<T>();
+        }
+
+        /// <summary>Creates a new tensor over the portion of the target array using the specified lengths.</summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="lengths">The lengths of the dimensions. If an empty span is provided, the created tensor will have a single dimension that is the same length as <paramref name="array" />.</param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   Thrown when one of the following conditions is met:
+        ///   * <paramref name="array" /> is null and <paramref name="lengths" /> is not empty
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length
+        /// </exception>
+        public ReadOnlyTensorSpan(T[]? array, scoped ReadOnlySpan<nint> lengths)
+        {
+            _shape = TensorShape.Create(array, lengths);
+            _reference = ref (array is not null)
+                       ? ref MemoryMarshal.GetArrayDataReference(array)
+                       : ref Unsafe.NullRef<T>();
+        }
+
+        /// <summary>Creates a new tensor over the portion of the target array beginning at the specified start index and using the specified lengths and strides.</summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="lengths">The lengths of the dimensions. If an empty span is provided, the created tensor will have a single dimension that is the same length as <paramref name="array" />.</param>
+        /// <param name="strides">The strides of each dimension. If an empty span is provided, then strides will be automatically calculated from <paramref name="lengths" />.</param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   Thrown when one of the following conditions is met:
+        ///   * <paramref name="array" /> is null and <paramref name="lengths" /> or <paramref name="strides" /> is not empty
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="array" />.Length
+        ///   * <paramref name="strides" /> is not empty and has a length different from <paramref name="lengths"/>
+        ///   * <paramref name="strides" /> is not empty and contains an element that is negative
+        ///   * <paramref name="strides" /> is not empty and contains an element that is zero in a non leading position
+        /// </exception>
+        public ReadOnlyTensorSpan(T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+        {
+            _shape = TensorShape.Create(array, lengths, strides);
             _reference = ref (array is not null)
                        ? ref MemoryMarshal.GetArrayDataReference(array)
                        : ref Unsafe.NullRef<T>();
@@ -73,6 +114,21 @@ namespace System.Numerics.Tensors
         {
             ref T reference = ref MemoryMarshal.GetReference(span);
             _shape = TensorShape.Create(ref reference, span.Length);
+            _reference = ref reference;
+        }
+
+        /// <summary>Creates a new tensor span over the target span using the specified lengths.</summary>
+        /// <param name="span">The target span.</param>
+        /// <param name="lengths">The lengths of the dimensions. If an empty span is provided, the created tensor span will have a single dimension that is the same length as <paramref name="span" />.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   Thrown when one of the following conditions is met:
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="span" />.Length
+        /// </exception>
+        public ReadOnlyTensorSpan(ReadOnlySpan<T> span, scoped ReadOnlySpan<nint> lengths)
+        {
+            ref T reference = ref MemoryMarshal.GetReference(span);
+            _shape = TensorShape.Create(ref reference, span.Length, lengths);
             _reference = ref reference;
         }
 
@@ -145,7 +201,26 @@ namespace System.Numerics.Tensors
         [CLSCompliant(false)]
         public unsafe ReadOnlyTensorSpan(T* data, nint dataLength)
         {
-            _shape = TensorShape.Create<T>(data, dataLength);
+            _shape = TensorShape.Create(data, dataLength);
+            _reference = ref Unsafe.AsRef<T>(data);
+        }
+
+        /// <summary>Creates a new tensor span over the target unmanaged buffer using the specified lengths.</summary>
+        /// <param name="data">The pointer to the start of the target unmanaged buffer.</param>
+        /// <param name="dataLength">The number of elements the target unmanaged buffer contains.</param>
+        /// <param name="lengths">The lengths of the dimensions. If an empty span is provided, the created tensor span will have a single dimension that is the same length as <paramref name="dataLength" />.</param>
+        /// <remarks>Returns default when <paramref name="data" /> is null.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   Thrown when one of the following conditions is met:
+        ///   * <paramref name="data" /> is <c>null</c> and <paramref name="dataLength" /> is not zero
+        ///   * <paramref name="data" /> is null and <paramref name="lengths" />
+        ///   * <paramref name="lengths" /> is not empty and contains an element that is either zero or negative
+        ///   * <paramref name="lengths" /> is not empty and has a flattened length greater than <paramref name="dataLength" />
+        /// </exception>
+        [CLSCompliant(false)]
+        public unsafe ReadOnlyTensorSpan(T* data, nint dataLength, scoped ReadOnlySpan<nint> lengths)
+        {
+            _shape = TensorShape.Create(data, dataLength, lengths);
             _reference = ref Unsafe.AsRef<T>(data);
         }
 
@@ -168,7 +243,7 @@ namespace System.Numerics.Tensors
         [CLSCompliant(false)]
         public unsafe ReadOnlyTensorSpan(T* data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
-            _shape = TensorShape.Create<T>(data, dataLength, lengths, strides);
+            _shape = TensorShape.Create(data, dataLength, lengths, strides);
             _reference = ref Unsafe.AsRef<T>(data);
         }
 
@@ -176,6 +251,12 @@ namespace System.Numerics.Tensors
         internal ReadOnlyTensorSpan(ref T data, nint dataLength)
         {
             _shape = TensorShape.Create(ref data, dataLength);
+            _reference = ref data;
+        }
+
+        internal ReadOnlyTensorSpan(ref T data, nint dataLength, scoped ReadOnlySpan<nint> lengths)
+        {
+            _shape = TensorShape.Create(ref data, dataLength, lengths);
             _reference = ref data;
         }
 
@@ -217,6 +298,8 @@ namespace System.Numerics.Tensors
 
         /// <inheritdoc cref="IReadOnlyTensor.FlattenedLength" />
         public nint FlattenedLength => _shape.FlattenedLength;
+
+        internal bool IsContiguousAndDense => _shape.IsContiguousAndDense;
 
         /// <inheritdoc cref="IReadOnlyTensor.IsEmpty" />
         public bool IsEmpty => _shape.IsEmpty;
