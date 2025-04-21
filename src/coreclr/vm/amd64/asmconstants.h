@@ -449,11 +449,11 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__VectorRegister
 ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame
                     == sizeof(FaultingExceptionFrame));
 
-#define               OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted (SIZEOF__Frame + 0x8)
+#define               OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted
                     == offsetof(FaultingExceptionFrame, m_fFilterExecuted));
 
-#define               OFFSETOF__FaultingExceptionFrame__m_SSP (SIZEOF__Frame)
+#define               OFFSETOF__FaultingExceptionFrame__m_SSP (0x20 + SIZEOF__CONTEXT)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FaultingExceptionFrame__m_SSP
                     == offsetof(FaultingExceptionFrame, m_SSP));
 

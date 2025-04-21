@@ -933,10 +933,6 @@ class FaultingExceptionFrame : public Frame
 {
     friend class CheckAsmOffsets;
 
-#ifdef TARGET_AMD64
-    TADDR                   m_SSP;
-#endif
-
 #ifndef FEATURE_EH_FUNCLETS
 #ifdef TARGET_X86
     DWORD                   m_Esp;
@@ -948,10 +944,12 @@ class FaultingExceptionFrame : public Frame
 #else // FEATURE_EH_FUNCLETS
     BOOL                    m_fFilterExecuted;  // Flag for FirstCallToHandler
     TADDR                   m_ReturnAddress;
-    // This T_CONTEXT field needs to be the last field in the class because it is a
-    // different size between Linux (pal.h) and the Windows cross-DAC (winnt.h).
     T_CONTEXT               m_ctx;
 #endif // !FEATURE_EH_FUNCLETS
+
+#ifdef TARGET_AMD64
+    TADDR                   m_SSP;
+#endif
 
 public:
 #ifndef DACCESS_COMPILE
