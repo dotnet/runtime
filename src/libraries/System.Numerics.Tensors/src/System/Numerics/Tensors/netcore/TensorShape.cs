@@ -728,6 +728,9 @@ namespace System.Numerics.Tensors
             return default;
         }
 
+        public static TensorShape Create(scoped ReadOnlySpan<nint> lengths)
+            => new TensorShape(linearLength: -1, lengths, strides: [], linearRankOrder: []);
+
         public static TensorShape Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
             => new TensorShape(linearLength: -1, lengths, strides, linearRankOrder: []);
 
@@ -748,6 +751,44 @@ namespace System.Numerics.Tensors
                         rank: 1
                     );
                 }
+            }
+            return default;
+        }
+
+        public static TensorShape Create<T>(T[]? array, scoped ReadOnlySpan<nint> lengths)
+        {
+            if (array is not null)
+            {
+                int linearLength = array.Length;
+
+                if (linearLength != 0)
+                {
+                    return new TensorShape(linearLength, lengths, strides: [], linearRankOrder: []);
+                }
+            }
+
+            if (lengths.Length != 0)
+            {
+                ThrowHelper.ThrowArgument_InvalidTensorShape();
+            }
+            return default;
+        }
+
+        public static TensorShape Create<T>(T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+        {
+            if (array is not null)
+            {
+                int linearLength = array.Length;
+
+                if (linearLength != 0)
+                {
+                    return new TensorShape(linearLength, lengths, strides, linearRankOrder: []);
+                }
+            }
+
+            if ((lengths.Length != 0) || (strides.Length != 0))
+            {
+                ThrowHelper.ThrowArgument_InvalidTensorShape();
             }
             return default;
         }
@@ -835,6 +876,9 @@ namespace System.Numerics.Tensors
             return default;
         }
 
+        public static TensorShape Create<T>(ref T reference, nint linearLength, scoped ReadOnlySpan<nint> lengths)
+            => Create(ref reference, linearLength, lengths, strides: [], linearRankOrder: []);
+
         public static TensorShape Create<T>(ref T reference, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
             => Create(ref reference, linearLength, lengths, strides, linearRankOrder: []);
 
@@ -861,6 +905,9 @@ namespace System.Numerics.Tensors
 
         public static unsafe TensorShape Create<T>(T* address, nint linearLength)
             => Create(ref Unsafe.AsRef<T>(address), linearLength);
+
+        public static unsafe TensorShape Create<T>(T* address, nint linearLength, scoped ReadOnlySpan<nint> lengths)
+            => Create(ref Unsafe.AsRef<T>(address), linearLength, lengths, strides: []);
 
         public static unsafe TensorShape Create<T>(T* address, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
             => Create(ref Unsafe.AsRef<T>(address), linearLength, lengths, strides);

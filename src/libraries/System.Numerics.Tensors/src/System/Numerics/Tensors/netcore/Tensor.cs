@@ -19,13 +19,32 @@ namespace System.Numerics.Tensors
     {
         #region AsTensorSpan
         /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[])" />
-        public static ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan<T>(this T[]? array) => new ReadOnlyTensorSpan<T>(array);
+        public static ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan<T>(this T[]? array)
+            => new ReadOnlyTensorSpan<T>(array);
+
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], ReadOnlySpan{nint})" />
+        public static ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan<T>(this T[]? array, scoped ReadOnlySpan<nint> lengths)
+            => new ReadOnlyTensorSpan<T>(array, lengths);
+
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], ReadOnlySpan{nint}, ReadOnlySpan{nint})" />
+        public static ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan<T>(this T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+            => new ReadOnlyTensorSpan<T>(array, lengths, strides);
 
         /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], int, ReadOnlySpan{nint}, ReadOnlySpan{nint})" />
-        public static ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan<T>(this T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides) => new ReadOnlyTensorSpan<T>(array, start, lengths, strides);
+        public static ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan<T>(this T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+            => new ReadOnlyTensorSpan<T>(array, start, lengths, strides);
 
         /// <inheritdoc cref="TensorSpan{T}.TensorSpan(T[])" />
-        public static TensorSpan<T> AsTensorSpan<T>(this T[]? array) => new TensorSpan<T>(array);
+        public static TensorSpan<T> AsTensorSpan<T>(this T[]? array)
+            => new TensorSpan<T>(array);
+
+        /// <inheritdoc cref="TensorSpan{T}.TensorSpan(T[], ReadOnlySpan{nint})" />
+        public static TensorSpan<T> AsTensorSpan<T>(this T[]? array, scoped ReadOnlySpan<nint> lengths)
+            => new TensorSpan<T>(array, lengths);
+
+        /// <inheritdoc cref="TensorSpan{T}.TensorSpan(T[], ReadOnlySpan{nint} , ReadOnlySpan{nint})" />
+        public static TensorSpan<T> AsTensorSpan<T>(this T[]? array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+            => new TensorSpan<T>(array, lengths, strides);
 
         /// <inheritdoc cref="TensorSpan{T}.TensorSpan(T[], int, ReadOnlySpan{nint}, ReadOnlySpan{nint})" />
         public static TensorSpan<T> AsTensorSpan<T>(this T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides) => new TensorSpan<T>(array, start, lengths, strides);
@@ -257,14 +276,21 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Create<T>(T[] array)
             => new Tensor<T>(array);
 
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], ReadOnlySpan{nint})" />
+        /// <returns>A new tensor that uses <paramref name="array" /> as its backing buffer and with the specified <paramref name="lengths" />.</returns>
+        public static Tensor<T> Create<T>(T[] array, scoped ReadOnlySpan<nint> lengths)
+            => new Tensor<T>(array, lengths);
+
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], ReadOnlySpan{nint}, ReadOnlySpan{nint})" />
+        /// <returns>A new tensor that uses <paramref name="array" /> as its backing buffer and with the specified <paramref name="lengths" /> and <paramref name="strides"/>.</returns>
+        public static Tensor<T> Create<T>(T[] array, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+            => new Tensor<T>(array, lengths, strides);
+
         /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ReadOnlyTensorSpan(T[], int, ReadOnlySpan{nint}, ReadOnlySpan{nint})" />
         /// <returns>A new tensor that uses <paramref name="array" /> as its backing buffer and with the specified <paramref name="lengths" /> and <paramref name="strides" />.</returns>
         public static Tensor<T> Create<T>(T[] array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
             => new Tensor<T>(array, start, lengths, strides);
 
-        /// <summary>Creates a tensor that contains elements copied from the specified enumerable.</summary>
-        /// <param name="enumerable">The enumerable whose elements are copied to the new tensor.</param>
-        /// <param name="pinned"><c>true</c> to pin the underlying buffer. The default is <c>false</c>.</param>
         /// <returns>A new tensor that contains elements copied from <paramref name="enumerable" />.</returns>
         public static Tensor<T> Create<T>(IEnumerable<T> enumerable, bool pinned = false)
         {
@@ -284,12 +310,13 @@ namespace System.Numerics.Tensors
             }
         }
 
-        /// <summary>Creates a tensor that contains elements copied from the specified enumerable.</summary>
-        /// <param name="enumerable">The enumerable whose elements are copied to the new tensor.</param>
-        /// <param name="lengths">The lengths of each dimension.</param>
-        /// <param name="strides">The strides of each dimension.</param>
-        /// <param name="pinned"><c>true</c> to pin the underlying buffer. The default is <c>false</c>.</param>
-        /// <returns>A new tensor that contains elements copied from <paramref name="enumerable" />.</returns>
+        /// <inheritdoc cref="Create{T}(IEnumerable{T}, ReadOnlySpan{nint}, bool)" />
+        /// <returns>A new tensor that contains elements copied from <paramref name="enumerable" /> and with the specified <paramref name="lengths" />.</returns>
+        public static Tensor<T> Create<T>(IEnumerable<T> enumerable, scoped ReadOnlySpan<nint> lengths, bool pinned = false)
+            => Create(enumerable, lengths, strides: [], pinned);
+
+        /// <inheritdoc cref="Create{T}(IEnumerable{T}, ReadOnlySpan{nint}, ReadOnlySpan{nint}, bool)" />
+        /// <returns>A new tensor that contains elements copied from <paramref name="enumerable" /> and with the specified <paramref name="lengths" /> and <paramref name="strides" />.</returns>
         public static Tensor<T> Create<T>(IEnumerable<T> enumerable, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
         {
             if (pinned)
@@ -304,7 +331,7 @@ namespace System.Numerics.Tensors
             else
             {
                 T[] array = enumerable.ToArray();
-                return Create(array, start: 0, lengths, strides);
+                return Create(array, lengths, strides);
             }
         }
 
@@ -360,7 +387,7 @@ namespace System.Numerics.Tensors
         {
             TensorShape shape = TensorShape.Create(lengths, strides: []);
             T[] array = GC.AllocateUninitializedArray<T>(checked((int)(shape.LinearLength)), pinned);
-            return new Tensor<T>(array, start: 0, in shape, pinned);
+            return new Tensor<T>(array, in shape, pinned);
         }
 
         /// <inheritdoc cref="ITensor{TSelf, T}.CreateUninitialized(ReadOnlySpan{nint}, ReadOnlySpan{nint}, bool)" />
@@ -368,7 +395,7 @@ namespace System.Numerics.Tensors
         {
             TensorShape shape = TensorShape.Create(lengths, strides);
             T[] values = GC.AllocateUninitializedArray<T>(checked((int)(shape.LinearLength)), pinned);
-            return new Tensor<T>(values, start: 0, in shape, pinned);
+            return new Tensor<T>(values, in shape, pinned);
         }
         #endregion
 
@@ -1388,7 +1415,7 @@ namespace System.Numerics.Tensors
             if (tensor.Lengths.SequenceEqual(lengths))
                 return tensor;
 
-            if (!tensor._shape.IsContiguousAndDense && !tensor.Strides.Contains(0))
+            if (!tensor.IsContiguousAndDense && !tensor.Strides.Contains(0))
             {
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
@@ -1460,7 +1487,7 @@ namespace System.Numerics.Tensors
             if (tensor.Lengths.SequenceEqual(lengths))
                 return tensor;
 
-            if (!tensor._shape.IsContiguousAndDense && !tensor.Strides.Contains(0))
+            if (!tensor.IsContiguousAndDense && !tensor.Strides.Contains(0))
             {
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
@@ -1536,7 +1563,7 @@ namespace System.Numerics.Tensors
             if (tensor.Lengths.SequenceEqual(lengths))
                 return tensor;
 
-            if (!tensor._shape.IsContiguousAndDense && !tensor.Strides.Contains(0))
+            if (!tensor.IsContiguousAndDense && !tensor.Strides.Contains(0))
             {
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
