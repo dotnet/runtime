@@ -5267,16 +5267,18 @@ static void process_unsafe_accessor_type (MonoMethod *accessor_method, MonoMetho
 			continue;
 		mono_error_assert_ok (error);
 
-		if (type->type == MONO_TYPE_VALUETYPE)
-			continue;
+		// Future versions of the runtime may support
+		// UnsafeAccessorTypeAttribute on value types.
+		g_assert (type->type != MONO_TYPE_VALUETYPE);
 
-		// Check the target signature for cmods and byref state. This information
-		// is not contained with in the type itself, so we need to check the target signature
-		// and retain it on the new type.
+		// Check the target signature for attribute, byref and cmods state. This information
+		// is not contained with in the type name itself, so we may need to check the target
+		// signature and retain it on the new type.
 		MonoType *current_param = (seq == 0) ? tgt_sig->ret : tgt_sig->params [seq - 1];
-		if (m_type_is_byref(current_param) || current_param->has_cmods) {
+		if (current_param->attrs != 0 || m_type_is_byref(current_param) || current_param->has_cmods) {
 			type = mono_metadata_type_dup_with_cmods(image, type, current_param);
-			type->byref__ = m_type_is_byref(current_param) ? 1 : 0;
+			type->byref__ = current_param->byref__;
+			type->attrs = current_param->attrs;
 		}
 
 		// Update the target signature with the new type
