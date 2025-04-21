@@ -2670,6 +2670,7 @@ AGAIN:
             case GT_NOP:
             case GT_LABEL:
             case GT_SWIFT_ERROR:
+            case GT_GCPOLL:
                 return true;
 
             default:
@@ -5239,6 +5240,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 break;
 
             case GT_NOP:
+            case GT_GCPOLL:
                 level  = 0;
                 costEx = 0;
                 costSz = 0;
@@ -5402,10 +5404,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_MaxMagnitude:
                         case NI_System_Math_MaxMagnitudeNumber:
                         case NI_System_Math_MaxNumber:
+                        case NI_System_Math_MaxUnsigned:
                         case NI_System_Math_Min:
                         case NI_System_Math_MinMagnitude:
                         case NI_System_Math_MinMagnitudeNumber:
                         case NI_System_Math_MinNumber:
+                        case NI_System_Math_MinUnsigned:
                         case NI_System_Math_Pow:
                         case NI_System_Math_Round:
                         case NI_System_Math_Sin:
@@ -5414,6 +5418,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Tan:
                         case NI_System_Math_Tanh:
                         case NI_System_Math_Truncate:
+                        case NI_PRIMITIVE_LeadingZeroCount:
+                        case NI_PRIMITIVE_TrailingZeroCount:
+                        case NI_PRIMITIVE_PopCount:
                         {
                             // Giving intrinsics a large fixed execution cost is because we'd like to CSE
                             // them, even if they are implemented by calls. This is different from modeling
@@ -5754,10 +5761,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     case NI_System_Math_MaxMagnitude:
                     case NI_System_Math_MaxMagnitudeNumber:
                     case NI_System_Math_MaxNumber:
+                    case NI_System_Math_MaxUnsigned:
                     case NI_System_Math_Min:
                     case NI_System_Math_MinMagnitude:
                     case NI_System_Math_MinMagnitudeNumber:
                     case NI_System_Math_MinNumber:
+                    case NI_System_Math_MinUnsigned:
                     {
                         level++;
                         break;
@@ -6007,7 +6016,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz += 2;
                     }
                 }
-                else if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+                else if (!IsAot())
                 {
                     costEx += 2;
                     costSz += 6;
@@ -6517,6 +6526,9 @@ unsigned GenTree::GetScaledIndex()
         case GT_MUL:
             return AsOp()->gtOp2->GetScaleIndexMul();
 
+#ifdef TARGET_RISCV64
+        case GT_SLLI_UW:
+#endif
         case GT_LSH:
             return AsOp()->gtOp2->GetScaleIndexShf();
 
@@ -6584,6 +6596,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_IL_OFFSET:
         case GT_NOP:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             return false;
 
         // Standard unary operators
@@ -6912,6 +6925,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_CALL:
             return true;
 
+        case GT_GCPOLL:
         case GT_KEEPALIVE:
             return true;
 
@@ -7243,6 +7257,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_MEMORYBARRIER:
         case GT_KEEPALIVE:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             return true;
 
         case GT_CALL:
@@ -7286,6 +7301,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
 
     switch (OperGet())
     {
+        case GT_ARR_ADDR:
         case GT_BOUNDS_CHECK:
         case GT_IND:
         case GT_BLK:
@@ -7728,27 +7744,20 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            setMethodHasFrozenObjects();
             tree = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-#ifdef DEBUG
-            tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
-#endif
+            INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)pValue);
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
             tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, true);
-#ifdef DEBUG
-            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
-#endif
+            INDEBUG(tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue);
             break;
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
             // Create the first indirection.
             tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_CONST_PTR, true);
-#ifdef DEBUG
-            tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue;
-#endif
+            INDEBUG(tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue);
             // Create the second indirection.
             tree = gtNewIndir(TYP_REF, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT | GTF_IND_NONNULL);
             break;
@@ -8106,11 +8115,7 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
             }
             else
             {
-                // Even if the caller doesn't need the resulting tree let's still conservatively call
-                // setMethodHasFrozenObjects here to make caller's life easier.
-                setMethodHasFrozenObjects();
-                GenTree* tree = gtNewIconEmbHndNode((void*)val, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                return tree;
+                return gtNewIconEmbHndNode((void*)val, nullptr, GTF_ICON_OBJ_HDL, nullptr);
             }
         }
 #ifdef FEATURE_SIMD
@@ -8666,8 +8671,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        if ((varDsc->TypeGet() == type) &&
-            ((type != TYP_STRUCT) || ClassLayout::AreCompatible(layout, varDsc->GetLayout())))
+        if ((varDsc->TypeGet() == type) && ((type != TYP_STRUCT) || layout->CanAssignFrom(varDsc->GetLayout())))
         {
             return gtNewLclvNode(lclNum, type);
         }
@@ -8691,7 +8695,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
 GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags)
 {
     assert((indirFlags & GTF_IND_INVARIANT) == 0);
-    assert(value->IsInitVal() || ClassLayout::AreCompatible(layout, value->GetLayout(this)));
+    assert(value->IsInitVal() || layout->CanAssignFrom(value->GetLayout(this)));
 
     GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, value, layout);
     store->gtFlags |= GTF_ASG;
@@ -8748,8 +8752,7 @@ GenTree* Compiler::gtNewStoreValueNode(
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        if ((varDsc->TypeGet() == type) &&
-            ((type != TYP_STRUCT) || ClassLayout::AreCompatible(layout, varDsc->GetLayout())))
+        if ((varDsc->TypeGet() == type) && ((type != TYP_STRUCT) || varDsc->GetLayout()->CanAssignFrom(layout)))
         {
             return gtNewStoreLclVarNode(lclNum, value);
         }
@@ -9082,7 +9085,7 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP lookup = {};
 
-    if (opts.IsReadyToRun())
+    if (IsAot())
     {
         helper                                        = CORINFO_HELP_READYTORUN_NEW;
         CORINFO_LOOKUP_KIND* const pGenericLookupKind = nullptr;
@@ -9430,6 +9433,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_NOP:
             case GT_LABEL:
             case GT_SWIFT_ERROR:
+            case GT_GCPOLL:
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
 
@@ -9521,7 +9525,6 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                     GenTreeIndexAddr(asIndAddr->Arr(), asIndAddr->Index(), asIndAddr->gtElemType,
                                      asIndAddr->gtStructElemClass, asIndAddr->gtElemSize, asIndAddr->gtLenOffset,
                                      asIndAddr->gtElemOffset, asIndAddr->IsBoundsChecked());
-                copy->AsIndexAddr()->gtIndRngFailBB = asIndAddr->gtIndRngFailBB;
             }
             break;
 
@@ -9619,8 +9622,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy = new (this, GT_BOUNDS_CHECK)
                     GenTreeBoundsChk(tree->AsBoundsChk()->GetIndex(), tree->AsBoundsChk()->GetArrayLength(),
                                      tree->AsBoundsChk()->gtThrowKind);
-                copy->AsBoundsChk()->gtIndRngFailBB = tree->AsBoundsChk()->gtIndRngFailBB;
-                copy->AsBoundsChk()->gtInxType      = tree->AsBoundsChk()->gtInxType;
+                copy->AsBoundsChk()->gtInxType = tree->AsBoundsChk()->gtInxType;
                 break;
 
             case GT_LEA:
@@ -10201,6 +10203,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_IL_OFFSET:
         case GT_NOP:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             m_state = -1;
             return;
 
@@ -11023,15 +11026,8 @@ void Compiler::gtDispNodeName(GenTree* tree)
         switch (tree->AsBoundsChk()->gtThrowKind)
         {
             case SCK_RNGCHK_FAIL:
-            {
                 bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " %s_Rng", name);
-                if (tree->AsBoundsChk()->gtIndRngFailBB != nullptr)
-                {
-                    bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " -> " FMT_BB,
-                                            tree->AsBoundsChk()->gtIndRngFailBB->bbNum);
-                }
                 break;
-            }
             case SCK_ARG_EXCPN:
                 sprintf_s(bufp, sizeof(buf), " %s_Arg", name);
                 break;
@@ -12018,7 +12014,6 @@ void Compiler::gtDispConst(GenTree* tree)
                     }
                     else
                     {
-                        assert(doesMethodHaveFrozenObjects());
                         printf(" 0x%llx", dspIconVal);
                     }
                 }
@@ -12059,7 +12054,7 @@ void Compiler::gtDispConst(GenTree* tree)
                             printf(" scope");
                             break;
                         case GTF_ICON_CLASS_HDL:
-                            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                            if (IsAot())
                             {
                                 printf(" class");
                             }
@@ -12069,7 +12064,7 @@ void Compiler::gtDispConst(GenTree* tree)
                             }
                             break;
                         case GTF_ICON_METHOD_HDL:
-                            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                            if (IsAot())
                             {
                                 printf(" method");
                             }
@@ -12079,7 +12074,7 @@ void Compiler::gtDispConst(GenTree* tree)
                             }
                             break;
                         case GTF_ICON_FIELD_HDL:
-                            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) || opts.IsReadyToRun())
+                            if (IsAot())
                             {
                                 printf(" field");
                             }
@@ -12349,6 +12344,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_PINVOKE_PROLOG:
         case GT_JMPTABLE:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             break;
 
         case GT_RET_EXPR:
@@ -12769,6 +12765,9 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Math_MaxNumber:
                     printf(" maxNumber");
                     break;
+                case NI_System_Math_MaxUnsigned:
+                    printf(" maxUnsigned");
+                    break;
                 case NI_System_Math_Min:
                     printf(" min");
                     break;
@@ -12780,6 +12779,9 @@ void Compiler::gtDispTree(GenTree*                    tree,
                     break;
                 case NI_System_Math_MinNumber:
                     printf(" minNumber");
+                    break;
+                case NI_System_Math_MinUnsigned:
+                    printf(" minUnsigned");
                     break;
                 case NI_System_Math_Pow:
                     printf(" pow");
@@ -12840,7 +12842,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
                    InsCflagsToString(tree->AsCCMP()->gtFlagsVal));
         }
 #endif
-
         gtDispCommonEndLine(tree);
 
         if (!topOnly)
@@ -18340,7 +18341,7 @@ bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
 
     if (comp->opts.compReloc)
     {
-        // During Ngen JIT is always asked to generate relocatable code.
+        // During AOT JIT is always asked to generate relocatable code.
         // Hence JIT will try to encode only icon handles as pc-relative offsets.
         return IsIconHandle() && (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue()));
     }
@@ -18372,7 +18373,7 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 {
     if (comp->opts.compReloc)
     {
-        // During Ngen JIT is always asked to generate relocatable code.
+        // During AOT JIT is always asked to generate relocatable code.
         // Hence JIT will try to encode only icon handles as pc-relative offsets.
         return IsIconHandle() && (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue()));
     }
@@ -33403,8 +33404,6 @@ bool Compiler::gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         }
         // Non-0 const refs can only occur with frozen objects
         assert(value->IsIconHandle(GTF_ICON_OBJ_HDL));
-        assert(doesMethodHaveFrozenObjects() ||
-               (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenObjects()));
     }
 
     // Try and get a class handle for the array

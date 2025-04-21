@@ -243,5 +243,13 @@ namespace System.Security.Cryptography
 
         // LDAP
         internal const string DomainComponent = "0.9.2342.19200300.100.1.25";
+
+        // ML-KEM
+        // id-alg-ml-kem-512
+        internal const string MlKem512 = "2.16.840.1.101.3.4.4.1";
+        // id-alg-ml-kem-768
+        internal const string MlKem768 = "2.16.840.1.101.3.4.4.2";
+        // id-alg-ml-kem-1024
+        internal const string MlKem1024 = "2.16.840.1.101.3.4.4.3";
     }
 }

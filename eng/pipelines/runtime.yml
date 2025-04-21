@@ -125,7 +125,7 @@ extends:
           - browser_wasm
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s mono.emsdk+clr.runtime -rc Release -c Release -lc $(_BuildConfig)
+            buildArgs: -s clr.runtime -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -1018,7 +1018,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=true
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
             timeoutInMinutes: 480
             condition: >-
               or(
@@ -1096,8 +1096,7 @@ extends:
           runtimeFlavor: mono
           platforms:
           - maccatalyst_x64
-          - ${{ if eq(variables['isRollingBuild'], true) }}:
-            - maccatalyst_arm64
+          - maccatalyst_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1107,7 +1106,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
-            buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
+            buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true
             timeoutInMinutes: 180
             condition: >-
               or(

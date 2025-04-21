@@ -72,6 +72,8 @@ public:
     const char* getOption(const char* key);
     const char* getOption(const char* key, LightWeightMap<DWORD, DWORD>* options);
 
+    uint32_t getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes);
+
     const MethodContext::Environment& getEnvironment();
 
     void* allocateArray(size_t size);

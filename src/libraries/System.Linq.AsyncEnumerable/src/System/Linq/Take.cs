@@ -24,7 +24,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             int count)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() || count <= 0 ? Empty<TSource>() :
@@ -35,7 +35,7 @@ namespace System.Linq
                 int count,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
                     yield return element;
 
@@ -61,7 +61,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Range range)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             if (source.IsKnownEmpty())
             {
@@ -97,29 +97,23 @@ namespace System.Linq
                 Debug.Assert(source is not null);
                 Debug.Assert(startIndex >= 0 && startIndex < endIndex);
 
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                int index = 0;
+                while (index < startIndex && await e.MoveNextAsync())
                 {
-                    int index = 0;
-                    while (index < startIndex && await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        ++index;
-                    }
-
-                    if (index < startIndex)
-                    {
-                        yield break;
-                    }
-
-                    while (index < endIndex && await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        yield return e.Current;
-                        ++index;
-                    }
+                    ++index;
                 }
-                finally
+
+                if (index < startIndex)
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    yield break;
+                }
+
+                while (index < endIndex && await e.MoveNextAsync())
+                {
+                    yield return e.Current;
+                    ++index;
                 }
             }
         }
@@ -144,10 +138,9 @@ namespace System.Linq
             if (isStartIndexFromEnd)
             {
                 // TakeLast compat: enumerator should be disposed before yielding the first element.
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using (IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken))
                 {
-                    if (!await e.MoveNextAsync().ConfigureAwait(false))
+                    if (!await e.MoveNextAsync())
                     {
                         yield break;
                     }
@@ -156,7 +149,7 @@ namespace System.Linq
                     queue.Enqueue(e.Current);
                     count = 1;
 
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
+                    while (await e.MoveNextAsync())
                     {
                         if (count < startIndex)
                         {
@@ -171,17 +164,13 @@ namespace System.Linq
                                 queue.Enqueue(e.Current);
                                 checked { ++count; }
                             }
-                            while (await e.MoveNextAsync().ConfigureAwait(false));
+                            while (await e.MoveNextAsync());
 
                             break;
                         }
                     }
 
                     Debug.Assert(queue.Count == Math.Min(count, startIndex));
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
                 }
 
                 startIndex = CalculateStartIndexFromEnd(startIndex, count);
@@ -198,41 +187,35 @@ namespace System.Linq
                 Debug.Assert(!isStartIndexFromEnd && isEndIndexFromEnd);
 
                 // SkipLast compat: the enumerator should be disposed at the end of the enumeration.
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                count = 0;
+                while (count < startIndex && await e.MoveNextAsync())
                 {
-                    count = 0;
-                    while (count < startIndex && await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        ++count;
-                    }
+                    ++count;
+                }
 
-                    if (count == startIndex)
+                if (count == startIndex)
+                {
+                    queue = new Queue<TSource>();
+                    while (await e.MoveNextAsync())
                     {
-                        queue = new Queue<TSource>();
-                        while (await e.MoveNextAsync().ConfigureAwait(false))
+                        if (queue.Count == endIndex)
                         {
-                            if (queue.Count == endIndex)
-                            {
-                                do
-                                {
-                                    queue.Enqueue(e.Current);
-                                    yield return queue.Dequeue();
-                                }
-                                while (await e.MoveNextAsync().ConfigureAwait(false));
-
-                                break;
-                            }
-                            else
+                            do
                             {
                                 queue.Enqueue(e.Current);
+                                yield return queue.Dequeue();
                             }
+                            while (await e.MoveNextAsync());
+
+                            break;
+                        }
+                        else
+                        {
+                            queue.Enqueue(e.Current);
                         }
                     }
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
                 }
             }
 

@@ -288,12 +288,9 @@ int coreclr_initialize(
     hr = CorHost2::CreateObject(IID_ICLRRuntimeHost4, (void**)&host);
     IfFailRet(hr);
 
-    ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
-
-    ExternalAssemblyProbeFn* externalAssemblyProbe = hostContract != nullptr ? hostContract->external_assembly_probe : nullptr;
-    if (bundleProbe != nullptr || externalAssemblyProbe != nullptr)
+    if (bundleProbe != nullptr)
     {
-        static Bundle bundle(exePath, bundleProbe, externalAssemblyProbe);
+        static Bundle bundle(exePath, bundleProbe);
         Bundle::AppBundle = &bundle;
     }
 
@@ -309,6 +306,7 @@ int coreclr_initialize(
     hr = host->Start();
     IfFailRet(hr);
 
+    ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
     hr = host->CreateAppDomainWithManager(
         appDomainFriendlyNameW,
         0,

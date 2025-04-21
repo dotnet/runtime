@@ -140,8 +140,8 @@ HANDLES(ARRAY_14, "SetValueRelaxedImpl",  ves_icall_System_Array_SetValueRelaxed
 
 ICALL_TYPE(BUFFER, "System.Buffer", BUFFER_0)
 NOHANDLES(ICALL(BUFFER_0, "BulkMoveWithWriteBarrier", ves_icall_System_Buffer_BulkMoveWithWriteBarrier))
-NOHANDLES(ICALL(BUFFER_2, "__Memmove", ves_icall_System_Runtime_RuntimeImports_Memmove))
-NOHANDLES(ICALL(BUFFER_3, "__ZeroMemory", ves_icall_System_Runtime_RuntimeImports_ZeroMemory))
+NOHANDLES(ICALL(BUFFER_2, "MemmoveInternal", ves_icall_System_Runtime_RuntimeImports_Memmove))
+NOHANDLES(ICALL(BUFFER_3, "ZeroMemoryInternal", ves_icall_System_Runtime_RuntimeImports_ZeroMemory))
 
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
 HANDLES(DELEGATE_1, "AllocDelegateLike_internal", ves_icall_System_Delegate_AllocDelegateLike_internal, MonoMulticastDelegate, 1, (MonoDelegate))

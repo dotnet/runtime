@@ -93,13 +93,6 @@ internal static partial class Interop
                 return new FakeSafeWinHttpHandle(false);
             }
 
-            if (accessType == Interop.WinHttp.WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY &&
-                !TestControl.WinHttpAutomaticProxySupport)
-            {
-                TestControl.LastWin32Error = (int)Interop.WinHttp.ERROR_INVALID_PARAMETER;
-                return new FakeSafeWinHttpHandle(false);
-            }
-
             APICallHistory.ProxyInfo proxyInfo;
             proxyInfo.AccessType = accessType;
             proxyInfo.Proxy = proxyName;
