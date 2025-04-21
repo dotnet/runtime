@@ -169,6 +169,15 @@ namespace System.Numerics.Tensors
                     flattenedLength = checked(flattenedLength * length);
                 }
 
+                if (linearLength == -1)
+                {
+                    linearLength = flattenedLength;
+                }
+                else
+                {
+                    ArgumentOutOfRangeException.ThrowIfNotEqual(linearLength, flattenedLength);
+                }
+
                 // When no strides are specified, the way we construct them makes it so that the
                 // underlying memory is contiguous and dense. This means that we can set the flag
                 // to indicate that the tensor is contiguous and dense without any further checks.
