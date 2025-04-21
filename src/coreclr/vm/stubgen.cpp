@@ -834,10 +834,10 @@ size_t ILStubLinker::Link(UINT* puMaxStack)
     }
 
 #ifdef _DEBUG
-    if (fStackUnderflow || this->GetNumEHClauses() != 0)
+    if (fStackUnderflow)
     {
         LogILStub(CORJIT_FLAGS());
-//        CONSISTENCY_CHECK_MSG(false, "IL stack underflow! -- see logging output");
+        CONSISTENCY_CHECK_MSG(false, "IL stack underflow! -- see logging output");
     }
 #endif // _DEBUG
 
