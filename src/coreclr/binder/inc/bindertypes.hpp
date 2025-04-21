@@ -58,15 +58,14 @@ typedef enum __ASM_DISPLAY_FLAGS
 
 typedef enum __PEKIND
 {
-    peNone        = 0x00000000,
-    peMSIL        = 0x00000001,
-    peI386        = 0x00000002,
-    peIA64        = 0x00000003,
-    peAMD64       = 0x00000004,
-    peARM         = 0x00000005,
-    peARM64       = 0x00000006,
-    peLOONGARCH64 = 0x00000007,
-    peInvalid     = 0xffffffff,
+    peNone      = 0x00000000,
+    peMSIL      = 0x00000001,
+    peI386      = 0x00000002,
+    peIA64      = 0x00000003,
+    peAMD64     = 0x00000004,
+    peARM       = 0x00000005,
+    peARM64     = 0x00000006,
+    peInvalid   = 0xffffffff,
 } PEKIND;
 
 struct AssemblyNameData
