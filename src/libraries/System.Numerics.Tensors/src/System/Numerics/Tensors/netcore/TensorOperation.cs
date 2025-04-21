@@ -5,8 +5,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
-using static System.Numerics.Tensors.TensorOperation;
 
 namespace System.Numerics.Tensors
 {
