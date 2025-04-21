@@ -5,7 +5,10 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    public class SlhDsaAlgorithmTests
+    /// <summary>
+    /// <see cref="SlhDsaAlgorithm"/> tests.
+    /// </summary>
+    public sealed class SlhDsaAlgorithmTests
     {
         [Fact]
         public static void AlgorithmsHaveExpectedParameters()

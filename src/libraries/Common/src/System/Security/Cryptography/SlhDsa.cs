@@ -341,29 +341,35 @@ namespace System.Security.Cryptography
         /// </exception>
         protected virtual bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
-            AlgorithmIdentifierAsn algorithmIdentifier = new()
-            {
-                Algorithm = Algorithm.Oid,
-                Parameters = default(ReadOnlyMemory<byte>?),
-            };
-
             // Secret key size for SLH-DSA is at most 128 bytes so we can stack allocate it.
-            Debug.Assert(Algorithm.SecretKeySizeInBytes is <= 128 and >= 0);
-            Span<byte> buffer = stackalloc byte[Algorithm.SecretKeySizeInBytes];
+            int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
+            Debug.Assert(secretKeySizeInBytes is <= 128 and >= 0);
+            Span<byte> buffer = stackalloc byte[secretKeySizeInBytes];
 
             try
             {
                 int secretKeyBytesWritten = ExportSlhDsaSecretKey(buffer);
-                Debug.Assert(secretKeyBytesWritten == Algorithm.SecretKeySizeInBytes);
+                Debug.Assert(secretKeyBytesWritten == secretKeySizeInBytes);
 
-                AsnWriter algorithmWriter = new(AsnEncodingRules.DER);
-                algorithmIdentifier.Encode(algorithmWriter);
-                AsnWriter privateKeyWriter = new(AsnEncodingRules.DER);
-                privateKeyWriter.WriteOctetString(buffer);
+                // The ASN.1 overhead of a PrivateKeyInfo encoding a private key is 22 bytes.
+                // Round it off to 32. This checked operation should never throw because the inputs are not
+                // user provided.
+                int capacity = checked(32 + secretKeySizeInBytes);
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
 
-                AsnWriter pkcs8Writer = KeyFormatHelper.WritePkcs8(algorithmWriter, privateKeyWriter, wrapPrivateKeyInOctetString: false);
+                using (writer.PushSequence())
+                {
+                    writer.WriteInteger(0); // Version
 
-                return pkcs8Writer.TryEncode(destination, out bytesWritten);
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteObjectIdentifier(Algorithm.Oid);
+                    }
+
+                    writer.WriteOctetString(buffer);
+                }
+
+                return writer.TryEncode(destination, out bytesWritten);
             }
             finally
             {
@@ -756,11 +762,20 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   The generated object.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm" /> is <see langword="null" />
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred generating the SLH-DSA key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports SLH-DSA.
+        /// </exception>
         public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
             ThrowIfNotSupported();
-
             return SlhDsaImplementation.GenerateKeyCore(algorithm);
         }
 
@@ -783,12 +798,20 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
         /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports SLH-DSA.
+        /// </exception>
         public static SlhDsa ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            ThrowIfMalformedEncoding(source, AsnEncodingRules.DER);
             ThrowIfNotSupported();
 
             unsafe
@@ -819,7 +842,7 @@ namespace System.Security.Cryptography
         ///   Imports an SLH-DSA private key from a PKCS#8 PrivateKeyInfo structure.
         /// </summary>
         /// <param name="source">
-        ///   The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-DER encoding.
+        ///   The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-BER encoding.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -834,17 +857,22 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
         /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports SLH-DSA.
+        /// </exception>
         public static SlhDsa ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
             ThrowIfNotSupported();
 
-            // TODO Should this be moved into SlhDsaImplementation? If OpenSSL or Windows can
-            // import a key directly from PKCS#8, then we can let them do so instead of us unwrapping
-            // the key and passing it to them.
             KeyFormatHelper.ReadPkcs8(
                 s_knownOids,
                 source,
@@ -898,6 +926,10 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
         /// </exception>
@@ -907,7 +939,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -943,6 +975,10 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
         /// </exception>
@@ -952,7 +988,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -981,6 +1017,10 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
         /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports SLH-DSA.
+        /// </exception>
         /// <remarks>
         ///   <para>
         ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
@@ -996,8 +1036,6 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static SlhDsa ImportFromPem(ReadOnlySpan<char> source)
         {
-            ThrowIfNotSupported();
-
             return PemKeyHelpers.ImportFactoryPem<SlhDsa>(source, label =>
                 label switch
                 {
@@ -1048,6 +1086,10 @@ namespace System.Security.Cryptography
         ///   <para>
         ///     An error occurred while importing the key.
         ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports SLH-DSA.
         /// </exception>
         /// <remarks>
         ///   <para>
@@ -1112,6 +1154,10 @@ namespace System.Security.Cryptography
         ///     An error occurred while importing the key.
         ///   </para>
         /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports SLH-DSA.
+        /// </exception>
         /// <remarks>
         ///   <para>
         ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
@@ -1140,18 +1186,18 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   The imported key.
         /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source"/> has a length that is not valid for the SLH-DSA algorithm.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm" /> is <see langword="null" />
+        /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="source"/> is not the correct size for the specified algorithm.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     An error occurred while importing the key.
-        ///   </para>
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports SLH-DSA.
         /// </exception>
         public static SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
@@ -1179,18 +1225,18 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   The imported key.
         /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source"/> has a length that is not valid for the SLH-DSA algorithm.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm" /> is <see langword="null" />
+        /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="source"/> is not the correct size for the specified algorithm.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     An error occurred while importing the key.
-        ///   </para>
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support SLH-DSA. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports SLH-DSA.
         /// </exception>
         public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
@@ -1274,35 +1320,30 @@ namespace System.Security.Cryptography
 
         private AsnWriter ExportSubjectPublicKeyInfoCore()
         {
-            byte[] rented = CryptoPool.Rent(Algorithm.PublicKeySizeInBytes);
+            // Public key size for SLH-DSA is at most 64 bytes so we can stack allocate it.
+            int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
+            Debug.Assert(publicKeySizeInBytes is <= 64 and >= 0);
+            Span<byte> buffer = stackalloc byte[publicKeySizeInBytes];
 
-            try
+            ExportSlhDsaPublicKeyCore(buffer);
+
+            // The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is 18 bytes.
+            // Round it off to 32. This checked operation should never throw because the inputs are not
+            // user provided.
+            int capacity = checked(32 + publicKeySizeInBytes);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
+
+            using (writer.PushSequence())
             {
-                ExportSlhDsaPublicKey(rented);
-
-                SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+                using (writer.PushSequence())
                 {
-                    Algorithm = new AlgorithmIdentifierAsn
-                    {
-                        Algorithm = Algorithm.Oid,
-                        Parameters = default(ReadOnlyMemory<byte>?),
-                    },
-                    SubjectPublicKey = rented.AsMemory(0, Algorithm.PublicKeySizeInBytes),
-                };
+                    writer.WriteObjectIdentifier(Algorithm.Oid);
+                }
 
-                // The ASN.1 overhead of a SubjectPublicKeyInfo encoding an encapsulation key is 18 bytes.
-                // Round it off to 32. This checked operation should never throw because the inputs are not
-                // user provided.
-                int capacity = checked(32 + Algorithm.PublicKeySizeInBytes);
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
-                spki.Encode(writer);
-                return writer;
+                writer.WriteBitString(buffer);
             }
-            finally
-            {
-                // Public key doesn't need to be cleared
-                CryptoPool.Return(rented, 0);
-            }
+
+            return writer;
         }
 
         private AsnWriter ExportEncryptedPkcs8PrivateKeyCore(ReadOnlySpan<char> password, PbeParameters pbeParameters)
@@ -1347,7 +1388,7 @@ namespace System.Security.Cryptography
 
         private TResult ExportPkcs8PrivateKeyCallback<TResult>(ExportPkcs8PrivateKeyFunc<TResult> func)
         {
-            // A PKCS#8 SLH-DSA-*-256s/f private key has an ASN.1 overhead of 22 bytes, assuming no attributes.
+            // A PKCS#8 SLH-DSA-SHA2-256s private key has an ASN.1 overhead of 22 bytes, assuming no attributes.
             // Make it an even 32 and that should give a good starting point for a buffer size.
             int size = Algorithm.SecretKeySizeInBytes + 32;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
@@ -1355,14 +1396,14 @@ namespace System.Security.Cryptography
             byte[] buffer = CryptoPool.Rent(size);
             int written;
 
-            while (!TryExportPkcs8PrivateKey(buffer, out written))
+            while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
                 CryptoPool.Return(buffer, 0);
                 size = checked(size * 2);
                 buffer = CryptoPool.Rent(size);
             }
 
-            if (written > buffer.Length)
+            if ((uint)written > buffer.Length)
             {
                 // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
                 CryptographicOperations.ZeroMemory(buffer);
@@ -1403,11 +1444,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void ThrowIfTrailingData(ReadOnlySpan<byte> data)
+        private static void ThrowIfMalformedEncoding(ReadOnlySpan<byte> data, AsnEncodingRules encoding)
         {
-            AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out int bytesRead);
-
-            if (bytesRead != data.Length)
+            // TODO should we use ReadEncodedValue with try/catch instead so we can rethrow with a useful inner exception?
+            if (!AsnDecoder.TryReadEncodedValue(data, encoding, out _, out _, out _, out int bytesRead) || bytesRead != data.Length)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }

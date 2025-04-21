@@ -5,31 +5,17 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    public class SlhDsaOpenSslConstructionTests : SlhDsaConstructionTestsBase
+    /// <summary>
+    /// Basic constructor validation for <see cref="SlhDsaOpenSsl"/> that is relevant even when OpenSSL doesn't support SLH-DSA.
+    /// For more comprehensive tests that rely on OpenSSL support for SLH-DSA, see <see cref="SlhDsaOpenSslTests"/>.
+    /// </summary>
+    public static class SlhDsaOpenSslConstructionTests
     {
         [Fact]
         public static void SlhDsaOpenSsl_NotSupportedOnNonUnixPlatforms()
         {
             Assert.Throws<PlatformNotSupportedException>(() => new SlhDsaOpenSsl(null));
             Assert.Throws<PlatformNotSupportedException>(() => new SlhDsaOpenSsl(new SafeEvpPKeyHandle()));
-        }
-
-        protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
-        {
-            Assert.Fail();
-            throw new PlatformNotSupportedException();
-        }
-
-        protected override SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
-        {
-            Assert.Fail();
-            throw new PlatformNotSupportedException();
-        }
-
-        protected override SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
-        {
-            Assert.Fail();
-            throw new PlatformNotSupportedException();
         }
     }
 }

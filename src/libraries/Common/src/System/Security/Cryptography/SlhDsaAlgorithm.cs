@@ -180,7 +180,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static SlhDsaAlgorithm SlhDsaShake256f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-256f", 32, 49856, Oids.SlhDsaShake256f);
 
-        internal static SlhDsaAlgorithm GetAlgorithmFromOid(string oid)
+        internal static SlhDsaAlgorithm? GetAlgorithmFromOid(string oid)
         {
             return oid switch
             {
@@ -197,7 +197,7 @@ namespace System.Security.Cryptography
                 Oids.SlhDsaSha2_256f => SlhDsaSha2_256f,
                 Oids.SlhDsaShake256f => SlhDsaShake256f,
 
-                _ => ThrowAlgorithmUnknown(oid),
+                _ => null,
             };
         }
 

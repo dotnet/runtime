@@ -8,6 +8,12 @@ using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
+#pragma warning disable CA1510, CA1513
+
+// The type being internal is making unused parameter warnings fire for
+// not-implemented methods. Suppress those warnings.
+#pragma warning disable IDE0060
+
 namespace System.Security.Cryptography
 {
     /// <summary>
@@ -30,7 +36,7 @@ namespace System.Security.Cryptography
         private const int MaxContextLength = 255;
 
         /// <summary>
-        ///   Gets the specific ML-DSA algorithm for this key.
+        ///  Gets the specific ML-DSA algorithm for this key.
         /// </summary>
         public MLDsaAlgorithm Algorithm { get; }
         private bool _disposed;
@@ -48,11 +54,13 @@ namespace System.Security.Cryptography
             Algorithm = algorithm;
         }
 
-
-        /// <summary>
-        ///   Throws <see cref="ObjectDisposedException" /> if the current instance is disposed.
-        /// </summary>
-        protected void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(MLDsa));
+        protected void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(typeof(MLDsa).FullName);
+            }
+        }
 
         /// <summary>
         ///   Gets a value indicating whether the current platform supports ML-DSA.
@@ -63,7 +71,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get; } = MLDsaImplementation.SupportsAny();
 
         /// <summary>
-        ///   Releases all resources used by the <see cref="MLDsa"/> class.
+        ///  Releases all resources used by the <see cref="MLDsa"/> class.
         /// </summary>
         public void Dispose()
         {
@@ -179,7 +187,7 @@ namespace System.Security.Cryptography
         // TODO: VerifyPreHash
 
         /// <summary>
-        ///   Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
+        ///  Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
         /// </summary>
         /// <returns>
         ///   A byte array containing the X.509 SubjectPublicKeyInfo representation of the public-key portion of this key.
@@ -199,8 +207,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Attempts to export the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format
-        ///   into the provided buffer.
+        ///  Attempts to export the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format
+        ///  into the provided buffer.
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the X.509 SubjectPublicKeyInfo value.
@@ -228,8 +236,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the public-key portion of the current key in a PEM-encoded representation of
-        ///   the X.509 SubjectPublicKeyInfo format.
+        ///  Exports the public-key portion of the current key in a PEM-encoded representation of
+        ///  the X.509 SubjectPublicKeyInfo format.
         /// </summary>
         /// <returns>
         ///   A string containing the PEM-encoded representation of the X.509 SubjectPublicKeyInfo
@@ -250,7 +258,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the current key in the PKCS#8 PrivateKeyInfo format.
+        ///  Exports the current key in the PKCS#8 PrivateKeyInfo format.
         /// </summary>
         /// <returns>
         ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of the this key.
@@ -278,8 +286,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Attempts to export the current key in the PKCS#8 PrivateKeyInfo format
-        ///   into the provided buffer.
+        ///  Attempts to export the current key in the PKCS#8 PrivateKeyInfo format
+        ///  into the provided buffer.
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the PKCS#8 PrivateKeyInfo value.
@@ -300,44 +308,15 @@ namespace System.Security.Cryptography
         /// </exception>
         public bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
         {
-            // An ML-DSA-44 "seed" export with no attributes is 54 bytes. A buffer smaller than that cannot hold a
-            // PKCS#8 encoded key. If we happen to get a buffer smaller than that, it won't export.
-            const int MinimumPossiblePkcs8MLDsaKey = 54;
+            ThrowIfDisposed();
 
-            if (destination.Length < MinimumPossiblePkcs8MLDsaKey)
-            {
-                bytesWritten = 0;
-                return false;
-            }
+            // TODO: Once the minimum size of a PKCS#8 export is known, add an early return false.
 
-            return TryExportPkcs8PrivateKeyCore(destination, out bytesWritten);
+            throw new NotImplementedException("The PKCS#8 format is still under debate");
         }
 
         /// <summary>
-        ///   When overridden in a derived class, attempts to export the current key in the PKCS#8 PrivateKeyInfo format
-        ///   into the provided buffer.
-        /// </summary>
-        /// <param name="destination">
-        ///   The buffer to receive the PKCS#8 PrivateKeyInfo value.
-        /// </param>
-        /// <param name="bytesWritten">
-        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
-        /// </param>
-        /// <returns>
-        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
-        ///   otherwise, <see langword="false" />.
-        /// </returns>
-        /// <exception cref="ObjectDisposedException">
-        ///   This instance has been disposed.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while exporting the key.
-        /// </exception>
-        protected virtual bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
-            throw new NotImplementedException();
-
-        /// <summary>
-        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 PrivateKeyInfo format.
+        ///  Exports the current key in a PEM-encoded representation of the PKCS#8 PrivateKeyInfo format.
         /// </summary>
         /// <returns>
         ///   A string containing the PEM-encoded representation of the PKCS#8 PrivateKeyInfo
@@ -357,7 +336,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
+        ///  Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
         /// </summary>
         /// <param name="password">
         ///   The password to use when encrypting the key material.
@@ -397,7 +376,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a byte-based password.
+        ///  Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
         ///   The bytes to use as a password when encrypting the key material.
@@ -439,8 +418,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
-        ///   using a char-based password.
+        ///  Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
+        ///  using a char-based password.
         /// </summary>
         /// <param name="password">
         ///   The password to use when encrypting the key material.
@@ -456,12 +435,8 @@ namespace System.Security.Cryptography
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <returns>
-        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
-        ///   otherwise, <see langword="false" />.
+        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of the this key.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
-        /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
         /// </exception>
@@ -471,8 +446,6 @@ namespace System.Security.Cryptography
         ///   <para>The private key is not exportable.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
         /// </exception>
         public bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
@@ -480,8 +453,6 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
-            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
@@ -497,8 +468,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
-        ///   using a byte-based password.
+        ///  Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
+        ///  using a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
         ///   The bytes to use as a password when encrypting the key material.
@@ -514,23 +485,19 @@ namespace System.Security.Cryptography
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <returns>
-        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
-        ///   otherwise, <see langword="false" />.
+        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of the this key.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
-        /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
+        ///   <para><paramref name="pbeParameters"/> specifies a KDF that requires a char-based password.</para>
+        ///   <para>-or-</para>
         ///   <para>This instance only represents a public key.</para>
         ///   <para>-or-</para>
         ///   <para>The private key is not exportable.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
         /// </exception>
         public bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
@@ -538,8 +505,6 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
-            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
@@ -555,8 +520,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo representation of this key,
-        ///   using a char-based password.
+        ///  Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo representation of this key,
+        ///  using a char-based password.
         /// </summary>
         /// <param name="password">
         ///   The bytes to use as a password when encrypting the key material.
@@ -598,8 +563,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo representation of this key,
-        ///   using a byte-based password.
+        ///  Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo representation of this key,
+        ///  using a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
         ///   The bytes to use as a password when encrypting the key material.
@@ -643,7 +608,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the public-key portion of the current key in the FIPS 204 public key format.
+        ///  Exports the public-key portion of the current key in the FIPS 204 public key format.
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the public key.
@@ -667,7 +632,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the current key in the FIPS 204 secret key format.
+        ///  Exports the current key in the FIPS 204 secret key format.
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the secret key.
@@ -694,7 +659,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the private seed of the current key.
+        ///  Exports the private seed of the current key.
         /// </summary>
         /// <param name="destination">
         ///   The buffer to receive the private seed.
@@ -748,10 +713,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports an ML-DSA public key from an X.509 SubjectPublicKeyInfo structure.
+        ///  Imports an ML-DSA public key from an X.509 SubjectPublicKeyInfo structure.
         /// </summary>
         /// <param name="source">
-        ///   The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
+        ///  The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -803,10 +768,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports an ML-DSA private key from a PKCS#8 PrivateKeyInfo structure.
+        ///  Imports an ML-DSA private key from a PKCS#8 PrivateKeyInfo structure.
         /// </summary>
         /// <param name="source">
-        ///   The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-DER encoding.
+        ///  The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-DER encoding.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -943,7 +908,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports an ML-DSA key from an RFC 7468 PEM-encoded string.
+        ///  Imports an ML-DSA key from an RFC 7468 PEM-encoded string.
         /// </summary>
         /// <param name="source">
         ///   The text of the PEM key to import.
@@ -977,7 +942,7 @@ namespace System.Security.Cryptography
         ///   The text of the PEM key to import.
         /// </param>
         /// <param name="password">
-        ///   The password to use when decrypting the key material.
+        ///  The password to use when decrypting the key material.
         /// </param>
         /// <returns>
         ///   <see langword="false" /> if the source did not contain a PEM-encoded ML-DSA key;
@@ -1009,7 +974,7 @@ namespace System.Security.Cryptography
         ///   The text of the PEM key to import.
         /// </param>
         /// <param name="passwordBytes">
-        ///   The password to use when decrypting the key material.
+        ///  The password to use when decrypting the key material.
         /// </param>
         /// <returns>
         ///   <see langword="false" /> if the source did not contain a PEM-encoded ML-DSA key;

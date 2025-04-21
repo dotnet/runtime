@@ -77,7 +77,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="algorithm" /> is <see langword="null" />
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occured generating the ML-KEM key.
+        ///   An error occurred generating the ML-KEM key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
@@ -1161,6 +1161,10 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
         /// </exception>
@@ -1170,7 +1174,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            ThrowIfMalformedEncoding(source, AsnEncodingRules.DER);
             ThrowIfNotSupported();
 
             unsafe
@@ -1237,7 +1241,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
             ThrowIfNotSupported();
 
             KeyFormatHelper.ReadPkcs8(s_knownOids, source, MLKemKeyReader, out int read, out MLKem kem);
@@ -1286,6 +1290,10 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
         /// </exception>
@@ -1295,7 +1303,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1331,6 +1339,10 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
         ///     The algorithm-specific import failed.
         ///   </para>
         /// </exception>
@@ -1340,7 +1352,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
         {
-            ThrowIfTrailingData(source);
+            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1389,7 +1401,7 @@ namespace System.Security.Cryptography
         public static MLKem ImportEncryptedPkcs8PrivateKey(string password, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(password);
-            ThrowIfTrailingData(source);
+            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1418,6 +1430,10 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
         /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-KEM.
+        /// </exception>
         /// <remarks>
         ///   <para>
         ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
@@ -1433,8 +1449,6 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static MLKem ImportFromPem(ReadOnlySpan<char> source)
         {
-            ThrowIfNotSupported();
-
             return PemKeyHelpers.ImportFactoryPem<MLKem>(source, label =>
                 label switch
                 {
@@ -1495,6 +1509,10 @@ namespace System.Security.Cryptography
         ///   <para>
         ///     An error occurred while importing the key.
         ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         /// <remarks>
         ///   <para>
@@ -1558,6 +1576,10 @@ namespace System.Security.Cryptography
         ///   <para>
         ///     An error occurred while importing the key.
         ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         /// <remarks>
         ///   <para>
@@ -1741,11 +1763,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void ThrowIfTrailingData(ReadOnlySpan<byte> data)
+        private static void ThrowIfMalformedEncoding(ReadOnlySpan<byte> data, AsnEncodingRules encoding)
         {
-            AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out int bytesRead);
-
-            if (bytesRead != data.Length)
+            // TODO should we use ReadEncodedValue with try/catch instead so we can rethrow with a useful inner exception?
+            if (!AsnDecoder.TryReadEncodedValue(data, encoding, out _, out _, out _, out int bytesRead) || bytesRead != data.Length)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
@@ -1801,7 +1822,7 @@ namespace System.Security.Cryptography
                 buffer = ArrayPool<byte>.Shared.Rent(size);
             }
 
-            if (written > buffer.Length)
+            if ((uint)written > buffer.Length)
             {
                 // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
                 CryptographicOperations.ZeroMemory(buffer);

@@ -11,11 +11,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 {
     public static class SlhDsaTestData
     {
-        /// <summary>
-        /// Gets the negation of <see cref="SlhDsa.IsSupported"/>. This can be used to conditionally skip tests.
-        /// </summary>
-        public static bool IsNotSupported => !SlhDsa.IsSupported;
-
         public static IEnumerable<object[]> AlgorithmsData => AlgorithmsRaw.Select(a => new[] { a });
 
         public static SlhDsaAlgorithm[] AlgorithmsRaw =

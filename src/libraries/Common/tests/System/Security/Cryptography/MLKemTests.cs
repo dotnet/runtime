@@ -215,12 +215,13 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportSubjectPublicKeyInfo_TrailingData()
+        public static void ImportSubjectPublicKeyInfo_MalformedEncoding()
         {
             // Extra byte at the end of the SPKI
             byte[] spki = new byte[MLKemTestData.IetfMlKem512Spki.Length + 1];
             MLKemTestData.IetfMlKem512Spki.AsSpan().CopyTo(spki);
-            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(spki));
+            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(spki)); // Too long
+            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(spki.AsSpan(..^2))); // Too short
         }
 
         [Fact]
@@ -300,15 +301,20 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportPkcs8PrivateKey_Seed_TrailingData()
+        public static void ImportPkcs8PrivateKey_Seed_MalformedEncoding()
         {
             foreach ((_, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
             {
-                byte[] oversized = new byte[pkcs8.Length + 1];
-                pkcs8.AsSpan().CopyTo(oversized);
+                byte[] invalidSize = new byte[pkcs8.Length + 1];
+                pkcs8.AsSpan(..^1).CopyTo(invalidSize);
 
-                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized.AsSpan()));
-                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized));
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize.AsSpan()));
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize));
+
+                Array.Resize(ref invalidSize, pkcs8.Length - 1);
+
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize.AsSpan()));
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize));
             }
         }
 
@@ -372,15 +378,20 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportPkcs8PrivateKey_ExpandedKey_TrailingData()
+        public static void ImportPkcs8PrivateKey_ExpandedKey_MalformedEncoding()
         {
             foreach ((_, byte[] pkcs8, _) in Pkcs8PrivateKeyExpandedKeyTestData)
             {
-                byte[] oversized = new byte[pkcs8.Length + 1];
-                pkcs8.AsSpan().CopyTo(oversized);
+                byte[] invalidSize = new byte[pkcs8.Length + 1];
+                pkcs8.AsSpan(..^1).CopyTo(invalidSize);
 
-                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized.AsSpan()));
-                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized));
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize.AsSpan()));
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize));
+
+                Array.Resize(ref invalidSize, pkcs8.Length - 1);
+
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize.AsSpan()));
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize));
             }
         }
 
@@ -450,15 +461,20 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportPkcs8PrivateKey_Both_TrailingData()
+        public static void ImportPkcs8PrivateKey_Both_MalformedEncoding()
         {
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyBothTestData)
             {
-                byte[] oversized = new byte[pkcs8.Length + 1];
-                pkcs8.AsSpan().CopyTo(oversized);
+                byte[] invalidSize = new byte[pkcs8.Length + 1];
+                pkcs8.AsSpan(..^1).CopyTo(invalidSize);
 
-                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized.AsSpan()));
-                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(oversized));
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize.AsSpan()));
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize));
+
+                Array.Resize(ref invalidSize, pkcs8.Length - 1);
+
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize.AsSpan()));
+                Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize));
             }
         }
 
@@ -483,21 +499,32 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ImportEncryptedPkcs8PrivateKey_TrailingData()
+        public static void ImportEncryptedPkcs8PrivateKey_MalformedEncoding()
         {
             foreach ((_, byte[] pkcs8) in Pkcs8EncryptedPrivateKeySeedTestData)
             {
-                byte[] oversized = new byte[pkcs8.Length + 1];
-                pkcs8.AsSpan().CopyTo(oversized);
+                byte[] invalidSize = new byte[pkcs8.Length + 1];
+                pkcs8.AsSpan(..^1).CopyTo(invalidSize);
 
                 Assert.Throws<CryptographicException>(() =>
-                    MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword, oversized));
+                    MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword, invalidSize));
 
                 Assert.Throws<CryptographicException>(() =>
-                    MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(), oversized));
+                    MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(), invalidSize));
 
                 Assert.Throws<CryptographicException>(() =>
-                    MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPasswordBytes, oversized));
+                    MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPasswordBytes, invalidSize));
+
+                Array.Resize(ref invalidSize, pkcs8.Length - 1);
+
+                Assert.Throws<CryptographicException>(() =>
+                    MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword, invalidSize));
+
+                Assert.Throws<CryptographicException>(() =>
+                    MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(), invalidSize));
+
+                Assert.Throws<CryptographicException>(() =>
+                    MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPasswordBytes, invalidSize));
             }
         }
 
