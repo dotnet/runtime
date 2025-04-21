@@ -88,8 +88,8 @@ endif(CLR_CMAKE_TARGET_WIN32)
 set( JIT_SOURCES
   abi.cpp
   alloc.cpp
-  async.cpp
   assertionprop.cpp
+  async.cpp
   bitset.cpp
   block.cpp
   buildstring.cpp
@@ -286,8 +286,8 @@ set( JIT_HEADERS
   _typeinfo.h
   abi.h
   alloc.h
-  async.h
   arraystack.h
+  async.h
   bitset.h
   layout.h
   bitsetasshortlong.h
