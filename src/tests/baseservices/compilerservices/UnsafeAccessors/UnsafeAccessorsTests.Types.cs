@@ -69,7 +69,8 @@ public static unsafe class UnsafeAccessorsTestsTypes
         extern static object CallPrivateConstructorClassByName(string a);
     }
 
-    [Fact]
+    // Skip validating error cases on Mono runtime
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotMonoRuntime))]
     public static void Verify_Type_InvalidArgument()
     {
         Console.WriteLine($"Running {nameof(Verify_Type_InvalidArgument)}");
