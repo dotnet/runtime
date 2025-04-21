@@ -1977,7 +1977,7 @@ private:
                                                         SingleTypeRegSet candidates = RBM_NONE,
                                                         bool             isGPR      = false);
     inline SingleTypeRegSet BuildApxIncompatibleGPRMaskIfNeeded(GenTree*         tree,
-                                                                SingleTypeRegSet candidates = RBM_NONE,
+                                                                SingleTypeRegSet candidates    = RBM_NONE,
                                                                 bool             canUseApxRegs = false);
     inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
