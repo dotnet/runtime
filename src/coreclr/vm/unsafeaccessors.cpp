@@ -743,7 +743,7 @@ namespace
                         sigBuilder.AppendElementType(ELEMENT_TYPE_MVAR);
                         sigBuilder.AppendData(i);
                     }
-                    sigLen;
+
                     sig = (PCCOR_SIGNATURE)sigBuilder.GetSignature((DWORD*)&sigLen);
                     methodSpecSigToken = pCode->GetSigToken(sig, sigLen);
                 }
