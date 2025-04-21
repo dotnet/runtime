@@ -567,7 +567,7 @@ namespace System.Reflection.Tests
         }
 
 #pragma warning disable SYSLIB0012
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // single file
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.HasAssemblyFiles))] // single file
         public void CodeBase()
         {
             if (PlatformDetection.IsNativeAot)

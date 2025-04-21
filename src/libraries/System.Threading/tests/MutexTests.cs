@@ -316,7 +316,7 @@ namespace System.Threading.Tests
                 Assert.Throws<UnauthorizedAccessException>(() => new Mutex(Guid.NewGuid().ToString("N"), options)));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.HasAssemblyFiles))]
         [MemberData(nameof(GetValidNames))]
         public void OpenExisting(string name)
         {
@@ -350,7 +350,7 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentException>("name", null, () => Mutex.OpenExisting(string.Empty, options: default));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void OpenExisting_UnavailableName()
         {
             string name = Guid.NewGuid().ToString("N");
