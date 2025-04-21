@@ -55,6 +55,15 @@ namespace System.Numerics.Tensors
             _isPinned = false;
         }
 
+        internal Tensor(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, scoped ReadOnlySpan<int> linearRankOrder)
+        {
+            _shape = TensorShape.Create(array, start, lengths, strides, linearRankOrder);
+            _values = (array is not null) ? array : [];
+
+            _start = start;
+            _isPinned = false;
+        }
+
         internal Tensor(T[] array, int start, in TensorShape shape, bool isPinned)
         {
             ThrowHelper.ThrowIfArrayTypeMismatch<T>(array);
@@ -257,7 +266,7 @@ namespace System.Numerics.Tensors
             var sb = new StringBuilder($"System.Numerics.Tensors.Tensor<{typeof(T).Name}>[{_shape}]");
 
             sb.AppendLine("{");
-            Tensor.ToString(AsReadOnlyTensorSpan(), maximumLengths, sb);
+            ((ReadOnlyTensorSpan<T>)AsTensorSpan()).ToString(sb, maximumLengths);
             sb.AppendLine("}");
 
             return sb.ToString();
