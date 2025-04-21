@@ -151,9 +151,7 @@
     <DefaultPacksSubsets Condition="'$(RuntimeFlavor)' != 'Mono' and '$(ForceBuildMobileManifests)' == 'true'">$(DefaultPacksSubsets)+mono.manifests</DefaultPacksSubsets>
 
     <BootstrapSubsets>host.native+libs.sfx+libs.pretest</BootstrapSubsets>
-    <BootstrapSubsets Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(BootstrapSubsets)+clr.corelib</BootstrapSubsets>
-    <BootstrapSubsets Condition="'$(RuntimeFlavor)' == 'Mono'">$(BootstrapSubsets)+mono.corelib</BootstrapSubsets>
-    <BootstrapSubsets Condition="'$(UseNativeAotForComponents)' != 'true'">$(BootstrapSubsets)+clr.runtime</BootstrapSubsets>
+    <BootstrapSubsets Condition="'$(UseNativeAotForComponents)' != 'true'">$(BootstrapSubsets)+clr.runtime+clr.corelib</BootstrapSubsets>
     <BootstrapSubsets Condition="'$(UseNativeAotForComponents)' == 'true'">$(BootstrapSubsets)+clr.nativeaotlibs+clr.nativeaotruntime+libs.native</BootstrapSubsets>
 
     <SwapNativeForIL Condition="$(_subset.Contains('+bootstrap+')) and '$(RuntimeFlavor)' == 'CoreCLR'">true</SwapNativeForIL>
@@ -459,9 +457,10 @@
     <!-- We may use these targets with the in-build ILCompiler or with the shipping ILCompiler. Produce them whenever we may use them. -->
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(SdkToolsSupported)' == 'true' or '$(NativeAotSupported)' == 'true'" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(SdkToolsSupported)' == 'true' or '$(NativeAotSupported)' == 'true'" />
-    <!-- skip the architectures that don't have LKG runtime packs -->
+
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr"  />
+
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
