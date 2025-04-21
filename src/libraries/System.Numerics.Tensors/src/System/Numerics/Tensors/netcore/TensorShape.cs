@@ -510,11 +510,25 @@ namespace System.Numerics.Tensors
                 lengths1 = lengths1[rankDelta..];
             }
 
-            // if equal or one is 1
+            // We need both to be empty if either is empty
+            if (shape1.IsEmpty)
+            {
+                return shape2.IsEmpty;
+            }
+            else if (shape2.IsEmpty)
+            {
+                return false;
+            }
+
+            // we need the lengths to be equal or one of them to be 1
             for (int i = 0; i < lengths1.Length; i++)
             {
                 nint length1 = lengths1[i];
+                Debug.Assert(length1 != 0);
+
                 nint length2 = lengths2[i];
+                Debug.Assert(length2 != 0);
+
                 if ((length1 != length2) && (length1 != 1) && (length2 != 1))
                 {
                     return false;
