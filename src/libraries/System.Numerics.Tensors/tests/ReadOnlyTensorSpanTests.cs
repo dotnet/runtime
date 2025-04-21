@@ -229,9 +229,9 @@ namespace System.Numerics.Tensors.Tests
         public static void ReadOnlyTensorSpanArrayConstructorTests()
         {
             // Make sure exception is thrown if lengths and strides would let you go past the end of the array
-            Assert.Throws<ArgumentException>(() => new TensorSpan<double>(new double[0], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
-            Assert.Throws<ArgumentException>(() => new TensorSpan<double>(new double[1], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
-            Assert.Throws<ArgumentException>(() => new TensorSpan<double>(new double[2], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 2 }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<double>(new double[0], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<double>(new double[1], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<double>(new double[2], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 2 }));
 
             // Make sure basic T[] constructor works
             int[] a = { 91, 92, -93, 94 };
@@ -257,7 +257,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, spanInt.Rank);
             Assert.Equal(0, spanInt.Lengths[0]);
             Assert.Equal(0, spanInt.FlattenedLength);
-            Assert.Equal(0, spanInt.Strides[0]);
+            Assert.Equal(1, spanInt.Strides[0]);
             // Make sure it still throws on index 0
             Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new ReadOnlyTensorSpan<int>(b);
@@ -571,7 +571,7 @@ namespace System.Numerics.Tensors.Tests
             fixed (int* p = b)
             {
                 spanInt = new ReadOnlyTensorSpan<int>(p, 0);
-                Assert.Equal(1, spanInt.Rank);
+                Assert.Equal(0, spanInt.Rank);
                 Assert.Equal(0, spanInt.Lengths[0]);
                 Assert.Equal(0, spanInt.FlattenedLength);
                 Assert.Equal(0, spanInt.Strides[0]);

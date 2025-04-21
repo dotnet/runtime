@@ -351,7 +351,7 @@ namespace System.Numerics.Tensors
 
                 _indexes[^1] = -1;
 
-                _linearOffset = 0;
+                _linearOffset = 0 - (!span.IsEmpty ? span.Strides[^1] : 0);
                 _itemsEnumerated = -1;
             }
 
@@ -378,7 +378,7 @@ namespace System.Numerics.Tensors
                 Array.Clear(_indexes);
                 _indexes[^1] = -1;
 
-                _linearOffset = 0;
+                _linearOffset = 0 - (!_span.IsEmpty ? _span.Strides[^1] : 0);
                 _itemsEnumerated = -1;
             }
 
