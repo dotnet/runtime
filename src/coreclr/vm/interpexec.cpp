@@ -1161,7 +1161,13 @@ CALL_TARGET_IP:
                 {
                     len = ALIGN_UP(len, INTERP_STACK_ALIGNMENT);
                     mem = pThreadContext->pFrameDataAllocator->Alloc((InterpreterFrame*)pFrame, len);
-                    if (mem != NULL && pMethod->initLocals)
+                    if (!mem)
+                    {
+                        // Interpreter-TODO: OutOfMemoryException
+                        assert(0);
+                    }
+
+                    if (pMethod->initLocals)
                     {
                         memset(mem, 0, len);
                     }
