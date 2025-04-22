@@ -2856,8 +2856,8 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
     {
 #if FEATURE_LOOP_ALIGN
 
-        if (!currIGWasNonEmpty && (emitAlignLast != nullptr) && (emitAlignLast->idaLoopHeadPredIG != nullptr)
-            && (emitAlignLast->idaLoopHeadPredIG->igNext == emitCurIG))
+        if (!currIGWasNonEmpty && (emitAlignLast != nullptr) && (emitAlignLast->idaLoopHeadPredIG != nullptr) &&
+            (emitAlignLast->idaLoopHeadPredIG->igNext == emitCurIG))
         {
             // If the emitCurIG was thought to be a loop-head, but if it didn't turn out that way and we end up
             // creating a new IG from which the loop starts, make sure to update the LoopHeadPred of last align
