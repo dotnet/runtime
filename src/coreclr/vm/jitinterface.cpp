@@ -14905,15 +14905,13 @@ BOOL EECodeInfo::HasFrameRegister()
 
 #if defined(TARGET_X86)
 
-PTR_CBYTE EECodeInfo::DecodeGCHdrInfo(hdrInfo ** infoPtr)
+PTR_CBYTE EECodeInfo::DecodeGCHdrInfoHelper(hdrInfo ** infoPtr)
 {
-    if (m_hdrInfoTable == NULL)
-    {
-        GCInfoToken gcInfoToken = GetGCInfoToken();
-        DWORD hdrInfoSize = (DWORD)::DecodeGCHdrInfo(gcInfoToken, m_relOffset, &m_hdrInfoBody);
-        _ASSERTE(hdrInfoSize != 0);
-        m_hdrInfoTable = (PTR_CBYTE)gcInfoToken.Info + hdrInfoSize;
-    }
+    GCInfoToken gcInfoToken = GetGCInfoToken();
+    _ASSERTE(m_hdrInfoTable == NULL);
+    DWORD hdrInfoSize = (DWORD)::DecodeGCHdrInfo(gcInfoToken, m_relOffset, &m_hdrInfoBody);
+    _ASSERTE(hdrInfoSize != 0);
+    m_hdrInfoTable = (PTR_CBYTE)gcInfoToken.Info + hdrInfoSize;
 
     *infoPtr = &m_hdrInfoBody;
     return m_hdrInfoTable;
