@@ -3954,6 +3954,11 @@ MetaSig::CompareElementType(
                 }
                 case ELEMENT_TYPE_GENERICINST:
                 {
+                    // Generic instantiation types are a special case. We need
+                    // additional context to compare them correctly.
+                    if (state == NULL)
+                        return FALSE;
+
                     // Due to how SigPointer works, we need to fiddle with the signature pointer
                     // to get the ELEMENT_TYPE_GENERICINST element type back in the stream.
                     // Since we know the size of the element type, we can just subtract one byte from the
@@ -3976,13 +3981,14 @@ MetaSig::CompareElementType(
                     _ASSERTE(*genericInstSig == ELEMENT_TYPE_GENERICINST);
 
                     SigPointer inst{ genericInstSig, genericInstSigLen };
-
-                    SigTypeContext dummyContext;
                     TypeHandle hOtherType = inst.GetTypeHandleThrowing(
                         pOtherModule,
-                        &dummyContext);
+                        &state->InternalToGenericInstContext);
 
-                    return (hInternal == hOtherType);
+                    // Compare typical method tables to handle shared generics.
+                    MethodTable* typicalInternalMT = hInternal.AsMethodTable()->GetTypicalMethodTable();
+                    MethodTable* typeicalOtherMT = hOtherType.AsMethodTable()->GetTypicalMethodTable();
+                    return typicalInternalMT == typeicalOtherMT;
                 }
                 default:
                 {

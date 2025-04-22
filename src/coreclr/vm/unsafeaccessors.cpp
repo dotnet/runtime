@@ -493,7 +493,7 @@ namespace
 
         // Following a similar iteration pattern found in MemberLoader::FindMethod().
         // However, we are only operating on the current type not walking the type hierarchy.
-        MethodTable::IntroducedMethodIterator iter(pMT);
+        MethodTable::IntroducedMethodIterator iter(pMT, /* restrictToCanonicalTypes */ FALSE);
         for (; iter.IsValid(); iter.Next())
         {
             MethodDesc* curr = iter.GetMethodDesc();
@@ -510,6 +510,7 @@ namespace
             TokenPairList list { nullptr };
             MetaSig::CompareState state{ &list };
             state.IgnoreCustomModifiers = ignoreCustomModifiers;
+            state.InternalToGenericInstContext = { cxt.Declaration->GetClassInstantiation(), cxt.Declaration->GetMethodInstantiation() };
             if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
                 continue;
 
