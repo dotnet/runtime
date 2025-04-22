@@ -289,7 +289,7 @@ namespace System.Numerics.Tensors
         public static void ValidateCompatibility<TArg>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlySpan<nint> lengths)
         {
             // x can be broadcast to destination, not vice verse
-            if (!TensorShape.AreCompatible(lengths, x._shape, true))
+            if (!TensorShape.AreCompatible(lengths, x._shape))
                 ThrowHelper.ThrowArgument_LengthsNotCompatible();
         }
 

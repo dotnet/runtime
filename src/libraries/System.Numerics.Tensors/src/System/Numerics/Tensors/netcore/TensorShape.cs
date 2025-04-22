@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using Microsoft.VisualBasic;
 
 namespace System.Numerics.Tensors
 {
@@ -481,8 +483,6 @@ namespace System.Numerics.Tensors
                         // We should only be here if we were broadcast
                         Debug.Assert((length == 1) && (stride == 0));
                     }
-
-                    Debug.Assert(GetLinearOffset<GetOffsetAndLengthForNInt, nint>(indexes[(destinationShape.Rank - Rank)..]) == linearOffset);
                     return linearOffset;
                 }
 
@@ -513,39 +513,31 @@ namespace System.Numerics.Tensors
                     indexes[rankIndex] = 0;
                 }
             }
-
-            Debug.Assert(GetLinearOffset<GetOffsetAndLengthForNInt, nint>(indexes[(destinationShape.Rank - Rank)..]) == 0);
             return 0;
         }
 
-        // can shape2 turn into shape1
+        // Answer the question: Can shape2 turn into shape1 or vice-versa if allowBidirectional?
         public static bool AreCompatible(in TensorShape shape1, in TensorShape shape2, bool allowBidirectional)
         {
-            scoped ReadOnlySpan<nint> lengths1 = shape1.Lengths;
-            scoped ReadOnlySpan<nint> lengths2 = shape2.Lengths;
-
             int rankDelta = shape1.Rank - shape2.Rank;
 
-            if (rankDelta != 0)
+            if (rankDelta < 0)
             {
-                if (rankDelta < 0)
+                if (!allowBidirectional)
                 {
-                    if (!allowBidirectional)
-                    {
-                        return false;
-                    }
-
-                    lengths1 = shape2.Lengths;
-                    lengths2 = shape1.Lengths;
-
-                    rankDelta = -rankDelta;
-                    Debug.Assert(rankDelta > 0);
+                    return false;
                 }
 
-                lengths1 = lengths1[rankDelta..];
+                ref readonly TensorShape tmpShape = ref shape1;
+                shape1 = ref shape2;
+                shape2 = ref tmpShape;
+
+                rankDelta = -rankDelta;
+                Debug.Assert(rankDelta > 0);
             }
 
             // We need both to be empty if either is empty
+
             if (shape1.IsEmpty)
             {
                 return shape2.IsEmpty;
@@ -555,60 +547,98 @@ namespace System.Numerics.Tensors
                 return false;
             }
 
-            // we need the lengths to be equal or one of them to be 1
+            // We need the lengths to be equal, length2 to be 1, or
+            // length1 to be 1 and be doing a bidirectional check.
+
+            ReadOnlySpan<nint> lengths1 = shape1.Lengths[rankDelta..];
+            ReadOnlySpan<nint> lengths2 = shape2.Lengths;
+
             for (int i = 0; i < lengths1.Length; i++)
             {
                 nint length1 = lengths1[i];
-                Debug.Assert(length1 != 0);
-
                 nint length2 = lengths2[i];
-                Debug.Assert(length2 != 0);
 
-                if ((length1 != length2) && (length1 != 1) && (length2 != 1))
+                if (length1 == length2)
                 {
-                    return false;
+                    continue;
                 }
+                else if ((length1 == 1) && allowBidirectional)
+                {
+                    continue;
+                }
+                else if (length2 == 1)
+                {
+                    continue;
+                }
+
+                return false;
             }
 
-            return true;
-        }
-
-        // can shape1 turn into lengths
-        public static bool AreCompatible(in ReadOnlySpan<nint> lengths, in TensorShape shape1, bool allowBidirectional)
-        {
-            scoped ReadOnlySpan<nint> lengths1 = lengths;
-            scoped ReadOnlySpan<nint> lengths2 = shape1.Lengths;
-
-            int rankDelta = lengths1.Length - shape1.Rank;
-
-            if (rankDelta != 0)
+            if (!allowBidirectional)
             {
-                if (rankDelta < 0)
+                // When we aren't bidirectionally compatible, then we
+                // need to ensure that if stride1 is 0, then stride2
+                // is also zero; otherwise we cannot safely operate.
+
+                ReadOnlySpan<nint> strides1 = shape1.Strides[rankDelta..];
+                ReadOnlySpan<nint> strides2 = shape2.Strides;
+
+                for (int i = 0; i < strides1.Length; i++)
                 {
-                    if (!allowBidirectional)
+                    nint stride1 = strides1[i];
+                    nint stride2 = strides2[i];
+
+                    if ((stride1 == 0) && (stride2 != 0))
                     {
                         return false;
                     }
-
-                    lengths1 = shape1.Lengths;
-                    lengths2 = lengths;
-
-                    rankDelta = -rankDelta;
-                    Debug.Assert(rankDelta > 0);
                 }
+            }
+            return true;
+        }
 
-                lengths1 = lengths1[rankDelta..];
+        // Answer the question: Can shape2 turn into shape1Lengths
+        public static bool AreCompatible(in ReadOnlySpan<nint> shape1Lengths, in TensorShape shape2)
+        {
+            int rankDelta = shape1Lengths.Length - shape2.Rank;
+
+            if (rankDelta < 0)
+            {
+                return false;
             }
 
-            // if equal or one is 1
+            // We need both to be empty if either is empty
+
+            if (shape1Lengths.IsEmpty)
+            {
+                return shape2.IsEmpty;
+            }
+            else if (shape2.IsEmpty)
+            {
+                return false;
+            }
+
+            // We need the lengths to be equal, length2 to be 1, or
+            // length1 to be 1 and be doing a bidirectional check.
+
+            ReadOnlySpan<nint> lengths1 = shape1Lengths[rankDelta..];
+            ReadOnlySpan<nint> lengths2 = shape2.Lengths;
+
             for (int i = 0; i < lengths1.Length; i++)
             {
                 nint length1 = lengths1[i];
                 nint length2 = lengths2[i];
-                if ((length1 != length2) && (length1 != 1) && (length2 != 1))
+
+                if (length1 == length2)
                 {
-                    return false;
+                    continue;
                 }
+                else if (length2 == 1)
+                {
+                    continue;
+                }
+
+                return false;
             }
 
             return true;

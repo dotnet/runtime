@@ -1856,7 +1856,14 @@ namespace System.Numerics.Tensors
         /// <param name="ranges">The ranges you want to set.</param>
         public static ref readonly TensorSpan<T> SetSlice<T>(this in TensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> values, params scoped ReadOnlySpan<NRange> ranges)
         {
-            values.CopyTo(tensor.Slice(ranges));
+            if (ranges.IsEmpty)
+            {
+                values.CopyTo(tensor);
+            }
+            else
+            {
+                values.CopyTo(tensor.Slice(ranges));
+            }
             return ref tensor;
         }
         #endregion
