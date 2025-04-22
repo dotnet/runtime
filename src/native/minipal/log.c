@@ -231,7 +231,6 @@ static HANDLE get_std_handle(minipal_log_flags flags)
     case minipal_log_flags_fatal:
     case minipal_log_flags_error:
         return GetStdHandle(STD_ERROR_HANDLE);
-        break;
     case minipal_log_flags_warning:
     case minipal_log_flags_info:
     case minipal_log_flags_debug:
