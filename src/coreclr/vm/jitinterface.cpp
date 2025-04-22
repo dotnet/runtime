@@ -15086,41 +15086,4 @@ void EECodeInfo::GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset)
     *pRBPOffset = StackOffset;
 }
 #undef kRBP
-
-ULONG EECodeInfo::GetFrameOffsetFromUnwindInfo()
-{
-    WRAPPER_NO_CONTRACT;
-
-    SUPPORTS_DAC;
-
-    // moduleBase is a target address.
-    TADDR moduleBase = GetModuleBase();
-
-    DWORD unwindInfo = RUNTIME_FUNCTION__GetUnwindInfoAddress(GetFunctionEntry());
-
-    if ((unwindInfo & RUNTIME_FUNCTION_INDIRECT) != 0)
-    {
-        unwindInfo = RUNTIME_FUNCTION__GetUnwindInfoAddress(PTR_RUNTIME_FUNCTION(moduleBase + (unwindInfo & ~RUNTIME_FUNCTION_INDIRECT)));
-    }
-
-    UNWIND_INFO * pInfo = GetUnwindInfoHelper(unwindInfo);
-    _ASSERTE((pInfo->Flags & UNW_FLAG_CHAININFO) == 0);
-
-    // Either we are not using a frame pointer, or we are using rbp as the frame pointer.
-    if ( (pInfo->FrameRegister != 0) && (pInfo->FrameRegister != kRBP) )
-    {
-        _ASSERTE(!"GetRbpOffset() - non-RBP frame pointer used, violating assumptions of the security stackwalk cache");
-        DebugBreak();
-    }
-
-    ULONG frameOffset = pInfo->FrameOffset;
-#ifdef UNIX_AMD64_ABI
-    if ((frameOffset == 15) && (pInfo->UnwindCode[0].UnwindOp == UWOP_SET_FPREG_LARGE))
-    {
-        frameOffset = *(ULONG*)&pInfo->UnwindCode[1];
-    }
-#endif
-
-    return frameOffset;
-}
 #endif // defined(TARGET_AMD64)

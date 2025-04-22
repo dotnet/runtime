@@ -2947,7 +2947,6 @@ ULONG       GetFixedStackSize();
     ULONG       GetFixedStackSize();
 
     void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
-    ULONG        GetFrameOffsetFromUnwindInfo();
 #endif // TARGET_AMD64
 
 private:
