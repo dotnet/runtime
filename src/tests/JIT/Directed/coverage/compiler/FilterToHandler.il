@@ -57,9 +57,12 @@ done2:
 
 .class public auto ansi FilterToHandler {
 .method public static int32 Main() {
-.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-    01 00 00 00
-)
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+    string('https://github.com/dotnet/runtime/issues/114902')
+    type([TestLibrary]TestLibrary.PlatformDetection)
+    string[1] ('IsAppleMobile')
+}
 .entrypoint
 .maxstack	20
   .try

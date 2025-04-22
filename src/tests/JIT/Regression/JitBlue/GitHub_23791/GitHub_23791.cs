@@ -16,6 +16,7 @@ public unsafe struct GitHub_23791
     byte NextElement(int i) => A[1+i];
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/114908", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
     public static int TestEntryPoint() 
     {
         int result = -1;
