@@ -25,7 +25,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         COR_ILEXCEPTION_CLAUSE_FILTER = 0x0001,         // If this bit is on, then this EH entry is for a filter
         COR_ILEXCEPTION_CLAUSE_FINALLY = 0x0002,        // This clause is a finally clause
         COR_ILEXCEPTION_CLAUSE_FAULT = 0x0004,          // Fault clause (finally that is called on exception only)
-        COR_ILEXCEPTION_CLAUSE_DUPLICATED = 0x0008,     // duplicated clause. This clause was duplicated to a funclet which was pulled out of line
         COR_ILEXCEPTION_CLAUSE_SAMETRY = 0x0010,        // This clause covers same try block as the previous one
 
         COR_ILEXCEPTION_CLAUSE_KIND_MASK = COR_ILEXCEPTION_CLAUSE_FILTER | COR_ILEXCEPTION_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_FAULT,
@@ -149,11 +148,6 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 default:
                     throw new NotImplementedException(Flags.ToString());
-            }
-
-            if ((Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_DUPLICATED) != (CorExceptionFlag)0)
-            {
-                writer.Write(" DUPLICATED");
             }
 
             if ((Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_SAMETRY) != (CorExceptionFlag)0)
