@@ -2854,6 +2854,8 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
 
     if (emitCurIGnonEmpty())
     {
+#if FEATURE_LOOP_ALIGN
+
         if (!currIGWasNonEmpty && (emitAlignLast != nullptr) && (emitAlignLast->idaLoopHeadPredIG != nullptr)
             && (emitAlignLast->idaLoopHeadPredIG->igNext == emitCurIG))
         {
@@ -2865,6 +2867,7 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
             // We need to only update emitAlignLast because we do not align intermingled or overlapping loops.
             emitAlignLast->idaLoopHeadPredIG = emitCurIG;
         }
+#endif // FEATURE_LOOP_ALIGN
 
         emitNxtIG();
     }
