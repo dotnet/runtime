@@ -35,7 +35,7 @@ namespace System.Numerics.Tensors
             scoped Span<nint> xIndexes = RentedBuffer.Create(destinationShape.Rank, x.Strides, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
             scoped Span<nint> yIndexes = RentedBuffer.Create(destinationShape.Rank, y.Strides, out nint yLinearOffset, out RentedBuffer<nint> yRentedBuffer);
 
-            for (nint i = 0; i < x.FlattenedLength; i++)
+            for (nint i = 0; i < destinationShape.FlattenedLength; i++)
             {
                 xLinearOffset = x._shape.AdjustToNextIndex(destinationShape, xLinearOffset, xIndexes);
                 yLinearOffset = y._shape.AdjustToNextIndex(destinationShape, yLinearOffset, yIndexes);
@@ -1972,7 +1972,7 @@ namespace System.Numerics.Tensors
         {
             public static void Invoke(ref readonly T x, T y, ref T destination)
             {
-                destination = (x - y) * (x - y);
+                destination += (x - y) * (x - y);
             }
             public static void Invoke(ReadOnlySpan<T> x, T y, Span<T> destination)
             {
@@ -1984,7 +1984,7 @@ namespace System.Numerics.Tensors
 
             public static void Invoke(ref readonly T x, ref readonly T y, ref T destination)
             {
-                destination = (x - y) * (x - y);
+                destination += (x - y) * (x - y);
             }
 
             public static void Invoke(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
