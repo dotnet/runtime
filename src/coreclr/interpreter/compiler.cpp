@@ -815,7 +815,9 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
     for (int i = 0; i < numDataItems; i++)
         pDataItems[i] = m_dataItems.Get(i);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems);
+    bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
+
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems, initLocals);
 
     return pMethod;
 }

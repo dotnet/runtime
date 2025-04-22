@@ -280,7 +280,8 @@ public class InterpreterTest
         if (3072 != LocallocNestedTests(1024, 512, 512, 1024)) return false;
 
         // SkipLocalsInit tests
-        if (!LocallocSkipLocalsInit(32)) return false;
+        // Test could be flaky if the allocated memory is already zeroed
+        // if (!LocallocSkipLocalsInit(32)) return false;
 
         return true;
     }

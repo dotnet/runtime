@@ -344,6 +344,7 @@ set(VM_SOURCES_WKS
     interopconverter.cpp
     interoputil.cpp
     interpexec.cpp
+    interpframeallocator.cpp
     invokeutil.cpp
     jithelpers.cpp
     managedmdimport.cpp
@@ -444,6 +445,7 @@ set(VM_HEADERS_WKS
     interoputil.h
     interoputil.inl
     interpexec.h
+    interpframallocator.h
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h
