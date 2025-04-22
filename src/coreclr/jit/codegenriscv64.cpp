@@ -3208,22 +3208,23 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             switch (cmpSize)
             {
                 case EA_4BYTE:
+                {
+                    regNumber tmpRegOp1 = internalRegisters.GetSingle(tree);
+                    assert(regOp1 != tmpRegOp1);
                     if (isUnsigned)
                     {
                         imm = static_cast<uint32_t>(imm);
-
-                        regNumber tmpRegOp1 = internalRegisters.GetSingle(tree);
-                        assert(regOp1 != tmpRegOp1);
-
                         emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
                         emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-                        regOp1 = tmpRegOp1;
                     }
                     else
                     {
                         imm = static_cast<int32_t>(imm);
+                        emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                     }
+                    regOp1 = tmpRegOp1;
                     break;
+                }
                 case EA_8BYTE:
                     break;
                 default:
