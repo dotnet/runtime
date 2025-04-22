@@ -20,6 +20,7 @@ public class AppsettingsTests : BlazorWasmTestBase
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/aspnetcore/issues/60536")]
     public async Task FileInVfs()
     {
         Configuration config = Configuration.Debug;
