@@ -3093,18 +3093,6 @@ PhaseStatus Compiler::fgCreateFunclets()
     assert(UsesFunclets());
     assert(!fgFuncletsCreated);
 
-    // Allocate the PSPSym, if needed. PSPSym is not used by the NativeAOT ABI
-    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-    {
-        if (ehNeedsPSPSym())
-        {
-            lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
-            LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
-            lclPSPSym->lvType    = TYP_I_IMPL;
-            lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
-        }
-    }
-
     fgCreateFuncletPrologBlocks();
 
     unsigned           XTnum;

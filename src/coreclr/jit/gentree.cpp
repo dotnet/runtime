@@ -6526,6 +6526,9 @@ unsigned GenTree::GetScaledIndex()
         case GT_MUL:
             return AsOp()->gtOp2->GetScaleIndexMul();
 
+#ifdef TARGET_RISCV64
+        case GT_SLLI_UW:
+#endif
         case GT_LSH:
             return AsOp()->gtOp2->GetScaleIndexShf();
 
@@ -11753,10 +11756,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "LocAllocSP";
             }
 #endif // JIT32_GCENCODER
-            else if (lclNum == lvaPSPSym)
-            {
-                ilName = "PSPSym";
-            }
             else
             {
                 ilKind = "tmp";
@@ -12839,7 +12838,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
                    InsCflagsToString(tree->AsCCMP()->gtFlagsVal));
         }
 #endif
-
         gtDispCommonEndLine(tree);
 
         if (!topOnly)
