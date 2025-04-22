@@ -3507,7 +3507,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
         pEHClause->_handlerAddress = (BYTE*)pJitMan->GetCodeAddressForRelOffset(MethToken, EHClause.HandlerStartPC);
 
         result = TRUE;
-        pEHClause->_isSameTry = (EHClause.Flags & 0x10) != 0; // CORINFO_EH_CLAUSE_SAMETRY
+        pEHClause->_isSameTry = (EHClause.Flags & COR_ILEXCEPTION_CLAUSE_SAMETRY) != 0;
 
         // Clear special flags - like COR_ILEXCEPTION_CLAUSE_CACHED_CLASS
         ULONG flags = (CorExceptionFlag)(EHClause.Flags & 0x0f);
