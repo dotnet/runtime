@@ -184,17 +184,17 @@ public static unsafe class UnsafeAccessorsTestsTypes
         {
             object class1 = CallGetClass(null);
             Assert.Equal("PrivateLib.Class1", class1.GetType().FullName);
-            object listClass1 = CallGetListOfClass(class1);
-            Assert.Equal("System.Collections.Generic.List`1[[PrivateLib.Class1, PrivateLib, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]", listClass1.GetType().FullName);
+            object listClass2 = CallGetListOfClass2(class1);
+            Assert.Equal("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]", listClass2.GetType().FullName);
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType("PrivateLib.Class1, PrivateLib")]
         extern static object CreateClass();
 
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetListOfClass")]
-        [return: UnsafeAccessorType("System.Collections.Generic.List`1[[PrivateLib.Class1, PrivateLib]]")]
-        extern static object CallGetListOfClass([UnsafeAccessorType("PrivateLib.Class1, PrivateLib")] object a);
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetListOfClass2")]
+        [return: UnsafeAccessorType("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")]
+        extern static object CallGetListOfClass2([UnsafeAccessorType("PrivateLib.Class1, PrivateLib")] object a);
     }
 
     [Fact]

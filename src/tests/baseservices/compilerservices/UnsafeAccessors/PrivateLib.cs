@@ -25,9 +25,11 @@ namespace PrivateLib
             return new Class1();
         }
 
-        List<Class1> GetListOfClass()
+        List<Class2> GetListOfClass2()
         {
-            return new List<Class1>();
+            return new List<Class2>();
         }
     }
+
+    class Class2 { }
 }
