@@ -951,20 +951,6 @@ namespace ILCompiler
                                         return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
                             }
-                            else if (popped.ValueKind == StackValueKind.ByRef
-                                && (opcode == ILOpcode.conv_i || opcode == ILOpcode.conv_u)
-                                && (reader.PeekILOpcode() is (>= ILOpcode.ldind_i1 and <= ILOpcode.ldind_ref) or ILOpcode.ldobj))
-                            {
-                                // In the interpreter memory model, there's no conversion from a byref to an integer.
-                                // Roslyn however sometimes emits a sequence of conv_u followed by ldind and we can
-                                // have a narrow path to handle that one.
-                                //
-                                // For example:
-                                //
-                                // static unsafe U Read<T, U>(T val) where T : unmanaged where U : unmanaged => *(U*)&val;
-                                stack.Push(popped);
-                                goto again;
-                            }
                             else
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode);
