@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef FEATURE_INTERPRETER
+
 #include "interpexec.h"
 #include "interpframeallocator.h"
 
@@ -109,3 +111,5 @@ void FrameDataAllocator::PopInfo(InterpreterFrame *pFrame)
         pCurrent->pos = pInfo->pos;
     }
 }
+
+#endif // FEATURE_INTERPRETER
