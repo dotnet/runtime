@@ -629,7 +629,7 @@ namespace System.Formats.Tar
                 checksum += FormatNumeric(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             }
 
-            if (_dataStream != null && _size >= 0)
+            if (_size >= 0)
             {
                 checksum += FormatNumeric(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             }
@@ -750,8 +750,8 @@ namespace System.Formats.Tar
         // Saves the gnu-specific fields into the specified spans.
         private int WriteGnuFields(Span<byte> buffer)
         {
-            int checksum = WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+            int checksum = WriteAsGnuTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+            checksum += WriteAsGnuTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
             if (_gnuUnusedBytes != null)
             {
@@ -1134,6 +1134,24 @@ namespace System.Formats.Tar
         {
             long unixTimeSeconds = timestamp.ToUnixTimeSeconds();
             return FormatNumeric(unixTimeSeconds, destination);
+        }
+
+        // Writes the specified DateTimeOffset's Unix time seconds, and returns its checksum.
+        // If the timestamp is UnixEpoch, it writes 0s into the destination span.
+        private int WriteAsGnuTimestamp(DateTimeOffset timestamp, Span<byte> destination)
+        {
+            if (timestamp == DateTimeOffset.UnixEpoch)
+            {
+#if DEBUG
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    Debug.Assert(destination[i] == 0, "Destination span should be zeroed.");
+                }
+#endif
+                return 0;
+            }
+
+            return WriteAsTimestamp(timestamp, destination);
         }
 
         // Writes the specified text as an UTF8 string aligned to the left, and returns its checksum.
