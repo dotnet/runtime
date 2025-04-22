@@ -694,7 +694,7 @@ MAIN_LOOP:
                 int32_t i1 = LOCAL_VAR(ip[2], int32_t);
                 int32_t i2 = LOCAL_VAR(ip[3], int32_t);
                 int32_t i3;
-                if (__builtin_mul_overflow(i1, i2, &i3))
+                if (!ClrSafeInt<int32_t>::multiply(i1, i2, i3))
                     assert(0); // Interpreter-TODO: OverflowException
                 LOCAL_VAR(ip[1], int32_t) = i3;
                 ip += 4;
@@ -706,7 +706,7 @@ MAIN_LOOP:
                 int64_t i1 = LOCAL_VAR(ip[2], int64_t);
                 int64_t i2 = LOCAL_VAR(ip[3], int64_t);
                 int64_t i3;
-                if (__builtin_mul_overflow(i1, i2, &i3))
+                if (!ClrSafeInt<int64_t>::multiply(i1, i2, i3))
                     assert(0); // Interpreter-TODO: OverflowException
                 LOCAL_VAR(ip[1], int64_t) = i3;
                 ip += 4;
@@ -718,7 +718,7 @@ MAIN_LOOP:
                 uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
                 uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                 uint32_t i3;
-                if (__builtin_mul_overflow(i1, i2, &i3))
+                if (!ClrSafeInt<uint32_t>::multiply(i1, i2, i3))
                     assert(0); // Interpreter-TODO: OverflowException
                 LOCAL_VAR(ip[1], uint32_t) = i3;
                 ip += 4;
@@ -730,7 +730,7 @@ MAIN_LOOP:
                 uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
                 uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
                 uint64_t i3;
-                if (__builtin_mul_overflow(i1, i2, &i3))
+                if (!ClrSafeInt<uint64_t>::multiply(i1, i2, i3))
                     assert(0); // Interpreter-TODO: OverflowException
                 LOCAL_VAR(ip[1], uint64_t) = i3;
                 ip += 4;
@@ -1263,7 +1263,23 @@ CALL_TARGET_IP:
 
                 if (len > 0)
                 {
-                    mem = frame_data_alloc(&pThreadContext->frameDataAllocator, (InterpreterFrame*)pFrame, ALIGN_UP(len, INTERP_STACK_ALIGNMENT));
+                    len = ALIGN_UP(len, INTERP_STACK_ALIGNMENT);
+                    mem = frame_data_alloc(&pThreadContext->frameDataAllocator, (InterpreterFrame*)pFrame, len);
+                    if (mem != NULL)
+                    {
+                        MethodDesc* md = reinterpret_cast<MethodDesc*>(pMethod->methodHnd);
+                        COR_ILMETHOD* pIL = md->GetILHeader();
+
+                        if (pIL != NULL)
+                        {
+                            COR_ILMETHOD_DECODER header(pIL);
+                            // Initialize local variables to zero if the flag is set
+                            if (header.GetFlags() & CorILMethod_InitLocals)
+                            {
+                                  memset(mem, 0, len);
+                            }
+                        }
+                    }
                 } else
                 {
                     mem = NULL;

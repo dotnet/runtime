@@ -279,6 +279,9 @@ public class InterpreterTest
         // Reuse fragment tests
         if (3072 != LocallocNestedTests(1024, 512, 512, 1024)) return false;
 
+        // SkipLocalsInit tests
+        if (!LocallocSkipLocalsInit(32)) return false;
+
         return true;
     }
 
@@ -320,6 +323,14 @@ public class InterpreterTest
         int* a2 = stackalloc int[k];
         for (int i = 0; i < k; i++) a2[i] = i;
         return a1[0] + a1[1] + a1[n - 1] + inner + a2[0] + a2[1] + a2[k - 1];
+    }
+
+    [SkipLocalsInit]
+    public static unsafe bool LocallocSkipLocalsInit(int n)
+    {
+        int* a = stackalloc int[n];
+        for (int i = 0; i < n; i++) if (a[i] != 0) return true;
+        return false;
     }
 
     public static bool TestVirtual()
