@@ -352,7 +352,7 @@ namespace Internal.IL
                     return false;
                 }
 
-                if (declSig.ReturnType != maybeSig.ReturnType)
+                if (declSig.ReturnType.GetTypeDefinition() != maybeSig.ReturnType.GetTypeDefinition())
                 {
                     return false;
                 }
@@ -367,7 +367,7 @@ namespace Internal.IL
                 TypeDesc maybeType = maybeSig[i];
 
                 // Compare the types
-                if (declType != maybeType)
+                if (declType.GetTypeDefinition() != maybeType.GetTypeDefinition())
                 {
                     return false;
                 }
