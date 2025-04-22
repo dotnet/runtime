@@ -385,9 +385,7 @@ namespace System.Net.Http
                 return;
             }
 
-            // connection.ReserveStream() always reserves a stream when EnableMultipleHttp3Connections is false.
-            bool reserved;
-            while (reserved = (connection.ReserveStream() || !EnableMultipleHttp3Connections))
+            while (connection.ReserveStream() || !EnableMultipleHttp3Connections)
             {
                 // Loop in case we get a request that has already been canceled or handled by a different connection.
                 while (true)
@@ -450,10 +448,9 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (reserved)
-                        {
-                            connection.ReleaseStream();
-                        }
+                        // connection.ReserveStream() always reserves a stream when EnableMultipleHttp3Connections is false.
+                        connection.ReleaseStream();
+
                         if (added)
                         {
                             if (NetEventSource.Log.IsEnabled()) connection.Trace("Put HTTP3 connection in pool.");
