@@ -35,8 +35,8 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
@@ -57,8 +57,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
@@ -90,8 +90,8 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
@@ -112,8 +112,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
@@ -134,7 +134,7 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: false);
         }
@@ -153,7 +153,7 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: false);
         }
@@ -172,7 +172,7 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: true);
         }
@@ -191,7 +191,7 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source.CreateOrderedAsyncEnumerable(keySelector, comparer, descending: true);
         }
