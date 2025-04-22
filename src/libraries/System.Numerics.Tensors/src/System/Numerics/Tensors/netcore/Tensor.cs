@@ -237,13 +237,58 @@ namespace System.Numerics.Tensors
             }
             Span<T> dstSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)totalLength);
 
-            for (int i = 0; i < tensors.Length; i++)
+            if (dimension == 0 || dimension == -1)
             {
-                TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(tensors[i], dstSpan);
-                dstSpan = dstSpan.Slice((int)tensors[i].FlattenedLength);
+                for (int i = 0; i < tensors.Length; i++)
+                {
+                    TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(tensors[i], dstSpan);
+                    dstSpan = dstSpan.Slice((int)tensors[i].FlattenedLength);
+                }
             }
+            else
+            {
+                Span<NRange> ranges = TensorOperation.RentedBuffer.CreateUninitialized(destination.Rank, out TensorOperation.RentedBuffer<NRange> rentedBuffer);
+                for (int i = 0; i < dimension; i++)
+                {
+                    ranges[i] = 0..1;
+                }
+                for (int i = dimension; i < destination.Rank; i++)
+                {
+                    ranges[i] = ..;
+                }
 
+                bool hasMore = true;
+                while (hasMore)
+                {
+                    for (int i = 0; i < tensors.Length; i++)
+                    {
+                        Tensor<T> slice = tensors[i].Slice(ranges);
+                        TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(slice, dstSpan);
+                        dstSpan = dstSpan.Slice((int)slice.FlattenedLength);
+                    }
+                    hasMore = IncrementIndexes(ranges, dimension, destination.Lengths);
+                }
+                rentedBuffer.Dispose();
+            }
             return ref destination;
+        }
+
+        private static bool IncrementIndexes(Span<NRange> ranges, int dimension, ReadOnlySpan<nint> lengths)
+        {
+            NRange curRange = ranges[dimension - 1];
+            ranges[dimension - 1] = new NRange(curRange.Start.Value + 1, curRange.End.Value + 1);
+
+            for (int i = dimension - 1; i >= 0; i--)
+            {
+                if (ranges[i].Start.Value >= lengths[i])
+                {
+                    ranges[i] = 0..1;
+                    if (i == 0)
+                        return false;
+                    ranges[i - 1] = new NRange(ranges[i - 1].Start.Value + 1, ranges[i - 1].End.Value + 1);
+                }
+            }
+            return true;
         }
 
         private static nint CalculateCopyLength(ReadOnlySpan<nint> lengths, int startingAxis)
@@ -4804,9 +4849,8 @@ namespace System.Numerics.Tensors
         public static T Norm<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : IRootFunctions<T>
         {
-            // TODO: TANNER ADVICE
             T result = T.AdditiveIdentity;
-            TensorOperation.Invoke<TensorOperation.SumOfSquaredDifferences<T>, T, T>(x, T.AdditiveIdentity, ref result);
+            TensorOperation.Invoke<TensorOperation.SumOfSquares<T>, T, T>(x, ref result);
             return T.Sqrt(result);
         }
         #endregion
