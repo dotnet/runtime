@@ -6075,53 +6075,6 @@ CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBox(CORINFO_CLASS_HANDLE  cls)
 }
 
 /***********************************************************************/
-// Get a representation for a stack-allocated boxed value type
-//
-CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_CLASS_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle VMClsHnd(cls);
-    if (Nullable::IsNullableType(VMClsHnd))
-    {
-        VMClsHnd = VMClsHnd.AsMethodTable()->GetInstantiation()[0];
-    }
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (VMClsHnd.RequiresAlign8())
-    {
-        // TODO: Maybe handle 32 bit platforms with 8 byte alignments
-        result = NULL;
-    }
-    else
-#endif
-    {
-        Instantiation boxedFieldsInst(&VMClsHnd, 1);
-        TypeHandle stackAllocatedBox = CoreLibBinder::GetClass(CLASS__STACKALLOCATEDBOX);
-        TypeHandle stackAllocatedBoxInst = stackAllocatedBox.Instantiate(boxedFieldsInst);
-        result = static_cast<CORINFO_CLASS_HANDLE>(stackAllocatedBoxInst.AsPtr());
-
-#ifdef _DEBUG
-        FieldDesc* pValueFD = CoreLibBinder::GetField(FIELD__STACKALLOCATEDBOX__VALUE);
-        DWORD index = pValueFD->GetApproxEnclosingMethodTable()->GetIndexForFieldDesc(pValueFD);
-        _ASSERTE(stackAllocatedBoxInst.GetMethodTable()->GetFieldDescByIndex(index)->GetOffset() == TARGET_POINTER_SIZE);
-#endif
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/***********************************************************************/
 // see code:Nullable#NullableVerification
 CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
@@ -7554,6 +7507,13 @@ static void getMethodInfoHelper(
             else if (CoreLibBinder::IsClass(pMT, CLASS__ACTIVATOR))
             {
                 fILIntrinsic = getILIntrinsicImplementationForActivator(ftn, methInfo, &localSig);
+            }
+            else if (CoreLibBinder::IsClass(pMT, CLASS__INSTANCE_CALLI_HELPER))
+            {
+                // We can ignore the existing header, since we are going to generate a new one.
+                cxt.Header = NULL;
+
+                ftn->GenerateFunctionPointerCall(&cxt.TransientResolver, &cxt.Header);
             }
         }
 
@@ -14748,6 +14708,7 @@ EECodeInfo::EECodeInfo()
 
 #ifdef FEATURE_EH_FUNCLETS
     m_pFunctionEntry = NULL;
+    m_isFuncletCache = IsFuncletCache::NotSet;
 #endif
 
 #ifdef TARGET_X86
@@ -14773,6 +14734,9 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     } CONTRACTL_END;
 
     m_codeAddress = codeAddress;
+#ifdef FEATURE_EH_FUNCLETS
+    m_isFuncletCache = IsFuncletCache::NotSet;
+#endif
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -14885,6 +14849,9 @@ EECodeInfo EECodeInfo::GetMainFunctionInfo()
     result.m_relOffset = 0;
     result.m_codeAddress = this->GetStartAddress();
     result.m_pFunctionEntry = NULL;
+#ifdef FEATURE_EH_FUNCLETS
+    result.m_isFuncletCache = IsFuncletCache::IsNotFunclet;
+#endif
 
     return result;
 }
@@ -14897,6 +14864,20 @@ PTR_RUNTIME_FUNCTION EECodeInfo::GetFunctionEntry()
     if (m_pFunctionEntry == NULL)
         m_pFunctionEntry = m_pJM->LazyGetFunctionEntry(this);
     return m_pFunctionEntry;
+}
+
+BOOL EECodeInfo::IsFunclet()
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_isFuncletCache == IsFuncletCache::NotSet)
+    {
+        m_isFuncletCache = GetJitManager()->LazyIsFunclet(this) ? IsFuncletCache::IsFunclet : IsFuncletCache::IsNotFunclet;
+    }
+
+    // At this point we know that m_isFuncletCache is either IsFunclet or IsNotFunclet, which is either 1 or 0. Just cast it to BOOL.
+    BOOL result = (BOOL)m_isFuncletCache;
+    _ASSERTE(!!GetJitManager()->LazyIsFunclet(this) == !!result);
+    return result;
 }
 
 #if defined(TARGET_AMD64)
@@ -15105,41 +15086,4 @@ void EECodeInfo::GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset)
     *pRBPOffset = StackOffset;
 }
 #undef kRBP
-
-ULONG EECodeInfo::GetFrameOffsetFromUnwindInfo()
-{
-    WRAPPER_NO_CONTRACT;
-
-    SUPPORTS_DAC;
-
-    // moduleBase is a target address.
-    TADDR moduleBase = GetModuleBase();
-
-    DWORD unwindInfo = RUNTIME_FUNCTION__GetUnwindInfoAddress(GetFunctionEntry());
-
-    if ((unwindInfo & RUNTIME_FUNCTION_INDIRECT) != 0)
-    {
-        unwindInfo = RUNTIME_FUNCTION__GetUnwindInfoAddress(PTR_RUNTIME_FUNCTION(moduleBase + (unwindInfo & ~RUNTIME_FUNCTION_INDIRECT)));
-    }
-
-    UNWIND_INFO * pInfo = GetUnwindInfoHelper(unwindInfo);
-    _ASSERTE((pInfo->Flags & UNW_FLAG_CHAININFO) == 0);
-
-    // Either we are not using a frame pointer, or we are using rbp as the frame pointer.
-    if ( (pInfo->FrameRegister != 0) && (pInfo->FrameRegister != kRBP) )
-    {
-        _ASSERTE(!"GetRbpOffset() - non-RBP frame pointer used, violating assumptions of the security stackwalk cache");
-        DebugBreak();
-    }
-
-    ULONG frameOffset = pInfo->FrameOffset;
-#ifdef UNIX_AMD64_ABI
-    if ((frameOffset == 15) && (pInfo->UnwindCode[0].UnwindOp == UWOP_SET_FPREG_LARGE))
-    {
-        frameOffset = *(ULONG*)&pInfo->UnwindCode[1];
-    }
-#endif
-
-    return frameOffset;
-}
 #endif // defined(TARGET_AMD64)

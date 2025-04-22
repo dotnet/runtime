@@ -2,40 +2,90 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Reflection.Emit;
+using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
     public abstract class SlhDsaTestsBase
     {
-        /// <summary>
-        /// Gets whether the platform has native support for SLH-DSA. Note that SLH-DSA may still be
-        /// used on the platform if it doesn't rely on native support (e.g. KeyVault keys).
-        /// </summary>
-        public static bool SupportedOnPlatform => false; // TODO: Once SLH-DSA is supported on a platform, set this to check for that platform.
+        protected abstract SlhDsa GenerateKey(SlhDsaAlgorithm algorithm);
+        protected abstract SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        protected abstract SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
 
-        /// <summary>
-        /// Gets whether the platform lacks native support for SLH-DSA. Note that SLH-DSA may still be
-        /// used on the platform if it doesn't rely on native support (e.g. KeyVault keys).
-        /// </summary>
-        public static bool NotSupportedOnPlatform => !SupportedOnPlatform;
+        protected static void ExerciseSuccessfulVerify(SlhDsa slhDsa, byte[] data, byte[] signature, byte[] context)
+        {
+            AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, context));
 
-        public static IEnumerable<object[]> AlgorithmsData => AlgorithmsRaw.Select(a => new[] { a });
+            if (data.Length > 0)
+            {
+                AssertExtensions.FalseExpression(slhDsa.VerifyData([], signature, context));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
 
-        public static SlhDsaAlgorithm[] AlgorithmsRaw =
-        [
-            SlhDsaAlgorithm.SlhDsaSha2_128s,
-            SlhDsaAlgorithm.SlhDsaShake128s,
-            SlhDsaAlgorithm.SlhDsaSha2_128f,
-            SlhDsaAlgorithm.SlhDsaShake128f,
-            SlhDsaAlgorithm.SlhDsaSha2_192s,
-            SlhDsaAlgorithm.SlhDsaShake192s,
-            SlhDsaAlgorithm.SlhDsaSha2_192f,
-            SlhDsaAlgorithm.SlhDsaShake192f,
-            SlhDsaAlgorithm.SlhDsaSha2_256s,
-            SlhDsaAlgorithm.SlhDsaShake256s,
-            SlhDsaAlgorithm.SlhDsaSha2_256f,
-            SlhDsaAlgorithm.SlhDsaShake256f,
-        ];
+                data[0] ^= 1;
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
+                data[0] ^= 1;
+            }
+            else
+            {
+                AssertExtensions.TrueExpression(slhDsa.VerifyData([], signature, context));
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
+
+                AssertExtensions.FalseExpression(slhDsa.VerifyData([0], signature, context));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData([1, 2, 3], signature, context));
+            }
+
+            signature[0] ^= 1;
+            AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
+            signature[0] ^= 1;
+
+            if (context.Length > 0)
+            {
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, []));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
+
+                context[0] ^= 1;
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
+                context[0] ^= 1;
+            }
+            else
+            {
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, []));
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
+
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, [0]));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, [1, 2, 3]));
+            }
+
+            AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, context));
+        }
+
+        protected static void VerifyDisposed(SlhDsa slhDsa)
+        {
+            // A signature-sized buffer can be reused for keys as well
+            byte[] tempBuffer = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
+            PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
+
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.SignData([], tempBuffer, []));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.VerifyData([], tempBuffer, []));
+
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, pbeParameters));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte>.Empty, pbeParameters));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char>.Empty, pbeParameters));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKey());
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKeyPem());
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPublicKey(tempBuffer));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaSecretKey(tempBuffer));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfo());
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfoPem());
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters, [], out _));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, pbeParameters, [], out _));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportPkcs8PrivateKey([], out _));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportSubjectPublicKeyInfo([], out _));
+        }
     }
 }
