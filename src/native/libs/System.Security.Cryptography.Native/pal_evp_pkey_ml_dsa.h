@@ -5,6 +5,16 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 
+typedef enum
+{
+    PalMLDsaId_Unknown = 0,
+    PalMLDsaId_MLDsa44 = 1,
+    PalMLDsaId_MLDsa65 = 2,
+    PalMLDsaId_MLDsa87 = 3,
+} PalMLDsaId;
+
+PALEXPORT int32_t CryptoNative_MLDsaGetPalId(const EVP_PKEY* pKey, int32_t* mldsaId);
+
 /*
 Generates a new EVP_PKEY with random parameters or if seed is not NULL, uses the seed to generate the key.
 The keyType is the type of the key (e.g., "ML-DSA-65").

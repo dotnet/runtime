@@ -23,7 +23,6 @@
     <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.generated.cs" Link="System\Text\Unicode\UnicodeHelpers.generated.cs" />
     <Compile Include="AsciiByteMapTests.cs" />
     <Compile Include="AsciiPreescapedDataTests.cs" />
-    <Compile Include="AllowedAsciiCodePointsTests.cs" />
     <Compile Include="SR.cs" />
     <Compile Include="InboxEncoderCommonTests.cs" />
     <Compile Include="AllowedBmpCodePointsBitmapTests.cs" />

@@ -16,6 +16,10 @@
 #include "dbginterface.h"
 #include <minipal/time.h>
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif
+
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -2267,8 +2271,6 @@ void Thread::HandleThreadAbort ()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
-    // @TODO: we should consider treating this function as an FCALL or HCALL and use FCThrow instead of COMPlusThrow
-
     // Sometimes we call this without any CLR SEH in place.  An example is UMThunkStubRareDisableWorker.
     // That's okay since COMPlusThrow will eventually erect SEH around the RaiseException. It prevents
     // us from stating CONTRACT here.
@@ -3788,7 +3790,7 @@ ThrowControlForThread(
     exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
     exceptionRecord.ExceptionFlags = 0;
 
-    OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
+    OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     DispatchManagedException(throwable, pfef->GetExceptionContext());
 #else // FEATURE_EH_FUNCLETS

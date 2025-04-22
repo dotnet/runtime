@@ -29,8 +29,7 @@
 
         // If g_GCShadow is 0, don't perform the check.
         PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadow, $t3
-        beq  $t3, $zero, 1f
-        ori  $t4, $t3, 0
+        beqz  $t3, 1f
 
         // Save destReg since we're about to modify it (and we need the original value both within the macro and
         // once we exit the macro).
@@ -39,7 +38,7 @@
         // Transform destReg into the equivalent address in the shadow heap.
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, $t3
         sub.d  \destReg, \destReg, $t3
-        bltu  $t4, $zero, 0f
+        bltu   \destReg, $zero, 0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadow, $t3
         add.d  \destReg, \destReg, $t3
@@ -61,8 +60,7 @@
 
         // Someone went and updated the real heap. We need to invalidate INVALIDGCVALUE the shadow location since we can not
         // guarantee whose shadow update won.
-        lu12i.w  $t3, ((INVALIDGCVALUE >> 12) & 0xFFFFF)
-        ori  $t3, $t3, (INVALIDGCVALUE & 0xFFF)
+        li.d  $t3, INVALIDGCVALUE
         st.d  $t3, \destReg, 0
 
 0:
@@ -104,11 +102,11 @@
         // Update the write watch table if necessary
         PREPARE_EXTERNAL_VAR_INDIRECT g_write_watch_table, $t3
 
-        beq  $t3, $zero, 2f
-        srli.d  $t5, \destReg, 12
-        add.d  $t3, $t3, $t5      // SoftwareWriteWatch::AddressToTableByteIndexShift
+        beqz  $t3, 2f
+        srli.d  $t4, \destReg, 12
+        add.d  $t3, $t3, $t4      // SoftwareWriteWatch::AddressToTableByteIndexShift
         ld.b  $t4, $t3, 0
-        bne  $t4, $zero, 2f
+        bnez  $t4, 2f
         ori  $t4, $zero, 0xFF
         st.b  $t4, $t3, 0
 #endif
@@ -124,14 +122,14 @@
 
         // Set this objects card, if it has not already been set.
         PREPARE_EXTERNAL_VAR_INDIRECT g_card_table, $t3
-        srli.d  $t5, \destReg, 11
-        add.d  $t4, $t3, $t5
+        srli.d  $t4, \destReg, 11
+        add.d  $t4, $t3, $t4
 
         // Check that this card has not already been written. Avoiding useless writes is a big win on
         // multi-proc systems since it avoids cache thrashing.
-        ld.b  $t3, $t4, 0
-        ori  $t5, $zero, 0xFF
-        beq  $t3, $t5, 0f
+        ld.bu  $t3, $t4, 0
+        xori  $t3, $t3, 0xFF
+        beqz  $t3, 0f
 
         ori  $t3, $zero, 0xFF
         st.b  $t3, $t4, 0
@@ -139,11 +137,11 @@
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Check if we need to update the card bundle table
         PREPARE_EXTERNAL_VAR_INDIRECT g_card_bundle_table, $t3
-        srli.d  $t5, \destReg, 21
-        add.d  $t4, $t3, $t5
-        ld.b  $t3, $t4, 0
-        ori  $t5, $zero, 0xFF
-        beq  $t3, $t5, 0f
+        srli.d  $t4, \destReg, 21
+        add.d  $t4, $t3, $t4
+        ld.bu  $t3, $t4, 0
+        xori  $t3, $t3, 0xFF
+        beqz  $t3, 0f
 
         ori  $t3, $zero, 0xFF
         st.b  $t3, $t4, 0
@@ -165,16 +163,14 @@
         // The "check" of this checked write barrier - is destReg
         // within the heap? if no, early out.
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, $t3
-        sltu  $t4, \destReg, $t3
+        bltu    \destReg, $t3, 0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, $t3
 
         // If \destReg >= g_lowest_address, compare \destReg to g_highest_address.
         // Otherwise, set the C flag (0x2) to take the next branch.
-        bnez  $t4, 1f
         bgeu  \destReg, $t3, 0f
 
-1:
         INSERT_UNCHECKED_WRITE_BARRIER_CORE \destReg, \refReg
 
 0:
@@ -218,23 +214,21 @@ LEAF_END RhpByRefAssignRef, _TEXT
 //   t7 : the object reference (RHS of the assignment).
 //
 // On exit:
-//   t3, t4 : trashed
-//   t6      : incremented by 8
+//   $t3 : trashed
+//   $t6 : incremented by 8 to implement JIT_ByRefWriteBarrier contract
  LEAF_ENTRY RhpCheckedAssignRef, _TEXT
 
         // is destReg within the heap?
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, $t3
-        sltu  $t4, $t6, $t3
-
+        bltu    $t6, $t3, LOCAL_LABEL(NotInHeap)
         PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, $t3
-        sltu  $t0, $t3, $t6
-        or  $t4, $t0, $t4
-        beq  $t4, $zero, C_FUNC(RhpAssignRefLoongArch64)
+        bgeu    $t6, $t3, LOCAL_LABEL(NotInHeap)
+        b  C_FUNC(RhpAssignRefLoongArch64)
 
 LOCAL_LABEL(NotInHeap):
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         st.d  $t7, $t6, 0
-        addi.d $t6, $t6, 8
+        addi.d  $t6, $t6, 8
         jirl  $r0, $ra, 0
 
 LEAF_END RhpCheckedAssignRef, _TEXT
@@ -252,6 +246,7 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 //  t3, t4 : trashed
 //  t6 : incremented by 8
 LEAF_ENTRY RhpAssignRefLoongArch64, _TEXT
+        dbar 0
 
     ALTERNATE_ENTRY RhpAssignRefAVLocation
         st.d  $t7, $t6, 0
@@ -289,20 +284,24 @@ LEAF_END RhpAssignRef, _TEXT
 //
 // On exit:
 //  a0: original value of objectref
-//  t1, t3, t6, t4: trashed
+//  t0, t1, t3, t4: trashed
 //
-    LEAF_ENTRY RhpCheckedLockCmpXchg
+LEAF_ENTRY RhpCheckedLockCmpXchg
 
 LOCAL_LABEL(RetryLoop):
-        ll.d  $t3, $a0, 0
+        // Load the current value at the destination address.
+        ll.d  $t0, $a0, 0       // t0 = *dest (load with atomic ordering)
+        // Compare the loaded value with the comparand.
+        bne  $t0, $a2, LOCAL_LABEL(EndOfExchange) // if (*dest != comparand) goto EndOfExchange
+
         ori  $t1, $a1, 0
-        bne  $t3, $a2, LOCAL_LABEL(EndOfExchange)
-        sc.d  $t1, $a0, 0
-        beqz  $t1, LOCAL_LABEL(RetryLoop)
+        // Attempt to store the exchange value at the destination address.
+        sc.d  $t1, $a0, 0  // t1 = (store conditional result with atomic, 0 if failed)
+        beqz  $t1, LOCAL_LABEL(RetryLoop) // if store conditional failed, retry
         b  LOCAL_LABEL(DoCardsCmpXchg)
 
 LOCAL_LABEL(EndOfExchange):
-        dbar 0x700
+        dbar  0x700
         b  LOCAL_LABEL(CmpXchgNoUpdate)
 
 LOCAL_LABEL(DoCardsCmpXchg):
@@ -313,12 +312,10 @@ LOCAL_LABEL(DoCardsCmpXchg):
         INSERT_CHECKED_WRITE_BARRIER_CORE  $a0, $a1
 
 LOCAL_LABEL(CmpXchgNoUpdate):
-        // a2 still contains the original value.
-        ori  $a0, $a2, 0
-
+        ori   $a0, $t0, 0   // t0 still contains the original value.
         jirl  $r0, $ra, 0
 
-    LEAF_END RhpCheckedLockCmpXchg, _TEXT
+LEAF_END RhpCheckedLockCmpXchg, _TEXT
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at RhpCheckedXchgAVLocation
@@ -335,10 +332,9 @@ LOCAL_LABEL(CmpXchgNoUpdate):
 // On exit:
 //  a0: original value of objectref
 //  t1: trashed
-//  t3, t6, t4: trashed
+//  t3, t4: trashed
 //
-    LEAF_ENTRY RhpCheckedXchg, _TEXT
-
+LEAF_ENTRY RhpCheckedXchg, _TEXT
         amswap_db.d  $t1, $a1, $a0      // exchange
 
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
@@ -352,4 +348,4 @@ LOCAL_LABEL(CmpXchgNoUpdate):
 
         jirl  $r0, $ra, 0
 
-    LEAF_END RhpCheckedXchg, _TEXT
+LEAF_END RhpCheckedXchg, _TEXT

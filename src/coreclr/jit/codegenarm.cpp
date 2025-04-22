@@ -1619,6 +1619,12 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         addr = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, (void**)&pAddr);
     }
 
+    EmitCallParams params;
+
+    params.methHnd = compiler->eeFindHelper(helper);
+    params.argSize = argSize;
+    params.retSize = retSize;
+
     if (!addr || !validImmForBL((ssize_t)addr))
     {
         if (callTargetReg == REG_NA)
@@ -1639,23 +1645,14 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
             regSet.verifyRegUsed(callTargetReg);
         }
 
-        GetEmitter()->emitIns_Call(emitter::EC_INDIR_R, compiler->eeFindHelper(helper),
-                                   INDEBUG_LDISASM_COMMA(nullptr) NULL, // addr
-                                   argSize, retSize, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                   gcInfo.gcRegByrefSetCur, DebugInfo(),
-                                   callTargetReg, // ireg
-                                   REG_NA, 0, 0,  // xreg, xmul, disp
-                                   false          // isJump
-        );
+        params.callType = EC_INDIR_R;
+        params.ireg     = callTargetReg;
+        genEmitCallWithCurrentGC(params);
     }
     else
     {
-        GetEmitter()->emitIns_Call(emitter::EC_FUNC_TOKEN, compiler->eeFindHelper(helper),
-                                   INDEBUG_LDISASM_COMMA(nullptr) addr, argSize, retSize, gcInfo.gcVarPtrSetCur,
-                                   gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), REG_NA, REG_NA, 0,
-                                   0,    /* ilOffset, ireg, xreg, xmul, disp */
-                                   false /* isJump */
-        );
+        params.callType = EC_FUNC_TOKEN;
+        genEmitCallWithCurrentGC(params);
     }
 
     regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);
@@ -2223,7 +2220,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
  *  Funclets have the following incoming arguments:
  *
  *      catch:          r0 = the exception object that was caught (see GT_CATCH_ARG)
- *      filter:         r0 = the exception object to filter (see GT_CATCH_ARG), r1 = CallerSP of the containing function
+ *      filter:         r0 = the exception object to filter (see GT_CATCH_ARG)
  *      finally/fault:  none
  *
  *  Funclets set the following registers on exit:
@@ -2239,50 +2236,9 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
  *                      ;         actually use in the funclet. Currently, we save the same set of callee-saved regs
  *                      ;         calculated for the entire function.
  *     sub sp, XXX      ; Establish the rest of the frame.
- *                      ;   XXX is determined by lvaOutgoingArgSpaceSize plus space for the PSP slot, aligned
- *                      ;   up to preserve stack alignment. If we push an odd number of registers, we also
- *                      ;   generate this, to keep the stack aligned.
+ *                      ;   XXX is determined by lvaOutgoingArgSpaceSize, aligned up to preserve stack alignment.
+ *                      ;   If we push an odd number of registers, we also generate this, to keep the stack aligned.
  *
- *     ; Fill the PSP slot, for use by the VM (it gets reported with the GC info), or by code generation of nested
- *     ;     filters.
- *     ; This is not part of the "OS prolog"; it has no associated unwind data, and is not reversed in the funclet
- *     ;     epilog.
- *
- *     if (this is a filter funclet)
- *     {
- *          // r1 on entry to a filter funclet is CallerSP of the containing function:
- *          // either the main function, or the funclet for a handler that this filter is dynamically nested within.
- *          // Note that a filter can be dynamically nested within a funclet even if it is not statically within
- *          // a funclet. Consider:
- *          //
- *          //    try {
- *          //        try {
- *          //            throw new Exception();
- *          //        } catch(Exception) {
- *          //            throw new Exception();     // The exception thrown here ...
- *          //        }
- *          //    } filter {                         // ... will be processed here, while the "catch" funclet frame is
- *          //                                       // still on the stack
- *          //    } filter-handler {
- *          //    }
- *          //
- *          // Because of this, we need a PSP in the main function anytime a filter funclet doesn't know whether the
- *          // enclosing frame will be a funclet or main function. We won't know any time there is a filter protecting
- *          // nested EH. To simplify, we just always create a main function PSP for any function with a filter.
- *
- *          ldr r1, [r1 - PSP_slot_CallerSP_offset]     ; Load the CallerSP of the main function (stored in the PSP of
- *                                                      ; the dynamically containing funclet or function)
- *          str r1, [sp + PSP_slot_SP_offset]           ; store the PSP
- *          sub r11, r1, Function_CallerSP_to_FP_delta  ; re-establish the frame pointer
- *     }
- *     else
- *     {
- *          // This is NOT a filter funclet. The VM re-establishes the frame pointer on entry.
- *          // TODO-ARM-CQ: if VM set r1 to CallerSP on entry, like for filters, we could save an instruction.
- *
- *          add r3, r11, Function_CallerSP_to_FP_delta  ; compute the CallerSP, given the frame pointer. r3 is scratch.
- *          str r3, [sp + PSP_slot_SP_offset]           ; store the PSP
- *     }
  *
  *  The epilog sequence is then:
  *
@@ -2300,11 +2256,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
  *      |       arguments       |
  *      +=======================+ <---- Caller's SP
  *      |Callee saved registers |
- *      |-----------------------|
- *      |Pre-spill regs space   |   // This is only necessary to keep the PSP slot at the same offset
- *      |                       |   // in function and funclet
- *      |-----------------------|
- *      |        PSP slot       |   // Omitted in NativeAOT ABI
  *      |-----------------------|
  *      ~  possible 4 byte pad  ~
  *      ~     for alignment     ~
@@ -2375,31 +2326,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
-
-    // If there is no PSPSym (NativeAOT ABI), we are done.
-    if (compiler->lvaPSPSym == BAD_VAR_NUM)
-    {
-        return;
-    }
-
-    if (isFilter)
-    {
-        // This is the first block of a filter
-
-        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, REG_R1, REG_R1, genFuncletInfo.fiPSP_slot_CallerSP_offset);
-        regSet.verifyRegUsed(REG_R1);
-        GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_R1, REG_SPBASE, genFuncletInfo.fiPSP_slot_SP_offset);
-        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_FPBASE, REG_R1,
-                                    genFuncletInfo.fiFunctionCallerSPtoFPdelta);
-    }
-    else
-    {
-        // This is a non-filter funclet
-        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_R3, REG_FPBASE,
-                                    genFuncletInfo.fiFunctionCallerSPtoFPdelta);
-        regSet.verifyRegUsed(REG_R3);
-        GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_R3, REG_SPBASE, genFuncletInfo.fiPSP_slot_SP_offset);
-    }
 }
 
 /*****************************************************************************
@@ -2486,8 +2412,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         // (plus the "pre spill regs"). Note that we assume r12 and r13 aren't saved
         // (also assumed in genFnProlog()).
         assert((regSet.rsMaskCalleeSaved & (RBM_R12 | RBM_R13)) == 0);
-        unsigned preSpillRegArgSize                = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
-        genFuncletInfo.fiFunctionCallerSPtoFPdelta = preSpillRegArgSize + 2 * REGSIZE_BYTES;
+        unsigned preSpillRegArgSize = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
 
         regMaskTP rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
         unsigned  saveRegsCount   = genCountBits(rsMaskSaveRegs);
@@ -2504,97 +2429,23 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;
         unsigned spDelta                  = funcletFrameSizeAligned - saveRegsSize;
 
-        unsigned PSP_slot_SP_offset = compiler->lvaOutgoingArgSpaceSize + funcletFrameAlignmentPad;
-        int      PSP_slot_CallerSP_offset =
-            -(int)(funcletFrameSize - compiler->lvaOutgoingArgSpaceSize); // NOTE: it's negative!
-
         /* Now save it for future use */
 
-        genFuncletInfo.fiSaveRegs                 = rsMaskSaveRegs;
-        genFuncletInfo.fiSpDelta                  = spDelta;
-        genFuncletInfo.fiPSP_slot_SP_offset       = PSP_slot_SP_offset;
-        genFuncletInfo.fiPSP_slot_CallerSP_offset = PSP_slot_CallerSP_offset;
+        genFuncletInfo.fiSaveRegs = rsMaskSaveRegs;
+        genFuncletInfo.fiSpDelta  = spDelta;
 
 #ifdef DEBUG
         if (verbose)
         {
             printf("\n");
             printf("Funclet prolog / epilog info\n");
-            printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunctionCallerSPtoFPdelta);
             printf("                        Save regs: ");
             dspRegMask(rsMaskSaveRegs);
             printf("\n");
             printf("                         SP delta: %d\n", genFuncletInfo.fiSpDelta);
-            printf("               PSP slot SP offset: %d\n", genFuncletInfo.fiPSP_slot_SP_offset);
-            printf("        PSP slot Caller SP offset: %d\n", genFuncletInfo.fiPSP_slot_CallerSP_offset);
-
-            if (PSP_slot_CallerSP_offset != compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym))
-            {
-                printf("lvaGetCallerSPRelativeOffset(lvaPSPSym): %d\n",
-                       compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
-            }
         }
 #endif // DEBUG
-
-        assert(PSP_slot_CallerSP_offset < 0);
-        if (compiler->lvaPSPSym != BAD_VAR_NUM)
-        {
-            assert(PSP_slot_CallerSP_offset ==
-                   compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)); // same offset used in main
-                                                                                 // function and funclet!
-        }
     }
-}
-
-void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
-{
-    assert(compiler->compGeneratingProlog);
-
-    if (compiler->lvaPSPSym == BAD_VAR_NUM)
-    {
-        return;
-    }
-
-    noway_assert(isFramePointerUsed()); // We need an explicit frame pointer
-
-    // We either generate:
-    //     add     r1, r11, 8
-    //     str     r1, [reg + PSPSymOffset]
-    // or:
-    //     add     r1, sp, 76
-    //     str     r1, [reg + PSPSymOffset]
-    // depending on the smallest encoding
-
-    int SPtoCallerSPdelta = -genCallerSPtoInitialSPdelta();
-
-    int       callerSPOffs;
-    regNumber regBase;
-
-    if (arm_Valid_Imm_For_Add_SP(SPtoCallerSPdelta))
-    {
-        // use the "add <reg>, sp, imm" form
-
-        callerSPOffs = SPtoCallerSPdelta;
-        regBase      = REG_SPBASE;
-    }
-    else
-    {
-        // use the "add <reg>, r11, imm" form
-
-        int FPtoCallerSPdelta = -genCallerSPtoFPdelta();
-        noway_assert(arm_Valid_Imm_For_Add(FPtoCallerSPdelta, INS_FLAGS_DONT_CARE));
-
-        callerSPOffs = FPtoCallerSPdelta;
-        regBase      = REG_FPBASE;
-    }
-
-    // We will just use the initReg since it is an available register
-    // and we are probably done using it anyway...
-    regNumber regTmp = initReg;
-    *pInitRegZeroed  = false;
-
-    GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, regTmp, regBase, callerSPOffs);
-    GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
 }
 
 //-----------------------------------------------------------------------------
