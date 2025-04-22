@@ -2561,7 +2561,9 @@ namespace System.Numerics.Tensors
                     rentedBuffer._array = ArrayPool<T>.Shared.Rent(rank);
                     Unsafe.SkipInit(out rentedBuffer._inline);
 
-                    return rentedBuffer._array.AsSpan(0, rank);
+                    Span<T> resultBuffer = rentedBuffer._array.AsSpan(0, rank);
+                    resultBuffer.Clear();
+                    return resultBuffer;
                 }
                 else
                 {
