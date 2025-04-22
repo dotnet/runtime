@@ -148,6 +148,7 @@ native_binaries_to_ignore = [
     "crossgen.exe",
     "crossgen2.exe",
     "dbgshim.dll",
+    "Dia2Lib.dll", # work around https://github.com/dotnet/runtime/issues/114933
     "e_sqlite3.dll",
     "FileCheck.exe",
     "ilasm.exe",
