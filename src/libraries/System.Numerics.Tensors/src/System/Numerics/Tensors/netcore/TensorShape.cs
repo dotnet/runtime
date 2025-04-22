@@ -71,7 +71,7 @@ namespace System.Numerics.Tensors
 
             if (rank == 0)
             {
-                lengths = [linearLength];
+                lengths = [0];
                 rank = 1;
             }
             Debug.Assert(rank >= 1);
@@ -281,7 +281,7 @@ namespace System.Numerics.Tensors
 
         private TensorShape(nint flattenedLength, nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, scoped ReadOnlySpan<int> linearRankOrder, int rank)
         {
-            Debug.Assert((linearLength == 0) || ((flattenedLength % linearLength) == 0));
+            Debug.Assert((linearLength == 0) || (linearLength >= flattenedLength));
 
             Debug.Assert(lengths.Length == rank);
             Debug.Assert(strides.Length == rank);
@@ -451,11 +451,12 @@ namespace System.Numerics.Tensors
             for (int i = 0; i < strides.Length; i++)
             {
                 int rankIndex = lengths.Length - (i + 1);
+                int destinationRankIndex = destinationShape.Lengths.Length - (i + 1);
 
                 nint length = lengths[rankIndex];
                 nint stride = strides[rankIndex];
 
-                nint index = ++indexes[rankIndex];
+                nint index = ++indexes[destinationRankIndex];
                 linearOffset += stride;
 
                 if (index < length)
@@ -463,7 +464,7 @@ namespace System.Numerics.Tensors
                     return linearOffset;
                 }
 
-                indexes[rankIndex] = 0;
+                indexes[destinationRankIndex] = 0;
                 linearOffset -= (stride * length);
             }
 
@@ -481,7 +482,11 @@ namespace System.Numerics.Tensors
 
                     if (index < length)
                     {
-                        break;
+                        // If we just break here we end up returning -strides[^1] as the linear offset.
+                        // If strides[^1] is 1, then we return -1 which is not correct and it ends the outer loop early.
+                        // By returning the linear offset here we ensure that the outer loop continues and handles the
+                        // broadcast case correctly.
+                        return linearOffset;
                     }
 
                     indexes[rankIndex] = 0;
@@ -974,8 +979,7 @@ namespace System.Numerics.Tensors
             // assume that the previousShape is already valid and the new shape
             // will strictly be the same size or smaller.
 
-            nint flattenedLength = 0;
-            nint linearLength = 0;
+            nint flattenedLength = 1;
             nint computedOffset = 0;
 
             for (int i = 0; i < state.Length; i++)
@@ -995,7 +999,7 @@ namespace System.Numerics.Tensors
 
             TensorShape result = new TensorShape(
                 flattenedLength,
-                linearLength,
+                LinearLength - computedOffset,
                 intermediateLengths,
                 strides,
                 linearRankOrder,
