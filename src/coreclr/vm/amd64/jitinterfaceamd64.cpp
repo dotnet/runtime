@@ -859,10 +859,10 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
 #endif // FEATURE_SVR_GC
         case WRITE_BARRIER_WRITE_WATCH_BYTE_REGIONS64:
         case WRITE_BARRIER_WRITE_WATCH_BIT_REGIONS64:
-            if (*(UINT64*)m_pWriteWatchTableImmediate != (size_t)g_sw_ww_table)
+            if (*(UINT64*)m_pWriteWatchTableImmediate != (size_t)g_write_watch_table)
             {
                 ExecutableWriterHolder<UINT64> writeWatchTableImmediateWriterHolder((UINT64*)m_pWriteWatchTableImmediate, sizeof(UINT64));
-                *writeWatchTableImmediateWriterHolder.GetRW() = (size_t)g_sw_ww_table;
+                *writeWatchTableImmediateWriterHolder.GetRW() = (size_t)g_write_watch_table;
                 stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             }
             break;

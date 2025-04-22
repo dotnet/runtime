@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .intel_syntax noprefix
-#include <unixasmmacros.inc>
+#include "AsmMacros_Shared.h"
 
 #ifdef WRITE_BARRIER_CHECK
 

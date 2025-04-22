@@ -28,7 +28,7 @@
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    IMPORT  g_sw_ww_table
+    IMPORT  g_write_watch_table
 #endif
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
@@ -279,8 +279,8 @@ ThePreStubPatchLabel
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        adrp     x12, g_sw_ww_table
-        ldr      x2, [x12, g_sw_ww_table]
+        adrp     x12, g_write_watch_table
+        ldr      x2, [x12, g_write_watch_table]
 #endif
 
         adrp     x12, g_ephemeral_low

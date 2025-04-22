@@ -643,6 +643,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/UMThunkStub.asm
         ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
         ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
     )
 
     set(VM_HEADERS_WKS_ARCH_ASM

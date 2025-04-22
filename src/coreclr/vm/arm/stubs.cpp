@@ -292,7 +292,7 @@ struct WriteBarrierDescriptor
     DWORD   m_dw_g_ephemeral_high_offset;   // Offset of the instruction reading g_ephemeral_high
     DWORD   m_dw_g_card_table_offset;       // Offset of the instruction reading g_card_table
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    DWORD   m_dw_g_sw_ww_table_offset;      // Offset of the instruction reading g_sw_ww_table
+    DWORD   m_dw_g_sw_ww_table_offset;      // Offset of the instruction reading g_write_watch_table
 #endif
 };
 
@@ -463,7 +463,7 @@ void UpdateGCWriteBarriers(bool postGrow = false)
             GWB_PATCH_OFFSET(g_ephemeral_high);
             GWB_PATCH_OFFSET(g_card_table);
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-            GWB_PATCH_OFFSET(g_sw_ww_table);
+            GWB_PATCH_OFFSET(g_write_watch_table);
 #endif
         }
 

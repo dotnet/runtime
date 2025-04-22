@@ -8,7 +8,7 @@
 ;; collection.
 ;;
 
-#include "AsmMacros.h"
+#include "AsmMacros_Shared.h"
 
     TEXTAREA
 

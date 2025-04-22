@@ -5899,11 +5899,75 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
 
+typedef uint8_t CODE_LOCATION;
+EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
+#if defined(HOST_X86)
+EXTERN_C CODE_LOCATION RhpAssignRefEAXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefECXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEBXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefESIAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEDIAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEBPAVLocation;
+#endif
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefAVLocation;
+#if defined(HOST_X86)
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEAXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefECXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
+#endif
+EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
+
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
+EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
+#endif
+
+static uintptr_t writeBarrierAVLocations[] =
+{
+    (uintptr_t)&RhpAssignRefAVLocation,
+#if defined(HOST_X86)
+    (uintptr_t)&RhpAssignRefEAXAVLocation,
+    (uintptr_t)&RhpAssignRefECXAVLocation,
+    (uintptr_t)&RhpAssignRefEBXAVLocation,
+    (uintptr_t)&RhpAssignRefESIAVLocation,
+    (uintptr_t)&RhpAssignRefEDIAVLocation,
+    (uintptr_t)&RhpAssignRefEBPAVLocation,
+#endif
+    (uintptr_t)&RhpCheckedAssignRefAVLocation,
+#if defined(HOST_X86)
+    (uintptr_t)&RhpCheckedAssignRefEAXAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefECXAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefEBXAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
+#endif
+    (uintptr_t)&RhpByRefAssignRefAVLocation1,
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
+    (uintptr_t)&RhpByRefAssignRefAVLocation2,
+#endif
+};
+
 // Check if the passed in instruction pointer is in one of the
 // JIT helper functions.
 bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
+
+    // compare the IP against the list of known possible AV locations in the write barrier helpers
+    for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
+    {
+#if defined(HOST_AMD64) || defined(HOST_X86)
+        // Verify that the runtime is not linked with incremental linking enabled. Incremental linking
+        // wraps every method symbol with a jump stub that breaks the following check.
+        ASSERT(*(uint8_t*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
+#endif
+
+        if (writeBarrierAVLocations[i] == uControlPc)
+            return true;
+    }
 
 #define CHECK_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
