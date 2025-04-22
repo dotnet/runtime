@@ -365,7 +365,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             break;
         }
 
-        case NI_Vector128_WithElement:
+        /*case NI_Vector128_WithElement:
 #if defined(TARGET_XARCH)
         case NI_Vector256_WithElement:
         case NI_Vector512_WithElement:
@@ -528,7 +528,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                 }
             }
             break;
-        }
+        }*/
     }
 
     if (result != nullptr)
