@@ -111,7 +111,9 @@ namespace System.Diagnostics
                 if (TryDecodeBaggageKey(keySpan, out string? key) && TryDecodeBaggageValue(valueSpan, out string value))
                 {
                     baggageList ??= new List<KeyValuePair<string, string?>>();
-                    baggageList.Add(new KeyValuePair<string, string?>(key, value));
+
+                    // Insert in reverse order for asp.net compatibility.
+                    baggageList.Insert(0, new KeyValuePair<string, string?>(key, value));
                 }
 
                 baggageSpan = entrySeparator >= 0 ? baggageSpan.Slice(entrySeparator + 1) : ReadOnlySpan<char>.Empty;
