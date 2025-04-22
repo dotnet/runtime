@@ -48,6 +48,8 @@ usage()
   echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   echo "                                  [Default: Minimal]"
+  echo "  --use-bootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
+  echo "  --bootstrap                     Build the bootstrap subset and then build the repo with --use-bootstrap."
   echo ""
 
   echo "Actions (defaults to --restore --build):"
