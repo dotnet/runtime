@@ -139,7 +139,12 @@ namespace ILCompiler.Reflection.ReadyToRun
             return reader.GetExportTable().TryGetValue("RTR_HEADER", out rva);
         }
 
-        internal static bool IsReadyToRunPlatformNeutralSource(this PEReader peReader)
+        /// <summary>
+        /// Check whether the file is a ReadyToRun image created from platform neutral (AnyCPU) IL image.
+        /// </summary>
+        /// <param name="reader">PEReader representing the executable to check</param>
+        /// <returns>true when the PEReader represents a ReadyToRun image created from AnyCPU IL image, false otherwise</returns>
+        public static bool IsReadyToRunPlatformNeutralSource(this PEReader peReader)
         {
             var managedNativeDirectory = peReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
             if (managedNativeDirectory.Size < 16 /* sizeof(ReadyToRunHeader) */)
