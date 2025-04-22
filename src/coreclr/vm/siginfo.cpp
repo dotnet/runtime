@@ -398,7 +398,7 @@ void SigPointer::CopyModOptsReqs(SigBuilder * pSigBuilder)
 
     CorElementType typ;
     IfFailThrow(PeekElemType(&typ));
-    if (typ == ELEMENT_TYPE_CMOD_REQD || typ == ELEMENT_TYPE_CMOD_OPT)
+    while (typ == ELEMENT_TYPE_CMOD_REQD || typ == ELEMENT_TYPE_CMOD_OPT)
     {
         // Skip the custom modifier
         IfFailThrow(GetByte(NULL));
@@ -410,6 +410,9 @@ void SigPointer::CopyModOptsReqs(SigBuilder * pSigBuilder)
         // Append the custom modifier and encoded token to the signature.
         pSigBuilder->AppendElementType(typ);
         pSigBuilder->AppendToken(token);
+
+        typ = ELEMENT_TYPE_END;
+        IfFailThrow(PeekElemType(&typ));
     }
 }
 

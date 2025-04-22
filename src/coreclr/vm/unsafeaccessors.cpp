@@ -109,7 +109,7 @@ namespace
 
         uint32_t callConvDecl;
         IfFailThrow(origSig.GetCallingConvInfo(&callConvDecl));
-        newSig.AppendByte((BYTE)(callConvDecl & IMAGE_CEE_CS_CALLCONV_MASK));
+        newSig.AppendByte((BYTE)callConvDecl);
 
         uint32_t declGenericCount = 0;
         if (callConvDecl & IMAGE_CEE_CS_CALLCONV_GENERIC)
@@ -164,7 +164,7 @@ namespace
 
         // Create a copy of the new signature and store it on the context.
         DWORD newSigLen;
-        void* newSigRaw = newSig.GetSignature((DWORD*)&newSigLen);
+        void* newSigRaw = newSig.GetSignature(&newSigLen);
 
         // Allocate the signature memory on the loader allocator associated
         // with the declaration method.
@@ -292,7 +292,7 @@ namespace
         _ASSERTE(method != NULL);
 
         PCCOR_SIGNATURE pSig1;
-        DWORD cSig1;
+        uint32_t cSig1;
         cxt.DeclarationSig.GetSignature(&pSig1, &cSig1);
         PCCOR_SIGNATURE pEndSig1 = pSig1 + cSig1;
         ModuleBase* pModule1 = cxt.Declaration->GetModule();
@@ -543,7 +543,7 @@ namespace
         _ASSERTE(field != NULL);
 
         PCCOR_SIGNATURE pSig1;
-        DWORD cSig1;
+        uint32_t cSig1;
         cxt.DeclarationSig.GetSignature(&pSig1, &cSig1);
         PCCOR_SIGNATURE pEndSig1 = pSig1 + cSig1;
         ModuleBase* pModule1 = cxt.Declaration->GetModule();
