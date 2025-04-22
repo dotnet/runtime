@@ -446,6 +446,45 @@ enum idAddrUnionTag
     iaut_SHIFT = 2
 };
 
+enum EmitCallType
+{
+    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method (call/bl addr with IP-relative encoding)
+#ifdef TARGET_XARCH
+    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method (call [addr]/call [rip+addr])
+#endif
+    EC_INDIR_R, // Indirect call via register (call/bl reg)
+#ifdef TARGET_XARCH
+    EC_INDIR_ARD, // Indirect call via an addressing mode (call [rax+rdx*8+disp])
+#endif
+
+    EC_COUNT
+};
+
+struct EmitCallParams
+{
+    EmitCallType          callType = EC_COUNT;
+    CORINFO_METHOD_HANDLE methHnd  = NO_METHOD_HANDLE;
+#ifdef DEBUG
+    // Used to report call sites to the EE
+    CORINFO_SIG_INFO* sigInfo = nullptr;
+#endif
+    void*    addr    = nullptr;
+    ssize_t  argSize = 0;
+    emitAttr retSize = EA_PTRSIZE;
+    // For multi-reg args with GC returns in the second arg
+    emitAttr  secondRetSize = EA_UNKNOWN;
+    BitVec    ptrVars       = BitVecOps::UninitVal();
+    regMaskTP gcrefRegs     = RBM_NONE;
+    regMaskTP byrefRegs     = RBM_NONE;
+    DebugInfo debugInfo;
+    regNumber ireg        = REG_NA;
+    regNumber xreg        = REG_NA;
+    unsigned  xmul        = 0;
+    ssize_t   disp        = 0;
+    bool      isJump      = false;
+    bool      noSafePoint = false;
+};
+
 class emitter
 {
     friend class emitLocation;
@@ -802,6 +841,9 @@ protected:
                                      */
 #define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
 #define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
+
+        // We repurpose 4 bits for the default flag value bits for ccmp instructions.
+#define _idEvexDFV (_idCustom4 << 3) | (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1
 
         // In certian cases, we do not allow instructions to be promoted to APX-EVEX.
         // e.g. instructions like add/and/or/inc/dec can be used with LOCK prefix, but cannot be prefixed by LOCK and
@@ -1400,6 +1442,13 @@ protected:
         {
             return idHasMemGenWrite() || idHasMemStkWrite() || idHasMemAdrWrite();
         }
+
+        bool idHasMemAndCns() const
+        {
+            assert((unsigned)idInsFmt() < emitFmtCount);
+            ID_OPS idOp = (ID_OPS)emitFmtToOps[idInsFmt()];
+            return ((idOp == ID_OP_CNS) || (idOp == ID_OP_DSP_CNS) || (idOp == ID_OP_AMD_CNS));
+        }
 #endif // defined(TARGET_XARCH)
 #ifdef TARGET_ARMARCH
         insOpts idInsOpt() const
@@ -1752,6 +1801,23 @@ protected:
         {
             assert(!idIsNoApxEvexPromotion());
             _idNoApxEvexXPromotion = 1;
+        }
+
+        unsigned idGetEvexDFV() const
+        {
+            return _idEvexDFV;
+        }
+
+        void idSetEvexDFV(insOpts instOptions)
+        {
+            unsigned value = static_cast<unsigned>((instOptions & INS_OPTS_EVEX_dfv_MASK) >> 8);
+
+            _idCustom1 = ((value >> 0) & 1);
+            _idCustom2 = ((value >> 1) & 1);
+            _idCustom3 = ((value >> 2) & 1);
+            _idCustom4 = ((value >> 3) & 1);
+
+            assert(value == idGetEvexDFV());
         }
 #endif
 
@@ -2187,6 +2253,18 @@ protected:
     };
 #endif
 
+#ifdef TARGET_RISCV64
+    struct instrDescLoadImm : instrDescCns
+    {
+        instrDescLoadImm() = delete;
+
+        static const int absMaxInsCount = 8;
+
+        instruction ins[absMaxInsCount];
+        int32_t     values[absMaxInsCount];
+    };
+#endif // TARGET_RISCV64
+
     struct instrDescCGCA : instrDesc // call with ...
     {
         instrDescCGCA() = delete;
@@ -2589,6 +2667,8 @@ private:
     bool emitDoesInsModifyFlags(instruction ins);
 #endif // TARGET_XARCH
 
+    void emitIns_Call(const EmitCallParams& params);
+
     /************************************************************************/
     /*      The logic that creates and keeps track of instruction groups    */
     /************************************************************************/
@@ -2733,6 +2813,14 @@ private:
     // whether to save GC state (to save space in the IG), and always save it.
 
     bool emitForceStoreGCState;
+
+    // This flag is used together with `emitForceStoreGCState`. After we set
+    // emitForceStoreGCState = true, we will mark `emitAddedLabel` to true whenever
+    // we see a label IG. In emitSavIG, we will reset `emitForceStoreGCState = false`
+    // only after seeing `emitAddedLabel == true`. Until then, we will keep recording
+    // GC_VARS on the IGs.
+
+    bool emitAddedLabel;
 
     // emitThis* variables are used during emission, to track GC updates
     // on a per-instruction basis. During code generation, per-instruction
@@ -3121,6 +3209,10 @@ private:
 #else
     instrDesc* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
 #endif // !TARGET_ARM64
+
+#ifdef TARGET_RISCV64
+    instrDesc* emitNewInstrLoadImm(emitAttr attr, cnsval_ssize_t cns);
+#endif // TARGET_RISCV64
 
     static const BYTE emitFmtToOps[];
 
@@ -3954,6 +4046,18 @@ inline emitter::instrDesc* emitter::emitNewInstrReloc(emitAttr attr, BYTE* addr)
 
 #endif // TARGET_ARM
 
+#ifdef TARGET_RISCV64
+
+inline emitter::instrDesc* emitter::emitNewInstrLoadImm(emitAttr attr, cnsval_ssize_t cns)
+{
+    instrDescLoadImm* id = static_cast<instrDescLoadImm*>(emitAllocAnyInstr(sizeof(instrDescLoadImm), attr));
+    id->idInsOpt(INS_OPTS_I);
+    id->idcCnsVal = cns;
+    return id;
+}
+
+#endif // TARGET_RISCV64
+
 #ifdef TARGET_XARCH
 
 /*****************************************************************************
@@ -4040,10 +4144,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
         // which case we load either a scalar or full vector; otherwise,
         // we load a 128-bit vector
 
-        assert((unsigned)id->idInsFmt() < emitFmtCount);
-        ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
-
-        if ((idOp != ID_OP_CNS) && (idOp != ID_OP_SCNS) && (idOp != ID_OP_DSP_CNS) && (idOp != ID_OP_AMD_CNS))
+        if (!id->idHasMemAndCns())
         {
             memSize = 16;
         }
@@ -4078,10 +4179,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
         // Embedded broadcast is never supported so if we have a cns operand
         // we load a full vector; otherwise, we load a 128-bit vector
 
-        assert((unsigned)id->idInsFmt() < emitFmtCount);
-        ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
-
-        if ((idOp != ID_OP_CNS) && (idOp != ID_OP_SCNS) && (idOp != ID_OP_DSP_CNS) && (idOp != ID_OP_AMD_CNS))
+        if (!id->idHasMemAndCns())
         {
             memSize = 16;
         }

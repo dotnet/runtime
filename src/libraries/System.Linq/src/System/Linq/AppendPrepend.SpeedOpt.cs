@@ -176,6 +176,10 @@ namespace System.Linq
 
                 return base.TryGetElementAt(index, out found);
             }
+
+            public override bool Contains(TSource value) =>
+                EqualityComparer<TSource>.Default.Equals(_item, value) ||
+                _source.Contains(value);
         }
 
         private sealed partial class AppendPrependN<TSource>
@@ -277,6 +281,22 @@ namespace System.Linq
                 }
 
                 return !onlyIfCheap || _source is ICollection<TSource> ? _source.Count() + _appendCount + _prependCount : -1;
+            }
+
+            public override bool Contains(TSource value)
+            {
+                foreach (SingleLinkedNode<TSource>? head in (ReadOnlySpan<SingleLinkedNode<TSource>?>)[_appended, _prepended])
+                {
+                    for (SingleLinkedNode<TSource>? node = head; node is not null; node = node.Linked)
+                    {
+                        if (EqualityComparer<TSource>.Default.Equals(node.Item, value))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return _source.Contains(value);
             }
         }
     }

@@ -115,10 +115,7 @@ namespace System.Text.Json
         /// </exception>
         public JsonSerializerOptions(JsonSerializerOptions options)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             // The following fields are not copied intentionally:
             // 1. _cachingContext can only be set in immutable options instances.
@@ -234,9 +231,9 @@ namespace System.Text.Json
 
                 if (_typeInfoResolverChain is { } resolverChain && !ReferenceEquals(resolverChain, value))
                 {
-                    // User is setting a new resolver; invalidate the resolver chain if already created.
-                    resolverChain.Clear();
-                    resolverChain.AddFlattened(value);
+                    // User is setting a new resolver; detach the resolver chain if already created.
+                    resolverChain.DetachFromOptions();
+                    _typeInfoResolverChain = null;
                 }
 
                 _typeInfoResolver = value;
@@ -1087,7 +1084,7 @@ namespace System.Text.Json
 
         private sealed class OptionsBoundJsonTypeInfoResolverChain : JsonTypeInfoResolverChain
         {
-            private readonly JsonSerializerOptions _options;
+            private JsonSerializerOptions? _options;
 
             public OptionsBoundJsonTypeInfoResolverChain(JsonSerializerOptions options)
             {
@@ -1095,11 +1092,18 @@ namespace System.Text.Json
                 AddFlattened(options._typeInfoResolver);
             }
 
-            public override bool IsReadOnly => _options.IsReadOnly;
+            public void DetachFromOptions()
+            {
+                _options = null;
+            }
+
+            public override bool IsReadOnly => _options?.IsReadOnly is true;
 
             protected override void ValidateAddedValue(IJsonTypeInfoResolver item)
             {
-                if (ReferenceEquals(item, this) || ReferenceEquals(item, _options._typeInfoResolver))
+                Debug.Assert(item is not null);
+
+                if (ReferenceEquals(item, this) || ReferenceEquals(item, _options?._typeInfoResolver))
                 {
                     // Cannot add the instances in TypeInfoResolver or TypeInfoResolverChain to the chain itself.
                     ThrowHelper.ThrowInvalidOperationException_InvalidChainedResolver();
@@ -1108,14 +1112,17 @@ namespace System.Text.Json
 
             protected override void OnCollectionModifying()
             {
-                _options.VerifyMutable();
+                _options?.VerifyMutable();
             }
 
             protected override void OnCollectionModified()
             {
                 // Collection modified by the user: replace the main
                 // resolver with the resolver chain as our source of truth.
-                _options._typeInfoResolver = this;
+                if (_options is not null)
+                {
+                    _options._typeInfoResolver = this;
+                }
             }
         }
 

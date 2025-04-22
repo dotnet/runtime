@@ -844,7 +844,7 @@
       </trans-unit>
       <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
         <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
-        <target state="new">All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</target>
+        <target state="translated">アンマネージ戻り値またはパラメーターとして渡される値のすべてのマーシャラーは、同じアンマネージ型を持つ必要があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">

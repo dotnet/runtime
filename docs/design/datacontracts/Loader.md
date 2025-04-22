@@ -31,7 +31,12 @@ record struct ModuleLookupTables(
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer module);
+TargetPointer GetRootAssembly();
 TargetPointer GetAssembly(ModuleHandle handle);
+TargetPointer GetPEAssembly(ModuleHandle handle);
+bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
+bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
+bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
@@ -49,12 +54,14 @@ Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `Module` | `Assembly` | Assembly of the Module |
+| `Module` | `PEAssembly` | PEAssembly of the Module |
 | `Module` | `Base` | Pointer to start of PE file in memory |
 | `Module` | `Flags` | Assembly of the Module |
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
 | `Module` | `ThunkHeap` | Pointer to the thunk heap |
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
+| `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
 | `Module` | `FieldDefToDescMap` | Mapping table |
 | `Module` | `ManifestModuleReferencesMap` | Mapping table |
 | `Module` | `MemberRefToDescMap` | Mapping table |
@@ -64,8 +71,24 @@ Data descriptors used:
 | `ModuleLookupMap` | `TableData` | Start of the mapping table's data |
 | `ModuleLookupMap` | `SupportedFlagsMask` | Mask for flag bits on lookup map entries |
 | `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
-| `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map
-| `Assembly` | `IsCollectible` | Flag indicating if this is module may be collected
+| `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map |
+| `Assembly` | `IsCollectible` | Flag indicating if this is module may be collected |
+| `PEAssembly` | `PEImage` | Pointer to the PEAssembly's PEImage |
+| `PEImage` | `LoadedImageLayout` | Pointer to the PEImage's loaded PEImageLayout |
+| `PEImage` | `ProbeExtensionResult` | PEImage's ProbeExtensionResult |
+| `ProbeExtensionResult` | `Type` | Type of ProbeExtensionResult |
+| `PEImageLayout` | `Base` | Base address of the image layout |
+| `PEImageLayout` | `Size` | Size of the image layout |
+| `PEImageLayout` | `Flags` | Flags associated with the PEImageLayout |
+| `CGrowableSymbolStream` | `Buffer` | Pointer to the raw symbol stream buffer start |
+| `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
+| `AppDomain` | `RootAssembly` | Pointer to the root assembly |
+
+Global variables used:
+| Global Name | Type | Purpose |
+| --- | --- | --- |
+| `AppDomain` | TargetPointer | Pointer to the global AppDomain |
+
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
@@ -73,9 +96,67 @@ ModuleHandle GetModuleHandle(TargetPointer modulePointer)
     return new ModuleHandle(modulePointer);
 }
 
+TargetPointer GetRootAssembly()
+{
+    TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+    AppDomain appDomain = // read AppDomain object starting at appDomainPointer
+    return appDomain.RootAssembly;
+}
+
 TargetPointer GetAssembly(ModuleHandle handle)
 {
-    return target.ReadPointer(handle.Address + /* Module::Assrembly offset */);
+    return target.ReadPointer(handle.Address + /* Module::Assembly offset */);
+}
+
+TargetPointer GetPEAssembly(ModuleHandle handle)
+{
+    return target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
+}
+
+bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags)
+{
+    baseAddress = TargetPointer.Null;
+    size = 0;
+    imageFlags = 0;
+
+    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
+    if (peAssembly == 0) return false; // no loaded PEAssembly
+
+    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
+    if(peImage == 0) return false; // no loaded PEImage
+
+    TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
+
+    baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
+    size = target.Read<uint>(peImageLayout + /* PEImageLayout::Size offset */);
+    imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
+    return true;
+}
+
+bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
+{
+    buffer = TargetPointer.Null;
+    size = 0;
+
+    TargetPointer growableSymbolStream = target.ReadPointer(handle.Address + /* Module::GrowableSymbolStream offset */);
+    if (growableSymbolStream == 0) return false; // no GrowableSymbolStream found
+
+    buffer = target.ReadPointer(growableSymbolStream + /* CGrowableSymbolStream::Buffer offset */);
+    size = target.Read<uint>(growableSymbolStream + /* CGrowableSymbolStream::Size offset */);
+    return true;
+}
+
+bool IsProbeExtensionResultValid(ModuleHandle handle)
+{
+    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
+    if (peAssembly == 0) return false; // no loaded PEAssembly
+
+    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
+    if(peImage == 0) return false; // no loaded PEImage
+
+    TargetPointer probeExtensionResult = target.ReadPointer(peImage + /* PEImage::ProbeExtensionResult offset */);
+    int type = target.Read<int>(probeExtensionResult + /* ProbeExtensionResult::Type offset */);
+    return type != 0; // 0 is the invalid type. See assemblyprobeextension.h for details
 }
 
 ModuleFlags GetFlags(ModuleHandle handle)

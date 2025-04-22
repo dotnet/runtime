@@ -129,6 +129,9 @@
   <data name="Argument_InputAndDestinationSpanMustNotOverlap" xml:space="preserve">
     <value>The destination span may only overlap with an input span if the two spans start at the same memory location.</value>
   </data>
+  <data name="Argument_DestinationSpansMustNotOverlap" xml:space="preserve">
+    <value>Destination spans must not overlap with each other.</value>
+  </data>
   <data name="Overflow_NegateTwosCompNum" xml:space="preserve">
     <value>Negating the minimum value of a twos complement number is invalid.</value>
   </data>
@@ -230,5 +233,11 @@
   </data>
   <data name="Argument_CannotReshapeNonContiguousOrDense" xml:space="preserve">
     <value>The Tensor provided is either non-contiguous or non-dense. Reshape only works with contigous and dense memory. You may need to Broadcast or Copy the data to be contigous.</value>
+  </data>
+  <data name="Argument_MinGreaterThanMax" xml:space="preserve">
+    <value>A minimum value may not be greater than a maximum value.</value>
+  </data>
+  <data name="Arithmetic_NaN" xml:space="preserve">
+    <value>Function does not accept floating point Not-a-Number values.</value>
   </data>
 </root>

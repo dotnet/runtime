@@ -48,10 +48,7 @@ namespace System.Runtime.CompilerServices
         /// If the key is not found, contains default(TValue).
         /// </param>
         /// <returns>Returns "true" if key was found, "false" otherwise.</returns>
-        /// <remarks>
-        /// The key may get garbage collected during the TryGetValue operation. If so, TryGetValue
-        /// may at its discretion, return "false" and set "value" to the default (as if the key was not present.)
-        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             if (key is null)
@@ -65,12 +62,8 @@ namespace System.Runtime.CompilerServices
         /// <summary>Adds a key to the table.</summary>
         /// <param name="key">key to add. May not be null.</param>
         /// <param name="value">value to associate with key.</param>
-        /// <remarks>
-        /// If the key is already entered into the dictionary, this method throws an exception.
-        /// The key may get garbage collected during the Add() operation. If so, Add()
-        /// has the right to consider any prior entries successfully removed and add a new entry without
-        /// throwing an exception.
-        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is already entered into the dictionary.</exception>
         public void Add(TKey key, TValue value)
         {
             if (key is null)
@@ -94,6 +87,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="key">The key to add.</param>
         /// <param name="value">The key's property value.</param>
         /// <returns>true if the key/value pair was added; false if the table already contained the key.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public bool TryAdd(TKey key, TValue value)
         {
             if (key is null)
@@ -117,6 +111,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Adds the key and value if the key doesn't exist, or updates the existing key's value if it does exist.</summary>
         /// <param name="key">key to add or update. May not be null.</param>
         /// <param name="value">value to associate with key.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public void AddOrUpdate(TKey key, TValue value)
         {
             if (key is null)
@@ -141,13 +136,9 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Removes a key and its value from the table.</summary>
-        /// <param name="key">key to remove. May not be null.</param>
-        /// <returns>true if the key is found and removed. Returns false if the key was not in the dictionary.</returns>
-        /// <remarks>
-        /// The key may get garbage collected during the Remove() operation. If so,
-        /// Remove() will not fail or throw, however, the return value can be either true or false
-        /// depending on who wins the race.
-        /// </remarks>
+        /// <param name="key">The key to remove.</param>
+        /// <returns><see langword="true"/> if the key is found and removed; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public bool Remove(TKey key)
         {
             if (key is null)
@@ -157,7 +148,25 @@ namespace System.Runtime.CompilerServices
 
             lock (_lock)
             {
-                return _container.Remove(key);
+                return _container.Remove(key, out _);
+            }
+        }
+
+        /// <summary>Removes a key and its value from the table, and returns the removed value if it was present.</summary>
+        /// <param name="key">The key to remove.</param>
+        /// <param name="value">value removed from the table, if it was present.</param>
+        /// <returns><see langword="true"/> if the key is found and removed; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
+        {
+            if (key is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+            }
+
+            lock (_lock)
+            {
+                return _container.Remove(key, out value);
             }
         }
 
@@ -692,17 +701,19 @@ namespace System.Runtime.CompilerServices
             }
 
             /// <summary>Removes the specified key from the table, if it exists.</summary>
-            internal bool Remove(TKey key)
+            internal bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
             {
                 VerifyIntegrity();
 
-                int entryIndex = FindEntry(key, out _);
+                int entryIndex = FindEntry(key, out object? valueObject);
                 if (entryIndex != -1)
                 {
                     RemoveIndex(entryIndex);
+                    value = Unsafe.As<TValue>(valueObject);
                     return true;
                 }
 
+                value = null;
                 return false;
             }
 

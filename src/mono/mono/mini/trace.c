@@ -139,8 +139,22 @@ frame_kind (MonoJitInfo *ji)
 	return 'c';
 }
 
+static void mono_trace_enter_method_impl (const char *prefix, MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx);
+
 void
 mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx)
+{
+	mono_trace_enter_method_impl ("ENTER:%c %s(", method, ji, ctx);
+}
+
+void
+mono_trace_samplepoint_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx)
+{
+	mono_trace_enter_method_impl ("SAMPLEPOINT:%c %s(", method, ji, ctx);
+}
+
+static void
+mono_trace_enter_method_impl (const char *prefix, MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx)
 {
 	int i;
 	MonoClass *klass;
@@ -162,7 +176,7 @@ mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 	if (!ji)
 		ji = mini_jit_info_table_find ((char *)MONO_RETURN_ADDRESS ());
 
-	printf ("ENTER:%c %s(", frame_kind (ji), fname);
+	printf (prefix, frame_kind (ji), fname);
 	g_free (fname);
 
 	sig = mono_method_signature_internal (method);

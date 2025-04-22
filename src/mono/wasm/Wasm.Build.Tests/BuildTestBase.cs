@@ -26,9 +26,11 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net10.0";
-        public const string DefaultTargetFrameworkForBlazor = "net10.0";
-        public const string TargetFrameworkForTasks = "net10.0";
+        public static readonly string DefaultTargetFramework = $"net{Environment.Version.Major}.0";
+        public static readonly string PreviousTargetFramework = $"net{Environment.Version.Major - 1}.0";
+        public static readonly string Previous2TargetFramework = $"net{Environment.Version.Major - 2}.0";
+        public static readonly string DefaultTargetFrameworkForBlazor = $"net{Environment.Version.Major}.0";
+        public static readonly string TargetFrameworkForTasks = $"net{Environment.Version.Major}.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly string s_unicodeChars = "\u9FC0\u8712\u679B\u906B\u486B\u7149";
         protected static readonly bool s_skipProjectCleanup;
@@ -62,7 +64,7 @@ namespace Wasm.Build.Tests
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
         public static string GetNuGetConfigPathFor(string targetFramework)
-            => Path.Combine(BuildEnvironment.TestDataPath, targetFramework == "net10.0" ? "nuget10.config" : "nuget9.config");
+            => Path.Combine(BuildEnvironment.TestDataPath, "nuget.config");
 
         public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
             => (TProvider)_providerOfBaseType;
@@ -230,8 +232,9 @@ namespace Wasm.Build.Tests
             return (_logPath, _nugetPackagesDir);
         }
 
-        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true, string targetFramework = DefaultTargetFramework)
+        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true, string? targetFramework = null)
         {
+            targetFramework ??= DefaultTargetFramework;
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);
             Directory.CreateDirectory(dir);

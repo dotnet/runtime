@@ -50,14 +50,14 @@ public sealed class GeneratedTestRunner : TestRunner
         return Task.CompletedTask;
     }
 
-    public override string WriteResultsToFile(XmlResultJargon xmlResultJargon)
+    public override Task<string> WriteResultsToFile(XmlResultJargon xmlResultJargon)
     {
         Debug.Assert(xmlResultJargon == XmlResultJargon.xUnit);
         File.WriteAllText(ResultsFileName, LastTestRun.GetTestResultOutput(_assemblyName));
-        return ResultsFileName;
+        return Task.FromResult(ResultsFileName);
     }
 
-    public override void WriteResultsToFile(TextWriter writer, XmlResultJargon jargon)
+    public override Task WriteResultsToFile(TextWriter writer, XmlResultJargon jargon)
     {
         Debug.Assert(jargon == XmlResultJargon.xUnit);
         string lastTestResults = LastTestRun.GetTestResultOutput(_assemblyName);
@@ -71,6 +71,7 @@ public sealed class GeneratedTestRunner : TestRunner
         {
             writer.WriteLine(lastTestResults);
         }
+        return Task.CompletedTask;
     }
 
     public override void SkipTests(IEnumerable<string> tests)

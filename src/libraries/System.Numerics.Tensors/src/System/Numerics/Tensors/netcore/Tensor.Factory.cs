@@ -64,7 +64,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static Tensor<T> Create<T>(T[] values, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
         {
-            return new Tensor<T>(values, lengths, strides, pinned);
+            return new Tensor<T>(values, lengths, strides, memoryOffset: 0, pinned);
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Create<T>(IEnumerable<T> values, scoped ReadOnlySpan<nint> lengths, bool pinned = false)
         {
             T[] data = values.ToArray();
-            return new Tensor<T>(data, lengths.IsEmpty ? [data.Length] : lengths, pinned);
+            return new Tensor<T>(data, lengths.IsEmpty ? [data.Length] : lengths, memoryOffset: 0, pinned);
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Create<T>(IEnumerable<T> values, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
         {
             T[] data = values.ToArray();
-            return new Tensor<T>(data, lengths.IsEmpty ? [data.Length] : lengths, strides, pinned);
+            return new Tensor<T>(data, lengths.IsEmpty ? [data.Length] : lengths, strides, memoryOffset: 0, pinned);
         }
 
         #region Normal
@@ -115,7 +115,7 @@ namespace System.Numerics.Tensors
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = new T[linearLength];
             GaussianDistribution<T>(values, linearLength, random);
-            return new Tensor<T>(values, lengths, false);
+            return new Tensor<T>(values, lengths, memoryOffset: 0, isPinned: false);
         }
 
         private static void GaussianDistribution<T>(in Span<T> values, nint linearLength, Random random)
@@ -154,7 +154,7 @@ namespace System.Numerics.Tensors
             for (int i = 0; i < values.Length; i++)
                 values[i] = T.CreateChecked(random.NextDouble());
 
-            return new Tensor<T>(values, lengths, false);
+            return new Tensor<T>(values, lengths, memoryOffset: 0, isPinned: false);
         }
 
         /// <summary>
@@ -175,7 +175,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
-            return new Tensor<T>(values, lengths, strides, pinned);
+            return new Tensor<T>(values, lengths, strides, memoryOffset: 0, pinned);
         }
 
         /// <summary>

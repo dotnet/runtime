@@ -1340,13 +1340,14 @@ namespace CorUnix
             goto I_exit;
         }
 
+#ifndef __wasm__
         if (!pSynchManager->CreateProcessPipe())
         {
             ERROR("Unable to create process pipe \n");
             palErr = ERROR_OPEN_FAILED;
             goto I_exit;
         }
-
+#endif
         s_pObjSynchMgr = pSynchManager;
 
         // Initialization was successful

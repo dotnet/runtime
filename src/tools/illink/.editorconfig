@@ -42,6 +42,9 @@ file_header_template = Copyright (c) .NET Foundation and contributors. All right
 # Spacing around keywords
 dotnet_diagnostic.SA1000.severity = none
 
+# Closing generic bracket should not be followed by a space
+dotnet_diagnostic.SA1015.severity = none
+
 # Access modifier must be declared
 dotnet_diagnostic.SA1400.severity = none
 

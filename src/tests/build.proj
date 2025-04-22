@@ -265,7 +265,7 @@
         AppDir="$(BuildDir)"
         DiagnosticPorts="$(DiagnosticPorts)"
         ForceInterpreter="$(MonoInterp)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
+        RuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         OutputDir="$(AppDir)"
         ProjectName="$(Category)"
         RuntimeComponents="@(RuntimeComponents)"

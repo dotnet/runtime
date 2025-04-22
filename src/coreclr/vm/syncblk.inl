@@ -159,13 +159,13 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::LockState::InterlockedTry_Lo
         }
         else if (state.ShouldNotPreemptWaiters() || !newState.TryIncrementSpinnerCount())
         {
-            return EnterHelperResult_UseSlowPath;
+            return EnterHelperResult::UseSlowPath;
         }
 
         LockState stateBeforeUpdate = CompareExchange(newState, state);
         if (stateBeforeUpdate == state)
         {
-            return state.ShouldNonWaiterAttemptToAcquireLock() ? EnterHelperResult_Entered : EnterHelperResult_Contention;
+            return state.ShouldNonWaiterAttemptToAcquireLock() ? EnterHelperResult::Entered : EnterHelperResult::Contention;
         }
 
         state = stateBeforeUpdate;
@@ -183,7 +183,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::LockState::InterlockedTry_Lo
         _ASSERTE(state.HasAnySpinners());
         if (!state.ShouldNonWaiterAttemptToAcquireLock())
         {
-            return state.ShouldNotPreemptWaiters() ? EnterHelperResult_UseSlowPath : EnterHelperResult_Contention;
+            return state.ShouldNotPreemptWaiters() ? EnterHelperResult::UseSlowPath : EnterHelperResult::Contention;
         }
 
         LockState newState = state;
@@ -193,7 +193,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::LockState::InterlockedTry_Lo
         LockState stateBeforeUpdate = CompareExchange(newState, state);
         if (stateBeforeUpdate == state)
         {
-            return EnterHelperResult_Entered;
+            return EnterHelperResult::Entered;
         }
 
         state = stateBeforeUpdate;
@@ -478,14 +478,13 @@ FORCEINLINE bool AwareLock::TryEnterHelper(Thread* pCurThread)
 
     if (m_lockState.InterlockedTryLock())
     {
-        m_HoldingThread = pCurThread;
         m_HoldingThreadId = pCurThread->GetThreadId();
         m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
         m_Recursion = 1;
         return true;
     }
 
-    if (GetOwningThread() == pCurThread) /* monitor is held, but it could be a recursive case */
+    if (GetHoldingThreadId() == pCurThread->GetThreadId()) /* monitor is held, but it could be a recursive case */
     {
         m_Recursion++;
         return true;
@@ -505,36 +504,35 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterBeforeSpinLoopHelper
 
     // Check the recursive case once before the spin loop. If it's not the recursive case in the beginning, it will not
     // be in the future, so the spin loop can avoid checking the recursive case.
-    if (!state.IsLocked() || GetOwningThread() != pCurThread)
+    if (!state.IsLocked() || GetHoldingThreadId() != pCurThread->GetThreadId())
     {
         if (m_lockState.InterlockedTrySetShouldNotPreemptWaitersIfNecessary(this, state))
         {
             // This thread currently should not preempt waiters, just wait
-            return EnterHelperResult_UseSlowPath;
+            return EnterHelperResult::UseSlowPath;
         }
 
         // Not a recursive enter, try to acquire the lock or register the spinner
         EnterHelperResult result = m_lockState.InterlockedTry_LockOrRegisterSpinner(state);
-        if (result != EnterHelperResult_Entered)
+        if (result != EnterHelperResult::Entered)
         {
-            // EnterHelperResult_Contention:
+            // EnterHelperResult::Contention:
             //   Lock was not acquired and the spinner was registered
-            // EnterHelperResult_UseSlowPath:
+            // EnterHelperResult::UseSlowPath:
             //   This thread currently should not preempt waiters, or we reached the maximum number of spinners, just wait
             return result;
         }
 
         // Lock was acquired and the spinner was not registered
-        m_HoldingThread = pCurThread;
         m_HoldingThreadId = pCurThread->GetThreadId();
         m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
         m_Recursion = 1;
-        return EnterHelperResult_Entered;
+        return EnterHelperResult::Entered;
     }
 
     // Recursive enter
     m_Recursion++;
-    return EnterHelperResult_Entered;
+    return EnterHelperResult::Entered;
 }
 
 FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterInsideSpinLoopHelper(Thread *pCurThread)
@@ -548,21 +546,20 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterInsideSpinLoopHelper
     // Try to acquire the lock and unregister the spinner. The recursive case is not checked here because
     // TryEnterBeforeSpinLoopHelper() would have taken care of that case before the spin loop.
     EnterHelperResult result = m_lockState.InterlockedTry_LockAndUnregisterSpinner();
-    if (result != EnterHelperResult_Entered)
+    if (result != EnterHelperResult::Entered)
     {
-        // EnterHelperResult_Contention:
+        // EnterHelperResult::Contention:
         //   Lock was not acquired and the spinner was not unregistered
-        // EnterHelperResult_UseSlowPath:
+        // EnterHelperResult::UseSlowPath:
         //   This thread currently should not preempt waiters, stop spinning and just wait
         return result;
     }
 
     // Lock was acquired and spinner was unregistered
-    m_HoldingThread = pCurThread;
     m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
-    return EnterHelperResult_Entered;
+    return EnterHelperResult::Entered;
 }
 
 FORCEINLINE bool AwareLock::TryEnterAfterSpinLoopHelper(Thread *pCurThread)
@@ -582,7 +579,6 @@ FORCEINLINE bool AwareLock::TryEnterAfterSpinLoopHelper(Thread *pCurThread)
     }
 
     // Spinner was unregistered and the lock was acquired
-    m_HoldingThread = pCurThread;
     m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
@@ -607,7 +603,7 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
         DWORD tid = pCurThread->GetThreadId();
         if (tid > SBLK_MASK_LOCK_THREADID)
         {
-            return AwareLock::EnterHelperResult_UseSlowPath;
+            return AwareLock::EnterHelperResult::UseSlowPath;
         }
 
         LONG newValue = oldValue | tid;
@@ -617,10 +613,10 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
         if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
 #endif
         {
-            return AwareLock::EnterHelperResult_Entered;
+            return AwareLock::EnterHelperResult::Entered;
         }
 
-        return AwareLock::EnterHelperResult_Contention;
+        return AwareLock::EnterHelperResult::Contention;
     }
 
     if (oldValue & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
@@ -628,30 +624,30 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
         // If we have a hash code already, we need to create a sync block
         if (oldValue & BIT_SBLK_IS_HASHCODE)
         {
-            return AwareLock::EnterHelperResult_UseSlowPath;
+            return AwareLock::EnterHelperResult::UseSlowPath;
         }
 
         SyncBlock *syncBlock = g_pSyncTable[oldValue & MASK_SYNCBLOCKINDEX].m_SyncBlock;
         _ASSERTE(syncBlock != NULL);
         if (syncBlock->m_Monitor.TryEnterHelper(pCurThread))
         {
-            return AwareLock::EnterHelperResult_Entered;
+            return AwareLock::EnterHelperResult::Entered;
         }
 
-        return AwareLock::EnterHelperResult_Contention;
+        return AwareLock::EnterHelperResult::Contention;
     }
 
     // The header is transitioning - use the slow path
     if (oldValue & BIT_SBLK_SPIN_LOCK)
     {
-        return AwareLock::EnterHelperResult_UseSlowPath;
+        return AwareLock::EnterHelperResult::UseSlowPath;
     }
 
     // Here we know we have the "thin lock" layout, but the lock is not free.
     // It could still be the recursion case - compare the thread id to check
     if (pCurThread->GetThreadId() != (DWORD)(oldValue & SBLK_MASK_LOCK_THREADID))
     {
-        return AwareLock::EnterHelperResult_Contention;
+        return AwareLock::EnterHelperResult::Contention;
     }
 
     // Ok, the thread id matches, it's the recursion case.
@@ -660,7 +656,7 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
 
     if ((newValue & SBLK_MASK_LOCK_RECLEVEL) == 0)
     {
-        return AwareLock::EnterHelperResult_UseSlowPath;
+        return AwareLock::EnterHelperResult::UseSlowPath;
     }
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
@@ -669,12 +665,12 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
     if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
 #endif
     {
-        return AwareLock::EnterHelperResult_Entered;
+        return AwareLock::EnterHelperResult::Entered;
     }
 
     // Use the slow path instead of spinning. The compare-exchange above would not fail often, and it's not worth forcing the
     // spin loop that typically follows the call to this function to check the recursive case, so just bail to the slow path.
-    return AwareLock::EnterHelperResult_UseSlowPath;
+    return AwareLock::EnterHelperResult::UseSlowPath;
 }
 
 // Helper encapsulating the core logic for releasing monitor. Returns what kind of
@@ -687,8 +683,8 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
         MODE_ANY;
     } CONTRACTL_END;
 
-    if (m_HoldingThread != pCurThread)
-        return AwareLock::LeaveHelperAction_Error;
+    if (m_HoldingThreadId != pCurThread->GetThreadId())
+        return AwareLock::LeaveHelperAction::Error;
 
     _ASSERTE(m_lockState.VolatileLoadWithoutBarrier().IsLocked());
     _ASSERTE(m_Recursion >= 1);
@@ -702,20 +698,19 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
 
     if (--m_Recursion == 0)
     {
-        m_HoldingThread = NULL;
         m_HoldingThreadId = 0;
         m_HoldingOSThreadId = 0;
 
         // Clear lock bit and determine whether we must signal a waiter to wake
         if (!m_lockState.InterlockedUnlock())
         {
-            return AwareLock::LeaveHelperAction_None;
+            return AwareLock::LeaveHelperAction::None;
         }
 
         // There is a waiter and we must signal a waiter to wake
-        return AwareLock::LeaveHelperAction_Signal;
+        return AwareLock::LeaveHelperAction::Signal;
     }
-    return AwareLock::LeaveHelperAction_None;
+    return AwareLock::LeaveHelperAction::None;
 }
 
 // Helper encapsulating the core logic for releasing monitor. Returns what kind of
@@ -735,7 +730,7 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
         if ((syncBlockValue & SBLK_MASK_LOCK_THREADID) != pCurThread->GetThreadId())
         {
             // This thread does not own the lock.
-            return AwareLock::LeaveHelperAction_Error;
+            return AwareLock::LeaveHelperAction::Error;
         }
 
         if (!(syncBlockValue & SBLK_MASK_LOCK_RECLEVEL))
@@ -749,7 +744,7 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
             if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
 #endif
             {
-                return AwareLock::LeaveHelperAction_Yield;
+                return AwareLock::LeaveHelperAction::Yield;
             }
         }
         else
@@ -762,11 +757,11 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
             if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
 #endif
             {
-                return AwareLock::LeaveHelperAction_Yield;
+                return AwareLock::LeaveHelperAction::Yield;
             }
         }
 
-        return AwareLock::LeaveHelperAction_None;
+        return AwareLock::LeaveHelperAction::None;
     }
 
     if ((syncBlockValue & (BIT_SBLK_SPIN_LOCK + BIT_SBLK_IS_HASHCODE)) == 0)
@@ -779,11 +774,11 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
 
     if (syncBlockValue & BIT_SBLK_SPIN_LOCK)
     {
-        return AwareLock::LeaveHelperAction_Contention;
+        return AwareLock::LeaveHelperAction::Contention;
     }
 
     // This thread does not own the lock.
-    return AwareLock::LeaveHelperAction_Error;
+    return AwareLock::LeaveHelperAction::Error;
 }
 
 #endif // DACCESS_COMPILE

@@ -19,6 +19,36 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(IntPtr.Zero, (IntPtr)handle);
         }
 
+        [Fact]
+        public void Ctor_Default_Generic()
+        {
+            var handle = new GCHandle<object>();
+            Assert.Throws<NullReferenceException>(() => handle.Target);
+            Assert.False(handle.IsAllocated);
+
+            Assert.Equal(IntPtr.Zero, GCHandle<object>.ToIntPtr(handle));
+        }
+
+        [Fact]
+        public void Ctor_Default_Weak()
+        {
+            var handle = new WeakGCHandle<object>();
+            Assert.Throws<NullReferenceException>(() => handle.TryGetTarget(out _));
+            Assert.False(handle.IsAllocated);
+
+            Assert.Equal(IntPtr.Zero, WeakGCHandle<object>.ToIntPtr(handle));
+        }
+
+        [Fact]
+        public void Ctor_Default_Pinned()
+        {
+            var handle = new PinnedGCHandle<object>();
+            Assert.Throws<NullReferenceException>(() => handle.Target);
+            Assert.False(handle.IsAllocated);
+
+            Assert.Equal(IntPtr.Zero, PinnedGCHandle<object>.ToIntPtr(handle));
+        }
+
         public static IEnumerable<object[]> Alloc_TestData()
         {
             yield return new object[] { null };
@@ -36,6 +66,29 @@ namespace System.Runtime.InteropServices.Tests
         {
             GCHandle handle = GCHandle.Alloc(value);
             ValidateGCHandle(handle, GCHandleType.Normal, value);
+        }
+
+        [Fact]
+        public void Alloc_Value_ReturnsExpected_Genenic()
+        {
+            RunTest<object>(null);
+            RunTest("String");
+            RunTest(new int[1]);
+            RunTest(new object[1]);
+            RunTest(new NonBlittable[1]);
+            RunTest<object>(new Blittable());
+            RunTest<object>(new NonBlittable());
+            RunTest<object>(new UnmanagedNonBlittable());
+            RunTest(new ClassWithReferences());
+            RunTest(new ClassWithoutReferences());
+
+            void RunTest<T>(T value) where T : class
+            {
+                ValidateGCHandle(new GCHandle<T>(value), value);
+                ValidateWeakGCHandle(new WeakGCHandle<T>(value), value);
+                ValidateWeakGCHandle(new WeakGCHandle<T>(value, trackResurrection: true), value);
+                ValidatePinnedGCHandle(new PinnedGCHandle<T>(value), value);
+            }
         }
 
         public static IEnumerable<object[]> Alloc_Type_TestData()
@@ -98,10 +151,69 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void AddrOfPinnedObject_NotInitialized_ThrowsInvalidOperationException()
+        public void FromIntPtr_Generic_Zero_NoCheck()
+        {
+            var handle = GCHandle<object>.FromIntPtr(IntPtr.Zero);
+            Assert.False(handle.IsAllocated);
+            var weakHandle = WeakGCHandle<object>.FromIntPtr(IntPtr.Zero);
+            Assert.False(weakHandle.IsAllocated);
+            var pinnedHandle = PinnedGCHandle<object>.FromIntPtr(IntPtr.Zero);
+            Assert.False(pinnedHandle.IsAllocated);
+        }
+
+        [Fact]
+        public unsafe void AddrOfPinnedObject_NotInitialized_ThrowsException()
         {
             var handle = new GCHandle();
             Assert.Throws<InvalidOperationException>(() => handle.AddrOfPinnedObject());
+            var handleOfObject = new PinnedGCHandle<object>();
+            Assert.Throws<NullReferenceException>(() => handleOfObject.GetAddressOfObjectData());
+            var handleOfString = new PinnedGCHandle<string>();
+            Assert.Throws<NullReferenceException>(() => handleOfString.GetAddressOfStringData());
+            var handleOfArray = new PinnedGCHandle<int[]>();
+            Assert.Throws<NullReferenceException>(() => handleOfArray.GetAddressOfArrayData());
+        }
+
+        [Fact]
+        public unsafe void AddrOfPinnedObject_ReturnsStringData()
+        {
+            string str = "String";
+            fixed (char* ptr = str)
+            {
+                var handle = GCHandle.Alloc(str, GCHandleType.Pinned);
+                try
+                {
+                    Assert.Equal((IntPtr)ptr, handle.AddrOfPinnedObject());
+                    using var handleOfString = new PinnedGCHandle<string>(str);
+                    Assert.NotEqual((IntPtr)ptr, (IntPtr)handleOfString.GetAddressOfObjectData());
+                    Assert.Equal((IntPtr)ptr, (IntPtr)handleOfString.GetAddressOfStringData());
+                }
+                finally
+                {
+                    handle.Free();
+                }
+            }
+        }
+
+        [Fact]
+        public unsafe void AddrOfPinnedObject_ReturnsArrayData()
+        {
+            int[] array = new int[1];
+            fixed (int* ptr = array)
+            {
+                var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+                try
+                {
+                    Assert.Equal((IntPtr)ptr, handle.AddrOfPinnedObject());
+                    using var handleOfArray = new PinnedGCHandle<int[]>(array);
+                    Assert.NotEqual((IntPtr)ptr, (IntPtr)handleOfArray.GetAddressOfObjectData());
+                    Assert.Equal((IntPtr)ptr, (IntPtr)handleOfArray.GetAddressOfArrayData());
+                }
+                finally
+                {
+                    handle.Free();
+                }
+            }
         }
 
         [Fact]
@@ -123,6 +235,17 @@ namespace System.Runtime.InteropServices.Tests
         {
             var handle = new GCHandle();
             Assert.Throws<InvalidOperationException>(() => handle.Free());
+        }
+
+        [Fact]
+        public void Dispose_NotInitialized_NoThrow()
+        {
+            var handleOfObject = new GCHandle<object>();
+            handleOfObject.Dispose();
+            var weakHandle = new WeakGCHandle<object>();
+            weakHandle.Dispose();
+            var pinnedHandle = new PinnedGCHandle<object>();
+            pinnedHandle.Dispose();
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -186,6 +309,73 @@ namespace System.Runtime.InteropServices.Tests
             finally
             {
                 handle.Free();
+                Assert.False(handle.IsAllocated);
+            }
+        }
+
+        private static void ValidateGCHandle<T>(GCHandle<T> handle, T target)
+            where T : class
+        {
+            try
+            {
+                Assert.Equal(target, handle.Target);
+                Assert.True(handle.IsAllocated);
+
+                Assert.NotEqual(IntPtr.Zero, GCHandle<T>.ToIntPtr(handle));
+            }
+            finally
+            {
+                handle.Dispose();
+                Assert.False(handle.IsAllocated);
+            }
+        }
+
+        private static void ValidateWeakGCHandle<T>(WeakGCHandle<T> handle, T target) where T : class
+        {
+            try
+            {
+                if (target != null)
+                {
+                    Assert.True(handle.TryGetTarget(out T outTarget));
+                    Assert.Equal(target, outTarget);
+                }
+                else
+                {
+                    Assert.False(handle.TryGetTarget(out T outTarget));
+                    Assert.Null(outTarget);
+                }
+                Assert.True(handle.IsAllocated);
+
+                Assert.NotEqual(IntPtr.Zero, WeakGCHandle<T>.ToIntPtr(handle));
+            }
+            finally
+            {
+                handle.Dispose();
+                Assert.False(handle.IsAllocated);
+            }
+        }
+
+        private static unsafe void ValidatePinnedGCHandle<T>(PinnedGCHandle<T> handle, T target) where T : class
+        {
+            try
+            {
+                Assert.Equal(target, handle.Target);
+                Assert.True(handle.IsAllocated);
+
+                Assert.NotEqual(IntPtr.Zero, PinnedGCHandle<T>.ToIntPtr(handle));
+
+                if (target == null)
+                {
+                    Assert.Equal(IntPtr.Zero, (IntPtr)handle.GetAddressOfObjectData());
+                }
+                else
+                {
+                    Assert.NotEqual(IntPtr.Zero, (IntPtr)handle.GetAddressOfObjectData());
+                }
+            }
+            finally
+            {
+                handle.Dispose();
                 Assert.False(handle.IsAllocated);
             }
         }

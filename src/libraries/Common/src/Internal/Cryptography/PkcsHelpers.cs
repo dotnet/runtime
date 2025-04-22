@@ -128,6 +128,16 @@ namespace Internal.Cryptography
             }
         }
 
+        public static int FirstBerValueLength(ReadOnlySpan<byte> source)
+        {
+            if (!AsnDecoder.TryReadEncodedValue(source, AsnEncodingRules.BER, out _, out _, out _, out int consumed))
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            return consumed;
+        }
+
         public static byte[] UnicodeToOctetString(this string s)
         {
             byte[] octets = new byte[2 * (s.Length + 1)];
@@ -341,6 +351,46 @@ namespace Internal.Cryptography
 #endif
                 _ => new Pkcs9AttributeObject(oid, encodedAttribute),
             };
+        }
+
+        public static AttributeAsn[] NormalizeAttributeSet(
+            AttributeAsn[] setItems,
+            Action<byte[]>? encodedValueProcessor = null)
+        {
+            byte[] normalizedValue;
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.PushSetOf();
+
+            foreach (AttributeAsn item in setItems)
+            {
+                item.Encode(writer);
+            }
+
+            writer.PopSetOf();
+            normalizedValue = writer.Encode();
+
+            encodedValueProcessor?.Invoke(normalizedValue);
+
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(normalizedValue, AsnEncodingRules.DER);
+                AsnValueReader setReader = reader.ReadSetOf();
+                AttributeAsn[] decodedSet = new AttributeAsn[setItems.Length];
+                int i = 0;
+                while (setReader.HasData)
+                {
+                    AttributeAsn.Decode(ref setReader, normalizedValue, out AttributeAsn item);
+                    decodedSet[i] = item;
+                    i++;
+                }
+
+                return decodedSet;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
     }
 }
