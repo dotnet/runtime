@@ -646,7 +646,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("close", resp.Headers.Connection);
                     Assert.True(resp.Headers.ConnectionClose.GetValueOrDefault());
                     Assert.Equal("attachment", resp.Content.Headers.ContentDisposition.DispositionType);
-                    Assert.Equal("\"fname.ext\"", resp.Content.Headers.ContentDisposition.FileName);
+                    Assert.Equal("fname.ext", resp.Content.Headers.ContentDisposition.FileName);
                     Assert.Contains("gzip", resp.Content.Headers.ContentEncoding);
                     Assert.Contains("da", resp.Content.Headers.ContentLanguage);
                     Assert.Equal(new Uri("/index.htm", UriKind.Relative), resp.Content.Headers.ContentLocation);

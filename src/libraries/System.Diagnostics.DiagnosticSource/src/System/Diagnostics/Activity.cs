@@ -575,11 +575,7 @@ namespace System.Diagnostics
             {
                 throw new NotSupportedException("Linked away");
             }
-            if (exception == null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
-
+            ArgumentNullException.ThrowIfNull(exception);
             TagList exceptionTags = tags;
 
             Source.NotifyActivityAddException(this, exception, ref exceptionTags);
