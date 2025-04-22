@@ -312,9 +312,9 @@ namespace System.Numerics.Tensors
             // can do bidirectional validation between x and y, that result can then be broadcast to destination
             if (TensorShape.AreCompatible(x._shape, y._shape, true))
             {
-                if (TensorShape.AreCompatible(x._shape, destination._shape, false))
+                if (TensorShape.AreCompatible(destination._shape, x._shape, false))
                 {
-                    if (TensorShape.AreCompatible(y._shape, destination._shape, false))
+                    if (TensorShape.AreCompatible(destination._shape, y._shape, false))
                     {
                         // all three are compatible
                         return;
