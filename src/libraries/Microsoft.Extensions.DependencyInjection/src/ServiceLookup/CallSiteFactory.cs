@@ -629,12 +629,23 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         break;
                     }
 
-                    if (attribute is FromKeyedServicesAttribute keyed)
+                    if (attribute is FromKeyedServicesAttribute fromKeyedServicesAttribute)
                     {
-                        var parameterSvcId = new ServiceIdentifier(keyed.Key, parameterType);
-                        callSite = GetCallSite(parameterSvcId, callSiteChain);
-                        isKeyedParameter = true;
-                        break;
+                        if (fromKeyedServicesAttribute.Key == FromKeyedServicesAttribute.FromServiceKey)
+                        {
+                            ServiceIdentifier parameterSvcId = new(serviceIdentifier.ServiceKey, parameterType);
+                            callSite = GetCallSite(parameterSvcId, callSiteChain);
+                            isKeyedParameter = true;
+                            break;
+                        }
+
+                        if (fromKeyedServicesAttribute.Key is not null)
+                        {
+                            ServiceIdentifier parameterSvcId = new(fromKeyedServicesAttribute.Key, parameterType);
+                            callSite = GetCallSite(parameterSvcId, callSiteChain);
+                            isKeyedParameter = true;
+                            break;
+                        }
                     }
                 }
 
