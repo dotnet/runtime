@@ -125,13 +125,13 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="TensorSpan{T}.this[ReadOnlySpan{nint}]" />
         public ref T this[params scoped ReadOnlySpan<nint> indexes]
         {
-            get => ref Unsafe.Add(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_values), _start), _shape.GetLinearOffset<TensorShape.GetOffsetAndLengthForNInt, nint>(indexes));
+            get => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_values), _start + _shape.GetLinearOffset<TensorShape.GetOffsetAndLengthForNInt, nint>(indexes));
         }
 
         /// <inheritdoc cref="TensorSpan{T}.this[ReadOnlySpan{NIndex}]" />
         public ref T this[params scoped ReadOnlySpan<NIndex> indexes]
         {
-            get => ref Unsafe.Add(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_values), _start), _shape.GetLinearOffset<TensorShape.GetOffsetAndLengthForNIndex, NIndex>(indexes));
+            get => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_values), _start + _shape.GetLinearOffset<TensorShape.GetOffsetAndLengthForNIndex, NIndex>(indexes));
         }
 
         /// <inheritdoc cref="TensorSpan{T}.this[ReadOnlySpan{NRange}]" />
@@ -252,7 +252,7 @@ namespace System.Numerics.Tensors
 
             return new Tensor<T>(
                 _values,
-                (int)(linearOffset),
+                (int)(_start + linearOffset),
                 in shape,
                 _isPinned
             );
@@ -268,7 +268,7 @@ namespace System.Numerics.Tensors
 
             return new Tensor<T>(
                 _values,
-                (int)(linearOffset),
+                (int)(_start + linearOffset),
                 in shape,
                 _isPinned
             );
@@ -284,7 +284,7 @@ namespace System.Numerics.Tensors
 
             return new Tensor<T>(
                 _values,
-                (int)(linearOffset),
+                (int)(_start + linearOffset),
                 in shape,
                 _isPinned
             );
