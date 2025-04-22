@@ -201,18 +201,27 @@ static int32_t HkdfCore(
 
         size_t keyLengthT = Int32ToSizeT(keyLength);
         size_t destinationLengthT = Int32ToSizeT(destinationLength);
-        size_t saltLengthT = Int32ToSizeT(saltLength);
-        size_t infoLengthT = Int32ToSizeT(infoLength);
 
-        OSSL_PARAM params[] =
+        OSSL_PARAM params[6] = {{0}};
+        int i = 0;
+        params[i++] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, (void*)key, keyLengthT);
+        params[i++] = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, algorithm, 0);
+
+        if (salt != NULL && saltLength > 0)
         {
-            OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, (void*)key, keyLengthT),
-            OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, algorithm, 0),
-            OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, (void*)salt, saltLengthT),
-            OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO, (void*)info, infoLengthT),
-            OSSL_PARAM_construct_int(OSSL_KDF_PARAM_MODE, &operation),
-            OSSL_PARAM_construct_end(),
-        };
+            size_t saltLengthT = Int32ToSizeT(saltLength);
+            params[i++] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, (void*)salt, saltLengthT);
+        }
+
+        if (info != NULL && infoLength > 0)
+        {
+            size_t infoLengthT = Int32ToSizeT(infoLength);
+            params[i++] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO, (void*)info, infoLengthT);
+        }
+
+        params[i++] = OSSL_PARAM_construct_int(OSSL_KDF_PARAM_MODE, &operation);
+        params[i] = OSSL_PARAM_construct_end();
+        assert(i < 6);
 
         if (EVP_KDF_derive(ctx, destination, destinationLengthT, params) <= 0)
         {

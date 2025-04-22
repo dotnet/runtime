@@ -113,7 +113,6 @@ int32_t CryptoNative_MLDsaSignPure(EVP_PKEY *pkey,
                                    uint8_t* destination, int32_t destinationLen)
 {
     assert(pkey);
-    assert(msg);
     assert(msgLen >= 0);
     assert(contextLen >= 0);
     assert(destination);
@@ -193,7 +192,6 @@ int32_t CryptoNative_MLDsaVerifyPure(EVP_PKEY *pkey,
                                      uint8_t* sig, int32_t sigLen)
 {
     assert(pkey);
-    assert(msg);
     assert(msgLen >= 0);
     assert(sig);
     assert(sigLen >= 2420 /* ML-DSA-44 signature size */);

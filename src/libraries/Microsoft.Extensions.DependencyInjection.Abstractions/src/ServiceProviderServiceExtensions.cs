@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A service object of type <typeparamref name="T"/> or null if there is no such service.</returns>
         public static T? GetService<T>(this IServiceProvider provider)
         {
-            ThrowHelper.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(provider);
 
             return (T?)provider.GetService(typeof(T));
         }
@@ -34,8 +34,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <exception cref="System.InvalidOperationException">There is no service of type <paramref name="serviceType"/>.</exception>
         public static object GetRequiredService(this IServiceProvider provider, Type serviceType)
         {
-            ThrowHelper.ThrowIfNull(provider);
-            ThrowHelper.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(serviceType);
 
             if (provider is ISupportRequiredService requiredServiceSupportingProvider)
             {
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <exception cref="System.InvalidOperationException">There is no service of type <typeparamref name="T"/>.</exception>
         public static T GetRequiredService<T>(this IServiceProvider provider) where T : notnull
         {
-            ThrowHelper.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(provider);
 
             return (T)provider.GetRequiredService(typeof(T));
         }
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An enumeration of services of type <typeparamref name="T"/>.</returns>
         public static IEnumerable<T> GetServices<T>(this IServiceProvider provider)
         {
-            ThrowHelper.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(provider);
 
             return provider.GetRequiredService<IEnumerable<T>>();
         }
@@ -87,8 +87,8 @@ namespace Microsoft.Extensions.DependencyInjection
         [RequiresDynamicCode("The native code for an IEnumerable<serviceType> might not be available at runtime.")]
         public static IEnumerable<object?> GetServices(this IServiceProvider provider, Type serviceType)
         {
-            ThrowHelper.ThrowIfNull(provider);
-            ThrowHelper.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(serviceType);
 
             Type? genericEnumerable = typeof(IEnumerable<>).MakeGenericType(serviceType);
             return (IEnumerable<object>)provider.GetRequiredService(genericEnumerable);

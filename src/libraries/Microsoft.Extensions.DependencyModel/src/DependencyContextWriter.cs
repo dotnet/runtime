@@ -15,8 +15,8 @@ namespace Microsoft.Extensions.DependencyModel
     {
         public void Write(DependencyContext context, Stream stream)
         {
-            ThrowHelper.ThrowIfNull(context);
-            ThrowHelper.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(context);
+            ArgumentNullException.ThrowIfNull(stream);
 
             // Custom encoder is required to fix https://github.com/dotnet/runtime/issues/3678
             // Since the JSON is only written to a file that is read by the SDK (and not transmitted over the wire),
