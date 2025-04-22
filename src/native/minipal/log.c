@@ -235,7 +235,6 @@ static HANDLE get_std_handle(minipal_log_flags flags)
     case minipal_log_flags_info:
     case minipal_log_flags_debug:
     case minipal_log_flags_verbose:
-    default:
         return GetStdHandle(STD_OUTPUT_HANDLE);
     }
 
