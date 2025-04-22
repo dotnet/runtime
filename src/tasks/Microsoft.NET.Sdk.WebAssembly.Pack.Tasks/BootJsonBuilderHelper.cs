@@ -16,7 +16,9 @@ namespace Microsoft.NET.Sdk.WebAssembly
 {
     public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsMultiThreaded, bool IsPublish)
     {
+#pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
         internal static readonly Regex mergeWithPlaceholderRegex = new Regex(@"/\*!\s*dotnetBootConfig\s*\*/\s*{}");
+#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
 
         private static readonly string[] coreAssemblyNames = [
             "System.Private.CoreLib",
