@@ -237,7 +237,6 @@ static HANDLE get_std_handle(minipal_log_flags flags)
     case minipal_log_flags_verbose:
     default:
         return GetStdHandle(STD_OUTPUT_HANDLE);
-        break;
     }
 
     return INVALID_HANDLE_VALUE;
