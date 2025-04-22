@@ -39,6 +39,8 @@ class TargetClass
     private C2 M_RROC1(ref readonly C1 a) => _f1;
 
     private C2 M_ListC1(List<C1> a) => _f1;
+
+    private ref C2 M_C1_RC2(C1 a) => ref _f1;
 }
 
 public static unsafe class UnsafeAccessorsTestsTypes
@@ -122,6 +124,7 @@ public static unsafe class UnsafeAccessorsTestsTypes
         Assert.Equal(c2, CallM_RC1(tgt, ref oc1));
         Assert.Equal(c2, CallM_RROC1(tgt, ref oc1));
         Assert.Equal(c2, CallM_ListC1(tgt, null));
+        Assert.Equal(c2, CallM_C1_RC2(tgt, c1));
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1")]
         [return: UnsafeAccessorType("C2")]
@@ -138,6 +141,10 @@ public static unsafe class UnsafeAccessorsTestsTypes
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_ListC1")]
         [return: UnsafeAccessorType("C2")]
         extern static object CallM_ListC1(TargetClass tgt, [UnsafeAccessorType("System.Collections.Generic.List`1[[C1]]")] object? a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1_RC2")]
+        [return: UnsafeAccessorType("C2")]
+        extern static ref object CallM_C1_RC2(TargetClass tgt, [UnsafeAccessorType("C1")] object a);
     }
 
     [Fact]
