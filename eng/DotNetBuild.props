@@ -34,7 +34,7 @@
       <InnerBuildArgs Condition="'$(_portableOS)' == 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os windows</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(_portableOS)' != 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(_portableOS)</InnerBuildArgs>
       <!-- Mobile builds are never "cross" builds as they don't have a rootfs-based filesystem build. -->
-      <InnerBuildArgs Condition="'$(CrossBuild)' == 'true' or ('$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(TargetsMobile)' != 'true')">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(CrossBuild)' == 'true' or ('$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(TargetsMobile)' != 'true' and '$(_portableOS)' != 'linux-bionic')">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)configuration $(Configuration)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)verbosity $(LogVerbosity)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)nodereuse $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>

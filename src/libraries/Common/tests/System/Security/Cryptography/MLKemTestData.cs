@@ -54,11 +54,19 @@ namespace System.Security.Cryptography.Tests
             MFQCAQAwCwYJYIZIAWUDBAQBBEKAQAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZ
             GhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=");
 
+        internal static string IetfMlKem512PrivateKeySeedPem => field ??= PemEncoding.WriteString(
+            "PRIVATE KEY",
+            IetfMlKem512PrivateKeySeed);
+
         internal static byte[] IetfMlKem512EncryptedPrivateKeySeed => field ??= Convert.FromBase64String(@"
             MIGyMFYGCSqGSIb3DQEFDTBJMDEGCSqGSIb3DQEFDDAkBBBu4zqgXqt7HTK6mTmr
             5B/aAgIIADAMBggqhkiG9w0CCQUAMBQGCCqGSIb3DQMHBAioOjwRcwdjBwRYSGy/
             LN0wpvceGrPIQr/FTvN2wRvoozbkYMC1Tzs4phJh8lbMgdLgbTA0mCK16lBWgjdi
             /vxAu7Wn/wmKjFTqvST9vKxgu8sotadxpERtJaecmAaHqMjFtA==");
+
+        internal static string IetfMlKem512EncryptedPrivateKeySeedPem => field ??= PemEncoding.WriteString(
+            "ENCRYPTED PRIVATE KEY",
+            IetfMlKem512EncryptedPrivateKeySeed);
 
         internal static byte[] IetfMlKem512PrivateKeyExpandedKey => field ??= Convert.FromBase64String(@"
             MIIGeAIBADALBglghkgBZQMEBAEEggZkBIIGYHBVT9Q2NE8nhbGzsbrBhLZnkAMz
@@ -96,6 +104,10 @@ namespace System.Security.Cryptography.Tests
             NoPwS/egnMXEHf6DChsWLgsyQzQ2LwhKFEZ3IzRLrdAA+NjFN8SPmY8FMHzr0e3g
             uBw7xZoGWhttY7JsgvEB/2SAY7N24rtsW3RV9lWlDC/q2t4VDvoODm82WuogISIj
             JCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+Pw==");
+
+        internal static string IetfMlKem512PrivateKeyExpandedKeyPem => field ??= PemEncoding.WriteString(
+            "PRIVATE KEY",
+            IetfMlKem512PrivateKeyExpandedKey);
 
         internal static byte[] IetfMlKem512EncryptedPrivateKeyExpandedKey => field ??= Convert.FromBase64String(@"
             MIIG3DBWBgkqhkiG9w0BBQ0wSTAxBgkqhkiG9w0BBQwwJAQQlj5FxGXOP5cuSHuH
@@ -136,6 +148,10 @@ namespace System.Security.Cryptography.Tests
             9bO6Iz/eChNTAJkI0gAyZmqkScYOiBxORGaclfQFGLznOD2umXKrv0Mb4pqXiVP8
             L6AcpfWf8A/oue1gG6wJpQeFrQJ6z+yWa/G6C/lJazw=");
 
+        internal static string IetfMlKem512EncryptedPrivateKeyExpandedKeyPem => field ??= PemEncoding.WriteString(
+            "ENCRYPTED PRIVATE KEY",
+            IetfMlKem512EncryptedPrivateKeyExpandedKey);
+
         internal static byte[] IetfMlKem512PrivateKeyBoth => field ??= Convert.FromBase64String(@"
             MIIGvgIBADALBglghkgBZQMEBAEEggaqMIIGpgRAAAECAwQFBgcICQoLDA0ODxAR
             EhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+PwSC
@@ -174,6 +190,10 @@ namespace System.Security.Cryptography.Tests
             dyM0S63QAPjYxTfEj5mPBTB869Ht4LgcO8WaBlobbWOybILxAf9kgGOzduK7bFt0
             VfZVpQwv6treFQ76Dg5vNlrqICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9
             Pj8=");
+
+        internal static string IetfMlKem512PrivateKeyBothPem => field ??= PemEncoding.WriteString(
+            "PRIVATE KEY",
+            IetfMlKem512PrivateKeyBoth);
 
         internal static byte[] IetfMlKem512EncryptedPrivateKeyBoth => field ??= Convert.FromBase64String(@"
             MIIHJDBWBgkqhkiG9w0BBQ0wSTAxBgkqhkiG9w0BBQwwJAQQ5zTKk8w8fC1UNK4+
@@ -215,6 +235,10 @@ namespace System.Security.Cryptography.Tests
             IzMpKOunXGvJgilkOqlaU2aT/dQ7xpm0lFqqztOGt7RiJOWwgHMqCEQ0LogmvBhF
             d/TwrYq/C1f/xaKue2pvMrjj909cxDZVq7X9E9s9aBR8m1FzUPoNkfoGIVZANitT
             1ZBGWJKA1Fw=");
+
+        internal static string IetfMlKem512EncryptedPrivateKeyBothPem => field ??= PemEncoding.WriteString(
+            "ENCRYPTED PRIVATE KEY",
+            IetfMlKem512EncryptedPrivateKeyBoth);
 
         internal static byte[] IetfMlKem512PrivateKeyDecapsulationKey => field ??= (
             "70554fd436344f2785b1b3b1bac184b6679003336c26f15a7de878c4825c6be03f3c4a480f75b7486aad31d3a00518623fd2" +
@@ -362,11 +386,19 @@ namespace System.Security.Cryptography.Tests
             MFQCAQAwCwYJYIZIAWUDBAQCBEKAQAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZ
             GhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=");
 
+        internal static string IetfMlKem768PrivateKeySeedPem => field ??= PemEncoding.WriteString(
+            "PRIVATE KEY",
+            IetfMlKem768PrivateKeySeed);
+
         internal static byte[] IetfMlKem768EncryptedPrivateKeySeed => field ??= Convert.FromBase64String(@"
             MIGyMFYGCSqGSIb3DQEFDTBJMDEGCSqGSIb3DQEFDDAkBBDVvN7dPv1xeTQ5V4S4
             lNYAAgIIADAMBggqhkiG9w0CCQUAMBQGCCqGSIb3DQMHBAhxYX16f/Or8ARY98/3
             tAF57U+XfDsiweIKGW37VcOMgrJr4jl8Tn6E1MC9sNiSKXd5Ge93Oscm46wIYOG/
             ltLe5Ba3maubTj7Sj1UHsFIRE0NGcpha09u2JH8iHIBR4tvBtg==");
+
+        internal static string IetfMlKem768EncryptedPrivateKeySeedPem => field ??= PemEncoding.WriteString(
+            "ENCRYPTED PRIVATE KEY",
+            IetfMlKem768EncryptedPrivateKeySeed);
 
         internal static byte[] IetfMlKem768PrivateKeyExpandedKey => field ??= Convert.FromBase64String(@"
             MIIJeAIBADALBglghkgBZQMEBAIEgglkBIIJYCfSp38zdW9hII7xE6voJZWHPUq8
@@ -420,6 +452,10 @@ namespace System.Security.Cryptography.Tests
             JKhVjfcrvje3X07btr6CFtbGM/srIoDiURPYaV5DSBw+6zl+sZJQUim2eiAeqJPD
             4ssy2ovDQvpN6gV4ok4W2Pj5ODqVt3BQ9Nn9L1cz7sHWPvPCPr+ZGBc2aacgISIj
             JCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+Pw==");
+
+        internal static string IetfMlKem768PrivateKeyExpandedKeyPem => field ??= PemEncoding.WriteString(
+            "PRIVATE KEY",
+            IetfMlKem768PrivateKeyExpandedKey);
 
         internal static byte[] IetfMlKem768EncryptedPrivateKeyExpandedKey => field ??= Convert.FromBase64String(@"
             MIIJ3DBWBgkqhkiG9w0BBQ0wSTAxBgkqhkiG9w0BBQwwJAQQdV5wgVIICzzniNpD
@@ -476,6 +512,10 @@ namespace System.Security.Cryptography.Tests
             X3qZc/K8q1BBn9dqcJRIKr/dZ7Mq1U6sa5zg+sDIZvLoS/weutBuPRHP9AofQWpS
             F1JkgTbf0PrGVr3jgdaXCY/7vfsB6+utgcs1F7KfKZA=");
 
+        internal static string IetfMlKem768EncryptedPrivateKeyExpandedKeyPem => field ??= PemEncoding.WriteString(
+            "ENCRYPTED PRIVATE KEY",
+            IetfMlKem768EncryptedPrivateKeyExpandedKey);
+
         internal static byte[] IetfMlKem768PrivateKeyBoth => field ??= Convert.FromBase64String(@"
             MIIJvgIBADALBglghkgBZQMEBAIEggmqMIIJpgRAAAECAwQFBgcICQoLDA0ODxAR
             EhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+PwSC
@@ -530,6 +570,10 @@ namespace System.Security.Cryptography.Tests
             2GleQ0gcPus5frGSUFIptnogHqiTw+LLMtqLw0L6TeoFeKJOFtj4+Tg6lbdwUPTZ
             /S9XM+7B1j7zwj6/mRgXNmmnICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9
             Pj8=");
+
+        internal static string IetfMlKem768PrivateKeyBothPem => field ??= PemEncoding.WriteString(
+            "PRIVATE KEY",
+            IetfMlKem768PrivateKeyBoth);
 
         internal static byte[] IetfMlKem768EncryptedPrivateKeyBoth => field ??= Convert.FromBase64String(@"
             MIIKJDBWBgkqhkiG9w0BBQ0wSTAxBgkqhkiG9w0BBQwwJAQQcdUu8kW63IlZ7x2z
@@ -587,6 +631,10 @@ namespace System.Security.Cryptography.Tests
             umXKtkydmdGcyWSUAzzOebKvrQxUAdBLqLktiDJ1UqgJYBREduuQkmQ7p9UFc49H
             uTR1HHzBYXNcscJfaQZJcS/hbHBaCvKgEvhUYTmXbSgaD1+fNq3gbthRZhNUOfiR
             RDd5KC8EEzk=");
+
+        internal static string IetfMlKem768EncryptedPrivateKeyBothPem => field ??= PemEncoding.WriteString(
+            "ENCRYPTED PRIVATE KEY",
+            IetfMlKem768EncryptedPrivateKeyBoth);
 
         internal static byte[] IetfMlKem768PrivateKeyDecapsulationKey => field ??= (
             "27d2a77f33756f61208ef113abe82595873d4abc730e5b5d679529bf6a4ceb6383427231a8612f41550515acba52e48ead8b" +
@@ -783,11 +831,19 @@ namespace System.Security.Cryptography.Tests
             MFQCAQAwCwYJYIZIAWUDBAQDBEKAQAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZ
             GhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=");
 
+        internal static string IetfMlKem1024PrivateKeySeedPem => field ??= PemEncoding.WriteString(
+            "PRIVATE KEY",
+            IetfMlKem1024PrivateKeySeed);
+
         internal static byte[] IetfMlKem1024EncryptedPrivateKeySeed => field ??= Convert.FromBase64String(@"
             MIGyMFYGCSqGSIb3DQEFDTBJMDEGCSqGSIb3DQEFDDAkBBArGFO1mU77a3ys0aR0
             +mWBAgIIADAMBggqhkiG9w0CCQUAMBQGCCqGSIb3DQMHBAh48Gqhu7YOpwRYPR66
             W02NrqRok/CagC9uo/viGlLLC5CUl4Y9cE3ZCEwfDxFufNeALt2Kusg+gJLMSq16
             g6YgQHQJeKZusLSnwzxOutuyKKgbGuIWxFBmtDZrXDjCO913Ow==");
+
+        internal static string IetfMlKem1024EncryptedPrivateKeySeedPem => field ??= PemEncoding.WriteString(
+            "ENCRYPTED PRIVATE KEY",
+            IetfMlKem1024EncryptedPrivateKeySeed);
 
         internal static byte[] IetfMlKem1024PrivateKeyExpandedKey => field ??= Convert.FromBase64String(@"
             MIIMeAIBADALBglghkgBZQMEBAMEggxkBIIMYPd7f2sVxz/izFRrZ/t3TKGbQs1G
@@ -857,6 +913,10 @@ namespace System.Security.Cryptography.Tests
             RvgYkYLSv16sTsHMXer1mcihPkgjVAbRf/3cg0S2xmmEqGiqkvoCInoIaVDrDIcB
             7VjcYod2uYOILhF1YTSeXBMafhFqBGOGHX0YZjxWJ8OMcUfdqt/Uis16RTUgISIj
             JCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+Pw==");
+
+        internal static string IetfMlKem1024PrivateKeyExpandedKeyPem => field ??= PemEncoding.WriteString(
+            "PRIVATE KEY",
+            IetfMlKem1024PrivateKeyExpandedKey);
 
         internal static byte[] IetfMlKem1024EncryptedPrivateKeyExpandedKey => field ??= Convert.FromBase64String(@"
             MIIM3DBWBgkqhkiG9w0BBQ0wSTAxBgkqhkiG9w0BBQwwJAQQE/G+HHo48gCgwImJ
@@ -929,6 +989,10 @@ namespace System.Security.Cryptography.Tests
             hi5UqCzJNmdxMEtwwyVHXuQBnNUlgl2/c4XAFIUwnQ11SM7UFPDwkDYzj529XwqA
             00ExhHl+b5Un8kb2eyOSe9UgG+cAMgA+m892u4ZKOSE=");
 
+        internal static string IetfMlKem1024EncryptedPrivateKeyExpandedKeyPem => field ??= PemEncoding.WriteString(
+            "ENCRYPTED PRIVATE KEY",
+            IetfMlKem1024EncryptedPrivateKeyExpandedKey);
+
         internal static byte[] IetfMlKem1024PrivateKeyBoth => field ??= Convert.FromBase64String(@"
             MIIMvgIBADALBglghkgBZQMEBAMEggyqMIIMpgRAAAECAwQFBgcICQoLDA0ODxAR
             EhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+PwSC
@@ -999,6 +1063,10 @@ namespace System.Security.Cryptography.Tests
             3INEtsZphKhoqpL6AiJ6CGlQ6wyHAe1Y3GKHdrmDiC4RdWE0nlwTGn4RagRjhh19
             GGY8VifDjHFH3arf1IrNekU1ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9
             Pj8=");
+
+        internal static string IetfMlKem1024PrivateKeyBothPem => field ??= PemEncoding.WriteString(
+            "PRIVATE KEY",
+            IetfMlKem1024PrivateKeyBoth);
 
         internal static byte[] IetfMlKem1024EncryptedPrivateKeyBoth => field ??= Convert.FromBase64String(@"
             MIINJDBWBgkqhkiG9w0BBQ0wSTAxBgkqhkiG9w0BBQwwJAQQVR0rwDXJnxYGA7N9
@@ -1072,6 +1140,10 @@ namespace System.Security.Cryptography.Tests
             wDhwJ70p+8156LxTRce8zboQquKUbrHxg4dsuoZIsqmDvecyMiPw1a71pUSnJ1V9
             9xpeir1cJ7dnmi2BncLvSCQDgnPUfs4awqmONkcqE4VtYzi10s588zWtXZcH3ar7
             FIgRVDi1lQg=");
+
+        internal static string IetfMlKem1024EncryptedPrivateKeyBothPem => field ??= PemEncoding.WriteString(
+            "ENCRYPTED PRIVATE KEY",
+            IetfMlKem1024EncryptedPrivateKeyBoth);
 
         internal static byte[] IetfMlKem1024PrivateKeyDecapsulationKey => field ??= (
             "f77b7f6b15c73fe2cc546b67fb774ca19b42cd463ea9fbb984ca477a77b6c71087cbf051abe4736a9072c6e870c8311c5596" +

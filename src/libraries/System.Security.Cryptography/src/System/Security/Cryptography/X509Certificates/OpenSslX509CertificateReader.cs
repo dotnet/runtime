@@ -618,6 +618,16 @@ namespace System.Security.Cryptography.X509Certificates
             return new MLDsaOpenSsl(_privateKey);
         }
 
+        public MLKem? GetMLKemPrivateKey()
+        {
+            if (_privateKey is null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new MLKemOpenSsl(_privateKey);
+        }
+
         private OpenSslX509CertificateReader CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates
@@ -702,6 +712,22 @@ namespace System.Security.Cryptography.X509Certificates
             using (MLDsaImplementation clone = MLDsaImplementation.DuplicatePrivateKey(privateKey))
             {
                 return CopyWithPrivateKey(clone.DuplicateHandle());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
+        {
+            switch (privateKey)
+            {
+                case MLKemOpenSsl implOpenSsl:
+                    return CopyWithPrivateKey(implOpenSsl.DuplicateKeyHandle());
+                case MLKemImplementation impl:
+                    return CopyWithPrivateKey(impl.DuplicateHandle());
+                default:
+                    using (MLKemImplementation clone = MLKemImplementation.DuplicatePrivateKey(privateKey))
+                    {
+                        return CopyWithPrivateKey(clone.DuplicateHandle());
+                    }
             }
         }
 

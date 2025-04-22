@@ -21,10 +21,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
 
         public OnImportsSatisfiedFeature(AttributedModelProvider attributeContext)
         {
-            if (attributeContext is null)
-            {
-                throw new ArgumentNullException(nameof(attributeContext));
-            }
+            ArgumentNullException.ThrowIfNull(attributeContext);
 
             _attributeContext = attributeContext;
         }
