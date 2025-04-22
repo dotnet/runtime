@@ -200,11 +200,7 @@ For Windows/x86 on NativeAOT and Linux/x86, funclets are used just like on other
 
 ## Cloned finallys
 
-JIT64 attempts to speed the normal control flow by 'inlining' a called finally along the 'normal' control flow (i.e., leaving a try body in a non-exceptional manner via C# fall-through). Because the VM semantics for non-rude Thread.Abort dictate that handlers will not be aborted, the JIT must mark these 'inlined' finally bodies. These show up as special entries at the end of the EH tables and are marked with `COR_ILEXCEPTION_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_DUPLICATED`, and the try_start, try_end, and handler_start are all the same: the start of the cloned finally.
-
-RyuJit also implements finally cloning, for all supported architectures. However, the implementation does not yet handle the thread abort case; cloned finally bodies are not guaranteed to remain intact and are not reported to the runtime. Because of this, finally cloning is disabled for VMs that support thread abort (desktop clr).
-
-JIT32 does not implement finally cloning.
+RyuJIT attempts to speed the normal control flow by 'inlining' a called finally along the 'normal' control flow (i.e., leaving a try body in a non-exceptional manner via C# fall-through). This optimization is supported on all architectures.
 
 ## Invoking Finallys/Non-local exits
 
