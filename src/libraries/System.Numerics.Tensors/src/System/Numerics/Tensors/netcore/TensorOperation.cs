@@ -196,9 +196,7 @@ namespace System.Numerics.Tensors
             scoped Span<nint> xIndexes = RentedBuffer.Create(destinationShape.Rank, x.Strides, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
             scoped Span<nint> yIndexes = RentedBuffer.Create(destinationShape.Rank, y.Strides, out nint yLinearOffset, out RentedBuffer<nint> yRentedBuffer);
 
-            nint loopCount = Math.Max(x.FlattenedLength, y.FlattenedLength);
-
-            for (nint i = 0; i < loopCount; i++)
+            for (nint i = 0; i < destinationShape.FlattenedLength; i++)
             {
                 xLinearOffset = x._shape.AdjustToNextIndex(destinationShape, xLinearOffset, xIndexes);
                 yLinearOffset = y._shape.AdjustToNextIndex(destinationShape, yLinearOffset, yIndexes);
