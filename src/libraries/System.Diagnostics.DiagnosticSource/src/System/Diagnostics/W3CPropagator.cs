@@ -111,13 +111,14 @@ namespace System.Diagnostics
                 if (TryDecodeBaggageKey(keySpan, out string? key) && TryDecodeBaggageValue(valueSpan, out string value))
                 {
                     baggageList ??= new List<KeyValuePair<string, string?>>();
-
-                    // Insert in reverse order for asp.net compatibility.
-                    baggageList.Insert(0, new KeyValuePair<string, string?>(key, value));
+                    baggageList.Add(new KeyValuePair<string, string?>(key, value));
                 }
 
                 baggageSpan = entrySeparator >= 0 ? baggageSpan.Slice(entrySeparator + 1) : ReadOnlySpan<char>.Empty;
             } while (baggageSpan.Length > 0);
+
+            // reverse order for asp.net compatibility.
+            baggageList?.Reverse();
 
             baggage = baggageList;
             return baggageList != null;
