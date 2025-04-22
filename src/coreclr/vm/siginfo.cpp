@@ -387,7 +387,7 @@ void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *
     }
 }
 
-void SigPointer::CopyModOptsReqs(SigBuilder * pSigBuilder)
+void SigPointer::CopyModOptsReqs(Module* pSigModule, SigBuilder* pSigBuilder)
 {
     CONTRACTL
     {
@@ -397,26 +397,26 @@ void SigPointer::CopyModOptsReqs(SigBuilder * pSigBuilder)
     CONTRACTL_END
 
     CorElementType typ;
-    IfFailThrow(PeekElemType(&typ));
+    IfFailThrowBF(PeekElemType(&typ), BFA_BAD_COMPLUS_SIG, pSigModule);
     while (typ == ELEMENT_TYPE_CMOD_REQD || typ == ELEMENT_TYPE_CMOD_OPT)
     {
         // Skip the custom modifier
-        IfFailThrow(GetByte(NULL));
+        IfFailThrowBF(GetByte(NULL), BFA_BAD_COMPLUS_SIG, pSigModule);
 
         // Get the encoded token.
         uint32_t token;
-        IfFailThrow(GetToken(&token));
+        IfFailThrowBF(GetToken(&token), BFA_BAD_COMPLUS_SIG, pSigModule);
 
         // Append the custom modifier and encoded token to the signature.
         pSigBuilder->AppendElementType(typ);
         pSigBuilder->AppendToken(token);
 
         typ = ELEMENT_TYPE_END;
-        IfFailThrow(PeekElemType(&typ));
+        IfFailThrowBF(PeekElemType(&typ), BFA_BAD_COMPLUS_SIG, pSigModule);
     }
 }
 
-void SigPointer::CopyExactlyOne(SigBuilder* pSigBuilder)
+void SigPointer::CopyExactlyOne(Module* pSigModule, SigBuilder* pSigBuilder)
 {
     CONTRACTL
     {
@@ -426,9 +426,9 @@ void SigPointer::CopyExactlyOne(SigBuilder* pSigBuilder)
     CONTRACTL_END
 
     intptr_t beginExactlyOne = (intptr_t)m_ptr;
-    IfFailThrow(SkipExactlyOne());
+    IfFailThrowBF(SkipExactlyOne(), BFA_BAD_COMPLUS_SIG, pSigModule);
     intptr_t endExactlyOne = (intptr_t)m_ptr;
-    pSigBuilder->AppendBlob((const PVOID)(beginExactlyOne), endExactlyOne - beginExactlyOne);
+    pSigBuilder->AppendBlob((const PVOID)beginExactlyOne, endExactlyOne - beginExactlyOne);
 }
 
 void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE additionalCallConv)
@@ -440,10 +440,10 @@ void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE
     }
     CONTRACTL_END
 
-    SigPointer spEnd(*this);
-    IfFailThrowBF(spEnd.SkipSignature(), BFA_BAD_COMPLUS_SIG, pSigModule);
-    pSigBuilder->AppendByte(*m_ptr | additionalCallConv);
-    pSigBuilder->AppendBlob((const PVOID)(m_ptr + 1), spEnd.m_ptr - (m_ptr + 1));
+    PCCOR_SIGNATURE beginSignature = m_ptr;
+    IfFailThrowBF(SkipSignature(), BFA_BAD_COMPLUS_SIG, pSigModule);
+    pSigBuilder->AppendByte(*beginSignature | additionalCallConv);
+    pSigBuilder->AppendBlob((const PVOID)(beginSignature + 1), m_ptr - (beginSignature + 1));
 }
 #endif // DACCESS_COMPILE
 

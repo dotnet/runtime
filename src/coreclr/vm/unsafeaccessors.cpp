@@ -95,8 +95,10 @@ namespace
         _ASSERTE(translations != NULL);
 
         //
-        // Parsing the signature follows details defined in ECMA-335 - II.23.2.1
+        // Parsing and building the signature follows details defined in ECMA-335 - II.23.2.1
         //
+
+        Module* pSigModule = cxt.Declaration->GetModule();
 
         // Read the current signature and copy it, updating the
         // types for the parameters that had UnsafeAccessorTypeAttribute.
@@ -130,13 +132,13 @@ namespace
         for (uint32_t i = 0; i < translationsCount; ++i)
         {
             // Copy over any modopts or modreqs.
-            origSig.CopyModOptsReqs(&newSig);
+            origSig.CopyModOptsReqs(pSigModule, &newSig);
 
             MethodTable* newType = translations[i];
             if (newType == NULL)
             {
                 // Copy the original parameter and continue.
-                origSig.CopyExactlyOne(&newSig);
+                origSig.CopyExactlyOne(pSigModule, &newSig);
                 continue;
             }
 
