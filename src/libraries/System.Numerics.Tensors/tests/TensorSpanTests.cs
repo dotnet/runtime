@@ -774,7 +774,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(-93, spanInt[1, 1]);
 
             // Make sure you can't overlap elements using strides
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<ArgumentException>(() =>
             {
                 var spanInt = new TensorSpan<int>(a, (int[])[], [2, 2], [1, 1]);
             });
@@ -814,9 +814,9 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorSpanArrayConstructorTests()
         {
             // Make sure exception is thrown if lengths and strides would let you go past the end of the array
-            Assert.Throws<ArgumentException>(() => new TensorSpan<double>(new double[0], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
-            Assert.Throws<ArgumentException>(() => new TensorSpan<double>(new double[1], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
-            Assert.Throws<ArgumentException>(() => new TensorSpan<double>(new double[2], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 2 }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<double>(new double[0], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<double>(new double[1], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new TensorSpan<double>(new double[2], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 2 }));
 
             // Make sure basic T[] constructor works
             int[] a = { 91, 92, -93, 94 };
@@ -842,7 +842,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, spanInt.Rank);
             Assert.Equal(0, spanInt.Lengths[0]);
             Assert.Equal(0, spanInt.FlattenedLength);
-            Assert.Equal(0, spanInt.Strides[0]);
+            Assert.Equal(1, spanInt.Strides[0]);
             // Make sure it still throws on index 0
             Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new TensorSpan<int>(b);
@@ -901,7 +901,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
 
             // Make sure we catch that there aren't enough elements in the array for the lengths
-            Assert.Throws<ArgumentException>(() => {
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
                 var spanInt = new TensorSpan<int>(a, 3, [1, 2], default);
             });
 
@@ -972,7 +972,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(-93, spanInt[1, 1]);
 
             // Make sure you can't overlap elements using strides
-            Assert.Throws<ArgumentOutOfRangeException>(() => {
+            Assert.Throws<ArgumentException>(() => {
                 var spanInt = new TensorSpan<int>(a, 0, [2, 2], [1, 1]);
             });
         }
@@ -994,12 +994,12 @@ namespace System.Numerics.Tensors.Tests
             // Should be a Tensor with 0 elements but Rank 1 with dimension 0 length 0
             Span<int> b = [];
             spanInt = new TensorSpan<int>(b);
-            Assert.Equal(1, spanInt.Rank);
-            Assert.Equal(0, spanInt.Lengths[0]);
+            Assert.Equal(0, spanInt.Rank);
+            Assert.Equal(0, spanInt.Lengths.Length);
             Assert.Equal(0, spanInt.FlattenedLength);
-            Assert.Equal(0, spanInt.Strides[0]);
+            Assert.Equal(0, spanInt.Strides.Length);
             // Make sure it still throws on index 0
-            Assert.Throws<IndexOutOfRangeException>(() => {
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
                 Span<int> b = [];
                 var spanInt = new TensorSpan<int>(b);
                 var x = spanInt[0];
@@ -1051,7 +1051,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
 
             // Make sure we catch that there aren't enough elements in the array for the lengths
-            Assert.Throws<ArgumentException>(() => {
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
                 var spanInt = new TensorSpan<int>(a.Slice(3), [1, 2], default);
             });
@@ -1127,7 +1127,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(-93, spanInt[1, 1]);
 
             // Make sure you can't overlap elements using strides
-            Assert.Throws<ArgumentOutOfRangeException>(() => {
+            Assert.Throws<ArgumentException>(() => {
                 Span<int> a = [91, 92, -93, 94];
                 var spanInt = new TensorSpan<int>(a, [2, 2], [1, 1]);
             });
@@ -1156,12 +1156,12 @@ namespace System.Numerics.Tensors.Tests
             fixed (int* p = b)
             {
                 spanInt = new TensorSpan<int>(p, 0);
-                Assert.Equal(1, spanInt.Rank);
-                Assert.Equal(0, spanInt.Lengths[0]);
+                Assert.Equal(0, spanInt.Rank);
+                Assert.Equal(0, spanInt.Lengths.Length);
                 Assert.Equal(0, spanInt.FlattenedLength);
-                Assert.Equal(0, spanInt.Strides[0]);
+                Assert.Equal(0, spanInt.Strides.Length);
                 // Make sure it still throws on index 0
-                Assert.Throws<IndexOutOfRangeException>(() =>
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
                 {
                     Span<int> b = [];
                     fixed (int* p = b)
@@ -1228,7 +1228,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(94, spanInt[0, 1]);
 
                 // Make sure we catch that there aren't enough elements in the array for the lengths
-                Assert.Throws<ArgumentException>(() =>
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
                 {
                     Span<int> a = [91, 92, -93, 94];
                     fixed (int* p = a)
@@ -1334,7 +1334,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(-93, spanInt[1, 1]);
 
                 // Make sure you can't overlap elements using strides
-                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                Assert.Throws<ArgumentException>(() =>
                 {
                     Span<int> a = [91, 92, -93, 94];
                     fixed (int* p = a)
@@ -1361,11 +1361,11 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, spanInt.Lengths[4]);
             Assert.Equal(6, spanInt.Lengths[5]);
             Assert.Equal(6, spanInt.Strides.Length);
-            Assert.Equal(6, spanInt.Strides[0]);
-            Assert.Equal(6, spanInt.Strides[1]);
-            Assert.Equal(6, spanInt.Strides[2]);
-            Assert.Equal(6, spanInt.Strides[3]);
-            Assert.Equal(6, spanInt.Strides[4]);
+            Assert.Equal(0, spanInt.Strides[0]);
+            Assert.Equal(0, spanInt.Strides[1]);
+            Assert.Equal(0, spanInt.Strides[2]);
+            Assert.Equal(0, spanInt.Strides[3]);
+            Assert.Equal(0, spanInt.Strides[4]);
             Assert.Equal(1, spanInt.Strides[5]);
             Assert.Equal(91, spanInt[0, 0, 0, 0, 0, 0]);
             Assert.Equal(92, spanInt[0, 0, 0, 0, 0, 1]);
@@ -1387,11 +1387,11 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, spanInt.Lengths[4]);
             Assert.Equal(3, spanInt.Lengths[5]);
             Assert.Equal(6, spanInt.Strides.Length);
-            Assert.Equal(12, spanInt.Strides[0]);
+            Assert.Equal(0, spanInt.Strides[0]);
             Assert.Equal(6, spanInt.Strides[1]);
             Assert.Equal(3, spanInt.Strides[2]);
-            Assert.Equal(3, spanInt.Strides[3]);
-            Assert.Equal(3, spanInt.Strides[4]);
+            Assert.Equal(0, spanInt.Strides[3]);
+            Assert.Equal(0, spanInt.Strides[4]);
             Assert.Equal(1, spanInt.Strides[5]);
             Assert.Equal(91, spanInt[0, 0, 0, 0, 0, 0]);
             Assert.Equal(92, spanInt[0, 0, 0, 0, 0, 1]);
@@ -1784,8 +1784,8 @@ namespace System.Numerics.Tensors.Tests
             int[] results = new int[9];
             TensorSpan<int> spanInt = a.AsTensorSpan([3, 3]);
 
-            Assert.Throws<IndexOutOfRangeException>(() => a.AsTensorSpan([2, 3]).Slice(0..1));
-            Assert.Throws<IndexOutOfRangeException>(() => a.AsTensorSpan([2, 3]).Slice(1..2));
+            Assert.Throws<ArgumentOutOfRangeException>(() => a.AsTensorSpan([2, 3]).Slice(0..1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => a.AsTensorSpan([2, 3]).Slice(1..2));
             Assert.Throws<ArgumentOutOfRangeException>(() => a.AsTensorSpan([2, 3]).Slice(0..1, 5..6));
 
             var sp = spanInt.Slice(1..3, 1..3);
