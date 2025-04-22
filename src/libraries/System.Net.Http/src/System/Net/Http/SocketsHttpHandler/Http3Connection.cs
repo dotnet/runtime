@@ -181,7 +181,7 @@ namespace System.Net.Http
         /// When EnableMultipleHttp3Connections is false: always reserve a stream, return a bool indicating if the stream is immediately available.
         /// When EnableMultipleHttp3Connections is true: reserve a stream only if it's available meaning that the return value also indicates whether it has been reserved.
         /// </summary>
-        public bool ReserveStream()
+        public bool TryReserveStream()
         {
             bool singleConnection = !_pool.Settings.EnableMultipleHttp3Connections;
 

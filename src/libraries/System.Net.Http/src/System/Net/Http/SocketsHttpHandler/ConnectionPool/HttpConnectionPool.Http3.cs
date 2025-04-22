@@ -173,7 +173,7 @@ namespace System.Net.Http
                     continue;
                 }
 
-                streamAvailable = connection.ReserveStream();
+                streamAvailable = connection.TryReserveStream();
 
                 // Disable and remove the connection from the pool only if we can open another.
                 // If we have only single connection, use the underlying QuicConnection mechanism to wait for available streams.
@@ -385,7 +385,7 @@ namespace System.Net.Http
                 return;
             }
 
-            while (connection.ReserveStream() || !EnableMultipleHttp3Connections)
+            while (connection.TryReserveStream() || !EnableMultipleHttp3Connections)
             {
                 // Loop in case we get a request that has already been canceled or handled by a different connection.
                 while (true)
@@ -448,7 +448,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        // connection.ReserveStream() always reserves a stream when EnableMultipleHttp3Connections is false.
+                        // TryReserveStream() always decrements the available stream counter when EnableMultipleHttp3Connections is false.
                         connection.ReleaseStream();
 
                         if (added)
