@@ -28,7 +28,6 @@ FrameDataFragment::~FrameDataFragment()
 FrameDataAllocator::FrameDataAllocator(size_t size)
 {
     pFirst = new FrameDataFragment(size);
-    assert(pFirst && "Failed to allocate initial fragment");
     pCurrent = pFirst;
     pInfos = nullptr;
     infosLen = 0;
@@ -88,7 +87,6 @@ void *FrameDataAllocator::Alloc(InterpreterFrame *pFrame, size_t size)
         {
             FreeFragments(pCurrent->pNext);
             FrameDataFragment *pNewFrag = new FrameDataFragment(size);
-            assert(pNewFrag && "Failed to allocate new fragment");
             pCurrent->pNext = pNewFrag;
             pCurrent = pNewFrag;
 

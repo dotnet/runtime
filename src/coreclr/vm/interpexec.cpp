@@ -1155,26 +1155,14 @@ CALL_TARGET_IP:
             case INTOP_LOCALLOC:
             {
                 int32_t len = LOCAL_VAR(ip[2], int32_t);
-                void* mem;
+                len = ALIGN_UP(len, INTERP_STACK_ALIGNMENT);
 
-                if (len > 0)
+                void* mem = pThreadContext->pFrameDataAllocator->Alloc((InterpreterFrame*)pFrame, len);
+                if (pMethod->initLocals)
                 {
-                    len = ALIGN_UP(len, INTERP_STACK_ALIGNMENT);
-                    mem = pThreadContext->pFrameDataAllocator->Alloc((InterpreterFrame*)pFrame, len);
-                    if (!mem)
-                    {
-                        // Interpreter-TODO: OutOfMemoryException
-                        assert(0);
-                    }
-
-                    if (pMethod->initLocals)
-                    {
-                        memset(mem, 0, len);
-                    }
-                } else
-                {
-                    mem = NULL;
+                    memset(mem, 0, len);
                 }
+
                 LOCAL_VAR(ip[1], void*) = mem;
                 ip += 3;
                 break;
