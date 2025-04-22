@@ -103,7 +103,7 @@ void *FrameDataAllocator::Alloc(InterpreterFrame *pFrame, size_t size)
 
 void FrameDataAllocator::PopInfo(InterpreterFrame *pFrame)
 {
-    int top = infosLen - 1;
+    size_t top = infosLen - 1;
     if (top >= 0 && pInfos[top].pFrame == pFrame)
     {
         FrameDataInfo *pInfo = &pInfos[--infosLen];
