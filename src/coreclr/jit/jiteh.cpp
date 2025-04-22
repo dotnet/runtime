@@ -3192,7 +3192,7 @@ void Compiler::dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& claus
 
     // Note: the flags field is kind of weird. It should be compared for equality
     // to determine the type of clause, even though it looks like a bitfield. In
-    // Particular, CORINFO_EH_CLAUSE_NONE is zero, so you can "&" to check it.
+    // particular, CORINFO_EH_CLAUSE_NONE is zero, so you cannot "&" to check it.
     // You do need to mask off the bits, though, because CORINFO_EH_CLAUSE_SAMETRY
     // is and'ed in.
     const DWORD CORINFO_EH_CLAUSE_TYPE_MASK = 0x7;
