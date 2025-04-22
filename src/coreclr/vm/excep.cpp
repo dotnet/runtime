@@ -4789,9 +4789,9 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
         {
             message.Append(exceptionMessage);
         }
-        message.Append(W("\n"));
 
         PrintToStdErrW(message.GetUnicode());
+        PrintToStdErrA("\n");
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
         // Send the log to Windows Event Log
