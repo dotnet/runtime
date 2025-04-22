@@ -169,4 +169,12 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/Utf8JsonWriterFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send Utf8JsonWriterFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/ZipArchiveFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send ZipArchiveFuzzer to OneFuzz
 # ONEFUZZ_TASK_WORKAROUND_END

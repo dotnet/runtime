@@ -175,7 +175,7 @@ PAL_ThrowExceptionFromContext(CONTEXT* context, PAL_SEHException* ex)
     // We need to make a copy of the exception off stack, since the "ex" is located in one of the stack
     // frames that will become obsolete by the ThrowExceptionFromContextInternal and the ThrowExceptionHelper
     // could overwrite the "ex" object by stack e.g. when allocating the low level exception object for "throw".
-    static __thread BYTE threadLocalExceptionStorage[sizeof(PAL_SEHException)];
+    static thread_local BYTE threadLocalExceptionStorage[sizeof(PAL_SEHException)];
     ThrowExceptionFromContextInternal(context, new (threadLocalExceptionStorage) PAL_SEHException(std::move(*ex)));
 }
 
@@ -372,12 +372,7 @@ bool CatchHardwareExceptionHolder::IsEnabled()
 
 --*/
 
-#if defined(__GNUC__)
-static __thread
-#else // __GNUC__
-__declspec(thread) static
-#endif // !__GNUC__
-NativeExceptionHolderBase *t_nativeExceptionHolderHead = nullptr;
+static thread_local NativeExceptionHolderBase *t_nativeExceptionHolderHead = nullptr;
 
 extern "C"
 NativeExceptionHolderBase **

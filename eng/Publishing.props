@@ -86,6 +86,9 @@
     <ShouldGenerateProductVersionFiles Condition="'$(OutputRID)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
     <ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ShouldGenerateProductVersionFiles>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' != 'true'">
+    <ShouldGenerateProductVersionFiles Condition="'$(DotNetFinalPublish)' == 'true'">true</ShouldGenerateProductVersionFiles>
+  </PropertyGroup>
 
   <Target Name="GenerateProductVersionFiles"
           DependsOnTargets="GetNonStableProductVersion"

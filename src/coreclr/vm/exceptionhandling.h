@@ -70,8 +70,4 @@ enum class InlinedCallFrameMarker
 #define USE_CURRENT_CONTEXT_IN_FILTER
 #endif // TARGET_X86
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-#define USE_FUNCLET_CALL_HELPER
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_X86 || TARGET_LOONGARCH64 || TARGET_RISCV64
-
 #endif  // __EXCEPTION_HANDLING_h__
