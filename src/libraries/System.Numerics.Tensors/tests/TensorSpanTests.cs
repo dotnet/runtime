@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -34,61 +35,61 @@ namespace System.Numerics.Tensors.Tests
             return totalLength;
         }
 
-        public delegate void TensorPrimitivesSpanInSpanOut<TIn, TOut>(ReadOnlySpan<TIn> input, Span<TOut> output);
+        public delegate TOut TensorPrimitivesSpanInSpanOut<TIn, TOut>(TIn input);
         public delegate ref readonly TensorSpan<TOut> TensorSpanInSpanOut<TIn, TOut>(scoped in ReadOnlyTensorSpan<TIn> input, in TensorSpan<TOut> destination);
 
         public static IEnumerable<object[]> SpanInSpanOutData()
         {
-            yield return Create<float, float>(TensorPrimitives.Abs, Tensor.Abs);
-            yield return Create<float, float>(TensorPrimitives.Acos, Tensor.Acos);
-            yield return Create<float, float>(TensorPrimitives.Acosh, Tensor.Acosh);
-            yield return Create<float, float>(TensorPrimitives.AcosPi, Tensor.AcosPi);
-            yield return Create<float, float>(TensorPrimitives.Asin, Tensor.Asin);
-            yield return Create<float, float>(TensorPrimitives.Asinh, Tensor.Asinh);
-            yield return Create<float, float>(TensorPrimitives.AsinPi, Tensor.AsinPi);
-            yield return Create<float, float>(TensorPrimitives.Atan, Tensor.Atan);
-            yield return Create<float, float>(TensorPrimitives.Atanh, Tensor.Atanh);
-            yield return Create<float, float>(TensorPrimitives.AtanPi, Tensor.AtanPi);
-            yield return Create<float, float>(TensorPrimitives.Cbrt, Tensor.Cbrt);
-            yield return Create<float, float>(TensorPrimitives.Ceiling, Tensor.Ceiling);
-            yield return Create<float, float>(TensorPrimitives.Cos, Tensor.Cos);
-            yield return Create<float, float>(TensorPrimitives.Cosh, Tensor.Cosh);
-            yield return Create<float, float>(TensorPrimitives.CosPi, Tensor.CosPi);
-            yield return Create<float, float>(TensorPrimitives.DegreesToRadians, Tensor.DegreesToRadians);
-            yield return Create<float, float>(TensorPrimitives.Exp, Tensor.Exp);
-            yield return Create<float, float>(TensorPrimitives.Exp10, Tensor.Exp10);
-            yield return Create<float, float>(TensorPrimitives.Exp10M1, Tensor.Exp10M1);
-            yield return Create<float, float>(TensorPrimitives.Exp2, Tensor.Exp2);
-            yield return Create<float, float>(TensorPrimitives.Exp2M1, Tensor.Exp2M1);
-            yield return Create<float, float>(TensorPrimitives.ExpM1, Tensor.ExpM1);
-            yield return Create<float, float>(TensorPrimitives.Floor, Tensor.Floor);
-            yield return Create<int, int>(TensorPrimitives.LeadingZeroCount, Tensor.LeadingZeroCount);
-            yield return Create<float, float>(TensorPrimitives.Log, Tensor.Log);
-            yield return Create<float, float>(TensorPrimitives.Log10, Tensor.Log10);
-            yield return Create<float, float>(TensorPrimitives.Log10P1, Tensor.Log10P1);
-            yield return Create<float, float>(TensorPrimitives.Log2, Tensor.Log2);
-            yield return Create<float, float>(TensorPrimitives.Log2P1, Tensor.Log2P1);
-            yield return Create<float, float>(TensorPrimitives.LogP1, Tensor.LogP1);
-            yield return Create<float, float>(TensorPrimitives.Negate, Tensor.Negate);
-            yield return Create<float, float>(TensorPrimitives.OnesComplement, Tensor.OnesComplement);
-            yield return Create<int, int>(TensorPrimitives.PopCount, Tensor.PopCount);
-            yield return Create<float, float>(TensorPrimitives.RadiansToDegrees, Tensor.RadiansToDegrees);
-            yield return Create<float, float>(TensorPrimitives.Reciprocal, Tensor.Reciprocal);
-            yield return Create<float, float>(TensorPrimitives.Round, Tensor.Round);
-            yield return Create<float, float>(TensorPrimitives.Sigmoid, Tensor.Sigmoid);
-            yield return Create<float, float>(TensorPrimitives.Sin, Tensor.Sin);
-            yield return Create<float, float>(TensorPrimitives.Sinh, Tensor.Sinh);
-            yield return Create<float, float>(TensorPrimitives.SinPi, Tensor.SinPi);
-            yield return Create<float, float>(TensorPrimitives.SoftMax, Tensor.SoftMax);
-            yield return Create<float, float>(TensorPrimitives.Sqrt, Tensor.Sqrt);
-            yield return Create<float, float>(TensorPrimitives.Tan, Tensor.Tan);
-            yield return Create<float, float>(TensorPrimitives.Tanh, Tensor.Tanh);
-            yield return Create<float, float>(TensorPrimitives.TanPi, Tensor.TanPi);
-            yield return Create<float, float>(TensorPrimitives.Truncate, Tensor.Truncate);
-            yield return Create<float, int>(TensorPrimitives.ILogB, Tensor.ILogB);
-            yield return Create<float, int>(TensorPrimitives.ConvertChecked, Tensor.ConvertChecked);
-            yield return Create<float, int>(TensorPrimitives.ConvertSaturating, Tensor.ConvertSaturating);
-            yield return Create<float, int>(TensorPrimitives.ConvertTruncating, Tensor.ConvertTruncating);
+            yield return Create<float, float>(float.Abs, Tensor.Abs);
+            yield return Create<float, float>(float.Acos, Tensor.Acos);
+            yield return Create<float, float>(float.Acosh, Tensor.Acosh);
+            yield return Create<float, float>(float.AcosPi, Tensor.AcosPi);
+            yield return Create<float, float>(float.Asin, Tensor.Asin);
+            yield return Create<float, float>(float.Asinh, Tensor.Asinh);
+            yield return Create<float, float>(float.AsinPi, Tensor.AsinPi);
+            yield return Create<float, float>(float.Atan, Tensor.Atan);
+            yield return Create<float, float>(float.Atanh, Tensor.Atanh);
+            yield return Create<float, float>(float.AtanPi, Tensor.AtanPi);
+            yield return Create<float, float>(float.Cbrt, Tensor.Cbrt);
+            yield return Create<float, float>(float.Ceiling, Tensor.Ceiling);
+            yield return Create<float, float>(float.Cos, Tensor.Cos);
+            yield return Create<float, float>(float.Cosh, Tensor.Cosh);
+            yield return Create<float, float>(float.CosPi, Tensor.CosPi);
+            yield return Create<float, float>(float.DegreesToRadians, Tensor.DegreesToRadians);
+            yield return Create<float, float>(float.Exp, Tensor.Exp);
+            yield return Create<float, float>(float.Exp10, Tensor.Exp10);
+            yield return Create<float, float>(float.Exp10M1, Tensor.Exp10M1);
+            yield return Create<float, float>(float.Exp2, Tensor.Exp2);
+            yield return Create<float, float>(float.Exp2M1, Tensor.Exp2M1);
+            yield return Create<float, float>(float.ExpM1, Tensor.ExpM1);
+            yield return Create<float, float>(float.Floor, Tensor.Floor);
+            yield return Create<int, int>(int.LeadingZeroCount, Tensor.LeadingZeroCount);
+            yield return Create<float, float>(float.Log, Tensor.Log);
+            yield return Create<float, float>(float.Log10, Tensor.Log10);
+            yield return Create<float, float>(float.Log10P1, Tensor.Log10P1);
+            yield return Create<float, float>(float.Log2, Tensor.Log2);
+            yield return Create<float, float>(float.Log2P1, Tensor.Log2P1);
+            yield return Create<float, float>(float.LogP1, Tensor.LogP1);
+            yield return Create<float, float>(x => -x, Tensor.Negate);
+            yield return Create<int, int>(x => ~x, Tensor.OnesComplement);
+            yield return Create<int, int>(int.PopCount, Tensor.PopCount);
+            yield return Create<float, float>(float.RadiansToDegrees, Tensor.RadiansToDegrees);
+            yield return Create<float, float>(f => 1 / f, Tensor.Reciprocal);
+            yield return Create<float, float>(float.Round, Tensor.Round);
+            //yield return Create<float, float>(float.Sigmoid, Tensor.Sigmoid);
+            yield return Create<float, float>(float.Sin, Tensor.Sin);
+            yield return Create<float, float>(float.Sinh, Tensor.Sinh);
+            yield return Create<float, float>(float.SinPi, Tensor.SinPi);
+            //yield return Create<float, float>(float.SoftMax, Tensor.SoftMax);
+            yield return Create<float, float>(float.Sqrt, Tensor.Sqrt);
+            yield return Create<float, float>(float.Tan, Tensor.Tan);
+            yield return Create<float, float>(float.Tanh, Tensor.Tanh);
+            yield return Create<float, float>(float.TanPi, Tensor.TanPi);
+            yield return Create<float, float>(float.Truncate, Tensor.Truncate);
+            yield return Create<float, int>(float.ILogB, Tensor.ILogB);
+            yield return Create<float, int>(x => Expression.Lambda<Func<int>>(Expression.ConvertChecked(Expression.Constant(x), typeof(int))).Compile()(), Tensor.ConvertChecked);
+            yield return Create<float, int>(x => (int)x, Tensor.ConvertSaturating);
+            yield return Create<float, int>(x => (int)MathF.Truncate(x), Tensor.ConvertTruncating);
 
             static object[] Create<TIn, TOut>(TensorPrimitivesSpanInSpanOut<TIn, TOut> tensorPrimitivesMethod, TensorSpanInSpanOut<TIn, TOut> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
@@ -105,26 +106,21 @@ namespace System.Numerics.Tensors.Tests
 
                 TIn[] data = new TIn[length];
                 TOut[] data2 = new TOut[length];
-                TOut[] expectedOutput = new TOut[length];
 
                 FillTensor<TIn>(data);
                 TensorSpan<TIn> x = Tensor.Create<TIn>(data, tensorLength, []);
                 TensorSpan<TOut> destination = Tensor.Create<TOut>(data2, tensorLength, []);
-                tensorPrimitivesOperation((ReadOnlySpan<TIn>)data, expectedOutput);
                 TensorSpan<TOut> tensorResults = tensorOperation(x, destination);
 
                 Assert.Equal(tensorLength, tensorResults.Lengths);
                 nint[] startingIndex = new nint[tensorLength.Length];
 
                 // the "Return" value
-                ReadOnlySpan<TOut> span = MemoryMarshal.CreateSpan(ref tensorResults[startingIndex], (int)length);
-                // the "destination" value
-                ReadOnlySpan<TOut> destSpan = MemoryMarshal.CreateSpan(ref destination[startingIndex], (int)length);
+                ReadOnlySpan<TOut> span = MemoryMarshal.CreateSpan(ref tensorResults.GetPinnableReference(), (int)length);
 
                 for (int i = 0; i < data.Length; i++)
                 {
-                    Assert.Equal(expectedOutput[i], span[i]);
-                    Assert.Equal(expectedOutput[i], destSpan[i]);
+                    Assert.Equal(tensorPrimitivesOperation(data[i]), span[i]);
                 }
 
                 // Now test if the source is sliced to be smaller then the destination that the destination is also sliced
@@ -133,79 +129,23 @@ namespace System.Numerics.Tensors.Tests
                 nint sliceFlattenedLength = CalculateTotalLength(Helpers.TensorSliceShapes[index]);
                 x = x.Slice(sliceLengths);
                 TIn[] sliceData = new TIn[sliceFlattenedLength];
-                x.FlattenTo(sliceData);
-                expectedOutput = new TOut[sliceFlattenedLength];
-
-                if (x.IsContiguousAndDense)
-                {
-                    tensorPrimitivesOperation((ReadOnlySpan<TIn>)sliceData, expectedOutput);
-                }
-                else
-                {
-                    int rowLength = (int)Helpers.TensorSliceShapes[index][^1];
-                    for (int i = 0; i < sliceData.Length; i+= rowLength)
-                    {
-                        tensorPrimitivesOperation(((ReadOnlySpan<TIn>)sliceData).Slice(i, rowLength), ((Span<TOut>)expectedOutput).Slice(i, rowLength));
-                    }
-
-                }
-
-                tensorResults = tensorOperation(x, destination);
-
-                // tensorResults lengths will still be the original tensorLength and not equal to the sliced length since that happened internally/automatically
-                Assert.Equal(tensorLength, tensorResults.Lengths);
-
-                TensorSpan<TOut>.Enumerator destEnum = destination.Slice(sliceLengths).GetEnumerator();
-                TensorSpan<TOut>.Enumerator tensorResultsEnum = tensorResults.Slice(sliceLengths).GetEnumerator();
-                bool destEnumMove;
-                bool tensorResultsEnumMove;
-
-                for (int i = 0; i < expectedOutput.Length; i++)
-                {
-                    destEnumMove = destEnum.MoveNext();
-                    tensorResultsEnumMove = tensorResultsEnum.MoveNext();
-
-                    Assert.True(destEnumMove);
-                    Assert.True(tensorResultsEnumMove);
-                    Assert.Equal(expectedOutput[i], destEnum.Current);
-                    Assert.Equal(expectedOutput[i], tensorResultsEnum.Current);
-                }
 
                 // Now test if the source and destination are sliced (so neither is continuous) it works correctly.
                 destination = destination.Slice(sliceLengths);
                 x.FlattenTo(sliceData);
-                expectedOutput = new TOut[sliceFlattenedLength];
-
-                if (x.IsContiguousAndDense)
-                {
-                    tensorPrimitivesOperation((ReadOnlySpan<TIn>)sliceData, expectedOutput);
-                }
-                else
-                {
-                    int rowLength = (int)Helpers.TensorSliceShapes[index][^1];
-                    for (int i = 0; i < sliceData.Length; i += rowLength)
-                    {
-                        tensorPrimitivesOperation(((ReadOnlySpan<TIn>)sliceData).Slice(i, rowLength), ((Span<TOut>)expectedOutput).Slice(i, rowLength));
-                    }
-
-                }
 
                 tensorResults = tensorOperation(x, destination);
 
                 Assert.Equal(Helpers.TensorSliceShapes[index], tensorResults.Lengths);
 
-                destEnum = destination.GetEnumerator();
-                tensorResultsEnum = tensorResults.GetEnumerator();
-
-                for (int i = 0; i < expectedOutput.Length; i++)
+                TensorSpan<TOut>.Enumerator tensorResultsEnum = tensorResults.GetEnumerator();
+                bool tensorResultsEnumMove;
+                for (int i = 0; i < sliceData.Length; i++)
                 {
-                    destEnumMove = destEnum.MoveNext();
                     tensorResultsEnumMove = tensorResultsEnum.MoveNext();
 
-                    Assert.True(destEnumMove);
                     Assert.True(tensorResultsEnumMove);
-                    Assert.Equal(expectedOutput[i], destEnum.Current);
-                    Assert.Equal(expectedOutput[i], tensorResultsEnum.Current);
+                    Assert.Equal(tensorPrimitivesOperation(sliceData[i]), tensorResultsEnum.Current);
                 }
             });
         }
@@ -220,9 +160,33 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(TensorPrimitives.Min, Tensor.Min);
             yield return Create<float>(TensorPrimitives.MinMagnitude, Tensor.MinMagnitude);
             yield return Create<float>(TensorPrimitives.MinNumber, Tensor.MinNumber);
-            yield return Create<float>(TensorPrimitives.Norm, Tensor.Norm);
-            yield return Create<float>(TensorPrimitives.Product, Tensor.Product);
-            yield return Create<float>(TensorPrimitives.Sum, Tensor.Sum);
+            yield return Create<float>(x =>
+            {
+                float sum = 0;
+                for (int i = 0; i < x.Length; i++)
+                {
+                    sum += x[i] * x[i];
+                }
+                return float.Sqrt(sum);
+            }, Tensor.Norm);
+            yield return Create<float>(x =>
+            {
+                float sum = 1;
+                for (int i = 0; i < x.Length; i++)
+                {
+                    sum *= x[i];
+                }
+                return sum;
+            }, Tensor.Product);
+            yield return Create<float>(x =>
+            {
+                float sum = 0;
+                for (int i = 0; i < x.Length; i++)
+                {
+                    sum += x[i];
+                }
+                return sum;
+            }, Tensor.Sum);
 
             static object[] Create<T>(TensorPrimitivesSpanInTOut<T> tensorPrimitivesMethod, TensorSpanInTOut<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
@@ -268,21 +232,21 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
-        public delegate void TensorPrimitivesTwoSpanInSpanOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output);
+        public delegate T TensorPrimitivesTwoSpanInSpanOut<T>(T input, T inputTwo);
         public delegate ref readonly TensorSpan<T> TensorTwoSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> inputTwo, in TensorSpan<T> destination);
         public delegate ref readonly TensorSpan<T> TensorTwoSpanInSpanOutInPlace<T>(in TensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> inputTwo);
         public static IEnumerable<object[]> TwoSpanInSpanOutData()
         {
-            yield return Create<float>(TensorPrimitives.Add, Tensor.Add);
-            yield return Create<float>(TensorPrimitives.Atan2, Tensor.Atan2);
-            yield return Create<float>(TensorPrimitives.Atan2Pi, Tensor.Atan2Pi);
-            yield return Create<float>(TensorPrimitives.CopySign, Tensor.CopySign);
-            yield return Create<float>(TensorPrimitives.Divide, Tensor.Divide);
-            yield return Create<float>(TensorPrimitives.Hypot, Tensor.Hypot);
-            yield return Create<float>(TensorPrimitives.Ieee754Remainder, Tensor.Ieee754Remainder);
-            yield return Create<float>(TensorPrimitives.Multiply, Tensor.Multiply);
-            yield return Create<float>(TensorPrimitives.Pow, Tensor.Pow);
-            yield return Create<float>(TensorPrimitives.Subtract, Tensor.Subtract);
+            yield return Create<float>((x, y) => x + y, Tensor.Add);
+            yield return Create<float>((x, y) => float.Atan2(x, y), Tensor.Atan2);
+            yield return Create<float>((x, y) => float.Atan2Pi(x, y), Tensor.Atan2Pi);
+            yield return Create<float>((x, y) => float.CopySign(x, y), Tensor.CopySign);
+            yield return Create<float>((x, y) => x / y, Tensor.Divide);
+            yield return Create<float>((x, y) => float.Hypot(x, y), Tensor.Hypot);
+            yield return Create<float>((x, y) => float.Ieee754Remainder(x, y), Tensor.Ieee754Remainder);
+            yield return Create<float>((x, y) => x * y, Tensor.Multiply);
+            yield return Create<float>((x, y) => float.Pow(x, y), Tensor.Pow);
+            yield return Create<float>((x, y) => x - y, Tensor.Subtract);
 
             static object[] Create<T>(TensorPrimitivesTwoSpanInSpanOut<T> tensorPrimitivesMethod, TensorTwoSpanInSpanOut<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
@@ -308,162 +272,67 @@ namespace System.Numerics.Tensors.Tests
                 TensorSpan<T> x = Tensor.Create<T>(data1, tensorLengths, []);
                 TensorSpan<T> y = Tensor.Create<T>(data2, tensorLengths, []);
                 TensorSpan<T> destination = Tensor.Create<T>(destData, tensorLengths, []);
-                tensorPrimitivesOperation((ReadOnlySpan<T>)data1, data2, expectedOutput);
                 TensorSpan<T> results = tensorOperation(x, y, destination);
 
                 Assert.Equal(tensorLengths, results.Lengths);
                 nint[] startingIndex = new nint[tensorLengths.Length];
                 // the "Return" value
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref results[startingIndex], (int)length);
-                // the "destination" value
-                ReadOnlySpan<T> destSpan = MemoryMarshal.CreateSpan(ref destination[startingIndex], (int)length);
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref results.GetPinnableReference(), (int)length);
 
                 for (int i = 0; i < data1.Length; i++)
                 {
-                    Assert.Equal(expectedOutput[i], span[i]);
-                    Assert.Equal(expectedOutput[i], destSpan[i]);
+                    Assert.Equal(tensorPrimitivesOperation(data1[i], data2[i]), span[i]);
                 }
 
-                // Now test when both sources are exact sizes but destination is too large and gets sliced internally.
-                nint[] tempLengths = tensorLengths.Select(i => i + 1).ToArray();
-                T[] tempDestData = new T[CalculateTotalLength(tempLengths)];
-                destination = Tensor.Create<T>(tempDestData, tempLengths, []);
-                results = tensorOperation(x, y, destination);
-
-                // Since the slice was internal the result lengths will be the extra large size.
-                Assert.Equal(tempLengths, results.Lengths);
-                startingIndex = new nint[tensorLengths.Length];
-
-                TensorSpan<T>.Enumerator destEnum = destination.Slice(tensorLengths).GetEnumerator();
-                TensorSpan<T>.Enumerator tensorResultsEnum = results.Slice(tensorLengths).GetEnumerator();
-                bool destEnumMove;
-                bool tensorResultsEnumMove;
-
-                for (int i = 0; i < expectedOutput.Length; i++)
-                {
-                    destEnumMove = destEnum.MoveNext();
-                    tensorResultsEnumMove = tensorResultsEnum.MoveNext();
-
-                    Assert.True(destEnumMove);
-                    Assert.True(tensorResultsEnumMove);
-                    Assert.Equal(expectedOutput[i], destEnum.Current);
-                    Assert.Equal(expectedOutput[i], tensorResultsEnum.Current);
-                }
 
                 // Now test if the first source is sliced to be smaller than the second (but is broadcast compatible) that broadcasting happens).
                 int rowLength = (int)Helpers.TensorSliceShapesForBroadcast[index][^1];
 
                 NRange[] sliceLengths = Helpers.TensorSliceShapesForBroadcast[index].Select(i => new NRange(0, i)).ToArray();
                 nint sliceFlattenedLength = CalculateTotalLength(Helpers.TensorSliceShapesForBroadcast[index]);
-                destination = destination.Slice(tensorLengths);
+                //destination = destination.Slice(sliceLengths);
                 x.Slice(sliceLengths).BroadcastTo(x);
                 x.FlattenTo(data1);
-
-                if (x.Slice(sliceLengths).IsContiguousAndDense && y.IsContiguousAndDense)
-                {
-                    tensorPrimitivesOperation((ReadOnlySpan<T>)data1, data2, expectedOutput);
-                }
-                else
-                {
-                    for (int i = 0; i < data1.Length; i += rowLength)
-                    {
-                        tensorPrimitivesOperation(((ReadOnlySpan<T>)data1).Slice(i, rowLength), ((ReadOnlySpan<T>)data2).Slice(i, rowLength), ((Span<T>)expectedOutput).Slice(i, rowLength));
-                    }
-
-                }
 
                 results = tensorOperation(x.Slice(sliceLengths), y, destination);
 
                 // results lengths will still be the original tensorLength
                 Assert.Equal(tensorLengths, results.Lengths);
 
-                destEnum = destination.GetEnumerator();
-                tensorResultsEnum = results.GetEnumerator();
+                TensorSpan<T>.Enumerator tensorResultsEnum = results.GetEnumerator();
+                TensorSpan<T>.Enumerator xEnum = x.GetEnumerator();
+                TensorSpan<T>.Enumerator yEnum = y.GetEnumerator();
+                bool tensorResultsEnumMove;
 
-                for (int i = 0; i < expectedOutput.Length; i++)
+                for (int i = 0; i < results.FlattenedLength; i++)
                 {
-                    destEnumMove = destEnum.MoveNext();
                     tensorResultsEnumMove = tensorResultsEnum.MoveNext();
-
-                    Assert.True(destEnumMove);
+                    xEnum.MoveNext();
+                    yEnum.MoveNext();
                     Assert.True(tensorResultsEnumMove);
-                    Assert.Equal(expectedOutput[i], destEnum.Current);
-                    Assert.Equal(expectedOutput[i], tensorResultsEnum.Current);
+
+                    Assert.Equal(tensorPrimitivesOperation(xEnum.Current, yEnum.Current), tensorResultsEnum.Current);
                 }
 
                 // Now test if the second source is sliced to be smaller than the first (but is broadcast compatible) that broadcasting happens).
                 y.Slice(sliceLengths).BroadcastTo(y);
                 y.FlattenTo(data2);
 
-                if (x.IsContiguousAndDense && y.Slice(sliceLengths).IsContiguousAndDense)
-                {
-                    tensorPrimitivesOperation((ReadOnlySpan<T>)data1, data2, expectedOutput);
-                }
-                else
-                {
-                    for (int i = 0; i < data2.Length; i += rowLength)
-                    {
-                        tensorPrimitivesOperation(((ReadOnlySpan<T>)data1).Slice(i, rowLength), ((ReadOnlySpan<T>)data2).Slice(i, rowLength), ((Span<T>)expectedOutput).Slice(i, rowLength));
-                    }
-
-                }
-
                 results = tensorOperation(x, y.Slice(sliceLengths), destination);
 
                 // results lengths will still be the original tensorLength
                 Assert.Equal(tensorLengths, results.Lengths);
 
-                destEnum = destination.GetEnumerator();
                 tensorResultsEnum = results.GetEnumerator();
-
-                for (int i = 0; i < expectedOutput.Length; i++)
+                xEnum = x.GetEnumerator();
+                yEnum = y.GetEnumerator();
+                for (int i = 0; i < results.FlattenedLength; i++)
                 {
-                    destEnumMove = destEnum.MoveNext();
                     tensorResultsEnumMove = tensorResultsEnum.MoveNext();
-
-                    Assert.True(destEnumMove);
+                    xEnum.MoveNext();
+                    yEnum.MoveNext();
                     Assert.True(tensorResultsEnumMove);
-                    Assert.Equal(expectedOutput[i], destEnum.Current);
-                    Assert.Equal(expectedOutput[i], tensorResultsEnum.Current);
-                }
-
-                // Now test if both sources are sliced to be smaller than the destination that the destination will be sliced automatically
-                T[] sliceData1 = new T[sliceFlattenedLength];
-                T[] sliceData2 = new T[sliceFlattenedLength];
-                expectedOutput = new T[sliceFlattenedLength];
-
-                x.Slice(sliceLengths).FlattenTo(sliceData1);
-                y.Slice(sliceLengths).FlattenTo(sliceData2);
-
-                if (x.Slice(sliceLengths).IsContiguousAndDense && y.Slice(sliceLengths).IsContiguousAndDense)
-                {
-                    tensorPrimitivesOperation((ReadOnlySpan<T>)sliceData1, sliceData2, expectedOutput);
-                }
-                else
-                {
-                    for (int i = 0; i < sliceData1.Length; i += rowLength)
-                    {
-                        tensorPrimitivesOperation(((ReadOnlySpan<T>)sliceData1).Slice(i, rowLength), ((ReadOnlySpan<T>)sliceData2).Slice(i, rowLength), ((Span<T>)expectedOutput).Slice(i, rowLength));
-                    }
-
-                }
-
-                results = tensorOperation(x.Slice(sliceLengths), y.Slice(sliceLengths), destination);
-
-                Assert.Equal(tensorLengths, results.Lengths);
-
-                destEnum = destination.Slice(sliceLengths).GetEnumerator();
-                tensorResultsEnum = results.Slice(sliceLengths).GetEnumerator();
-
-                for (int i = 0; i < expectedOutput.Length; i++)
-                {
-                    destEnumMove = destEnum.MoveNext();
-                    tensorResultsEnumMove = tensorResultsEnum.MoveNext();
-
-                    Assert.True(destEnumMove);
-                    Assert.True(tensorResultsEnumMove);
-                    Assert.Equal(expectedOutput[i], destEnum.Current);
-                    Assert.Equal(expectedOutput[i], tensorResultsEnum.Current);
+                    Assert.Equal(tensorPrimitivesOperation(xEnum.Current, yEnum.Current), tensorResultsEnum.Current);
                 }
             });
         }

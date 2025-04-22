@@ -483,6 +483,10 @@ namespace System.Numerics.Tensors
                         // We should only be here if we were broadcast
                         Debug.Assert((length == 1) && (stride == 0));
                     }
+
+                    // this needs to be linearOffset - src._start, but src is not being passed in currently. Commenting out for now.
+                    // It also causes problems with broadcasting.
+                    //Debug.Assert(GetLinearOffset<GetOffsetAndLengthForNInt, nint>(indexes[(destinationShape.Rank - Rank)..]) == linearOffset);
                     return linearOffset;
                 }
 
