@@ -1,6 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "gcinfoencoder.h"
+
+// HACK: debugreturn.h (included by gcinfoencoder.h) breaks constexpr
+#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
+#undef return
+#endif // debug_instrumented_return
+
 #include "interpreter.h"
 
 #include <inttypes.h>
@@ -35,7 +41,7 @@ static const InterpType g_interpTypeFromStackType[] =
 };
 
 // Used by assertAbort
-thread_local ICorJitInfo* gInterpJitInfoTls = nullptr;
+thread_local ICorJitInfo* t_InterpJitInfoTls = nullptr;
 
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
 
@@ -902,7 +908,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
 {
     // Fill in the thread-local used for assertions
-    gInterpJitInfoTls = compHnd;
+    t_InterpJitInfoTls = compHnd;
 
     m_methodHnd = methodInfo->ftn;
     m_compScopeHnd = methodInfo->scope;
@@ -3466,8 +3472,8 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
 
 extern "C" void assertAbort(const char* why, const char* file, unsigned line)
 {
-    if (gInterpJitInfoTls) {
-        if (!gInterpJitInfoTls->doAssert(file, line, why))
+    if (t_InterpJitInfoTls) {
+        if (!t_InterpJitInfoTls->doAssert(file, line, why))
             return;
     }
 

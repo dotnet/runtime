@@ -5,7 +5,6 @@
 
 #include "threads.h"
 #include "gcenv.h"
-#include <math.h>
 #include "interpexec.h"
 
 typedef void* (*HELPER_FTN_PP)(void*);
