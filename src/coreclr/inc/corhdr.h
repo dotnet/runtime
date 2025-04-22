@@ -1680,6 +1680,8 @@ typedef enum CorAttributeTargets
 // Keep in sync with RuntimeCompatibilityAttribute.cs
 #define RUNTIMECOMPATIBILITY_TYPE_W             W("System.Runtime.CompilerServices.RuntimeCompatibilityAttribute")
 #define RUNTIMECOMPATIBILITY_TYPE               "System.Runtime.CompilerServices.RuntimeCompatibilityAttribute"
+#define RUNTIMECOMPATIBILITY_TYPE_NAMESPACE     "System.Runtime.CompilerServices"
+#define RUNTIMECOMPATIBILITY_TYPE_NAME          "RuntimeCompatibilityAttribute"
 
 
 // Keep in sync with AssemblySettingAttributes.cs

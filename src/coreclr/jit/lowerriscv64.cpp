@@ -187,6 +187,73 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
+    if (comp->opts.OptimizationEnabled())
+    {
+        GenTree*& op1 = binOp->gtOp1;
+        GenTree*& op2 = binOp->gtOp2;
+
+        bool isOp1Negated = op1->OperIs(GT_NOT);
+        bool isOp2Negated = op2->OperIs(GT_NOT);
+        if (binOp->OperIs(GT_AND, GT_OR, GT_XOR) && (isOp1Negated || isOp2Negated))
+        {
+            if ((isOp1Negated && isOp2Negated) || comp->compOpportunisticallyDependsOn(InstructionSet_Zbb))
+            {
+                if (isOp1Negated)
+                {
+                    BlockRange().Remove(op1);
+                    op1 = op1->AsUnOp()->gtGetOp1();
+                }
+                if (isOp2Negated)
+                {
+                    BlockRange().Remove(op2);
+                    op2 = op2->AsUnOp()->gtGetOp1();
+                }
+
+                if (isOp1Negated != isOp2Negated)
+                {
+                    assert(comp->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                    if (isOp1Negated)
+                        std::swap(op1, op2);
+
+                    genTreeOps operNot = GT_NONE;
+                    switch (binOp->OperGet())
+                    {
+                        case GT_AND:
+                            operNot = GT_AND_NOT;
+                            break;
+                        case GT_OR:
+                            operNot = GT_OR_NOT;
+                            break;
+                        default:
+                            assert(binOp->OperIs(GT_XOR));
+                            operNot = GT_XOR_NOT;
+                            break;
+                    }
+                    binOp->ChangeOper(operNot);
+                }
+                else if (binOp->OperIs(GT_AND, GT_OR)) // XOR is good after negation removal, (~a ^ ~b) == (a ^ b)
+                {
+                    assert(isOp1Negated && isOp2Negated);
+                    LIR::Use use;
+                    if (BlockRange().TryGetUse(binOp, &use))
+                    {
+                        // (~a | ~b) == ~(a & b),  (~a & ~b) == ~(a | b)
+                        genTreeOps reverseOper = binOp->OperIs(GT_AND) ? GT_OR : GT_AND;
+                        binOp->ChangeOper(reverseOper);
+
+                        GenTreeUnOp* negation = comp->gtNewOperNode(GT_NOT, binOp->gtType, binOp);
+                        BlockRange().InsertAfter(binOp, negation);
+                        use.ReplaceWith(negation);
+                    }
+                    else
+                    {
+                        binOp->SetUnusedValue();
+                    }
+                }
+            }
+        }
+    }
+
     ContainCheckBinary(binOp);
 
     return binOp->gtNext;
@@ -490,6 +557,313 @@ void Lowering::LowerRotate(GenTree* tree)
     ContainCheckShiftRotate(tree->AsOp());
 }
 
+// Determine if cast type is 32-bit zero extension
+bool IsIntZeroExtCast(GenTreeCast* cast)
+{
+    GenTree* const  src          = cast->CastOp();
+    const var_types srcType      = genActualType(src);
+    const bool      srcUnsigned  = cast->IsUnsigned();
+    const unsigned  srcSize      = genTypeSize(srcType);
+    const var_types castType     = cast->gtCastType;
+    const bool      castUnsigned = varTypeIsUnsigned(castType);
+    const unsigned  castSize     = genTypeSize(castType);
+
+    return varTypeIsIntegralOrI(srcType) && varTypeIsIntegralOrI(castType) && srcSize == 4 && castSize == 8 &&
+           (castUnsigned || srcUnsigned);
+}
+
+// Determine SH(X)ADD(_UW) node for the given shift amount and signedness
+genTreeOps GetShxaddOp(unsigned int shamt, bool isUnsigned)
+{
+    if (isUnsigned)
+    {
+        switch (shamt)
+        {
+            case 1:
+                return GT_SH1ADD_UW;
+            case 2:
+                return GT_SH2ADD_UW;
+            case 3:
+                return GT_SH3ADD_UW;
+            default:
+                unreached();
+        }
+    }
+    else
+    {
+        switch (shamt)
+        {
+            case 1:
+                return GT_SH1ADD;
+            case 2:
+                return GT_SH2ADD;
+            case 3:
+                return GT_SH3ADD;
+            default:
+                unreached();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// TryLowerShiftAddToShxadd : Lower ADD(LSH) node to SH(X)ADD(.UW) node.
+//
+// Arguments:
+//    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
+{
+    if (comp->opts.OptimizationDisabled())
+    {
+        return false;
+    }
+
+    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_ADD) ||
+        ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
+    {
+        return false;
+    }
+
+    GenTree* base  = nullptr;
+    GenTree* shift = nullptr;
+
+    if (tree->gtOp1->OperIs(GT_LSH, GT_MUL, GT_SLLI_UW))
+    {
+        shift = tree->gtOp1;
+        base  = tree->gtOp2;
+    }
+    else if (tree->gtOp2->OperIs(GT_LSH, GT_MUL, GT_SLLI_UW))
+    {
+        shift = tree->gtOp2;
+        base  = tree->gtOp1;
+    }
+    else
+    {
+        return false;
+    }
+
+    bool isSlliUw = false;
+    if (shift->OperIs(GT_SLLI_UW))
+    {
+        isSlliUw = true;
+    }
+
+    GenTree*     index = shift->gtGetOp1();
+    unsigned int scale = shift->GetScaledIndex();
+    if (scale == 0)
+    {
+        return false;
+    }
+
+    assert(base->IsValue());
+    assert(index->IsValue());
+
+    if (base->isContained() || index->isContained() || !varTypeIsIntegralOrI(base) || !varTypeIsIntegralOrI(index) ||
+        base->IsCnsIntOrI() || index->IsCnsIntOrI())
+    {
+        return false;
+    }
+
+    JITDUMP("Removing unused node:\n  ");
+    DISPNODE(shift->gtGetOp2());
+    BlockRange().Remove(shift->gtGetOp2());
+    DEBUG_DESTROY_NODE(shift->gtGetOp2());
+
+    JITDUMP("Removing unused node:\n  ");
+    DISPNODE(shift);
+    BlockRange().Remove(shift);
+    DEBUG_DESTROY_NODE(shift);
+
+    DWORD shamt;
+    BitScanForward(&shamt, scale);
+
+    tree->gtOp1 = index;
+    tree->gtOp2 = base;
+    tree->ChangeOper(GetShxaddOp(shamt, isSlliUw));
+
+    JITDUMP("Base:\n  ");
+    DISPNODE(tree->gtOp2);
+    JITDUMP("Index:\n  ");
+    DISPNODE(tree->gtOp1);
+
+    JITDUMP("New SHXADD node:\n  ");
+    DISPNODE(tree);
+    JITDUMP("\n");
+
+    if (index->OperIs(GT_CAST))
+    {
+        GenTreeCast* const cast = index->AsCast();
+        GenTree* const     src  = cast->CastOp();
+
+        if (IsIntZeroExtCast(cast))
+        {
+            JITDUMP("Removing unused node:\n  ");
+            DISPNODE(cast);
+            BlockRange().Remove(cast);
+            DEBUG_DESTROY_NODE(cast);
+
+            tree->gtOp1 = src;
+            tree->ChangeOper(GetShxaddOp(shamt, true));
+
+            JITDUMP("Index:\n  ");
+            DISPNODE(tree->gtOp1);
+
+            JITDUMP("Transformed SH(X)ADD node to SH(X)ADD_UW node:\n  ");
+            DISPNODE(tree);
+            JITDUMP("\n");
+        }
+    }
+
+    *next = tree->gtNext;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// TryLowerZextAddToAddUw : Lower ADD(CAST) node to ADD_UW node.
+//
+// Arguments:
+//    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next)
+{
+    if (comp->opts.OptimizationDisabled())
+    {
+        return false;
+    }
+
+    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_ADD) ||
+        ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
+    {
+        return false;
+    }
+
+    GenTree* base  = nullptr;
+    GenTree* index = nullptr;
+
+    if (tree->gtOp1->OperIs(GT_CAST))
+    {
+        index = tree->gtOp1;
+        base  = tree->gtOp2;
+    }
+    else if (tree->gtOp2->OperIs(GT_CAST))
+    {
+        index = tree->gtOp2;
+        base  = tree->gtOp1;
+    }
+    else
+    {
+        return false;
+    }
+
+    assert(base->IsValue());
+    assert(index->IsValue());
+
+    if (base->isContained() || index->isContained() || !varTypeIsIntegralOrI(base) || !varTypeIsIntegralOrI(index) ||
+        base->IsCnsIntOrI() || index->IsCnsIntOrI())
+    {
+        return false;
+    }
+
+    GenTreeCast* const cast = index->AsCast();
+    GenTree* const     src  = cast->CastOp();
+
+    if (IsIntZeroExtCast(cast))
+    {
+        JITDUMP("Removing unused node:\n  ");
+        DISPNODE(cast);
+        BlockRange().Remove(cast);
+        DEBUG_DESTROY_NODE(cast);
+
+        tree->gtOp1 = src;
+        tree->gtOp2 = base;
+        tree->ChangeOper(GT_ADD_UW);
+
+        JITDUMP("Base:\n  ");
+        DISPNODE(tree->gtOp2);
+        JITDUMP("Index:\n  ");
+        DISPNODE(tree->gtOp1);
+
+        JITDUMP("New ADD_UW node:\n  ");
+        DISPNODE(tree);
+        JITDUMP("\n");
+
+        *next = tree->gtNext;
+
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// TryLowerZextLeftShiftToSlliUw : Lower LSH(CAST) node to SLLI_UW node.
+//
+// Arguments:
+//    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next)
+{
+    if (comp->opts.OptimizationDisabled())
+    {
+        return false;
+    }
+
+    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_LSH) ||
+        !tree->gtOp1->OperIs(GT_CAST) || !tree->gtOp2->IsCnsIntOrI() ||
+        ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
+    {
+        return false;
+    }
+
+    GenTree* index = tree->gtOp1;
+
+    assert(index->IsValue());
+
+    if (index->isContained() || !varTypeIsIntegralOrI(index) || index->IsCnsIntOrI())
+    {
+        return false;
+    }
+
+    GenTreeCast* const cast = index->AsCast();
+    GenTree* const     src  = cast->CastOp();
+
+    if (IsIntZeroExtCast(cast))
+    {
+        JITDUMP("Removing unused node:\n  ");
+        DISPNODE(cast);
+        BlockRange().Remove(cast);
+        DEBUG_DESTROY_NODE(cast);
+
+        tree->gtOp1 = src;
+        tree->ChangeOper(GT_SLLI_UW);
+
+        JITDUMP("Index:\n  ");
+        DISPNODE(tree->gtOp1);
+
+        JITDUMP("New SLLI_UW node:\n  ");
+        DISPNODE(tree);
+        JITDUMP("\n");
+
+        *next = tree->gtNext;
+
+        return true;
+    }
+
+    return false;
+}
+
 #ifdef FEATURE_SIMD
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
@@ -637,6 +1011,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
+        MakeSrcContained(indirNode, addr);
+    }
+    else if (addr->IsCnsIntOrI() && !addr->AsIntCon()->ImmedValNeedsReloc(comp))
+    {
         MakeSrcContained(indirNode, addr);
     }
 }
