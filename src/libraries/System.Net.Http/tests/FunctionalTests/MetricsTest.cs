@@ -1340,6 +1340,26 @@ namespace System.Net.Http.Functional.Tests
         public HttpMetricsTest_Http30(ITestOutputHelper output) : base(output)
         {
         }
+
+        [Fact]
+        public async Task H3ConnectionFailure_TimeInQueueRecorded()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options()
+            {
+                Alpn = "shall-not-work" // anything other than "h3"
+            });
+
+            using HttpMessageInvoker client = CreateHttpMessageInvoker();
+            using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, server.Address)
+            {
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            await Assert.ThrowsAsync<HttpRequestException>(() => SendAsync(client, request));
+
+            Assert.Equal(1, recorder.GetMeasurements().Count);
+        }
     }
 
     public class HttpMetricsTest_Http30_HttpMessageInvoker : HttpMetricsTest_Http30
