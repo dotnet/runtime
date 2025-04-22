@@ -9,7 +9,6 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONM
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug, mono_log_warn } from "./logging";
 import { mono_exit } from "./exit";
-import { addCachedReponse, findCachedResponse } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { mono_log_info } from "./logging";
@@ -675,7 +674,7 @@ const totalResources = new Set<string>();
 function download_resource (asset: AssetEntryInternal): LoadingResource {
     try {
         mono_assert(asset.resolvedUrl, "Request's resolvedUrl must be set");
-        const fetchResponse = download_resource_with_cache(asset);
+        const fetchResponse = fetchResource(asset);
         const response = { name: asset.name, url: asset.resolvedUrl, response: fetchResponse };
 
         totalResources.add(asset.name!);
@@ -706,16 +705,6 @@ function download_resource (asset: AssetEntryInternal): LoadingResource {
             name: asset.name, url: asset.resolvedUrl!, response: Promise.resolve(response)
         };
     }
-}
-
-async function download_resource_with_cache (asset: AssetEntryInternal): Promise<Response> {
-    let response = await findCachedResponse(asset);
-    if (!response) {
-        response = await fetchResource(asset);
-        addCachedReponse(asset, response);
-    }
-
-    return response;
 }
 
 function fetchResource (asset: AssetEntryInternal): Promise<Response> {

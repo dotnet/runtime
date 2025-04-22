@@ -164,9 +164,7 @@ export type LoaderHelpers = {
 
     retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-    logDownloadStatsToConsole: () => void;
     installUnhandledErrorHandler: () => void;
-    purgeUnusedCacheEntriesAsync: () => Promise<void>;
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
