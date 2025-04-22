@@ -445,7 +445,7 @@ set(VM_HEADERS_WKS
     interoputil.h
     interoputil.inl
     interpexec.h
-    interpframallocator.h
+    interpframeallocator.h
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h
