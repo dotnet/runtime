@@ -11,13 +11,16 @@ FrameDataFragment::FrameDataFragment(size_t size)
         size = INTERP_STACK_FRAGMENT_SIZE;
     }
 
-    void *pMemory = malloc(sizeof(FrameDataFragment) + size);
-    assert(pMemory && "Failed to allocate FrameDataFragment");
-
-    start = (uint8_t*)pMemory + sizeof(FrameDataFragment);
+    start = (uint8_t*)malloc(size);
+    assert(start && "Failed to allocate FrameDataFragment");
     end = start + size;
     pos = start;
     pNext = nullptr;
+}
+
+FrameDataFragment::~FrameDataFragment()
+{
+    free(start);
 }
 
 FrameDataAllocator::FrameDataAllocator(size_t size)
@@ -58,14 +61,14 @@ void FrameDataAllocator::PushInfo(InterpreterFrame *pFrame)
     }
 
     FrameDataInfo *pInfo = &pInfos[infosLen++];
-    pInfo->frame = pFrame;
+    pInfo->pFrame = pFrame;
     pInfo->pFrag = pCurrent;
     pInfo->pos = pCurrent->pos;
 }
 
 void *FrameDataAllocator::Alloc(InterpreterFrame *pFrame, size_t size)
 {
-    if (!infosLen || (infosLen > 0 && pInfos[infosLen - 1].frame != pFrame))
+    if (!infosLen || (infosLen > 0 && pInfos[infosLen - 1].pFrame != pFrame))
     {
         PushInfo(pFrame);
     }
@@ -99,7 +102,7 @@ void *FrameDataAllocator::Alloc(InterpreterFrame *pFrame, size_t size)
 void FrameDataAllocator::PopInfo(InterpreterFrame *pFrame)
 {
     int top = infosLen - 1;
-    if (top >= 0 && pInfos[top].frame == pFrame)
+    if (top >= 0 && pInfos[top].pFrame == pFrame)
     {
         FrameDataInfo *pInfo = &pInfos[--infosLen];
         pCurrent = pInfo->pFrag;

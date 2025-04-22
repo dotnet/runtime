@@ -16,14 +16,15 @@ struct FrameDataFragment
     FrameDataFragment *pNext;
 
     FrameDataFragment(size_t size);
+    ~FrameDataFragment();
 };
 
 struct FrameDataInfo
 {
     // The frame that this data belongs to
-    InterpreterFrame *frame;
+    InterpreterFrame *pFrame;
     // Pointers for restoring the localloc memory:
-    // frag - the current allocation fragment at frame entry
+    // pFrag - the current allocation fragment at frame entry
     // pos - the fragment pointer at frame entry
     // When the frame returns, we use these to roll back any local allocations
     FrameDataFragment *pFrag;
