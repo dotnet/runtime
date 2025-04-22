@@ -307,20 +307,6 @@ namespace System.Net.Http
                 finally
                 {
                     waitForConnectionActivity.Stop(request, Pool, exception);
-                    waitForConnectionActivity?.Stop();
-                    if (queueStartingTimestamp != 0)
-                    {
-                        TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
-                        if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
-                        {
-                            _pool.Settings._metrics!.RequestLeftQueue(request, Pool, duration, versionMajor: 3);
-                        }
-
-                        if (HttpTelemetry.Log.IsEnabled())
-                        {
-                            HttpTelemetry.Log.RequestLeftQueue(versionMajor: 3, duration);
-                        }
-                    }
                 }
 
                 if (quicStream == null)
@@ -959,12 +945,12 @@ namespace System.Net.Http
     /// </summary>
     internal struct WaitForHttp3ConnectionActivity
     {
-        private readonly SocketsHttpHandlerMetrics _metrics;
+        private readonly SocketsHttpHandlerMetrics? _metrics;
         private readonly HttpAuthority _authority;
         private Activity? _activity;
         private long _startTimestamp;
 
-        public WaitForHttp3ConnectionActivity(SocketsHttpHandlerMetrics metrics, HttpAuthority authority)
+        public WaitForHttp3ConnectionActivity(SocketsHttpHandlerMetrics? metrics, HttpAuthority authority)
         {
             _metrics = metrics;
             _authority = authority;
@@ -975,7 +961,7 @@ namespace System.Net.Http
         public void Start()
         {
             Debug.Assert(!Started);
-            _startTimestamp = HttpTelemetry.Log.IsEnabled() || _metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
+            _startTimestamp = HttpTelemetry.Log.IsEnabled() || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && _metrics!.RequestsQueueDuration.Enabled) ? Stopwatch.GetTimestamp() : 0;
             _activity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(_authority);
             Started = true;
         }
@@ -992,7 +978,11 @@ namespace System.Net.Http
             if (_startTimestamp != 0)
             {
                 TimeSpan duration = Stopwatch.GetElapsedTime(_startTimestamp);
-                _metrics!.RequestLeftQueue(request, pool, duration, versionMajor: 3);
+
+                if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
+                {
+                    _metrics!.RequestLeftQueue(request, pool, duration, versionMajor: 3);
+                }
                 if (HttpTelemetry.Log.IsEnabled())
                 {
                     HttpTelemetry.Log.RequestLeftQueue(3, duration);
@@ -1000,6 +990,7 @@ namespace System.Net.Http
             }
         }
 
+        [Conditional("DEBUG")]
         public void AssertActivityNotRunning()
         {
             Debug.Assert(_activity?.IsStopped != false);
