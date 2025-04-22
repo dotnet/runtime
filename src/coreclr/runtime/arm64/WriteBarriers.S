@@ -1,7 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <unixasmmacros.inc>
+#include "AsmMacros_Shared.h"
+
+#if defined(__APPLE__)
+    // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
+    // Fix, but adding an empty, unused method
+    LEAF_ENTRY RhpWriteBarriersDoNotFailToBuild, _TEXT
+       ret
+    LEAF_END RhpWriteBarriersDoNotFailToBuild, _TEXT
+#endif
 
 // Macro used to copy contents of newly updated GC heap locations to a shadow copy of the heap. This is used
 // during garbage collections to verify that object references where never written to the heap without using a
@@ -229,11 +237,24 @@ LEAF_END RhpByRefAssignRefArm64, _TEXT
         b       C_FUNC(RhpAssignRefArm64)
 
 LOCAL_LABEL(NotInHeap):
+#ifdef TARGET_APPLE
+        b       C_FUNC(RhpCheckedAssignRefArm64_NotInHeap)
+#else
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         str     x15, [x14], 8
         ret
-
+#endif
 LEAF_END RhpCheckedAssignRefArm64, _TEXT
+
+#ifdef TARGET_APPLE
+// Apple's linker has issues which break unwind info if
+// an ALTERNATE_ENTRY is present in the middle of a function
+LEAF_ENTRY RhpCheckedAssignRefArm64_NotInHeap, _TEXT
+    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+        str     x15, [x14], 8
+        ret
+LEAF_END RhpCheckedAssignRefArm64_NotInHeap, _TEXT
+#endif
 
 // JIT_WriteBarrier(Object** dst, Object* src)
 //
@@ -266,6 +287,7 @@ LEAF_ENTRY RhpAssignRef, _TEXT
         b       C_FUNC(RhpAssignRefArm64)
 LEAF_END RhpAssignRef, _TEXT
 
+#ifdef FEATURE_NATIVEAOT
 
 // Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 // successful updates.
@@ -395,3 +417,4 @@ LOCAL_LABEL(NoBarrierXchg):
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
 .arch_extension nolse
 #endif
+#endif // FEATURE_NATIVEAOT
