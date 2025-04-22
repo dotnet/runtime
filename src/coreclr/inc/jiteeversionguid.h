@@ -11,7 +11,7 @@
 // the EE changes (by adding or removing methods to any interface shared between them), this GUID should
 // be changed. This is the identifier verified by ICorJitCompiler::getVersionIdentifier().
 //
-// You can use "uuidgen.exe -s" to generate this value.
+// You can use src/coreclr/scripts/genJITEEVersionIdentifier.cmd (or .sh on Unix) to generate this value.
 //
 // Note that this file is parsed by some tools, namely superpmi.py, so make sure the first line is exactly
 // of the form:
