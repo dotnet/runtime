@@ -1242,7 +1242,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     if (op2->gtOper == GT_CNS_INT)
                     {
                         ssize_t iconVal = op2->AsIntCon()->IconValue();
-                        if (varTypeIsSmall(lclVar) && op1->OperIs(GT_STORE_LCL_VAR))
+                        if (varTypeIsSmall(lclVar))
                         {
                             iconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
                             if (!optLocalAssertionProp)
