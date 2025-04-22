@@ -535,10 +535,10 @@ namespace System.Net.WebSockets.Client.Tests
                 CloseTest test = (CloseTest)Activator.CreateInstance(typeof(CloseTest).Assembly.GetType(typeName), new object[] { null });
                 using CancellationTokenSource timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                bool unobserved = false;
+                Exception unobserved = null;
                 TaskScheduler.UnobservedTaskException += (obj, args) =>
                 {
-                    unobserved = true;
+                    unobserved = args.Exception;
                 };
 
                 TaskCompletionSource clientCompleted = new TaskCompletionSource();
@@ -551,7 +551,7 @@ namespace System.Net.WebSockets.Client.Tests
                     GC.Collect(2);
                     GC.WaitForPendingFinalizers();
                     clientCompleted.SetResult();
-                    Assert.False(unobserved);
+                    Assert.Null(unobserved);
                 },
                 async (serverWs, ct) =>
                 {
