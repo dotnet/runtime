@@ -109,7 +109,7 @@ namespace
 
         uint32_t callConvDecl;
         IfFailThrow(origSig.GetCallingConvInfo(&callConvDecl));
-        newSig.AppendByte((BYTE)(callConvDecl & IMAGE_CEE_CS_CALLCONV_MASK));
+        newSig.AppendByte((BYTE)callConvDecl);
 
         uint32_t declGenericCount = 0;
         if (callConvDecl & IMAGE_CEE_CS_CALLCONV_GENERIC)
