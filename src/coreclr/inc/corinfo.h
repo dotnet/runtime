@@ -813,6 +813,7 @@ enum CORINFO_ACCESS_FLAGS
 };
 
 // These are the flags set on an CORINFO_EH_CLAUSE
+// Keep values in sync with COR_ILEXCEPTION_CLAUSE flags
 enum CORINFO_EH_CLAUSE_FLAGS
 {
     CORINFO_EH_CLAUSE_NONE      = 0,
