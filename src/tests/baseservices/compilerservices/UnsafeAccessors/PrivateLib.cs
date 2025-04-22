@@ -20,16 +20,17 @@ namespace PrivateLib
 
         Class1() { }
 
-        static Class1 GetClass()
-        {
-            return new Class1();
-        }
+        static Class1 GetClass() => new Class1();
 
-        List<Class2> GetListOfClass2()
-        {
-            return new List<Class2>();
-        }
+        List<Class2> GetListOfClass2() => new List<Class2>();
     }
 
     class Class2 { }
+
+    class GenericClass<T>
+    {
+        List<T> M1() => new List<T>();
+
+        List<U> M2<U>() => new List<U>();
+    }
 }
