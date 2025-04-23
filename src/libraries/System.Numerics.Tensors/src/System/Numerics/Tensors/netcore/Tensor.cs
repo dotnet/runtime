@@ -1788,66 +1788,33 @@ namespace System.Numerics.Tensors
         /// <param name="dimension">dimension along which to reverse over. -1 will reverse over all of the dimensions of the left tensor.</param>
         public static ref readonly TensorSpan<T> ReverseDimension<T>(scoped in ReadOnlyTensorSpan<T> tensor, in TensorSpan<T> destination, int dimension)
         {
+            // When the dimension is -1, its just a straight reverse copy.
             if (dimension == -1)
             {
-                Debug.Assert(tensor._shape.LinearLength == destination._shape.LinearLength);
-                nint index = tensor._shape.LinearLength - 1;
-                Span<T> inputSpan = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._shape.LinearLength);
-                Span<T> outputSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-                for (int i = 0; i <= tensor._shape.LinearLength / 2; i++)
-                {
-                    outputSpan[i] = inputSpan[(int)index];
-                    outputSpan[(int)index--] = inputSpan[i];
-                }
+                TensorOperation.ValidateCompatibility(tensor, destination);
+                TensorOperation.ReverseInvoke<TensorOperation.CopyTo<T>, T, T>(tensor, destination);
             }
+            // With any other dimension, we need to copy the data in reverse order based on the provided dimension.
             else
             {
-                nint copyLength = 1;
-                for (nint i = dimension; i < tensor.Lengths.Length; i++)
-                {
-                    copyLength *= tensor.Lengths[(int)i];
-                }
-                copyLength /= tensor.Lengths[(int)dimension];
+                TensorOperation.ValidateCompatibility(tensor, destination);
+                Span<NRange> srcIndexes = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<NRange> srcIndexesRentedBuffer);
+                Span<NRange> dstIndexes = TensorOperation.RentedBuffer.CreateUninitialized(tensor.Rank, out TensorOperation.RentedBuffer<NRange> dstIndexesRentedBuffer);
 
-                scoped Span<nint> oIndices;
-                nint[]? oIndicesArray;
-                scoped Span<nint> iIndices;
-                nint[]? iIndicesArray;
-                if (tensor.Rank > 6)
+                for (int i = 0; i < srcIndexes.Length; i++)
                 {
-                    oIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
-                    oIndices = oIndicesArray.AsSpan(0, tensor.Rank);
-                    oIndices.Clear();
-
-                    iIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
-                    iIndices = iIndicesArray.AsSpan(0, tensor.Rank);
-                    iIndices.Clear();
-                }
-                else
-                {
-                    oIndicesArray = null;
-                    oIndices = stackalloc nint[tensor.Rank];
-                    iIndicesArray = null;
-                    iIndices = stackalloc nint[tensor.Rank];
+                    srcIndexes[i] = NRange.All;
+                    dstIndexes[i] = NRange.All;
                 }
 
-                iIndices[(int)dimension] = tensor.Lengths[(int)dimension] - 1;
-                nint copiedValues = 0;
-                ReadOnlyTensorSpan<T> islice = tensor.Slice(tensor.Lengths);
-
-                while (copiedValues < tensor.FlattenedLength)
+                for (int i = (int)tensor.Lengths[dimension]; i > 0; i--)
                 {
-                    // TensorSpanHelpers.Memmove(ref Unsafe.Add(ref destination._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, tensor.Strides, tensor.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    // TensorSpanHelpers.AdjustIndexes((int)dimension, 1, oIndices, tensor.Lengths);
-                    // TensorSpanHelpers.AdjustIndexesDown((int)dimension, 1, iIndices, tensor.Lengths);
-                    copiedValues += copyLength;
+                    srcIndexes[dimension] = new NRange(i - 1, i);
+                    dstIndexes[dimension] = new NRange(tensor.Lengths[dimension] - i, tensor.Lengths[dimension] - i + 1);
+                    TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(tensor.Slice(srcIndexes), destination.Slice(dstIndexes));
                 }
-
-                if (oIndicesArray != null && iIndicesArray != null)
-                {
-                    ArrayPool<nint>.Shared.Return(oIndicesArray);
-                    ArrayPool<nint>.Shared.Return(iIndicesArray);
-                }
+                srcIndexesRentedBuffer.Dispose();
+                dstIndexesRentedBuffer.Dispose();
             }
 
             return ref destination;
