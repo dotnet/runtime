@@ -563,7 +563,43 @@ int minipal_getcpufeatures(void)
         }
     }
 
-#endif // HAVE_HWPROBE_H
+#else
+
+    // https://docs.kernel.org/arch/riscv/uabi.html
+    // Example:
+    // isa             : rv64imadc_zifoo_zigoo_zafoo_sbar_scar_zxmbaz_xqux_xrux
+
+    FILE*  cpuInfo = fopen("/proc/cpuinfo", "r");
+    size_t n       = 0;
+    char*  buf     = NULL;
+
+    assert(cpuInfo != NULL);
+
+    while (getline(&buf, &n, cpuInfo) != -1 && (strncmp(buf, "isa", 3) != 0))
+    {
+    };
+
+    char* savePtr = NULL;
+    char* isaLine;
+
+    if ((strtok_r(buf, ":", &savePtr) != NULL) && ((isaLine = strtok_r(NULL, ":", &savePtr)) != NULL))
+    {
+        savePtr = NULL;
+        for (char* extension = strtok_r(isaLine, "_", &savePtr); extension != NULL;
+             extension       = strtok_r(NULL, "_", &savePtr))
+        {
+            if (strcmp(extension, "zba") == 0)
+            {
+                result |= RiscV64IntrinsicConstants_Zba;
+            }
+            else if (strcmp(extension, "zbb") == 0)
+            {
+                result |= RiscV64IntrinsicConstants_Zbb;
+            }
+        }
+    }
+
+#endif
 
 #endif // HOST_UNIX
 
