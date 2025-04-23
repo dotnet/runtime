@@ -1916,10 +1916,8 @@ private:
 
     InlineSString<100>  m_SystemDirectory;
 
-public:
     // Global domain that every one uses
     SPTR_DECL(SystemDomain, m_pSystemDomain);
-private:
     LoaderAllocator * m_pDelayedUnloadListOfLoaderAllocators;
 
 #ifndef DACCESS_COMPILE
@@ -1957,7 +1955,14 @@ public:
                                    bool enumThis);
 #endif
 
+    friend struct ::cdac_data<SystemDomain>;
 };  // class SystemDomain
+
+template<>
+struct cdac_data<SystemDomain>
+{
+    static constexpr void* const SystemDomain = (void*)&SystemDomain::m_pSystemDomain;
+};
 
 #include "comreflectioncache.inl"
 
