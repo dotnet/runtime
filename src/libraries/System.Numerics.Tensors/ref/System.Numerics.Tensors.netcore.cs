@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Collections;
-
 namespace System.Buffers
 {
     [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
