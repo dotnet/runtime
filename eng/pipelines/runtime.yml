@@ -1741,6 +1741,7 @@ extends:
       # Build and test Mono Minijit with the libraries testss
       #
       - template: /eng/pipelines/common/platform-matrix.yml
+        condition: eq(variables['isRollingBuild'], true)
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
