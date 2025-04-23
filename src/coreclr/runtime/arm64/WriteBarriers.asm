@@ -57,7 +57,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         PREPARE_EXTERNAL_VAR_INDIRECT $g_GCShadow, x12
         add     $destReg, $destReg, x12
 
-        PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadowEnd, x12
+        PREPARE_EXTERNAL_VAR_INDIRECT $g_GCShadowEnd, x12
         cmp     $destReg, x12
         bhs     %ft0
 
@@ -275,6 +275,7 @@ NotInHeap
         b       RhpAssignRefArm64
     LEAF_END RhpAssignRef
 
+#ifdef FEATURE_NATIVEAOT
 
 ;; Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 ;; successful updates.
@@ -388,5 +389,6 @@ NoBarrierXchg
         ret
 
     LEAF_END RhpCheckedXchg
+#endif // FEATURE_NATIVEAOT
 
     end
