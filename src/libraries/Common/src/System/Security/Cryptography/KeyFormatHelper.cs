@@ -161,8 +161,7 @@ namespace System.Security.Cryptography
         internal static AsnWriter WritePkcs8(
             AsnWriter algorithmIdentifierWriter,
             AsnWriter privateKeyWriter,
-            AsnWriter? attributesWriter = null,
-            bool wrapPrivateKeyInOctetString = true)
+            AsnWriter? attributesWriter = null)
         {
             // Ensure both algorithm identifier and key writers are balanced.
             int algorithmIdentifierLength = algorithmIdentifierWriter.GetEncodedLength();
@@ -194,14 +193,7 @@ namespace System.Security.Cryptography
             algorithmIdentifierWriter.CopyTo(writer);
 
             // PKI.privateKey
-            if (wrapPrivateKeyInOctetString)
-            {
-                using (writer.PushOctetString())
-                {
-                    privateKeyWriter.CopyTo(writer);
-                }
-            }
-            else
+            using (writer.PushOctetString())
             {
                 privateKeyWriter.CopyTo(writer);
             }

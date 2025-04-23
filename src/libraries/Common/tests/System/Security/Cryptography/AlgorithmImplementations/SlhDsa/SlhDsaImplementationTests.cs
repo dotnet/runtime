@@ -10,9 +10,6 @@ using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    /// <summary>
-    /// Tests for the default <see cref="SlhDsa"/> implementation.
-    /// </summary>
     [ConditionalClass(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
     public sealed class SlhDsaImplementationTests : SlhDsaTests
     {

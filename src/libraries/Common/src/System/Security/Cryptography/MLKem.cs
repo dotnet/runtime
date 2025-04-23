@@ -316,7 +316,7 @@ namespace System.Security.Cryptography
         protected abstract void ExportPrivateSeedCore(Span<byte> destination);
 
         /// <summary>
-        /// Imports an ML-KEM key from its private seed value.
+        ///   Imports an ML-KEM key from its private seed value.
         /// </summary>
         /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
         /// <param name="source">The private seed.</param>
@@ -347,7 +347,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Imports an ML-KEM key from its private seed value.
+        ///   Imports an ML-KEM key from its private seed value.
         /// </summary>
         /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
         /// <param name="source">The private seed.</param>
@@ -376,7 +376,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Imports an ML-KEM key from a decapsulation key.
+        ///   Imports an ML-KEM key from a decapsulation key.
         /// </summary>
         /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
         /// <param name="source">The decapsulation key.</param>
@@ -406,7 +406,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Imports an ML-KEM key from a decapsulation key.
+        ///   Imports an ML-KEM key from a decapsulation key.
         /// </summary>
         /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
         /// <param name="source">The decapsulation key.</param>
@@ -433,7 +433,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Imports an ML-KEM key from a encapsulation key.
+        ///   Imports an ML-KEM key from a encapsulation key.
         /// </summary>
         /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
         /// <param name="source">The encapsulation key.</param>
@@ -463,7 +463,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Imports an ML-KEM key from a encapsulation key.
+        ///   Imports an ML-KEM key from a encapsulation key.
         /// </summary>
         /// <param name="algorithm">The specific ML-KEM algorithm for this key.</param>
         /// <param name="source">The encapsulation key.</param>
@@ -783,7 +783,7 @@ namespace System.Security.Cryptography
         ///   otherwise, <see langword="false" />.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -836,7 +836,7 @@ namespace System.Security.Cryptography
         ///   otherwise, <see langword="false" />.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -865,7 +865,7 @@ namespace System.Security.Cryptography
         ///   using a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
-        ///   The password to use when encrypting the key material.
+        ///   The bytes to use as a password when encrypting the key material.
         /// </param>
         /// <param name="pbeParameters">
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
@@ -882,7 +882,7 @@ namespace System.Security.Cryptography
         ///   otherwise, <see langword="false" />.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -917,7 +917,7 @@ namespace System.Security.Cryptography
         ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
-        ///   The password to use when encrypting the key material.
+        ///   The bytes to use as a password when encrypting the key material.
         /// </param>
         /// <param name="pbeParameters">
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
@@ -926,7 +926,7 @@ namespace System.Security.Cryptography
         ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -966,7 +966,7 @@ namespace System.Security.Cryptography
         ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -1006,7 +1006,7 @@ namespace System.Security.Cryptography
         ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters" /> or <paramref name="password" /> is <see langword="null" />.
+        ///   <paramref name="pbeParameters" /> or <paramref name="password" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -1083,7 +1083,7 @@ namespace System.Security.Cryptography
         ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -1124,7 +1124,7 @@ namespace System.Security.Cryptography
         ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -1174,7 +1174,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
-            ThrowIfMalformedEncoding(source, AsnEncodingRules.DER);
+            ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
             unsafe
@@ -1241,7 +1241,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
         {
-            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
+            ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
             KeyFormatHelper.ReadPkcs8(s_knownOids, source, MLKemKeyReader, out int read, out MLKem kem);
@@ -1303,7 +1303,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
         {
-            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
+            ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1352,7 +1352,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
         {
-            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
+            ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1375,7 +1375,7 @@ namespace System.Security.Cryptography
         ///   The imported key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="password" /> is <see langword="null" />.
+        ///   <paramref name="password" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
@@ -1401,7 +1401,7 @@ namespace System.Security.Cryptography
         public static MLKem ImportEncryptedPkcs8PrivateKey(string password, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(password);
-            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
+            ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1436,19 +1436,21 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   <para>
-        ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
-        ///   are found, an exception is raised to prevent importing a key when the key is ambiguous.
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is raised to prevent importing a key when the key is ambiguous.
         ///   </para>
         ///   <para>
-        ///   This method supports the following PEM labels:
-        ///   <list type="bullet">
-        ///     <item><description>PUBLIC KEY</description></item>
-        ///     <item><description>PRIVATE KEY</description></item>
-        ///   </list>
+        ///     This method supports the following PEM labels:
+        ///     <list type="bullet">
+        ///       <item><description>PUBLIC KEY</description></item>
+        ///       <item><description>PRIVATE KEY</description></item>
+        ///     </list>
         ///   </para>
         /// </remarks>
         public static MLKem ImportFromPem(ReadOnlySpan<char> source)
         {
+            ThrowIfNotSupported();
+
             return PemKeyHelpers.ImportFactoryPem<MLKem>(source, label =>
                 label switch
                 {
@@ -1465,6 +1467,7 @@ namespace System.Security.Cryptography
         public static MLKem ImportFromPem(string source)
         {
             ArgumentNullException.ThrowIfNull(source);
+            ThrowIfNotSupported();
             return ImportFromPem(source.AsSpan());
         }
 
@@ -1477,33 +1480,33 @@ namespace System.Security.Cryptography
         ///   The password to use for decrypting the key material.
         /// </param>
         /// <exception cref="ArgumentException">
-        /// <para>
-        ///   <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
-        /// </para>
-        /// <para>-or-</para>
-        /// <para>
-        ///   <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
-        /// </para>
+        ///   <para>
+        ///     <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
+        ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///   The password is incorrect.
+        ///     The password is incorrect.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   indicate the key is for an algorithm other than the algorithm
-        ///   represented by this instance.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     indicate the key is for an algorithm other than the algorithm
+        ///     represented by this instance.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   represent the key in a format that is not supported.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     represent the key in a format that is not supported.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -1529,6 +1532,8 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static MLKem ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<char> password)
         {
+            ThrowIfNotSupported();
+
             return PemKeyHelpers.ImportEncryptedFactoryPem<MLKem, char>(
                 source,
                 password,
@@ -1541,36 +1546,36 @@ namespace System.Security.Cryptography
         /// <param name="source">
         ///   The PEM text of the encrypted key to import.</param>
         /// <param name="passwordBytes">
-        ///   The password to use for decrypting the key material.
+        ///   The bytes to use as a password when decrypting the key material.
         /// </param>
         /// <exception cref="ArgumentException">
-        /// <para>
-        ///   <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
-        /// </para>
-        /// <para>-or-</para>
-        /// <para>
-        ///   <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
-        /// </para>
+        ///   <para>
+        ///     <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
+        ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///   The password is incorrect.
+        ///     The password is incorrect.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   indicate the key is for an algorithm other than the algorithm
-        ///   represented by this instance.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     indicate the key is for an algorithm other than the algorithm
+        ///     represented by this instance.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   represent the key in a format that is not supported.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     represent the key in a format that is not supported.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -1591,6 +1596,8 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static MLKem ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<byte> passwordBytes)
         {
+            ThrowIfNotSupported();
+
             return PemKeyHelpers.ImportEncryptedFactoryPem<MLKem, byte>(
                 source,
                 passwordBytes,
@@ -1605,6 +1612,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(password);
+            ThrowIfNotSupported();
 
             return ImportFromEncryptedPem(source.AsSpan(), password.AsSpan());
         }
@@ -1617,6 +1625,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(passwordBytes);
+            ThrowIfNotSupported();
 
             return ImportFromEncryptedPem(source.AsSpan(), new ReadOnlySpan<byte>(passwordBytes));
         }
@@ -1763,10 +1772,19 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void ThrowIfMalformedEncoding(ReadOnlySpan<byte> data, AsnEncodingRules encoding)
+        private static void ThrowIfInvalidLength(ReadOnlySpan<byte> data)
         {
-            // TODO should we use ReadEncodedValue with try/catch instead so we can rethrow with a useful inner exception?
-            if (!AsnDecoder.TryReadEncodedValue(data, encoding, out _, out _, out _, out int bytesRead) || bytesRead != data.Length)
+            int bytesRead;
+            try
+            {
+                AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out bytesRead);
+            }
+            catch (AsnContentException ace)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ace);
+            }
+
+            if (bytesRead != data.Length)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }

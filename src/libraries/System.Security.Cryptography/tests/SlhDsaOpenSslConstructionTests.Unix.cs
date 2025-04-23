@@ -5,10 +5,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    /// <summary>
-    /// Basic constructor validation for <see cref="SlhDsaOpenSsl"/> that is relevant even when OpenSSL doesn't support SLH-DSA.
-    /// For more comprehensive tests that rely on OpenSSL support for SLH-DSA, see <see cref="SlhDsaOpenSslTests"/>.
-    /// </summary>
     public static class SlhDsaOpenSslConstructionTests
     {
         [Fact]

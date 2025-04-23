@@ -11,10 +11,6 @@ using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    /// <summary>
-    /// Validates that <see cref="SlhDsa"/> instance methods satisfy the declared contracts. This includes correct validation of arguments before
-    /// calling virtual/abstract methods and using the returned values correctly.
-    /// </summary>
     public static class SlhDsaContractTests
     {
         public static IEnumerable<object[]> ArgumentValidationData =>
@@ -357,7 +353,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
             select new object[] { algorithm, pbeParameters };
 
-        [Theory]
+        public static bool HasSymmetricEncryption => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
+
+        [ConditionalTheory(nameof(HasSymmetricEncryption))]
         [MemberData(nameof(AlgorithmWithPbeParametersData))]
         public static void ExportEncryptedPkcs8PrivateKey_CallsExportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm, PbeParameters pbeParameters)
         {
@@ -470,7 +468,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 {
                     // New buffer must be larger than the original
                     bool ret = true;
-                    AssertExtensions.TrueExpression(destination.Length > originalSize);
+                    AssertExtensions.GreaterThan(destination.Length, originalSize);
                     minimalEncoding.CopyTo(destination);
                     bytesWritten = minimalEncoding.Length;
 
@@ -507,14 +505,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 // Return false to force a resize
                 bool ret = false;
 
-                AssertExtensions.TrueExpression(destination.Length > previousSize);
+                AssertExtensions.GreaterThan(destination.Length, previousSize);
                 previousSize = destination.Length;
                 bytesWritten = 0;
 
                 return ret;
             };
 
-            Assert.Throws<OverflowException>(slhDsa.ExportPkcs8PrivateKey);   
+            AssertExtensions.ThrowsAny<OverflowException, OutOfMemoryException>(() => slhDsa.ExportPkcs8PrivateKey());
             AssertExtensions.TrueExpression(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount > 0);
         }
 

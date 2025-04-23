@@ -9,9 +9,6 @@ using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    /// <summary>
-    /// Base class for testing SLH-DSA implementations that derive from <see cref="SlhDsa"/>.
-    /// </summary>
     public abstract class SlhDsaTests
     {
         protected abstract SlhDsa GenerateKey(SlhDsaAlgorithm algorithm);

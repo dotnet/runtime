@@ -264,7 +264,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Export the current key in the PKCS#8 PrivateKeyInfo format.
+        ///   Exports the current key in the PKCS#8 PrivateKeyInfo format.
         /// </summary>
         /// <returns>
         ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of the this key.
@@ -343,12 +343,12 @@ namespace System.Security.Cryptography
         {
             // Secret key size for SLH-DSA is at most 128 bytes so we can stack allocate it.
             int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
-            Debug.Assert(secretKeySizeInBytes is <= 128 and >= 0);
-            Span<byte> buffer = stackalloc byte[secretKeySizeInBytes];
+            Debug.Assert(secretKeySizeInBytes is <= 128);
+            Span<byte> secretKey = (stackalloc byte[128])[..secretKeySizeInBytes];
 
             try
             {
-                int secretKeyBytesWritten = ExportSlhDsaSecretKey(buffer);
+                int secretKeyBytesWritten = ExportSlhDsaSecretKey(secretKey);
                 Debug.Assert(secretKeyBytesWritten == secretKeySizeInBytes);
 
                 // The ASN.1 overhead of a PrivateKeyInfo encoding a private key is 22 bytes.
@@ -366,16 +366,14 @@ namespace System.Security.Cryptography
                         writer.WriteObjectIdentifier(Algorithm.Oid);
                     }
 
-                    writer.WriteOctetString(buffer);
+                    writer.WriteOctetString(secretKey);
                 }
 
                 return writer.TryEncode(destination, out bytesWritten);
             }
             finally
             {
-                // TODO Is this needed for stackalloc'd spans? Technically stack isn't cleared on return
-                // and a subsequent frame with SkipLocalsInit can see this data..
-                CryptographicOperations.ZeroMemory(buffer);
+                CryptographicOperations.ZeroMemory(secretKey);
             }
         }
 
@@ -410,7 +408,7 @@ namespace System.Security.Cryptography
         ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -446,7 +444,7 @@ namespace System.Security.Cryptography
         ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
-        ///   The password to use when encrypting the key material.
+        ///   The bytes to use as a password when encrypting the key material.
         /// </param>
         /// <param name="pbeParameters">
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
@@ -455,7 +453,7 @@ namespace System.Security.Cryptography
         ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -509,7 +507,7 @@ namespace System.Security.Cryptography
         ///   otherwise, <see langword="false" />.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -567,7 +565,7 @@ namespace System.Security.Cryptography
         ///   otherwise, <see langword="false" />.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -617,7 +615,7 @@ namespace System.Security.Cryptography
         ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -642,7 +640,7 @@ namespace System.Security.Cryptography
             try
             {
                 // Skip clear since the data is already encrypted.
-                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: true);
+                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
             }
             finally
             {
@@ -811,7 +809,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
-            ThrowIfMalformedEncoding(source, AsnEncodingRules.DER);
+            ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
             unsafe
@@ -870,7 +868,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
         {
-            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
+            ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
             KeyFormatHelper.ReadPkcs8(
@@ -939,7 +937,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
         {
-            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
+            ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -988,7 +986,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
         {
-            ThrowIfMalformedEncoding(source, AsnEncodingRules.BER);
+            ThrowIfInvalidLength(source);
             ThrowIfNotSupported();
 
             return KeyFormatHelper.DecryptPkcs8(
@@ -1023,19 +1021,21 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   <para>
-        ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
-        ///   are found, an exception is raised to prevent importing a key when the key is ambiguous.
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is raised to prevent importing a key when the key is ambiguous.
         ///   </para>
         ///   <para>
-        ///   This method supports the following PEM labels:
-        ///   <list type="bullet">
-        ///     <item><description>PUBLIC KEY</description></item>
-        ///     <item><description>PRIVATE KEY</description></item>
-        ///   </list>
+        ///     This method supports the following PEM labels:
+        ///     <list type="bullet">
+        ///       <item><description>PUBLIC KEY</description></item>
+        ///       <item><description>PRIVATE KEY</description></item>
+        ///     </list>
         ///   </para>
         /// </remarks>
         public static SlhDsa ImportFromPem(ReadOnlySpan<char> source)
         {
+            ThrowIfNotSupported();
+
             return PemKeyHelpers.ImportFactoryPem<SlhDsa>(source, label =>
                 label switch
                 {
@@ -1054,33 +1054,33 @@ namespace System.Security.Cryptography
         ///   The password to use for decrypting the key material.
         /// </param>
         /// <exception cref="ArgumentException">
-        /// <para>
-        ///   <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
-        /// </para>
-        /// <para>-or-</para>
-        /// <para>
-        ///   <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
-        /// </para>
+        ///   <para>
+        ///     <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
+        ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///   The password is incorrect.
+        ///     The password is incorrect.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   indicate the key is for an algorithm other than the algorithm
-        ///   represented by this instance.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     indicate the key is for an algorithm other than the algorithm
+        ///     represented by this instance.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   represent the key in a format that is not supported.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     represent the key in a format that is not supported.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -1106,6 +1106,8 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static SlhDsa ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<char> password)
         {
+            ThrowIfNotSupported();
+
             return PemKeyHelpers.ImportEncryptedFactoryPem<SlhDsa, char>(
                 source,
                 password,
@@ -1118,36 +1120,36 @@ namespace System.Security.Cryptography
         /// <param name="source">
         ///   The PEM text of the encrypted key to import.</param>
         /// <param name="passwordBytes">
-        ///   The password to use for decrypting the key material.
+        ///   The bytes to use as a password when decrypting the key material.
         /// </param>
         /// <exception cref="ArgumentException">
-        /// <para>
-        ///   <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
-        /// </para>
-        /// <para>-or-</para>
-        /// <para>
-        ///   <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
-        /// </para>
+        ///   <para>
+        ///     <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
+        ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
-        ///   The password is incorrect.
+        ///     The password is incorrect.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   indicate the key is for an algorithm other than the algorithm
-        ///   represented by this instance.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     indicate the key is for an algorithm other than the algorithm
+        ///     represented by this instance.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text from <paramref name="source" />
-        ///   represent the key in a format that is not supported.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     represent the key in a format that is not supported.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -1168,6 +1170,8 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static SlhDsa ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<byte> passwordBytes)
         {
+            ThrowIfNotSupported();
+
             return PemKeyHelpers.ImportEncryptedFactoryPem<SlhDsa, byte>(
                 source,
                 passwordBytes,
@@ -1322,10 +1326,10 @@ namespace System.Security.Cryptography
         {
             // Public key size for SLH-DSA is at most 64 bytes so we can stack allocate it.
             int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
-            Debug.Assert(publicKeySizeInBytes is <= 64 and >= 0);
-            Span<byte> buffer = stackalloc byte[publicKeySizeInBytes];
+            Debug.Assert(publicKeySizeInBytes is <= 64);
+            Span<byte> publicKey = (stackalloc byte[64])[..publicKeySizeInBytes];
 
-            ExportSlhDsaPublicKeyCore(buffer);
+            ExportSlhDsaPublicKeyCore(publicKey);
 
             // The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is 18 bytes.
             // Round it off to 32. This checked operation should never throw because the inputs are not
@@ -1340,7 +1344,7 @@ namespace System.Security.Cryptography
                     writer.WriteObjectIdentifier(Algorithm.Oid);
                 }
 
-                writer.WriteBitString(buffer);
+                writer.WriteBitString(publicKey);
             }
 
             return writer;
@@ -1351,8 +1355,16 @@ namespace System.Security.Cryptography
             AsnWriter tmp = ExportPkcs8PrivateKeyCallback(static pkcs8 =>
             {
                 AsnWriter writer = new(AsnEncodingRules.BER, initialCapacity: pkcs8.Length);
-                // TODO Is try..catch { writer.Reset(); } needed?
-                writer.WriteEncodedValueForCrypto(pkcs8);
+                try
+                {
+                    writer.WriteEncodedValueForCrypto(pkcs8);
+                }
+                catch
+                {
+                    writer.Reset();
+                    throw;
+                }
+
                 return writer;
             });
 
@@ -1371,8 +1383,16 @@ namespace System.Security.Cryptography
             AsnWriter tmp = ExportPkcs8PrivateKeyCallback(static pkcs8 =>
             {
                 AsnWriter writer = new(AsnEncodingRules.BER, initialCapacity: pkcs8.Length);
-                // TODO Is try..catch { writer.Reset(); } needed?
-                writer.WriteEncodedValueForCrypto(pkcs8);
+                try
+                {
+                    writer.WriteEncodedValueForCrypto(pkcs8);
+                }
+                catch
+                {
+                    writer.Reset();
+                    throw;
+                }
+
                 return writer;
             });
 
@@ -1444,10 +1464,19 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void ThrowIfMalformedEncoding(ReadOnlySpan<byte> data, AsnEncodingRules encoding)
+        private static void ThrowIfInvalidLength(ReadOnlySpan<byte> data)
         {
-            // TODO should we use ReadEncodedValue with try/catch instead so we can rethrow with a useful inner exception?
-            if (!AsnDecoder.TryReadEncodedValue(data, encoding, out _, out _, out _, out int bytesRead) || bytesRead != data.Length)
+            int bytesRead;
+            try
+            {
+                AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out bytesRead);
+            }
+            catch (AsnContentException ace)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ace);
+            }
+
+            if (bytesRead != data.Length)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }

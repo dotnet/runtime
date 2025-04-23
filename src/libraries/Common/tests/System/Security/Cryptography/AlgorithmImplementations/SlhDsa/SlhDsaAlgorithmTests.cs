@@ -5,9 +5,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    /// <summary>
-    /// <see cref="SlhDsaAlgorithm"/> tests.
-    /// </summary>
     public sealed class SlhDsaAlgorithmTests
     {
         [Fact]

@@ -10,9 +10,6 @@ using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    /// <summary>
-    /// Tests <see cref="SlhDsa"/> Generate and Import methods.
-    /// </summary>
     public static class SlhDsaFactoryTests
     {
         [Fact]
@@ -60,7 +57,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertThrows(WritePemRaw("PUBLIC KEY", "%"));
 
             static void AssertThrows(string pem) =>
-                AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromPem(pem));
+                AssertThrowIfNotSupported(() =>
+                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromPem(pem)));
         }
 
         [Fact]
@@ -74,8 +72,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             static void AssertThrows(string encryptedPem)
             {
-                AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem, "password"));
-                AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem, "password"u8));
+                AssertThrowIfNotSupported(() =>
+                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem, "password")));
+                AssertThrowIfNotSupported(() =>
+                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem, "password"u8)));
             }
         }
 
@@ -94,9 +94,20 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             static void AssertThrows(ReadOnlyMemory<byte> encodedBytes)
             {
-                AssertImportSubjectKeyPublicInfo(import => Assert.Throws<CryptographicException>(import), encodedBytes);
-                AssertImportPkcs8PrivateKey(import => Assert.Throws<CryptographicException>(import), encodedBytes);
-                AssertImportEncryptedPkcs8PrivateKey(import => Assert.Throws<CryptographicException>(import), encodedBytes);
+                AssertImportSubjectKeyPublicInfo(
+                    import => Assert.Throws<CryptographicException>(import),
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(import)),
+                    encodedBytes);
+
+                AssertImportPkcs8PrivateKey(
+                    import => Assert.Throws<CryptographicException>(import),
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(import)),
+                    encodedBytes);
+
+                AssertImportEncryptedPkcs8PrivateKey(
+                    import => Assert.Throws<CryptographicException>(import),
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(import)),
+                    encodedBytes);
             }
         }
 
@@ -105,7 +116,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             // Valid BER but invalid DER - uses indefinite length encoding
             byte[] indefiniteLengthOctet = [0x04, 0x80, 0x01, 0x02, 0x03, 0x04, 0x00, 0x00];
-            AssertImportSubjectKeyPublicInfo(import => Assert.Throws<CryptographicException>(import), indefiniteLengthOctet);
+            AssertImportSubjectKeyPublicInfo(import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(import)), indefiniteLengthOctet);
         }
 
         [Fact]
@@ -166,20 +177,26 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [Fact]
         public static void ImportPkcs8PrivateKey_AlgorithmErrorsInAsn()
         {
-            // RSA key isn't valid for SLH-DSA
-            using RSA rsa = RSA.Create();
-            byte[] rsaPkcs8Bytes = rsa.ExportPkcs8PrivateKey();
-            AssertImportPkcs8PrivateKey(
-                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import())),
-                rsaPkcs8Bytes);
+            if (!OperatingSystem.IsBrowser())
+            {
+                // RSA key isn't valid for SLH-DSA
+                using RSA rsa = RSA.Create();
+                byte[] rsaPkcs8Bytes = rsa.ExportPkcs8PrivateKey();
+                AssertImportPkcs8PrivateKey(
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import())),
+                    rsaPkcs8Bytes);
+            }
 
             // Create an invalid SLH-DSA PKCS8 with parameters
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteBitString("random bitstring"u8);
+            byte[] someEncodedBytes = writer.Encode();
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
                     Algorithm = AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
-                    Parameters = rsaPkcs8Bytes, // <-- Invalid
+                    Parameters = someEncodedBytes, // <-- Invalid
                 },
                 PrivateKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes]
             };
