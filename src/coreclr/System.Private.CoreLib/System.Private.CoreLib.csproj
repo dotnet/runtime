@@ -19,8 +19,9 @@
     <ILLinkDescriptorsXml>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXml>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
 
-    <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
-    <FeaturePortableTimer>true</FeaturePortableTimer>
+    <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
+    <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
+    <FeatureSingleThread Condition="'$(TargetsBrowser)' == 'true'">true</FeatureSingleThread>
   </PropertyGroup>
 
   <ItemGroup>
