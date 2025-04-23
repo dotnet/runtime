@@ -25,6 +25,7 @@ internal sealed class Module : IData<Module>
         ReadyToRunInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(ReadyToRunInfo)].Offset);
         GrowableSymbolStream = target.ReadPointer(address + (ulong)type.Fields[nameof(GrowableSymbolStream)].Offset);
         AvailableTypeParams = target.ReadPointer(address + (ulong)type.Fields[nameof(AvailableTypeParams)].Offset);
+        InstMethodHashTable = target.ReadPointer(address + (ulong)type.Fields[nameof(InstMethodHashTable)].Offset);
 
         FieldDefToDescMap = address + (ulong)type.Fields[nameof(FieldDefToDescMap)].Offset;
         ManifestModuleReferencesMap = address + (ulong)type.Fields[nameof(ManifestModuleReferencesMap)].Offset;
@@ -46,6 +47,7 @@ internal sealed class Module : IData<Module>
     public TargetPointer ReadyToRunInfo { get; init; }
     public TargetPointer GrowableSymbolStream { get; init; }
     public TargetPointer AvailableTypeParams { get; init; }
+    public TargetPointer InstMethodHashTable { get; init; }
 
     public TargetPointer FieldDefToDescMap { get; init; }
     public TargetPointer ManifestModuleReferencesMap { get; init; }

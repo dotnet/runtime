@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
+
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -137,16 +140,30 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     internal class EnumMethodInstances
     {
         private readonly Target _target;
-        public EnumMethodInstances(Target target)
+        private readonly TargetPointer _mainMethodDesc;
+        private readonly TargetPointer _appDomain;
+        private readonly ILoader _loader;
+        private readonly IRuntimeTypeSystem _rts;
+        public EnumMethodInstances(Target target, TargetPointer methodDesc, TargetPointer appDomain)
         {
             _target = target;
+            _mainMethodDesc = methodDesc;
+            if (appDomain == TargetPointer.Null)
+            {
+                TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+                _appDomain = _target.ReadPointer(appDomainPointer);
+            }
+            else
+            {
+                _appDomain = appDomain;
+            }
 
+            _loader = _target.Contracts.Loader;
+            _rts = _target.Contracts.RuntimeTypeSystem;
         }
 
         public int Start(TargetPointer methodDesc, TargetPointer appDomain)
         {
-            ILoader loader = _target.Contracts.Loader;
-
             if (appDomain == TargetPointer.Null)
             {
                 TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
@@ -158,13 +175,13 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                 return HResults.S_FALSE;
             }
 
-            List<Contracts.ModuleHandle> modules = loader.GetAssemblies(
+            List<Contracts.ModuleHandle> modules = _loader.GetAssemblies(
                 appDomain,
                 AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
 
             foreach (Contracts.ModuleHandle moduleHandle in modules)
             {
-                List<TargetPointer> typeParams = loader.GetAvailableTypeParams(moduleHandle);
+                List<TargetPointer> typeParams = _loader.GetAvailableTypeParams(moduleHandle);
                 foreach (TargetPointer type in typeParams)
                 {
                     Console.WriteLine(type);
@@ -177,6 +194,117 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             return HResults.S_OK;
         }
 
+        public IEnumerable<MethodDescHandle> IterateMethodInstantiations(Contracts.ModuleHandle moduleHandle)
+        {
+            List<TargetPointer> methodInstantiations = _loader.GetInstantiatedMethods(moduleHandle);
+
+            foreach (TargetPointer methodPtr in methodInstantiations)
+            {
+                yield return _rts.GetMethodDescHandle(methodPtr);
+            }
+        }
+
+        public IEnumerable<Contracts.TypeHandle> IterateTypeParams(Contracts.ModuleHandle moduleHandle)
+        {
+            List<TargetPointer> typeParams = _loader.GetAvailableTypeParams(moduleHandle);
+
+            foreach (TargetPointer type in typeParams)
+            {
+                yield return _rts.GetTypeHandle(type);
+            }
+        }
+
+        public IEnumerable<Contracts.ModuleHandle> IterateModules()
+        {
+            ILoader loader = _target.Contracts.Loader;
+            List<Contracts.ModuleHandle> modules = loader.GetAssemblies(
+                _appDomain,
+                AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
+
+            foreach (Contracts.ModuleHandle moduleHandle in modules)
+            {
+                yield return moduleHandle;
+            }
+        }
+
+        public IEnumerable<MethodDescHandle> IterateMethodInstances()
+        {
+            /*
+            There are 4 cases for method instances:
+            1. Non-generic method on non-generic type  (There is 1 MethodDesc for the method (excluding unboxing stubs, and such)
+            2. Generic method on non-generic type (There is a generic defining method + a instantiated method for each particular instantiation)
+            3. Non-generic method on generic type (There is 1 method for each generic instance created + 1 for the method on the uninstantiated generic type)
+            4. Generic method on Generic type (There are N generic defining methods where N is the number of generic instantiations of the generic type + 1 on the uninstantiated generic types + M different generic instances of the method)
+            */
+
+            MethodDescHandle mainMD = _rts.GetMethodDescHandle(_mainMethodDesc);
+
+            if (!HasClassOrMethodInstantiation(_mainMethodDesc))
+            {
+                // case 1
+                // no method or class instantiation, then it's not generic.
+                yield return mainMD;
+                yield break;
+            }
+
+            TargetPointer mtAddr = _rts.GetMethodTable(mainMD);
+            TypeHandle mainMT = _rts.GetTypeHandle(mtAddr);
+            TargetPointer mainModule = _rts.GetModule(mainMT);
+            uint mainMTToken = _rts.GetTypeDefToken(mainMT);
+            uint mainMDToken = _rts.GetMethodToken(mainMD);
+            ushort slotNum = _rts.GetSlotNumber(mainMD);
+
+            if (HasMethodInstantiation(_mainMethodDesc))
+            {
+                // case 2/4
+                // 2 is trivial, 4 is covered because the defining method on a generic type is not instantiated
+                foreach (Contracts.ModuleHandle moduleHandle in IterateModules())
+                {
+                    foreach (MethodDescHandle methodDesc in IterateMethodInstantiations(moduleHandle))
+                    {
+                        TypeHandle methodTypeHandle = _rts.GetTypeHandle(_rts.GetMethodTable(methodDesc));
+
+                        if (mainModule != _rts.GetModule(methodTypeHandle)) continue;
+                        if (mainMDToken != _rts.GetMethodToken(methodDesc)) continue;
+
+                        yield return methodDesc;
+                    }
+                }
+            }
+
+            if (HasClassInstantiation(_mainMethodDesc))
+            {
+                // case 3
+                // class instantiations are only interesting if the method is not generic
+                foreach (Contracts.ModuleHandle moduleHandle in IterateModules())
+                {
+                    if (HasClassInstantiation(_mainMethodDesc))
+                    {
+                        foreach (Contracts.TypeHandle typeParam in IterateTypeParams(moduleHandle))
+                        {
+                            uint typeParamToken = _rts.GetTypeDefToken(typeParam);
+
+                            // not a MethodTable
+                            if (typeParamToken == 0) continue;
+
+                            // Check the class token
+                            if (mainMTToken != typeParamToken) continue;
+
+                            // Check the module is correct
+                            if (mainModule != _rts.GetModule(typeParam)) continue;
+
+                            TargetPointer cmt = _rts.GetCanonicalMethodTable(typeParam);
+                            TypeHandle cmtHandle = _rts.GetTypeHandle(cmt);
+
+
+
+                        }
+                    }
+                }
+            }
+
+        }
+
         private bool HasNativeCodeAnyVersion(TargetPointer methodDesc)
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
@@ -187,6 +315,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
             if (pcode == TargetCodePointer.Null)
             {
+                // I think this is equivalent to get any native code version
                 NativeCodeVersionHandle nativeCodeVersion = cv.GetActiveNativeCodeVersion(methodDesc);
                 if (nativeCodeVersion.Valid)
                 {
