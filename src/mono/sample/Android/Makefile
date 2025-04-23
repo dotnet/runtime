@@ -61,4 +61,3 @@ run: appbuilder
 clean:
 	rm -rf $(REPO_DIR)/artifacts/bin/AndroidSampleApp
 	rm -rf $(REPO_DIR)/artifacts/obj/mono/AndroidSampleApp
-
