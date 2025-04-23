@@ -123,7 +123,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_Await,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_AsyncSuspend,
-    NI_System_Runtime_CompilerServices_RuntimeHelpers_get_RuntimeAsyncViaJitGeneratedStateMachines,
 
     NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
 
