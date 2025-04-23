@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Diagnostics.CDac.ExecutionManagerHelpers;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
-namespace Microsoft.Diagnostics.CDac.Tests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 internal abstract class NibbleMapTestBuilderBase
 {

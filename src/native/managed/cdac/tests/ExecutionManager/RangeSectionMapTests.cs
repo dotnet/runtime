@@ -4,9 +4,9 @@
 using System;
 using Xunit;
 
-using Microsoft.Diagnostics.CDac.ExecutionManagerHelpers;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
-namespace Microsoft.Diagnostics.CDac.Tests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class RangeSectionMapTests
 {

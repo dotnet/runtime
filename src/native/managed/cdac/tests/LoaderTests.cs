@@ -3,11 +3,11 @@
 
 using System;
 using System.IO;
-using Microsoft.Diagnostics.CDac.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.CDac.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 using MockLoader = MockDescriptors.Loader;
 

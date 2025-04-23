@@ -4,12 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Diagnostics.CDac.Contracts;
-using Microsoft.Diagnostics.CDac.RuntimeTypeSystemHelpers;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.CDac.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class MethodDescTests
 {

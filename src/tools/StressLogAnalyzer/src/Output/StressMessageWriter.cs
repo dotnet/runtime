@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text;
-using Microsoft.Diagnostics.CDac;
-using Microsoft.Diagnostics.CDac.Contracts;
+using Microsoft.Diagnostics.DataContractReader;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace StressLogAnalyzer.Output;
 

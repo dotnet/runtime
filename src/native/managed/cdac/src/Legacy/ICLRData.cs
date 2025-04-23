@@ -5,7 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-namespace Microsoft.Diagnostics.CDac.Legacy;
+namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 // This file contains managed declarations for the IXCLRData interfaces.
 // See src/coreclr/inc/clrdata.idl

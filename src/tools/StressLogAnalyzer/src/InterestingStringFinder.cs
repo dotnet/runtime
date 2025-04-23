@@ -11,7 +11,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Diagnostics.CDac;
+using Microsoft.Diagnostics.DataContractReader;
 
 namespace StressLogAnalyzer
 {

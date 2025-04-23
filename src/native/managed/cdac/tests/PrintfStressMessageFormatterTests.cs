@@ -5,12 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.Diagnostics.CDac;
-using Microsoft.Diagnostics.CDac.Contracts;
+using Microsoft.Diagnostics.DataContractReader;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.CDac.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class PrintfStressMessageFormatterTests
 {

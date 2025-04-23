@@ -4,12 +4,12 @@
 using Xunit;
 using Moq;
 
-using Microsoft.Diagnostics.CDac.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System.Collections.Generic;
 using System;
 using System.Reflection;
 
-namespace Microsoft.Diagnostics.CDac.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class PrecodeStubsTests
 {

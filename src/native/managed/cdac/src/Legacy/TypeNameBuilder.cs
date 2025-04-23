@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
-using Microsoft.Diagnostics.CDac.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
-namespace Microsoft.Diagnostics.CDac.Legacy;
+namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [Flags]
 internal enum TypeNameFormat

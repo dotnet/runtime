@@ -3,12 +3,12 @@
 
 using Xunit;
 
-using Microsoft.Diagnostics.CDac.ExecutionManagerHelpers;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using System.Collections.Generic;
 using System;
 using Moq;
 
-namespace Microsoft.Diagnostics.CDac.Tests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class RuntimeFunctionTests
 {

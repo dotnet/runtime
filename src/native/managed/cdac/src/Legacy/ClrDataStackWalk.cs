@@ -6,10 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using Microsoft.Diagnostics.CDac.Contracts;
-using Microsoft.Diagnostics.CDac.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
-namespace Microsoft.Diagnostics.CDac.Legacy;
+namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
 internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk

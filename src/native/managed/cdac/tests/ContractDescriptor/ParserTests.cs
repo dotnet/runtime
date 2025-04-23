@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Xunit;
 
-namespace Microsoft.Diagnostics.CDac.Tests.ContractDescriptor;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;
 
 public class ParserTests
 {

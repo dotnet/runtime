@@ -4,12 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Diagnostics.CDac.ExecutionManagerHelpers;
-using Microsoft.Diagnostics.CDac.Tests.ExecutionManager;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
+using Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
-using InteriorMapValue = Microsoft.Diagnostics.CDac.ExecutionManagerHelpers.RangeSectionMap.InteriorMapValue;
+using InteriorMapValue = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.RangeSectionMap.InteriorMapValue;
 
-namespace Microsoft.Diagnostics.CDac.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 internal partial class MockDescriptors
 {

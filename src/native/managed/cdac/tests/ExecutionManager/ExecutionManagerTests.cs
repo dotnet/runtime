@@ -4,10 +4,10 @@
 using Xunit;
 
 using System.Collections.Generic;
-using Microsoft.Diagnostics.CDac.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 
-namespace Microsoft.Diagnostics.CDac.Tests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class ExecutionManagerTests
 {

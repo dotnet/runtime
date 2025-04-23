@@ -6,7 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Microsoft.Diagnostics.CDac.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 internal unsafe class TargetTestHelpers
 {
     public MockTarget.Architecture Arch { get; init; }

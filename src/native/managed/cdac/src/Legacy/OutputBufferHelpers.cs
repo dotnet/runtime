@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Microsoft.Diagnostics.CDac.Legacy;
+namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 internal static class OutputBufferHelpers
 {

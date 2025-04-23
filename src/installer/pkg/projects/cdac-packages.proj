@@ -2,7 +2,7 @@
   <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
 
   <ItemGroup>
-    <ProjectReference Include="Microsoft.DotNet.CDac.Transport\Microsoft.DotNet.CDac.Transport.pkgproj" 
+    <ProjectReference Include="Microsoft.DotNet.CDAC.Transport\Microsoft.DotNet.CDAC.Transport.pkgproj" 
                       AdditionalProperties="PackageTargetRuntime=$(OutputRID)" />
   </ItemGroup>
 

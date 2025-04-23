@@ -5,9 +5,9 @@ using Moq;
 using Xunit;
 
 using System;
-using Microsoft.Diagnostics.CDac.ExecutionManagerHelpers;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
-namespace Microsoft.Diagnostics.CDac.Tests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class HotColdLookupTests
 {
