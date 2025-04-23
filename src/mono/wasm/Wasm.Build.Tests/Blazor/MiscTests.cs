@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
 using Xunit.Abstractions;
@@ -95,5 +97,24 @@ public class MiscTests : BlazorWasmTestBase
         BootJsonData bootJson = _provider.GetBootJson(bootConfigPath);
 
         Assert.Contains(bootJson.resources.lazyAssembly.Keys, f => f.StartsWith(razorClassLibraryName));
+    }
+
+    
+    [Fact]
+    public async Task TestOverrideHtmlAssetPlaceholders()
+    {
+        var config = Configuration.Release;
+        string extraProperties = "<OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>";
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_import_map_html", extraProperties: extraProperties);
+        UpdateFile(Path.Combine("wwwroot", "index.html"), new Dictionary<string, string> {
+            { """<base href="/" />""", """<script type="importmap"></script> <base href="/" />""" }
+        });
+
+        BuildProject(info, config);
+        BrowserRunOptions runOptions = new(config, TestScenario: "DotnetRun");
+        await RunForBuildWithDotnetRun(runOptions);
+        
+        PublishProject(info, config, new PublishOptions(UseCache: false));
+        await RunForPublishWithWebServer(runOptions);
     }
 }

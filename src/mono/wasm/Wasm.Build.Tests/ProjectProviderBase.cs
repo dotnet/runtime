@@ -41,8 +41,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public bool IsFingerprintingEnabled => EnvironmentVariables.UseFingerprinting;
 
-    public bool IsFingerprintingOnDotnetJsEnabled => EnvironmentVariables.UseFingerprintingDotnetJS;
-
     // Returns the actual files on disk
     public IReadOnlyDictionary<string, DotNetFileName> AssertBasicBundle(AssertBundleOptions assertOptions)
     {
@@ -82,7 +80,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         EnsureProjectDirIsSet();
         return FindAndAssertDotnetFiles(binFrameworkDir: assertOptions.BinFrameworkDir,
-                                        expectFingerprintOnDotnetJs: IsFingerprintingOnDotnetJsEnabled,
                                         assertOptions,
                                         superSet: GetAllKnownDotnetFilesToFingerprintMap(assertOptions),
                                         expected: GetDotNetFilesExpectedSet(assertOptions)
@@ -94,11 +91,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public IReadOnlyDictionary<string, DotNetFileName> FindAndAssertDotnetFiles(
         string binFrameworkDir,
-        bool expectFingerprintOnDotnetJs,
         AssertBundleOptions assertOptions,
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlySet<string> expected)
     {
+        var expectFingerprintOnDotnetJs = assertOptions.ExpectDotnetJsFingerprinting;
         EnsureProjectDirIsSet();
         var actual = new SortedDictionary<string, DotNetFileName>();
 
@@ -109,6 +106,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                                              SearchOption.TopDirectoryOnly)
                                                 .Order()
                                                 .ToList();
+        
+        var comparisonLogging = new List<string>();
+
         foreach ((string expectedFilename, bool expectFingerprint) in superSet.OrderByDescending(kvp => kvp.Key))
         {
             string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
@@ -121,7 +121,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                         return false;
 
                     string actualFilename = Path.GetFileName(actualFile);
-                    // _testOutput.WriteLine($"Comparing {expectedFilename} with {actualFile}, expectFingerprintOnDotnetJs: {expectFingerprintOnDotnetJs}, expectFingerprint: {expectFingerprint}");
+                    comparisonLogging.Add($"Comparing {expectedFilename} with {actualFile}, expectFingerprint: {expectFingerprint}");
                     if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
                                                expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                                expectFingerprintForThisFile: expectFingerprint))
@@ -149,12 +149,18 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 }).ToList();
         }
 
-        // _testOutput.WriteLine($"Accepted count: {actual.Count}");
-        // foreach (var kvp in actual)
-        //     _testOutput.WriteLine($"Accepted: \t[{kvp.Key}] = {kvp.Value}");
-
         if (dotnetFiles.Any())
         {
+            foreach (var message in comparisonLogging)
+            {
+                _testOutput.WriteLine(message);
+            }
+            _testOutput.WriteLine($"Accepted count: {actual.Count}");
+            foreach (var kvp in actual)
+            {
+                _testOutput.WriteLine($"Accepted: \t[{kvp.Key}] = {kvp.Value}");
+            }
+
             throw new XunitException($"Found unknown files in {binFrameworkDir}:{Environment.NewLine}    " +
                     $"{string.Join($"{Environment.NewLine}  ", dotnetFiles.Select(f => Path.GetRelativePath(binFrameworkDir, f)))}{Environment.NewLine}" +
                     $"Add these to {nameof(GetAllKnownDotnetFilesToFingerprintMap)} method{Environment.NewLine}" + 
@@ -173,7 +179,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         IReadOnlySet<string> expected,
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlyDictionary<string, DotNetFileName> actualReadOnly,
-        bool expectFingerprintOnDotnetJs,
+        bool? expectFingerprintOnDotnetJs,
         string bundleDir)
     {
         EnsureProjectDirIsSet();
@@ -399,8 +405,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return dict;
     }
 
-    public bool ShouldCheckFingerprint(string expectedFilename, bool expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile)
-        => IsFingerprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs) || expectFingerprintForThisFile);
+    public bool ShouldCheckFingerprint(string expectedFilename, bool? expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile)
+        => IsFingerprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs == true) || expectFingerprintForThisFile);
 
 
     public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
@@ -577,7 +583,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 string extension = Path.GetExtension(expectedFilename).Substring(1);
 
                 if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
-                                           expectFingerprintOnDotnetJs: IsFingerprintingOnDotnetJsEnabled,
+                                           expectFingerprintOnDotnetJs: options.ExpectDotnetJsFingerprinting,
                                            expectFingerprintForThisFile: expectFingerprint))
                 {
                     return Regex.Match(item, $"{prefix}{s_dotnetVersionHashRegex}{extension}").Success;
