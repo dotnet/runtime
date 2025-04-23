@@ -165,6 +165,14 @@
     </Exec>
 
     <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems). The Command %(TestConsoleApps.TestCommand) return a non-success exit code $(ExecutionExitCode)." ContinueOnError="ErrorAndContinue" />
+ 
+    <!-- Remove test projects dir to save disk space if the test was successful. Ignore failures as this is best effort.
+         Don't use Removedir as ContinueOnError on it doesn't work when using warnaserror/TreatWarningsAsErrors. -->
+    <PropertyGroup>
+      <TestProjectCleanCommand Condition="'$(OS)' == 'Windows_NT'">rmdir "%(TestConsoleApps.ProjectDir.TrimEnd('\'))" /s /q</TestProjectCleanCommand>
+      <TestProjectCleanCommand Condition="'$(OS)' != 'Windows_NT'">rm -rf "%(TestConsoleApps.ProjectDir)"</TestProjectCleanCommand>
+    </PropertyGroup>
+    <Exec Condition="'$(ExecutionExitCode)' == '100'" Command="$(TestProjectCleanCommand)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="ExecuteApplications" />
