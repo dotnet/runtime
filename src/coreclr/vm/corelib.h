@@ -693,10 +693,6 @@ DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,  
 #ifdef FEATURE_IJW
 DEFINE_METHOD(RUNTIME_HELPERS,      COPY_CONSTRUCT,         CopyConstruct, NoSig)
 #endif // FEATURE_IJW
-// TODO: Pending API review these are likely to move to AsyncHelpers.
-//       Not doing the move proactively, since it would require updating Roslyn compiler that we use.
-DEFINE_METHOD(RUNTIME_HELPERS,      UNSAFE_AWAIT_AWAITER_FROM_RUNTIME_ASYNC_1, UnsafeAwaitAwaiterFromRuntimeAsync, GM_T_RetVoid)
-DEFINE_METHOD(RUNTIME_HELPERS,      AWAIT_AWAITER_FROM_RUNTIME_ASYNC_1, AwaitAwaiterFromRuntimeAsync, GM_T_RetVoid)
 
 DEFINE_CLASS(ASYNC_HELPERS,       CompilerServices,          AsyncHelpers)
 DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION,        AllocContinuation, NoSig)
@@ -707,6 +703,7 @@ DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK, FinalizeTaskRet
 DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK_1, FinalizeTaskReturningThunk, GM_Continuation_RetTaskOfT)
 DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK, FinalizeValueTaskReturningThunk, SM_Continuation_RetValueTask)
 DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK_1, FinalizeValueTaskReturningThunk, GM_Continuation_RetValueTaskOfT)
+DEFINE_METHOD(ASYNC_HELPERS,      UNSAFE_AWAIT_AWAITER_1,    UnsafeAwaitAwaiter, GM_T_RetVoid)
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)

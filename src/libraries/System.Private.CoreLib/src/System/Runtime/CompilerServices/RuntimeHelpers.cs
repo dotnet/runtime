@@ -4,8 +4,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
 {
@@ -175,11 +173,5 @@ namespace System.Runtime.CompilerServices
         /// <returns>true if the given type is a reference type or a value type that contains references or by-refs; otherwise, false.</returns>
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct => IsReferenceOrContainsReferences<T>();
-
-        // This will be replaced with the actual implementation when the shape of public API is reviewed and approved
-        // See: https://github.com/dotnet/runtime/issues/114310
-        // For now these are minimum stubs to enable building. The helpers should not be in use yet.
-        internal static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion => throw new PlatformNotSupportedException();
-        internal static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion => throw new PlatformNotSupportedException();
     }
 }

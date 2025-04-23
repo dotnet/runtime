@@ -437,6 +437,9 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
     _ASSERTE(!pAsyncOtherVariant->IsAsyncThunkMethod());
     _ASSERTE(!pAsyncOtherVariant->IsVoid());
 
+    // TODO: (async) we may now be able to just do "AsyncHelpers.Await(other(arg))",
+    //       but would need to make sure it is not "optimized" back to calling this same thunk.
+
     // Implement IL that is effectively the following
     /*
     {
@@ -444,7 +447,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
         if (!awaiter.IsCompleted)
         {
             // Magic function which will suspend the current run of async methods
-            RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync<TaskAwaiter<RetType>>(awaiter);
+            AsyncHelpers.UnsafeAwaitAwaiter<TaskAwaiter<RetType>>(awaiter);
         }
         return awaiter.GetResult();
     }
@@ -585,11 +588,11 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
     pCode->EmitRET();
 }
 
-// Get a token for RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync<TaskAwaiter<T>>()
+// Get a token for AsyncHelpers.UnsafeAwaitAwaiter<TaskAwaiter<T>>()
 // with T substituted by the return type of the async method.
 int MethodDesc::GetTokenForAwaitAwaiterInstantiatedOverTaskAwaiterType(ILCodeStream* pCode, TypeHandle taskAwaiterType)
 {
-    MethodDesc* awaitAwaiter = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__UNSAFE_AWAIT_AWAITER_FROM_RUNTIME_ASYNC_1);
+    MethodDesc* awaitAwaiter = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__UNSAFE_AWAIT_AWAITER_1);
     TypeHandle thInstantiations[]{ taskAwaiterType };
     awaitAwaiter = FindOrCreateAssociatedMethodDesc(awaitAwaiter, awaitAwaiter->GetMethodTable(), FALSE, Instantiation(thInstantiations, 1), FALSE);
 

@@ -94,28 +94,24 @@ namespace System.Runtime.CompilerServices
         public object?[]? GCData;
     }
 
-    // TODO: make public when public Async API is moved to AsyncHelpers (pending API review)
-    internal static partial class AsyncHelpers
+    public static partial class AsyncHelpers
     {
         // This is the "magic" method on wich other "Await" methods are built.
         // Calling this from an Async method returns the continuation to the caller thus
         // explicitly initiates suspension.
-        // TODO: make private when public Async API is moved to AsyncHelpers (pending API review)
         [Intrinsic]
-        internal static void AsyncSuspend(Continuation continuation) => throw new UnreachableException();
+        private static void AsyncSuspend(Continuation continuation) => throw new UnreachableException();
 
         // Used during suspensions to hold the continuation chain and on what we are waiting.
         // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.
-        // TODO: make private when public Async API is moved to AsyncHelpers (pending API review)
-        internal struct RuntimeAsyncAwaitState
+        private struct RuntimeAsyncAwaitState
         {
             public Continuation? SentinelContinuation;
             public INotifyCompletion? Notifier;
         }
 
-        // TODO: make private when public Async API is moved to AsyncHelpers (pending API review)
         [ThreadStatic]
-        internal static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
+        private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
 
         private static Continuation AllocContinuation(Continuation prevContinuation, nuint numGCRefs, nuint dataSize)
         {
