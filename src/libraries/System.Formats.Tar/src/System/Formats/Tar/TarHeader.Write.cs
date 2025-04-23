@@ -1167,8 +1167,6 @@ namespace System.Formats.Tar
             ulong remaining = (ulong)value;
             Span<byte> digits = stackalloc byte[32]; // longer than any possible octal formatting of a ulong
 
-            digits.Slice(0, digits.Length - 1).Fill(0x30); // Prefill with '0' chars except the last, which should remain 0x0 (null terminator)
-
             int i = digits.Length - 1;
 
             while (true)
