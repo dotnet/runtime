@@ -53,14 +53,7 @@ namespace System.Net.Sockets.Tests
             }
             catch (SocketException e)
             {
-                if (_disposed ||
-                    e.SocketErrorCode == SocketError.OperationAborted ||
-                    e.SocketErrorCode == SocketError.Interrupted)
-                {
-                    return;
-                }
-
-                throw;
+                return;
             }
             catch (ObjectDisposedException)
             {
@@ -83,14 +76,6 @@ namespace System.Net.Sockets.Tests
             }
             catch (SocketException e)
             {
-                if (_disposed ||
-                    e.SocketErrorCode == SocketError.OperationAborted ||
-                    e.SocketErrorCode == SocketError.Interrupted)
-                {
-                    return;
-                }
-
-                throw;
             }
             catch (ObjectDisposedException)
             {
