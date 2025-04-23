@@ -3985,10 +3985,10 @@ MetaSig::CompareElementType(
                         pOtherModule,
                         &state->InternalToGenericInstContext);
 
-                    // Compare typical method tables to handle shared generics.
-                    MethodTable* typicalInternalMT = hInternal.AsMethodTable()->GetTypicalMethodTable();
-                    MethodTable* typeicalOtherMT = hOtherType.AsMethodTable()->GetTypicalMethodTable();
-                    return typicalInternalMT == typeicalOtherMT;
+                    // Compare canonical method tables to handle shared generics.
+                    MethodTable* canonicalInternalMT = hInternal.AsMethodTable()->GetCanonicalMethodTable();
+                    MethodTable* canonicalOtherMT = hOtherType.AsMethodTable()->GetCanonicalMethodTable();
+                    return canonicalInternalMT == canonicalOtherMT;
                 }
                 default:
                 {
