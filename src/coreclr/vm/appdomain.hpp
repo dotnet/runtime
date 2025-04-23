@@ -1918,6 +1918,7 @@ private:
 
     // Global domain that every one uses
     SPTR_DECL(SystemDomain, m_pSystemDomain);
+
     LoaderAllocator * m_pDelayedUnloadListOfLoaderAllocators;
 
 #ifndef DACCESS_COMPILE
