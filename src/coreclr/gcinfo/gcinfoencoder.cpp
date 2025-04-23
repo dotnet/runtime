@@ -373,7 +373,6 @@ GcInfoSize& GcInfoSize::operator+=(const GcInfoSize& other)
     SecObjSize += other.SecObjSize;
     GsCookieSize += other.GsCookieSize;
     GenericsCtxSize += other.GenericsCtxSize;
-    PspSymSize += other.PspSymSize;
     StackBaseSize += other.StackBaseSize;
     ReversePInvokeFrameSize += other.ReversePInvokeFrameSize;
     FixedAreaSize += other.FixedAreaSize;
@@ -480,7 +479,6 @@ template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncode
     m_GSCookieValidRangeStart = 0;
     _ASSERTE(sizeof(m_GSCookieValidRangeEnd) == sizeof(UINT32));
     m_GSCookieValidRangeEnd = (UINT32) (-1); // == UINT32.MaxValue
-    m_PSPSymStackSlot = NO_PSP_SYM;
     m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
     m_contextParamType = GENERIC_CONTEXTPARAM_NONE;
 
@@ -709,14 +707,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetGSCoo
     m_GSCookieStackSlot       = spOffsetGSCookie;
     m_GSCookieValidRangeStart = validRangeStart;
     m_GSCookieValidRangeEnd   = validRangeEnd;
-}
-
-template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetPSPSymStackSlot( INT32 spOffsetPSPSym )
-{
-    _ASSERTE( spOffsetPSPSym != NO_PSP_SYM );
-    _ASSERTE( m_PSPSymStackSlot == NO_PSP_SYM || m_PSPSymStackSlot == spOffsetPSPSym );
-
-    m_PSPSymStackSlot              = spOffsetPSPSym;
 }
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetGenericsInstContextStackSlot( INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type)
@@ -952,7 +942,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     UINT32 hasContextParamType = (m_GenericsInstContextStackSlot != NO_GENERICS_INST_CONTEXT);
     UINT32 hasReversePInvokeFrame = (m_ReversePInvokeFrameSlot != NO_REVERSE_PINVOKE_FRAME);
 
-    BOOL slimHeader = (!m_IsVarArg && !hasGSCookie && (m_PSPSymStackSlot == NO_PSP_SYM) &&
+    BOOL slimHeader = (!m_IsVarArg && !hasGSCookie &&
         !hasContextParamType && (m_InterruptibleRanges.Count() == 0) && !hasReversePInvokeFrame &&
         ((m_StackBaseRegister == NO_STACK_BASE_REGISTER) || (GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister) == 0))) &&
 #ifdef TARGET_AMD64
@@ -981,7 +971,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE(m_Info1, (m_IsVarArg ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, 0 /* unused - was hasSecurityObject */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, (hasGSCookie ? 1 : 0), 1, FlagsSize);
-        GCINFO_WRITE(m_Info1, ((m_PSPSymStackSlot != NO_PSP_SYM) ? 1 : 0), 1, FlagsSize);
+        GCINFO_WRITE(m_Info1, 0 /* unused - was hasPSPSymStackSlot */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, m_contextParamType, 2, FlagsSize);
 #if defined(TARGET_LOONGARCH64)
         assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
@@ -1046,17 +1036,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
         GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_GSCookieStackSlot), GcInfoEncoding::GS_COOKIE_STACK_SLOT_ENCBASE, GsCookieSize);
 
-    }
-
-    // Encode the offset to the PSPSym.
-    // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before stack allocations on X64.
-    if(m_PSPSymStackSlot != NO_PSP_SYM)
-    {
-        _ASSERTE(!slimHeader);
-#ifdef _DEBUG
-        GCINFO_LOG( LL_INFO1000, "Parent PSP at " FMT_STK "\n", DBG_STK(m_PSPSymStackSlot));
-#endif
-        GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_PSPSymStackSlot), GcInfoEncoding::PSP_SYM_STACK_SLOT_ENCBASE, PspSymSize);
     }
 
     // Encode the offset to the generics type context.

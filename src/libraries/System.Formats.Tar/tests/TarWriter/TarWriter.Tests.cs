@@ -9,6 +9,9 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarWriter_Tests : TarTestsBase
     {
+        private readonly DateTimeOffset TimestampForChecksum = new DateTimeOffset(2022, 1, 2, 3, 45, 00, TimeSpan.Zero);
+        private readonly DateTimeOffset UnixEpochTimestampForChecksum = DateTimeOffset.UnixEpoch;
+
         [Fact]
         public void Constructors_NullStream()
         {
@@ -99,13 +102,10 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        private readonly DateTimeOffset TimestampForChecksum = new DateTimeOffset(2022, 1, 2, 3, 45, 00, TimeSpan.Zero);
-
         [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
         public void Verify_Checksum_RegularFile(TarEntryFormat format) =>
             Verify_Checksum_Internal(
                 format,
@@ -114,36 +114,62 @@ namespace System.Formats.Tar.Tests
                 longLink: false,
                 longPath: false);
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Verify_Checksum_RegularFile_Gnu(bool testEpoch) =>
+            Verify_Checksum_Internal(TarEntryFormat.Gnu, TarEntryType.RegularFile, longPath: false, longLink: false, testEpoch);
+
         [Theory] // V7 does not support BlockDevice
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
         public void Verify_Checksum_BlockDevice(TarEntryFormat format) =>
             Verify_Checksum_Internal(format, TarEntryType.BlockDevice, longPath: false, longLink: false);
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Verify_Checksum_BlockDevice_Gnu(bool testEpoch) =>
+            Verify_Checksum_Internal(TarEntryFormat.Gnu, TarEntryType.BlockDevice, longPath: false, longLink: false, testEpoch);
+
+        [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
         public void Verify_Checksum_Directory_LongPath(TarEntryFormat format) =>
             Verify_Checksum_Internal(format, TarEntryType.Directory, longPath: true, longLink: false);
 
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void Verify_Checksum_SymbolicLink_LongLink(TarEntryFormat format) =>
-            Verify_Checksum_Internal(format, TarEntryType.SymbolicLink, longPath: false, longLink: true);
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Verify_Checksum_Directory_LongPath_Gnu(bool testEpoch) =>
+            Verify_Checksum_Internal(TarEntryFormat.Gnu, TarEntryType.Directory, longPath: true, longLink: false, testEpoch);
 
         [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
+        public void Verify_Checksum_SymbolicLink_LongLink(TarEntryFormat format) =>
+            Verify_Checksum_Internal(format, TarEntryType.SymbolicLink, longPath: false, longLink: true);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Verify_Checksum_SymbolicLink_LongLink_Gnu(bool testEpoch) =>
+            Verify_Checksum_Internal(TarEntryFormat.Gnu, TarEntryType.SymbolicLink, longPath: false, longLink: true, testEpoch);
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
         public void Verify_Checksum_SymbolicLink_LongLink_LongPath(TarEntryFormat format) =>
             Verify_Checksum_Internal(format, TarEntryType.SymbolicLink, longPath: true, longLink: true);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Verify_Checksum_SymbolicLink_LongLink_LongPath_Gnu(bool testEpoch) =>
+            Verify_Checksum_Internal(TarEntryFormat.Gnu, TarEntryType.SymbolicLink, longPath: true, longLink: true, testEpoch);
 
         [Fact]
         public void Verify_Size_RegularFile_Empty()
@@ -217,13 +243,13 @@ namespace System.Formats.Tar.Tests
             Assert.Null(actualEntry.DataStream); // No stream created when size field's value is 0
         }
 
-        private void Verify_Checksum_Internal(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink)
+        private void Verify_Checksum_Internal(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink, bool testEpoch = false)
         {
             using MemoryStream archive = new MemoryStream();
             int expectedChecksum;
             using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
             {
-                TarEntry entry = CreateTarEntryAndGetExpectedChecksum(format, entryType, longPath, longLink, out expectedChecksum);
+                TarEntry entry = CreateTarEntryAndGetExpectedChecksum(format, entryType, longPath, longLink, testEpoch, out expectedChecksum);
                 writer.WriteEntry(entry);
                 Assert.Equal(expectedChecksum, entry.Checksum);
             }
@@ -236,7 +262,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        private TarEntry CreateTarEntryAndGetExpectedChecksum(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink, out int expectedChecksum)
+        private TarEntry CreateTarEntryAndGetExpectedChecksum(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink, bool testEpoch, out int expectedChecksum)
         {
             expectedChecksum = 0;
 
@@ -251,7 +277,7 @@ namespace System.Formats.Tar.Tests
             }
 
             expectedChecksum += GetChecksumForCommonFields(entry, entryType);
-            expectedChecksum += GetChecksumForFormatSpecificFields(entry, format);
+            expectedChecksum += GetChecksumForFormatSpecificFields(entry, format, testEpoch);
 
             return entry;
         }
@@ -318,7 +344,7 @@ namespace System.Formats.Tar.Tests
             int expectedChecksum = 256;
 
             // '0000744\0' = 48 + 48 + 48 + 48 + 55 + 52 + 52 + 0 = 351
-            entry.Mode = AssetMode; // octal 744 => u+rxw, g+r, o+r
+            entry.Mode = AssetMode; // decimal 484 (octal 744) => u+rxw, g+r, o+r
             expectedChecksum += 351;
 
             // '0017351\0' = 48 + 48 + 49 + 55 + 51 + 53 + 49 + 0 = 353
@@ -344,11 +370,16 @@ namespace System.Formats.Tar.Tests
                 entry.DataStream.Seek(0, SeekOrigin.Begin); // Rewind to ensure it gets written from the beginning
                 expectedChecksum += 533;
             }
+            else
+            {
+                // '0000000000\0' = 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 0 = 528
+                expectedChecksum += 528;
+            }
 
             // If V7 regular file:            '\0' = 0
-            // If Ustar/Pax/Gnu regular file: '0'  = 48
-            // If block device:               '4'  = 52
-            expectedChecksum += (byte)entryType;
+                // If Ustar/Pax/Gnu regular file: '0'  = 48
+                // If block device:               '4'  = 52
+                expectedChecksum += (byte)entryType;
 
             // Checksum so far: 256 + 351 + 353 + 359 + 571 = decimal 1890
             // If V7RegularFile: 1890 + 533 + 0  = 2423 (octal 4567) => '004567\0'
@@ -357,7 +388,7 @@ namespace System.Formats.Tar.Tests
             return expectedChecksum;
         }
 
-        private int GetChecksumForFormatSpecificFields(TarEntry entry, TarEntryFormat format)
+        private int GetChecksumForFormatSpecificFields(TarEntry entry, TarEntryFormat format, bool testEpoch)
         {
             int checksum = 0;
             switch (format)
@@ -402,14 +433,29 @@ namespace System.Formats.Tar.Tests
 
                 if (posixEntry is GnuTarEntry gnuEntry)
                 {
-                    // '14164217674\0' = 49 + 52 + 49 + 54 + 52 + 50 + 49 + 55 + 54 + 55 + 52 + 0 = 571
-                    gnuEntry.AccessTime = TimestampForChecksum; // ToUnixTimeSeconds() = decimal 1641095100, octal 14164217674;
-                    checksum += 571;
+                    GetTimestampToTest(testEpoch, out DateTimeOffset expectedTimestampToTest, out int expectedTimestampChecksumToTest);
 
-                    // '14164217674\0' = 49 + 52 + 49 + 54 + 52 + 50 + 49 + 55 + 54 + 55 + 52 + 0 = 571
-                    gnuEntry.ChangeTime = TimestampForChecksum; // ToUnixTimeSeconds() = decimal 1641095100, octal 14164217674;
-                    checksum += 571;
-                    // Total: 1142
+                    gnuEntry.AccessTime = expectedTimestampToTest;
+                    checksum += expectedTimestampChecksumToTest;
+
+                    gnuEntry.ChangeTime = expectedTimestampToTest;
+                    checksum += expectedTimestampChecksumToTest;
+                    // Total: UnixEpoch = 0, otherwise = 1142
+
+                    void GetTimestampToTest(bool testEpoch, out DateTimeOffset expectedTimestampToTest, out int expectedTimestampChecksumToTest)
+                    {
+                        if (!testEpoch)
+                        {
+                            expectedTimestampChecksumToTest = 571;
+
+                            // '14164217674\0' = 49 + 52 + 49 + 54 + 52 + 50 + 49 + 55 + 54 + 55 + 52 + 0 = 571
+                            expectedTimestampToTest = TimestampForChecksum; // ToUnixTimeSeconds() = decimal 1641095100, octal 14164217674;
+                        }
+
+                        expectedTimestampChecksumToTest = 0;
+                        // '\0\0\0\0\0\0\0\0\0\0\0\0' = 0
+                        expectedTimestampToTest = UnixEpochTimestampForChecksum; // ToUnixTimeSeconds() = decimal 0, octal 0;
+                    }
                 }
             }
 
