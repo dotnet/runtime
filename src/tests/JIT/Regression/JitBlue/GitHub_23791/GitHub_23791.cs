@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 // The jit should null check 'this' in NextElement
 
