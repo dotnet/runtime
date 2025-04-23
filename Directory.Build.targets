@@ -12,6 +12,8 @@
   <PropertyGroup Condition="'$(UseBootstrapLayout)' == 'true'">
     <!-- Keep in sync with outputs defined in Microsoft.NETCore.Platforms.csproj. -->
     <BundledRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(BootstrapRidGraphDir)', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+    <!-- If our bootstrap build didn't add a new RID to the graph, fall back to the frozen graph. -->
+    <BundledRuntimeIdentifierGraphFile Condition="!Exists('$(BundledRuntimeIdentifierGraphFile)')">$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(UseBootstrapLayout)' != 'true'">
     <!-- Keep in sync with outputs defined in Microsoft.NETCore.Platforms.csproj. -->
