@@ -521,7 +521,6 @@ public:
         }
 #endif // FEATURE_MASKED_HW_INTRINSICS
         regNum       = reg;
-        nextRegNum   = REG_NEXT(regNum);
         isCalleeSave = ((RBM_CALLEE_SAVED & genRegMask(reg)) != 0);
     }
 
@@ -545,7 +544,6 @@ public:
     Interval* previousInterval;
 
     regNumber     regNum;
-    regNumber     nextRegNum; // the next active register.
     bool          isCalleeSave;
     unsigned char regOrder;
 };
