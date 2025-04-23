@@ -682,10 +682,18 @@ namespace System.Formats.Tar
             {
                 checksum += FormatNumeric(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
             }
+            else if (_uid == 0 && _format is TarEntryFormat.Gnu)
+            {
+                FormatAsZeroChars(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
+            }
 
             if (_gid > 0)
             {
                 checksum += FormatNumeric(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
+            }
+            else if (_uid == 0 && _format is TarEntryFormat.Gnu)
+            {
+                FormatAsZeroChars(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             }
 
             if (_size >= 0)
@@ -1126,6 +1134,14 @@ namespace System.Formats.Tar
                 checksum += b;
             }
             return checksum;
+        }
+
+        private static int FormatAsZeroChars(Span<byte> destination)
+        {
+            Debug.Assert(destination.Length > 1);
+            destination.Slice(0, destination.Length - 1).Fill(0x30); // '0' char
+            destination[^1] = 0; // Null terminator
+            return Checksum(destination);
         }
 
         private int FormatNumeric(int value, Span<byte> destination)
