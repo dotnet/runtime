@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -127,6 +127,9 @@ namespace System.Numerics.Tensors.Tests
                     Assert.Equal(expectedOutput[i], span[i]);
                     Assert.Equal(expectedOutput[i], destSpan[i]);
                 }
+                TensorSpan_TestEnumerator(x);
+                TensorSpan_TestEnumerator(destination);
+                TensorSpan_TestEnumerator(tensorResults);
 
                 // Now test if the source is sliced to be smaller then the destination that the destination is also sliced
                 // to the correct size.
@@ -136,6 +139,7 @@ namespace System.Numerics.Tensors.Tests
                 TIn[] sliceData = new TIn[sliceFlattenedLength];
                 x.FlattenTo(sliceData);
                 expectedOutput = new TOut[sliceFlattenedLength];
+                TensorSpan_TestEnumerator(x);
 
                 if (TensorHelpers.IsContiguousAndDense<TIn>(x))
                 {
@@ -171,6 +175,8 @@ namespace System.Numerics.Tensors.Tests
                     Assert.Equal(expectedOutput[i], destEnum.Current);
                     Assert.Equal(expectedOutput[i], tensorResultsEnum.Current);
                 }
+                TensorSpan_TestEnumerator(destination);
+                TensorSpan_TestEnumerator(tensorResults);
 
                 // Now test if the source and destination are sliced (so neither is continuous) it works correctly.
                 destination = destination.Slice(sliceLengths);
@@ -190,6 +196,7 @@ namespace System.Numerics.Tensors.Tests
                     }
 
                 }
+                TensorSpan_TestEnumerator(destination);
 
                 tensorResults = tensorOperation(x, destination);
 
@@ -208,6 +215,8 @@ namespace System.Numerics.Tensors.Tests
                     Assert.Equal(expectedOutput[i], destEnum.Current);
                     Assert.Equal(expectedOutput[i], tensorResultsEnum.Current);
                 }
+                TensorSpan_TestEnumerator(destination);
+                TensorSpan_TestEnumerator(tensorResults);
             });
         }
 
@@ -311,6 +320,10 @@ namespace System.Numerics.Tensors.Tests
                 TensorSpan<T> destination = Tensor.Create<T>(destData, tensorLengths, []);
                 tensorPrimitivesOperation((ReadOnlySpan<T>)data1, data2, expectedOutput);
                 TensorSpan<T> results = tensorOperation(x, y, destination);
+                TensorSpan_TestEnumerator(x);
+                TensorSpan_TestEnumerator(y);
+                TensorSpan_TestEnumerator(destination);
+                TensorSpan_TestEnumerator(results);
 
                 Assert.Equal(tensorLengths, results.Lengths);
                 nint[] startingIndex = new nint[tensorLengths.Length];
@@ -329,7 +342,12 @@ namespace System.Numerics.Tensors.Tests
                 nint[] tempLengths = tensorLengths.Select(i => i + 1).ToArray();
                 T[] tempDestData = new T[CalculateTotalLength(tempLengths)];
                 destination = Tensor.Create<T>(tempDestData, tempLengths, []);
+                TensorSpan_TestEnumerator(destination);
                 results = tensorOperation(x, y, destination);
+                TensorSpan_TestEnumerator(x);
+                TensorSpan_TestEnumerator(y);
+                TensorSpan_TestEnumerator(destination);
+                TensorSpan_TestEnumerator(results);
 
                 // Since the slice was internal the result lengths will be the extra large size.
                 Assert.Equal(tempLengths, results.Lengths);
@@ -359,6 +377,7 @@ namespace System.Numerics.Tensors.Tests
                 destination = destination.Slice(tensorLengths);
                 x.Slice(sliceLengths).BroadcastTo(x);
                 x.FlattenTo(data1);
+                TensorSpan_TestEnumerator(x);
 
                 if (TensorHelpers.IsContiguousAndDense<T>(x.Slice(sliceLengths)) && TensorHelpers.IsContiguousAndDense<T>(y))
                 {
@@ -374,6 +393,10 @@ namespace System.Numerics.Tensors.Tests
                 }
 
                 results = tensorOperation(x.Slice(sliceLengths), y, destination);
+                TensorSpan_TestEnumerator(x.Slice(sliceLengths));
+                TensorSpan_TestEnumerator(y);
+                TensorSpan_TestEnumerator(destination);
+                TensorSpan_TestEnumerator(results);
 
                 // results lengths will still be the original tensorLength
                 Assert.Equal(tensorLengths, results.Lengths);
@@ -395,6 +418,7 @@ namespace System.Numerics.Tensors.Tests
                 // Now test if the second source is sliced to be smaller than the first (but is broadcast compatible) that broadcasting happens).
                 y.Slice(sliceLengths).BroadcastTo(y);
                 y.FlattenTo(data2);
+                TensorSpan_TestEnumerator(y);
 
                 if (TensorHelpers.IsContiguousAndDense<T>(x) && TensorHelpers.IsContiguousAndDense<T>(y.Slice(sliceLengths)))
                 {
@@ -410,6 +434,10 @@ namespace System.Numerics.Tensors.Tests
                 }
 
                 results = tensorOperation(x, y.Slice(sliceLengths), destination);
+                TensorSpan_TestEnumerator(x);
+                TensorSpan_TestEnumerator(y.Slice(sliceLengths));
+                TensorSpan_TestEnumerator(destination);
+                TensorSpan_TestEnumerator(results);
 
                 // results lengths will still be the original tensorLength
                 Assert.Equal(tensorLengths, results.Lengths);
@@ -450,6 +478,10 @@ namespace System.Numerics.Tensors.Tests
                 }
 
                 results = tensorOperation(x.Slice(sliceLengths), y.Slice(sliceLengths), destination);
+                TensorSpan_TestEnumerator(x.Slice(sliceLengths));
+                TensorSpan_TestEnumerator(y.Slice(sliceLengths));
+                TensorSpan_TestEnumerator(destination);
+                TensorSpan_TestEnumerator(results);
 
                 Assert.Equal(tensorLengths, results.Lengths);
 
@@ -501,11 +533,15 @@ namespace System.Numerics.Tensors.Tests
                 T results = tensorOperation(x, y);
 
                 Assert.Equal(expectedOutput, results);
+                TensorSpan_TestEnumerator(x);
+                TensorSpan_TestEnumerator(y);
 
                 // Now test if the first source is sliced to be non contiguous that it still gives expected result.
                 NRange[] sliceLengths = Helpers.TensorSliceShapesForBroadcast[index].Select(i => new NRange(0, i)).ToArray();
                 TensorSpan<T> broadcastX = Tensor.Create<T>(broadcastData1, tensorLength, []);
+                TensorSpan_TestEnumerator(broadcastX);
                 x.Slice(sliceLengths).BroadcastTo(broadcastX);
+                TensorSpan_TestEnumerator(broadcastX);
                 TensorSpan<T>.Enumerator enumerator = broadcastX.GetEnumerator();
                 bool cont = enumerator.MoveNext();
                 int i = 0;
@@ -523,7 +559,9 @@ namespace System.Numerics.Tensors.Tests
                 // Now test if the second source is sliced to be non contiguous that it still gives expected result.
 
                 TensorSpan<T> broadcastY = Tensor.Create<T>(broadcastData2, tensorLength, []);
+                TensorSpan_TestEnumerator(broadcastY);
                 y.Slice(sliceLengths).BroadcastTo(broadcastY);
+                TensorSpan_TestEnumerator(broadcastY);
 
                 enumerator = broadcastY.GetEnumerator();
                 cont = enumerator.MoveNext();
@@ -544,7 +582,7 @@ namespace System.Numerics.Tensors.Tests
         #endregion
 
         [Fact]
-        public static unsafe void TensorSpanSetSliceTests()
+        public static unsafe void TensorSpan_SetSliceTests()
         {
             // Cannot reshape if memory is non-contiguous or non-dense
             Assert.Throws<ArgumentException>(() =>
@@ -552,6 +590,9 @@ namespace System.Numerics.Tensors.Tests
                 var ab = new TensorSpan<double>(array: [0d, 1, 2, 3, 0d, 1, 2, 3]);  // [0, 1, 2, 3]
                 var b = ab.Reshape(lengths: new IntPtr[] { 2, 2, 2 });  // [[0, 1], [2, 3]]
                 var c = b.Slice(ranges: new NRange[] { 1.., 1..2, ..1 });  // [[0], [2]]
+                TensorSpan_TestEnumerator(ab);
+                TensorSpan_TestEnumerator(b);
+                TensorSpan_TestEnumerator(c);
                 c.Reshape(lengths: new IntPtr[] { 1, 2, 1 });
             });
 
@@ -560,18 +601,21 @@ namespace System.Numerics.Tensors.Tests
             {
                 var ar = new double[1];
                 var a = new TensorSpan<double>(ar.AsSpan()[..1], new IntPtr[] { 2 }, new IntPtr[] { 0 });
+                TensorSpan_TestEnumerator(a);
                 a.SetSlice(new TensorSpan<double>(new double[] { 1, 3 }), new NRange[] { ..2 });
             });
 
             // Make sure that slice range and the values are the same length
             var ar = new double[4];
             var a = new TensorSpan<double>(ar, new IntPtr[] { 2, 2 }, default);
+            TensorSpan_TestEnumerator(a);
 
             a.SetSlice(new TensorSpan<double>(new double[] { 1, 3 }), new NRange[] { ..1, .. });
             Assert.Equal(1, a[0, 0]);
             Assert.Equal(3, a[0, 1]);
             Assert.Equal(0, a[1, 0]);
             Assert.Equal(0, a[1, 1]);
+            TensorSpan_TestEnumerator(a);
 
             // Make sure we can use a stride of 0.
             a.SetSlice(new TensorSpan<double>(new double[] { -1 }, [2], [0]), new NRange[] { 1.., .. });
@@ -579,6 +623,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(3, a[0, 1]);
             Assert.Equal(-1, a[1, 0]);
             Assert.Equal(-1, a[1, 1]);
+            TensorSpan_TestEnumerator(a);
 
             // Make sure we can use a multi dimensional span with multiple 0 strides
             a.SetSlice(new TensorSpan<double>(new double[] { -10 }, [2, 2], [0, 0]));
@@ -586,6 +631,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(-10, a[0, 1]);
             Assert.Equal(-10, a[1, 0]);
             Assert.Equal(-10, a[1, 1]);
+            TensorSpan_TestEnumerator(a);
 
             // Make sure if the slice is broadcastable to the correct size you don't need to set a size for SetSlice
             a.SetSlice(new TensorSpan<double>(new double[] { -20 }, [1], [0]));
@@ -593,12 +639,14 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(-20, a[0, 1]);
             Assert.Equal(-20, a[1, 0]);
             Assert.Equal(-20, a[1, 1]);
+            TensorSpan_TestEnumerator(a);
 
             //Assert.Throws
         }
 
         [Fact]
-        public static void TensorSpanSystemArrayConstructorTests()
+        public static void TensorSpan_SystemArrayConstructorTests()
+
         {
             // When using System.Array constructor make sure the type of the array matches T[]
             Assert.Throws<ArrayTypeMismatchException>(() => new TensorSpan<double>(array: new[] { 1 }));
@@ -616,6 +664,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[0, 2]);
             Assert.Equal(94, spanInt[0, 3]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure null works
             // Should be a tensor with 0 elements and Rank 0 and no strides or lengths
@@ -624,6 +673,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, spanInt.Rank);
             Assert.Equal(0, spanInt.Lengths.Length);
             Assert.Equal(0, spanInt.Strides.Length);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure empty array works
             // Should be a Tensor with 0 elements but Rank 2 with dimension 0 length 0
@@ -635,9 +685,11 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, spanInt.FlattenedLength);
             Assert.Equal(0, spanInt.Strides[0]);
             Assert.Equal(0, spanInt.Strides[1]);
+            TensorSpan_TestEnumerator(spanInt);
             // Make sure it still throws on index 0, 0
             Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new TensorSpan<int>(b);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[0, 0];
             });
 
@@ -650,6 +702,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure can use only some of the array
             spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
@@ -658,27 +711,32 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(91, spanInt[0, 0]);
             Assert.Equal(92, spanInt[0, 1]);
+            TensorSpan_TestEnumerator(spanInt);
             Assert.Throws<IndexOutOfRangeException>(() =>
             {
                 var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[1, 1];
             });
 
             Assert.Throws<IndexOutOfRangeException>(() =>
             {
                 var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[0, -1];
             });
 
             Assert.Throws<IndexOutOfRangeException>(() =>
             {
                 var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[-1, 0];
             });
 
             Assert.Throws<IndexOutOfRangeException>(() =>
             {
                 var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[1, 0];
             });
 
@@ -689,6 +747,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(92, spanInt[0, 0]);
             Assert.Equal(-93, spanInt[0, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure Index offset works correctly
             spanInt = new TensorSpan<int>(a, (int[])[0, 2], [1, 2], default);
@@ -697,6 +756,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(-93, spanInt[0, 0]);
             Assert.Equal(94, spanInt[0, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure 2D array works with strides of all 0 and initial offset to loop over last element again
             spanInt = new TensorSpan<int>(a, (int[])[0, 3], [2, 2], [0, 0]);
@@ -707,6 +767,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
             Assert.Equal(94, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure we catch that there aren't enough elements in the array for the lengths
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -723,6 +784,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure 2D array works with stride of 0 to loop over first 2 elements again
             spanInt = new TensorSpan<int>(a, (int[])[0, 0], [2, 2], [0, 1]);
@@ -733,6 +795,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[0, 1]);
             Assert.Equal(91, spanInt[1, 0]);
             Assert.Equal(92, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure 2D array works with stride of 0 and initial offset to loop over last 2 elements again
             spanInt = new TensorSpan<int>(a, (int[])[0, 2], [2, 2], [0, 1]);
@@ -743,6 +806,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure strides can't be negative
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -773,6 +837,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(91, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(-93, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure you can't overlap elements using strides
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -789,6 +854,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
             Assert.Equal(94, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             //Make sure it works with NIndex
             spanInt = new TensorSpan<int>(a, (NIndex[])[1, 1], [2, 2], [0, 0]);
@@ -799,6 +865,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
             Assert.Equal(94, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             //Make sure it works with NIndex
             spanInt = new TensorSpan<int>(a, (NIndex[])[^1, ^1], [2, 2], [0, 0]);
@@ -809,10 +876,11 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
             Assert.Equal(94, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
         }
 
         [Fact]
-        public static void TensorSpanArrayConstructorTests()
+        public static void TensorSpan_ArrayConstructorTests()
         {
             // Make sure exception is thrown if lengths and strides would let you go past the end of the array
             Assert.Throws<ArgumentException>(() => new TensorSpan<double>(new double[0], lengths: new IntPtr[] { 2 }, strides: new IntPtr[] { 1 }));
@@ -828,6 +896,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[1]);
             Assert.Equal(-93, spanInt[2]);
             Assert.Equal(94, spanInt[3]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure null works
             // Should be a tensor with 0 elements and Rank 0 and no strides or lengths
@@ -835,6 +904,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, spanInt.Rank);
             Assert.Equal(0, spanInt.Lengths.Length);
             Assert.Equal(0, spanInt.Strides.Length);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure empty array works
             // Should be a Tensor with 0 elements but Rank 1 with dimension 0 length 0
@@ -844,9 +914,11 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, spanInt.Lengths[0]);
             Assert.Equal(0, spanInt.FlattenedLength);
             Assert.Equal(0, spanInt.Strides[0]);
+            TensorSpan_TestEnumerator(spanInt);
             // Make sure it still throws on index 0
             Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new TensorSpan<int>(b);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[0];
             });
 
@@ -857,6 +929,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, spanInt.Lengths[0]);
             Assert.Equal(0, spanInt.FlattenedLength);
             Assert.Equal(0, spanInt.Strides[0]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure 2D array works
             spanInt = new TensorSpan<int>(a, new Index(0), [2, 2], default);
@@ -867,6 +940,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure can use only some of the array
             spanInt = new TensorSpan<int>(a, new Index(0), [1, 2], default);
@@ -875,13 +949,16 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(91, spanInt[0, 0]);
             Assert.Equal(92, spanInt[0, 1]);
+            TensorSpan_TestEnumerator(spanInt);
             Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new TensorSpan<int>(a, new Index(0), [1, 2], default);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[1, 1];
             });
 
             Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new TensorSpan<int>(a, new Index(0), [1, 2], default);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[1, 0];
             });
 
@@ -892,6 +969,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(92, spanInt[0, 0]);
             Assert.Equal(-93, spanInt[0, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure Index offset works correctly
             spanInt = new TensorSpan<int>(a, new Index(2), [1, 2], default);
@@ -900,6 +978,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(-93, spanInt[0, 0]);
             Assert.Equal(94, spanInt[0, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure we catch that there aren't enough elements in the array for the lengths
             Assert.Throws<ArgumentException>(() => {
@@ -915,6 +994,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure 2D array works with stride of 0 to loop over first 2 elements again
             spanInt = new TensorSpan<int>(a, new Index(0), [2, 2], [0, 1]);
@@ -925,6 +1005,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[0, 1]);
             Assert.Equal(91, spanInt[1, 0]);
             Assert.Equal(92, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure 2D array works with stride of 0 and initial offset to loop over last 2 elements again
             spanInt = new TensorSpan<int>(a, new Index(2), [2, 2], [0, 1]);
@@ -935,6 +1016,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure 2D array works with strides of all 0 and initial offset to loop over last element again
             spanInt = new TensorSpan<int>(a, new Index(3), [2, 2], [0, 0]);
@@ -945,6 +1027,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
             Assert.Equal(94, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure strides can't be negative
             Assert.Throws<ArgumentOutOfRangeException>(() => {
@@ -971,6 +1054,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(91, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(-93, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure you can't overlap elements using strides
             Assert.Throws<ArgumentOutOfRangeException>(() => {
@@ -979,7 +1063,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public static void TensorSpanSpanConstructorTests()
+        public static void TensorSpan_SpanConstructorTests()
         {
             // Make sure basic T[] constructor works
             Span<int> a = [91, 92, -93, 94];
@@ -990,6 +1074,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[1]);
             Assert.Equal(-93, spanInt[2]);
             Assert.Equal(94, spanInt[3]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure empty span works
             // Should be a Tensor with 0 elements but Rank 1 with dimension 0 length 0
@@ -999,10 +1084,12 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, spanInt.Lengths[0]);
             Assert.Equal(0, spanInt.FlattenedLength);
             Assert.Equal(0, spanInt.Strides[0]);
+            TensorSpan_TestEnumerator(spanInt);
             // Make sure it still throws on index 0
             Assert.Throws<IndexOutOfRangeException>(() => {
                 Span<int> b = [];
                 var spanInt = new TensorSpan<int>(b);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[0];
             });
 
@@ -1015,6 +1102,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure can use only some of the array
             spanInt = new TensorSpan<int>(a, [1, 2], default);
@@ -1023,15 +1111,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(91, spanInt[0, 0]);
             Assert.Equal(92, spanInt[0, 1]);
+            TensorSpan_TestEnumerator(spanInt);
             Assert.Throws<IndexOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
                 var spanInt = new TensorSpan<int>(a, [1, 2], default);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[1, 1];
             });
 
             Assert.Throws<IndexOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
                 var spanInt = new TensorSpan<int>(a, [1, 2], default);
+                TensorSpan_TestEnumerator(spanInt);
                 var x = spanInt[1, 0];
             });
 
@@ -1042,6 +1133,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(92, spanInt[0, 0]);
             Assert.Equal(-93, spanInt[0, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure Index offset works correctly
             spanInt = new TensorSpan<int>(a.Slice(2), [1, 2], default);
@@ -1050,6 +1142,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(-93, spanInt[0, 0]);
             Assert.Equal(94, spanInt[0, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure we catch that there aren't enough elements in the array for the lengths
             Assert.Throws<ArgumentException>(() => {
@@ -1066,6 +1159,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure 2D array works with stride of 0 to loop over first 2 elements again
             spanInt = new TensorSpan<int>(a, [2, 2], [0, 1]);
@@ -1076,6 +1170,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(92, spanInt[0, 1]);
             Assert.Equal(91, spanInt[1, 0]);
             Assert.Equal(92, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure 2D array works with stride of 0 and initial offset to loop over last 2 elements again
             spanInt = new TensorSpan<int>(a.Slice(2), [2, 2], [0, 1]);
@@ -1086,6 +1181,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure 2D array works with strides of all 0 and initial offset to loop over last element again
             spanInt = new TensorSpan<int>(a.Slice(3), [2, 2], [0, 0]);
@@ -1096,6 +1192,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[0, 1]);
             Assert.Equal(94, spanInt[1, 0]);
             Assert.Equal(94, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure strides can't be negative
             Assert.Throws<ArgumentOutOfRangeException>(() => {
@@ -1126,6 +1223,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(91, spanInt[0, 1]);
             Assert.Equal(-93, spanInt[1, 0]);
             Assert.Equal(-93, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure you can't overlap elements using strides
             Assert.Throws<ArgumentOutOfRangeException>(() => {
@@ -1135,7 +1233,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public static unsafe void TensorSpanPointerConstructorTests()
+        public static unsafe void TensorSpan_PointerConstructorTests()
         {
             // Make sure basic T[] constructor works
             Span<int> a = [91, 92, -93, 94];
@@ -1150,6 +1248,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(-93, spanInt[2]);
                 Assert.Equal(94, spanInt[3]);
             }
+            TensorSpan_TestEnumerator(spanInt);
 
             // Make sure empty span works
             // Should be a Tensor with 0 elements but Rank 1 with dimension 0 length 0
@@ -1161,6 +1260,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(0, spanInt.Lengths[0]);
                 Assert.Equal(0, spanInt.FlattenedLength);
                 Assert.Equal(0, spanInt.Strides[0]);
+                TensorSpan_TestEnumerator(spanInt);
                 // Make sure it still throws on index 0
                 Assert.Throws<IndexOutOfRangeException>(() =>
                 {
@@ -1168,6 +1268,7 @@ namespace System.Numerics.Tensors.Tests
                     fixed (int* p = b)
                     {
                         var spanInt = new TensorSpan<int>(p, 0);
+                        TensorSpan_TestEnumerator(spanInt);
                         var x = spanInt[0];
                     }
                 });
@@ -1184,6 +1285,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(92, spanInt[0, 1]);
                 Assert.Equal(-93, spanInt[1, 0]);
                 Assert.Equal(94, spanInt[1, 1]);
+                TensorSpan_TestEnumerator(spanInt);
 
                 // Make sure can use only some of the array
                 spanInt = new TensorSpan<int>(p, 4, [1, 2], default);
@@ -1192,12 +1294,14 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(2, spanInt.Lengths[1]);
                 Assert.Equal(91, spanInt[0, 0]);
                 Assert.Equal(92, spanInt[0, 1]);
+                TensorSpan_TestEnumerator(spanInt);
                 Assert.Throws<IndexOutOfRangeException>(() =>
                 {
                     Span<int> a = [91, 92, -93, 94];
                     fixed (int* p = a)
                     {
                         var spanInt = new TensorSpan<int>(p, 4, [1, 2], default);
+                        TensorSpan_TestEnumerator(spanInt);
                         var x = spanInt[1, 1];
                     }
                 });
@@ -1208,6 +1312,7 @@ namespace System.Numerics.Tensors.Tests
                     fixed (int* p = a)
                     {
                         var spanInt = new TensorSpan<int>(p, 4, [1, 2], default);
+                        TensorSpan_TestEnumerator(spanInt);
                         var x = spanInt[1, 0];
                     }
                 });
@@ -1219,6 +1324,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(2, spanInt.Lengths[1]);
                 Assert.Equal(92, spanInt[0, 0]);
                 Assert.Equal(-93, spanInt[0, 1]);
+                TensorSpan_TestEnumerator(spanInt);
 
                 // Make sure Index offset works correctly
                 spanInt = new TensorSpan<int>(p + 2, 2, [1, 2], default);
@@ -1227,6 +1333,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(2, spanInt.Lengths[1]);
                 Assert.Equal(-93, spanInt[0, 0]);
                 Assert.Equal(94, spanInt[0, 1]);
+                TensorSpan_TestEnumerator(spanInt);
 
                 // Make sure we catch that there aren't enough elements in the array for the lengths
                 Assert.Throws<ArgumentException>(() =>
@@ -1247,6 +1354,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(92, spanInt[0, 1]);
                 Assert.Equal(-93, spanInt[1, 0]);
                 Assert.Equal(94, spanInt[1, 1]);
+                TensorSpan_TestEnumerator(spanInt);
 
                 // Make sure 2D array works with stride of 0 to loop over first 2 elements again
                 spanInt = new TensorSpan<int>(p, 4, [2, 2], [0, 1]);
@@ -1257,6 +1365,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(92, spanInt[0, 1]);
                 Assert.Equal(91, spanInt[1, 0]);
                 Assert.Equal(92, spanInt[1, 1]);
+                TensorSpan_TestEnumerator(spanInt);
 
                 // Make sure 2D array works with stride of 0 and initial offset to loop over last 2 elements again
                 spanInt = new TensorSpan<int>(p + 2, 2, [2, 2], [0, 1]);
@@ -1267,6 +1376,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(94, spanInt[0, 1]);
                 Assert.Equal(-93, spanInt[1, 0]);
                 Assert.Equal(94, spanInt[1, 1]);
+                TensorSpan_TestEnumerator(spanInt);
 
                 // Make sure 2D array works with strides of all 0 and initial offset to loop over last element again
                 spanInt = new TensorSpan<int>(p + 3, 1, [2, 2], [0, 0]);
@@ -1277,6 +1387,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(94, spanInt[0, 1]);
                 Assert.Equal(94, spanInt[1, 0]);
                 Assert.Equal(94, spanInt[1, 1]);
+                TensorSpan_TestEnumerator(spanInt);
 
                 // Make sure strides can't be negative
                 Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -1333,6 +1444,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(91, spanInt[0, 1]);
                 Assert.Equal(-93, spanInt[1, 0]);
                 Assert.Equal(-93, spanInt[1, 1]);
+                TensorSpan_TestEnumerator(spanInt);
 
                 // Make sure you can't overlap elements using strides
                 Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -1347,7 +1459,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public static void TensorSpanLargeDimensionsTests()
+        public static void TensorSpan_LargeDimensionsTests()
         {
             int[] a = { 91, 92, -93, 94, 95, -96 };
             int[] results = new int[6];
@@ -1376,6 +1488,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(-96, spanInt[0, 0, 0, 0, 0, 5]);
             spanInt.FlattenTo(results);
             Assert.Equal(a, results);
+            TensorSpan_TestEnumerator(spanInt);
 
             a = [91, 92, -93, 94, 95, -96, -91, -92, 93, -94, -95, 96];
             results = new int[12];
@@ -1408,10 +1521,11 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(96, spanInt[0, 1, 1, 0, 0, 2]);
             spanInt.FlattenTo(results);
             Assert.Equal(a, results);
+            TensorSpan_TestEnumerator(spanInt);
         }
 
         [Fact]
-        public static void IntArrayAsTensorSpan()
+        public static void TensorSpan_IntArrayAs()
         {
             int[] a = { 91, 92, -93, 94 };
             int[] results = new int[4];
@@ -1428,15 +1542,16 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(94, spanInt[3]);
             spanInt.FlattenTo(results);
             Assert.Equal(a, results);
+
             spanInt[0] = 100;
             spanInt[1] = 101;
             spanInt[2] = -102;
             spanInt[3] = 103;
-
             Assert.Equal(100, spanInt[0]);
             Assert.Equal(101, spanInt[1]);
             Assert.Equal(-102, spanInt[2]);
             Assert.Equal(103, spanInt[3]);
+            TensorSpan_TestEnumerator(spanInt);
 
             a[0] = 91;
             a[1] = 92;
@@ -1461,15 +1576,15 @@ namespace System.Numerics.Tensors.Tests
             spanInt[0, 1] = 101;
             spanInt[1, 0] = -102;
             spanInt[1, 1] = 103;
-
             Assert.Equal(100, spanInt[0, 0]);
             Assert.Equal(101, spanInt[0, 1]);
             Assert.Equal(-102, spanInt[1, 0]);
             Assert.Equal(103, spanInt[1, 1]);
+            TensorSpan_TestEnumerator(spanInt);
         }
 
         [Fact]
-        public static void TensorSpanFillTest()
+        public static void TensorSpan_FillTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             TensorSpan<int> spanInt = a.AsTensorSpan(3, 3);
@@ -1493,6 +1608,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(int.MaxValue, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
 
             a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             spanInt = a.AsTensorSpan(9);
@@ -1502,6 +1618,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(-1, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
 
             a = [.. Enumerable.Range(0, 27)];
             spanInt = a.AsTensorSpan(3,3,3);
@@ -1511,6 +1628,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(-1, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
 
             a = [.. Enumerable.Range(0, 12)];
             spanInt = a.AsTensorSpan(3, 2, 2);
@@ -1520,6 +1638,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(-1, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
 
             a = [.. Enumerable.Range(0, 16)];
             spanInt = a.AsTensorSpan(2,2,2,2);
@@ -1529,6 +1648,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(-1, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
 
             a = [.. Enumerable.Range(0, 24)];
             spanInt = a.AsTensorSpan(3, 2, 2, 2);
@@ -1538,10 +1658,11 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(-1, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
         }
 
         [Fact]
-        public static void TensorSpanClearTest()
+        public static void TensorSpan_ClearTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             TensorSpan<int> spanInt = a.AsTensorSpan(3, 3);
@@ -1571,6 +1692,8 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(0, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
+            TensorSpan_TestEnumerator(slice);
 
             a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             spanInt = a.AsTensorSpan(9);
@@ -1596,6 +1719,8 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(0, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
+            TensorSpan_TestEnumerator(slice);
 
             a = [.. Enumerable.Range(0, 27)];
             spanInt = a.AsTensorSpan(3, 3, 3);
@@ -1605,6 +1730,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(0, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
 
             a = [.. Enumerable.Range(0, 12)];
             spanInt = a.AsTensorSpan(3, 2, 2);
@@ -1614,6 +1740,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(0, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
 
             a = [.. Enumerable.Range(0, 16)];
             spanInt = a.AsTensorSpan(2, 2, 2, 2);
@@ -1623,6 +1750,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(0, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
 
             a = [.. Enumerable.Range(0, 24)];
             spanInt = a.AsTensorSpan(3, 2, 2, 2);
@@ -1632,10 +1760,11 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(0, enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
         }
 
         [Fact]
-        public static void TensorSpanCopyTest()
+        public static void TensorSpan_CopyTest()
         {
             int[] leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] rightData = new int[9];
@@ -1660,9 +1789,13 @@ namespace System.Numerics.Tensors.Tests
                     rightData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
                     TensorSpan<int> leftSpan = leftData.AsTensorSpan(9);
                     TensorSpan<int> tensor = rightData.AsTensorSpan(rightData.Length);
+                    TensorSpan_TestEnumerator(leftSpan);
+                    TensorSpan_TestEnumerator(tensor);
                     leftSpan.CopyTo(tensor);
                 }
             );
+            TensorSpan_TestEnumerator(leftSpan);
+            TensorSpan_TestEnumerator(rightSpan);
 
             leftData = [.. Enumerable.Range(0, 27)];
             rightData = [.. Enumerable.Range(0, 27)];
@@ -1679,12 +1812,16 @@ namespace System.Numerics.Tensors.Tests
             {
                 var l = leftData.AsTensorSpan(3, 3, 3);
                 var r = new TensorSpan<int>();
+                TensorSpan_TestEnumerator(l);
+                TensorSpan_TestEnumerator(r);
                 l.CopyTo(r);
             });
+            TensorSpan_TestEnumerator(leftSpan);
+            TensorSpan_TestEnumerator(rightSpan);
         }
 
         [Fact]
-        public static void TensorSpanTryCopyTest()
+        public static void TensorSpan_TryCopyTest()
         {
             int[] leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] rightData = new int[9];
@@ -1702,6 +1839,8 @@ namespace System.Numerics.Tensors.Tests
             //Make sure its a copy
             leftSpan[0, 0] = 100;
             Assert.NotEqual(leftSpan[0, 0], rightSpan[0, 0]);
+            TensorSpan_TestEnumerator(leftSpan);
+            TensorSpan_TestEnumerator(rightSpan);
 
             leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             rightData = new int[15];
@@ -1710,6 +1849,8 @@ namespace System.Numerics.Tensors.Tests
             success = leftSpan.TryCopyTo(rightSpan);
 
             Assert.False(success);
+            TensorSpan_TestEnumerator(leftSpan);
+            TensorSpan_TestEnumerator(rightSpan);
 
             leftData = [.. Enumerable.Range(0, 27)];
             rightData = [.. Enumerable.Range(0, 27)];
@@ -1722,24 +1863,29 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(leftEnum.Current, rightEnum.Current);
             }
+            TensorSpan_TestEnumerator(leftSpan);
+            TensorSpan_TestEnumerator(rightSpan);
 
             var l = leftData.AsTensorSpan(3, 3, 3);
             var r = new TensorSpan<int>();
             success = l.TryCopyTo(r);
             Assert.False(success);
+            TensorSpan_TestEnumerator(l);
+            TensorSpan_TestEnumerator(r);
 
             success = new TensorSpan<double>(new double[1]).TryCopyTo(Array.Empty<double>());
             Assert.False(success);
         }
 
         [Fact]
-        public static void TensorSpanSliceTest()
+        public static void TensorSpan_SliceTest()
         {
             // Make sure slicing an empty TensorSpan works
             TensorSpan<int> emptyTensorSpan = new TensorSpan<int>(Array.Empty<int>()).Slice(new NRange[] { .. });
             Assert.Equal([0], emptyTensorSpan.Lengths);
             Assert.Equal(1, emptyTensorSpan.Rank);
             Assert.Equal(0, emptyTensorSpan.FlattenedLength);
+            TensorSpan_TestEnumerator(emptyTensorSpan);
 
             // Make sure slicing a multi-dimensional empty TensorSpan works
             int[,] empty2dArray = new int[2, 0];
@@ -1748,11 +1894,14 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal([2, 0], slicedEmptyTensorSpan.Lengths);
             Assert.Equal(2, slicedEmptyTensorSpan.Rank);
             Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+            TensorSpan_TestEnumerator(emptyTensorSpan);
+            TensorSpan_TestEnumerator(slicedEmptyTensorSpan);
 
             slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { 0..1, .. });
             Assert.Equal([1, 0], slicedEmptyTensorSpan.Lengths);
             Assert.Equal(2, slicedEmptyTensorSpan.Rank);
             Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+            TensorSpan_TestEnumerator(slicedEmptyTensorSpan);
 
             // Make sure slicing a multi-dimensional empty TensorSpan works
             int[,,,] empty4dArray = new int[2, 5, 1, 0];
@@ -1761,18 +1910,24 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal([2, 5, 1, 0], slicedEmptyTensorSpan.Lengths);
             Assert.Equal(4, slicedEmptyTensorSpan.Rank);
             Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+            TensorSpan_TestEnumerator(emptyTensorSpan);
+            TensorSpan_TestEnumerator(slicedEmptyTensorSpan);
 
             emptyTensorSpan = new TensorSpan<int>(empty4dArray);
             slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { 0..1, .., .., .. });
             Assert.Equal([1, 5, 1, 0], slicedEmptyTensorSpan.Lengths);
             Assert.Equal(4, slicedEmptyTensorSpan.Rank);
             Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+            TensorSpan_TestEnumerator(emptyTensorSpan);
+            TensorSpan_TestEnumerator(slicedEmptyTensorSpan);
 
             emptyTensorSpan = new TensorSpan<int>(empty4dArray);
             slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { 0..1, 2..3, .., .. });
             Assert.Equal([1, 1, 1, 0], slicedEmptyTensorSpan.Lengths);
             Assert.Equal(4, slicedEmptyTensorSpan.Rank);
             Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+            TensorSpan_TestEnumerator(emptyTensorSpan);
+            TensorSpan_TestEnumerator(slicedEmptyTensorSpan);
 
             empty4dArray = new int[2, 0, 1, 5];
             emptyTensorSpan = new TensorSpan<int>(empty4dArray);
@@ -1780,6 +1935,8 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal([2, 0, 1, 5], slicedEmptyTensorSpan.Lengths);
             Assert.Equal(4, slicedEmptyTensorSpan.Rank);
             Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+            TensorSpan_TestEnumerator(emptyTensorSpan);
+            TensorSpan_TestEnumerator(slicedEmptyTensorSpan);
 
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] results = new int[9];
@@ -1788,6 +1945,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<IndexOutOfRangeException>(() => a.AsTensorSpan(2, 3).Slice(0..1));
             Assert.Throws<IndexOutOfRangeException>(() => a.AsTensorSpan(2, 3).Slice(1..2));
             Assert.Throws<ArgumentOutOfRangeException>(() => a.AsTensorSpan(2, 3).Slice(0..1, 5..6));
+            TensorSpan_TestEnumerator(spanInt);
 
             var sp = spanInt.Slice(1..3, 1..3);
             Assert.Equal(5, sp[0, 0]);
@@ -1804,6 +1962,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(slice[index++], enumerator.Current);
             }
+            TensorSpan_TestEnumerator(sp);
 
             sp = spanInt.Slice(0..3, 0..3);
             Assert.Equal(1, sp[0, 0]);
@@ -1824,6 +1983,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(a[index++], enumerator.Current);
             }
+            TensorSpan_TestEnumerator(sp);
 
             sp = spanInt.Slice(0..1, 0..1);
             Assert.Equal(1, sp[0, 0]);
@@ -1838,6 +1998,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(slice[index++], enumerator.Current);
             }
+            TensorSpan_TestEnumerator(sp);
 
             sp = spanInt.Slice(0..2, 0..2);
             Assert.Equal(1, sp[0, 0]);
@@ -1854,6 +2015,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(slice[index++], enumerator.Current);
             }
+            TensorSpan_TestEnumerator(sp);
 
             int[] numbers = [.. Enumerable.Range(0, 27)];
             spanInt = numbers.AsTensorSpan(3, 3, 3);
@@ -1869,6 +2031,8 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(slice[index++], enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
+            TensorSpan_TestEnumerator(sp);
 
             sp = spanInt.Slice(1..3, 1..3, 1..3);
             Assert.Equal(13, sp[0, 0, 0]);
@@ -1889,6 +2053,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(slice[index++], enumerator.Current);
             }
+            TensorSpan_TestEnumerator(sp);
 
             numbers = [.. Enumerable.Range(0, 16)];
             spanInt = numbers.AsTensorSpan(2, 2, 2, 2);
@@ -1907,10 +2072,12 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(slice[index++], enumerator.Current);
             }
+            TensorSpan_TestEnumerator(spanInt);
+            TensorSpan_TestEnumerator(sp);
         }
 
         [Fact]
-        public static void LongArrayAsTensorSpan()
+        public static void TensorSpan_LongArrayAs()
         {
             long[] b = { 91, -92, 93, 94, -95 };
             TensorSpan<long> spanLong = b.AsTensorSpan(5);
@@ -1919,14 +2086,104 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(93, spanLong[2]);
             Assert.Equal(94, spanLong[3]);
             Assert.Equal(-95, spanLong[4]);
+            TensorSpan_TestEnumerator(spanLong);
         }
 
         [Fact]
-        public static void NullArrayAsTensorSpan()
+        public static void TensorSpan_NullArrayAs()
         {
             int[] a = null;
             TensorSpan<int> span = a.AsTensorSpan();
             Assert.True(span == default);
+            TensorSpan_TestEnumerator(span);
+        }
+
+        private static void TensorSpan_TestEnumerator<T>(TensorSpan<T> span)
+            where T : INumberBase<T>
+        {
+            Span<nint> curIndexes = new nint[span.Rank];
+            if (span.Rank > 0)
+                curIndexes[span.Rank - 1] = -1;
+            var enumerator = span.GetEnumerator();
+            for (var i = 0; i < span.FlattenedLength; i++)
+            {
+                TensorSpanHelpers_AdjustIndexes(span.Rank - 1, 1, curIndexes, span.Lengths);
+                Assert.True(enumerator.MoveNext());
+                ref var current = ref enumerator.Current;
+
+                var value = current;
+                Assert.Equal(span[curIndexes], current);
+                current++;
+                Assert.Equal(span[curIndexes], current);
+                current = value;
+                Assert.Equal(span[curIndexes], current);
+            }
+            Assert.False(enumerator.MoveNext());
+
+            TestGI(span.GetEnumerator(), span);
+            TestI(span.GetEnumerator(), span);
+
+            static void TestGI<TEnumerator>(TEnumerator enumerator, TensorSpan<T> span)
+                where TEnumerator : IEnumerator<T>, allows ref struct
+            {
+                Test(enumerator, span);
+                _ = enumerator.MoveNext();
+                enumerator.Reset();
+                Test(enumerator, span);
+
+                static void Test(TEnumerator enumerator, TensorSpan<T> span)
+                {
+                    Span<nint> curIndexes = new nint[span.Rank];
+                    if (span.Rank > 0)
+                        curIndexes[span.Rank - 1] = -1;
+                    for (var i = 0; i < span.FlattenedLength; i++)
+                    {
+                        TensorSpanHelpers_AdjustIndexes(span.Rank - 1, 1, curIndexes, span.Lengths);
+                        Assert.True(enumerator.MoveNext());
+                        Assert.Equal(span[curIndexes], enumerator.Current);
+                        enumerator.Dispose();
+                        Assert.Equal(span[curIndexes], enumerator.Current);
+                    }
+                    Assert.False(enumerator.MoveNext());
+                    enumerator.Dispose();
+                    Assert.False(enumerator.MoveNext());
+                }
+            }
+
+            static void TestI<TEnumerator>(TEnumerator enumerator, TensorSpan<T> span)
+                where TEnumerator : IEnumerator, allows ref struct
+            {
+                Test(enumerator, span);
+                _ = enumerator.MoveNext();
+                enumerator.Reset();
+                Test(enumerator, span);
+
+                static void Test(TEnumerator enumerator, TensorSpan<T> span)
+                {
+                    Span<nint> curIndexes = new nint[span.Rank];
+                    if (span.Rank > 0)
+                        curIndexes[span.Rank - 1] = -1;
+                    for (var i = 0; i < span.FlattenedLength; i++)
+                    {
+                        TensorSpanHelpers_AdjustIndexes(span.Rank - 1, 1, curIndexes, span.Lengths);
+                        Assert.True(enumerator.MoveNext());
+                        Assert.Equal(span[curIndexes], enumerator.Current);
+                    }
+                    Assert.False(enumerator.MoveNext());
+                }
+            }
+        }
+
+        private static void TensorSpanHelpers_AdjustIndexes(int curIndex, nint addend, Span<nint> curIndexes, scoped ReadOnlySpan<nint> length)
+        {
+            if (addend <= 0 || curIndex < 0 || length[curIndex] <= 0)
+                return;
+            curIndexes[curIndex] += addend;
+
+            (nint Quotient, nint Remainder) result = Math.DivRem(curIndexes[curIndex], length[curIndex]);
+
+            TensorSpanHelpers_AdjustIndexes(curIndex - 1, result.Quotient, curIndexes, length);
+            curIndexes[curIndex] = result.Remainder;
         }
     }
 }
