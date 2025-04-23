@@ -9,8 +9,6 @@ using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
-#nullable enable
-
 namespace Generators
 {
     [Generator]
@@ -20,7 +18,6 @@ namespace Generators
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // Register the generator to run on AdditionalFiles (manifest and inclusion list)
             IncrementalValuesProvider<AdditionalText> manifestFiles = context.AdditionalTextsProvider.Where(f => f.Path.EndsWith(".man", StringComparison.OrdinalIgnoreCase));
             IncrementalValuesProvider<AdditionalText> inclusionFiles = context.AdditionalTextsProvider.Where(f => f.Path.EndsWith(".lst", StringComparison.OrdinalIgnoreCase));
 
@@ -31,20 +28,26 @@ namespace Generators
                 AdditionalText manifestFile = tuple.Left;
                 System.Collections.Immutable.ImmutableArray<AdditionalText> inclusionFiles = tuple.Right;
                 string manifestText = manifestFile.GetText(spc.CancellationToken)?.ToString();
-                string inclusionText = inclusionFiles.FirstOrDefault()?.GetText(spc.CancellationToken)?.ToString();
                 if (string.IsNullOrEmpty(manifestText))
                 {
                     return;
                 }
 
                 var manifest = XDocument.Parse(manifestText);
+
+                string inclusionText = inclusionFiles.FirstOrDefault()?.GetText(spc.CancellationToken)?.ToString();
+
                 Dictionary<string, HashSet<string>> inclusionList = ParseInclusionListFromString(inclusionText);
+
                 foreach (KeyValuePair<string, string> kvp in manifestsToGenerate)
                 {
                     string providerName = kvp.Key;
                     string className = providerNameToClassNameMap[providerName];
-                    XElement providerNode = manifest.Descendants(EventNs + "provider").FirstOrDefault(e => (string)e.Attribute("name") == providerName);
-                    if (providerNode == null)
+                    XElement? providerNode = manifest
+                        .Descendants(EventNs + "provider")
+                        .FirstOrDefault(e => (string)e.Attribute("name") == providerName);
+
+                    if (providerNode is null)
                     {
                         continue;
                     }
@@ -55,9 +58,9 @@ namespace Generators
             });
         }
 
-        private static Dictionary<string, HashSet<string>> ParseInclusionListFromString(string inclusionText)
+        private static Dictionary<string, HashSet<string>> ParseInclusionListFromString(string? inclusionText)
         {
-            var inclusionList = new Dictionary<string, HashSet<string>>();
+            Dictionary<string, HashSet<string>> inclusionList = [];
             if (string.IsNullOrEmpty(inclusionText))
             {
                 return inclusionList;
@@ -156,8 +159,14 @@ namespace Generators
         private static void GenerateKeywordsClass(XElement providerNode, StringWriter writer, Dictionary<string, HashSet<string>> inclusionList)
         {
             string? providerName = providerNode.Attribute("name")?.Value;
+
+            if (providerName is null)
+            {
+                return;
+            }
+
             XElement eventsNode = providerNode.Element(EventNs + "events");
-            if (eventsNode == null)
+            if (eventsNode is null)
             {
                 return;
             }
@@ -167,7 +176,9 @@ namespace Generators
             foreach (XElement? eventNode in eventNodes)
             {
                 string? eventName = eventNode.Attribute("symbol")?.Value;
-                if (!IncludeEvent(inclusionList, providerName, eventName))
+
+                if (eventName is null
+                    || !IncludeEvent(inclusionList, providerName, eventName))
                 {
                     continue;
                 }
@@ -181,8 +192,8 @@ namespace Generators
                     }
                 }
             }
-            XElement keywordsNode = providerNode.Element(EventNs + "keywords");
-            if (keywordsNode == null)
+            XElement? keywordsNode = providerNode.Element(EventNs + "keywords");
+            if (keywordsNode is null)
             {
                 return;
             }
@@ -192,11 +203,11 @@ namespace Generators
                         {
                 """);
 
-            foreach (XElement? keywordNode in keywordsNode.Elements(EventNs + "keyword"))
+            foreach (XElement keywordNode in keywordsNode.Elements(EventNs + "keyword"))
             {
                 string? name = keywordNode.Attribute("name")?.Value;
                 string? mask = keywordNode.Attribute("mask")?.Value;
-                if (name != null && mask != null && usedKeywords.Contains(name))
+                if (name is not null && mask is not null && usedKeywords.Contains(name))
                 {
                     writer.WriteLine($"            public const EventKeywords {name} = (EventKeywords){mask};");
                 }
@@ -211,6 +222,12 @@ namespace Generators
         private static void GenerateEventMethods(XElement providerNode, StringWriter writer, Dictionary<string, HashSet<string>> inclusionList)
         {
             string? providerName = providerNode.Attribute("name")?.Value;
+
+            if (providerName is null)
+            {
+                return;
+            }
+
             XElement eventsNode = providerNode.Element(EventNs + "events");
             if (eventsNode == null)
             {
@@ -233,18 +250,19 @@ namespace Generators
             }
 
             // Build a dictionary of eventID -> latest version
-            var latestEventVersions = new Dictionary<string, string>();
+            Dictionary<string, string> latestEventVersions = [];
             foreach (XElement? eventNode in eventNodes)
             {
                 string? eventName = eventNode.Attribute("symbol")?.Value;
-                if (!IncludeEvent(inclusionList, providerName, eventName))
+                if (eventName is null
+                    || !IncludeEvent(inclusionList, providerName, eventName))
                 {
                     continue;
                 }
 
                 string? eventId = eventNode.Attribute("value")?.Value;
                 string? version = eventNode.Attribute("version")?.Value;
-                if (eventId != null && version != null)
+                if (eventId is not null && version is not null)
                 {
                     if (!latestEventVersions.TryGetValue(eventId, out string? existingVersion) || string.CompareOrdinal(version, existingVersion) > 0)
                     {
@@ -256,7 +274,8 @@ namespace Generators
             foreach (XElement? eventNode in eventNodes)
             {
                 string? eventName = eventNode.Attribute("symbol")?.Value;
-                if (!IncludeEvent(inclusionList, providerName, eventName))
+                if (eventName is null
+                    || !IncludeEvent(inclusionList, providerName, eventName))
                 {
                     continue;
                 }
@@ -269,15 +288,21 @@ namespace Generators
                 string? eventId = eventNode.Attribute("value")?.Value;
                 string? version = eventNode.Attribute("version")?.Value;
                 // Only emit the event if it is the latest version for this eventId
-                if (eventId == null || version == null || latestEventVersions[eventId] != version)
+                if (eventId is null || version is null || latestEventVersions[eventId] != version)
                 {
                     continue;
                 }
 
                 string? level = eventNode.Attribute("level")?.Value;
-                IEnumerable<string>? keywords = eventNode.Attribute("keywords")?.Value?.ToString().Split([' '], StringSplitOptions.RemoveEmptyEntries).Select(k => $"Keywords.{k}");
+                IEnumerable<string>? keywords = eventNode
+                    .Attribute("keywords")
+                    ?.Value
+                    .ToString()
+                    .Split([' '], StringSplitOptions.RemoveEmptyEntries)
+                    .Select(k => $"Keywords.{k}");
 
                 writer.Write($"        [Event({eventId}, Version = {version}, Level = EventLevel.{level?.Replace("win:", "")}");
+
                 if (keywords?.Any() == true)
                 {
                     writer.Write($", Keywords = {string.Join(" | ", keywords)}");
@@ -287,7 +312,11 @@ namespace Generators
 
                 // Write the method signature
                 writer.Write($"        private void {eventName}(");
-                if (!string.IsNullOrEmpty(eventNode.Attribute("template")?.Value) && templateDict.TryGetValue(eventNode.Attribute("template")?.Value, out XElement? template))
+
+                string? templateValue = eventNode.Attribute("template")?.Value;
+
+                if (!string.IsNullOrEmpty(templateValue)
+                    && templateDict.TryGetValue(templateValue, out XElement? template))
                 {
                     IEnumerable<XElement> dataNodes = template.Elements(EventNs + "data").ToArray();
                     var paramList = new List<string>();
@@ -296,7 +325,7 @@ namespace Generators
                     // COMPAT: Cut the parameter list at any binary or ansi string arguments,
                     // or if the count attribute is set on any of the parameters.
                     int numArgumentsToEmit = 0;
-                    foreach (XElement? data in dataNodes)
+                    foreach (XElement data in dataNodes)
                     {
                         string? paramType = data.Attribute("inType")?.Value.ToString();
 
@@ -313,7 +342,7 @@ namespace Generators
                         numArgumentsToEmit++;
                     }
 
-                    foreach (XElement? data in dataNodes)
+                    foreach (XElement data in dataNodes)
                     {
                         if (numArgumentsToEmit-- <= 0)
                         {
@@ -322,11 +351,12 @@ namespace Generators
 
                         string? paramType = data.Attribute("inType")?.Value;
                         string? paramName = data.Attribute("name")?.Value;
-                        if (paramType != null && paramName != null && manifestTypeToCSharpTypeMap.TryGetValue(paramType, out string? csType))
+                        if (paramType is not null && paramName is not null
+                            && manifestTypeToCSharpTypeMap.TryGetValue(paramType, out string? csType))
                         {
                             paramList.Add($"{csType} {paramName}");
                         }
-                        else if (paramType != null && paramName != null)
+                        else if (paramType is not null && paramName is not null)
                         {
                             paramList.Add($"object {paramName}");
                         }
