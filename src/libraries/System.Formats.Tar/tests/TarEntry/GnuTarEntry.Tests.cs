@@ -13,48 +13,6 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-
-    public class Carlos
-    {
-        [Fact]
-        public void Test()
-        {
-            string inputFile = @"C:\Users\calope\source\repos\test\unpack-repack\input_official_good.gz";
-            string outputFile = @"C:\Users\calope\source\repos\test\unpack-repack\NEW-OUTPUT.tar.gz";
-
-            File.Delete(outputFile);
-
-            using MemoryStream streamToCompress = new();
-            using (TarWriter writer = new (streamToCompress, leaveOpen: true))
-            {
-                foreach (TarEntry entry in ReadTarGZipEntries(inputFile))
-                {
-                    writer.WriteEntry(entry);
-                }
-            }
-
-            streamToCompress.Flush();
-
-            streamToCompress.Position = 0;
-            using (FileStream outputStream = File.Open(outputFile, FileMode.Create, FileAccess.Write))
-            {
-                using GZipStream compressor = new(outputStream, CompressionMode.Compress);
-                streamToCompress.CopyTo(compressor);
-            }
-        }
-
-        private static IEnumerable<TarEntry> ReadTarGZipEntries(string path)
-        {
-            using FileStream streamToDecompress = File.OpenRead(path);
-            using GZipStream decompressor = new(streamToDecompress, CompressionMode.Decompress);
-            using TarReader tarReader = new(decompressor);
-            while (tarReader.GetNextEntry() is TarEntry entry)
-            {
-                yield return entry;
-            }
-        }
-    }
-
     public class GnuTarEntry_Tests : TarTestsBase
 {
     [Fact]
