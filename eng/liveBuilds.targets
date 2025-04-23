@@ -61,6 +61,7 @@
     <BootstrapRuntimePackDir>$(ArtifactsDir)bootstrap/microsoft.netcore.app/lib</BootstrapRuntimePackDir>
     <BootstrapAotSdkDir>$(ArtifactsDir)bootstrap/aotsdk</BootstrapAotSdkDir>
     <BootstrapHostDir>$(ArtifactsDir)bootstrap/host</BootstrapHostDir>
+    <BootstrapRidGraphDir>$(ArtifactsDir)bootstrap/ridgraph</BootstrapRidGraphDir>
   </PropertyGroup>
 
   <PropertyGroup>

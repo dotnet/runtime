@@ -30,6 +30,7 @@
         Condition="'$(UseNativeAotForComponents)' != 'true'" />
       <RefPackFile Include="$(MicrosoftNetCoreAppRefPackDir)/**/*" />
       <RuntimePackFile Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*" />
+      <RidGraphFile Include="$(ArtifactsBinDir)Microsoft.NETCore.Platforms/*.json" />
 
       <AotSdkFile
         DestinationPath="$(BootstrapAotSdkDir)/%(Filename)%(Extension)" />
@@ -39,7 +40,9 @@
         DestinationPath="$(BootstrapRefPackDir)/%(RecursiveDir)%(Filename)%(Extension)" />
       <RuntimePackFile
         DestinationPath="$(BootstrapRuntimePackDir)/%(RecursiveDir)%(Filename)%(Extension)" />
-      <BootstrapFile Include="@(AotSdkFile);@(AppHostFile);@(RefPackFile);@(RuntimePackFile)" />
+      <RidGraphFile
+        DestinationPath="$(BootstrapRidGraphDir)/%(RecursiveDir)%(Filename)%(Extension)" />
+      <BootstrapFile Include="@(AotSdkFile);@(AppHostFile);@(RefPackFile);@(RuntimePackFile);@(RidGraphFile)" />
     </ItemGroup>
 
     <Copy

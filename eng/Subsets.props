@@ -166,7 +166,7 @@
     <_subset>$(_subset.Replace('+tools+', '+$(DefaultToolsSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+host+', '+$(DefaultHostSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+packs+', '+$(DefaultPacksSubsets)+'))</_subset>
-    <_subset>$(_subset.Replace('+bootstrap+', '+$(BootstrapSubsets)+'))</_subset>
+    <_subset>$(_subset.Replace('+bootstrap+', '+bootstrap+$(BootstrapSubsets)+'))</_subset>
     <_subset Condition="'$(TargetOS)' == 'browser'">$(_subset.Replace('+clr.runtime+', '+mono.emsdk+clr.runtime+'))</_subset>
 
     <!-- Surround _subset in dashes to simplify checks below -->
@@ -722,6 +722,11 @@
   <!-- Tasks-->
   <ItemGroup Condition="$(_subset.Contains('+tasks+'))">
     <ProjectToBuild Include="$(RepoTasksDir)tasks.proj" Category="tasks" />
+  </ItemGroup>
+
+  <!-- Bootstrap -->
+  <ItemGroup Condition="$(_subset.Contains('+bootstrap+'))">
+    <ProjectToBuild Include="$(LibrariesProjectRoot)Microsoft.NETCore.Platforms\src\Microsoft.NETCore.Platforms.csproj" Category="libraries" />
   </ItemGroup>
 
   <!-- Set default configurations. -->
