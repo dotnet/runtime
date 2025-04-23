@@ -51,7 +51,7 @@ void FrameDataAllocator::FreeFragments(FrameDataFragment *pFrag)
     }
 }
 
-void FrameDataAllocator::PushInfo(InterpreterFrame *pFrame)
+void FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
 {
     if (infosLen == infosCapacity)
     {
@@ -67,7 +67,7 @@ void FrameDataAllocator::PushInfo(InterpreterFrame *pFrame)
     pInfo->pos = pCurrent->pos;
 }
 
-void *FrameDataAllocator::Alloc(InterpreterFrame *pFrame, size_t size)
+void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
 {
     if (!infosLen || (infosLen > 0 && pInfos[infosLen - 1].pFrame != pFrame))
     {
@@ -99,7 +99,7 @@ void *FrameDataAllocator::Alloc(InterpreterFrame *pFrame, size_t size)
     return result;
 }
 
-void FrameDataAllocator::PopInfo(InterpreterFrame *pFrame)
+void FrameDataAllocator::PopInfo(InterpMethodContextFrame *pFrame)
 {
     size_t top = infosLen - 1;
     if (top >= 0 && pInfos[top].pFrame == pFrame)

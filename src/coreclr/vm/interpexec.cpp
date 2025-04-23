@@ -1157,7 +1157,7 @@ CALL_TARGET_IP:
                 int32_t len = LOCAL_VAR(ip[2], int32_t);
                 len = ALIGN_UP(len, INTERP_STACK_ALIGNMENT);
 
-                void* mem = pThreadContext->pFrameDataAllocator->Alloc((InterpreterFrame*)pFrame, len);
+                void* mem = pThreadContext->pFrameDataAllocator->Alloc(pFrame, len);
                 if (pMethod->initLocals)
                 {
                     memset(mem, 0, len);
@@ -1179,7 +1179,7 @@ CALL_TARGET_IP:
 EXIT_FRAME:
 
     // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
-    pThreadContext->pFrameDataAllocator->PopInfo((InterpreterFrame*)pFrame);
+    pThreadContext->pFrameDataAllocator->PopInfo(pFrame);
     if (pFrame->pParent && pFrame->pParent->ip)
     {
         // Return to the main loop after a non-recursive interpreter call

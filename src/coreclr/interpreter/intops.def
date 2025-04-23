@@ -160,10 +160,10 @@ OPDEF(INTOP_MUL_I8, "mul.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_MUL_R4, "mul.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_MUL_R8, "mul.r8", 4, 1, 2, InterpOpNoArgs)
 
-OPDEF(INTOP_MUL_OVF_I4, "mul.ovf.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_MUL_OVF_I4, "mul.ovf.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_MUL_OVF_I8, "mul.ovf.i8", 4, 1, 2, InterpOpNoArgs)
 
-OPDEF(INTOP_MUL_OVF_UN_I4, "mul.ovf.un.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_MUL_OVF_UN_I4, "mul.ovf.un.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_MUL_OVF_UN_I8, "mul.ovf.un.i8", 4, 1, 2, InterpOpNoArgs)
 
 OPDEF(INTOP_DIV_I4, "div.i4", 4, 1, 2, InterpOpNoArgs)

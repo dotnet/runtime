@@ -22,7 +22,7 @@ struct FrameDataFragment
 struct FrameDataInfo
 {
     // The frame that this data belongs to
-    InterpreterFrame *pFrame;
+    InterpMethodContextFrame *pFrame;
     // Pointers for restoring the localloc memory:
     // pFrag - the current allocation fragment at frame entry
     // pos - the fragment pointer at frame entry
@@ -30,7 +30,7 @@ struct FrameDataInfo
     FrameDataFragment *pFrag;
     uint8_t *pos;
 
-    FrameDataInfo(InterpreterFrame *pFrame, FrameDataFragment *pFrag, uint8_t *pos);
+    FrameDataInfo(InterpMethodContextFrame *pFrame, FrameDataFragment *pFrag, uint8_t *pos);
 };
 
 struct FrameDataAllocator
@@ -44,10 +44,10 @@ struct FrameDataAllocator
     FrameDataAllocator(size_t size);
     ~FrameDataAllocator();
 
-    void *Alloc(InterpreterFrame *pFrame, size_t size);
+    void *Alloc(InterpMethodContextFrame *pFrame, size_t size);
     void FreeFragments(FrameDataFragment *pFrag);
-    void PushInfo(InterpreterFrame *pFrame);
-    void PopInfo(InterpreterFrame *pFrame);
+    void PushInfo(InterpMethodContextFrame *pFrame);
+    void PopInfo(InterpMethodContextFrame *pFrame);
 };
 
 #endif
