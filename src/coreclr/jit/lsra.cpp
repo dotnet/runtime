@@ -4308,7 +4308,8 @@ void LinearScan::resetAllRegistersState()
     clearAllNextIntervalRef();
     clearAllSpillCost();
     regNumber regIndex = REG_FIRST;
-    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
+    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT;
+         regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
 #ifdef DEBUG
@@ -4919,7 +4920,8 @@ void LinearScan::allocateRegistersMinimal()
     clearAllSpillCost();
 
     regNumber regIndex = REG_FIRST;
-    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
+    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT;
+         regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
@@ -5583,7 +5585,8 @@ void LinearScan::allocateRegisters()
 
     resetRegState();
     regNumber regIndex = REG_FIRST;
-    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
+    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT;
+         regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
@@ -7903,7 +7906,8 @@ void LinearScan::resolveRegisters()
     if (localVarsEnregistered)
     {
         regNumber regIndex = REG_FIRST;
-        for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
+        for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT;
+             regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
         {
             RegRecord* physRegRecord    = getRegisterRecord(reg);
             Interval*  assignedInterval = physRegRecord->assignedInterval;
@@ -11829,7 +11833,8 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
 {
     regNumber regIndex = REG_FIRST;
-    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
+    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT;
+         regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
     {
         regMaskTP regMask = genRegMask(reg);
         // If this isn't available or if it's still waiting to be freed (i.e. it was in
@@ -11950,7 +11955,8 @@ void LinearScan::verifyFinalAllocation()
 
     // Clear register assignments.
     regNumber regIndex = REG_FIRST;
-    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
+    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT;
+         regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
     {
         RegRecord* physRegRecord        = getRegisterRecord(reg);
         physRegRecord->assignedInterval = nullptr;
@@ -12054,7 +12060,8 @@ void LinearScan::verifyFinalAllocation()
 
                     // Clear register assignments.
                     regNumber regIndex = REG_FIRST;
-                    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
+                    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT;
+                         regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
                     {
                         RegRecord* physRegRecord        = getRegisterRecord(reg);
                         physRegRecord->assignedInterval = nullptr;
@@ -12380,7 +12387,8 @@ void LinearScan::verifyFinalAllocation()
 
             // Clear register assignments.
             regNumber regIndex = REG_FIRST;
-            for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
+            for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT;
+                 regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
             {
                 RegRecord* physRegRecord        = getRegisterRecord(reg);
                 physRegRecord->assignedInterval = nullptr;
