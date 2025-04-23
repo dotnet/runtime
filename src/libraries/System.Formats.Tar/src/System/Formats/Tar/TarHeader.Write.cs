@@ -407,7 +407,7 @@ namespace System.Formats.Tar
             if (IsLinkNameTooLongForRegularField())
             {
                 // Linkname is too long for the regular header field, create a longlink entry where the linkname will be stored.
-                TarHeader longLinkHeader = await GetGnuLongLinkMetadataHeaderAsync(cancellationToken).ConfigureAwait(false);
+                TarHeader longLinkHeader = GetGnuLongLinkMetadataHeader();
                 Debug.Assert(longLinkHeader._dataStream != null && longLinkHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
                 await longLinkHeader.WriteWithSeekableDataStreamAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
@@ -416,7 +416,7 @@ namespace System.Formats.Tar
             if (IsNameTooLongForRegularField())
             {
                 // Name is too long for the regular header field, create a longpath entry where the name will be stored.
-                TarHeader longPathHeader = await GetGnuLongPathMetadataHeaderAsync(cancellationToken).ConfigureAwait(false);
+                TarHeader longPathHeader = GetGnuLongPathMetadataHeader();
                 Debug.Assert(longPathHeader._dataStream != null && longPathHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
                 await longPathHeader.WriteWithSeekableDataStreamAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
@@ -442,17 +442,6 @@ namespace System.Formats.Tar
             return data;
         }
 
-        private static async ValueTask<MemoryStream> GetLongMetadataStreamAsync(string text, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            MemoryStream data = new MemoryStream();
-            await data.WriteAsync(Encoding.UTF8.GetBytes(text), cancellationToken).ConfigureAwait(false);
-            data.WriteByte(0); // Add a null terminator at the end of the string, _size will be calculated later
-            data.Position = 0;
-            return data;
-        }
-
         private TarHeader GetGnuLongLinkMetadataHeader()
         {
             Debug.Assert(_linkName != null);
@@ -460,24 +449,9 @@ namespace System.Formats.Tar
             return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink, _uid, _gid, _uName, _gName);
         }
 
-        private async Task<TarHeader> GetGnuLongLinkMetadataHeaderAsync(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Debug.Assert(_linkName != null);
-            MemoryStream dataStream = await GetLongMetadataStreamAsync(_linkName, cancellationToken).ConfigureAwait(false);
-            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink, _uid, _gid, _uName, _gName);
-        }
-
         private TarHeader GetGnuLongPathMetadataHeader()
         {
             MemoryStream dataStream = GetLongMetadataStream(_name);
-            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath, _uid, _gid, _uName, _gName);
-        }
-
-        private async Task<TarHeader> GetGnuLongPathMetadataHeaderAsync(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            MemoryStream dataStream = await GetLongMetadataStreamAsync(_name, cancellationToken).ConfigureAwait(false);
             return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath, _uid, _gid, _uName, _gName);
         }
 
