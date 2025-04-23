@@ -22,6 +22,7 @@ namespace System.Runtime.Loader.Tests
         public MockAssembly() {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class ContextualReflectionTestFixture : IContextualReflectionTestFixture
     {
         public AssemblyLoadContext isolatedAlc { get; }
