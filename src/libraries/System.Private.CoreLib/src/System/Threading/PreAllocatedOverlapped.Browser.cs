@@ -7,8 +7,13 @@ namespace System.Threading
     {
         [CLSCompliantAttribute(false)]
         public PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData) { }
+#pragma warning disable CA1822 // Mark members as static
+        internal bool AddRef() => false;
+        internal void Release() { }
+#pragma warning restore CA1822 // Mark members as static
         [CLSCompliantAttribute(false)]
         public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) => new PreAllocatedOverlapped(callback, state, pinData);
         public void Dispose() { }
+        internal ThreadPoolBoundHandleOverlapped? _overlappedPortableCore;
     }
 }
