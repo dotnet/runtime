@@ -38,6 +38,13 @@ typedef var_types RegisterType;
 #define FloatRegisterType TYP_FLOAT
 #define MaskRegisterType  TYP_MASK
 
+// REGISTER_LOOKUP : a lookup table to match register indice to active registers.
+#ifdef TARGET_AMD64
+#define REGISTER_LOOKUP(regIndex) regIndices[(unsigned)regIndex]
+#else
+#define REGISTER_LOOKUP(regIndex) regIndex
+#endif
+
 //------------------------------------------------------------------------
 // regType: Return the RegisterType to use for a given type
 //
@@ -2132,7 +2139,8 @@ private:
     }
 #endif // TARGET_XARCH
 
-    unsigned availableRegCount;
+    unsigned   availableRegCount;
+    regNumber* regIndices;
 
     FORCEINLINE unsigned get_AVAILABLE_REG_COUNT() const
     {

@@ -837,6 +837,28 @@ LinearScan::LinearScan(Compiler* theCompiler)
     rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
     regIntLast        = compiler->regIntLast;
     isApxSupported    = compiler->canUseApxEncoding();
+    if (isApxSupported)
+    {
+        regIndices = new regNumber[ACTUAL_REG_COUNT];
+        for (int i = 0; i < (int)ACTUAL_REG_COUNT; i++)
+        {
+            regIndices[i] = (regNumber)i;
+        }
+    }
+    else
+    {
+        regIndices =
+            new regNumber[]{(regNumber)0,  (regNumber)1,  (regNumber)2,  (regNumber)3,  (regNumber)4,  (regNumber)5,
+                            (regNumber)6,  (regNumber)7,  (regNumber)8,  (regNumber)9,  (regNumber)10, (regNumber)11,
+                            (regNumber)12, (regNumber)13, (regNumber)14, (regNumber)15, (regNumber)32, (regNumber)33,
+                            (regNumber)34, (regNumber)35, (regNumber)36, (regNumber)37, (regNumber)38, (regNumber)39,
+                            (regNumber)40, (regNumber)41, (regNumber)42, (regNumber)43, (regNumber)44, (regNumber)45,
+                            (regNumber)46, (regNumber)47, (regNumber)48, (regNumber)49, (regNumber)50, (regNumber)51,
+                            (regNumber)52, (regNumber)53, (regNumber)54, (regNumber)55, (regNumber)56, (regNumber)57,
+                            (regNumber)58, (regNumber)59, (regNumber)60, (regNumber)61, (regNumber)62, (regNumber)63,
+                            (regNumber)64, (regNumber)65, (regNumber)66, (regNumber)67, (regNumber)68, (regNumber)69,
+                            (regNumber)70, (regNumber)71};
+    }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
@@ -4285,8 +4307,8 @@ void LinearScan::resetAllRegistersState()
     resetAvailableRegs();
     clearAllNextIntervalRef();
     clearAllSpillCost();
-
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    regNumber regIndex = REG_FIRST;
+    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
 #ifdef DEBUG
@@ -4896,7 +4918,8 @@ void LinearScan::allocateRegistersMinimal()
     clearAllNextIntervalRef();
     clearAllSpillCost();
 
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    regNumber regIndex = REG_FIRST;
+    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
@@ -5559,7 +5582,8 @@ void LinearScan::allocateRegisters()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     resetRegState();
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    regNumber regIndex = REG_FIRST;
+    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
@@ -7878,7 +7902,8 @@ void LinearScan::resolveRegisters()
     // are encountered.
     if (localVarsEnregistered)
     {
-        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+        regNumber regIndex = REG_FIRST;
+        for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
         {
             RegRecord* physRegRecord    = getRegisterRecord(reg);
             Interval*  assignedInterval = physRegRecord->assignedInterval;
@@ -11803,7 +11828,8 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 //
 void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
 {
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    regNumber regIndex = REG_FIRST;
+    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
     {
         regMaskTP regMask = genRegMask(reg);
         // If this isn't available or if it's still waiting to be freed (i.e. it was in
@@ -11897,7 +11923,7 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
         // If this is occupied by a double interval, skip the corresponding float reg.
         if ((assignedInterval != nullptr) && (assignedInterval->registerType == TYP_DOUBLE))
         {
-            reg = REG_NEXT(reg);
+            regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex);
         }
 #endif
     }
@@ -11923,7 +11949,8 @@ void LinearScan::verifyFinalAllocation()
     }
 
     // Clear register assignments.
-    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    regNumber regIndex = REG_FIRST;
+    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
     {
         RegRecord* physRegRecord        = getRegisterRecord(reg);
         physRegRecord->assignedInterval = nullptr;
@@ -12026,7 +12053,8 @@ void LinearScan::verifyFinalAllocation()
                     }
 
                     // Clear register assignments.
-                    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+                    regNumber regIndex = REG_FIRST;
+                    for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
                     {
                         RegRecord* physRegRecord        = getRegisterRecord(reg);
                         physRegRecord->assignedInterval = nullptr;
@@ -12351,7 +12379,8 @@ void LinearScan::verifyFinalAllocation()
             }
 
             // Clear register assignments.
-            for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+            regNumber regIndex = REG_FIRST;
+            for (regNumber reg = REGISTER_LOOKUP(regIndex); reg < AVAILABLE_REG_COUNT; regIndex = REG_NEXT(regIndex), reg = REGISTER_LOOKUP(regIndex))
             {
                 RegRecord* physRegRecord        = getRegisterRecord(reg);
                 physRegRecord->assignedInterval = nullptr;
