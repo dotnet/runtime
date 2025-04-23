@@ -2000,6 +2000,39 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Type
     return pObjMT->GetRestoredSlot(GetSlot());
 }
 
+MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
+{
+    CONTRACT(MethodDesc*)
+    {
+        THROWS;
+        GC_TRIGGERS;
+
+        PRECONDITION(IsVtableMethod());
+        PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
+        POSTCONDITION(RETVAL != NULL);
+    }
+    CONTRACT_END;
+    // Method table of target (might be instantiated)
+    MethodTable *pObjMT = (*orThis)->GetMethodTable();
+
+    // This is the static method descriptor describing the call.
+    // It is not the destination of the call, which we must compute.
+    MethodDesc* pStaticMD = this;
+
+    if (pStaticMD->HasMethodInstantiation())
+    {
+        CheckRestore();
+        RETURN(ResolveGenericVirtualMethod(orThis));
+    }
+
+    if (pStaticMD->IsInterface())
+    {
+        RETURN(MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis));
+    }
+
+    RETURN(pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot()));
+}
+
 //*******************************************************************************
 // The following resolve virtual dispatch for the given method on the given
 // object down to an actual address to call, including any
@@ -2010,47 +2043,12 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
     {
         THROWS;
         GC_TRIGGERS;
-
-        PRECONDITION(IsVtableMethod());
-        PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
         POSTCONDITION(RETVAL != NULL);
     }
     CONTRACT_END;
 
-    // Method table of target (might be instantiated)
-    MethodTable *pObjMT = (*orThis)->GetMethodTable();
-
-    // This is the static method descriptor describing the call.
-    // It is not the destination of the call, which we must compute.
-    MethodDesc* pStaticMD = this;
-    MethodDesc *pTargetMD;
-
-    if (pStaticMD->HasMethodInstantiation())
-    {
-        CheckRestore();
-        pTargetMD = ResolveGenericVirtualMethod(orThis);
-
-        // If we're remoting this call we can't call directly on the returned
-        // method desc, we need to go through a stub that guarantees we end up
-        // in the remoting handler. The stub we use below is normally just for
-        // non-virtual calls on virtual methods (that have the same problem
-        // where we could end up bypassing the remoting system), but it serves
-        // our purpose here (basically pushes our correctly instantiated,
-        // resolved method desc on the stack and calls the remoting code).
-
-        RETURN(pTargetMD->GetMultiCallableAddrOfCode());
-    }
-
-    if (pStaticMD->IsInterface())
-    {
-        pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,pStaticMD,orThis);
-        RETURN(pTargetMD->GetMultiCallableAddrOfCode());
-    }
-
-
-    pTargetMD = pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot());
-
-    RETURN (pTargetMD->GetMultiCallableAddrOfCode());
+    MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, staticTH);
+    RETURN(pTargetMD->GetMultiCallableAddrOfCode());
 }
 
 //*******************************************************************************

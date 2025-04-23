@@ -25,7 +25,7 @@ void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
 
     // The historic location of ThreadType slot kept for compatibility with SOS
     // TODO: Introduce DAC API to make this hack unnecessary
-    gCurrentThreadInfo.m_EETlsData = (void**)&t_ThreadType - TlsIdx_ThreadType;
+    t_CurrentThreadInfo.m_EETlsData = (void**)&t_ThreadType - TlsIdx_ThreadType;
 }
 
 void ClrFlsClearThreadType(TlsThreadTypeFlag flag)
