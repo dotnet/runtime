@@ -1131,28 +1131,14 @@ void InitThreadManager()
     }
     else
     {
-        // I am using virtual protect to cover the entire range that this code falls in.
-        //
-
-        // We could reset it to non-writeable inbetween GCs and such, but then we'd have to keep on re-writing back and forth,
-        // so instead we'll leave it writable from here forward.
-
-        DWORD oldProt;
-        if (!ClrVirtualProtect((void *)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart,
-                            PAGE_EXECUTE_READWRITE, &oldProt))
-        {
-            _ASSERTE(!"ClrVirtualProtect of code page failed");
-            COMPlusThrowWin32();
-        }
-
 #ifdef TARGET_X86
         JIT_WriteBarrierEAX_Loc = (void*)JIT_WriteBarrierEAX;
 #else
-        JIT_WriteBarrier_Loc = (void*)JIT_WriteBarrier;
+        JIT_WriteBarrier_Loc = (void*)RhpByRefAssignRef;
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
-        JIT_WriteBarrier_Table_Loc = (void*)&JIT_WriteBarrier_Table;
+        JIT_WriteBarrier_Table_Loc = NULL;
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 
