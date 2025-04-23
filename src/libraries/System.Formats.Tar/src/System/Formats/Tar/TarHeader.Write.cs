@@ -673,17 +673,25 @@ namespace System.Formats.Tar
 
             int checksum = 0;
 
-            int mode = Math.Max(0, _mode);
-            checksum += FormatNumeric(mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
+            if (_mode >= 0)
+            {
+                checksum += FormatNumeric(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
+            }
 
-            int uid = Math.Max(0, _uid);
-            checksum += FormatNumeric(uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
+            if (_uid >= 0)
+            {
+                checksum += FormatNumeric(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
+            }
 
-            int gid = Math.Max(0, _gid);
-            checksum += FormatNumeric(gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
+            if (_gid >= 0)
+            {
+                checksum += FormatNumeric(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
+            }
 
-            long size = Math.Max(0, _size);
-            checksum += FormatNumeric(size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+            if (_size >= 0)
+            {
+                checksum += FormatNumeric(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+            }
 
             checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
 
