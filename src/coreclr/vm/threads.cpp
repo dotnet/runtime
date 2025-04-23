@@ -1134,7 +1134,7 @@ void InitThreadManager()
 #ifdef TARGET_X86
         JIT_WriteBarrierEAX_Loc = (void*)JIT_WriteBarrierEAX;
 #else
-        JIT_WriteBarrier_Loc = (void*)RhpByRefAssignRef;
+        JIT_WriteBarrier_Loc = (void*)RhpAssignRef;
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
