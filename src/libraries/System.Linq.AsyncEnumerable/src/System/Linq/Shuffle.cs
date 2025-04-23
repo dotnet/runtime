@@ -22,7 +22,7 @@ namespace System.Linq
         public static IAsyncEnumerable<TSource> Shuffle<TSource>(
             this IAsyncEnumerable<TSource> source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() ? Empty<TSource>() :

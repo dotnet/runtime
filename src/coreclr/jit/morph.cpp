@@ -3156,16 +3156,21 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     // the partial byref will not point within the object, and thus not get updated correctly during a GC.
     // This is mostly a risk in fully-interruptible code regions.
 
-    // We can generate two types of trees for "addr":
+    // We can generate three types of trees for "addr":
     //
     //  1) "arrRef + (index + elemOffset)"
     //  2) "(arrRef + elemOffset) + index"
+    //  3) "(arrRef + index) + elemOffset"
     //
     // XArch has powerful addressing modes such as [base + index*scale + offset] so it's fine with 1),
     // while for Arm we better try to make an invariant sub-tree as large as possible, which is usually
     // "(arrRef + elemOffset)" and is CSE/LoopHoisting friendly => produces better codegen.
     // 2) should still be safe from GC's point of view since both ADD operations are byref and point to
     // within the object so GC will be able to correctly track and update them.
+    //
+    // RISC-V has very minimal addressing mode: [base + offset] which won't benefit much from CSE/LoopHoisting. However,
+    // RISC-V has the SH(X)ADD_(UW) instruction that represents [base + index] well. Therefore, 3) lends itself more
+    // naturally to RISC-V addressing mode.
 
     bool groupArrayRefWithElemOffset = false;
 #ifdef TARGET_ARMARCH
@@ -3180,6 +3185,16 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         groupArrayRefWithElemOffset = false;
     }
 #endif
+    bool groupArrayRefWithIndex = false;
+#if defined(TARGET_RISCV64)
+    groupArrayRefWithIndex = true;
+
+    // Don't use 3) for structs to reduce number of size regressions
+    if (varTypeIsStruct(elemTyp))
+    {
+        groupArrayRefWithIndex = false;
+    }
+#endif
 
     // Note the array reference may now be TYP_I_IMPL, TYP_BYREF, or TYP_REF
     //
@@ -3191,6 +3206,11 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     {
         GenTree* basePlusOffset = gtNewOperNode(GT_ADD, arrPtrType, arrRef, elemOffset);
         addr                    = gtNewOperNode(GT_ADD, arrPtrType, basePlusOffset, addr);
+    }
+    else if (groupArrayRefWithIndex)
+    {
+        addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
+        addr = gtNewOperNode(GT_ADD, TYP_BYREF, addr, elemOffset);
     }
     else
     {

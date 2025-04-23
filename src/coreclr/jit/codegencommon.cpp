@@ -1506,6 +1506,21 @@ FOUND_AM:
     return true;
 }
 
+//------------------------------------------------------------------------
+// genEmitCallWithCurrentGC:
+//   Emit a call with GC information captured from current GC information.
+//
+// Parameters:
+//   params - Call emission parameters
+//
+void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
+{
+    params.ptrVars   = gcInfo.gcVarPtrSetCur;
+    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
+    params.byrefRegs = gcInfo.gcRegByrefSetCur;
+    GetEmitter()->emitIns_Call(params);
+}
+
 /*****************************************************************************
  *
  *  Generate an exit sequence for a return from a method (note: when compiling
@@ -2328,95 +2343,16 @@ void CodeGen::genReportEH()
 
     unsigned XTnum;
 
-    bool isNativeAOT = compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-
-    unsigned EHCount = compiler->compHndBBtabCount;
-
-    // Count duplicated clauses. This uses the same logic as below, where we actually generate them for reporting to the
-    // VM.
-    unsigned duplicateClauseCount = 0;
-    unsigned enclosingTryIndex;
-
-    // Duplicate clauses are not used by NativeAOT ABI
-    if (compiler->UsesFunclets() && !isNativeAOT)
-    {
-        for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
-        {
-            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndex(XTnum); // find the true enclosing try index,
-                                                                               // ignoring 'mutual protect' trys
-                 enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
-                 enclosingTryIndex = compiler->ehGetEnclosingTryIndex(enclosingTryIndex))
-            {
-                ++duplicateClauseCount;
-            }
-        }
-        EHCount += duplicateClauseCount;
-    }
-
-    unsigned clonedFinallyCount = 0;
-
-    // Duplicate clauses are not used by NativeAOT ABI
-    if (compiler->UsesFunclets() && compiler->UsesCallFinallyThunks() && !isNativeAOT)
-    {
-        // We don't keep track of how many cloned finally there are. So, go through and count.
-        // We do a quick pass first through the EH table to see if there are any try/finally
-        // clauses. If there aren't, we don't need to look for BBJ_CALLFINALLY.
-
-        bool anyFinallys = false;
-        for (EHblkDsc* const HBtab : EHClauses(compiler))
-        {
-            if (HBtab->HasFinallyHandler())
-            {
-                anyFinallys = true;
-                break;
-            }
-        }
-        if (anyFinallys)
-        {
-            for (BasicBlock* const block : compiler->Blocks())
-            {
-                if (block->KindIs(BBJ_CALLFINALLY))
-                {
-                    ++clonedFinallyCount;
-                }
-            }
-
-            EHCount += clonedFinallyCount;
-        }
-    }
-
 #ifdef DEBUG
     if (compiler->opts.dspEHTable)
     {
-        if (compiler->UsesFunclets())
-        {
-            if (compiler->UsesCallFinallyThunks())
-            {
-                printf("%d EH table entries, %d duplicate clauses, %d cloned finallys, %d total EH entries reported to "
-                       "VM\n",
-                       compiler->compHndBBtabCount, duplicateClauseCount, clonedFinallyCount, EHCount);
-                assert(compiler->compHndBBtabCount + duplicateClauseCount + clonedFinallyCount == EHCount);
-            }
-            else
-            {
-                printf("%d EH table entries, %d duplicate clauses, %d total EH entries reported to VM\n",
-                       compiler->compHndBBtabCount, duplicateClauseCount, EHCount);
-                assert(compiler->compHndBBtabCount + duplicateClauseCount == EHCount);
-            }
-        }
-#if defined(FEATURE_EH_WINDOWS_X86)
-        else
-        {
-            printf("%d EH table entries, %d total EH entries reported to VM\n", compiler->compHndBBtabCount, EHCount);
-            assert(compiler->compHndBBtabCount == EHCount);
-        }
-#endif // FEATURE_EH_WINDOWS_X86
+        printf("%d EH table entries\n", compiler->compHndBBtabCount);
     }
 #endif // DEBUG
 
     // Tell the VM how many EH clauses to expect.
-    compiler->eeSetEHcount(EHCount);
-    compiler->Metrics.EHClauseCount = (int)EHCount;
+    compiler->eeSetEHcount(compiler->compHndBBtabCount);
+    compiler->Metrics.EHClauseCount = (int)compiler->compHndBBtabCount;
 
     struct EHClauseInfo
     {
@@ -2504,288 +2440,10 @@ void CodeGen::genReportEH()
             }
         }
 
-        assert(XTnum < EHCount);
         compiler->eeSetEHinfo(XTnum, &clause);
     }
 
-    // Now output duplicated clauses.
-    //
-    // If a funclet has been created by moving a handler out of a try region that it was originally nested
-    // within, then we need to report a "duplicate" clause representing the fact that an exception in that
-    // handler can be caught by the 'try' it has been moved out of. This is because the original 'try' region
-    // descriptor can only specify a single, contiguous protected range, but the funclet we've moved out is
-    // no longer contiguous with the original 'try' region. The new EH descriptor will have the same handler
-    // region as the enclosing try region's handler region. This is the sense in which it is duplicated:
-    // there is now a "duplicate" clause with the same handler region as another, but a different 'try'
-    // region.
-    //
-    // For example, consider this (capital letters represent an unknown code sequence, numbers identify a
-    // try or handler region):
-    //
-    // A
-    // try (1) {
-    //   B
-    //   try (2) {
-    //     C
-    //   } catch (3) {
-    //     D
-    //   } catch (4) {
-    //     E
-    //   }
-    //   F
-    // } catch (5) {
-    //   G
-    // }
-    // H
-    //
-    // Here, we have try region (1) BCDEF protected by catch (5) G, and region (2) C protected
-    // by catch (3) D and catch (4) E. Note that catch (4) E does *NOT* protect the code "D".
-    // This is an example of 'mutually protect' regions. First, we move handlers (3) and (4)
-    // to the end of the code. However, (3) and (4) are nested inside, and protected by, try (1). Again
-    // note that (3) is not nested inside (4), despite ebdEnclosingTryIndex indicating that.
-    // The code "D" and "E" won't be contiguous with the protected region for try (1) (which
-    // will, after moving catch (3) AND (4), be BCF). Thus, we need to add a new EH descriptor
-    // representing try (1) protecting the new funclets catch (3) and (4).
-    // The code will be generated as follows:
-    //
-    // ABCFH // "main" code
-    // D // funclet
-    // E // funclet
-    // G // funclet
-    //
-    // The EH regions are:
-    //
-    //  C -> D
-    //  C -> E
-    //  BCF -> G
-    //  D -> G // "duplicate" clause
-    //  E -> G // "duplicate" clause
-    //
-    // Note that we actually need to generate one of these additional "duplicate" clauses for every
-    // region the funclet is nested in. Take this example:
-    //
-    //  A
-    //  try (1) {
-    //      B
-    //      try (2,3) {
-    //          C
-    //          try (4) {
-    //              D
-    //              try (5,6) {
-    //                  E
-    //              } catch {
-    //                  F
-    //              } catch {
-    //                  G
-    //              }
-    //              H
-    //          } catch {
-    //              I
-    //          }
-    //          J
-    //      } catch {
-    //          K
-    //      } catch {
-    //          L
-    //      }
-    //      M
-    //  } catch {
-    //      N
-    //  }
-    //  O
-    //
-    // When we pull out funclets, we get the following generated code:
-    //
-    // ABCDEHJMO // "main" function
-    // F // funclet
-    // G // funclet
-    // I // funclet
-    // K // funclet
-    // L // funclet
-    // N // funclet
-    //
-    // And the EH regions we report to the VM are (in order; main clauses
-    // first in most-to-least nested order, funclets ("duplicated clauses")
-    // last, in most-to-least nested) are:
-    //
-    //  E -> F
-    //  E -> G
-    //  DEH -> I
-    //  CDEHJ -> K
-    //  CDEHJ -> L
-    //  BCDEHJM -> N
-    //  F -> I // funclet clause #1 for F
-    //  F -> K // funclet clause #2 for F
-    //  F -> L // funclet clause #3 for F
-    //  F -> N // funclet clause #4 for F
-    //  G -> I // funclet clause #1 for G
-    //  G -> K // funclet clause #2 for G
-    //  G -> L // funclet clause #3 for G
-    //  G -> N // funclet clause #4 for G
-    //  I -> K // funclet clause #1 for I
-    //  I -> L // funclet clause #2 for I
-    //  I -> N // funclet clause #3 for I
-    //  K -> N // funclet clause #1 for K
-    //  L -> N // funclet clause #1 for L
-    //
-    // So whereas the IL had 6 EH clauses, we need to report 19 EH clauses to the VM.
-    // Note that due to the nature of 'mutually protect' clauses, it would be incorrect
-    // to add a clause "F -> G" because F is NOT protected by G, but we still have
-    // both "F -> K" and "F -> L" because F IS protected by both of those handlers.
-    //
-    // The overall ordering of the clauses is still the same most-to-least nesting
-    // after front-to-back start offset. Because we place the funclets at the end
-    // these new clauses should also go at the end by this ordering.
-    //
-
-    if (duplicateClauseCount > 0)
-    {
-        unsigned  reportedDuplicateClauseCount = 0; // How many duplicated clauses have we reported?
-        unsigned  XTnum2;
-        EHblkDsc* HBtab;
-        for (XTnum2 = 0, HBtab = compiler->compHndBBtab; XTnum2 < compiler->compHndBBtabCount; XTnum2++, HBtab++)
-        {
-            unsigned enclosingTryIndex;
-
-            EHblkDsc* fletTab = compiler->ehGetDsc(XTnum2);
-
-            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndex(XTnum2); // find the true enclosing try index,
-                                                                                // ignoring 'mutual protect' trys
-                 enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
-                 enclosingTryIndex = compiler->ehGetEnclosingTryIndex(enclosingTryIndex))
-            {
-                // The funclet we moved out is nested in a try region, so create a new EH descriptor for the funclet
-                // that will have the enclosing try protecting the funclet.
-
-                noway_assert(XTnum2 < enclosingTryIndex); // the enclosing region must be less nested, and hence have a
-                                                          // greater EH table index
-
-                EHblkDsc* encTab = compiler->ehGetDsc(enclosingTryIndex);
-
-                // The try region is the handler of the funclet. Note that for filters, we don't protect the
-                // filter region, only the filter handler region. This is because exceptions in filters never
-                // escape; the VM swallows them.
-
-                BasicBlock* bbTryBeg  = fletTab->ebdHndBeg;
-                BasicBlock* bbTryLast = fletTab->ebdHndLast;
-
-                BasicBlock* bbHndBeg  = encTab->ebdHndBeg; // The handler region is the same as the enclosing try
-                BasicBlock* bbHndLast = encTab->ebdHndLast;
-
-                UNATIVE_OFFSET tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
-
-                tryBeg = compiler->ehCodeOffset(bbTryBeg);
-                hndBeg = compiler->ehCodeOffset(bbHndBeg);
-
-                tryEnd = (bbTryLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(bbTryLast->Next());
-                hndEnd = (bbHndLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(bbHndLast->Next());
-
-                if (encTab->HasFilter())
-                {
-                    hndTyp = compiler->ehCodeOffset(encTab->ebdFilter);
-                }
-                else
-                {
-                    hndTyp = encTab->ebdTyp;
-                }
-
-                CORINFO_EH_CLAUSE_FLAGS flags = ToCORINFO_EH_CLAUSE_FLAGS(encTab->ebdHandlerType);
-
-                // Tell the VM this is an extra clause caused by moving funclets out of line.
-                flags = (CORINFO_EH_CLAUSE_FLAGS)(flags | CORINFO_EH_CLAUSE_DUPLICATE);
-
-                // Note that the JIT-EE interface reuses the CORINFO_EH_CLAUSE type, even though the names of
-                // the fields aren't really accurate. For example, we set "TryLength" to the offset of the
-                // instruction immediately after the 'try' body. So, it really could be more accurately named
-                // "TryEndOffset".
-
-                CORINFO_EH_CLAUSE clause;
-                clause.ClassToken = hndTyp; /* filter offset is passed back here for filter-based exception handlers */
-                clause.Flags      = flags;
-                clause.TryOffset  = tryBeg;
-                clause.TryLength  = tryEnd;
-                clause.HandlerOffset = hndBeg;
-                clause.HandlerLength = hndEnd;
-
-                assert(XTnum < EHCount);
-
-                // Tell the VM about this EH clause (a duplicated clause).
-                compiler->eeSetEHinfo(XTnum, &clause);
-
-                ++XTnum;
-                ++reportedDuplicateClauseCount;
-
-#ifndef DEBUG
-                if (duplicateClauseCount == reportedDuplicateClauseCount)
-                {
-                    break; // we've reported all of them; no need to continue looking
-                }
-#endif // !DEBUG
-
-            } // for each 'true' enclosing 'try'
-        }     // for each EH table entry
-
-        assert(duplicateClauseCount == reportedDuplicateClauseCount);
-    } // if (duplicateClauseCount > 0)
-
-    if (clonedFinallyCount > 0)
-    {
-        unsigned reportedClonedFinallyCount = 0;
-        for (BasicBlock* const block : compiler->Blocks())
-        {
-            if (block->KindIs(BBJ_CALLFINALLY))
-            {
-                UNATIVE_OFFSET hndBeg, hndEnd;
-
-                hndBeg = compiler->ehCodeOffset(block);
-
-                // How big is it? The BBJ_CALLFINALLYRET has a null bbEmitCookie! Look for the block after, which must
-                // be a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
-                BasicBlock* bbLabel = block->Next();
-                if (block->isBBCallFinallyPair())
-                {
-                    bbLabel = bbLabel->Next(); // skip the BBJ_CALLFINALLYRET
-                }
-                if (bbLabel == nullptr)
-                {
-                    hndEnd = compiler->info.compNativeCodeSize;
-                }
-                else
-                {
-                    hndEnd = compiler->ehCodeOffset(bbLabel);
-                }
-
-                CORINFO_EH_CLAUSE clause;
-                clause.ClassToken = 0; // unused
-                clause.Flags      = (CORINFO_EH_CLAUSE_FLAGS)(CORINFO_EH_CLAUSE_FINALLY | CORINFO_EH_CLAUSE_DUPLICATE);
-                clause.TryOffset  = hndBeg;
-                clause.TryLength  = hndBeg;
-                clause.HandlerOffset = hndBeg;
-                clause.HandlerLength = hndEnd;
-
-                assert(XTnum < EHCount);
-
-                // Tell the VM about this EH clause (a cloned finally clause).
-                compiler->eeSetEHinfo(XTnum, &clause);
-
-                ++XTnum;
-                ++reportedClonedFinallyCount;
-
-#ifndef DEBUG
-                if (clonedFinallyCount == reportedClonedFinallyCount)
-                {
-                    break; // we're done; no need to keep looking
-                }
-#endif        // !DEBUG
-            } // block is BBJ_CALLFINALLY
-        }     // for each block
-
-        assert(clonedFinallyCount == reportedClonedFinallyCount);
-    } // if (clonedFinallyCount > 0)
-
-    assert(XTnum == EHCount);
+    assert(XTnum == compiler->compHndBBtabCount);
 }
 
 //----------------------------------------------------------------------
@@ -5172,18 +4830,6 @@ void CodeGen::genFnProlog()
     }
 #endif // DEBUG
 
-#if defined(DEBUG)
-
-    // We cannot force 0-initialization of the PSPSym
-    // as it will overwrite the real value
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->lvaPSPSym);
-        assert(!varDsc->lvMustInit);
-    }
-
-#endif // DEBUG
-
     /*-------------------------------------------------------------------------
      *
      *  Record the stack frame ranges that will cover all of the tracked
@@ -5673,13 +5319,9 @@ void CodeGen::genFnProlog()
 
     genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
 
-    if (compiler->UsesFunclets())
-    {
-        genSetPSPSym(initReg, &initRegZeroed);
-    }
-    else
-    {
 #if defined(FEATURE_EH_WINDOWS_X86)
+    if (!compiler->UsesFunclets())
+    {
         // when compInitMem is true the genZeroInitFrame will zero out the shadow SP slots
         if (compiler->ehNeedsShadowSPslots() && !compiler->info.compInitMem)
         {
@@ -5699,8 +5341,8 @@ void CodeGen::genFnProlog()
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, initReg, compiler->lvaShadowSPslotsVar,
                                       firstSlotOffs);
         }
-#endif // FEATURE_EH_WINDOWS_X86
     }
+#endif // FEATURE_EH_WINDOWS_X86
 
     genReportGenericContextArg(initReg, &initRegZeroed);
 
