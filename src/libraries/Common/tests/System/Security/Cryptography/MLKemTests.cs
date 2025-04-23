@@ -306,7 +306,7 @@ namespace System.Security.Cryptography.Tests
             foreach ((_, byte[] pkcs8) in Pkcs8PrivateKeySeedTestData)
             {
                 byte[] invalidSize = new byte[pkcs8.Length + 1];
-                pkcs8.AsSpan(..^1).CopyTo(invalidSize);
+                pkcs8.AsSpan().CopyTo(invalidSize);
 
                 Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize.AsSpan()));
                 Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize));
@@ -383,7 +383,7 @@ namespace System.Security.Cryptography.Tests
             foreach ((_, byte[] pkcs8, _) in Pkcs8PrivateKeyExpandedKeyTestData)
             {
                 byte[] invalidSize = new byte[pkcs8.Length + 1];
-                pkcs8.AsSpan(..^1).CopyTo(invalidSize);
+                pkcs8.AsSpan().CopyTo(invalidSize);
 
                 Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize.AsSpan()));
                 Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize));
@@ -466,7 +466,7 @@ namespace System.Security.Cryptography.Tests
             foreach ((MLKemAlgorithm algorithm, byte[] pkcs8, byte[] decapKey) in Pkcs8PrivateKeyBothTestData)
             {
                 byte[] invalidSize = new byte[pkcs8.Length + 1];
-                pkcs8.AsSpan(..^1).CopyTo(invalidSize);
+                pkcs8.AsSpan().CopyTo(invalidSize);
 
                 Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize.AsSpan()));
                 Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey(invalidSize));
@@ -504,7 +504,7 @@ namespace System.Security.Cryptography.Tests
             foreach ((_, byte[] pkcs8) in Pkcs8EncryptedPrivateKeySeedTestData)
             {
                 byte[] invalidSize = new byte[pkcs8.Length + 1];
-                pkcs8.AsSpan(..^1).CopyTo(invalidSize);
+                pkcs8.AsSpan().CopyTo(invalidSize);
 
                 Assert.Throws<CryptographicException>(() =>
                     MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword, invalidSize));
