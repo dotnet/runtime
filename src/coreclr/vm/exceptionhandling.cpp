@@ -870,7 +870,7 @@ void DumpClauses(IJitManager* pJitMan, const METHODTOKEN& MethToken, UINT_PTR uM
         EE_ILEXCEPTION_CLAUSE EHClause;
         pJitMan->GetNextEHClause(&EnumState, &EHClause);
 
-        EH_LOG((LL_INFO1000, "  | %s clause [%x, %x], handler: [%x, %x] %s",
+        EH_LOG((LL_INFO1000, "  | %s clause [%x, %x], handler: [%x, %x]",
                 (IsFault(&EHClause)         ? "fault"   :
                 (IsFinally(&EHClause)       ? "finally" :
                 (IsFilterHandler(&EHClause) ? "filter"  :
@@ -878,8 +878,7 @@ void DumpClauses(IJitManager* pJitMan, const METHODTOKEN& MethToken, UINT_PTR uM
                 EHClause.TryStartPC       , // + uMethodStartPC,
                 EHClause.TryEndPC         , // + uMethodStartPC,
                 EHClause.HandlerStartPC   , // + uMethodStartPC,
-                EHClause.HandlerEndPC     , // + uMethodStartPC
-                (IsDuplicateClause(&EHClause) ? "[duplicate]" : "")
+                EHClause.HandlerEndPC       // + uMethodStartPC
                 ));
 
         if (IsFilterHandler(&EHClause))
@@ -3508,7 +3507,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
         pEHClause->_handlerAddress = (BYTE*)pJitMan->GetCodeAddressForRelOffset(MethToken, EHClause.HandlerStartPC);
 
         result = TRUE;
-        pEHClause->_isSameTry = (EHClause.Flags & 0x10) != 0; // CORINFO_EH_CLAUSE_SAMETRY
+        pEHClause->_isSameTry = (EHClause.Flags & COR_ILEXCEPTION_CLAUSE_SAMETRY) != 0;
 
         // Clear special flags - like COR_ILEXCEPTION_CLAUSE_CACHED_CLASS
         ULONG flags = (CorExceptionFlag)(EHClause.Flags & 0x0f);
@@ -3517,12 +3516,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
             pEHClause->_tryStartOffset, pEHClause->_tryEndOffset,
             pEHClause->_isSameTry ? ", isSameTry" : "", pEHClause->_handlerAddress));
 
-        if (flags & COR_ILEXCEPTION_CLAUSE_DUPLICATED)
-        {
-            EH_LOG((LL_INFO100, " duplicated clause\n"));
-            result = FALSE;
-        }
-        else if (flags == COR_ILEXCEPTION_CLAUSE_NONE)
+        if (flags == COR_ILEXCEPTION_CLAUSE_NONE)
         {
             pEHClause->_clauseKind = RH_EH_CLAUSE_TYPED;
             pEHClause->_pTargetType = pJitMan->ResolveEHClause(&EHClause, &pFrameIter->m_crawl).AsMethodTable();
