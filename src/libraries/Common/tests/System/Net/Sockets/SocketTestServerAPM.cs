@@ -51,7 +51,7 @@ namespace System.Net.Sockets.Tests
             {
                 client = _socket.EndAccept(result);
             }
-            catch (SocketException e)
+            catch (SocketException)
             {
                 return;
             }
