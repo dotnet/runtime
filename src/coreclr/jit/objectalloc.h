@@ -149,6 +149,9 @@ class ObjectAllocator final : public Phase
     unsigned        m_maxPseudoLocals;
     unsigned        m_regionsToClone;
 
+    // Struct fields
+    bool m_trackFields;
+
     //===============================================================================
     // Methods
 public:
@@ -187,8 +190,10 @@ private:
     bool         MorphAllocObjNodes();
     void         RewriteUses();
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
-    unsigned int MorphAllocObjNodeIntoStackAlloc(
-        GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
+    unsigned int MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj,
+                                                 ClassLayout*     layout,
+                                                 BasicBlock*      block,
+                                                 Statement*       stmt);
     unsigned int MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
                                                CORINFO_CLASS_HANDLE clsHnd,
                                                unsigned int         length,
@@ -197,7 +202,7 @@ private:
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
-    void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
+    void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, bool retypeFields);
     ObjectAllocationType AllocationKind(GenTree* tree);
 
     // Conditionally escaping allocation support
@@ -226,6 +231,10 @@ private:
     void CloneAndSpecialize();
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
+
+    ClassLayout* GetBoxedLayout(ClassLayout* structLayout);
+    ClassLayout* GetNonGCLayout(ClassLayout* existingLayout);
+    ClassLayout* GetByrefLayout(ClassLayout* existingLayout);
 
 #ifdef DEBUG
     void DumpIndex(unsigned bvIndex);
