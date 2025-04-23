@@ -121,7 +121,8 @@ VMs and raw metal environments are used for Android, Apple, Linux, and Windows O
 
 Other environments have their own process.
 
-- [Android](../workflow/testing/libraries/testing-android.md)
+- [Android](../workflow/testing/libraries/testing-android.md#upgrading-the-android-ndk-version-in-ci-pipelines)
+
 - [Browser Wasm](https://github.com/dotnet/runtime/pull/112066)
 
 ## Porting
