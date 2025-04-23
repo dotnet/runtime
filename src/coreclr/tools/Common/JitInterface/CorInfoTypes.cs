@@ -620,8 +620,7 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_FILTER = 0x0001, // If this bit is on, then this EH entry is for a filter
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
         CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault clause
-        CORINFO_EH_CLAUSE_DUPLICATED = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
-        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one. (Used by NativeAOT ABI.)
+        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one.
     };
 
     public struct CORINFO_EH_CLAUSE

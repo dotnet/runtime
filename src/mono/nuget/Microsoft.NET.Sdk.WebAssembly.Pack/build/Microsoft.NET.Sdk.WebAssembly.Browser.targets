@@ -207,7 +207,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <!-- true = boot config will have hard fingerprint; false = boot config will have soft fingerprint -->
       <_WasmFingerprintBootConfig Condition="'$(_WasmInlineBootConfig)' == 'true'">$(_WasmFingerprintDotnetJs)</_WasmFingerprintBootConfig>
       <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">$(WasmFingerprintBootConfig)</_WasmFingerprintBootConfig>
-      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''and $(_WasmBootConfigFileName.EndsWith('.js'))">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintBootConfig>
+      <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == '' and $(_WasmBootConfigFileName.EndsWith('.js'))">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintBootConfig>
       <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
       <_WasmPreloadAssets>$(WasmPreloadAssets)</_WasmPreloadAssets>
       <_WasmPreloadAssets Condition="'$(_WasmPreloadAssets)' == ''">true</_WasmPreloadAssets>
