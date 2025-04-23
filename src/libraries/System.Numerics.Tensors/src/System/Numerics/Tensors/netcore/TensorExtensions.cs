@@ -1,16 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Buffers;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Security.Cryptography;
-using System.Runtime.Serialization;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -23,6 +20,104 @@ namespace System.Numerics.Tensors
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public static partial class Tensor
     {
+        #region Select
+        /// <summary>
+        /// Selects a scalar from a tensor. Used in conjunction with the Select method on a Tensor.
+        /// </summary>
+        /// <typeparam name="T">The type of the <paramref name="tensor"/>.</typeparam>
+        /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> tensor to operate over.</param>
+        /// <returns>Result of the tensor operation <typeparamref name="T"/></returns>
+        public delegate T TensorScalarSelector<T>(in ReadOnlyTensorSpan<T> tensor);
+
+        /// <summary>
+        /// Selects a tensor from a tensor. Used in conjunction with the Select method on a Tensor.
+        /// </summary>
+        /// <typeparam name="T">The type of the <paramref name="tensor"/>.</typeparam>
+        /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> tensor to operate over.</param>
+        /// <returns>Result of the tensor operation <see cref="Tensor{T}"/>.</returns>
+        public delegate Tensor<T> TensorSelector<T>(in ReadOnlyTensorSpan<T> tensor);
+
+        /// <summary>
+        /// Runs a <paramref name="func"/> on a <paramref name="tensor"/> for the given dimension and returns the result.
+        /// </summary>
+        /// <typeparam name="T">The type of the <paramref name="tensor"/>.</typeparam>
+        /// <param name="tensor">The <see cref="Tensor{T}"/> to operate on.</param>
+        /// <param name="func">The <see cref="TensorScalarSelector{T}"/> to run on the <paramref name="tensor"/>.</param>
+        /// <param name="dimension">Which dimension to operate on.</param>
+        /// <returns><see cref="Tensor{T}"/> where each element in the tensor is the result of calling <paramref name="func"/> on the given <paramref name="tensor"/> and <paramref name="dimension"/>.</returns>
+        public static Tensor<T> Select<T>(this Tensor<T> tensor, TensorScalarSelector<T> func, int dimension = 0)
+        {
+            if (dimension < 0 || dimension >= tensor.Rank)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+            if (tensor == null)
+                ThrowHelper.ThrowArgumentNullException(nameof(tensor));
+            if (func == null)
+                ThrowHelper.ThrowArgumentNullException(nameof(func));
+
+            Tensor<T>.DimensionCollection.Enumerator enumerator = tensor.Dimensions.GetEnumerator(dimension);
+            T[] values = new T[enumerator.Count];
+            int index = 0;
+            while (enumerator.MoveNext())
+            {
+                values[index++] = func(enumerator.Current);
+            }
+            return Create(values, [values.Length]);
+        }
+
+        /// <summary>
+        /// Runs a <paramref name="func"/> on a <paramref name="tensor"/> for the given dimension and returns the result.
+        /// </summary>
+        /// <typeparam name="T">The type of the <paramref name="tensor"/>.</typeparam>
+        /// <param name="tensor">The <see cref="Tensor{T}"/> to operate on.</param>
+        /// <param name="func">The <see cref="TensorSelector{T}"/> to run on the <paramref name="tensor"/>.</param>
+        /// <param name="dimension">Which dimension to operate on.</param>
+        /// <returns><see cref="Tensor{T}"/> where each element in the tensor is the result of calling <paramref name="func"/> on the given <paramref name="tensor"/> and <paramref name="dimension"/>.</returns>
+        public static Tensor<T> Select<T>(this Tensor<T> tensor, TensorSelector<T> func, int dimension = 0)
+        {
+            if (dimension < 0 || dimension >= tensor.Rank)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+            if (tensor == null)
+                ThrowHelper.ThrowArgumentNullException(nameof(tensor));
+            if (func == null)
+                ThrowHelper.ThrowArgumentNullException(nameof(func));
+
+            Tensor<T>.DimensionCollection.Enumerator enumerator = tensor.Dimensions.GetEnumerator(dimension);
+            int index = 0;
+
+            // Figure out how many elements will be returned in the tensor from 1 call to func.
+            enumerator.MoveNext();
+            Tensor<T> temp = func(enumerator.Current);
+            int oneItterationLength = (int)temp.FlattenedLength;
+            int totalLength = oneItterationLength * enumerator.Count;
+            T[] values = new T[totalLength];
+            Span<T> valuesSpan = values;
+            temp.FlattenTo(valuesSpan.Slice(0, oneItterationLength));
+            index += oneItterationLength;
+
+            while (enumerator.MoveNext())
+            {
+                func(enumerator.Current).FlattenTo(valuesSpan.Slice(index, oneItterationLength));
+                index += oneItterationLength;
+            }
+
+            nint[] lengths = temp.Lengths.ToArray();
+            lengths[0] = enumerator.Count;
+
+            return Create<T>(values, lengths);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="Tensor{T}"/> by concatenating the tensors in the specified <paramref name="source"/> collection.
+        /// </summary>
+        /// <typeparam name="T">The type of the <paramref name="source"/>.</typeparam>
+        /// <param name="source">The <see cref="ToTensor{T}(IEnumerable{Tensor{T}})"/> to concatenate.</param>
+        /// <returns><see cref="Tensor{T}"/> of all the elements in the <paramref name="source"/> concatenated together.</returns>
+        public static Tensor<T> ToTensor<T>(this IEnumerable<Tensor<T>> source)
+        {
+            return Concatenate(source.ToArray());
+        }
+        #endregion
+
         #region AsReadOnlySpan
         /// <summary>
         /// Extension method to more easily create a TensorSpan from an array.
