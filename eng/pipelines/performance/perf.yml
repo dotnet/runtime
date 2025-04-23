@@ -27,8 +27,6 @@ resources:
     - repository: performance
       type: git
       name: internal/dotnet-performance
-      # TODO: Revert this
-      ref: refs/heads/feature/perf-build-time
 
 variables:
 - template: /eng/pipelines/common/variables.yml
