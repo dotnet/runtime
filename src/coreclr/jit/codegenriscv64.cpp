@@ -318,7 +318,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *  Funclets have the following incoming arguments:
  *
  *      catch:          a0 = the exception object that was caught (see GT_CATCH_ARG)
- *      filter:         a0 = the exception object to filter (see GT_CATCH_ARG), a1 = CallerSP of the containing function
+ *      filter:         a0 = the exception object to filter (see GT_CATCH_ARG)
  *      finally/fault:  none
  *
  *  Funclets set the following registers on exit:
@@ -347,8 +347,6 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
- *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes, not including FP/RA
@@ -368,13 +366,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  * function, even if the funclet doesn't have any calls, or has a much smaller, or larger, maximum number of
  * outgoing arguments for any call).
  *
- * Note that in all cases, the PSPSym is in exactly the same position with respect to Caller-SP,
- * and that location is the same relative to Caller-SP as in the main function where higher than
- * the callee-saved registers.
- * That is to say, the PSPSym's relative offset to Caller-SP is not depended on the callee-saved registers.
- *
- * Funclets do not have varargs arguments. However, because the PSPSym must exist at the same offset from Caller-SP as in the main function, we
- * must add buffer space for the saved varargs/argument registers here, if the main function did the same.
+ * Funclets do not have varargs arguments.
  *
  * Note that localloc cannot be used in a funclet.
  *
@@ -464,45 +456,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
-
-    // If there is no PSPSym (NativeAOT ABI), we are done. Otherwise, we need to set up the PSPSym in the functlet
-    // frame.
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        if (isFilter)
-        {
-            // This is the first block of a filter
-            // Note that register a1 = CallerSP of the containing function
-            // A1 is overwritten by the first Load (new callerSP)
-            // A2 is scratch when we have a large constant offset
-
-            // Load the CallerSP of the main function (stored in the PSP of the dynamically containing funclet or
-            // function)
-            genInstrWithConstant(INS_ld, EA_PTRSIZE, REG_A1, REG_A1, genFuncletInfo.fiCallerSP_to_PSP_slot_delta,
-                                 REG_A2, false);
-            regSet.verifyRegUsed(REG_A1);
-
-            // Store the PSP value (aka CallerSP)
-            genInstrWithConstant(INS_sd, EA_PTRSIZE, REG_A1, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta, REG_A2,
-                                 false);
-
-            // re-establish the frame pointer
-            genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_FPBASE, REG_A1,
-                                 genFuncletInfo.fiFunction_CallerSP_to_FP_delta, REG_A2, false);
-        }
-        else // This is a non-filter funclet
-        {
-            // A3 is scratch, A2 can also become scratch.
-
-            // compute the CallerSP, given the frame pointer. a3 is scratch?
-            genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_A3, REG_FPBASE,
-                                 -genFuncletInfo.fiFunction_CallerSP_to_FP_delta, REG_A2, false);
-            regSet.verifyRegUsed(REG_A3);
-
-            genInstrWithConstant(INS_sd, EA_PTRSIZE, REG_A3, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta, REG_A2,
-                                 false);
-        }
-    }
 }
 
 /*****************************************************************************
@@ -580,21 +533,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert((rsMaskSaveRegs & RBM_RA) != 0);
     assert((rsMaskSaveRegs & RBM_FP) != 0);
 
-    // Because a method and funclets must have the same caller-relative PSPSym offset,
-    // if there is a PSPSym, we have to pad the funclet frame size for OSR.
-    //
-    int osrPad = 0;
-    if (compiler->opts.IsOSR())
-    {
-        osrPad -= compiler->info.compPatchpointInfo->TotalFrameSize();
-
-        // OSR pad must be already aligned to stack size.
-        assert((osrPad % STACK_ALIGN) == 0);
-    }
-
     /* Now save it for future use */
-    genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() + osrPad;
-
     int funcletFrameSize = compiler->lvaOutgoingArgSpaceSize;
 
     genFuncletInfo.fiSP_to_CalleeSaved_delta = funcletFrameSize;
@@ -607,13 +546,11 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         delta_PSP -= TARGET_POINTER_SIZE;
     }
 
-    funcletFrameSize = funcletFrameSize - delta_PSP - osrPad;
+    funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
 
-    genFuncletInfo.fiSpDelta                    = -funcletFrameSize;
-    genFuncletInfo.fiSaveRegs                   = rsMaskSaveRegs;
-    genFuncletInfo.fiSP_to_PSP_slot_delta       = funcletFrameSize + delta_PSP + osrPad;
-    genFuncletInfo.fiCallerSP_to_PSP_slot_delta = osrPad + delta_PSP;
+    genFuncletInfo.fiSpDelta  = -funcletFrameSize;
+    genFuncletInfo.fiSaveRegs = rsMaskSaveRegs;
 
 #ifdef DEBUG
     if (verbose)
@@ -623,22 +560,10 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("                        Save regs: ");
         dspRegMask(genFuncletInfo.fiSaveRegs);
         printf("\n");
-        if (compiler->opts.IsOSR())
-        {
-            printf("                          OSR Pad: %d\n", osrPad);
-        }
-        printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunction_CallerSP_to_FP_delta);
         printf("  SP to CalleeSaved location delta: %d\n", genFuncletInfo.fiSP_to_CalleeSaved_delta);
         printf("                       SP delta: %d\n", genFuncletInfo.fiSpDelta);
     }
     assert(genFuncletInfo.fiSP_to_CalleeSaved_delta >= 0);
-
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        assert(genFuncletInfo.fiCallerSP_to_PSP_slot_delta ==
-               compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)); // same offset used in main function and
-                                                                             // funclet!
-    }
 #endif // DEBUG
 }
 
@@ -792,33 +717,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     compiler->unwindEndEpilog();
 }
 
-void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
-{
-    assert(compiler->compGeneratingProlog);
-
-    if (compiler->lvaPSPSym == BAD_VAR_NUM)
-    {
-        return;
-    }
-
-    noway_assert(isFramePointerUsed()); // We need an explicit frame pointer
-
-    int SPtoCallerSPdelta = -genCallerSPtoInitialSPdelta();
-
-    if (compiler->opts.IsOSR())
-    {
-        SPtoCallerSPdelta += compiler->info.compPatchpointInfo->TotalFrameSize();
-    }
-
-    // We will just use the initReg since it is an available register
-    // and we are probably done using it anyway...
-    regNumber regTmp = initReg;
-    *pInitRegZeroed  = false;
-
-    genInstrWithConstant(INS_addi, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta, regTmp, false);
-    GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
-}
-
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     regNumber rAddr;
@@ -947,19 +845,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     BasicBlock* const nextBlock = block->Next();
 
     // Generate a call to the finally, like this:
-    //      mov  a0,qword ptr [fp + 10H] / sp    // Load a0 with PSPSym, or sp if PSPSym is not used
     //      jal  finally-funclet
     //      j    finally-return                  // Only for non-retless finally calls
     // The 'b' can be a NOP if we're going to the next block.
-
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        GetEmitter()->emitIns_R_S(INS_ld, EA_PTRSIZE, REG_A0, compiler->lvaPSPSym, 0);
-    }
-    else
-    {
-        GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_A0, REG_SPBASE, 0);
-    }
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
@@ -1485,7 +1373,6 @@ void CodeGen::genLclHeap(GenTree* tree)
     regNumber            targetReg                = tree->GetRegNum();
     regNumber            regCnt                   = REG_NA;
     regNumber            tempReg                  = REG_NA;
-    regNumber            pspSymReg                = REG_NA;
     var_types            type                     = genActualType(size->gtType);
     emitAttr             easz                     = emitTypeSize(type);
     BasicBlock*          endLabel                 = nullptr; // can optimize for riscv64.
@@ -3745,10 +3632,6 @@ int CodeGenInterface::genSPtoFPdelta() const
     assert(compiler->compCalleeRegsPushed >= 2); // always FP/RA.
 
     int delta = compiler->compLclFrameSize;
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        delta -= TARGET_POINTER_SIZE;
-    }
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         delta -= TARGET_POINTER_SIZE;
@@ -7067,8 +6950,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
  * 4. We allocate the frame here; no further changes to SP are allowed (except in the body, for localloc).
  *
  * For functions with GS and localloc, we had saved the frame pointer and RA at the top
- * of the frame. Note that the funclet frames must follow the same rule,
- * and both main frame and funclet frames (if any) must put PSPSym in the same offset from Caller-SP.
+ * of the frame.
  * Since this frame type is relatively rare, we force using it via stress modes, for additional coverage.
  *
  * The frames look like the following (simplified to only include components that matter for establishing the
@@ -7088,8 +6970,6 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
  *      |  Varargs regs space   | // Only for varargs functions; NYI on RV64
  *      |-----------------------|
  *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
- *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      |Callee saved registers | // not including FP/RA; multiple of 8 bytes
  *      |-----------------------|
@@ -7178,10 +7058,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     int totalFrameSize = genTotalFrameSize();
     int leftFrameSize  = 0;
     int localFrameSize = compiler->compLclFrameSize;
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;
@@ -7252,10 +7128,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     int totalFrameSize = genTotalFrameSize();
     int localFrameSize = compiler->compLclFrameSize;
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;

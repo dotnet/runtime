@@ -886,9 +886,20 @@ internal sealed unsafe partial class SOSDacImpl
             data->dwTransientFlags = (uint)flags;
 
             data->ilBase = contract.GetILBase(handle);
-            TargetSpan readOnlyMetadata = _target.Contracts.EcmaMetadata.GetReadOnlyMetadataAddress(handle);
-            data->metadataStart = readOnlyMetadata.Address;
-            data->metadataSize = readOnlyMetadata.Size;
+
+            try
+            {
+                TargetSpan readOnlyMetadata = _target.Contracts.EcmaMetadata.GetReadOnlyMetadataAddress(handle);
+                data->metadataStart = readOnlyMetadata.Address;
+                data->metadataSize = readOnlyMetadata.Size;
+            }
+            catch (System.Exception)
+            {
+                // if we are unable to read the metadata, to match the DAC behavior
+                // set metadataStart and metadataSize to 0
+                data->metadataStart = 0;
+                data->metadataSize = 0;
+            }
 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
 
