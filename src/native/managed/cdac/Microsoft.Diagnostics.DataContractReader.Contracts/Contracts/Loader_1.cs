@@ -202,6 +202,24 @@ internal readonly struct Loader_1 : ILoader
         return typeParams;
     }
 
+    List<TargetPointer> ILoader.GetInstantiatedMethods(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        List<TargetPointer> typeParams = [];
+
+        if (module.InstMethodHashTable == TargetPointer.Null)
+            return typeParams;
+
+        InstMethodHashTable methodHashTable = _target.ProcessedData.GetOrAdd<InstMethodHashTable>(module.AvailableTypeParams);
+
+        foreach (InstMethodHashTable.InstMethodHashTableEntry entry in methodHashTable.Entries)
+        {
+            typeParams.Add(entry.MethodDesc);
+        }
+
+        return typeParams;
+    }
+
     bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
