@@ -25,25 +25,25 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public Task GenericDelegateParameterFails()
         {
-            var src = """
-            using System;
-            using System.Runtime.InteropServices;
-
-            partial class Test
-            {
-                [LibraryImportAttribute("DoesNotExist")]
-                public static partial void Method1(Func<int, int> {|#0:f|});
-            }
-            """;
-
-
             return VerifyCS.VerifySourceGeneratorAsync(
-                src,
+                CodeSnippets.BasicParametersAndModifiers("System.Func<int, int>"),
                 new DiagnosticResult[]
                 {
-                    VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
                         .WithLocation(0)
-                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "f")
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "Method"),
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                        .WithLocation(1)
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "p"),
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                        .WithLocation(2)
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "pIn"),
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                        .WithLocation(3)
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "pRef"),
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                        .WithLocation(4)
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "pOut"),
                 });
         }
 
