@@ -1241,7 +1241,6 @@ CallArgs::CallArgs()
 #endif
     , m_hasThisPointer(false)
     , m_hasRetBuffer(false)
-    , m_hasAsyncContinuation(false)
     , m_isVarArgs(false)
     , m_abiInformationDetermined(false)
     , m_hasAddedFinalArgs(false)
@@ -1520,9 +1519,6 @@ void CallArgs::AddedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             m_hasRetBuffer = true;
             break;
-        case WellKnownArg::AsyncContinuation:
-            m_hasAsyncContinuation = true;
-            break;
         default:
             break;
     }
@@ -1545,10 +1541,6 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             assert(FindWellKnownArg(arg) == nullptr);
             m_hasRetBuffer = false;
-            break;
-        case WellKnownArg::AsyncContinuation:
-            assert(FindWellKnownArg(arg) == nullptr);
-            m_hasAsyncContinuation = false;
             break;
         default:
             break;

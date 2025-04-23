@@ -4743,7 +4743,6 @@ class CallArgs
 #endif
     bool m_hasThisPointer           : 1;
     bool m_hasRetBuffer             : 1;
-    bool m_hasAsyncContinuation     : 1;
     bool m_isVarArgs                : 1;
     bool m_abiInformationDetermined : 1;
     bool m_hasAddedFinalArgs        : 1;
@@ -4819,7 +4818,6 @@ public:
     // clang-format off
     bool HasThisPointer() const { return m_hasThisPointer; }
     bool HasRetBuffer() const { return m_hasRetBuffer; }
-    bool HasAsyncContinuation() const { return m_hasAsyncContinuation; }
     bool IsVarArgs() const { return m_isVarArgs; }
     void SetIsVarArgs() { m_isVarArgs = true; }
     void ClearIsVarArgs() { m_isVarArgs = false; }
