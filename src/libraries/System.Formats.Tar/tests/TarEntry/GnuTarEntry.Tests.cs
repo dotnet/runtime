@@ -735,6 +735,7 @@ namespace System.Formats.Tar.Tests
             ChangeTime = DateTimeOffset.UnixEpoch,
             Uid = 0,
             Gid = 0,
+            Mode = 0,
             UserName = TestUName,
             GroupName = TestGName
         };
@@ -750,6 +751,7 @@ namespace System.Formats.Tar.Tests
         Assert.Equal(linkName, entry.LinkName);
         Assert.Equal(0, entry.Uid); // Should be '0' chars in the long header
         Assert.Equal(0, entry.Gid); // Should be '0' chars in the long header
+        Assert.Equal(UnixFileMode.None, entry.Mode); // Should be '0' chars in the long header
         Assert.Equal(TestUName, entry.UserName);
         Assert.Equal(TestGName, entry.GroupName);
         Assert.Equal(0, entry.Length); // No data in the main entry
@@ -821,7 +823,7 @@ namespace System.Formats.Tar.Tests
         {
             reportedSize = CheckHeaderMetadataAndGetReportedSize(ms, nextEntryStart, isLongLinkOrLongPath: true);
             CheckDataContainsExpectedString(ms, nextEntryStart + 512, reportedSize, linkName, shouldTrim: false); // Skip to the data section
-            nextEntryStart = nextEntryStart + 512 + 512; // Skip the current header and the long link entry
+            nextEntryStart += 512 + 512; // Skip the current header and the long link entry
             Assert.True(linkName.Length < 512, "Do not test paths longer than a 512 byte block");
         }
 
@@ -829,7 +831,7 @@ namespace System.Formats.Tar.Tests
         {
             reportedSize = CheckHeaderMetadataAndGetReportedSize(ms, nextEntryStart, isLongLinkOrLongPath: true);
             CheckDataContainsExpectedString(ms, nextEntryStart + 512, reportedSize, name, shouldTrim: false); // Skip to the data section
-            nextEntryStart = 512 + 512; // Skip the current header and the long path entry
+            nextEntryStart += 512 + 512; // Skip the current header and the long path entry
             Assert.True(name.Length < 512, "Do not test paths longer than a 512 byte block");
         }
 
@@ -867,6 +869,10 @@ namespace System.Formats.Tar.Tests
         {
             CheckBytesAreZeros(ms, buffer.AsSpan(0, 8), uidStart);
             CheckBytesAreZeros(ms, buffer.AsSpan(0, 8), gidStart);
+        }
+        else
+        {
+            CheckBytesAreZeros(ms, buffer.AsSpan(0, 8), modeStart);
         }
         CheckBytesAreZeros(ms, buffer, mTimeStart);
         CheckBytesAreZeros(ms, buffer, aTimeStart);
