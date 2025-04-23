@@ -2712,6 +2712,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha256.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sve.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sve2.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsArmIntrinsics)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" />
@@ -2723,6 +2724,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha1.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha256.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sve.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sve2.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsWasmIntrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\WasmBase.cs" />
