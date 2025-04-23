@@ -27,6 +27,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
 {
     private const string c_ActivitySourcePrefix = "[AS]";
     private const string c_ParentRatioSamplerPrefix = "ParentRatioSampler(";
+    private const string c_ParentRateLimitingSamplerPrefix = "ParentRateLimitingSampler(";
 
     /// <summary>
     /// Parses filterAndPayloadSpecs which is a list of lines each of which has the from
@@ -261,6 +262,29 @@ internal sealed class DsesFilterAndTransform : IDisposable
                         }
 
                         sampleFunc = DsesSamplerBuilder.CreateParentRatioSampler(ratio);
+                    }
+                    else if (suffixPart.StartsWith(c_ParentRateLimitingSamplerPrefix.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        int endingLocation = suffixPart.IndexOf(')');
+                        if (endingLocation < 0
+                            || !int.TryParse(
+#if NETFRAMEWORK || NETSTANDARD
+                                    suffixPart.Slice(c_ParentRateLimitingSamplerPrefix.Length, endingLocation - c_ParentRateLimitingSamplerPrefix.Length).ToString(),
+#else
+                                    suffixPart.Slice(c_ParentRateLimitingSamplerPrefix.Length, endingLocation - c_ParentRateLimitingSamplerPrefix.Length),
+#endif
+                                    NumberStyles.None, CultureInfo.InvariantCulture, out int maximumRatePerSecond)
+                            || maximumRatePerSecond <= 0)
+                        {
+                            if (eventSource.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                            {
+                                eventSource.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because rate limiting sampling was invalid");
+                            }
+
+                            return next;
+                        }
+
+                        sampleFunc = DsesSamplerBuilder.CreateParentRateLimitingSampler(maximumRatePerSecond);
                     }
                     else
                     {

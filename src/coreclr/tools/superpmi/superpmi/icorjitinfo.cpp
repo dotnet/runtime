@@ -608,13 +608,6 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeForBox(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repGetTypeForBox(cls);
 }
 
-// Class handle for a boxed value type, on the stack.
-CORINFO_CLASS_HANDLE MyICJI::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("getTypeForBoxOnStack");
-    return jitInstance->mc->repGetTypeForBoxOnStack(cls);
-}
-
 // returns the correct box helper for a particular class.  Note
 // that if this returns CORINFO_HELP_BOX, the JIT can assume
 // 'standard' boxing (allocate object and copy), and optimize
