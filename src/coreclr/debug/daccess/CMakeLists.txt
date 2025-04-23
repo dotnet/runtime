@@ -1,6 +1,6 @@
 add_definitions(-DFEATURE_NO_HOST)
 
-add_subdirectory(${CLR_SRC_NATIVE_DIR}/managed/cdac/cmake ${CLR_ARTIFACTS_OBJ_DIR}/cdac)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/managed/mscordaccore_universal/cmake ${CLR_ARTIFACTS_OBJ_DIR}/mscordaccore_universal)
 
 include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})

@@ -124,7 +124,7 @@
       </CoreCLRCrossTargetFiles>
     </ItemGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" Exclude="$(MonoArtifactsPath)\*cdac*" />
+      <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" Exclude="$(MonoArtifactsPath)\*mscordaccore_universal*" />
       <RuntimeFiles>
         <IsNative>true</IsNative>
       </RuntimeFiles>

@@ -163,7 +163,7 @@ jobs:
 
     - subset: tools_cdac
       include:
-      - src/native/managed/cdac/*
+      - src/native/managed/mscordaccore_universal/*
 
     - subset: installer
       include:

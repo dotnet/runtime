@@ -10,7 +10,7 @@
     <ItemGroup>
         <!-- add new projects here -->
         <!-- NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)libhellomanaged/src/libhellomanaged.csproj" -->
-        <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)cdac/src/mscordaccore_universal.csproj" />
+        <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)mscordaccore_universal/src/mscordaccore_universal.csproj" />
     </ItemGroup>
 
     <!-- Decide if we're going to do the NativeAOT builds -->
