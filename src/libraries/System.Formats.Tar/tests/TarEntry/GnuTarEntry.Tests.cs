@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -668,95 +671,266 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(octalSizeBytes, buffer.Take(octalSizeBytes.Length).ToArray());
         }
 
-        [Fact]
-        public void Timestamps_UnixEpoch_ShouldBeNulls()
+        public static IEnumerable<object[]> NameAndLink_TestData()
         {
-            // The GNU format sets the access and change times to nulls when they are set to the unix epoch.
+            // Name and link have a max length of 100. Anything longer goes into LongPath or LongLink entries in GNU.
+            yield return new object[] { InitialEntryName, InitialEntryName }; // Short name and short link
+            yield return new object[] { InitialEntryName, new string('b', 101) }; // Short name and long link
+            yield return new object[] { new string('a', 101), InitialEntryName }; // Long name and short link
+            yield return new object[] { new string('a', 101), new string('b', 101) }; // Long name and long link
+        }
+
+        private GnuTarEntry CreateEntryForLongLinkLongPathChecks(string name, string linkName)
+        {
+            // A SymbolicLink entry can test both LongLink and LongPath entries if
+            // the length of either string is longer than what fits in the header.
+            return new GnuTarEntry(TarEntryType.SymbolicLink, name)
+            {
+                LinkName = linkName,
+                ModificationTime = DateTimeOffset.UnixEpoch,
+                AccessTime = DateTimeOffset.UnixEpoch,
+                ChangeTime = DateTimeOffset.UnixEpoch,
+                Uid = 0,
+                Gid = 0,
+                UserName = TestUName,
+                GroupName = TestGName
+            };
+        }
+
+        private void ValidateEntryForRegularEntryInLongLinkAndLongPathChecks(GnuTarEntry entry, string name, string linkName)
+        {
+            Assert.NotNull(entry);
+            Assert.Equal(DateTimeOffset.UnixEpoch, entry.ModificationTime);
+            Assert.Equal(DateTimeOffset.UnixEpoch, entry.AccessTime);
+            Assert.Equal(DateTimeOffset.UnixEpoch, entry.ChangeTime);
+            Assert.Equal(name, entry.Name);
+            Assert.Equal(linkName, entry.LinkName);
+            Assert.Equal(0, entry.Uid); // Should be '0' chars in the long header
+            Assert.Equal(0, entry.Gid); // Should be '0' chars in the long header
+            Assert.Equal(TestUName, entry.UserName);
+            Assert.Equal(TestGName, entry.GroupName);
+            Assert.Equal(0, entry.Length); // No data in the main entry
+        }
+
+        [Theory]
+        [MemberData(nameof(NameAndLink_TestData))]
+        public void Check_LongLink_AndLongPath_Metadata(string name, string linkName)
+        {
+            // The GNU format sets the mtime, atime and ctime to nulls in headers when they are set to the unix epoch.
+            // Also the uid and gid should be '0' in the long entries headers.
+            // Also the uname and gname in the long entry headers should be set to those of the main entry.
 
             using MemoryStream ms = new();
 
             using (TarWriter writer = new(ms, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                // Should not be "0" characters, but null characters
-                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName)
-                {
-                    ModificationTime = DateTimeOffset.UnixEpoch,
-                    AccessTime = DateTimeOffset.UnixEpoch,
-                    ChangeTime = DateTimeOffset.UnixEpoch
-                };
+                GnuTarEntry entry = CreateEntryForLongLinkLongPathChecks(name, linkName);
                 writer.WriteEntry(entry);
             }
             ms.Position = 0;
 
-            // Publicly they should be the unix epoch
             using (TarReader reader = new(ms, leaveOpen: true))
             {
                 GnuTarEntry entry = reader.GetNextEntry() as GnuTarEntry;
-                Assert.NotNull(entry);
-                Assert.Equal(DateTimeOffset.UnixEpoch, entry.ModificationTime);
-                Assert.Equal(DateTimeOffset.UnixEpoch, entry.AccessTime);
-                Assert.Equal(DateTimeOffset.UnixEpoch, entry.ChangeTime);
+                ValidateEntryForRegularEntryInLongLinkAndLongPathChecks(entry, name, linkName);
             }
 
-            ValidateMTimeATimeAndCTimeBytes(ms);
+            ValidateLongEntryBytes(ms, name, linkName);
         }
 
-        [Fact]
-        public async Task Timestamps_UnixEpoch_ShouldBeNulls_Async()
+        [Theory]
+        [MemberData(nameof(NameAndLink_TestData))]
+        public async Task Check_LongLink_AndLongPath_Metadata_Async(string name, string linkName)
         {
+            // The GNU format sets the mtime, atime and ctime to nulls in headers when they are set to the unix epoch.
+            // Also the uid and gid should be '0' in the long entries headers.
+            // Also the uname and gname in the long entry headers should be set to those of the main entry.
+
             await using MemoryStream ms = new();
 
             await using (TarWriter writer = new(ms, TarEntryFormat.Gnu, leaveOpen: true))
             {
-                // Should not be "0" characters, but null characters
-                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName)
-                {
-                    ModificationTime = DateTimeOffset.UnixEpoch,
-                    AccessTime = DateTimeOffset.UnixEpoch,
-                    ChangeTime = DateTimeOffset.UnixEpoch
-                };
+                GnuTarEntry entry = CreateEntryForLongLinkLongPathChecks(name, linkName);
                 await writer.WriteEntryAsync(entry);
             }
             ms.Position = 0;
 
-            // Publicly they should be the unix epoch
             await using (TarReader reader = new(ms, leaveOpen: true))
             {
                 GnuTarEntry entry = await reader.GetNextEntryAsync() as GnuTarEntry;
-                Assert.NotNull(entry);
-                Assert.Equal(DateTimeOffset.UnixEpoch, entry.ModificationTime);
-                Assert.Equal(DateTimeOffset.UnixEpoch, entry.AccessTime);
-                Assert.Equal(DateTimeOffset.UnixEpoch, entry.ChangeTime);
+                ValidateEntryForRegularEntryInLongLinkAndLongPathChecks(entry, name, linkName);
             }
 
-            ValidateMTimeATimeAndCTimeBytes(ms);
+            ValidateLongEntryBytes(ms, name, linkName);
         }
 
-        private void ValidateMTimeATimeAndCTimeBytes(MemoryStream ms)
+        private void ValidateLongEntryBytes(MemoryStream ms, string name, string linkName)
+        {
+            bool isLongPath = name.Length >= 100;
+            bool isLongLink = linkName.Length >= 100;
+
+            ms.Position = 0;
+
+            long nextEntryStart = 0;
+            long reportedSize;
+
+            if (isLongLink)
+            {
+                reportedSize = CheckHeaderMetadataAndGetReportedSize(ms, nextEntryStart, isLongLinkOrLongPath: true);
+                CheckDataContainsExpectedString(ms, nextEntryStart + 512, reportedSize, linkName, shouldTrim: false); // Skip to the data section
+                nextEntryStart = nextEntryStart + 512 + 512; // Skip the current header and the long link entry
+                Assert.True(linkName.Length < 512, "Do not test paths longer than a 512 byte block");
+            }
+
+            if (isLongPath)
+            {
+                reportedSize = CheckHeaderMetadataAndGetReportedSize(ms, nextEntryStart, isLongLinkOrLongPath: true);
+                CheckDataContainsExpectedString(ms, nextEntryStart + 512, reportedSize, name, shouldTrim: false); // Skip to the data section
+                nextEntryStart = 512 + 512; // Skip the current header and the long path entry
+                Assert.True(name.Length < 512, "Do not test paths longer than a 512 byte block");
+            }
+
+            CheckHeaderMetadataAndGetReportedSize(ms, nextEntryStart, isLongLinkOrLongPath: false);
+        }
+
+        private long CheckHeaderMetadataAndGetReportedSize(MemoryStream ms, long nextEntryStart, bool isLongLinkOrLongPath)
         {
             // internally, mtime, atime and ctime should be nulls
+            // and if the entry is a long path or long link, the entry's data length should be
+            // equal to the string plus a null character
 
-            // name, mode, uid, gid, size, and mtime is the next
-            int mTimeStart = 100 + 8 + 8 + 8 + 12;
-            // checksum, typeflag, linkname, magic, uname, gname, devmajor, devminor, and atime is the next
-            int aTimeStart = mTimeStart + 12 + 8 + 1 + 100 + 8 + 32 + 32 + 8 + 8;
-            // ctime is the next
-            int cTimeStart = aTimeStart + 12;
-            byte[] buffer = new byte[12]; // mtime, atime and ctime are 12 bytes in length
+            // name mode uid gid size mtime checksum typeflag linkname magic uname gname devmajor devminor atime ctime
+            // 100  8    8   8   12   12    8        1        100      8     32    32    8        8        12    12
+            long nameStart = nextEntryStart;
+            long modeStart = nameStart + 100;
+            long uidStart = modeStart + 8;
+            long gidStart = uidStart + 8;
+            long sizeStart = gidStart + 8;
+            long mTimeStart = sizeStart + 12;
+            long checksumStart = mTimeStart + 12;
+            long typeflagStart = checksumStart + 8;
+            long linkNameStart = typeflagStart + 1;
+            long magicStart = linkNameStart + 100;
+            long uNameStart = magicStart + 8;
+            long gNameStart = uNameStart + 32;
+            long devMajorStart = gNameStart + 32;
+            long devMinorStart = devMajorStart + 8;
+            long aTimeStart = gNameStart + 8;
+            long cTimeStart = aTimeStart + 12;
 
+            byte[] buffer = new byte[12]; // size, mtime, atime, ctime all are 12 bytes in length
+
+            if (isLongLinkOrLongPath)
+            {
+                // CheckBytesAreZeros(ms, buffer.AsSpan(0, 8), uidStart);
+                // CheckBytesAreZeros(ms, buffer.AsSpan(0, 8), gidStart);
+            }
             CheckBytesAreNulls(ms, buffer, mTimeStart);
             CheckBytesAreNulls(ms, buffer, aTimeStart);
             CheckBytesAreNulls(ms, buffer, cTimeStart);
+            CheckDataContainsExpectedString(ms, uNameStart, 32, TestUName, shouldTrim: true);
+            CheckDataContainsExpectedString(ms, gNameStart, 32, TestGName, shouldTrim: true);
+
+            ms.Seek(sizeStart, SeekOrigin.Begin);
+            ms.Read(buffer);
+            return ParseNumeric<long>(buffer);
         }
 
-        private void CheckBytesAreNulls(MemoryStream ms, Span<byte> buffer, int start)
+        private void CheckBytesAreSpecificChar(MemoryStream ms, Span<byte> buffer, long dataStart, byte charToCheck)
         {
-            ms.Seek(start, SeekOrigin.Begin);
+            ms.Seek(dataStart, SeekOrigin.Begin);
             ms.Read(buffer);
             foreach (byte b in buffer)
             {
-                Assert.Equal(0, b); // All should be nulls
+                Assert.Equal(charToCheck, b);
             }
+        }
+
+        private void CheckBytesAreNulls(MemoryStream ms, Span<byte> buffer, long dataStart) => CheckBytesAreSpecificChar(ms, buffer, dataStart, 0); // null char
+
+        private void CheckBytesAreZeros(MemoryStream ms, Span<byte> buffer, long dataStart) => CheckBytesAreSpecificChar(ms, buffer, dataStart, 0x30); // '0' char
+
+        private void CheckDataContainsExpectedString(MemoryStream ms, long dataStart, long actualDataLength, string expectedString, bool shouldTrim)
+        {
+            ms.Seek(dataStart, SeekOrigin.Begin);
+            byte[] buffer = new byte[actualDataLength];
+            ms.Read(buffer);
+
+            if (shouldTrim)
+            {
+                string actualString = Encoding.ASCII.GetString(TrimEndingNullsAndSpaces(buffer));
+                Assert.Equal(expectedString, actualString);
+            }
+            else
+            {
+                string actualString = Encoding.ASCII.GetString(buffer);
+                Assert.Equal(expectedString, actualString[..^1]); // The last byte should be a null character
+            }
+        }
+
+        private static T ParseNumeric<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>, IBinaryInteger<T>
+        {
+            byte leadingByte = buffer[0];
+            if (leadingByte == 0xff)
+            {
+                return T.ReadBigEndian(buffer, isUnsigned: false);
+            }
+            else if (leadingByte == 0x80)
+            {
+                return T.ReadBigEndian(buffer.Slice(1), isUnsigned: true);
+            }
+            else
+            {
+                return ParseOctal<T>(buffer);
+            }
+        }
+
+        private static T ParseOctal<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>
+        {
+            buffer = TrimEndingNullsAndSpaces(buffer);
+            buffer = TrimLeadingNullsAndSpaces(buffer);
+
+            if (buffer.Length == 0)
+            {
+                return T.Zero;
+            }
+
+            T octalFactor = T.CreateTruncating(8u);
+            T value = T.Zero;
+            foreach (byte b in buffer)
+            {
+                uint digit = (uint)(b - '0');
+                if (digit >= 8)
+                {
+                    throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
+                }
+
+                value = checked((value * octalFactor) + T.CreateTruncating(digit));
+            }
+
+            return value;
+        }
+
+        private static ReadOnlySpan<byte> TrimEndingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        {
+            int trimmedLength = buffer.Length;
+            while (trimmedLength > 0 && buffer[trimmedLength - 1] is 0 or 32)
+            {
+                trimmedLength--;
+            }
+
+            return buffer.Slice(0, trimmedLength);
+        }
+
+        private static ReadOnlySpan<byte> TrimLeadingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        {
+            int newStart = 0;
+            while (newStart < buffer.Length && buffer[newStart] is 0 or 32)
+            {
+                newStart++;
+            }
+
+            return buffer.Slice(newStart);
         }
     }
 }
