@@ -5800,7 +5800,7 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
 //       address to take the thread to the appropriate stub (based on the return
 //       type of the method) which will then handle preparing the thread for GC.
 //
-void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
+void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger)
 {
     struct AutoClearPendingThreadActivation
     {
