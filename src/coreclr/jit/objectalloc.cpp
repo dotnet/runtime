@@ -2039,16 +2039,11 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
                         // It's either null or points to inside a stack-allocated object.
                         parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
                     }
-                }
-                else
-                {
-                    assert(tree == parent->AsIndir()->Data());
-                    GenTree* const addr = parent->AsIndir()->Addr();
 
-                    // If we are storing to a GC struct field, we may need to retype the store
+                    // If we are storing to a GC struct field we may need to retype the store
                     //
-                    if (retypeFields && parent->OperIs(GT_STOREIND) && (addr->OperIs(GT_FIELD_ADDR)) &&
-                        (varTypeIsGC(parent->TypeGet())))
+                    if (retypeFields && parent->OperIs(GT_STOREIND) && tree->OperIs(GT_FIELD_ADDR) &&
+                        varTypeIsGC(parent->TypeGet()))
                     {
                         parent->ChangeType(newType);
                     }
