@@ -354,6 +354,13 @@ namespace System.Formats.Tar
                 await WriteWithSeekableDataStreamAsync(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
             }
         }
+        // Checks if the linkname string is too long to fit in the regular header field.
+        // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
+        private bool IsLinkNameTooLongForRegularField() => _linkName != null && (Encoding.UTF8.GetByteCount(_linkName) + 1) > FieldLengths.LinkName;
+
+        // Checks if the name string is too long to fit in the regular header field.
+        // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
+        private bool IsNameTooLongForRegularField() => (Encoding.UTF8.GetByteCount(_name) + 1) > FieldLengths.Name;
 
         // Writes the current header as a Gnu entry into the archive stream.
         // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
@@ -361,19 +368,19 @@ namespace System.Formats.Tar
         {
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
-            // First, we determine if we need a preceding LongLink, and write it if needed
-            if (_linkName != null && Encoding.UTF8.GetByteCount(_linkName) > FieldLengths.LinkName)
+            if (IsLinkNameTooLongForRegularField())
             {
-                TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
+                // Linkname is too long for the regular header field, create a longlink entry where the linkname will be stored.
+                TarHeader longLinkHeader = GetGnuLongLinkMetadataHeader();
                 Debug.Assert(longLinkHeader._dataStream != null && longLinkHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
                 longLinkHeader.WriteWithSeekableDataStream(TarEntryFormat.Gnu, archiveStream, buffer);
                 buffer.Clear(); // Reset it to reuse it
             }
 
-            // Second, we determine if we need a preceding LongPath, and write it if needed
-            if (Encoding.UTF8.GetByteCount(_name) > FieldLengths.Name)
+            if (IsNameTooLongForRegularField())
             {
-                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
+                // Name is too long for the regular header field, create a longpath entry where the name will be stored.
+                TarHeader longPathHeader = GetGnuLongPathMetadataHeader();
                 Debug.Assert(longPathHeader._dataStream != null && longPathHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
                 longPathHeader.WriteWithSeekableDataStream(TarEntryFormat.Gnu, archiveStream, buffer);
                 buffer.Clear(); // Reset it to reuse it
@@ -397,19 +404,19 @@ namespace System.Formats.Tar
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
             cancellationToken.ThrowIfCancellationRequested();
 
-            // First, we determine if we need a preceding LongLink, and write it if needed
-            if (_linkName != null && Encoding.UTF8.GetByteCount(_linkName) > FieldLengths.LinkName)
+            if (IsLinkNameTooLongForRegularField())
             {
-                TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
+                // Linkname is too long for the regular header field, create a longlink entry where the linkname will be stored.
+                TarHeader longLinkHeader = await GetGnuLongLinkMetadataHeaderAsync(cancellationToken).ConfigureAwait(false);
                 Debug.Assert(longLinkHeader._dataStream != null && longLinkHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
                 await longLinkHeader.WriteWithSeekableDataStreamAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
             }
 
-            // Second, we determine if we need a preceding LongPath, and write it if needed
-            if (Encoding.UTF8.GetByteCount(_name) > FieldLengths.Name)
+            if (IsNameTooLongForRegularField())
             {
-                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
+                // Name is too long for the regular header field, create a longpath entry where the name will be stored.
+                TarHeader longPathHeader = await GetGnuLongPathMetadataHeaderAsync(cancellationToken).ConfigureAwait(false);
                 Debug.Assert(longPathHeader._dataStream != null && longPathHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
                 await longPathHeader.WriteWithSeekableDataStreamAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
@@ -426,8 +433,56 @@ namespace System.Formats.Tar
             }
         }
 
+        private static MemoryStream GetLongMetadataStream(string text)
+        {
+            MemoryStream data = new MemoryStream();
+            data.Write(Encoding.UTF8.GetBytes(text));
+            data.WriteByte(0); // Add a null terminator at the end of the string, _size will be calculated later
+            data.Position = 0;
+            return data;
+        }
+
+        private static async ValueTask<MemoryStream> GetLongMetadataStreamAsync(string text, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            MemoryStream data = new MemoryStream();
+            await data.WriteAsync(Encoding.UTF8.GetBytes(text), cancellationToken).ConfigureAwait(false);
+            data.WriteByte(0); // Add a null terminator at the end of the string, _size will be calculated later
+            data.Position = 0;
+            return data;
+        }
+
+        private TarHeader GetGnuLongLinkMetadataHeader()
+        {
+            Debug.Assert(_linkName != null);
+            MemoryStream dataStream = GetLongMetadataStream(_linkName);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink, _uid, _gid, _uName, _gName);
+        }
+
+        private async Task<TarHeader> GetGnuLongLinkMetadataHeaderAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Debug.Assert(_linkName != null);
+            MemoryStream dataStream = await GetLongMetadataStreamAsync(_linkName, cancellationToken).ConfigureAwait(false);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink, _uid, _gid, _uName, _gName);
+        }
+
+        private TarHeader GetGnuLongPathMetadataHeader()
+        {
+            MemoryStream dataStream = GetLongMetadataStream(_name);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath, _uid, _gid, _uName, _gName);
+        }
+
+        private async Task<TarHeader> GetGnuLongPathMetadataHeaderAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            MemoryStream dataStream = await GetLongMetadataStreamAsync(_name, cancellationToken).ConfigureAwait(false);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath, _uid, _gid, _uName, _gName);
+        }
+
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream (seekable).
-        private static TarHeader GetGnuLongMetadataHeader(TarEntryType entryType, string longText)
+        private static TarHeader GetGnuLongMetadataHeader(MemoryStream dataStream, TarEntryType entryType, int mainEntryUid, int mainEntryGid, string? mainEntryUname, string? mainEntryGname)
         {
             Debug.Assert(entryType is TarEntryType.LongPath or TarEntryType.LongLink);
 
@@ -435,11 +490,15 @@ namespace System.Formats.Tar
             {
                 _name = GnuLongMetadataName, // Same name for both longpath or longlink
                 _mode = TarHelpers.GetDefaultMode(entryType),
-                _uid = 0,
-                _gid = 0,
-                _mTime = DateTimeOffset.MinValue, // 0
+                _uid = mainEntryUid,
+                _gid = mainEntryGid,
+                _mTime = DateTimeOffset.UnixEpoch, // 0
                 _typeFlag = entryType,
-                _dataStream = new MemoryStream(Encoding.UTF8.GetBytes(longText))
+                _dataStream = dataStream,
+                _uName = mainEntryUname,
+                _gName = mainEntryGname,
+                _aTime = DateTimeOffset.UnixEpoch, // 0
+                _cTime = DateTimeOffset.UnixEpoch, // 0
             };
         }
 
@@ -634,7 +693,15 @@ namespace System.Formats.Tar
                 checksum += FormatNumeric(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             }
 
-            checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
+            if (_format is TarEntryFormat.Gnu)
+            {
+                // Just like atime and ctime, mtime should be stored as zeros when the value is UnixEpoch.
+                checksum += WriteAsGnuTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
+            }
+            else
+            {
+                checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
+            }
 
             char typeFlagChar = (char)actualEntryType;
             buffer[FieldLocations.TypeFlag] = (byte)typeFlagChar;
