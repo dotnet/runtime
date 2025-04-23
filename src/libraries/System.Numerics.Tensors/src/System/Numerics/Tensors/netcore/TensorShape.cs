@@ -522,6 +522,71 @@ namespace System.Numerics.Tensors
             return 0;
         }
 
+        public nint AdjustToPreviousIndex(in TensorShape destinationShape, nint linearOffset, Span<nint> indexes)
+        {
+            Debug.Assert(indexes.Length >= Rank);
+            Debug.Assert(indexes.Length == destinationShape.Rank);
+
+            ReadOnlySpan<nint> lengths = Lengths;
+            ReadOnlySpan<nint> strides = Strides;
+
+            ReadOnlySpan<nint> destinationLengths = destinationShape.Lengths;
+
+            for (int i = 0; i < strides.Length; i++)
+            {
+                int rankIndex = lengths.Length - (i + 1);
+                int destinationRankIndex = destinationShape.Lengths.Length - (i + 1);
+
+                nint length = lengths[rankIndex];
+                nint stride = strides[rankIndex];
+
+                nint index = --indexes[destinationRankIndex];
+                linearOffset -= stride;
+
+                // We can have a scenario such as lengths: [1], destinationLengths: [2] in
+                // which case we still need to keep incrementing the index but without
+                // adjusting the linearOffset
+
+                if (index >= 0)//destinationLengths[destinationRankIndex])
+                {
+                    if (index >= length)
+                    {
+                        // We should only be here if we were broadcast
+                        Debug.Assert((length == 1) && (stride == 0));
+                    }
+                    return linearOffset;
+                }
+
+                indexes[destinationRankIndex] = lengths[rankIndex];
+                linearOffset += (stride * length);
+            }
+
+            if (indexes.Length != Rank)
+            {
+                for (int i = destinationLengths.Length - 1; i >= strides.Length; i--)
+                {
+                    int rankIndex = destinationLengths.Length - (i + 1);
+
+                    nint length = destinationLengths[rankIndex];
+                    // Strides are always 0 because we are broadcasting at this point in the loop.
+
+                    nint index = ++indexes[rankIndex];
+
+                    if (index < length)
+                    {
+                        // For any indexes that exist in the destinationShape but not
+                        // in the srcShape we will only increment them if all lower
+                        // indexes were 0. This means we're starting over at the beginning
+                        // of the srcShape and the linearOffset must be 0.
+                        break;
+                    }
+
+                    indexes[rankIndex] = 0;
+                }
+            }
+            return 0;
+        }
+
         // Answer the question: Can shape2 turn into shape1 or vice-versa if allowBidirectional?
         public static bool AreCompatible(in TensorShape shape1, in TensorShape shape2, bool allowBidirectional)
         {

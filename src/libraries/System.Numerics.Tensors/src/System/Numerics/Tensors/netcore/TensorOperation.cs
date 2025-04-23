@@ -124,6 +124,34 @@ namespace System.Numerics.Tensors
             destinationRentedBuffer.Dispose();
         }
 
+        public static void ReverseInvoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in TensorSpan<TResult> destination)
+            where TOperation : TensorOperation.IUnaryOperation_Tensor<TArg, TResult>
+        {
+            scoped Span<nint> xIndexes = RentedBuffer.Create(destination.Rank, x.Strides, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
+            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, destination.Strides, out nint _, out RentedBuffer<nint> destinationRentedBuffer);
+
+            destinationIndexes[0] = destination.Lengths[0];
+            for (int i = 1; i < destinationIndexes.Length; i++)
+            {
+                destinationIndexes[i] = destination.Lengths[i] - 1;
+            }
+            nint destinationLinearOffset = destination._shape.LinearLength;
+
+            for (nint i = 0; i < destination.FlattenedLength; i++)
+            {
+                xLinearOffset = x._shape.AdjustToNextIndex(destination._shape, xLinearOffset, xIndexes);
+                destinationLinearOffset = destination._shape.AdjustToPreviousIndex(destination._shape, destinationLinearOffset, destinationIndexes);
+
+                TOperation.Invoke(
+                    in Unsafe.Add(ref x._reference, xLinearOffset),
+                    ref Unsafe.Add(ref destination._reference, destinationLinearOffset)
+                );
+            }
+
+            xRentedBuffer.Dispose();
+            destinationRentedBuffer.Dispose();
+        }
+
         // For copyto/flattento
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in Span<TResult> destination)
             where TOperation : TensorOperation.IUnaryOperation_Tensor<TArg, TResult>
