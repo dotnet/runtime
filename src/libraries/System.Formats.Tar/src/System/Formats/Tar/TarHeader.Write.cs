@@ -673,43 +673,19 @@ namespace System.Formats.Tar
 
             int checksum = 0;
 
-            if (_mode > 0)
-            {
-                checksum += FormatNumeric(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
-            }
+            int mode = Math.Max(0, _mode);
+            checksum += FormatNumeric(mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
 
-            if (_uid > 0)
-            {
-                checksum += FormatNumeric(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
-            }
-            else if (_uid == 0 && _format is TarEntryFormat.Gnu)
-            {
-                FormatAsZeroChars(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
-            }
+            int uid = Math.Max(0, _uid);
+            checksum += FormatNumeric(uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
 
-            if (_gid > 0)
-            {
-                checksum += FormatNumeric(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
-            }
-            else if (_uid == 0 && _format is TarEntryFormat.Gnu)
-            {
-                FormatAsZeroChars(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
-            }
+            int gid = Math.Max(0, _gid);
+            checksum += FormatNumeric(gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
 
-            if (_size >= 0)
-            {
-                checksum += FormatNumeric(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
-            }
+            long size = Math.Max(0, _size);
+            checksum += FormatNumeric(size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
 
-            if (_format is TarEntryFormat.Gnu)
-            {
-                // Just like atime and ctime, mtime should be stored as zeros when the value is UnixEpoch.
-                checksum += WriteAsGnuTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
-            }
-            else
-            {
-                checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
-            }
+            checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
 
             char typeFlagChar = (char)actualEntryType;
             buffer[FieldLocations.TypeFlag] = (byte)typeFlagChar;
@@ -825,8 +801,8 @@ namespace System.Formats.Tar
         // Saves the gnu-specific fields into the specified spans.
         private int WriteGnuFields(Span<byte> buffer)
         {
-            int checksum = WriteAsGnuTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            checksum += WriteAsGnuTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+            int checksum = WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+            checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
             if (_gnuUnusedBytes != null)
             {
@@ -1135,15 +1111,6 @@ namespace System.Formats.Tar
             }
             return checksum;
         }
-
-        private static int FormatAsZeroChars(Span<byte> destination)
-        {
-            Debug.Assert(destination.Length > 1);
-            destination.Slice(0, destination.Length - 1).Fill(0x30); // '0' char
-            destination[^1] = 0; // Null terminator
-            return Checksum(destination);
-        }
-
         private int FormatNumeric(int value, Span<byte> destination)
         {
             Debug.Assert(destination.Length == 8, "8 byte field expected.");
@@ -1200,7 +1167,10 @@ namespace System.Formats.Tar
             ulong remaining = (ulong)value;
             Span<byte> digits = stackalloc byte[32]; // longer than any possible octal formatting of a ulong
 
+            digits.Slice(0, digits.Length - 1).Fill(0x30); // Prefill with '0' chars except the last, which should remain 0x0 (null terminator)
+
             int i = digits.Length - 1;
+
             while (true)
             {
                 digits[i] = (byte)('0' + (remaining % 8));
@@ -1217,24 +1187,6 @@ namespace System.Formats.Tar
         {
             long unixTimeSeconds = timestamp.ToUnixTimeSeconds();
             return FormatNumeric(unixTimeSeconds, destination);
-        }
-
-        // Writes the specified DateTimeOffset's Unix time seconds, and returns its checksum.
-        // If the timestamp is UnixEpoch, it writes 0s into the destination span.
-        private int WriteAsGnuTimestamp(DateTimeOffset timestamp, Span<byte> destination)
-        {
-            if (timestamp == DateTimeOffset.UnixEpoch)
-            {
-#if DEBUG
-                for (int i = 0; i < destination.Length; i++)
-                {
-                    Debug.Assert(destination[i] == 0, "Destination span should be zeroed.");
-                }
-#endif
-                return 0;
-            }
-
-            return WriteAsTimestamp(timestamp, destination);
         }
 
         // Writes the specified text as an UTF8 string aligned to the left, and returns its checksum.
