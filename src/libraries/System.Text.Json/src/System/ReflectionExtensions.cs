@@ -6,12 +6,14 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json.Reflection
 {
     internal static partial class ReflectionExtensions
     {
+        private static readonly Type s_jsonValuePrimitiveType = typeof(JsonValuePrimitive<>);
         private static readonly Type s_nullableType = typeof(Nullable<>);
 
         /// <summary>
@@ -164,5 +166,12 @@ namespace System.Text.Json.Reflection
 
             return member;
         }
+
+        /// <summary>
+        /// Returns <see langword="true" /> when the given type is of type <see cref="JsonValuePrimitive{TValue}"/>.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsJsonValuePrimitiveOfT(this Type type) =>
+            type.IsGenericType && type.GetGenericTypeDefinition() == s_jsonValuePrimitiveType;
     }
 }
