@@ -12,8 +12,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
-        [ActiveIssue("Not allowed if SingleFileHost", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public sealed class IncrementalTests
         {
             [Fact]

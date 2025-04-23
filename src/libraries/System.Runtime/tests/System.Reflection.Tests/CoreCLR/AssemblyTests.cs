@@ -11,7 +11,6 @@ namespace System.Reflection.Tests
     public class AssemblyTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39650", TestPlatforms.Browser)]
         public void CurrentLocation_HasLocaton()
         {
             string location = GetExecutingAssembly().Location;

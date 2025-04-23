@@ -18,8 +18,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
-    [ActiveIssue("Not allowed if SingleFileHost", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
         internal sealed class ConfigBindingGenTestDriver

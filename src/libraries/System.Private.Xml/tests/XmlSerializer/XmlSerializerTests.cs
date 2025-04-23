@@ -2303,7 +2303,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.Equal(x.Name, y.Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
 #if XMLSERIALIZERGENERATORTESTS
     // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
     // loaded in the default ALC, which causes problems for this test.
@@ -2311,7 +2311,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 #endif
     [ActiveIssue("34072", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/96799", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
-    [ActiveIssue("Not allowed if IsSingleFile", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public static void Xml_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);

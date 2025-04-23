@@ -9,7 +9,7 @@ namespace System.IO.Tests
     public class DisabledFileLockingSwitchTests
     {
         [Fact]
-        [ActiveIssue("TODO", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         public static void ConfigSwitchIsHonored()
         {
             Assert.Equal(OperatingSystem.IsWindows(), PlatformDetection.IsFileLockingEnabled);

@@ -13,10 +13,9 @@ using Xunit;
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
-    [ActiveIssue("Not allowed if SingleFileHost", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/92467")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))] // https://github.com/dotnet/runtime/issues/71962
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process), nameof(PlatformDetection.HasAssemblyFiles))] // https://github.com/dotnet/runtime/issues/71962
     public static class JsonSourceGeneratorIncrementalTests
     {
         [Theory]

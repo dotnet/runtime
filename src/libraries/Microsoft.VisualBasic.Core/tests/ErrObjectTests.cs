@@ -9,9 +9,8 @@ namespace Microsoft.VisualBasic.Tests
 {
     public class ErrObjectTests
     {
-        [Fact]
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/mono/mono/issues/14854", TestRuntimes.Mono)]
-        [ActiveIssue("Not allowed if SingleFileHost", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         public void Clear()
         {
             ProjectData.ClearProjectError();

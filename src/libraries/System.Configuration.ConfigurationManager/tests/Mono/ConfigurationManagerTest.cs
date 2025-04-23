@@ -253,7 +253,6 @@ namespace MonoTests.System.Configuration
         // Doesn't pass on Mono
         // [Category("NotWorking")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21528", TargetFrameworkMonikers.NetFramework)]
-
         public void mapped_ExeConfiguration_null()
         {
             SysConfig config = ConfigurationManager.OpenMappedExeConfiguration(null, ConfigurationUserLevel.None);

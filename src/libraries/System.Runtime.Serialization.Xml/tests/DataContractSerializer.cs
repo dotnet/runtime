@@ -1116,14 +1116,13 @@ public static partial class DataContractSerializerTests
         Assert.Equal(x.PropertyNameWithSpecialCharacters\u6F22\u00F1, y.PropertyNameWithSpecialCharacters\u6F22\u00F1);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
 #if XMLSERIALIZERGENERATORTESTS
     // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
     // loaded in the default ALC, which causes problems for this test.
     [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
 #endif
     [ActiveIssue("34072", TestRuntimes.Mono)]
-    [ActiveIssue("Not allowed if IsSingleFile", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public static void DCS_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: false, out var weakRef);
@@ -1136,14 +1135,13 @@ public static partial class DataContractSerializerTests
         Assert.True(!weakRef.IsAlive);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
 #if XMLSERIALIZERGENERATORTESTS
     // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
     // loaded in the default ALC, which causes problems for this test.
     [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
 #endif
     [ActiveIssue("34072", TestRuntimes.Mono)]
-    [ActiveIssue("Not allowed if IsSingleFile", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
     public static void DCS_CollectionTypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: true, out var weakRef);

@@ -85,7 +85,7 @@ jobs:
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
-# Android emulators
+# Android devices
 # Build the whole product using CoreCLR and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
