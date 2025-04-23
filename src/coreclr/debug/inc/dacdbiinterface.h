@@ -1477,7 +1477,7 @@ public:
     //
     // Note:
     //    Because of the complexity involved in checking for the parent frame, we should always
-    //    ask the ExceptionTracker to do it.
+    //    ask the ExInfo to do it.
     //
 
     virtual

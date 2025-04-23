@@ -85,7 +85,7 @@ namespace System.Net.Http
             Debug.Assert(connectionSetupActivity is not null);
 
             // We only support links for request activities created by the "System.Net.Http" ActivitySource.
-            if (DiagnosticsHandler.s_activitySource.HasListeners())
+            if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && DiagnosticsHandler.s_activitySource.HasListeners())
             {
                 Activity? requestActivity = Activity.Current;
                 if (requestActivity?.Source == DiagnosticsHandler.s_activitySource)

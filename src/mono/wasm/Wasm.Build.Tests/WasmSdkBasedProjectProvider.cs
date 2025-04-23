@@ -28,7 +28,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     {
         var result = new SortedDictionary<string, bool>()
         {
-            { "dotnet.js", false },
+            { "dotnet.js", true },
             { "dotnet.js.map", false },
             { "dotnet.native.js", true },
             { "dotnet.native.js.symbols", false },
@@ -40,8 +40,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             { "dotnet.diagnostics.js.map", false },
         };
 
-        if (assertOptions.BuildOptions.BootConfigFileName.EndsWith(".js"))
-            result[assertOptions.BuildOptions.BootConfigFileName] = false;
+        if (assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js") ?? false)
+            result[assertOptions.BuildOptions.BootConfigFileName] = true;
 
         return result;
     }
@@ -76,7 +76,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                 res.Add("dotnet.diagnostics.js.map");
         }
 
-        if (assertOptions.BuildOptions.BootConfigFileName.EndsWith(".js"))
+        if (assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js") ?? false)
             res.Add(assertOptions.BuildOptions.BootConfigFileName);
 
         return res;

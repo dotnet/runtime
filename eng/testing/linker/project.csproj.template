@@ -53,7 +53,7 @@
     <MicrosoftNetCoreAppRuntimePackDir>{MicrosoftNetCoreAppRuntimePackDir}</MicrosoftNetCoreAppRuntimePackDir>
 
     <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
-    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
     {AdditionalProperties}
 
     <!-- Needed for PublishAot -->

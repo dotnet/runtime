@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Logging
 
         public LogValuesFormatter(string format)
         {
-            ThrowHelper.ThrowIfNull(format);
+            ArgumentNullException.ThrowIfNull(format);
 
             OriginalFormat = format;
 

@@ -1339,6 +1339,22 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     goto DONE_ASSERTION;
                 }
 
+                case GT_CALL:
+                {
+                    if (optLocalAssertionProp)
+                    {
+                        GenTreeCall* const call = op2->AsCall();
+                        if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(call->GetHelperNum()))
+                        {
+                            assertion.assertionKind  = OAK_NOT_EQUAL;
+                            assertion.op2.kind       = O2K_CONST_INT;
+                            assertion.op2.u1.iconVal = 0;
+                            goto DONE_ASSERTION;
+                        }
+                    }
+                    break;
+                }
+
                 default:
                     break;
             }
@@ -5675,7 +5691,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             //           default: %name.Length is >= 8 here%
             //       }
             //
-            if (value > 0)
+            if ((value > 0) && !vnStore->IsVNConstant(opVN))
             {
                 AssertionDsc dsc   = {};
                 dsc.assertionKind  = OAK_NOT_EQUAL;
@@ -5683,17 +5699,19 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
                 dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
                 dsc.op2.u1.iconVal = 0;
                 dsc.op2.SetIconFlag(GTF_EMPTY);
-                if (vnStore->IsVNCheckedBound(opVN))
+                if (vnStore->IsVNNeverNegative(opVN))
                 {
-                    // Create "arrBnd >= value" assertion
+                    // Create "X >= value" assertion (both operands are never negative)
                     dsc.op1.kind = O1K_CONSTANT_LOOP_BND;
                     dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
+                    assert(vnStore->IsVNConstantBound(dsc.op1.vn));
                 }
                 else
                 {
                     // Create "X u>= value" assertion
                     dsc.op1.kind = O1K_CONSTANT_LOOP_BND_UN;
                     dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
+                    assert(vnStore->IsVNConstantBoundUnsigned(dsc.op1.vn));
                 }
                 newAssertIdx = optAddAssertion(&dsc);
             }
