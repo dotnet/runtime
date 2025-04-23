@@ -167,6 +167,7 @@ extends:
           - windows_x86
           - linux_x64
           - linux_arm
+          - linux_arm64
           variables:
           - name: timeoutPerTestInMinutes
             value: 60
