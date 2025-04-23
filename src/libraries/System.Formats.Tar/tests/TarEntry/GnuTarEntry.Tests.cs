@@ -669,7 +669,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public void ATime_CTime_Epochs_ShouldBeNulls()
+        public void Timestamps_UnixEpoch_ShouldBeNulls()
         {
             // The GNU format sets the access and change times to nulls when they are set to the unix epoch.
 
@@ -680,6 +680,7 @@ namespace System.Formats.Tar.Tests
                 // Should not be "0" characters, but null characters
                 GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName)
                 {
+                    ModificationTime = DateTimeOffset.UnixEpoch,
                     AccessTime = DateTimeOffset.UnixEpoch,
                     ChangeTime = DateTimeOffset.UnixEpoch
                 };
@@ -692,15 +693,16 @@ namespace System.Formats.Tar.Tests
             {
                 GnuTarEntry entry = reader.GetNextEntry() as GnuTarEntry;
                 Assert.NotNull(entry);
+                Assert.Equal(DateTimeOffset.UnixEpoch, entry.ModificationTime);
                 Assert.Equal(DateTimeOffset.UnixEpoch, entry.AccessTime);
                 Assert.Equal(DateTimeOffset.UnixEpoch, entry.ChangeTime);
             }
 
-            ValidateATimeAndCTimeBytes(ms);
+            ValidateMTimeATimeAndCTimeBytes(ms);
         }
 
         [Fact]
-        public async Task ATime_CTime_Epochs_ShouldBeNulls_Async()
+        public async Task Timestamps_UnixEpoch_ShouldBeNulls_Async()
         {
             await using MemoryStream ms = new();
 
@@ -709,6 +711,7 @@ namespace System.Formats.Tar.Tests
                 // Should not be "0" characters, but null characters
                 GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName)
                 {
+                    ModificationTime = DateTimeOffset.UnixEpoch,
                     AccessTime = DateTimeOffset.UnixEpoch,
                     ChangeTime = DateTimeOffset.UnixEpoch
                 };
@@ -721,31 +724,39 @@ namespace System.Formats.Tar.Tests
             {
                 GnuTarEntry entry = await reader.GetNextEntryAsync() as GnuTarEntry;
                 Assert.NotNull(entry);
+                Assert.Equal(DateTimeOffset.UnixEpoch, entry.ModificationTime);
                 Assert.Equal(DateTimeOffset.UnixEpoch, entry.AccessTime);
                 Assert.Equal(DateTimeOffset.UnixEpoch, entry.ChangeTime);
             }
 
-            ValidateATimeAndCTimeBytes(ms);
+            ValidateMTimeATimeAndCTimeBytes(ms);
         }
 
-        private void ValidateATimeAndCTimeBytes(MemoryStream ms)
+        private void ValidateMTimeATimeAndCTimeBytes(MemoryStream ms)
         {
-            // internally, atime and ctime should be nulls
+            // internally, mtime, atime and ctime should be nulls
 
-            // name, mode, uid, gid, size, mtime, checksum, typeflag, linkname, magic, uname, gname, devmajor, devminor,
-            // atime, ctime
-            int aTimeStart = 100 + 8 + 8 + 8 + 12 + 12 + 8 + 1 + 100 + 8 + 32 + 32 + 8 + 8;
+            // name, mode, uid, gid, size, and mtime is the next
+            int mTimeStart = 100 + 8 + 8 + 8 + 12;
+            // checksum, typeflag, linkname, magic, uname, gname, devmajor, devminor, and atime is the next
+            int aTimeStart = mTimeStart + 12 + 8 + 1 + 100 + 8 + 32 + 32 + 8 + 8;
+            // ctime is the next
             int cTimeStart = aTimeStart + 12;
-            byte[] buffer = new byte[12]; // atime and ctime are 12 bytes in length
+            byte[] buffer = new byte[12]; // mtime, atime and ctime are 12 bytes in length
 
-            ms.Seek(aTimeStart, SeekOrigin.Begin);
+            CheckBytesAreNulls(ms, buffer, mTimeStart);
+            CheckBytesAreNulls(ms, buffer, aTimeStart);
+            CheckBytesAreNulls(ms, buffer, cTimeStart);
+        }
+
+        private void CheckBytesAreNulls(MemoryStream ms, Span<byte> buffer, int start)
+        {
+            ms.Seek(start, SeekOrigin.Begin);
             ms.Read(buffer);
-
-            Assert.All(buffer, b => Assert.Equal(0, b)); // All should be nulls
-
-            ms.Seek(cTimeStart, SeekOrigin.Begin);
-            ms.Read(buffer);
-            Assert.All(buffer, b => Assert.Equal(0, b)); // All should be nulls
+            foreach (byte b in buffer)
+            {
+                Assert.Equal(0, b); // All should be nulls
+            }
         }
     }
 }
