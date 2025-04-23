@@ -4,7 +4,7 @@
 namespace System.Diagnostics.CodeAnalysis
 {
     /// <summary>
-    /// Indicates that the specified public static boolean get-only property
+    /// Indicates that the specified static boolean get-only property
     /// corresponds to the feature switch specified by name.
     /// </summary>
     /// <remarks>
