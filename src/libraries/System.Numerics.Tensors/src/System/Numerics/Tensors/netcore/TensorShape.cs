@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -208,11 +209,16 @@ namespace System.Numerics.Tensors
                 // aren't actually stored in memory.
 
                 nint minimumNonZeroStride = 0;
+                var sortedWithIndex = destinationLinearRankOrder.ToArray()
+                    .Select((value, index) => new { Value = value, Index = index })
+                    .OrderBy(x => x.Value)
+                    .ToArray();
 
+                int[] sortedOrder = sortedWithIndex.Select(x => x.Index).ToArray();
                 for (int i = 0; i < destinationLinearRankOrder.Length; i++)
                 {
                     int rankIndex = destinationLinearRankOrder.Length - (i + 1);
-                    int linearRankIndex = destinationLinearRankOrder[rankIndex];
+                    int linearRankIndex = sortedOrder[rankIndex];
 
                     nint length = lengths[linearRankIndex];
 
