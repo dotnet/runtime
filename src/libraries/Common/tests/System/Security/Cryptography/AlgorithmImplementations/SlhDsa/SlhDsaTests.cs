@@ -3,14 +3,30 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Test.Cryptography;
 using Xunit;
+
+using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    [ConditionalClass(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
-    public abstract class SlhDsaImplementationTestsBase : SlhDsaInstanceTestsBase
+    public abstract class SlhDsaTests
     {
+        protected abstract SlhDsa GenerateKey(SlhDsaAlgorithm algorithm);
+        protected abstract SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        protected abstract SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+
+        [Theory]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public void UseAfterDispose(SlhDsaAlgorithm algorithm)
+        {
+            using SlhDsa slhDsa = GenerateKey(algorithm);
+
+            slhDsa.Dispose();
+            slhDsa.Dispose(); // no throw
+
+            VerifyDisposed(slhDsa);
+        }
+
         public static IEnumerable<object[]> NistSigVerTestVectorsData =>
             from vector in SlhDsaTestData.NistSigVerTestVectors
             select new object[] { vector };
@@ -130,6 +146,53 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
                 ExerciseSuccessfulVerify(slhDsa, data, signature, []);
             }
+        }
+
+        public static void ExerciseSuccessfulVerify(SlhDsa slhDsa, byte[] data, byte[] signature, byte[] context)
+        {
+            AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, context));
+
+            if (data.Length > 0)
+            {
+                AssertExtensions.FalseExpression(slhDsa.VerifyData([], signature, context));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
+
+                data[0] ^= 1;
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
+                data[0] ^= 1;
+            }
+            else
+            {
+                AssertExtensions.TrueExpression(slhDsa.VerifyData([], signature, context));
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
+
+                AssertExtensions.FalseExpression(slhDsa.VerifyData([0], signature, context));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData([1, 2, 3], signature, context));
+            }
+
+            signature[0] ^= 1;
+            AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
+            signature[0] ^= 1;
+
+            if (context.Length > 0)
+            {
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, []));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
+
+                context[0] ^= 1;
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, context));
+                context[0] ^= 1;
+            }
+            else
+            {
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, []));
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
+
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, [0]));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, [1, 2, 3]));
+            }
+
+            AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, context));
         }
     }
 }
