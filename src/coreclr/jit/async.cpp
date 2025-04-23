@@ -92,12 +92,6 @@ bool AsyncLiveness::IsLocalCaptureUnnecessary(unsigned lclNum)
         return true;
     }
 
-    if (lclNum == m_comp->lvaPSPSym)
-    {
-        // Initialized in prolog
-        return true;
-    }
-
     if (lclNum == m_comp->info.compLvFrameListRoot)
     {
         return true;
