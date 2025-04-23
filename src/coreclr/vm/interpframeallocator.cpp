@@ -14,7 +14,10 @@ FrameDataFragment::FrameDataFragment(size_t size)
     }
 
     start = (uint8_t*)malloc(size);
-    assert(start && "Failed to allocate FrameDataFragment");
+    if (start == nullptr)
+    {
+        ThrowOutOfMemory();
+    }
     end = start + size;
     pos = start;
     pNext = nullptr;
@@ -57,7 +60,10 @@ void FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
     {
         size_t newCapacity = infosCapacity == 0 ? 8 : infosCapacity * 2;
         pInfos = (FrameDataInfo*)realloc(pInfos, newCapacity * sizeof(FrameDataInfo));
-        assert(pInfos && "Failed to reallocate frame info");
+        if (pInfos == nullptr)
+        {
+            ThrowOutOfMemory();
+        }
         infosCapacity = newCapacity;
     }
 
