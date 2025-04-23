@@ -7,7 +7,7 @@
 #include "dbgutil.h"
 #include <cdac_reader.h>
 
-#define CDAC_LIB_NAME MAKEDLLNAME_W(W("cdac"))
+#define CDAC_LIB_NAME MAKEDLLNAME_W(W("mscordaccore_universal"))
 
 namespace
 {
