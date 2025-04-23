@@ -640,7 +640,7 @@ typedef enum CorMethodImpl
     miNoOptimization     =   0x0040,   // Method may not be optimized.
     miAggressiveOptimization = 0x0200, // Method may contain hot code and should be aggressively optimized.
 
-    miAsync              =   0x0400,   // Method requires async state machine rewrite.
+    miAsync              =   0x2000,   // Method requires async state machine rewrite.
 
     // These are the flags that are allowed in MethodImplAttribute's Value
     // property. This should include everything above except the code impl

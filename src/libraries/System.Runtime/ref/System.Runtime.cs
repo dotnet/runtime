@@ -12369,6 +12369,7 @@ namespace System.Reflection
         AggressiveInlining = 256,
         AggressiveOptimization = 512,
         InternalCall = 4096,
+        Async = 8192,
         MaxMethodImplVal = 65535,
     }
     public abstract partial class MethodInfo : System.Reflection.MethodBase
@@ -13669,7 +13670,7 @@ namespace System.Runtime.CompilerServices
         PreserveSig = 128,
         AggressiveInlining = 256,
         AggressiveOptimization = 512,
-        Async = 1024,
+        Async = 8192,
         InternalCall = 4096,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
