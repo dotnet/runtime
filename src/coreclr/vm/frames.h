@@ -1041,8 +1041,10 @@ typedef DPTR(class SoftwareExceptionFrame) PTR_SoftwareExceptionFrame;
 class SoftwareExceptionFrame : public Frame
 {
     TADDR                           m_ReturnAddress;
-    T_CONTEXT                       m_Context;
     T_KNONVOLATILE_CONTEXT_POINTERS m_ContextPointers;
+    // This T_CONTEXT field needs to be the last field in the class because it is a
+    // different size between Linux (pal.h) and the Windows cross-DAC (winnt.h).
+    T_CONTEXT                       m_Context;
 
 public:
 #ifndef DACCESS_COMPILE
