@@ -138,9 +138,6 @@
   <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
-  <data name="Argument_PrivateSeedWrongSizeForAlgorithm" xml:space="preserve">
-    <value>The private seed is not the correct size for the indicated algorithm.</value>
-  </data>
   <data name="Argument_PublicKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The public key is not the correct size for the indicated algorithm.</value>
   </data>
@@ -698,6 +695,9 @@
   </data>
   <data name="Cryptography_SignHash_WrongSize" xml:space="preserve">
     <value>The provided hash value is not the expected size for the specified hash algorithm.</value>
+  </data>
+  <data name="Cryptography_SlhDsaInvalidAlgorithmHandle" xml:space="preserve">
+    <value>The specified EVP_PKEY handle is not a known SLH-DSA algorithm.</value>
   </data>
   <data name="Cryptography_TlsRequires64ByteSeed" xml:space="preserve">
     <value>The TLS key derivation function requires a seed value of exactly 64 bytes.</value>

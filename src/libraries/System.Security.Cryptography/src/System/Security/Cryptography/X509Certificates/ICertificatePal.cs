@@ -32,6 +32,7 @@ namespace System.Security.Cryptography.X509Certificates
         ECDsa? GetECDsaPrivateKey();
         ECDiffieHellman? GetECDiffieHellmanPrivateKey();
         MLDsa? GetMLDsaPrivateKey();
+        MLKem? GetMLKemPrivateKey();
         string GetNameInfo(X509NameType nameType, bool forIssuer);
         void AppendPrivateKeyInfo(StringBuilder sb);
         ICertificatePal CopyWithPrivateKey(DSA privateKey);
@@ -39,6 +40,7 @@ namespace System.Security.Cryptography.X509Certificates
         ICertificatePal CopyWithPrivateKey(RSA privateKey);
         ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey);
         ICertificatePal CopyWithPrivateKey(MLDsa privateKey);
+        ICertificatePal CopyWithPrivateKey(MLKem privateKey);
         PolicyData GetPolicyData();
     }
 }

@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Logging.Console
             IExternalScopeProvider? scopeProvider,
             ConsoleLoggerOptions options)
         {
-            ThrowHelper.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(name);
 
             _name = name;
             _queueProcessor = loggerProcessor;
@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Logging.Console
                 return;
             }
 
-            ThrowHelper.ThrowIfNull(formatter);
+            ArgumentNullException.ThrowIfNull(formatter);
 
             t_stringWriter ??= new StringWriter();
             LogEntry<TState> logEntry = new LogEntry<TState>(logLevel, _name, eventId, state, exception, formatter);
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <inheritdoc />
         public void LogRecords(IEnumerable<BufferedLogRecord> records)
         {
-            ThrowHelper.ThrowIfNull(records);
+            ArgumentNullException.ThrowIfNull(records);
 
             StringWriter writer = t_stringWriter ??= new StringWriter();
 
