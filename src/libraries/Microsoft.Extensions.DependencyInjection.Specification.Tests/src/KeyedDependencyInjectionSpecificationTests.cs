@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
@@ -287,13 +288,11 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
+        [InlineData(true)]
+        [InlineData(false)]
         // Test ordering and slot assignments when DI calls the service's constructor
         // across keyed services with different service types and keys.
-        public void ResolveWithAnyKeyQuery_Constructor(bool anyKeyQueryBeforeSingletonQueries, bool checkCache)
+        public void ResolveWithAnyKeyQuery_Constructor(bool anyKeyQueryBeforeSingletonQueries)
         {
             var serviceCollection = new ServiceCollection();
 
@@ -338,25 +337,24 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             void DoAnyKeyQuery()
             {
-                allInstancesA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey).ToArray();
-                allInstancesB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey).ToArray();
+                IEnumerable<TestServiceA> allA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey);
+                IEnumerable<TestServiceB> allB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey);
 
-                if (checkCache)
-                {
-                    allInstancesA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey).ToArray();
-                    allInstancesB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey).ToArray();
-                }
+                // Verify caching returns the same IEnumerable<> instance.
+                Assert.Same(allA, provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey));
+                Assert.Same(allB, provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey));
+
+                allInstancesA = allA.ToArray();
+                allInstancesB = allB.ToArray();
             }
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
+        [InlineData(true)]
+        [InlineData(false)]
         // Test ordering and slot assignments when DI calls the service's constructor
         // across keyed services with different service types with duplicate keys.
-        public void ResolveWithAnyKeyQuery_Constructor_Duplicates(bool anyKeyQueryBeforeSingletonQueries, bool checkCache)
+        public void ResolveWithAnyKeyQuery_Constructor_Duplicates(bool anyKeyQueryBeforeSingletonQueries)
         {
             var serviceCollection = new ServiceCollection();
 
@@ -406,25 +404,24 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             void DoAnyKeyQuery()
             {
-                allInstancesA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey).ToArray();
-                allInstancesB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey).ToArray();
+                IEnumerable<TestServiceA> allA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey);
+                IEnumerable<TestServiceB> allB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey);
 
-                if (checkCache)
-                {
-                    allInstancesA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey).ToArray();
-                    allInstancesB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey).ToArray();
-                }
+                // Verify caching returns the same IEnumerable<> instances.
+                Assert.Same(allA, provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey));
+                Assert.Same(allB, provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey));
+
+                allInstancesA = allA.ToArray();
+                allInstancesB = allB.ToArray();
             }
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
+        [InlineData(true)]
+        [InlineData(false)]
         // Test ordering and slot assignments when service is provided
         // across keyed services with different service types and keys.
-        public void ResolveWithAnyKeyQuery_InstanceProvided(bool anyKeyQueryBeforeSingletonQueries, bool checkCache)
+        public void ResolveWithAnyKeyQuery_InstanceProvided(bool anyKeyQueryBeforeSingletonQueries)
         {
             var serviceCollection = new ServiceCollection();
 
@@ -483,25 +480,24 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             void DoAnyKeyQuery()
             {
-                allInstancesA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey).ToArray();
-                allInstancesB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey).ToArray();
+                IEnumerable<TestServiceA> allA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey);
+                IEnumerable<TestServiceB> allB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey);
 
-                if (checkCache)
-                {
-                    allInstancesA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey).ToArray();
-                    allInstancesB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey).ToArray();
-                }
+                // Verify caching returns the same items.
+                Assert.Equal(allA, provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey));
+                Assert.Equal(allB, provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey));
+
+                allInstancesA = allA.ToArray();
+                allInstancesB = allB.ToArray();
             }
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
+        [InlineData(true)]
+        [InlineData(false)]
         // Test ordering and slot assignments when service is provided
         // across keyed services with different service types with duplicate keys.
-        public void ResolveWithAnyKeyQuery_InstanceProvided_Duplicates(bool anyKeyQueryBeforeSingletonQueries, bool checkCache)
+        public void ResolveWithAnyKeyQuery_InstanceProvided_Duplicates(bool anyKeyQueryBeforeSingletonQueries)
         {
             var serviceCollection = new ServiceCollection();
 
@@ -550,14 +546,15 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             void DoAnyKeyQuery()
             {
-                allInstancesA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey).ToArray();
-                allInstancesB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey).ToArray();
+                IEnumerable<TestServiceA> allA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey);
+                IEnumerable<TestServiceB> allB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey);
 
-                if (checkCache)
-                {
-                    allInstancesA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey).ToArray();
-                    allInstancesB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey).ToArray();
-                }
+                // Verify caching returns the same items.
+                Assert.Equal(allA, provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey));
+                Assert.Equal(allB, provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey));
+
+                allInstancesA = allA.ToArray();
+                allInstancesB = allB.ToArray();
             }
         }
 
