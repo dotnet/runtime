@@ -98,7 +98,7 @@ namespace System.Diagnostics
 
         private StackFrame[] GetFramesCore()
         {
-            return _stackFrames;
+            return _stackFrames ?? [];
         }
     }
 }
