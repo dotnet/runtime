@@ -257,8 +257,7 @@ namespace System
             if (significand > TDecimal.MaxSignificand)
             {
                 significand = TValue.One;
-                int significandTotalDigits = Math.Min(number.DigitsCount, TDecimal.Precision);
-                exponent += significandTotalDigits - 1;
+                exponent += TDecimal.Precision - 1;
             }
 
             static void MidPointRounding(ref TValue significand, ref NumberBuffer number, int midPointDigitIndex)
@@ -280,7 +279,7 @@ namespace System
                     c = *++p;
                 }
 
-                if (tiedToEvenRounding && !int.IsEvenInteger(*(p + midPointDigitIndex - 1)))
+                if (tiedToEvenRounding && !int.IsEvenInteger(*(number.DigitsPtr + midPointDigitIndex - 1)))
                 {
                     significand += TValue.One;
                 }
