@@ -86,8 +86,40 @@ namespace System.Diagnostics
         internal void InitializeSourceInfo(bool fNeedFileInfo, Exception? exception)
         {
             StackTrace.GetStackFramesInternal(this, fNeedFileInfo, exception);
+        }
 
-            if (!fNeedFileInfo)
+        public MethodBase? GetMethodBase(int i)
+        {
+            // There may be a better way to do this.
+            // we got RuntimeMethodHandles here and we need to go to MethodBase
+            // but we don't know whether the reflection info has been initialized
+            // or not. So we call GetMethods and GetConstructors on the type
+            // and then we fetch the proper MethodBase!!
+            IntPtr mh = rgMethodHandle![i];
+
+            if (mh == IntPtr.Zero)
+                return null;
+
+            IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(new RuntimeMethodHandleInternal(mh), this));
+
+            return RuntimeType.GetMethodBase(mhReal);
+        }
+
+        private void InitializeFrameSourceInfo(int index)
+        {
+            // rgiMethodToken is null if file info wasn't requested when collecting the stack trace.
+            if (rgiMethodToken == null)
+                return;
+
+            // We use rgiMethodToken[i] to indicate whether we've initialized the info for this frame.
+            // If the native code set it to zero, then information is already initialized from the native
+            // symbol reader. If the native code set it to non-zero, then we're supposed to use the managed
+            // symbol reader to try to resolve debug information.
+            //
+            // This is the only purpose the field has, however, so we can assign it to zero AFTER resolving
+            // symbol information to indicate that it's already been resolved without causing any issues
+            // elsewhere.
+            if (rgiMethodToken[index] == 0)
                 return;
 
             // Check if this function is being reentered because of an exception in the code below
@@ -131,17 +163,12 @@ namespace System.Diagnostics
                     Interlocked.CompareExchange(ref s_getSourceLineInfo, getSourceLineInfo, null);
                 }
 
-                for (int index = 0; index < iFrameCount; index++)
-                {
-                    // If there was some reason not to try get the symbols from the portable PDB reader like the module was
-                    // ENC or the source/line info was already retrieved, the method token is 0.
-                    if (rgiMethodToken![index] != 0)
-                    {
-                        s_getSourceLineInfo!(rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
-                            rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
-                            rgiILOffset![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
-                    }
-                }
+                s_getSourceLineInfo!(rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
+                    rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
+                    rgiILOffset![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
+
+                // Make sure we mark down that debug information for this frame was resolved
+                rgiMethodToken[index] = 0;
             }
             catch
             {
@@ -152,28 +179,37 @@ namespace System.Diagnostics
             }
         }
 
-        public MethodBase? GetMethodBase(int i)
-        {
-            // There may be a better way to do this.
-            // we got RuntimeMethodHandles here and we need to go to MethodBase
-            // but we don't know whether the reflection info has been initialized
-            // or not. So we call GetMethods and GetConstructors on the type
-            // and then we fetch the proper MethodBase!!
-            IntPtr mh = rgMethodHandle![i];
-
-            if (mh == IntPtr.Zero)
-                return null;
-
-            IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(new RuntimeMethodHandleInternal(mh), this));
-
-            return RuntimeType.GetMethodBase(mhReal);
-        }
-
         public int GetOffset(int i) { return rgiOffset![i]; }
         public int GetILOffset(int i) { return rgiILOffset![i]; }
-        public string? GetFilename(int i) { return rgFilename?[i]; }
-        public int GetLineNumber(int i) { return rgiLineNumber == null ? 0 : rgiLineNumber[i]; }
-        public int GetColumnNumber(int i) { return rgiColumnNumber == null ? 0 : rgiColumnNumber[i]; }
+        public string? GetFilename(int i)
+        {
+            InitializeFrameSourceInfo(i);
+            return rgFilename?[i];
+        }
+        public int GetLineNumber(int i)
+        {
+            if (rgiLineNumber == null)
+            {
+                return 0;
+            }
+            else
+            {
+                InitializeFrameSourceInfo(i);
+                return rgiLineNumber[i];
+            }
+        }
+        public int GetColumnNumber(int i)
+        {
+            if (rgiColumnNumber == null)
+            {
+                return 0;
+            }
+            else
+            {
+                InitializeFrameSourceInfo(i);
+                return rgiColumnNumber[i];
+            }
+        }
 
         public bool IsLastFrameFromForeignExceptionStackTrace(int i)
         {

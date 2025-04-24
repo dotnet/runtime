@@ -95,5 +95,10 @@ namespace System.Diagnostics
                 builder.AppendLine();
         }
 #endif
+
+        private StackFrame[] GetFramesCore()
+        {
+            return _stackFrames;
+        }
     }
 }
