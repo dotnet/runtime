@@ -3267,21 +3267,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 regNumber tmpRegOp2 = internalRegisters.GetSingle(tree);
                 assert(regOp1 != tmpRegOp2);
                 assert(regOp2 != tmpRegOp2);
-
-                if (isUnsigned)
-                {
-                    emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
-                    emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-
-                    emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp2, regOp2, 32);
-                    emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp2, tmpRegOp2, 32);
-                }
-                else
-                {
-                    emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp1, regOp1, 0);
-                    emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp2, regOp2, 0);
-                }
-
+                emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
+                emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp2, regOp2);
                 regOp1 = tmpRegOp1;
                 regOp2 = tmpRegOp2;
             }
