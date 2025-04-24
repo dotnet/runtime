@@ -974,8 +974,25 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         TargetPointer slotPtr = GetAddressOfMethodTableSlot(GetCanonicalMethodTable(typeHandle), slot);
         TargetCodePointer pCode = _target.ReadCodePointer(slotPtr);
 
-        // NOT IMPLEMENTED
-        return new MethodDescHandle(pCode.AsTargetPointer);
+        if (pCode == TargetCodePointer.Null)
+        {
+            // TODO(cdac): Implement this path
+            // if pCode is null, we iterate through the method descs in the MT.
+        }
+
+        // standard path, ask ExecutionManager for the MethodDesc
+        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
+        {
+            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
+            return GetMethodDescHandle(methodDescPtr);
+        }
+
+        // FCall path, look up address in the FCall table
+
+        // stub path, read address as a Precode and read MethodDesc from it
+
+        throw new NotImplementedException("MethodDesc for slot is not implemented yet");
     }
 
     TargetPointer IRuntimeTypeSystem.GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc)
