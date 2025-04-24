@@ -92,5 +92,10 @@ namespace System.Diagnostics
                 _stackFrames[foreignFrames + i] = new StackFrame(frames[i], needFileInfo);
             }
         }
+
+        private StackFrame[] GetFramesCore()
+        {
+            return _stackFrames;
+        }
     }
 }

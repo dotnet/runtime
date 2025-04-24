@@ -4,11 +4,16 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Diagnostics
 {
     public partial class StackTrace
     {
+        private StackFrameHelper? _stackFrameHelper;
+        private bool _fNeedFileInfo;
+        private bool _isForException;
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackTrace_GetStackFramesInternal")]
         private static partial void GetStackFramesInternal(ObjectHandleOnStack sfh, [MarshalAs(UnmanagedType.Bool)] bool fNeedFileInfo, ObjectHandleOnStack e);
 
@@ -66,30 +71,47 @@ namespace System.Diagnostics
             StackF.InitializeSourceInfo(fNeedFileInfo, e);
 
             _numOfFrames = StackF.GetNumberOfFrames();
+            _stackFrameHelper = StackF;
 
             if (_methodsToSkip > _numOfFrames)
                 _methodsToSkip = _numOfFrames;
 
-            if (_numOfFrames != 0)
+            _fNeedFileInfo = fNeedFileInfo;
+            _isForException = e != null;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="StackFrame"/> array for this StackTrace, possibly creating if needed.
+        /// </summary>
+        /// <returns></returns>
+        private StackFrame[] GetFramesCore()
+        {
+            if (_numOfFrames != 0 && _stackFrames == null)
             {
-                _stackFrames = new StackFrame[_numOfFrames];
+                Debug.Assert(_stackFrameHelper != null);
+
+                StackFrame[] stackFrames = new StackFrame[_numOfFrames];
 
                 for (int i = 0; i < _numOfFrames; i++)
                 {
-                    _stackFrames[i] = new StackFrame(StackF, i, fNeedFileInfo);
+                    stackFrames[i] = new StackFrame(_stackFrameHelper, i, _fNeedFileInfo);
                 }
 
                 // CalculateFramesToSkip skips all frames in the System.Diagnostics namespace,
                 // but this is not desired if building a stack trace from an exception.
-                if (e == null)
-                    _methodsToSkip += CalculateFramesToSkip(StackF, _numOfFrames);
+                if (!_isForException)
+                    _methodsToSkip += CalculateFramesToSkip(_stackFrameHelper, _numOfFrames);
 
                 _numOfFrames -= _methodsToSkip;
                 if (_numOfFrames < 0)
                 {
                     _numOfFrames = 0;
                 }
+
+                _stackFrames = stackFrames;
             }
+
+            return _stackFrames ?? [];
         }
     }
 }
