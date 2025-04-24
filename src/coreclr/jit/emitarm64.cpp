@@ -17419,6 +17419,12 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
         return false;
     }
 
+    if (emitComp->compGeneratingUnwindProlog || emitComp->compGeneratingUnwindEpilog)
+    {
+        // Don't remove instructions while generating "unwind" part of prologs or epilogs
+        return false;
+    }
+
     // Cannot allow post indexing if the load itself is already modifying the
     // register.
     regNumber loadStoreDataReg = emitLastIns->idReg1();

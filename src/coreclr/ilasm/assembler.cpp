@@ -1129,7 +1129,7 @@ void Assembler::AddException(DWORD pcStart, DWORD pcEnd, DWORD pcHandler, DWORD 
     clause->SetHandlerLength(pcHandlerTo - pcHandler);
     clause->SetClassToken(crException);
 
-    int flags = COR_ILEXCEPTION_CLAUSE_OFFSETLEN;
+    int flags = 0;
     if (isFilter) {
         flags |= COR_ILEXCEPTION_CLAUSE_FILTER;
     }

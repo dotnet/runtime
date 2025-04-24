@@ -3458,7 +3458,6 @@ ClrDataAccess::TraverseEHInfo(CLRDATA_ADDRESS ip, DUMPEHINFO pFunc, LPVOID token
             deh.tryEndOffset = EHClause.TryEndPC;
             deh.handlerStartOffset = EHClause.HandlerStartPC;
             deh.handlerEndOffset = EHClause.HandlerEndPC;
-            deh.isDuplicateClause = IsDuplicateClause(&EHClause);
 
             if (!(pFunc)(i, EHCount, &deh, token))
             {
