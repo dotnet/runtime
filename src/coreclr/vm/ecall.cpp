@@ -336,11 +336,10 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         return CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE)->GetMultiCallableAddrOfCode();
     }
 
+#ifdef FEATURE_COMINTEROP
     // COM imported classes have special constructors
     if (pMT->IsComObjectType()
-#ifdef FEATURE_COMINTEROP
         && (g_pBaseCOMObject == NULL || pMT != g_pBaseCOMObject)
-#endif // FEATURE_COMINTEROP
     )
     {
         if (pfSharedOrDynamicFCallImpl)
@@ -352,6 +351,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         // FCComCtor does not need to be in the fcall hashtable since it does not erect frame.
         return GetEEFuncEntryPoint(FCComCtor);
     }
+#endif // FEATURE_COMINTEROP
 
     if (!pMD->GetModule()->IsSystem())
         COMPlusThrow(kSecurityException, BFA_ECALLS_MUST_BE_IN_SYS_MOD);
