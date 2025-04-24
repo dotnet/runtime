@@ -4,6 +4,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -141,9 +143,12 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     {
         private readonly Target _target;
         private readonly TargetPointer _mainMethodDesc;
-        private readonly TargetPointer _appDomain;
+        public readonly TargetPointer _appDomain;
         private readonly ILoader _loader;
         private readonly IRuntimeTypeSystem _rts;
+        public IEnumerator<MethodDescHandle> methodEnumerator = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
+        public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
+
         public EnumMethodInstances(Target target, TargetPointer methodDesc, TargetPointer appDomain)
         {
             _target = target;
@@ -162,39 +167,19 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             _rts = _target.Contracts.RuntimeTypeSystem;
         }
 
-        public int Start(TargetPointer methodDesc, TargetPointer appDomain)
+        public int Start()
         {
-            if (appDomain == TargetPointer.Null)
-            {
-                TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                appDomain = _target.ReadPointer(appDomainPointer);
-            }
-
-            if (!HasClassOrMethodInstantiation(methodDesc) && !HasNativeCodeAnyVersion(methodDesc))
+            if (!HasClassOrMethodInstantiation(_mainMethodDesc) && !HasNativeCodeAnyVersion(_mainMethodDesc))
             {
                 return HResults.S_FALSE;
             }
 
-            List<Contracts.ModuleHandle> modules = _loader.GetAssemblies(
-                appDomain,
-                AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
-
-            foreach (Contracts.ModuleHandle moduleHandle in modules)
-            {
-                List<TargetPointer> typeParams = _loader.GetAvailableTypeParams(moduleHandle);
-                foreach (TargetPointer type in typeParams)
-                {
-                    Console.WriteLine(type);
-                }
-            }
-
-            // for each module find available type params
-            // for each module get inst method hash table
+            methodEnumerator = IterateMethodInstances().GetEnumerator();
 
             return HResults.S_OK;
         }
 
-        public IEnumerable<MethodDescHandle> IterateMethodInstantiations(Contracts.ModuleHandle moduleHandle)
+        private IEnumerable<MethodDescHandle> IterateMethodInstantiations(Contracts.ModuleHandle moduleHandle)
         {
             List<TargetPointer> methodInstantiations = _loader.GetInstantiatedMethods(moduleHandle);
 
@@ -204,7 +189,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             }
         }
 
-        public IEnumerable<Contracts.TypeHandle> IterateTypeParams(Contracts.ModuleHandle moduleHandle)
+        private IEnumerable<Contracts.TypeHandle> IterateTypeParams(Contracts.ModuleHandle moduleHandle)
         {
             List<TargetPointer> typeParams = _loader.GetAvailableTypeParams(moduleHandle);
 
@@ -214,7 +199,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             }
         }
 
-        public IEnumerable<Contracts.ModuleHandle> IterateModules()
+        private IEnumerable<Contracts.ModuleHandle> IterateModules()
         {
             ILoader loader = _target.Contracts.Loader;
             List<Contracts.ModuleHandle> modules = loader.GetAssemblies(
@@ -227,7 +212,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             }
         }
 
-        public IEnumerable<MethodDescHandle> IterateMethodInstances()
+        private IEnumerable<MethodDescHandle> IterateMethodInstances()
         {
             /*
             There are 4 cases for method instances:
@@ -252,7 +237,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             TargetPointer mainModule = _rts.GetModule(mainMT);
             uint mainMTToken = _rts.GetTypeDefToken(mainMT);
             uint mainMDToken = _rts.GetMethodToken(mainMD);
-            ushort slotNum = _rts.GetSlotNumber(mainMD);
+            // ushort slotNum = _rts.GetSlotNumber(mainMD);
 
             if (HasMethodInstantiation(_mainMethodDesc))
             {
@@ -295,9 +280,8 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
                             TargetPointer cmt = _rts.GetCanonicalMethodTable(typeParam);
                             TypeHandle cmtHandle = _rts.GetTypeHandle(cmt);
-
-
-
+                            Console.WriteLine(cmtHandle);
+                            Debug.Assert(false, "Iterating class instantiations is not implemented yet");
                         }
                     }
                 }
@@ -355,36 +339,94 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ulong address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
     {
         int hr = HResults.S_OK;
-        try
+
+        *handle = 0;
+        hr = HResults.S_FALSE;
+
+        int hrLocal = default;
+        ulong handleLocal = default;
+        if (_legacyProcess is not null)
         {
-            *handle = 0;
-            hr = HResults.S_FALSE;
-
-            IExecutionManager eman = _target.Contracts.ExecutionManager;
-            if (eman.GetCodeBlockHandle(address) is CodeBlockHandle cbh && eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
-            {
-
-                EnumMethodInstances emi = new(_target);
-                emi.Start(methodDesc, (ulong)appDomain);
-                // GCHandle gcHandle = GCHandle.Alloc(emi);
-                // *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
-
-            }
+            hrLocal = _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, &handleLocal);
+            if (hrLocal < 0)
+                return hrLocal;
         }
-        catch (System.Exception ex)
+
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        if (eman.GetCodeBlockHandle(address) is CodeBlockHandle cbh && eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
         {
-            hr = ex.HResult;
-        }
-        return _legacyProcess is not null ? _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, handle) : HResults.E_NOTIMPL;
+            EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
 
-        //return hr;
+            emi.LegacyHandle = handleLocal;
+
+            GCHandle gcHandle = GCHandle.Alloc(emi);
+            *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
+            hr = emi.Start();
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+        return hr;
     }
 
-    int IXCLRDataProcess.EnumMethodInstanceByAddress(ulong* handle, /*IXCLRDataMethodInstance*/ void** method)
-        => _legacyProcess is not null ? _legacyProcess.EnumMethodInstanceByAddress(handle, method) : HResults.E_NOTIMPL;
+    int IXCLRDataProcess.EnumMethodInstanceByAddress(ulong* handle, out IXCLRDataMethodInstance? method)
+    {
+        method = default;
+        int hr = HResults.S_OK;
+
+        GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+        if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
+
+        IXCLRDataMethodInstance? legacyMethod = null;
+        int hrLocal = default;
+        if (_legacyProcess is not null)
+        {
+            ulong legacyHandle = emi.LegacyHandle;
+            hrLocal = _legacyProcess.EnumMethodInstanceByAddress(&legacyHandle, out legacyMethod);
+            emi.LegacyHandle = legacyHandle;
+            if (hrLocal < 0)
+                return hrLocal;
+        }
+
+        if (emi.methodEnumerator.MoveNext())
+        {
+            MethodDescHandle methodDesc = emi.methodEnumerator.Current;
+            method = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain, legacyMethod);
+        }
+        else
+        {
+            hr = HResults.S_FALSE;
+        }
+
+        if (legacyMethod is not null)
+        {
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+
+        return hr;
+    }
 
     int IXCLRDataProcess.EndEnumMethodInstancesByAddress(ulong handle)
-        => _legacyProcess is not null ? _legacyProcess.EndEnumMethodInstancesByAddress(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+        if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
+        gcHandle.Free();
+
+        if (_legacyProcess != null && emi.LegacyHandle != TargetPointer.Null)
+        {
+            int hrLocal = _legacyProcess.EndEnumMethodInstancesByAddress(emi.LegacyHandle);
+            if (hrLocal < 0)
+                return hrLocal;
+        }
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetDataByAddress(
         ulong address,

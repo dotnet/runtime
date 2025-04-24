@@ -44,18 +44,18 @@ BOOL LoadedMethodDescIterator::Next(
     m_fFirstTime = FALSE;
 
     // This is the 1st time we've called Next(). must Initialize iterator
-    if (m_mainMD == NULL)
-    {
-        m_mainMD = m_module->LookupMethodDef(m_md);
-    }
+    // if (m_mainMD == NULL)
+    // {
+    //     m_mainMD = m_module->LookupMethodDef(m_md);
+    // }
 
     // note m_mainMD should be sufficiently restored to allow us to get
     // at the method table, flags and token etc.
-    if (m_mainMD == NULL)
-    {
-        *pAssemblyHolder = NULL;
-        return FALSE;
-    }
+    // if (m_mainMD == NULL)
+    // {
+    //     *pAssemblyHolder = NULL;
+    //     return FALSE;
+    // }
 
     // Needs to work w/ non-generic methods too.
     if (!m_mainMD->HasClassOrMethodInstantiation())
