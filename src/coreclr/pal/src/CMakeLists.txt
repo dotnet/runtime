@@ -224,16 +224,6 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
-if (CLR_CMAKE_HOST_ANDROID)
-    add_library(coreclrpal_objects
-        OBJECT
-        ${SOURCES}
-        ${ARCH_SOURCES}
-        ${PLATFORM_SOURCES}
-    )
-endif()
-
-
 add_library(coreclrpal
   STATIC
   ${SOURCES}
@@ -371,3 +361,9 @@ endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
 install_clr (TARGETS coreclrpal DESTINATIONS lib)
+
+# Install the static PAL library for the runtime pack
+# The libcoreclrpal.a is linked using -Wl,--whole-archive as a separate static library
+if(CLR_CMAKE_HOST_ANDROID)
+    install_clr(TARGETS coreclrpal DESTINATIONS . sharedFramework)
+endif()
