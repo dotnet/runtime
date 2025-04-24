@@ -9,7 +9,7 @@ namespace Microsoft.VisualBasic.Tests
 {
     public class ErrObjectTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         [ActiveIssue("https://github.com/mono/mono/issues/14854", TestRuntimes.Mono)]
         public void Clear()
         {
