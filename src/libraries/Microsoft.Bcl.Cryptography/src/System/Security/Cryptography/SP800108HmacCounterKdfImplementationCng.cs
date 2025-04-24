@@ -13,7 +13,6 @@ namespace System.Security.Cryptography
 
             scoped ReadOnlySpan<byte> symmetricKeyMaterial;
             scoped Span<byte> clearSpan = default;
-            int symmetricKeyMaterialLength;
             int hashAlgorithmBlockSize = GetHashBlockSize(hashAlgorithm.Name);
 
             if (key.Length > hashAlgorithmBlockSize)
@@ -28,26 +27,15 @@ namespace System.Security.Cryptography
                 }
 
                 symmetricKeyMaterial = clearSpan;
-                symmetricKeyMaterialLength = symmetricKeyMaterial.Length;
-            }
-            else if (!key.IsEmpty)
-            {
-                symmetricKeyMaterial = key;
-                symmetricKeyMaterialLength = key.Length;
             }
             else
             {
-                // CNG requires a non-null pointer even when the length is zero.
-                symmetricKeyMaterial = [0];
-                symmetricKeyMaterialLength = 0;
+                symmetricKeyMaterial = key;
             }
 
             try
             {
-                fixed (byte* pSymmetricKeyMaterial = symmetricKeyMaterial)
-                {
-                    _keyHandle = CreateSymmetricKey(pSymmetricKeyMaterial, symmetricKeyMaterialLength);
-                }
+                _keyHandle = CreateSymmetricKey(symmetricKeyMaterial);
             }
             finally
             {
@@ -65,33 +53,21 @@ namespace System.Security.Cryptography
 
             scoped ReadOnlySpan<byte> symmetricKeyMaterial;
             scoped Span<byte> clearSpan = default;
-            int symmetricKeyMaterialLength;
             int hashAlgorithmBlockSize = GetHashBlockSize(hashAlgorithm.Name);
 
             if (key.Length > hashAlgorithmBlockSize)
             {
                 clearSpan = HashOneShot(hashAlgorithm, key);
                 symmetricKeyMaterial = clearSpan;
-                symmetricKeyMaterialLength = symmetricKeyMaterial.Length;
-            }
-            else if (key.Length > 0)
-            {
-                symmetricKeyMaterial = key;
-                symmetricKeyMaterialLength = key.Length;
             }
             else
             {
-                // CNG requires a non-null pointer even when the length is zero.
-                symmetricKeyMaterial = [0];
-                symmetricKeyMaterialLength = 0;
+                symmetricKeyMaterial = key;
             }
 
             try
             {
-                fixed (byte* pSymmetricKeyMaterial = symmetricKeyMaterial)
-                {
-                    _keyHandle = CreateSymmetricKey(pSymmetricKeyMaterial, symmetricKeyMaterialLength);
-                }
+                _keyHandle = CreateSymmetricKey(symmetricKeyMaterial);
             }
             finally
             {

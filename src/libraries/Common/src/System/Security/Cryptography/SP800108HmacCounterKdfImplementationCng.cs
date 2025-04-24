@@ -128,7 +128,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static unsafe SafeBCryptKeyHandle CreateSymmetricKey(byte* symmetricKey, int symmetricKeyLength)
+        private static SafeBCryptKeyHandle CreateSymmetricKey(ReadOnlySpan<byte> symmetricKey)
         {
             NTSTATUS generateKeyStatus;
             SafeBCryptKeyHandle keyHandle;
@@ -141,7 +141,7 @@ namespace System.Security.Cryptography
                     pbKeyObject: IntPtr.Zero,
                     cbKeyObject: 0,
                     symmetricKey,
-                    symmetricKeyLength,
+                    symmetricKey.Length,
                     dwFlags: 0);
             }
             else
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography
                     pbKeyObject: IntPtr.Zero,
                     cbKeyObject: 0,
                     symmetricKey,
-                    symmetricKeyLength,
+                    symmetricKey.Length,
                     dwFlags: 0);
             }
 

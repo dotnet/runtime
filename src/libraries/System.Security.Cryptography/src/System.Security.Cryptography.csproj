@@ -1514,6 +1514,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\NotNullReadOnlySpanMarshaller.cs"
+             Link="Common\System\Runtime\InteropServices\NotNullReadOnlySpanMarshaller.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptAcquireContext_IntPtr.cs"

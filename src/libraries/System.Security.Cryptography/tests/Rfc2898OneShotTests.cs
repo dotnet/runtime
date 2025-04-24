@@ -208,6 +208,23 @@ namespace System.Security.Cryptography
             Assert.Equal(expected, output.ToArray());
         }
 
+        [Fact]
+        public static void Pbkdf2_Password_EmptySpans()
+        {
+            ReadOnlySpan<byte> expected =
+            [
+                0xF7, 0xCE, 0x0B, 0x65, 0x3D, 0x2D, 0x72, 0xA4, 0x10, 0x8C, 0xF5, 0xAB, 0xE9, 0x12, 0xFF, 0xDD
+            ];
+            Span<byte> output = stackalloc byte[16];
+            Rfc2898DeriveBytes.Pbkdf2(
+                ReadOnlySpan<byte>.Empty,
+                ReadOnlySpan<byte>.Empty,
+                output,
+                iterations: 1,
+                HashAlgorithmName.SHA256);
+            AssertExtensions.SequenceEqual(expected, output);
+        }
+
         [Theory]
         [MemberData(nameof(Pbkdf2_PasswordBytes_Compare_Data))]
         public static void Pbkdf2_PasswordBytes_Compare(

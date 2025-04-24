@@ -55,20 +55,11 @@ namespace System.Security.Cryptography
             // stackalloc 0 to let compiler know this cannot escape.
             scoped Span<byte> clearSpan;
             scoped ReadOnlySpan<byte> symmetricKeyMaterial;
-            int symmetricKeyMaterialLength;
 
-            if (password.IsEmpty)
-            {
-                // CNG won't accept a null pointer for the password.
-                symmetricKeyMaterial = [0];
-                symmetricKeyMaterialLength = 0;
-                clearSpan = default;
-            }
-            else if (password.Length <= hashBlockSizeBytes)
+            if (password.Length <= hashBlockSizeBytes)
             {
                 // Password is small enough to use as-is.
                 symmetricKeyMaterial = password;
-                symmetricKeyMaterialLength = password.Length;
                 clearSpan = default;
             }
             else
@@ -108,26 +99,20 @@ namespace System.Security.Cryptography
 
                 clearSpan = hashBuffer.Slice(0, hashBufferSize);
                 symmetricKeyMaterial = clearSpan;
-                symmetricKeyMaterialLength = hashBufferSize;
             }
-
-            Debug.Assert(symmetricKeyMaterial.Length > 0);
 
             NTSTATUS generateKeyStatus;
 
             if (Interop.BCrypt.PseudoHandlesSupported)
             {
-                fixed (byte* pSymmetricKeyMaterial = symmetricKeyMaterial)
-                {
-                    generateKeyStatus = Interop.BCrypt.BCryptGenerateSymmetricKey(
-                        (nuint)BCryptAlgPseudoHandle.BCRYPT_PBKDF2_ALG_HANDLE,
-                        out keyHandle,
-                        pbKeyObject: IntPtr.Zero,
-                        cbKeyObject: 0,
-                        pSymmetricKeyMaterial,
-                        symmetricKeyMaterialLength,
-                        dwFlags: 0);
-                }
+                generateKeyStatus = Interop.BCrypt.BCryptGenerateSymmetricKey(
+                    (nuint)BCryptAlgPseudoHandle.BCRYPT_PBKDF2_ALG_HANDLE,
+                    out keyHandle,
+                    pbKeyObject: IntPtr.Zero,
+                    cbKeyObject: 0,
+                    symmetricKeyMaterial,
+                    symmetricKeyMaterial.Length,
+                    dwFlags: 0);
             }
             else
             {
@@ -151,17 +136,14 @@ namespace System.Security.Cryptography
                     Interlocked.CompareExchange(ref s_pbkdf2AlgorithmHandle, pbkdf2AlgorithmHandle, null);
                 }
 
-                fixed (byte* pSymmetricKeyMaterial = symmetricKeyMaterial)
-                {
-                    generateKeyStatus = Interop.BCrypt.BCryptGenerateSymmetricKey(
-                        s_pbkdf2AlgorithmHandle,
-                        out keyHandle,
-                        pbKeyObject: IntPtr.Zero,
-                        cbKeyObject: 0,
-                        pSymmetricKeyMaterial,
-                        symmetricKeyMaterialLength,
-                        dwFlags: 0);
-                }
+                generateKeyStatus = Interop.BCrypt.BCryptGenerateSymmetricKey(
+                    s_pbkdf2AlgorithmHandle,
+                    out keyHandle,
+                    pbKeyObject: IntPtr.Zero,
+                    cbKeyObject: 0,
+                    symmetricKeyMaterial,
+                    symmetricKeyMaterial.Length,
+                    dwFlags: 0);
             }
 
             CryptographicOperations.ZeroMemory(clearSpan);

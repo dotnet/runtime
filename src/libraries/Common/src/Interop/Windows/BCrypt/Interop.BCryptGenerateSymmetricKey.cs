@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -10,22 +11,22 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         [LibraryImport(Libraries.BCrypt)]
-        internal static unsafe partial NTSTATUS BCryptGenerateSymmetricKey(
+        internal static partial NTSTATUS BCryptGenerateSymmetricKey(
             SafeBCryptAlgorithmHandle hAlgorithm,
             out SafeBCryptKeyHandle phKey,
             IntPtr pbKeyObject,
             int cbKeyObject,
-            byte* pbSecret,
+            [MarshalUsing(typeof(NotNullReadOnlySpanMarshaller<,>))] ReadOnlySpan<byte> pbSecret,
             int cbSecret,
             uint dwFlags);
 
         [LibraryImport(Libraries.BCrypt)]
-        internal static unsafe partial NTSTATUS BCryptGenerateSymmetricKey(
+        internal static partial NTSTATUS BCryptGenerateSymmetricKey(
             nuint hAlgorithm,
             out SafeBCryptKeyHandle phKey,
             IntPtr pbKeyObject,
             int cbKeyObject,
-            byte* pbSecret,
+            [MarshalUsing(typeof(NotNullReadOnlySpanMarshaller<,>))] ReadOnlySpan<byte> pbSecret,
             int cbSecret,
             uint dwFlags);
     }
