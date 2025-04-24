@@ -61,6 +61,8 @@
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
                                                    ('$(IsNETCoreAppRef)' == 'true' or '$(IsNETCoreAppSrc)' == 'true')">true</DisableImplicitFrameworkReferences>
+    <!-- EnableAOTAnalyzer is enabled by default for src projects. -->
+    <EnableAOTAnalyzer Condition="'$(EnableAOTAnalyzer)' == '' and '$(IsSourceProject)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">true</EnableAOTAnalyzer>
     <!-- Enable trimming for any source project that's part of the shared framework.
          Don't attempt to trim PNSE assemblies which are generated from the reference source. -->
     <ILLinkTrimAssembly Condition="'$(ILLinkTrimAssembly)' == '' and
@@ -135,7 +137,10 @@
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets" Condition="'$(EnableRunSettingsSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="('$(IsSourceProject)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)') or '$(ExplicitlyImportCustomILLinkTargets)' == 'true'" />
+  <PropertyGroup>
+    <ImportCustomILLLinkTargets Condition="'$(ImportCustomILLinkTargets)' == '' And ('$(IsSourceProject)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)')">true</ImportCustomILLLinkTargets>
+  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(ImportCustomILLinkTargets)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 

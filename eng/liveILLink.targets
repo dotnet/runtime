@@ -2,7 +2,7 @@
 
   <!-- NOTE: these targets should be a no-op, unless _RequiresLiveILLink, computed below, is true. -->
 
-  <PropertyGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">
     <!-- Keep these conditions in sync with _RequiresILLinkPack in
          https://github.com/dotnet/sdk/blob/main/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Publish.targets -->
     <_RequiresLiveILLink Condition="'$(_RequiresLiveILLink)' == '' And (
