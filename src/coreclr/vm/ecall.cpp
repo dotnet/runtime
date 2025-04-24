@@ -350,8 +350,8 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         return GetEEFuncEntryPoint(FCComCtor);
     }
 #else // !FEATURE_COMINTEROP
-    // This code path is taken when a class marked with ComInterop is being created.
-    // If we get here and ComInterop isn't suppported, throw.
+    // This code path is taken when a class marked with ComImport is being created.
+    // If we get here and COM interop isn't suppported, throw.
     if (pMT->IsComObjectType())
         COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_COM);
 #endif // FEATURE_COMINTEROP
