@@ -708,12 +708,12 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             continue;
         }
 
-        // We have to mark all struct params as escaping, because
+        // We have to mark all implicit byref params as escaping, because
         // their GC reporting is controlled by the caller
         //
-        if (lclDsc->lvIsParam && (lclDsc->lvType == TYP_STRUCT))
+        if (lclDsc->lvIsParam && lclDsc->lvIsImplicitByRef)
         {
-            JITDUMP("   V%02u is a struct param\n", lclNum);
+            JITDUMP("   V%02u is an implicit byref param\n", lclNum);
             MarkLclVarAsEscaping(lclNum);
             continue;
         }
