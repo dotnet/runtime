@@ -1149,13 +1149,6 @@ BOOL IJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     {
          GetNextEHClause(&pEnumState, &EHClause);
 
-        // Duplicate clauses are always listed at the end, so when we hit a duplicate clause,
-        // we have already visited all of the normal clauses.
-        if (IsDuplicateClause(&EHClause))
-        {
-            break;
-        }
-
         if (IsFilterHandler(&EHClause))
         {
             if (EHClause.FilterOffset == funcletStartOffset)
