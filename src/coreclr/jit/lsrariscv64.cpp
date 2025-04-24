@@ -446,7 +446,10 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
                 if (cmpSize == EA_4BYTE)
-                    buildInternalIntRegisterDefForNode(tree);
+                {
+                    if (!tree->OperIs(GT_EQ, GT_NE) || tree->gtGetOp2()->IsIntegralConst(-2048))
+                        buildInternalIntRegisterDefForNode(tree);
+                }
             }
             buildInternalRegisterUses();
         }
