@@ -966,6 +966,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return md.HasNativeCodeSlot;
     }
 
+    MethodDescHandle IRuntimeTypeSystem.GetMethodDescForSlot(TypeHandle typeHandle, ushort slot)
+    {
+        if (!typeHandle.IsMethodTable())
+            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
+
+        TargetPointer slotPtr = GetAddressOfMethodTableSlot(GetCanonicalMethodTable(typeHandle), slot);
+        TargetCodePointer pCode = _target.ReadCodePointer(slotPtr);
+
+        // NOT IMPLEMENTED
+        return new MethodDescHandle(pCode.AsTargetPointer);
+    }
+
     TargetPointer IRuntimeTypeSystem.GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc)
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
