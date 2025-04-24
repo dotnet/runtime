@@ -708,6 +708,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             continue;
         }
 
+#if FEATURE_IMPLICIT_BYREFS
         // We have to mark all implicit byref params as escaping, because
         // their GC reporting is controlled by the caller
         //
@@ -717,6 +718,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             MarkLclVarAsEscaping(lclNum);
             continue;
         }
+#endif
 
         // Parameters have unknown initial values.
         // OSR locals have unknown initial values.
