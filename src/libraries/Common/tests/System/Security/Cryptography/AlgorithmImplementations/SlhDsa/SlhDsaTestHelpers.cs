@@ -44,19 +44,5 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportPkcs8PrivateKey(tempBuffer, out _));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportSubjectPublicKeyInfo([], out _));
         }
-
-        public static void AssertSameBuffer(ReadOnlySpan<byte> expected, ReadOnlySpan<byte> actual)
-        {
-            if (expected.Length != actual.Length)
-            {
-                Assert.Fail("Expected buffers to have same length. " +
-                    $"The first buffer's length {expected.Length} does not match the second buffer's length {actual.Length}.");
-            }
-
-            if (!expected.Overlaps(actual, out int offset) || offset != 0)
-            {
-                Assert.Fail("Expected buffers to be the same memory location, but were not.");
-            }
-        }
     }
 }

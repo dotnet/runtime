@@ -1,12 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Linq;
-using Test.Cryptography;
 using Xunit;
-
-using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
@@ -67,14 +62,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     VerifyInstanceIsUsable(two);
                 }
 
-                VerifyDisposed(one);
+                SlhDsaTestHelpers.VerifyDisposed(one);
                 Assert.Throws<ObjectDisposedException>(() => one.DuplicateKeyHandle());
 
                 VerifyInstanceIsUsable(two);
                 ExerciseSuccessfulVerify(two, data, oneSignature, context);
             }
 
-            VerifyDisposed(two);
+            SlhDsaTestHelpers.VerifyDisposed(two);
             Assert.Throws<ObjectDisposedException>(() => two.DuplicateKeyHandle());
         }
 

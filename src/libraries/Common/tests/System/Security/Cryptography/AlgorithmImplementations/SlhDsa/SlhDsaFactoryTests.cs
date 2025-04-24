@@ -1,12 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Formats.Asn1;
-using System.Security.Cryptography.Asn1;
 using Xunit;
 using Xunit.Sdk;
-
-using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
@@ -88,7 +84,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             if (publicKey.Length == 0)
             {
-                testDirectCall(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, []));
+                testDirectCall(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, Array.Empty<byte>()));
                 testDirectCall(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, ReadOnlySpan<byte>.Empty));
             }
             else
@@ -104,7 +100,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             if (secretKey.Length == 0)
             {
-                testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, []));
+                testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, Array.Empty<byte>()));
                 testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, ReadOnlySpan<byte>.Empty));
             }
             else
@@ -130,13 +126,13 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 {
                     test();
                 }
-                catch (PlatformNotSupportedException)
+                catch (PlatformNotSupportedException pnse)
                 {
-                    // Expected exception
+                    Assert.Contains("SlhDsa", pnse.Message);
                 }
-                catch (ThrowsException te) when (te.InnerException is PlatformNotSupportedException)
+                catch (ThrowsException te) when (te.InnerException is PlatformNotSupportedException pnse)
                 {
-                    // Expected exception
+                    Assert.Contains("SlhDsa", pnse.Message);
                 }
             }
         }

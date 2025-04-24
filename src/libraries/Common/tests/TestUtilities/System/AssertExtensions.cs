@@ -414,6 +414,22 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Validates that the two buffers are the same memory location.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="expected"></param>
+        /// <param name="actual"></param>
+        public static void Same<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
+        {
+            if (expected.Length != actual.Length)
+            {
+                throw new XunitException($"Expected length: {expected.Length}{Environment.NewLine}Actual length: {actual.Length}");
+            }
+
+            AssertExtensions.TrueExpression(expected.Overlaps(actual, out int offset) && offset == 0);
+        }
+
         // NOTE: Consider using SequenceEqual below instead, as it will give more useful information about what
         // the actual differences are, especially for large arrays/spans.
         /// <summary>

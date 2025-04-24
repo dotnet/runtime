@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
-
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
     public abstract class SlhDsaTests
@@ -36,56 +34,89 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Equal(vector.TestPassed, secretSlhDsa.VerifyData(msg, sig, ctx));
         }
 
+        // Signing takes a relatively long time so we'll just run it on a representative sample of algorithms.
+        public static IEnumerable<object[]> AlgorithmsData_Small => AlgorithmsRaw_Small.Select(a => new[] { a });
+
+        public static SlhDsaAlgorithm[] AlgorithmsRaw_Small =
+        [
+            // Fast algorithms
+            SlhDsaAlgorithm.SlhDsaSha2_128f,
+            SlhDsaAlgorithm.SlhDsaShake128f,
+            SlhDsaAlgorithm.SlhDsaSha2_192f,
+            SlhDsaAlgorithm.SlhDsaShake192f,
+            SlhDsaAlgorithm.SlhDsaSha2_256f,
+            SlhDsaAlgorithm.SlhDsaShake256f,
+
+            // Slow algorithms
+            // These tend to be over 10x slower than the fast counterparts. For perf numbers, see
+            // section 10 in https://sphincs.org/data/sphincs+-r3.1-specification.pdf (from June 2022).
+            SlhDsaAlgorithm.SlhDsaSha2_128s,
+            SlhDsaAlgorithm.SlhDsaShake192s,
+            SlhDsaAlgorithm.SlhDsaSha2_256s,
+        ];
+
         [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        [MemberData(nameof(AlgorithmsData_Small))]
         public void GenerateSignVerifyNoContext(SlhDsaAlgorithm algorithm)
         {
             using SlhDsa slhDsa = GenerateKey(algorithm);
             byte[] data = [1, 2, 3, 4, 5];
             byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
-            Assert.Equal(signature.Length, slhDsa.SignData(data, signature));
 
+            Assert.Equal(signature.Length, slhDsa.SignData(data, signature));
             ExerciseSuccessfulVerify(slhDsa, data, signature, []);
+
+            signature.AsSpan().Clear();
+            Assert.Equal(signature.Length, slhDsa.SignData(data, signature, Array.Empty<byte>()));
+            ExerciseSuccessfulVerify(slhDsa, data, signature, Array.Empty<byte>());
         }
 
         [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        [MemberData(nameof(AlgorithmsData_Small))]
         public void GenerateSignVerifyWithContext(SlhDsaAlgorithm algorithm)
         {
             using SlhDsa slhDsa = GenerateKey(algorithm);
             byte[] context = [1, 1, 3, 5, 6];
             byte[] data = [1, 2, 3, 4, 5];
             byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
-            Assert.Equal(signature.Length, slhDsa.SignData(data, signature, context));
 
+            Assert.Equal(signature.Length, slhDsa.SignData(data, signature, context));
             ExerciseSuccessfulVerify(slhDsa, data, signature, context);
         }
 
         [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        [MemberData(nameof(AlgorithmsData_Small))]
         public void GenerateSignVerifyEmptyMessageNoContext(SlhDsaAlgorithm algorithm)
         {
             using SlhDsa slhDsa = GenerateKey(algorithm);
             byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
-            Assert.Equal(signature.Length, slhDsa.SignData([], signature));
 
+            Assert.Equal(signature.Length, slhDsa.SignData([], signature));
+            ExerciseSuccessfulVerify(slhDsa, [], signature, []);
+
+            signature.AsSpan().Clear();
+            Assert.Equal(signature.Length, slhDsa.SignData(Array.Empty<byte>(), signature, Array.Empty<byte>()));
             ExerciseSuccessfulVerify(slhDsa, [], signature, []);
         }
 
         [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        [MemberData(nameof(AlgorithmsData_Small))]
         public void GenerateSignVerifyEmptyMessageWithContext(SlhDsaAlgorithm algorithm)
         {
             using SlhDsa slhDsa = GenerateKey(algorithm);
             byte[] context = [1, 1, 3, 5, 6];
             byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
-            Assert.Equal(signature.Length, slhDsa.SignData([], signature, context));
 
+            Assert.Equal(signature.Length, slhDsa.SignData([], signature, context));
+            ExerciseSuccessfulVerify(slhDsa, [], signature, context);
+
+            signature.AsSpan().Clear();
+            Assert.Equal(signature.Length, slhDsa.SignData(Array.Empty<byte>(), signature, context));
             ExerciseSuccessfulVerify(slhDsa, [], signature, context);
         }
 
         [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        [MemberData(nameof(AlgorithmsData_Small))]
         public void GenerateSignExportPublicVerifyWithPublicOnly(SlhDsaAlgorithm algorithm)
         {
             byte[] publicKey;
@@ -109,7 +140,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        [MemberData(nameof(AlgorithmsData_Small))]
         public void GenerateExportSecretKeySignAndVerify(SlhDsaAlgorithm algorithm)
         {
             byte[] secretKey;
@@ -145,7 +176,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             slhDsa.Dispose();
             slhDsa.Dispose(); // no throw
 
-            VerifyDisposed(slhDsa);
+            SlhDsaTestHelpers.VerifyDisposed(slhDsa);
         }
 
         protected static void ExerciseSuccessfulVerify(SlhDsa slhDsa, byte[] data, byte[] signature, byte[] context)
@@ -154,7 +185,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             if (data.Length > 0)
             {
-                AssertExtensions.FalseExpression(slhDsa.VerifyData([], signature, context));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(Array.Empty<byte>(), signature, context));
                 AssertExtensions.FalseExpression(slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
 
                 data[0] ^= 1;
@@ -163,7 +194,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
             else
             {
-                AssertExtensions.TrueExpression(slhDsa.VerifyData([], signature, context));
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(Array.Empty<byte>(), signature, context));
                 AssertExtensions.TrueExpression(slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
 
                 AssertExtensions.FalseExpression(slhDsa.VerifyData([0], signature, context));
@@ -176,7 +207,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             if (context.Length > 0)
             {
-                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, []));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, Array.Empty<byte>()));
                 AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
 
                 context[0] ^= 1;
@@ -185,7 +216,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
             else
             {
-                AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, []));
+                AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, Array.Empty<byte>()));
                 AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
 
                 AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, [0]));

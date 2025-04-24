@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Text.Unicode;
 using Test.Cryptography;
 
 namespace System.Security.Cryptography.SLHDsa.Tests

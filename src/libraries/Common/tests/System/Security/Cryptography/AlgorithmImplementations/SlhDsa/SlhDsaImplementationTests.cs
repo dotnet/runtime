@@ -3,10 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Xunit;
-
-using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {

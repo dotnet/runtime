@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Formats.Asn1;
 using System.Linq;
-using System.Security.Cryptography.Asn1;
 using Xunit;
-
-using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
@@ -198,7 +194,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             slhDsa.Dispose();
             slhDsa.Dispose(); // no throw
 
-            VerifyDisposed(slhDsa);
+            SlhDsaTestHelpers.VerifyDisposed(slhDsa);
         }
 
         private static void AssertExpectedFill(ReadOnlySpan<byte> source, byte fillElement, byte paddingElement, int startIndex, int length)
