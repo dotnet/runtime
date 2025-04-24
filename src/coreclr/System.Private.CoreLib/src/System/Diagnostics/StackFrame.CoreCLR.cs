@@ -38,7 +38,7 @@ namespace System.Diagnostics
 
             skipFrames += StackTrace.CalculateFramesToSkip(StackF, iNumOfFrames);
 
-            if ((iNumOfFrames - skipFrames) > 0)
+            if (((iNumOfFrames - skipFrames) > 0) && (skipFrames >= 0))
             {
                 _method = StackF.GetMethodBase(skipFrames);
                 _nativeOffset = StackF.GetOffset(skipFrames);

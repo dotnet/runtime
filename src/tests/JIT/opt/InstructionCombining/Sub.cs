@@ -126,12 +126,22 @@ namespace TestSub
                 fail = true;
             }
 
+            if (!SubsGreaterThan(1, int.MinValue))
+            {
+                fail = true;
+            }
+
             if (!SubsGreaterThanEq(4, 4))
             {
                 fail = true;
             }
 
             if (!SubsLessThan(7, 8))
+            {
+                fail = true;
+            }
+
+            if (!SubsLessThan(-5, int.MaxValue))
             {
                 fail = true;
             }

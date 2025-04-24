@@ -139,6 +139,11 @@ namespace TestAdd
             {
                 fail = true;
             }
+        
+            if (!AddsGreaterThan(1, int.MaxValue))
+            {
+                fail = true;
+            }
 
             if (!AddsGreaterThanEq(-2, 2))
             {
@@ -146,6 +151,11 @@ namespace TestAdd
             }
 
             if (!AddsLessThan(4, -5))
+            {
+                fail = true;
+            }
+
+            if (!AddsLessThan(-2, int.MinValue))
             {
                 fail = true;
             }
