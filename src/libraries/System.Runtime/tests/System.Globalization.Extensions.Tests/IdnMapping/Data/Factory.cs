@@ -28,7 +28,7 @@ namespace System.Globalization.Tests
             string fileName = null;
             if (PlatformDetection.ICUVersion >= new Version(76, 0))
                 fileName = "IdnaTest_16.txt";
-            else if (PlatformDetection.ICUVersion >= new Version(74, 0))
+            else if (PlatformDetection.ICUVersion >= new Version(72, 0))
                 fileName = "IdnaTest_15_1.txt";
             else if (PlatformDetection.ICUVersion >= new Version(66, 0) || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
                 fileName = "IdnaTest_13.txt";
