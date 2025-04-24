@@ -22,6 +22,11 @@ InterpThreadContext* InterpGetThreadContext()
         threadContext->pStackStart = threadContext->pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
         threadContext->pStackEnd = threadContext->pStackStart + INTERP_STACK_SIZE;
         threadContext->pFrameDataAllocator = new FrameDataAllocator(INTERP_STACK_FRAGMENT_SIZE);
+        if (threadContext->pFrameDataAllocator->pFirst->start == NULL)
+        {
+            // Interpreter-TODO: OutOfMemoryException
+            assert(0);
+        }
 
         t_pThreadContext = threadContext;
         return threadContext;
@@ -1158,6 +1163,11 @@ CALL_TARGET_IP:
                 len = ALIGN_UP(len, INTERP_STACK_ALIGNMENT);
 
                 void* mem = pThreadContext->pFrameDataAllocator->Alloc(pFrame, len);
+                if (mem == NULL)
+                {
+                    // Interpreter-TODO: OutOfMemoryException
+                    assert(0);
+                }
                 if (pMethod->initLocals)
                 {
                     memset(mem, 0, len);

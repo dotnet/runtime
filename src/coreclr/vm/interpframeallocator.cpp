@@ -14,13 +14,11 @@ FrameDataFragment::FrameDataFragment(size_t size)
     }
 
     start = (uint8_t*)malloc(size);
-    if (start == nullptr)
+    if (start != nullptr)
     {
-        // Interpreter-TODO: Throw OutOfMemory exception
-        assert(start && "Failed to allocate FrameDataFragment");
+        end = start + size;
+        pos = start;
     }
-    end = start + size;
-    pos = start;
     pNext = nullptr;
 }
 
@@ -55,17 +53,17 @@ void FrameDataAllocator::FreeFragments(FrameDataFragment *pFrag)
     }
 }
 
-void FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
+bool FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
 {
     if (infosLen == infosCapacity)
     {
         size_t newCapacity = infosCapacity == 0 ? 8 : infosCapacity * 2;
-        pInfos = (FrameDataInfo*)realloc(pInfos, newCapacity * sizeof(FrameDataInfo));
-        if (pInfos == nullptr)
+        FrameDataInfo* newInfos = (FrameDataInfo*)realloc(pInfos, newCapacity * sizeof(FrameDataInfo));
+        if (newInfos == nullptr)
         {
-            // Interpreter-TODO: Throw OutOfMemory exception
-            assert(pInfos && "Failed to allocate FrameDataInfo");
+            return false;
         }
+        pInfos = newInfos;
         infosCapacity = newCapacity;
     }
 
@@ -73,13 +71,17 @@ void FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
     pInfo->pFrame = pFrame;
     pInfo->pFrag = pCurrent;
     pInfo->pos = pCurrent->pos;
+    return true;
 }
 
 void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
 {
-    if (!infosLen || (infosLen > 0 && pInfos[infosLen - 1].pFrame != pFrame))
+    if (!infosLen || pInfos[infosLen - 1].pFrame != pFrame)
     {
-        PushInfo(pFrame);
+        if (!PushInfo(pFrame))
+        {
+            return nullptr;
+        }
     }
 
     uint8_t *pos = pCurrent->pos;
@@ -94,10 +96,16 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
         else
         {
             FreeFragments(pCurrent->pNext);
+            pCurrent->pNext = nullptr;
+
             FrameDataFragment *pNewFrag = new FrameDataFragment(size);
+            if (pNewFrag->start == nullptr)
+            {
+                return nullptr;
+            }
+
             pCurrent->pNext = pNewFrag;
             pCurrent = pNewFrag;
-
             pos = pNewFrag->pos;
         }
     }

@@ -46,7 +46,7 @@ struct FrameDataAllocator
 
     void *Alloc(InterpMethodContextFrame *pFrame, size_t size);
     void FreeFragments(FrameDataFragment *pFrag);
-    void PushInfo(InterpMethodContextFrame *pFrame);
+    bool PushInfo(InterpMethodContextFrame *pFrame);
     void PopInfo(InterpMethodContextFrame *pFrame);
 };
 
