@@ -415,11 +415,10 @@ namespace System
         }
 
         /// <summary>
-        /// Validates that the two buffers are the same memory location.
+        /// Validates that the actual span is the same as the expected span.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="expected"></param>
-        /// <param name="actual"></param>
+        /// <param name="expected">The expected span.</param>
+        /// <param name="actual">The actual span.</param>
         public static void Same<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
         {
             if (expected.Length != actual.Length)
