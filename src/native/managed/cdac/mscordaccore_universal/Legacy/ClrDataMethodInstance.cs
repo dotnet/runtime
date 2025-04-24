@@ -37,6 +37,7 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
 
     int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, out IXCLRDataModule? mod)
     {
+        mod = default;
         //_legacyImpl is not null ? _legacyImpl.GetTokenAndScope(token, mod) : HResults.E_NOTIMPL;
         int hr = HResults.S_OK;
 
@@ -47,18 +48,36 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
             {
                 *token = rts.GetMethodToken(_methodDesc);
             }
-            if (mod is not null)
+            //if (mod is not null)
             {
+                IXCLRDataModule? legacyMod = null;
+                if (_legacyImpl is not null)
+                {
+                    int hrLegacy = _legacyImpl.GetTokenAndScope(token, out legacyMod);
+                    if (hrLegacy < 0)
+                        return hrLegacy;
+                }
                 TargetPointer mtAddr = rts.GetMethodTable(_methodDesc);
                 TypeHandle mainMT = rts.GetTypeHandle(mtAddr);
                 TargetPointer module = rts.GetModule(mainMT);
-                *mod = module.Value;
+                mod = new ClrDataModule(module, _target, legacyMod);
             }
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint tokenLocal;
+            int hrLocal = _legacyImpl.GetTokenAndScope(&tokenLocal, out IXCLRDataModule? legacyMod);
+
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(tokenLocal == *token, $"cDAC: {*token:x}, DAC: {tokenLocal:x}");
+        }
+#endif
 
         return hr;
     }
@@ -103,5 +122,40 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
         => _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetRepresentativeEntryAddress(ulong* addr)
-        => _legacyImpl is not null ? _legacyImpl.GetRepresentativeEntryAddress(addr) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+            TargetCodePointer addrCode = rts.GetNativeCode(_methodDesc);
+
+            if (addrCode.Value != 0)
+            {
+                *addr = addrCode.Value;
+            }
+            else
+            {
+                hr = unchecked((int)0x8000FFFF); // E_UNEXPECTED
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong addrLocal;
+            int hrLocal = _legacyImpl.GetRepresentativeEntryAddress(&addrLocal);
+
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(addrLocal == *addr, $"cDAC: {*addr:x}, DAC: {addrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
 }
