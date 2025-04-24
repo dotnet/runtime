@@ -3263,7 +3263,7 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigne
 }
 
 //------------------------------------------------------------------------
-// gtNewSimdAllFalseMaskNode: Create an embedded mask with all bits set to false
+// gtNewSimdFalseMaskByteNode: Create an embedded mask with all bits set to false
 //
 // Arguments:
 //    simdSize        -- the simd size of the nodes being masked
@@ -3271,7 +3271,7 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigne
 // Return Value:
 //    The mask
 //
-GenTree* Compiler::gtNewSimdAllFalseMaskNode(unsigned simdSize)
+GenTree* Compiler::gtNewSimdFalseMaskByteNode(unsigned simdSize)
 {
     return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateFalseMaskByte, CORINFO_TYPE_UBYTE, simdSize);
 }
