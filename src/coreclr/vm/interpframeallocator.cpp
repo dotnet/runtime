@@ -117,8 +117,7 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
 
 void FrameDataAllocator::PopInfo(InterpMethodContextFrame *pFrame)
 {
-    size_t top = infosLen - 1;
-    if (top >= 0 && pInfos[top].pFrame == pFrame)
+    if (infosLen > 0 && pInfos[infosLen - 1].pFrame == pFrame)
     {
         FrameDataInfo *pInfo = &pInfos[--infosLen];
         pCurrent = pInfo->pFrag;
