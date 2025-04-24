@@ -92,6 +92,7 @@ endif
 
 ifdef FEATURE_EH_FUNCLETS
 EXTERN @IL_Throw_x86@8:PROC
+EXTERN @IL_ThrowExact_x86@8:PROC
 EXTERN @IL_Rethrow_x86@4:PROC
 endif ; FEATURE_EH_FUNCLETS
 
