@@ -194,6 +194,15 @@ target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr PUBLIC log)
     target_link_libraries(coreclr_static PUBLIC log)
+    target_sources(coreclr_static PUBLIC
+        $<TARGET_OBJECTS:coreclrminipal_objects>
+        $<TARGET_OBJECTS:coreclrpal_objects>
+        $<TARGET_OBJECTS:eventprovider_objects>
+        $<TARGET_OBJECTS:gc_pal_objects>
+        $<TARGET_OBJECTS:libunwind>
+        $<TARGET_OBJECTS:minipal_objects>
+        $<TARGET_OBJECTS:nativeresourcestring_objects>
+    )
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)

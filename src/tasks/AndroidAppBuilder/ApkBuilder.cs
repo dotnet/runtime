@@ -333,6 +333,14 @@ public partial class ApkBuilder
             extraLinkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
         }
 
+        if (StaticLinkedRuntime && IsCoreCLR)
+        {
+            // Ensure global symbol references in the shared library are resolved to definitions in
+            // the same shared library. For the static linked runtime specifically, we need this for
+            // global functions in assembly for the linker to treat relative offsets to them as constant
+            extraLinkerArgs.AppendLine($"    \"-Wl,-Bsymbolic\"");
+        }
+
         nativeLibraries += assemblerFilesToLink.ToString();
 
         string aotSources = assemblerFiles.ToString();
@@ -476,7 +484,6 @@ public partial class ApkBuilder
                     excludedLibs.Add("libmscordaccore.so");
                 }
             }
-
             if (!StaticLinkedRuntime)
                 dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
         }

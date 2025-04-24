@@ -46,9 +46,3 @@ add_library(minipal_sanitizer_support OBJECT
 # Exclude this target from the default build as we may not have sanitzer headers available
 # in a non-sanitized build.
 set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
-
-
-if(CLR_CMAKE_HOST_ANDROID)
-    install (TARGETS minipal DESTINATION .)
-endif()
-
