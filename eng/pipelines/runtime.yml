@@ -1786,11 +1786,12 @@ extends:
           parameters:
             platforms:
               - name: CentOS9
+                baseOS: linux-x64
                 targetRID: centos.9-x64
                 portableBuild: false
                 container: SourceBuild_centos_x64
               - name: NonexistentRID
-                baseOS: linux
+                baseOS: linux-x64
                 targetRID: banana.24-x64
                 portableBuild: false
                 container: SourceBuild_centos_x64
