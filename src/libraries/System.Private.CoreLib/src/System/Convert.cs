@@ -2901,15 +2901,16 @@ namespace System
 
             // Perf: reuse the variable that stored the number of '=' to store the number of bytes encoded by the
             // last group that contains the '=':
-            if (padding != 0)
-            {
-                if (padding == 1)
-                    padding = 2;
-                else if (padding == 2)
-                    padding = 1;
-                else
-                    throw new FormatException(SR.Format_BadBase64Char);
-            }
+            if ((uint)padding >= 3)
+                throw new FormatException(SR.Format_BadBase64Char);
+
+            // padding map
+            // -----------
+            // 0 => 0
+            // 1 => 2
+            // 2 => 1
+            ReadOnlySpan<byte> map = [0, 2, 1];
+            padding = map[padding];
 
             // Done:
             return (usefulInputLength / 4) * 3 + padding;
