@@ -63,8 +63,7 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 if (Unsafe.IsNullRef(ref MemoryMarshal.GetReference(managed)) && managed.IsEmpty)
                 {
-                    T[] notNull = new T[1];
-                    return ref MemoryMarshal.GetArrayDataReference(notNull);
+                    return ref MemoryMarshal.GetArrayDataReference(Array.Empty<T>());
                 }
                 else
                 {
