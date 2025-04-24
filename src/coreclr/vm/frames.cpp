@@ -2264,7 +2264,7 @@ static void DumpGCRefMap(const char *name, BYTE *address)
     }
     buf.AppendUTF8("\n");
 
-    minipal_log_print_info(buf.GetUTF8());
+    minipal_log_print_info("%s", buf.GetUTF8());
 }
 #endif
 
