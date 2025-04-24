@@ -27,12 +27,11 @@ public class PreloadingTests : WasmTemplateTestsBase
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "PreloadAssets");
 
-        // TODO: AssertAppBundle doesn't with fingerprinted dotnet.js at the moment
-        string extraMSBuildArgs = $"-p:OverrideHtmlAssetPlaceholders=true -p:WasmFingerprintAssets={fingerprintAssets}";
+        string extraMSBuildArgs = $"-p:WasmFingerprintAssets={fingerprintAssets}";
         if (isPublish)
-            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: extraMSBuildArgs, AssertAppBundle: false));
+            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: extraMSBuildArgs));
         else
-            BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraMSBuildArgs, AssertAppBundle: false));
+            BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraMSBuildArgs));
 
         string? indexHtmlPath = null;
         if (isPublish)
