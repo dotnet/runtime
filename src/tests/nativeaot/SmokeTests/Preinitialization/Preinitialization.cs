@@ -67,6 +67,7 @@ internal class Program
         TestVTableManipulation.Run();
         TestVTableNegativeScenarios.Run();
         TestByRefFieldAddressEquality.Run();
+        TestComInterfaceEntry.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -2030,6 +2031,79 @@ unsafe class TestByRefFieldAddressEquality
         Assert.AreEqual(true, ClassTakingAddressOfInitialized.AreEqual);
 
         Assert.AreEqual(true, ClassTakingAddressOfUninitialized.AreEqual);
+    }
+}
+
+unsafe class TestComInterfaceEntry
+{
+    struct MyVTableEntries
+    {
+        public ComWrappers.ComInterfaceEntry TinyImpl;
+        public ComWrappers.ComInterfaceEntry SmallImpl;
+    }
+
+    class VtableEntries
+    {
+        [FixedAddressValueType]
+        public static MyVTableEntries Entries;
+
+        static VtableEntries()
+        {
+            Entries.TinyImpl.IID = new Guid(0x1234, 0x4567, 0x789A, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89);
+            Entries.TinyImpl.Vtable = ITinyVtableImpl.VftablePtr;
+            Entries.SmallImpl.IID = new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98);
+            Entries.SmallImpl.Vtable = ISmallVtableImpl.VftablePtr;
+        }
+    }
+
+    class ITinyVtableImpl
+    {
+        [FixedAddressValueType]
+        private static readonly ITinyVtable Vtbl;
+
+        public static nint VftablePtr => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+
+        static ITinyVtableImpl()
+        {
+            Vtbl.Method = &Method;
+        }
+    }
+
+    class ISmallVtableImpl
+    {
+        [FixedAddressValueType]
+        private static readonly ISmallVtable Vtbl;
+
+        public static nint VftablePtr => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+
+        static ISmallVtableImpl()
+        {
+            Vtbl.Method1 = &Method;
+            Vtbl.Method2 = &OtherMethod;
+        }
+    }
+
+    public unsafe struct ITinyVtable
+    {
+        public delegate*<void> Method;
+    }
+
+    public unsafe struct ISmallVtable
+    {
+        public delegate*<void> Method1;
+        public delegate*<void> Method2;
+    }
+
+    static void Method() { }
+    static void OtherMethod() { }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(VtableEntries));
+        Assert.AreEqual(ITinyVtableImpl.VftablePtr, VtableEntries.Entries.TinyImpl.Vtable);
+        Assert.AreEqual(new Guid(0x1234, 0x4567, 0x789A, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89), VtableEntries.Entries.TinyImpl.IID);
+        Assert.AreEqual(ISmallVtableImpl.VftablePtr, VtableEntries.Entries.SmallImpl.Vtable);
+        Assert.AreEqual(new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98), VtableEntries.Entries.SmallImpl.IID);
     }
 }
 

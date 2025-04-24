@@ -200,11 +200,7 @@ For Windows/x86 on NativeAOT and Linux/x86, funclets are used just like on other
 
 ## Cloned finallys
 
-JIT64 attempts to speed the normal control flow by 'inlining' a called finally along the 'normal' control flow (i.e., leaving a try body in a non-exceptional manner via C# fall-through). Because the VM semantics for non-rude Thread.Abort dictate that handlers will not be aborted, the JIT must mark these 'inlined' finally bodies. These show up as special entries at the end of the EH tables and are marked with `COR_ILEXCEPTION_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_DUPLICATED`, and the try_start, try_end, and handler_start are all the same: the start of the cloned finally.
-
-RyuJit also implements finally cloning, for all supported architectures. However, the implementation does not yet handle the thread abort case; cloned finally bodies are not guaranteed to remain intact and are not reported to the runtime. Because of this, finally cloning is disabled for VMs that support thread abort (desktop clr).
-
-JIT32 does not implement finally cloning.
+RyuJIT attempts to speed the normal control flow by 'inlining' a called finally along the 'normal' control flow (i.e., leaving a try body in a non-exceptional manner via C# fall-through). This optimization is supported on all architectures.
 
 ## Invoking Finallys/Non-local exits
 
@@ -322,33 +318,9 @@ Finally1:
 
 Note that JIT64 does not implement this properly. The C# compiler used to always insert all necessary "step" blocks. The Roslyn C# compiler at one point did not, but then was changed to once again insert them.
 
-## The PSPSym and funclet parameters
+## Funclet parameters
 
-The *PSPSym* (which stands for Previous Stack Pointer Symbol) is a pointer-sized local variable used to access locals from the main function body.
-
-NativeAOT does not use PSPSym. For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores all non-volatile registers. The same convention is used across all platforms.
-
-CoreCLR uses PSPSym for all platforms except x86: the frame pointer on x86 is always preserved when the handlers are invoked.
-
-First, two definitions.
-
-*Caller-SP* is the value of the stack pointer in a function's caller before the call instruction is executed. That is, when function A calls function B, Caller-SP for B is the value of the stack pointer immediately before the call instruction in A (calling B) was executed. Note that this definition holds for both AMD64, which pushes the return value when a call instruction is executed, and for ARM, which doesn't. For AMD64, Caller-SP is the address above the call return address.
-
-*Initial-SP* is the initial value of the stack pointer after the fixed-size portion of the frame has been allocated. That is, before any "alloca"-type allocations.
-
-The value stored in PSPSym is the value of Initial-SP for AMD64 or Caller-SP for other platforms, for the main function. The stack offset of the PSPSym is reported to the VM in the GC information header. The value reported in the GC information is the offset of the PSPSym from Initial-SP for AMD64 or Caller-SP for other platforms. (Note that both the value stored, and the way the value is reported to the VM, differs between architectures. In particular, note that most things in the GC information header are reported as offsets relative to Caller-SP, but PSPSym on AMD64 is one exception, and maybe the only exception.)
-
-The VM uses the PSPSym to find other locals it cares about (such as the generics context in a funclet frame). The JIT uses it to re-establish the frame pointer register, so that the frame pointer is the same value in a funclet as it is in the main function body.
-
-When a funclet is called, it is passed the *Establisher Frame Pointer*. For AMD64 this is true for all funclets and it is passed as the first argument in RCX, but for ARM and ARM64 this is only true for first pass funclets (currently just filters) and it is passed as the second argument in R1. The Establisher Frame Pointer is a stack pointer of an interesting "parent" frame in the exception processing system. For the CLR, it points either to the main function frame or a dynamically enclosing funclet frame from the same function, for the funclet being invoked. The value of the Establisher Frame Pointer is Initial-SP on AMD64, Caller-SP on x86, ARM, and ARM64.
-
-Using the establisher frame, the funclet wants to load the value of the PSPSym. Since we don't know if the Establisher Frame is from the main function or a funclet, we design the main function and funclet frame layouts to place the PSPSym at an identical, small, constant offset from the Establisher Frame in each case. (This is also required because we only report a single offset to the PSPSym in the GC information, and that offset must be valid for the main function and all of its funclets). Then, the funclet uses this known offset to compute the PSPSym address and read its value. From this, it can compute the value of the frame pointer (which is a constant offset from the PSPSym value) and set the frame register to be the same as the parent function. Also, the funclet writes the value of the PSPSym to its own frame's PSPSym. This "copying" of the PSPSym happens for every funclet invocation, in particular, for every nested funclet invocation.
-
-On ARM and ARM64, for all second pass funclets (finally, fault, catch, and filter-handler) the VM restores all non-volatile registers to their values within the parent frame. This includes the frame register (`R11`). Thus, the PSPSym is not used to recompute the frame pointer register in this case, though the PSPSym is copied to the funclet's frame, as for all funclets.
-
-Catch, Filter, and Filter-handlers also get an Exception object (GC ref) as an argument (`REG_EXCEPTION_OBJECT`). On AMD64 it is the second argument and thus passed in RDX. On ARM and ARM64 this is the first argument and passed in R0.
-
-(Note that the JIT64 source code contains a comment that says, "The current CLR doesn't always pass the correct establisher frame to the funclet. Funclet may receive establisher frame of funclet when expecting that of original routine." It indicates this is the reason that a PSPSym is required in all funclets as well as the main function, whereas if the establisher frame was correctly reported, the PSPSym could be omitted in some cases.)
+Catch, Filter, and Filter-handlers get an Exception object (GC ref) as an argument (`REG_EXCEPTION_OBJECT`). On AMD64 it is passed in RCX (Windows ABI) or RSI (Unix ABI). On ARM and ARM64 this is the first argument and passed in R0.
 
 ## Funclet Return Values
 
@@ -374,11 +346,11 @@ Some definitions:
 
 When an exception occurs, the VM is invoked to do some processing. If the exception is within a "try" region, it eventually calls a corresponding handler (which also includes calling filters). The exception location within a function might be where a "throw" instruction executes, the point of a processor exception like null pointer dereference or divide by zero, or the point of a call where the callee threw an exception but did not catch it.
 
-On AMD64, all register values that existed at the exception point in the corresponding "try" region are trashed on entry to the funclet. That is, the only registers that have known values are those of the funclet parameters.
+The VM sets the frame register to be the same as the parent function. This allows the funclets to access local variables using frame-relative addresses.
 
-On ARM and ARM64, all registers are restored to their values at the exception point.
+For filter funclets and on CoreCLR/AMD64 for all funclets, all other register values that existed at the exception point in the corresponding "try" region are trashed on entry to the funclet. That is, the only registers that have known values are those of the funclet parameters and the frame register.
 
-On x86: TBD.
+For other funclets on all platforms except CoreCLR/AMD64, all non-volatile registers are restored to their values at the exception point. The JIT codegen [does not take advantage of it currently](https://github.com/dotnet/runtime/pull/114630#issuecomment-2810210759).
 
 ### Registers on return from a funclet
 
@@ -523,85 +495,6 @@ When the inner "throw new UserException4" is executed, the exception handling fi
 
 Filters are invoked in the 1st pass of EH processing and as such execution might resume back at the faulting address, or in the filter-handler, or someplace else. Because the VM must allow GC's to occur during and after a filter invocation, but before the EH subsystem knows where it will resume, we need to keep everything alive at both the faulting address **and** within the filter. This is accomplished by 3 means: (1) the VM's stackwalker and GCInfoDecoder report as live both the filter frame and its corresponding parent frame, (2) the JIT encodes all stack slots that are live within the filter as being pinned, and (3) the JIT reports as live (and possible zero-initializes) anything live-out of the filter. Because of (1) it is likely that a stack variable that is live within the filter and the try body will be double reported. During the mark phase of the GC double reporting is not a problem. The problem only arises if the object is relocated: if the same location is reported twice, the GC will try to relocate the address stored at that location twice. Thus we prevent the object from being relocated by pinning it, which leads us to why we must do (2). (3) is done so that after the filter returns, we can still safely incur a GC before executing the filter-handler or any outer handler within the same frame. For the same reason, control must exit a filter region via its final block (in other words, a filter region must terminate with the instruction that leaves the filter region, and the program may not exit the filter region via other paths).
 
-## Duplicated Clauses
-
-Duplicated clauses are a special set of entries in the EH tables to assist the VM. Specifically, if handler 'A' is also protected by an outer EH clause 'B', then the JIT must emit a duplicated clause, a duplicate of 'B', that marks the whole handler 'A' (which is now lexically disjoint for the range of code for the corresponding try body 'A') as being protected by the handler for 'B'.
-
-Duplicated clauses are not needed for x86 and for NativeAOT ABI.
-
-During exception dispatch the VM uses these duplicated clauses to know when to skip any frames between the handler and its parent function. After skipping to the parent function, due to a duplicated clause, the VM searches for a regular/non-duplicate clause in the parent function. The order of duplicated clauses is important. They should appear after all of the main function clauses. They should still follow the normal sorting rules (inner-to-outer, top-to-bottom), but because the try-start/try-end will all be the same for a given handler, they should maintain the ordering, regarding inner-to-outer, as the corresponding original clause.
-
-Example:
-
-```
-A: try {
-B:	...
-C:	try {
-D:		...
-E:		try {
-F:			...
-G:		}
-H:		catch {
-I:			...
-J:		}
-K:		...
-L:	}
-M:	finally {
-N:		...
-O:	}
-P:	...
-Q: }
-R: catch {
-S:	...
-T: }
-```
-
-In MSIL this would generate 3 EH clauses:
-
-```
-.try E-G catch H-J
-.try C-L finally M-O
-.try A-Q catch R-T
-```
-
-The native code would be laid out as follows (the order of the handlers is irrelevant except they are after the main method body) with their corresponding (fake) native offsets:
-
-```
-A: -> 1
-B: -> 2
-C: -> 3
-D: -> 4
-E: -> 5
-F: -> 6
-G: -> 7
-K: -> 8
-L: -> 9
-P: -> 10
-Q: -> 11
-H: -> 12
-I: -> 13
-J: -> 14
-M: -> 15
-N: -> 16
-O: -> 17
-R: -> 18
-S: -> 19
-T: -> 20
-```
-
-The native EH clauses would be listed as follows:
-
-```
-1. .try 5-7 catch 12-14 (top-most & inner-most first)
-2. .try 3-9 finally 15-17 (top-most & next inner-most)
-3. .try 1-11 catch 18-20 (top-most & outer-most)
-4. .try 12-14 finally 15-17 duplicated (inner-most because clause 2 is inside clause 3, top-most because handler H-J is first)
-5. .try 12-14 catch 18-20 duplicated
-6. .try 15-17 catch 18-20
-```
-
-If the handlers were in a different order, then clause 6 might appear before clauses 4 and 5, but never in between.
-
 ## Clauses covering the same try region
 
 Several consecutive clauses may cover the same `try` block. A clause covering the same region as the previous one is marked by the `COR_ILEXCEPTION_CLAUSE_SAMETRY` flag. When exception ex1 is thrown while running handler for another exception ex2 and the exception ex2 escapes the ex1's handler frame, this enables the runtime to skip clauses that cover the same `try` block as the clause that handled the ex1.
@@ -695,12 +588,6 @@ x64 currently saves RBP, RSI and RDI while ARM64 saves just FP and LR.
 ## EnC is supported for methods with EH
 
 However, EnC remap is not supported inside funclets. The stack layout of funclets does not matter for EnC.
-
-## Considerations with regards to PSPSym
-
-As explained previously in this document, on x64 we have Initial RSP == PSPSym. For EnC methods, as we disallow remappings after localloc (see below), we furthermore have RBP == PSPSym.
-For ARM64 we have Caller SP == PSPSym and the FP points to the previously saved FP/LR pair. For EnC the JIT always sets up the stack frame so that the FP/LR pair is at Caller SP - 16 and does not save any additional callee saves.
-These invariants allow the VM to compute new value of the frame pointer and PSPSym after the edit without any additional information. Note that the frame pointer and PSPSym do not change values or location on ARM64. However, EH may be added to a function in which case a new PSPSym needs to be materialized, even on ARM64. Location of PSPSym is found via GC info.
 
 ## Localloc
 

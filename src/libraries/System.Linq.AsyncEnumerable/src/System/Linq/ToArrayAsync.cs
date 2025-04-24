@@ -20,7 +20,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 

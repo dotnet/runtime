@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -16,11 +17,22 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 
     public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     {
-        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        ILoader loader = target.Contracts.Loader;
 
-        TargetPointer baseAddress = module.GetLoadedMetadata(out ulong size);
+        if (!loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint imageFlags))
+        {
+            throw new InvalidOperationException("Module is not loaded.");
+        }
+        bool isMapped = (imageFlags & 0x1) != 0; // FLAG_MAPPED = 0x1
+        PEStreamOptions isLoaded = isMapped ? PEStreamOptions.IsLoadedImage : PEStreamOptions.Default;
 
-        return new TargetSpan(baseAddress, size);
+        TargetStream stream = new(target, baseAddress, size);
+        using PEReader peReader = new PEReader(stream, PEStreamOptions.PrefetchMetadata | isLoaded);
+
+        int metadataStartOffset = peReader.PEHeaders.MetadataStartOffset;
+        int metadataSize = peReader.PEHeaders.MetadataSize;
+
+        return new TargetSpan(baseAddress + (ulong)metadataStartOffset, (ulong)metadataSize);
     }
 
     public MetadataReader? GetMetadata(ModuleHandle handle)

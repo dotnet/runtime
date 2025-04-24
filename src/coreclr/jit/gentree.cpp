@@ -11756,10 +11756,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "LocAllocSP";
             }
 #endif // JIT32_GCENCODER
-            else if (lclNum == lvaPSPSym)
-            {
-                ilName = "PSPSym";
-            }
             else
             {
                 ilKind = "tmp";
