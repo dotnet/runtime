@@ -64,13 +64,15 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
         switch (parentNode->OperGet())
         {
+            case GT_LE: // a <= N  ->  a < N+1
+            case GT_GT: // a > N  ->  !(a <= N)  ->  !(a < N+1)
+                immVal += 1;
+                FALLTHROUGH;
             case GT_ADD:
             case GT_EQ:
             case GT_NE:
             case GT_LT:
-            case GT_LE:
             case GT_GE:
-            case GT_GT:
             case GT_AND:
             case GT_OR:
             case GT_XOR:
@@ -85,9 +87,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_XCHG:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
-                if (immVal == 0)
-                    return true;
-                break;
+                return (immVal == 0);
 
             default:
                 break;

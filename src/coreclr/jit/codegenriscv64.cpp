@@ -3211,17 +3211,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 {
                     regNumber tmpRegOp1 = internalRegisters.GetSingle(tree);
                     assert(regOp1 != tmpRegOp1);
-                    if (isUnsigned)
-                    {
-                        imm = static_cast<uint32_t>(imm);
-                        emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
-                        emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-                    }
-                    else
-                    {
-                        imm = static_cast<int32_t>(imm);
-                        emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-                    }
+                    imm = static_cast<int32_t>(imm);
+                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                     regOp1 = tmpRegOp1;
                     break;
                 }
@@ -3231,107 +3222,38 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     unreached();
             }
 
-            if (tree->OperIs(GT_LT))
+            assert(emitter::isValidSimm12(imm));
+            if (tree->OperIs(GT_EQ, GT_NE))
             {
-                if (!isUnsigned && emitter::isValidSimm12(imm))
-                {
-                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
-                }
-                else if (isUnsigned && emitter::isValidUimm11(imm))
-                {
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm);
-                }
-                else
-                {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                }
-            }
-            else if (tree->OperIs(GT_LE))
-            {
-                if (!isUnsigned && emitter::isValidSimm12(imm + 1))
-                {
-                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
-                }
-                else if (isUnsigned && emitter::isValidUimm11(imm + 1))
-                {
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm + 1);
-                }
-                else
-                {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm + 1);
-                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                }
-            }
-            else if (tree->OperIs(GT_GT))
-            {
-                if (!isUnsigned && emitter::isValidSimm12(imm + 1))
-                {
-                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
-                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
-                }
-                else if (isUnsigned && emitter::isValidUimm11(imm + 1))
-                {
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm + 1);
-                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
-                }
-                else
-                {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, REG_RA, regOp1);
-                }
-            }
-            else if (tree->OperIs(GT_GE))
-            {
-                if (!isUnsigned && emitter::isValidSimm12(imm))
-                {
-                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
-                }
-                else if (isUnsigned && emitter::isValidUimm11(imm))
-                {
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm);
-                }
-                else
-                {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                }
-                emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
-            }
-            else if (tree->OperIs(GT_NE))
-            {
-                if (!imm)
-                {
-                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, regOp1);
-                }
-                else if (emitter::isValidUimm12(imm))
+                if (imm != 0)
                 {
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
-                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
+                    regOp1 = targetReg;
                 }
-                else
-                {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
-                }
-            }
-            else if (tree->OperIs(GT_EQ))
-            {
-                if (!imm)
+
+                if (tree->OperIs(GT_EQ))
                 {
                     emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, 1);
                 }
-                else if (emitter::isValidUimm12(imm))
-                {
-                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, targetReg, 1);
-                }
                 else
                 {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, targetReg, 1);
+                    assert(tree->OperIs(GT_NE));
+                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, regOp1);
+                }
+            }
+            else
+            {
+                assert(tree->OperIs(GT_LT, GT_LE, GT_GT, GT_GE));
+                if (tree->OperIs(GT_LE, GT_GT))
+                {
+                    imm += 1;
+                }
+                instruction ins = isUnsigned ? INS_sltiu : INS_slti;
+
+                emit->emitIns_R_R_I(ins, EA_PTRSIZE, targetReg, regOp1, imm);
+                if (tree->OperIs(GT_GT, GT_GE))
+                {
+                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
             }
         }
