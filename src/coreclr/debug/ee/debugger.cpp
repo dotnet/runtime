@@ -16827,17 +16827,6 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
     LOG((LF_CORDB, LL_INFO10000, "D::SSTCN SetThreadContextNeededFlare returned\n"));
     _ASSERTE(!"We failed to SetThreadContext from out of process!");
 }
-
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-void Debugger::SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext)
-{
-    pThread->SetThreadState(Thread::TS_SSToExitApcCall);
-    g_pEEInterface->SetThreadFilterContext(pThread, interruptedContext);
-    DebuggerController::EnableSingleStep(pThread);
-    g_pEEInterface->SetThreadFilterContext(pThread, NULL);
-}
-#endif //FEATURE_SPECIAL_USER_MODE_APC
-
 BOOL Debugger::IsOutOfProcessSetContextEnabled()
 {
     return m_fOutOfProcessSetContextEnabled;
@@ -16854,6 +16843,16 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
 }
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #endif // DACCESS_COMPILE
-
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+void Debugger::SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext)
+{
+    pThread->SetThreadState(Thread::TS_SSToExitApcCall);
+    g_pEEInterface->SetThreadFilterContext(pThread, interruptedContext);
+    DebuggerController::EnableSingleStep(pThread);
+    g_pEEInterface->SetThreadFilterContext(pThread, NULL);
+}
+#endif //FEATURE_SPECIAL_USER_MODE_APC
+#endif // DACCESS_COMPILE
 #endif //DEBUGGING_SUPPORTED
 
