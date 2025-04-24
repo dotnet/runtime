@@ -945,14 +945,15 @@ namespace System.Net.Http
     /// </summary>
     internal struct WaitForHttp3ConnectionActivity
     {
-        private readonly SocketsHttpHandlerMetrics? _metrics;
+        // The HttpConnectionSettings -> SocketsHttpHandlerMetrics indirection is needed for the trimmer.
+        private HttpConnectionSettings _settings;
         private readonly HttpAuthority _authority;
         private Activity? _activity;
         private long _startTimestamp;
 
-        public WaitForHttp3ConnectionActivity(SocketsHttpHandlerMetrics? metrics, HttpAuthority authority)
+        public WaitForHttp3ConnectionActivity(HttpConnectionSettings settings, HttpAuthority authority)
         {
-            _metrics = metrics;
+            _settings = settings;
             _authority = authority;
         }
 
@@ -961,7 +962,7 @@ namespace System.Net.Http
         public void Start()
         {
             Debug.Assert(!Started);
-            _startTimestamp = HttpTelemetry.Log.IsEnabled() || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && _metrics!.RequestsQueueDuration.Enabled) ? Stopwatch.GetTimestamp() : 0;
+            _startTimestamp = HttpTelemetry.Log.IsEnabled() || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && _settings._metrics!.RequestsQueueDuration.Enabled) ? Stopwatch.GetTimestamp() : 0;
             _activity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(_authority);
             Started = true;
         }
@@ -981,7 +982,7 @@ namespace System.Net.Http
 
                 if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
                 {
-                    _metrics!.RequestLeftQueue(request, pool, duration, versionMajor: 3);
+                    _settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor: 3);
                 }
                 if (HttpTelemetry.Log.IsEnabled())
                 {
