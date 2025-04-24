@@ -6,7 +6,7 @@
 #include "interpexec.h"
 #include "interpframeallocator.h"
 
-FrameDataFragment::FrameDataFragment(size_t size)
+FrameDataAllocator::FrameDataFragment::FrameDataFragment(size_t size)
 {
     if (size < INTERP_STACK_FRAGMENT_SIZE)
     {
@@ -22,7 +22,7 @@ FrameDataFragment::FrameDataFragment(size_t size)
     pNext = nullptr;
 }
 
-FrameDataFragment::~FrameDataFragment()
+FrameDataAllocator::FrameDataFragment::~FrameDataFragment()
 {
     free(pFrameStart);
 }
@@ -88,6 +88,7 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
 
     if (pFramePos + size > pCurrent->pFrameEnd)
     {
+        // Move to the next fragment or create a new one if necessary
         if (pCurrent->pNext && ((pCurrent->pNext->pFrameStart + size) <= pCurrent->pNext->pFrameEnd))
         {
             pCurrent = pCurrent->pNext;
@@ -123,6 +124,11 @@ void FrameDataAllocator::PopInfo(InterpMethodContextFrame *pFrame)
         pCurrent = pInfo->pFrag;
         pCurrent->pFramePos = pInfo->pFramePos;
     }
+}
+
+bool FrameDataAllocator::IsAllocated()
+{
+    return pFirst != nullptr && pFirst->pFrameStart != nullptr;
 }
 
 #endif // FEATURE_INTERPRETER
