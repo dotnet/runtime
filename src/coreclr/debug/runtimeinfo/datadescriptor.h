@@ -228,7 +228,6 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ReadyToRunInfo, cdac_data<Module>::ReadyToRunInfo)
 CDAC_TYPE_FIELD(Module, /*pointer*/, GrowableSymbolStream, cdac_data<Module>::GrowableSymbolStream)
 CDAC_TYPE_FIELD(Module, /*pointer*/, AvailableTypeParams, offsetof(Module, m_pAvailableParamTypes))
-CDAC_TYPE_FIELD(Module, /*pointer*/, InstMethodHashTable, offsetof(Module, m_pInstMethodHashTable))
 
 CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_data<Module>::FieldDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_data<Module>::ManifestModuleReferencesMap)

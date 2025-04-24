@@ -169,7 +169,8 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
         public int Start()
         {
-            if (!HasClassOrMethodInstantiation(_mainMethodDesc) && !HasNativeCodeAnyVersion(_mainMethodDesc))
+            MethodDescHandle mainMD = _rts.GetMethodDescHandle(_mainMethodDesc);
+            if (!HasClassOrMethodInstantiation(mainMD) && !HasNativeCodeAnyVersion(mainMD))
             {
                 return HResults.S_FALSE;
             }
@@ -224,11 +225,14 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
             MethodDescHandle mainMD = _rts.GetMethodDescHandle(_mainMethodDesc);
 
-            if (!HasClassOrMethodInstantiation(_mainMethodDesc))
+            if (!HasClassOrMethodInstantiation(mainMD))
             {
                 // case 1
                 // no method or class instantiation, then it's not generic.
-                yield return mainMD;
+                if (HasNativeCodeAnyVersion(mainMD))
+                {
+                    yield return mainMD;
+                }
                 yield break;
             }
 
@@ -237,9 +241,9 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             TargetPointer mainModule = _rts.GetModule(mainMT);
             uint mainMTToken = _rts.GetTypeDefToken(mainMT);
             uint mainMDToken = _rts.GetMethodToken(mainMD);
-            // ushort slotNum = _rts.GetSlotNumber(mainMD);
+            ushort slotNum = _rts.GetSlotNumber(mainMD);
 
-            if (HasMethodInstantiation(_mainMethodDesc))
+            if (HasMethodInstantiation(mainMD))
             {
                 // case 2/4
                 // 2 is trivial, 4 is covered because the defining method on a generic type is not instantiated
@@ -252,18 +256,23 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                         if (mainModule != _rts.GetModule(methodTypeHandle)) continue;
                         if (mainMDToken != _rts.GetMethodToken(methodDesc)) continue;
 
-                        yield return methodDesc;
+                        if (HasNativeCodeAnyVersion(methodDesc))
+                        {
+                            yield return methodDesc;
+                        }
                     }
                 }
+
+                yield break;
             }
 
-            if (HasClassInstantiation(_mainMethodDesc))
+            if (HasClassInstantiation(mainMD))
             {
                 // case 3
                 // class instantiations are only interesting if the method is not generic
                 foreach (Contracts.ModuleHandle moduleHandle in IterateModules())
                 {
-                    if (HasClassInstantiation(_mainMethodDesc))
+                    if (HasClassInstantiation(mainMD))
                     {
                         foreach (Contracts.TypeHandle typeParam in IterateTypeParams(moduleHandle))
                         {
@@ -280,27 +289,32 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
                             TargetPointer cmt = _rts.GetCanonicalMethodTable(typeParam);
                             TypeHandle cmtHandle = _rts.GetTypeHandle(cmt);
-                            Console.WriteLine(cmtHandle);
-                            Debug.Assert(false, "Iterating class instantiations is not implemented yet");
+
+                            MethodDescHandle methodDesc = _rts.GetMethodDescForSlot(cmtHandle, slotNum);
+                            if (HasNativeCodeAnyVersion(methodDesc))
+                            {
+                                yield return methodDesc;
+                            }
                         }
                     }
                 }
+
+                yield break;
             }
 
         }
 
-        private bool HasNativeCodeAnyVersion(TargetPointer methodDesc)
+        private bool HasNativeCodeAnyVersion(MethodDescHandle mdHandle)
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             ICodeVersions cv = _target.Contracts.CodeVersions;
 
-            MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDesc);
             TargetCodePointer pcode = rts.GetNativeCode(mdHandle);
 
             if (pcode == TargetCodePointer.Null)
             {
                 // I think this is equivalent to get any native code version
-                NativeCodeVersionHandle nativeCodeVersion = cv.GetActiveNativeCodeVersion(methodDesc);
+                NativeCodeVersionHandle nativeCodeVersion = cv.GetActiveNativeCodeVersion(mdHandle.Address);
                 if (nativeCodeVersion.Valid)
                 {
                     pcode = cv.GetNativeCode(nativeCodeVersion);
@@ -310,26 +324,23 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             return pcode != TargetCodePointer.Null;
         }
 
-        private bool HasClassOrMethodInstantiation(TargetPointer mdAddr)
+        private bool HasClassOrMethodInstantiation(MethodDescHandle md)
         {
-            return HasClassInstantiation(mdAddr) || HasMethodInstantiation(mdAddr);
+            return HasClassInstantiation(md) || HasMethodInstantiation(md);
         }
 
-        private bool HasClassInstantiation(TargetPointer mdAddr)
+        private bool HasClassInstantiation(MethodDescHandle md)
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
-            MethodDescHandle md = rts.GetMethodDescHandle(mdAddr);
             TargetPointer mtAddr = rts.GetMethodTable(md);
             TypeHandle mt = rts.GetTypeHandle(mtAddr);
             return !rts.GetInstantiation(mt).IsEmpty;
         }
 
-        private bool HasMethodInstantiation(TargetPointer mdAddr)
+        private bool HasMethodInstantiation(MethodDescHandle md)
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-
-            MethodDescHandle md = rts.GetMethodDescHandle(mdAddr);
 
             if (rts.IsGenericMethodDefinition(md)) return true;
             return !rts.GetGenericMethodInstantiation(md).IsEmpty;

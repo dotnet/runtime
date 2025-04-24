@@ -37,6 +37,7 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
 
     int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, out IXCLRDataModule? mod)
     {
+        // TODO(cdac): change to explicitly marshall mod as a void**. This approach does not support mod being null
         mod = default;
         //_legacyImpl is not null ? _legacyImpl.GetTokenAndScope(token, mod) : HResults.E_NOTIMPL;
         int hr = HResults.S_OK;
