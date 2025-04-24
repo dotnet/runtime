@@ -74,7 +74,7 @@ namespace System.Net.Sockets.Tests
             {
                 _socket.BeginAccept(OnAccept, null);
             }
-            catch (SocketException e)
+            catch (SocketException)
             {
             }
             catch (ObjectDisposedException)
