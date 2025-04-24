@@ -9218,15 +9218,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         }
     }
 
-#ifdef TARGET_ARM64
-    optimizedTree = fgMorphTryUseAllMaskVariant(node);
-    if (optimizedTree != nullptr)
-    {
-        optimizedTree->SetMorphed(this);
-        return optimizedTree;
-    }
-#endif
-
     NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
     var_types      retType         = node->TypeGet();
     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
@@ -9676,6 +9667,15 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
     }
+
+#ifdef TARGET_ARM64
+    optimizedTree = fgMorphTryUseAllMaskVariant(node);
+    if (optimizedTree != nullptr)
+    {
+        optimizedTree->SetMorphed(this);
+        return optimizedTree;
+    }
+#endif
 
     return node;
 }
