@@ -813,13 +813,14 @@ enum CORINFO_ACCESS_FLAGS
 };
 
 // These are the flags set on an CORINFO_EH_CLAUSE
+// Keep values in sync with COR_ILEXCEPTION_CLAUSE flags
 enum CORINFO_EH_CLAUSE_FLAGS
 {
     CORINFO_EH_CLAUSE_NONE      = 0,
     CORINFO_EH_CLAUSE_FILTER    = 0x0001, // If this bit is on, then this EH entry is for a filter
     CORINFO_EH_CLAUSE_FINALLY   = 0x0002, // This clause is a finally clause
     CORINFO_EH_CLAUSE_FAULT     = 0x0004, // This clause is a fault clause
-    CORINFO_EH_CLAUSE_DUPLICATE = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
+    // UNUSED                   = 0x0008,
     CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one
 };
 
