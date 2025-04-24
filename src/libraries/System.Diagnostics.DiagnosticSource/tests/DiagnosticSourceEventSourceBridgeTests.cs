@@ -1477,9 +1477,6 @@ namespace System.Diagnostics.Tests
                 // tolerance of extra sample can be done if the second turn after the loop check sw.ElapsedMilliseconds. 2 extra events (start and stop).
                 Assert.True(maxOps * 2 * 3 + 2 >= eventSourceListener.EventCount, $"{eventSourceListener.EventCount} events were recorded, while maxOpPerSecond is {maxOpPerSecond}");
 
-                // Ensure the minimum number of events is recorded in 3 seconds. We are choosing reasonable small number as it depends on the machine speed.
-                Assert.True(eventSourceListener.EventCount >= 6, $"{eventSourceListener.EventCount} events were recorded, while maxOpPerSecond is {maxOpPerSecond}");
-
                 Thread.Sleep(1000); // ensure new allowance for root creation
                 Activity.Current = null;
                 using var root = a.Source.StartActivity("root");

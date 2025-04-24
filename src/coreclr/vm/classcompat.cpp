@@ -520,7 +520,7 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
             message.AppendUTF8((LPCUTF8) qb.Ptr());
             message.AppendUTF8("\n");
 
-            minipal_log_print_info(message.GetUTF8());
+            minipal_log_print_info("%s", message.GetUTF8());
             message.Clear();
         }
     }
