@@ -1364,7 +1364,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
     }
     else
     {
-#if __SIZEOF_POINTER__ == 8
+#if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
             EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
@@ -3146,7 +3146,7 @@ retry_emit:
                     }
                     case CEE_LOCALLOC:
                         CHECK_STACK(1);
-#if __SIZEOF_POINTER__ == 8
+#if TARGET_64BIT
                         if (m_pStackPointer[-1].type == StackTypeI8)
                             EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_8);
 #endif
