@@ -4,7 +4,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <BuildAsStandalone>false</BuildAsStandalone>
+    <BuildAsStandalone>true</BuildAsStandalone>
   </PropertyGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
