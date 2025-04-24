@@ -12,7 +12,7 @@
     <PackageVersionNet7>7.0.20</PackageVersionNet7>
     <PackageVersionNet6>6.0.36</PackageVersionNet6>
     <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>4</PreReleaseVersionIteration>
+    <PreReleaseVersionIteration>5</PreReleaseVersionIteration>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
@@ -38,15 +38,15 @@
     <!-- dotnet/roslyn-analyzers dependencies -->
     <MicrosoftCodeAnalysisNetAnalyzersVersion>10.0.0-preview.25217.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- dotnet/roslyn dependencies -->
-    <MicrosoftCodeAnalysisAnalyzersVersion>3.12.0-beta1.25218.9</MicrosoftCodeAnalysisAnalyzersVersion>
+    <MicrosoftCodeAnalysisAnalyzersVersion>3.12.0-beta1.25220.1</MicrosoftCodeAnalysisAnalyzersVersion>
     <!--
       These versions should not be used by any project that contributes to the design-time experience in VS, such as an analyzer, code-fix, or generator assembly.
       Any tools that contribute to the design-time experience should use the MicrosoftCodeAnalysisVersion_LatestVS property above to ensure
       they do not break the local dev experience.
     -->
-    <MicrosoftCodeAnalysisCSharpVersion>5.0.0-1.25218.9</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisVersion>5.0.0-1.25218.9</MicrosoftCodeAnalysisVersion>
-    <MicrosoftNetCompilersToolsetVersion>5.0.0-1.25218.9</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>5.0.0-1.25220.1</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisVersion>5.0.0-1.25220.1</MicrosoftCodeAnalysisVersion>
+    <MicrosoftNetCompilersToolsetVersion>5.0.0-1.25220.1</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
@@ -83,24 +83,24 @@
   <PropertyGroup>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies (also used in wasm build tests -->
-    <MicrosoftDotNetApiCompatTaskVersion>10.0.100-preview.4.25211.22</MicrosoftDotNetApiCompatTaskVersion>
+    <MicrosoftDotNetApiCompatTaskVersion>10.0.100-preview.4.25220.1</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetBuildTasksFeedVersion>10.0.0-beta.25216.2</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>10.0.0-beta.25216.2</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>10.0.0-beta.25216.2</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>10.0.0-beta.25216.2</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitAssertVersion>2.9.2-beta.25216.2</MicrosoftDotNetXUnitAssertVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>10.0.0-beta.25216.2</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.9.2-beta.25216.2</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksArchivesVersion>10.0.0-beta.25216.2</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>10.0.0-beta.25216.2</MicrosoftDotNetBuildTasksInstallersVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>10.0.0-beta.25216.2</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>10.0.0-beta.25216.2</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
-    <MicrosoftDotNetBuildTasksTemplatingVersion>10.0.0-beta.25216.2</MicrosoftDotNetBuildTasksTemplatingVersion>
-    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>10.0.0-beta.25216.2</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>10.0.0-beta.25216.2</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>10.0.0-beta.25217.1</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>10.0.0-beta.25217.1</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>10.0.0-beta.25217.1</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>10.0.0-beta.25217.1</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitAssertVersion>2.9.2-beta.25217.1</MicrosoftDotNetXUnitAssertVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>10.0.0-beta.25217.1</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.9.2-beta.25217.1</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetBuildTasksArchivesVersion>10.0.0-beta.25217.1</MicrosoftDotNetBuildTasksArchivesVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>10.0.0-beta.25217.1</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>10.0.0-beta.25217.1</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>10.0.0-beta.25217.1</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
+    <MicrosoftDotNetBuildTasksTemplatingVersion>10.0.0-beta.25217.1</MicrosoftDotNetBuildTasksTemplatingVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>10.0.0-beta.25217.1</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>10.0.0-beta.25217.1</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>10.0.0-beta.25178.2</MicrosoftDotNetVersionToolsTasksVersion>
-    <MicrosoftDotNetPackageTestingVersion>10.0.0-beta.25216.2</MicrosoftDotNetPackageTestingVersion>
+    <MicrosoftDotNetPackageTestingVersion>10.0.0-beta.25217.1</MicrosoftDotNetPackageTestingVersion>
     <!-- TODO: Remove pinned xunit.analyzers version: https://github.com/dotnet/runtime/issues/97088 -->
     <XUnitAnalyzersVersion>1.4.0</XUnitAnalyzersVersion>
     <!-- NuGet dependencies -->
@@ -148,27 +148,27 @@
     <SystemTextEncodingsWebToolsetVersion>8.0.0</SystemTextEncodingsWebToolsetVersion>
     <SystemThreadingTasksExtensionsToolsetVersion>4.5.4</SystemThreadingTasksExtensionsToolsetVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>10.0.0-beta.25215.1</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>10.0.0-beta.25215.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDataCommonTestDataVersion>10.0.0-beta.25215.1</SystemDataCommonTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>10.0.0-beta.25215.1</SystemDrawingCommonTestDataVersion>
-    <SystemFormatsTarTestDataVersion>10.0.0-beta.25215.1</SystemFormatsTarTestDataVersion>
-    <SystemIOCompressionTestDataVersion>10.0.0-beta.25215.1</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>10.0.0-beta.25215.1</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>10.0.0-beta.25215.1</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>10.0.0-beta.25215.1</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>10.0.0-beta.25215.1</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>10.0.0-beta.25215.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemTextRegularExpressionsTestDataVersion>10.0.0-beta.25215.1</SystemTextRegularExpressionsTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>10.0.0-beta.25215.1</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>10.0.0-beta.25215.1</MicrosoftDotNetCilStripSourcesVersion>
-    <MicrosoftNETHostModelTestDataVersion>10.0.0-beta.25215.1</MicrosoftNETHostModelTestDataVersion>
+    <SystemRuntimeNumericsTestDataVersion>10.0.0-beta.25222.1</SystemRuntimeNumericsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>10.0.0-beta.25222.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDataCommonTestDataVersion>10.0.0-beta.25222.1</SystemDataCommonTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>10.0.0-beta.25222.1</SystemDrawingCommonTestDataVersion>
+    <SystemFormatsTarTestDataVersion>10.0.0-beta.25222.1</SystemFormatsTarTestDataVersion>
+    <SystemIOCompressionTestDataVersion>10.0.0-beta.25222.1</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>10.0.0-beta.25222.1</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>10.0.0-beta.25222.1</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>10.0.0-beta.25222.1</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>10.0.0-beta.25222.1</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>10.0.0-beta.25222.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemTextRegularExpressionsTestDataVersion>10.0.0-beta.25222.1</SystemTextRegularExpressionsTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>10.0.0-beta.25222.1</SystemWindowsExtensionsTestDataVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>10.0.0-beta.25222.1</MicrosoftDotNetCilStripSourcesVersion>
+    <MicrosoftNETHostModelTestDataVersion>10.0.0-beta.25222.1</MicrosoftNETHostModelTestDataVersion>
     <!-- xharness dependencies -->
     <MicrosoftDotNetXHarnessTestRunnersCommonVersion>10.0.0-prerelease.25214.3</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>10.0.0-prerelease.25214.3</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>10.0.0-prerelease.25214.3</MicrosoftDotNetXHarnessCLIVersion>
     <!-- hotreload-utils dependencies -->
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.25207.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.25214.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.25217.3</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.25217.3</optimizationwindows_ntx86MIBCRuntimeVersion>
@@ -179,7 +179,7 @@
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderVersion>2.0.0</MicrosoftDiaSymReaderVersion>
     <MicrosoftDiaSymReaderNativeVersion>17.10.0-beta1.24272.1</MicrosoftDiaSymReaderNativeVersion>
-    <SystemCommandLineVersion>2.0.0-beta5.25218.1</SystemCommandLineVersion>
+    <SystemCommandLineVersion>2.0.0-beta5.25222.1</SystemCommandLineVersion>
     <TraceEventVersion>3.1.16</TraceEventVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
@@ -227,7 +227,7 @@
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.5-alpha.25166.4</MicrosoftDotNetCecilVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>10.0.0-preview.4.25214.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>10.0.0-preview.5.25222.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.8</MicrosoftNativeQuicMsQuicSchannelVersion>
     <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24167.3</SystemNetMsQuicTransportVersion>
@@ -257,7 +257,7 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion>10.0.100-preview.4.25211.22</MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion>10.0.100-preview.4.25220.1</MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
