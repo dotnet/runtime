@@ -17,6 +17,12 @@ namespace System
                 return TDecimal.Zero;
             }
 
+            // This handles cases where the significand or exponent exceed their allowed limits.
+            // It attempts to normalize the number by converting the significand into a digit buffer,
+            // appending trailing zeros if necessary to bring the exponent within bounds,
+            // and rounding if the digit count exceeds the allowed precision.
+            // If normalization or rounding still results in an overflow, it returns positive or negative infinity.
+
             if (significand > TDecimal.MaxSignificand || exponent > TDecimal.MaxExponent)
             {
                 byte* pDigits = stackalloc byte[TDecimal.SignificandBufferLength];
