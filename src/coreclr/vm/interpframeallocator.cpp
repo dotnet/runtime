@@ -13,18 +13,18 @@ FrameDataFragment::FrameDataFragment(size_t size)
         size = INTERP_STACK_FRAGMENT_SIZE;
     }
 
-    start = (uint8_t*)malloc(size);
-    if (start != nullptr)
+    pFrameStart = (uint8_t*)malloc(size);
+    if (pFrameStart != nullptr)
     {
-        end = start + size;
-        pos = start;
+        pFrameEnd = pFrameStart + size;
+        pFramePos = pFrameStart;
     }
     pNext = nullptr;
 }
 
 FrameDataFragment::~FrameDataFragment()
 {
-    free(start);
+    free(pFrameStart);
 }
 
 FrameDataAllocator::FrameDataAllocator(size_t size)
@@ -38,7 +38,7 @@ FrameDataAllocator::FrameDataAllocator(size_t size)
 
 FrameDataAllocator::~FrameDataAllocator()
 {
-    assert(pCurrent == pFirst && pCurrent->pos == pCurrent->start);
+    assert(pCurrent == pFirst && pCurrent->pFramePos == pCurrent->pFrameStart);
     FreeFragments(pFirst);
     free(pInfos);
 }
@@ -70,7 +70,7 @@ bool FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
     FrameDataInfo *pInfo = &pInfos[infosLen++];
     pInfo->pFrame = pFrame;
     pInfo->pFrag = pCurrent;
-    pInfo->pos = pCurrent->pos;
+    pInfo->pFramePos = pCurrent->pFramePos;
     return true;
 }
 
@@ -84,14 +84,14 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
         }
     }
 
-    uint8_t *pos = pCurrent->pos;
+    uint8_t *pFramePos = pCurrent->pFramePos;
 
-    if (pos + size > pCurrent->end)
+    if (pFramePos + size > pCurrent->pFrameEnd)
     {
-        if (pCurrent->pNext && ((pCurrent->pNext->start + size) <= pCurrent->pNext->end))
+        if (pCurrent->pNext && ((pCurrent->pNext->pFrameStart + size) <= pCurrent->pNext->pFrameEnd))
         {
             pCurrent = pCurrent->pNext;
-            pos = pCurrent->pos = pCurrent->start;
+            pFramePos = pCurrent->pFramePos = pCurrent->pFrameStart;
         }
         else
         {
@@ -99,20 +99,20 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
             pCurrent->pNext = nullptr;
 
             FrameDataFragment *pNewFrag = new FrameDataFragment(size);
-            if (pNewFrag->start == nullptr)
+            if (pNewFrag->pFrameStart == nullptr)
             {
                 return nullptr;
             }
 
             pCurrent->pNext = pNewFrag;
             pCurrent = pNewFrag;
-            pos = pNewFrag->pos;
+            pFramePos = pNewFrag->pFramePos;
         }
     }
 
-    void *result = (void*)pos;
-    pCurrent->pos = (uint8_t*)(pos + size);
-    return result;
+    void *pMemory = (void*)pFramePos;
+    pCurrent->pFramePos = (uint8_t*)(pFramePos + size);
+    return pMemory;
 }
 
 void FrameDataAllocator::PopInfo(InterpMethodContextFrame *pFrame)
@@ -121,7 +121,7 @@ void FrameDataAllocator::PopInfo(InterpMethodContextFrame *pFrame)
     {
         FrameDataInfo *pInfo = &pInfos[--infosLen];
         pCurrent = pInfo->pFrag;
-        pCurrent->pos = pInfo->pos;
+        pCurrent->pFramePos = pInfo->pFramePos;
     }
 }
 

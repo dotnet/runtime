@@ -22,7 +22,7 @@ InterpThreadContext* InterpGetThreadContext()
         threadContext->pStackStart = threadContext->pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
         threadContext->pStackEnd = threadContext->pStackStart + INTERP_STACK_SIZE;
         threadContext->pFrameDataAllocator = new FrameDataAllocator(INTERP_STACK_FRAGMENT_SIZE);
-        if (threadContext->pFrameDataAllocator->pFirst->start == NULL)
+        if (threadContext->pFrameDataAllocator->pFirst->pFrameStart == NULL)
         {
             // Interpreter-TODO: OutOfMemoryException
             assert(0);

@@ -7,11 +7,11 @@
 struct FrameDataFragment
 {
     // The start of the fragment
-    uint8_t *start;
+    uint8_t *pFrameStart;
     // The end of the fragment
-    uint8_t *end;
+    uint8_t *pFrameEnd;
     // The current position in the fragment
-    uint8_t *pos;
+    uint8_t *pFramePos;
     // The next fragment in the list
     FrameDataFragment *pNext;
 
@@ -28,9 +28,9 @@ struct FrameDataInfo
     // pos - the fragment pointer at frame entry
     // When the frame returns, we use these to roll back any local allocations
     FrameDataFragment *pFrag;
-    uint8_t *pos;
+    uint8_t *pFramePos;
 
-    FrameDataInfo(InterpMethodContextFrame *pFrame, FrameDataFragment *pFrag, uint8_t *pos);
+    FrameDataInfo(InterpMethodContextFrame *pFrame, FrameDataFragment *pFrag, uint8_t *pFramePos);
 };
 
 struct FrameDataAllocator
