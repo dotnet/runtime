@@ -1485,7 +1485,12 @@ HCIMPL0(void, IL_Rethrow)
 }
 HCIMPLEND
 
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
 HCIMPL1(void, IL_ThrowExact, Object* obj)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -1502,8 +1507,7 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     
     SoftwareExceptionFrame exceptionFrame;
 #ifdef TARGET_X86
-    _ASSERTE(!"Introduce `IL_ThrowExact_x86` following the pattern of other Throw helpers.");
-    // exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
 #else
     RtlCaptureContext(exceptionFrame.GetContext());
 #endif

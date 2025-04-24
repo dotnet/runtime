@@ -1907,6 +1907,23 @@ FASTCALL_FUNC IL_Throw, 4
 FASTCALL_ENDFUNC IL_Throw
 
 ;==========================================================================
+; Capture a transition block with register values and call the IL_ThrowExact
+; implementation written in C.
+;
+; Input state:
+;   ECX = Pointer to exception object
+;==========================================================================
+FASTCALL_FUNC IL_ThrowExact, 4
+    STUB_PROLOG
+
+    mov     edx, esp
+    call    @IL_ThrowExact_x86@8
+
+    STUB_EPILOG
+    ret     4
+FASTCALL_ENDFUNC IL_ThrowExact
+
+;==========================================================================
 ; Capture a transition block with register values and call the IL_Rethrow
 ; implementation written in C.
 ;==========================================================================
