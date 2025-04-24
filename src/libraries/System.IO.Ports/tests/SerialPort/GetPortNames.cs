@@ -19,7 +19,7 @@ namespace System.IO.Ports.Tests
         /// Check that all ports either open correctly or fail with UnauthorizedAccessException (which implies they're already open)
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34490", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34490", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono, TestPlatforms.Android)]
         public void OpenEveryPortName()
         {
             foreach (string portName in SerialPort.GetPortNames())
@@ -41,6 +41,7 @@ namespace System.IO.Ports.Tests
         /// (On Windows, the latter uses a different technique to SerialPort to find ports).
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34490", TestPlatforms.Android)]
         public void AllHelperPortsAreInGetPortNames()
         {
             if (PlatformDetection.IsWindows && PlatformDetection.IsArmOrArm64Process)
@@ -63,6 +64,7 @@ namespace System.IO.Ports.Tests
         /// eg https://github.com/dotnet/corefx/pull/18928 / https://github.com/dotnet/corefx/pull/20668
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34490", TestPlatforms.Android)]
         public void AllGetPortNamesAreInHelperPorts()
         {
             string[] helperPortNames = PortHelper.GetPorts();
