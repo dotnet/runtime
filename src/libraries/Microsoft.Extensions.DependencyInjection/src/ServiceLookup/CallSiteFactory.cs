@@ -418,32 +418,32 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 callSiteChain.Remove(serviceIdentifier);
             }
-        }
 
-        private static bool KeysMatch(object? lookupKey, object? descriptorKey)
-        {
-            if (lookupKey == null && descriptorKey == null)
+            static bool KeysMatch(object? lookupKey, object? descriptorKey)
             {
-                // Both are non keyed services
-                return true;
+                if (lookupKey == null && descriptorKey == null)
+                {
+                    // Both are non keyed services
+                    return true;
+                }
+
+                if (lookupKey != null && descriptorKey != null)
+                {
+                    // Both are keyed services
+
+                    // We don't want to return AnyKey registration, so ignore it
+                    if (descriptorKey.Equals(KeyedService.AnyKey))
+                        return false;
+
+                    // Check if both keys are equal, or if the lookup key
+                    // should matches all keys (except AnyKey)
+                    return lookupKey.Equals(descriptorKey)
+                        || lookupKey.Equals(KeyedService.AnyKey);
+                }
+
+                // One is a keyed service, one is not
+                return false;
             }
-
-            if (lookupKey != null && descriptorKey != null)
-            {
-                // Both are keyed services
-
-                // We don't want to return AnyKey registration, so ignore it
-                if (descriptorKey.Equals(KeyedService.AnyKey))
-                    return false;
-
-                // Check if both keys are equal, or if the lookup key
-                // should matches all keys (except AnyKey)
-                return lookupKey.Equals(descriptorKey)
-                    || lookupKey.Equals(KeyedService.AnyKey);
-            }
-
-            // One is a keyed service, one is not
-            return false;
         }
 
         private static CallSiteResultCacheLocation GetCommonCacheLocation(CallSiteResultCacheLocation locationA, CallSiteResultCacheLocation locationB)
