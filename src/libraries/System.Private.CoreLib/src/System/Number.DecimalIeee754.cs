@@ -242,17 +242,16 @@ namespace System
 
             exponent += number.DigitsCount - TDecimal.Precision;
 
-            int midPointDigitIndex = Math.Min(number.DigitsCount, TDecimal.Precision);
             byte* p = number.DigitsPtr;
-            int c = *(p + midPointDigitIndex);
+            int midPointValue = *(p + TDecimal.Precision);
 
-            if (c > '5')
+            if (midPointValue > '5')
             {
                 significand += TValue.One;
             }
-            else if (c == '5')
+            else if (midPointValue == '5')
             {
-                MidPointRounding(ref significand, ref number, midPointDigitIndex);
+                MidPointRounding(ref significand, ref number, TDecimal.Precision);
             }
 
             if (significand > TDecimal.MaxSignificand)
@@ -264,11 +263,12 @@ namespace System
 
             static void MidPointRounding(ref TValue significand, ref NumberBuffer number, int midPointDigitIndex)
             {
-                byte* p = number.DigitsPtr + midPointDigitIndex + 1;
+                int index = midPointDigitIndex + 1;
+                byte* p = number.DigitsPtr + index;
                 int c = *p;
                 bool tiedToEvenRounding = true;
 
-                while (c != 0)
+                while (index < number.DigitsCount && c != 0)
                 {
                     if (c != '0')
                     {
@@ -276,10 +276,11 @@ namespace System
                         tiedToEvenRounding = false;
                         break;
                     }
+                    ++index;
                     c = *++p;
                 }
 
-                if (tiedToEvenRounding && *(p + midPointDigitIndex - 1) % 2 == 1)
+                if (tiedToEvenRounding && !int.IsEvenInteger(*(p + midPointDigitIndex - 1)))
                 {
                     significand += TValue.One;
                 }
