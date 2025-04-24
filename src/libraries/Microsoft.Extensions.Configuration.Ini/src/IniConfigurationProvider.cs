@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Configuration.Ini
     /// Provides configuration key-value pairs that are obtained from an INI file.
     /// </summary>
     /// <remarks>
-    /// <para>Files are simple line structures (<a href="https://en.wikipedia.org/wiki/INI_file">INI Files on Wikipedia</a>).</para>
+    /// <para>INI files are simple line structures (<a href="https://en.wikipedia.org/wiki/INI_file">INI files on Wikipedia</a>).</para>
     /// <para>The following is an example of an INI file:</para>
     /// <code lang="ini">
     /// [Section:Header]
