@@ -2449,11 +2449,14 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 {
                     if (!isReturnsArrayKnown)
                     {
-                        CORINFO_CLASS_HANDLE retClass = info.compMethodInfo->args.retTypeClass;
-                        if (retClass != NO_CLASS_HANDLE)
+                        if (info.compRetType == TYP_REF)
                         {
-                            uint32_t retClassAttribs = info.compCompHnd->getClassAttribs(retClass);
-                            returnsArray             = (retClassAttribs & CORINFO_FLG_ARRAY) != 0;
+                            CORINFO_CLASS_HANDLE retClass = info.compMethodInfo->args.retTypeClass;
+                            if (retClass != NO_CLASS_HANDLE)
+                            {
+                                uint32_t retClassAttribs = info.compCompHnd->getClassAttribs(retClass);
+                                returnsArray             = (retClassAttribs & CORINFO_FLG_ARRAY) != 0;
+                            }
                         }
                         isReturnsArrayKnown = true;
                     }
