@@ -30,8 +30,6 @@
     <DisableArcadeExcludeFromBuildSupport>true</DisableArcadeExcludeFromBuildSupport>
     <!-- Use SDK compilers in full VMR builds. -->
     <UsingToolMicrosoftNetCompilers Condition="'$(DotNetBuildOrchestrator)' != 'true'">true</UsingToolMicrosoftNetCompilers>
-    <MicrosoftDotNetXliffTasksVersion>10.0.0-beta.25223.119</MicrosoftDotNetXliffTasksVersion>
-    <MicrosoftNETSdkILVersion>10.0.0-preview.4.25223.119</MicrosoftNETSdkILVersion>
   </PropertyGroup>
   <ItemGroup>
     <WorkloadSdkBandVersions Include="$(SdkBandVersion)" SupportsMachineArch="true" />
@@ -103,6 +101,7 @@
     <MicrosoftDotNetRemoteExecutorVersion>10.0.0-beta.25223.119</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>10.0.0-beta.25178.2</MicrosoftDotNetVersionToolsTasksVersion>
     <MicrosoftDotNetPackageTestingVersion>10.0.0-beta.25223.119</MicrosoftDotNetPackageTestingVersion>
+    <MicrosoftDotNetXliffTasksVersion>10.0.0-beta.25223.119</MicrosoftDotNetXliffTasksVersion>
     <!-- TODO: Remove pinned xunit.analyzers version: https://github.com/dotnet/runtime/issues/97088 -->
     <XUnitAnalyzersVersion>1.4.0</XUnitAnalyzersVersion>
     <!-- NuGet dependencies -->
@@ -112,6 +111,7 @@
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- ILAsm dependencies -->
     <MicrosoftNETCoreILAsmVersion>10.0.0-preview.4.25223.119</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETSdkILVersion>10.0.0-preview.4.25223.119</MicrosoftNETSdkILVersion>
     <!-- Maintenance-Packages dependencies -->
     <MicrosoftBclHashCodeVersion>6.0.0</MicrosoftBclHashCodeVersion>
     <SystemBuffersVersion>4.6.1</SystemBuffersVersion>
