@@ -242,8 +242,7 @@ namespace System
 
             exponent += number.DigitsCount - TDecimal.Precision;
 
-            byte* p = number.DigitsPtr;
-            int midPointValue = *(p + TDecimal.Precision);
+            int midPointValue = *(number.DigitsPtr + TDecimal.Precision);
 
             if (midPointValue > '5')
             {
@@ -279,7 +278,7 @@ namespace System
                     c = *++p;
                 }
 
-                if (tiedToEvenRounding && !int.IsEvenInteger(*(number.DigitsPtr + midPointDigitIndex - 1)))
+                if (tiedToEvenRounding && !int.IsEvenInteger(*(number.DigitsPtr + midPointDigitIndex - 1) - '0'))
                 {
                     significand += TValue.One;
                 }
