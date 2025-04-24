@@ -746,7 +746,7 @@ create_scc (ScanData *data)
 	for (i = dyn_array_ptr_size (&loop_stack) - 1; i >= 0; --i) {
 		ScanData *other = (ScanData *)dyn_array_ptr_get (&loop_stack, i);
 		found_bridge |= other->is_bridge;
-		if (dyn_array_ptr_size (&other->xrefs) > 0) {
+		if (dyn_array_ptr_size (&other->xrefs) > 0 || found_bridge) {
 			// This scc will have more xrefs than the ones from the color_merge_array,
 			// we will need to create a new color to store this information.
 			can_reduce_color = FALSE;

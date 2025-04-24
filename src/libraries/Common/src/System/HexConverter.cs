@@ -178,7 +178,7 @@ namespace System
             }
         }
 
-        public static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
+        public static string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
 #if NETFRAMEWORK || NETSTANDARD2_0
             Span<char> result = bytes.Length > 16 ?
@@ -192,10 +192,24 @@ namespace System
                 pos += 2;
             }
             return result.ToString();
+#elif NET9_0_OR_GREATER
+            SpanCasingPair args = new() { Bytes = bytes, Casing = casing };
+            return string.Create(bytes.Length * 2, args, static (chars, args) =>
+                EncodeToUtf16(args.Bytes, chars, args.Casing));
 #else
-            return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
-                EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
+            // .NET 8.0 path (doesn't support 'allow ref struct' feature)
+            unsafe
+            {
+                return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
+                    EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
+            }
 #endif
+        }
+
+        private ref struct SpanCasingPair
+        {
+            public ReadOnlySpan<byte> Bytes { get; set; }
+            public Casing Casing { get; set; }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

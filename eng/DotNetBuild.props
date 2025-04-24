@@ -1,6 +1,13 @@
 <!-- When altering this file, include @dotnet/product-construction as a reviewer. -->
 
 <Project>
+  <PropertyGroup>
+    <!-- TargetRid can be set by the orchestrator, so we need to set OutputRID to that as a default. -->
+    <OutputRID Condition="'$(OutputRID)' == ''">$(TargetRid)</OutputRID>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)OSArch.props" Condition="'$(_ImportedOSArchProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)RuntimeIdentifier.props" Condition="'$(_ImportedRuntimeIdentifierProps)' != 'true'" />
 
   <PropertyGroup>
     <GitHubRepositoryName>runtime</GitHubRepositoryName>
@@ -8,47 +15,7 @@
     <BaseInnerSourceBuildCommand Condition="'$(OS)' == 'Windows_NT'">.\build.cmd</BaseInnerSourceBuildCommand>
     <BaseInnerSourceBuildCommand Condition="'$(OS)' != 'Windows_NT'">./build.sh</BaseInnerSourceBuildCommand>
 
-    <_hostRid>$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_hostRid>
-    <!-- TargetRid names what gets built. -->
-    <TargetRid Condition="'$(TargetRid)' == ''">$(_hostRid)</TargetRid>
-
-    <!-- Split e.g. 'fedora.33-x64' into 'fedora.33' and 'x64'. -->
-    <_targetRidPlatformIndex>$(TargetRid.LastIndexOf('-'))</_targetRidPlatformIndex>
-    <TargetArch>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetArch>
-    <TargetOS>$(TargetRid.Substring(0, $(_targetRidPlatformIndex)))</TargetOS>
-
-    <_hostRidPlatformIndex>$(_hostRid.LastIndexOf('-'))</_hostRidPlatformIndex>
-    <_hostArch>$(_hostRid.Substring($(_hostRidPlatformIndex)).TrimStart('-'))</_hostArch>
-
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
-  </PropertyGroup>
-
-  <!-- Keep this list in sync with https://github.com/dotnet/sdk/blob/main/src/SourceBuild/content/Directory.Build.props#L23 -->
-  <PropertyGroup Label="ShortStacks">
-    <ShortStack Condition="'$(TargetOS)' == 'wasi'">true</ShortStack>
-    <ShortStack Condition="'$(TargetOS)' == 'browser'">true</ShortStack>
-    <ShortStack Condition="'$(TargetOS)' == 'ios'">true</ShortStack>
-    <ShortStack Condition="'$(TargetOS)' == 'iossimulator'">true</ShortStack>
-    <ShortStack Condition="'$(TargetOS)' == 'tvos'">true</ShortStack>
-    <ShortStack Condition="'$(TargetOS)' == 'tvossimulator'">true</ShortStack>
-    <ShortStack Condition="'$(TargetOS)' == 'maccatalyst'">true</ShortStack>
-    <ShortStack Condition="'$(TargetOS)' == 'android'">true</ShortStack>
-    <ShortStack Condition="'$(TargetOS)' == 'linux-bionic'">true</ShortStack>
-    <!-- Mono LLVM builds are short -->
-    <ShortStack Condition="'$(DotNetBuildMonoEnableLLVM)' == 'true' or '$(DotNetBuildMonoAOTEnableLLVM)' == 'true'">true</ShortStack>
-  </PropertyGroup>
-
-  <!--
-    Allow the VMR orchestrator to control whether or not to build rid-specific artifacts,
-    but provide defaults until the VMR orchestrator provides controls in all scenarios.
-  -->
-  <PropertyGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">
-    <!-- Source-build always needs all artifacts to be published. -->
-    <EnableDefaultRidSpecificArtifacts Condition="'$(DotNetBuildSourceOnly)' != ''">false</EnableDefaultRidSpecificArtifacts>
-    <!-- Short-stack builds should always only publish RID-specific artifacts. -->
-    <EnableDefaultRidSpecificArtifacts Condition="'$(ShortStack)' == 'true'">true</EnableDefaultRidSpecificArtifacts>
-    <!-- If no override is specified, don't use RID-specific publishing. Instead, publish everything. -->
-    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">false</EnableDefaultRidSpecificArtifacts>
   </PropertyGroup>
 
   <Target Name="GetRuntimeSourceBuildCommandConfiguration"
@@ -63,21 +30,20 @@
       <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(Sign)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)sign</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)pack</InnerBuildArgs>
 
-      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArch)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(TargetOS)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(CrossBuild)' == 'true' or ('$(TargetArch)' != '$(_hostArch)' and '$(ShortStack)' != 'true')">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArchitecture)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(_portableOS)' == 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os windows</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(_portableOS)' != 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(_portableOS)</InnerBuildArgs>
+      <!-- Mobile builds are never "cross" builds as they don't have a rootfs-based filesystem build. -->
+      <InnerBuildArgs Condition="'$(CrossBuild)' == 'true' or ('$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(TargetsMobile)' != 'true' and '$(_portableOS)' != 'linux-bionic')">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)configuration $(Configuration)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)verbosity $(LogVerbosity)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)nodereuse $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)warnAsError $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)usemonoruntime</InnerBuildArgs>
       <!-- TODO: This parameter is only available on the Unix script. Intentional? -->
-      <InnerBuildArgs Condition="'$(OS)' != 'Windows_NT'">$(InnerBuildArgs) --outputrid $(TargetRid)</InnerBuildArgs>
-      <!-- PackageOS and ToolsOS control the rids of prebuilts consumed by the build.
-           They are set to RuntimeOS so they match with the build SDK rid. -->
-      <InnerBuildArgs Condition="'$(RuntimeOS)' != ''">$(InnerBuildArgs) /p:PackageOS=$(RuntimeOS) /p:ToolsOS=$(RuntimeOS)</InnerBuildArgs>
-      <!-- BaseOS is an expected known rid in the graph that TargetRid is compatible with.
-           It's used to add TargetRid in the graph if the parent can't be detected. -->
+      <InnerBuildArgs Condition="'$(OS)' != 'Windows_NT'">$(InnerBuildArgs) --outputrid $(OutputRID)</InnerBuildArgs>
+      <!-- BaseOS is an expected known rid in the graph that OutputRID is compatible with.
+           It's used to add OutputRID in the graph if the parent can't be detected. -->
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS) /p:BaseOS=$(BaseOS)</InnerBuildArgs>
       <!-- Pass through special build modes controlled by properties -->
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
@@ -112,13 +78,14 @@
       <InnerBuildArgs Condition="'$(GitHubRepositoryName)' != ''">$(InnerBuildArgs) /p:GitHubRepositoryName=$(GitHubRepositoryName)</InnerBuildArgs>
 
       <!-- Handle system libraries -->
-      <UseSystemLibs Condition="'$(UseSystemLibs)' != ''">+$(UseSystemLibs)+</UseSystemLibs>
-      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+brotli+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_BROTLI=true</InnerBuildArgs>
-      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+libunwind+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=true</InnerBuildArgs>
+      <UseSystemLibs Condition="'$(UseSystemLibs)' != ''">+$(UseSystemLibs)</UseSystemLibs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+brotli'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_BROTLI=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+libunwind'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=true</InnerBuildArgs>
       <!-- TODO: llvm-libunwind -->
       <!-- TODO: LinuxTracepoints -->
-      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+rapidjson+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_RAPIDJSON=true</InnerBuildArgs>
-      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+zlib+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_ZLIB=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+rapidjson'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_RAPIDJSON=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+zlib'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_ZLIB=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('-lttng'))">$(InnerBuildArgs) /p:FeatureXplatEventSource=false</InnerBuildArgs>
 
       <!-- Needed until https://github.com/dotnet/runtime/issues/109329 is fixed. -->
       <InnerBuildArgs Condition="'$(NetCoreAppToolCurrentVersion)' != ''">$(InnerBuildArgs) /p:NetCoreAppToolCurrentVersion=$(NetCoreAppToolCurrentVersion)</InnerBuildArgs>

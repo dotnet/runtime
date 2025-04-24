@@ -78,10 +78,7 @@ namespace System.DirectoryServices.ActiveDirectory
             CheckIfDisposed();
 
             // validate siteName
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             if (siteName.Length == 0)
             {

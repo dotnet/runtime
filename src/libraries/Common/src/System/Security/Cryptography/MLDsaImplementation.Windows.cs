@@ -27,19 +27,19 @@ namespace System.Security.Cryptography
         protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa GenerateKeyImpl(MLDsaAlgorithm algorithm) =>
+        internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportPkcs8PrivateKeyValue(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsaImplementation ImportPkcs8PrivateKeyValue(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial MLDsa ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
     }
 }

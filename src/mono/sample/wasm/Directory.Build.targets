@@ -1,9 +1,5 @@
 <Project>
   <Import Project="../Directory.Build.targets" />
-  <PropertyGroup>
-    <WasmPerfTracing Condition="'$(WasmPerfTracing)' == '' and '$(WasmProfilers)' == '' and '$(WasmBuildNative)' != 'false'">true</WasmPerfTracing>
-    <WasmPerfInstrumentation Condition="'$(WasmPerfInstrumentation)' == '' and '$(WasmPerfTracing)' == 'true' and '$(WasmProfilers)' == '' and '$(WasmBuildNative)' != 'false'">all</WasmPerfInstrumentation>
-  </PropertyGroup>
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
 
   <PropertyGroup>
