@@ -19,6 +19,12 @@ namespace System.ComponentModel.DataAnnotations
         {
             switch (value)
             {
+                case Uri valueAsUri:
+                {
+                    return valueAsUri.Scheme == Uri.UriSchemeHttp
+                        || valueAsUri.Scheme == Uri.UriSchemeHttps
+                        || valueAsUri.Scheme == Uri.UriSchemeFtp;
+                }
                 case string valueAsString:
                 {
                     return valueAsString.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
