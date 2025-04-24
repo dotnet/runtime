@@ -265,89 +265,47 @@ do {                                                                            
 
 #endif // !defined(DEBUGGER_UNWIND)
 
-//
 // Macros for stripping pointer authentication (PAC) bits.
-//
-//
-//#if !defined(DACCESS_COMPILE)
-//
-//#define STRIP_PAC(pointer)    RtlStripPacOnline(pointer)
-//
-//
-//FORCEINLINE
-////VOID RtlStripPacOnline(_Inout_ PULONG64 Pointer)
-//VOID RtlStripPacOnline(void** Pointer)
-//
-///*++
-//
-//Routine Description:
-//
-//    This routine strips the ARM64 Pointer Authentication Code (PAC) from a
-//    pointer using the ARM64-native xpaci intrinsic directly. Hence this should
-//    only be called when stripping a pointer at runtime (not debugger)
-//
-//Arguments:
-//
-//    Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
-//
-//Return Value:
-//
-//    None.
-//
-//--*/
-//
-//{
-//    // This is a key step: The pointer is passed as a reference to be modified.
-//    unsigned int key = 12345;  // Example key (not used for XPACI, but for PAC authentication)
-//
-//    // Inline assembly to invoke the `xpaci` instruction.
-//    // The pointer is passed as an argument and modified in-place.
-//    asm volatile (
-//        "xpaci %[Pointer]"            // Strip the Pointer Authentication Code (PAC) from the pointer
-//        : [Pointer] "+r" (Pointer)       // The pointer is modified in-place
-//        :                         // No input operands needed (beyond the pointer)
-//        : "memory"                // Memory is affected, prevent reordering
-//    );
-//}
-//
-////
-////FORCEINLINE
-////VOID
-////RtlStripPacOnline (
-////    _Inout_ PULONG64 Pointer
-////    )
-////
-/////*++
-////
-////Routine Description:
-////
-////    This routine strips the ARM64 Pointer Authentication Code (PAC) from a
-////    pointer using the ARM64-native xpaci intrinsic directly. Hence this should
-////    only be called when stripping a pointer at runtime (not debugger)
-////
-////Arguments:
-////
-////    Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
-////
-////Return Value:
-////
-////    None.
-////
-////--*/
-////
-////{
-////    ULONG64 StrippedPointer = CONTEXT_GetSveLengthFromOS();
-////
-////    StrippedPointer = *Pointer;
-////    StrippedPointer = (ULONG64)__xpaci((PVOID)StrippedPointer);
-////    *Pointer = StrippedPointer;
-////    return;
-////}
-//
-//#else
+#if !defined(DACCESS_COMPILE)
 
-//#define STRIP_PAC(pointer)    RtlStripPacManual(pointer)
-#define STRIP_PAC(pointer)  *pointer &= 0x0000FFFFFFFFFFFF
+#define STRIP_PAC(pointer)    RtlStripPacOnline(pointer)
+
+FORCEINLINE
+VOID RtlStripPacOnline(_Inout_ PULONG64 Pointer)
+
+/*++
+
+Routine Description:
+
+   This routine strips the ARM64 Pointer Authentication Code (PAC) from a
+   pointer using the ARM64-native xpaci intrinsic directly. Hence this should
+   only be called when stripping a pointer at runtime (not debugger)
+
+Arguments:
+
+   Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
+
+Return Value:
+
+   None.
+
+--*/
+
+{
+   // Inline assembly to invoke the `xpaci` instruction.
+   // The pointer is passed as an argument and modified in-place.
+   ULONG64 StrippedPointer = *Pointer;
+   asm volatile (".arch_extension pauth\n"
+                 "xpaci %0"
+                 : "+r" (StrippedPointer)
+                 :
+                 : "memory"
+                );
+    *Pointer = StrippedPointer;
+}
+#else
+
+#define STRIP_PAC(pointer)    RtlStripPacManual(pointer)
 
 FORCEINLINE
 VOID
@@ -376,33 +334,11 @@ Return Value:
 
 --*/
 {
-    ULONG64 StrippedPointer;
-
-    // For now hard code to mask everything but the bottom 55 bits
-    ULONG64 PointerAuthMask = (1ull << 55) - 1;
-
-    StrippedPointer = *Pointer;
-
-    //
-    // Strip the pointer manually. Bit 55 of the pointer is replicated across
-    // the "unused" bits (if bit 55 is 1, all unused bits should be 1; if bit
-    // 55 is 0, all unused bits should be 0).
-    //
-
-    if (((StrippedPointer >> 55) & 0x1) == 0) {
-        StrippedPointer &= ~PointerAuthMask;
-
-    } else {
-        StrippedPointer |= PointerAuthMask;
-    }
-
-    *Pointer = StrippedPointer;
-
+    *Pointer &= 0x0000FFFFFFFFFFFF;
     return;
 }
 
-//#endif // !defined(DACCESS_COMPILE)
-
+#endif // !defined(DACCESS_COMPILE)
 
 //
 // Macros to clarify opcode parsing

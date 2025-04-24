@@ -5796,6 +5796,19 @@ static bool IsTailCallJitHelper(const BYTE * ip)
     return TailCallStubManager::IsTailCallJitHelper(reinterpret_cast<PCODE>(ip));
 }
 
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+static inline void* PacStripPtr(void* ptr)
+{
+    __asm__ volatile (".arch_extension pauth\n"
+                      "xpaci %0"
+                      : "+r" (ptr)
+                      :
+                      : "memory"                // Memory is affected, prevent reordering
+                      );
+    return ptr;
+}
+#endif // TARGET_ARM64 && __GNUC__
+
 // Check whether a call to an IP will be a tailcall dispatched by first
 // returning. When a tailcall cannot be performed just with a jump instruction,
 // the code will be doing a regular call to a managed function called the
@@ -5842,10 +5855,15 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
     TailCallTls* tls = GetThread()->GetTailCallTls();
     LPVOID tailCallAwareRetAddr = tls->GetFrame()->TailCallAwareReturnAddress;
 
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+    retAddr = PacStripPtr(retAddr);
+    tailCallAwareRetAddr = PacStripPtr(tailCallAwareRetAddr);
+#endif // TARGET_ARM64 && __GNUC__
+
     LOG((LF_CORDB,LL_INFO1000, "ITCTR: ret addr is %p, tailcall aware ret addr is %p\n",
         retAddr, tailCallAwareRetAddr));
 
-    return ((unsigned long long)retAddr & 0x0000FFFFFFFFFFFFULL) == ((unsigned long long)(tailCallAwareRetAddr) & 0x0000FFFFFFFFFFFFULL);
+    return retAddr == tailCallAwareRetAddr;
 }
 
 // bool DebuggerStepper::TrapStep()   TrapStep attepts to set a

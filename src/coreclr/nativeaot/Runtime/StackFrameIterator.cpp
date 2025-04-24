@@ -1599,6 +1599,19 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 #define STACK_ALIGN_SIZE 4
 #endif
 
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+static inline void* PacStripPtr(void* ptr)
+{
+    __asm__ volatile (".arch_extension pauth\n"
+                      "xpaci %0"
+                      : "+r" (ptr)
+                      :
+                      : "memory"                // Memory is affected, prevent reordering
+                      );
+    return ptr;
+}
+#endif // TARGET_ARM64 && __GNUC__
+
 void StackFrameIterator::UnwindThrowSiteThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
@@ -1790,8 +1803,11 @@ UnwindOutOfCurrentManagedFrame:
         // if the thread is safe to walk, it better not have a hijack in place.
         ASSERT(!m_pThread->IsHijacked());
 
-        //TODO-PAC: Strip pac while populating IP in m_RegDisplay
-        SetControlPC(dac_cast<PTR_VOID>(PCODEToPINSTR(m_RegDisplay.GetIP() & (TADDR)0x0000FFFFFFFFFFFF)));
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+        SetControlPC(PacStripPtr(dac_cast<PTR_VOID>(PCODEToPINSTR(m_RegDisplay.GetIP()))));
+#else
+        SetControlPC(dac_cast<PTR_VOID>(PCODEToPINSTR(m_RegDisplay.GetIP())));
+#endif // TARGET_ARM64 && __GNUC__
 
         PTR_VOID collapsingTargetFrame = NULL;
 
@@ -2122,8 +2138,10 @@ void StackFrameIterator::CalculateCurrentMethodState()
         return;
     }
 
-    //TODO-PAC: Strip the address at the source
-    m_ControlPC = dac_cast<PTR_VOID>(dac_cast<TADDR>(m_ControlPC) & (TADDR)0x0000FFFFFFFFFFFF);
+#if defined(TARGET_ARM64) && defined(__GNUC__)
+    m_ControlPC = PacStripPtr(m_ControlPC);
+#endif // TARGET_ARM64 && __GNUC__
+
     // Assume that the caller is likely to be in the same module
     if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))
     {
