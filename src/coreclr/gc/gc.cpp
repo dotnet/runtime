@@ -13228,9 +13228,6 @@ void region_free_list::sort_by_committed_and_age()
     }
     tail_free_region = prev;
 }
-<<<<<<< HEAD
-#endif //USE_REGIONS
-=======
 
 void gc_heap::age_free_regions (const char* msg)
 {
@@ -13277,7 +13274,6 @@ void gc_heap::age_free_regions (const char* msg)
         }
     }
 }
->>>>>>> 31f5aeccefd (only age regions during BGC)
 
 // distribute_free_regions is called during all blocking GCs and in the start of the BGC mark phase
 // unless we already called it during an ephemeral GC right before the BGC.
