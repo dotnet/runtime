@@ -127,10 +127,17 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
+        [ComImport]
+        [Guid("00000000-0000-0000-0000-000000000000")]
+        interface ComInterface
+        {
+            void Func();
+        }
+
         // This class is used to test the PrepareMethod API with COM interop on non-Windows platforms.
         [ComImport]
         [Guid("00000000-0000-0000-0000-000000000000")]
-        class ComClass
+        class ComClass : ComInterface
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             public extern void Func();
