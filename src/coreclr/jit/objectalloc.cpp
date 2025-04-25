@@ -698,12 +698,27 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         {
             JITDUMP("   V%02u is address exposed\n", lclNum);
             MarkLclVarAsEscaping(lclNum);
+            continue;
         }
-        else if (lclNum == comp->info.compRetBuffArg)
+
+        if (lclNum == comp->info.compRetBuffArg)
         {
             JITDUMP("   V%02u is retbuff\n", lclNum);
             MarkLclVarAsEscaping(lclNum);
+            continue;
         }
+
+#if FEATURE_IMPLICIT_BYREFS
+        // We have to mark all implicit byref params as escaping, because
+        // their GC reporting is controlled by the caller
+        //
+        if (lclDsc->lvIsParam && lclDsc->lvIsImplicitByRef)
+        {
+            JITDUMP("   V%02u is an implicit byref param\n", lclNum);
+            MarkLclVarAsEscaping(lclNum);
+            continue;
+        }
+#endif
 
         // Parameters have unknown initial values.
         // OSR locals have unknown initial values.
@@ -2047,8 +2062,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
 
                     // If we are storing to a GC struct field, we may need to retype the store
                     //
-                    if (retypeFields && parent->OperIs(GT_STOREIND) && (addr->OperIs(GT_FIELD_ADDR)) &&
-                        (varTypeIsGC(parent->TypeGet())))
+                    if (parent->OperIs(GT_STOREIND) && addr->OperIs(GT_FIELD_ADDR) && varTypeIsGC(parent->TypeGet()))
                     {
                         parent->ChangeType(newType);
                     }
