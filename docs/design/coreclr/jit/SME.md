@@ -44,11 +44,9 @@ A program can enter or leave Streaming Mode using the following:
 
 The `FEAT_SME_FA64` feature, if present, integrates the SME unit directly onto each CPU core (referred to as the "Mesh" configuration on the right). In this configuration, no instructions become invalid. However, this setup may not be implemented for server SKUs due to the significant silicon area required for an SME unit on every core. This implementation detail still requires confirmation from Arm.
 
-An alternative configuration involves a single shared SME unit across all or a subset of CPU cores (referred to as the "DSU" configuration on the left). This setup is more suited for PCs, laptops, and mobile devices. The M4 processor is currently the only production-ready device with SME support, but it includes SME functionality without SVE capabilities in its main CPU cores.
+The standard configuration involves a single shared SME unit across all or a subset of CPU cores (referred to as the "DSU" configuration on the left). This setup is more suited for PCs, laptops, and mobile devices. The M4 processor is currently the only production-ready device with SME support, but it includes SME functionality without SVE capabilities in its main CPU cores.
 
 ![alt text](./images/SME_Dsu_Mesh_modes.png)
-Image credit: https://www.youtube.com/watch?v=jrniGW_Hzno
-
 
 ### ZA Storage
 
@@ -73,8 +71,6 @@ C++ provides the following function attributes to define compatibility with Stre
 - `__arm_streaming_compatible`: Indicates that the function uses only instructions valid in both streaming and non-streaming modes.
 - **Default Behavior**: If no attribute is specified, the function is treated as a non-streaming mode function.
 
-![Function Attributes Overview](./images/SME_Function_Attributes.png)
-
 ### SME State Management
 
 It is the caller's responsibility to ensure the SME state is properly configured before a function is entered and to restore the previous state upon function exit. The callee assumes that the SME state is valid when the function is invoked.
@@ -87,7 +83,7 @@ It is the caller's responsibility to ensure the SME state is properly configured
   - When calling streaming and non-streaming functions from a streaming-compatible function, the compiler inserts code to check the current SME state and switch modes if necessary.
   - For streaming-compatible functions, no mode-checking or state-switching is required.
 
-![Transition Handling Example](./images/SME_Transition_Handling.png)
+[LLVM document about SME](https://llvm.org/docs/AArch64SME.html#compiler-inserted-streaming-mode-changes) captures different possibilities of state transition and how they are handled.
 
 Let us take a look at [this example](https://godbolt.org/z/hxehqv6eG). 
 
@@ -395,6 +391,8 @@ Several scenarios can arise where VL-dependent objects might cross boundaries be
 
 If other options are preferred instead of method attributes, we would need to rethink how to enforce this restriction effectively.
 
+[Calling restrictions related to streaming mode](https://arm-software.github.io/acle/main/acle.html#calling-restrictions-related-to-streaming-mode) section of Arm ACLE highlights some of the rules for passing around VL-dependent objects between streaming state.
+
 ### Runtime
 
 ### Notes on .NET Runtime Components for SME
@@ -575,11 +573,9 @@ These naming conventions ensure clarity and consistency across the API surface. 
 - SME kernel docs: https://docs.kernel.org/arch/arm64/sme.html
 - LLVM register allocation for `ZA`: https://github.com/llvm/llvm-project/commit/c08dabb0f476e7ff3df70d379f3507707acbac4e
 
-- ![ZA Array Vector Access and Tile Mapping](./images/SME_ZA_1.png)  
-_Image courtesy: Arm documentation for 32B/256-bits SVL. Source: [Arm SME Overview](https://developer.arm.com/documentation/109246/0100/SME-Overview/SME-ZA-storage/ZA-array-vector-access-and-ZA-tile-mapping)_
+- [Arm SME's ZA tile mapping](https://developer.arm.com/documentation/109246/0100/SME-Overview/SME-ZA-storage/ZA-array-vector-access-and-ZA-tile-mapping)
 
-- ![SME ZA Storage](./images/SME_ZA_2.png)  
-_Image credits: [Arm Community Blog](https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/arm-scalable-matrix-extension-introduction)_
+- [Arm Community Blog that describes SME ZA Storage](https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/arm-scalable-matrix-extension-introduction)
 
 
 ## TODO
