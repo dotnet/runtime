@@ -38,11 +38,11 @@ typedef var_types RegisterType;
 #define FloatRegisterType TYP_FLOAT
 #define MaskRegisterType  TYP_MASK
 
-// REGISTER_LOOKUP : a lookup table to match register indice to active registers.
+// NEXT_REGISTER : update reg to next active registers.
 #ifdef TARGET_AMD64
-#define REGISTER_LOOKUP(regIndex) regIndices[(unsigned)regIndex]
+#define NEXT_REGISTER(reg, index) index++, reg = regIndices[index]
 #else
-#define REGISTER_LOOKUP(regIndex) regIndex
+#define NEXT_REGISTER(reg, index) reg = REG_NEXT(reg)
 #endif
 
 //------------------------------------------------------------------------
