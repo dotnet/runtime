@@ -101,11 +101,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }, SlhDsaTestHelpers.EncryptionPasswordType.Byte);
         }
 
+        public static IEnumerable<object[]> ApiWithDestinationSpanTestData =>
+            from algorithm in SlhDsaTestData.AlgorithmsRaw
+            from destinationLargerThanRequired in new[] { true, false }
+            select new object[] { algorithm, destinationLargerThanRequired };
+
         private const int PaddingSize = 10;
 
         [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void ExportSlhDsaPublicKey_CallsCore(SlhDsaAlgorithm algorithm)
+        [MemberData(nameof(ApiWithDestinationSpanTestData))]
+        public static void ExportSlhDsaPublicKey_CallsCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -113,20 +118,21 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] publicKey = CreatePaddedFilledArray(publicKeySize, 42);
 
             // Extra bytes in destination buffer should not be touched
-            Memory<byte> destination = publicKey.AsMemory(PaddingSize, publicKeySize);
+            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
+            Memory<byte> destination = publicKey.AsMemory(PaddingSize, publicKeySize + extraBytes);
 
             slhDsa.ExportSlhDsaPublicKeyCoreHook = _ => { };
-            slhDsa.AddDestinationBufferIsSameAssertion(destination[..publicKeySize]);
+            slhDsa.AddDestinationBufferIsSameAssertion(destination);
             slhDsa.AddFillDestination(1);
 
-            slhDsa.ExportSlhDsaPublicKey(destination.Span);
+            Assert.Equal(algorithm.PublicKeySizeInBytes, slhDsa.ExportSlhDsaPublicKey(destination.Span));
             Assert.Equal(1, slhDsa.ExportSlhDsaPublicKeyCoreCallCount);
             AssertExpectedFill(publicKey, fillElement: 1, paddingElement: 42, PaddingSize, publicKeySize);
         }
 
         [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void ExportSlhDsaSecretKey_CallsCore(SlhDsaAlgorithm algorithm)
+        [MemberData(nameof(ApiWithDestinationSpanTestData))]
+        public static void ExportSlhDsaSecretKey_CallsCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -134,20 +140,21 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] secretKey = CreatePaddedFilledArray(secretKeySize, 42);
 
             // Extra bytes in destination buffer should not be touched
-            Memory<byte> destination = secretKey.AsMemory(PaddingSize, secretKeySize);
+            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
+            Memory<byte> destination = secretKey.AsMemory(PaddingSize, secretKeySize + extraBytes);
 
             slhDsa.ExportSlhDsaSecretKeyCoreHook = _ => { };
-            slhDsa.AddDestinationBufferIsSameAssertion(destination[..secretKeySize]);
+            slhDsa.AddDestinationBufferIsSameAssertion(destination);
             slhDsa.AddFillDestination(1);
 
-            slhDsa.ExportSlhDsaSecretKey(destination.Span);
+            Assert.Equal(algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(destination.Span));
             Assert.Equal(1, slhDsa.ExportSlhDsaSecretKeyCoreCallCount);
             AssertExpectedFill(secretKey, fillElement: 1, paddingElement: 42, PaddingSize, secretKeySize);
         }
 
         [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void SignData_CallsCore(SlhDsaAlgorithm algorithm)
+        [MemberData(nameof(ApiWithDestinationSpanTestData))]
+        public static void SignData_CallsCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -155,7 +162,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] signature = CreatePaddedFilledArray(signatureSize, 42);
 
             // Extra bytes in destination buffer should not be touched
-            Memory<byte> destination = signature.AsMemory(PaddingSize, signatureSize);
+            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
+            Memory<byte> destination = signature.AsMemory(PaddingSize, signatureSize + extraBytes);
             byte[] testData = [2];
             byte[] testContext = [3];
 
@@ -165,7 +173,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             slhDsa.AddDestinationBufferIsSameAssertion(destination[..signatureSize]);
             slhDsa.AddFillDestination(1);
 
-            slhDsa.SignData(testData, signature.AsSpan(PaddingSize, signatureSize), testContext);
+            slhDsa.SignData(testData, signature.AsSpan(PaddingSize, signatureSize + extraBytes), testContext);
             Assert.Equal(1, slhDsa.SignDataCoreCallCount);
             AssertExpectedFill(signature, fillElement: 1, paddingElement: 42, PaddingSize, signatureSize);
         }
@@ -260,7 +268,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertExtensions.SequenceEqual(CreateFilledArray(algorithm.SecretKeySizeInBytes, 1), exportedPkcs8.PrivateKey.Span);
                 Assert.Equal(0, exportedPkcs8.Version);
                 Assert.Equal(SlhDsaTestHelpers.AlgorithmToOid(algorithm), exportedPkcs8.PrivateKeyAlgorithm.Algorithm);
-                Assert.Equal(default(ReadOnlyMemory<byte>?), exportedPkcs8.PrivateKeyAlgorithm.Parameters);
+                AssertExtensions.FalseExpression(exportedPkcs8.PrivateKeyAlgorithm.Parameters.HasValue);
                 Assert.Null(exportedPkcs8.Attributes);
             });
         }
@@ -334,7 +342,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SubjectPublicKeyInfoAsn exportedPkcs8 = SubjectPublicKeyInfoAsn.Decode(exported, AsnEncodingRules.DER);
                 AssertExtensions.SequenceEqual(CreateFilledArray(algorithm.PublicKeySizeInBytes, 1), exportedPkcs8.SubjectPublicKey.Span);
                 Assert.Equal(SlhDsaTestHelpers.AlgorithmToOid(algorithm), exportedPkcs8.Algorithm.Algorithm);
-                Assert.Equal(default(ReadOnlyMemory<byte>?), exportedPkcs8.Algorithm.Parameters);
+                AssertExtensions.FalseExpression(exportedPkcs8.Algorithm.Parameters.HasValue);
             });
         }
 

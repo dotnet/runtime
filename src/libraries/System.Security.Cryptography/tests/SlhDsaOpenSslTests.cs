@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Linq;
-using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
@@ -60,7 +57,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
                 using (one)
                 {
-                    one.SignData(data, oneSignature, context);
+                    Assert.Equal(oneSignature.Length, one.SignData(data, oneSignature, context));
                     VerifyInstanceIsUsable(one);
                     VerifyInstanceIsUsable(two);
                 }
@@ -79,7 +76,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         private static void VerifyInstanceIsUsable(SlhDsaOpenSsl slhDsa)
         {
             byte[] secretKey = new byte[slhDsa.Algorithm.SecretKeySizeInBytes];
-            slhDsa.ExportSlhDsaSecretKey(secretKey); // does not throw
+            Assert.Equal(slhDsa.Algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey)); // does not throw
 
             // usable
             byte[] data = [1, 2, 3];

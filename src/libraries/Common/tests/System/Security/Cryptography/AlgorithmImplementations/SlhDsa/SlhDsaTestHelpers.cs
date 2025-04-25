@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             callback(slhDsa =>
             {
                 byte[] buffer = new byte[slhDsa.Algorithm.PublicKeySizeInBytes];
-                slhDsa.ExportSlhDsaPublicKey(buffer.AsSpan());
+                Assert.Equal(slhDsa.Algorithm.PublicKeySizeInBytes, slhDsa.ExportSlhDsaPublicKey(buffer.AsSpan()));
                 return buffer;
             });
 
@@ -253,7 +253,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             callback(slhDsa =>
             {
                 byte[] buffer = new byte[slhDsa.Algorithm.SecretKeySizeInBytes];
-                slhDsa.ExportSlhDsaSecretKey(buffer.AsSpan());
+                Assert.Equal(slhDsa.Algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(buffer.AsSpan()));
                 return buffer;
             });
 

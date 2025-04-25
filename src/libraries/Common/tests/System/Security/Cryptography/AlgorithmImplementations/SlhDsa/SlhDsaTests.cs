@@ -63,11 +63,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] data = [1, 2, 3, 4, 5];
             byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
 
-            slhDsa.SignData(data, signature);
+            Assert.Equal(signature.Length, slhDsa.SignData(data, signature));
             ExerciseSuccessfulVerify(slhDsa, data, signature, []);
 
             signature.AsSpan().Clear();
-            slhDsa.SignData(data, signature, Array.Empty<byte>());
+            Assert.Equal(signature.Length, slhDsa.SignData(data, signature, Array.Empty<byte>()));
             ExerciseSuccessfulVerify(slhDsa, data, signature, Array.Empty<byte>());
         }
 
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] data = [1, 2, 3, 4, 5];
             byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
 
-            slhDsa.SignData(data, signature, context);
+            Assert.Equal(signature.Length, slhDsa.SignData(data, signature, context));
             ExerciseSuccessfulVerify(slhDsa, data, signature, context);
         }
 
@@ -91,11 +91,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = GenerateKey(algorithm);
             byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
 
-            slhDsa.SignData([], signature);
+            Assert.Equal(signature.Length, slhDsa.SignData([], signature));
             ExerciseSuccessfulVerify(slhDsa, [], signature, []);
 
             signature.AsSpan().Clear();
-            slhDsa.SignData(Array.Empty<byte>(), signature, Array.Empty<byte>());
+            Assert.Equal(signature.Length, slhDsa.SignData(Array.Empty<byte>(), signature, Array.Empty<byte>()));
             ExerciseSuccessfulVerify(slhDsa, [], signature, []);
         }
 
@@ -107,11 +107,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] context = [1, 1, 3, 5, 6];
             byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
 
-            slhDsa.SignData([], signature, context);
+            Assert.Equal(signature.Length, slhDsa.SignData([], signature, context));
             ExerciseSuccessfulVerify(slhDsa, [], signature, context);
 
             signature.AsSpan().Clear();
-            slhDsa.SignData(Array.Empty<byte>(), signature, context);
+            Assert.Equal(signature.Length, slhDsa.SignData(Array.Empty<byte>(), signature, context));
             ExerciseSuccessfulVerify(slhDsa, [], signature, context);
         }
 
@@ -126,11 +126,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using (SlhDsa slhDsa = GenerateKey(algorithm))
             {
                 signature = new byte[algorithm.SignatureSizeInBytes];
-                slhDsa.SignData(data, signature);
+                Assert.Equal(signature.Length, slhDsa.SignData(data, signature));
                 AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature));
 
                 publicKey = new byte[algorithm.PublicKeySizeInBytes];
-                slhDsa.ExportSlhDsaPublicKey(publicKey);
+                Assert.Equal(publicKey.Length, slhDsa.ExportSlhDsaPublicKey(publicKey));
             }
 
             using (SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(algorithm, publicKey))
@@ -150,10 +150,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using (SlhDsa slhDsa = GenerateKey(algorithm))
             {
                 signature = new byte[algorithm.SignatureSizeInBytes];
-                slhDsa.SignData(data, signature);
+                Assert.Equal(signature.Length, slhDsa.SignData(data, signature));
 
                 secretKey = new byte[algorithm.SecretKeySizeInBytes];
-                slhDsa.ExportSlhDsaSecretKey(secretKey);
+                Assert.Equal(secretKey.Length, slhDsa.ExportSlhDsaSecretKey(secretKey));
             }
 
             using (SlhDsa slhDsa = ImportSlhDsaSecretKey(algorithm, secretKey))
@@ -161,7 +161,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 ExerciseSuccessfulVerify(slhDsa, data, signature, []);
 
                 signature.AsSpan().Clear();
-                slhDsa.SignData(data, signature);
+                Assert.Equal(signature.Length, slhDsa.SignData(data, signature));
 
                 ExerciseSuccessfulVerify(slhDsa, data, signature, []);
             }

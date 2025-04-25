@@ -93,6 +93,16 @@ namespace System.IO.MemoryMappedFiles
             // nop
         }
 
-        private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_length < 0, this);
+        private void ThrowIfDisposed()
+        {
+#if NET
+            ObjectDisposedException.ThrowIf(_length < 0, this);
+#else
+            if (_length < 0)
+            {
+                throw new ObjectDisposedException(GetType().FullName);
+            }
+#endif
+        }
     }
 }

@@ -307,7 +307,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
 
             byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes];
-            slhDsa.ExportSlhDsaSecretKey(secretKey);
+            Assert.Equal(slhDsa.Algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey));
             AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, secretKey);
         }
 
@@ -317,9 +317,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = SlhDsa.ImportSubjectPublicKeyInfo(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyPkcs8);
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
 
-            byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes];
-            slhDsa.ExportSlhDsaPublicKey(secretKey);
-            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, secretKey);
+            byte[] publicKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes];
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes, slhDsa.ExportSlhDsaPublicKey(publicKey));
+            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, publicKey);
         }
 
         [Fact]
@@ -330,7 +330,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
 
             byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes];
-            slhDsa.ExportSlhDsaSecretKey(secretKey);
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey));
             AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, secretKey);
         }
 
@@ -341,9 +341,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = SlhDsa.ImportFromPem(pem);
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
 
-            byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes];
-            slhDsa.ExportSlhDsaPublicKey(secretKey);
-            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, secretKey);
+            byte[] publicKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes];
+            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes, slhDsa.ExportSlhDsaPublicKey(publicKey));
+            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, publicKey);
         }
 
         #endregion IETF samples
@@ -374,11 +374,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using (SlhDsa secretSlhDsa = ImportSlhDsaSecretKey(vector.Algorithm, sk))
             {
                 byte[] pubKey = new byte[vector.Algorithm.PublicKeySizeInBytes];
-                secretSlhDsa.ExportSlhDsaPublicKey(pubKey);
+                Assert.Equal(pk.Length, secretSlhDsa.ExportSlhDsaPublicKey(pubKey));
                 AssertExtensions.SequenceEqual(pk, pubKey);
 
                 byte[] secretKey = new byte[vector.Algorithm.SecretKeySizeInBytes];
-                secretSlhDsa.ExportSlhDsaSecretKey(secretKey);
+                Assert.Equal(sk.Length, secretSlhDsa.ExportSlhDsaSecretKey(secretKey));
                 AssertExtensions.SequenceEqual(sk, secretKey);
             }
 
@@ -386,7 +386,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using (SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(vector.Algorithm, pk))
             {
                 byte[] pubKey = new byte[vector.Algorithm.PublicKeySizeInBytes];
-                publicSlhDsa.ExportSlhDsaPublicKey(pubKey);
+                Assert.Equal(pk.Length, publicSlhDsa.ExportSlhDsaPublicKey(pubKey));
                 AssertExtensions.SequenceEqual(pk, pubKey);
 
                 byte[] secretKey = new byte[vector.Algorithm.SecretKeySizeInBytes];

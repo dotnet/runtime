@@ -93,8 +93,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Signs the specified data with the provided context,
-        ///   writing the signature into the provided buffer.
+        ///   Sign the specified data, writing the signature into the provided buffer.
         /// </summary>
         /// <param name="data">
         ///   The data to sign.
@@ -106,8 +105,11 @@ namespace System.Security.Cryptography
         ///   An optional context-specific value to limit the scope of the signature.
         ///   The default value is an empty buffer.
         /// </param>
+        /// <returns>
+        ///   The number of bytes written to the <paramref name="destination" /> buffer.
+        /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is the incorrect length to receive the signature.
+        ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
@@ -121,7 +123,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the data.</para>
         /// </exception>
-        public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
+        public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
             if (context.Length > MaxContextLength)
             {
@@ -133,73 +135,15 @@ namespace System.Security.Cryptography
 
             int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
 
-            if (destination.Length != signatureSizeInBytes)
+            if (destination.Length < signatureSizeInBytes)
             {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationTooShort, signatureSizeInBytes),
-                    nameof(destination));
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
             ThrowIfDisposed();
 
             SignDataCore(data, context, destination.Slice(0, signatureSizeInBytes));
-        }
-
-        /// <summary>
-        ///   Signs the specified data with the provided context
-        /// </summary>
-        /// <param name="data">
-        ///   The data to sign.
-        /// </param>
-        /// <param name="context">
-        ///   An optional context-specific value to limit the scope of the signature.
-        ///   The default value is an empty buffer.
-        /// </param>
-        /// <returns>
-        ///   The signature.
-        /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
-        ///   255 bytes.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">
-        ///   This instance has been disposed.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   <para>The instance represents only a public key.</para>
-        ///   <para>-or-</para>
-        ///   <para>An error occurred while signing the data.</para>
-        /// </exception>
-        private byte[] SignData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context = default)
-        {
-            // TODO: Currently private b/c this overload causes ambiguous call errors when mixing
-            // collection expressions and arrays.
-            // Also omitting the optional parameter on the 3-ary overload conflicts with this overload.
-            // Also, byte[] implicitly converts to ROS<byte> so the only reason
-            // for this overload would be OOB. Can we just include in Microsoft.Bcl.Crypto?
-            if (context.Length > MaxContextLength)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(context),
-                    context.Length,
-                    SR.Argument_SignatureContextTooLong255);
-            }
-
-            ThrowIfDisposed();
-
-            byte[] signature = new byte[Algorithm.SignatureSizeInBytes];
-            SignDataCore(data, context, signature);
-            return signature;
-        }
-
-        /// <inheritdoc cref="SignData(ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="data"/> is <see langword="null" />.
-        /// </exception>
-        private byte[] SignData(byte[] data, byte[]? context = default)
-        {
-            ArgumentNullException.ThrowIfNull(data);
-            return SignData(data.AsSpan(), context: context.AsSpan());
+            return signatureSizeInBytes;
         }
 
         /// <summary>
@@ -248,22 +192,6 @@ namespace System.Security.Cryptography
             }
 
             return VerifyDataCore(data, context, signature);
-        }
-
-        /// <inheritdoc cref="VerifyData(ReadOnlySpan{byte}, ReadOnlySpan{byte}, ReadOnlySpan{byte})" />
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="data"/> or <paramref name="signature"/> is <see langword="null" />.
-        /// </exception>
-        private bool VerifyData(byte[] data, byte[] signature, byte[]? context = default)
-        {
-            // TODO: Currently private b/c this overload causes ambiguous call errors when mixing
-            // collection expressions and arrays
-            // Also, byte[] implicitly converts to ROS<byte> so the only reason
-            // for this overload would be OOB. Can we just include in Microsoft.Bcl.Crypto?
-            ArgumentNullException.ThrowIfNull(data);
-            ArgumentNullException.ThrowIfNull(signature);
-
-            return VerifyData(data.AsSpan(), signature.AsSpan(), context.AsSpan());
         }
 
         /// <summary>
@@ -440,6 +368,7 @@ namespace System.Security.Cryptography
                     writer.WriteOctetString(secretKey);
                 }
 
+                Debug.Assert(writer.GetEncodedLength() <= capacity);
                 return writer.TryEncode(destination, out bytesWritten);
             }
             finally
@@ -464,51 +393,6 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
             return ExportPkcs8PrivateKeyCallback(static pkcs8 => PemEncoding.WriteString(PemLabels.Pkcs8PrivateKey, pkcs8));
-        }
-
-        /// <summary>
-        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a byte-based password.
-        /// </summary>
-        /// <param name="passwordBytes">
-        ///   The bytes to use as a password when encrypting the key material.
-        /// </param>
-        /// <param name="pbeParameters">
-        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
-        /// </param>
-        /// <returns>
-        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">
-        ///   This instance has been disposed.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   <para>This instance only represents a public key.</para>
-        ///   <para>-or-</para>
-        ///   <para>The private key is not exportable.</para>
-        ///   <para>-or-</para>
-        ///   <para>An error occurred while exporting the key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
-        /// </exception>
-        public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
-        {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
-            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
-            ThrowIfDisposed();
-
-            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
-
-            try
-            {
-                return writer.Encode();
-            }
-            finally
-            {
-                writer.Reset();
-            }
         }
 
         /// <summary>
@@ -556,19 +440,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        /// <inheritdoc cref="ExportEncryptedPkcs8PrivateKey(ReadOnlySpan{char}, PbeParameters)"/>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
-        /// </exception>
-        public byte[] ExportEncryptedPkcs8PrivateKey(string password, PbeParameters pbeParameters)
-        {
-            ArgumentNullException.ThrowIfNull(password);
-            return ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters);
-        }
-
         /// <summary>
-        ///   Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
-        ///   using a byte-based password.
+        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a byte-based password.
         /// </summary>
         /// <param name="passwordBytes">
         ///   The bytes to use as a password when encrypting the key material.
@@ -576,16 +449,8 @@ namespace System.Security.Cryptography
         /// <param name="pbeParameters">
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
-        /// <param name="destination">
-        ///   The buffer to receive the PKCS#8 EncryptedPrivateKeyInfo value.
-        /// </param>
-        /// <param name="bytesWritten">
-        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
-        ///   This parameter is treated as uninitialized.
-        /// </param>
         /// <returns>
-        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
-        ///   otherwise, <see langword="false" />.
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
@@ -602,11 +467,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
         /// </exception>
-        public bool TryExportEncryptedPkcs8PrivateKey(
-            ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters,
-            Span<byte> destination,
-            out int bytesWritten)
+        public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
             ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
@@ -616,12 +477,22 @@ namespace System.Security.Cryptography
 
             try
             {
-                return writer.TryEncode(destination, out bytesWritten);
+                return writer.Encode();
             }
             finally
             {
                 writer.Reset();
             }
+        }
+
+        /// <inheritdoc cref="ExportEncryptedPkcs8PrivateKey(ReadOnlySpan{char}, PbeParameters)"/>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        public byte[] ExportEncryptedPkcs8PrivateKey(string password, PbeParameters pbeParameters)
+        {
+            ArgumentNullException.ThrowIfNull(password);
+            return ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters);
         }
 
         /// <summary>
@@ -682,6 +553,64 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///   Attempts to export the current key in the PKCS#8 EncryptedPrivateKeyInfo format into a provided buffer,
+        ///   using a byte-based password.
+        /// </summary>
+        /// <param name="passwordBytes">
+        ///   The bytes to use as a password when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the PKCS#8 EncryptedPrivateKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        /// </exception>
+        public bool TryExportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<byte> passwordBytes,
+            PbeParameters pbeParameters,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
+            ThrowIfDisposed();
+
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
+
+            try
+            {
+                return writer.TryEncode(destination, out bytesWritten);
+            }
+            finally
+            {
+                writer.Reset();
+            }
+        }
+
         /// <inheritdoc cref="TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan{char}, PbeParameters, Span{byte}, out int)"/>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
@@ -694,6 +623,53 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(password);
             return TryExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters, destination, out bytesWritten);
+        }
+
+        /// <summary>
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
+        ///   representation of this key, using a char-based password.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when encrypting the key material.
+        /// </param>
+        /// <param name="pbeParameters">
+        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>This instance only represents a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>The private key is not exportable.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while exporting the key.</para>
+        /// </exception>
+        public string ExportEncryptedPkcs8PrivateKeyPem(
+            ReadOnlySpan<char> password,
+            PbeParameters pbeParameters)
+        {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
+            ThrowIfDisposed();
+
+            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
+
+            try
+            {
+                // Skip clear since the data is already encrypted.
+                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
+            }
+            finally
+            {
+                writer.Reset();
+            }
         }
 
         /// <summary>
@@ -745,53 +721,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        /// <summary>
-        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
-        ///   representation of this key, using a char-based password.
-        /// </summary>
-        /// <param name="password">
-        ///   The password to use when encrypting the key material.
-        /// </param>
-        /// <param name="pbeParameters">
-        ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
-        /// </param>
-        /// <returns>
-        ///   A string containing the PEM-encoded PKCS#8 EncryptedPrivateKeyInfo.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="pbeParameters"/> is <see langword="null"/>.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">
-        ///   This instance has been disposed.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   <para>This instance only represents a public key.</para>
-        ///   <para>-or-</para>
-        ///   <para>The private key is not exportable.</para>
-        ///   <para>-or-</para>
-        ///   <para>An error occurred while exporting the key.</para>
-        /// </exception>
-        public string ExportEncryptedPkcs8PrivateKeyPem(
-            ReadOnlySpan<char> password,
-            PbeParameters pbeParameters)
-        {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
-            PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
-            ThrowIfDisposed();
-
-            AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
-
-            try
-            {
-                // Skip clear since the data is already encrypted.
-                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
-            }
-            finally
-            {
-                writer.Reset();
-            }
-        }
-
         /// <inheritdoc cref="ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan{char}, PbeParameters)"/>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
@@ -810,6 +739,9 @@ namespace System.Security.Cryptography
         /// <param name="destination">
         ///   The buffer to receive the public key.
         /// </param>
+        /// <returns>
+        ///   The number of bytes written to <paramref name="destination"/>.
+        /// </returns>
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the public key.
         /// </exception>
@@ -817,20 +749,19 @@ namespace System.Security.Cryptography
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void ExportSlhDsaPublicKey(Span<byte> destination)
+        public int ExportSlhDsaPublicKey(Span<byte> destination)
         {
             int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
 
-            if (destination.Length != publicKeySizeInBytes)
+            if (destination.Length < publicKeySizeInBytes)
             {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, publicKeySizeInBytes),
-                    nameof(destination));
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
             ThrowIfDisposed();
 
             ExportSlhDsaPublicKeyCore(destination);
+            return publicKeySizeInBytes;
         }
 
         /// <summary>
@@ -858,6 +789,9 @@ namespace System.Security.Cryptography
         /// <param name="destination">
         ///   The buffer to receive the secret key.
         /// </param>
+        /// <returns>
+        ///   The number of bytes written to <paramref name="destination"/>.
+        /// </returns>
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the secret key.
         /// </exception>
@@ -867,20 +801,19 @@ namespace System.Security.Cryptography
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void ExportSlhDsaSecretKey(Span<byte> destination)
+        public int ExportSlhDsaSecretKey(Span<byte> destination)
         {
             int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
 
-            if (destination.Length != secretKeySizeInBytes)
+            if (destination.Length < secretKeySizeInBytes)
             {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationTooShort, secretKeySizeInBytes),
-                    nameof(destination));
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
             ThrowIfDisposed();
 
             ExportSlhDsaSecretKeyCore(destination.Slice(0, secretKeySizeInBytes));
+            return secretKeySizeInBytes;
         }
 
         /// <summary>
@@ -972,15 +905,14 @@ namespace System.Security.Cryptography
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
 
                         SlhDsaAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
+                        ReadOnlySpan<byte> publicKey = spki.SubjectPublicKey.Span;
 
-                        try
+                        if (publicKey.Length != algorithm.PublicKeySizeInBytes)
                         {
-                            return ImportSlhDsaPublicKey(algorithm, spki.SubjectPublicKey.Span);
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                         }
-                        catch (ArgumentException ae)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
-                        }
+
+                        return ImportSlhDsaPublicKey(algorithm, spki.SubjectPublicKey.Span);
                     }
                 }
             }
@@ -993,7 +925,7 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportSubjectPublicKeyInfo(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
-            return ImportSubjectPublicKeyInfo(source.AsSpan());
+            return ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -1037,15 +969,14 @@ namespace System.Security.Cryptography
                 (ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn algId, out SlhDsa ret) =>
                 {
                     SlhDsaAlgorithm info = GetAlgorithmIdentifier(in algId);
+                    ReadOnlySpan<byte> privateKey = key.Span;
 
-                    try
+                    if (privateKey.Length != info.SecretKeySizeInBytes)
                     {
-                        ret = ImportSlhDsaSecretKey(info, key.Span);
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     }
-                    catch (ArgumentException ae)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
-                    }
+
+                    ret = ImportSlhDsaSecretKey(info, key.Span);
                 },
                 out int read,
                 out SlhDsa kem);
@@ -1060,7 +991,7 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportPkcs8PrivateKey(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
-            return ImportPkcs8PrivateKey(source.AsSpan());
+            return ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -1174,7 +1105,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(password);
             ArgumentNullException.ThrowIfNull(source);
-            return ImportEncryptedPkcs8PrivateKey(password.AsSpan(), source.AsSpan());
+            return ImportEncryptedPkcs8PrivateKey(password.AsSpan(), new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -1393,7 +1324,7 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(passwordBytes);
             ThrowIfNotSupported();
 
-            return ImportFromEncryptedPem(source.AsSpan(), passwordBytes.AsSpan());
+            return ImportFromEncryptedPem(source.AsSpan(), new ReadOnlySpan<byte>(passwordBytes));
         }
 
         /// <summary>
@@ -1442,7 +1373,7 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
-            return ImportSlhDsaPublicKey(algorithm, source.AsSpan());
+            return ImportSlhDsaPublicKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -1491,7 +1422,7 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
-            return ImportSlhDsaSecretKey(algorithm, source.AsSpan());
+            return ImportSlhDsaSecretKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -1585,6 +1516,7 @@ namespace System.Security.Cryptography
                 writer.WriteBitString(publicKey);
             }
 
+            Debug.Assert(writer.GetEncodedLength() <= capacity);
             return writer;
         }
 

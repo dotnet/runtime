@@ -2856,10 +2856,10 @@ namespace System.Security.Cryptography
         public byte[] ExportPkcs8PrivateKey() { throw null; }
         public string ExportPkcs8PrivateKeyPem() { throw null; }
         public byte[] ExportSlhDsaPublicKey() { throw null; }
-        public void ExportSlhDsaPublicKey(System.Span<byte> destination) { }
+        public int ExportSlhDsaPublicKey(System.Span<byte> destination) { throw null; }
         protected abstract void ExportSlhDsaPublicKeyCore(System.Span<byte> destination);
         public byte[] ExportSlhDsaSecretKey() { throw null; }
-        public void ExportSlhDsaSecretKey(System.Span<byte> destination) { }
+        public int ExportSlhDsaSecretKey(System.Span<byte> destination) { throw null; }
         protected abstract void ExportSlhDsaSecretKeyCore(System.Span<byte> destination);
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public string ExportSubjectPublicKeyInfoPem() { throw null; }
@@ -2881,7 +2881,7 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.SlhDsa ImportSlhDsaSecretKey(System.Security.Cryptography.SlhDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.SlhDsa ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
         public static System.Security.Cryptography.SlhDsa ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
-        public void SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { }
+        public int SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination);
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
