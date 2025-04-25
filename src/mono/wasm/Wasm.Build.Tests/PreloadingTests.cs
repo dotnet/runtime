@@ -51,7 +51,7 @@ public class PreloadingTests : WasmTemplateTestsBase
         Assert.True(File.Exists(indexHtmlPath));
         string indexHtmlContent = File.ReadAllText(indexHtmlPath);
 
-        if (fingerprintAssets)
+        if (fingerprintDotnetJs)
         {
             // Expect to find fingerprinted preload
             Assert.Contains("<link href=\"_framework/dotnet", indexHtmlContent);
