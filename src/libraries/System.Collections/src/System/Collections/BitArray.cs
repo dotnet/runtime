@@ -348,7 +348,7 @@ namespace System.Collections
             ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
             if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
             {
-                for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
+                for (; i < (uint)count - ((uint)Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
                 {
                     Vector512<int> result = Vector512.LoadUnsafe(ref left, i) & Vector512.LoadUnsafe(ref right, i);
                     result.StoreUnsafe(ref left, i);
@@ -356,7 +356,7 @@ namespace System.Collections
             }
             else if (Vector256.IsHardwareAccelerated && (uint)count >= Vector256<int>.Count)
             {
-                for (; i < (uint)count - (Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
+                for (; i < (uint)count - ((uint)Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
                 {
                     Vector256<int> result = Vector256.LoadUnsafe(ref left, i) & Vector256.LoadUnsafe(ref right, i);
                     result.StoreUnsafe(ref left, i);
@@ -364,7 +364,7 @@ namespace System.Collections
             }
             else if (Vector128.IsHardwareAccelerated && (uint)count >= Vector128<int>.Count)
             {
-                for (; i < (uint)count - (Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
+                for (; i < (uint)count - ((uint)Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
                 {
                     Vector128<int> result = Vector128.LoadUnsafe(ref left, i) & Vector128.LoadUnsafe(ref right, i);
                     result.StoreUnsafe(ref left, i);
@@ -421,7 +421,7 @@ namespace System.Collections
             ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
             if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
             {
-                for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
+                for (; i < (uint)count - ((uint)Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
                 {
                     Vector512<int> result = Vector512.LoadUnsafe(ref left, i) | Vector512.LoadUnsafe(ref right, i);
                     result.StoreUnsafe(ref left, i);
@@ -429,7 +429,7 @@ namespace System.Collections
             }
             else if (Vector256.IsHardwareAccelerated && (uint)count >= Vector256<int>.Count)
             {
-                for (; i < (uint)count - (Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
+                for (; i < (uint)count - ((uint)Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
                 {
                     Vector256<int> result = Vector256.LoadUnsafe(ref left, i) | Vector256.LoadUnsafe(ref right, i);
                     result.StoreUnsafe(ref left, i);
@@ -437,7 +437,7 @@ namespace System.Collections
             }
             else if (Vector128.IsHardwareAccelerated && (uint)count >= Vector128<int>.Count)
             {
-                for (; i < (uint)count - (Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
+                for (; i < (uint)count - ((uint)Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
                 {
                     Vector128<int> result = Vector128.LoadUnsafe(ref left, i) | Vector128.LoadUnsafe(ref right, i);
                     result.StoreUnsafe(ref left, i);
@@ -495,7 +495,7 @@ namespace System.Collections
 
             if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
             {
-                for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
+                for (; i < (uint)count - ((uint)Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
                 {
                     Vector512<int> result = Vector512.LoadUnsafe(ref left, i) ^ Vector512.LoadUnsafe(ref right, i);
                     result.StoreUnsafe(ref left, i);
@@ -503,7 +503,7 @@ namespace System.Collections
             }
             else if (Vector256.IsHardwareAccelerated && (uint)count >= Vector256<int>.Count)
             {
-                for (; i < (uint)count - (Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
+                for (; i < (uint)count - ((uint)Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
                 {
                     Vector256<int> result = Vector256.LoadUnsafe(ref left, i) ^ Vector256.LoadUnsafe(ref right, i);
                     result.StoreUnsafe(ref left, i);
@@ -511,7 +511,7 @@ namespace System.Collections
             }
             else if (Vector128.IsHardwareAccelerated && (uint)count >= Vector128<int>.Count)
             {
-                for (; i < (uint)count - (Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
+                for (; i < (uint)count - ((uint)Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
                 {
                     Vector128<int> result = Vector128.LoadUnsafe(ref left, i) ^ Vector128.LoadUnsafe(ref right, i);
                     result.StoreUnsafe(ref left, i);
@@ -541,6 +541,8 @@ namespace System.Collections
             int[] thisArray = m_array;
 
             int count = GetInt32ArrayLengthFromBitLength(Length);
+            if ((uint)count > (uint)thisArray.Length)
+                ThrowHelper.ThrowConcurrentOperation();
 
             // Unroll loop for count less than Vector256 size.
             switch (count)
@@ -560,7 +562,7 @@ namespace System.Collections
             ref int value = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
             if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
             {
-                for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
+                for (; i < (uint)count - ((uint)Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
                 {
                     Vector512<int> result = ~Vector512.LoadUnsafe(ref value, i);
                     result.StoreUnsafe(ref value, i);
@@ -568,7 +570,7 @@ namespace System.Collections
             }
             else if (Vector256.IsHardwareAccelerated && (uint)count >= Vector256<int>.Count)
             {
-                for (; i < (uint)count - (Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
+                for (; i < (uint)count - ((uint)Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
                 {
                     Vector256<int> result = ~Vector256.LoadUnsafe(ref value, i);
                     result.StoreUnsafe(ref value, i);
@@ -576,7 +578,7 @@ namespace System.Collections
             }
             else if (Vector128.IsHardwareAccelerated && (uint)count >= Vector128<int>.Count)
             {
-                for (; i < (uint)count - (Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
+                for (; i < (uint)count - ((uint)Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
                 {
                     Vector128<int> result = ~Vector128.LoadUnsafe(ref value, i);
                     result.StoreUnsafe(ref value, i);
@@ -790,7 +792,12 @@ namespace System.Collections
                 Span<byte> span = byteArray.AsSpan(index);
 
                 int quotient = Div4Rem(arrayLength, out int remainder);
-                for (int i = 0; i < quotient; i++)
+                if (BitConverter.IsLittleEndian)
+                {
+                    MemoryMarshal.AsBytes(m_array.AsSpan(0, quotient)).CopyTo(span);
+                    span = span.Slice(quotient * 4);
+                }
+                else for (int i = 0; i < quotient; i++)
                 {
                     BinaryPrimitives.WriteInt32LittleEndian(span, m_array[i]);
                     span = span.Slice(4);
@@ -821,147 +828,145 @@ namespace System.Collections
             }
             else if (array is bool[] boolArray)
             {
-                if (array.Length - index < m_length)
+                // This method uses unsafe code to manipulate data in the BitArray.  To avoid issues with
+                // buggy code concurrently mutating this instance in a way that could cause memory corruption,
+                // we snapshot the array then operate only on this snapshot.  We don't care about such code
+                // corrupting the BitArray data in a way that produces incorrect answers, since BitArray is not meant
+                // to be thread-safe; we only care about avoiding buffer overruns.
+                int[] thisArray = m_array;
+                int thisLength = m_length;
+                if (thisLength < 0 || thisArray.Length < GetInt32ArrayLengthFromBitLength(thisLength))
+                {
+                    ThrowHelper.ThrowConcurrentOperation();
+                }
+                if (array.Length - index < thisLength)
                 {
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 }
 
                 uint i = 0;
 
-                if (m_length < BitsPerInt32)
+                ref int thisRef = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
+                ref bool boolRef = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference<bool>(boolArray), index);
+
+                if (thisLength < BitsPerInt32)
                     goto LessThan32;
 
-                // The mask used when shuffling a single int into Vector128/256/512.
-                // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
-                // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
-                Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
-                Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
-
-                if (Avx512F.IsSupported && (uint)m_length >= Vector512<byte>.Count)
+                if (Vector512.IsHardwareAccelerated && (uint)thisLength >= (uint)Vector512<byte>.Count)
                 {
-                    Vector256<byte> upperShuffleMask_CopyToBoolArray256 = Vector256.Create(0x04040404_04040404, 0x05050505_05050505,
-                                                                                             0x06060606_06060606, 0x07070707_07070707).AsByte();
-                    Vector256<byte> lowerShuffleMask_CopyToBoolArray256 = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
-                    Vector512<byte> shuffleMask = Vector512.Create(lowerShuffleMask_CopyToBoolArray256, upperShuffleMask_CopyToBoolArray256);
-                    Vector512<byte> bitMask = Vector512.Create(0x80402010_08040201).AsByte();
+                    // With AVX512, we could take advantage of the instruction "kmovq k, m64"
+                    // and do something like
+                    // Vector512.ConditionalSelect(Avx512F.CreateMask(Unsafe.ReadUnaligned<long>(ref Unsafe.AddByteOffset(ref Unsafe.As<int, byte>(ref thisRef), i >> BitShiftPerByte))),
+                    //                             Vector512.Create((byte)1),
+                    //                             Vector512<byte>.Zero)
+                    // Unfortunately Avx512F.CreateMask does not exist. See dotnet/runtime#87097
+
+                    Vector512<byte> shuffleMask;//This should be chosen so that with AVX512, vpshufb can be emitted instead of the slower, less avaliable(AVX512_VBMI) vpermb.
+                    Vector512<byte> bitMask;
                     Vector512<byte> ones = Vector512.Create((byte)1);
-
-                    fixed (bool* destination = &boolArray[index])
+                    if (BitConverter.IsLittleEndian)
                     {
-                        for (; (i + Vector512<byte>.Count) <= (uint)m_length; i += (uint)Vector512<byte>.Count)
-                        {
-                            ulong bits = (ulong)(uint)m_array[i / (uint)BitsPerInt32] + ((ulong)m_array[(i / (uint)BitsPerInt32) + 1] << BitsPerInt32);
-                            Vector512<ulong> scalar = Vector512.Create(bits);
-                            Vector512<byte> shuffled = Avx512BW.Shuffle(scalar.AsByte(), shuffleMask);
-                            Vector512<byte> extracted = Avx512F.And(shuffled, bitMask);
+                        shuffleMask = Vector512.Create(0x00000000_00000000, 0x09090909_09090909, 0x12121212_12121212, 0x1B1B1B1B_1B1B1B1B,
+                                                       0x24242424_24242424, 0x2D2D2D2D_2D2D2D2D, 0x36363636_36363636, 0x3F3F3F3F_3F3F3F3F).AsByte();
+                        bitMask = Vector512.Create(0x80402010_08040201).AsByte();
+                    }
+                    else
+                    {
+                        shuffleMask = Vector512.Create(0x03030303_03030303, 0x0A0A0A0A_0A0A0A0A, 0x11111111_11111111, 0x18181818_18181818,
+                                                       0x27272727_27272727, 0x2E2E2E2E_2E2E2E2E, 0x35353535_35353535, 0x3C3C3C3C_3C3C3C3C).AsByte();
+                        bitMask = Vector512.Create(0x01020408_10204080).AsByte();
+                    }
 
-                            // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
-                            // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
-                            Vector512<byte> normalized = Avx512BW.Min(extracted, ones);
-                            Avx512F.Store((byte*)destination + i, normalized);
-                        }
+                    for (; i < (uint)thisLength - ((uint)Vector512<byte>.Count - 1u); i += (uint)Vector512<byte>.Count)
+                    {
+                        Vector512<long> bits = Vector512.Create(Unsafe.ReadUnaligned<long>(ref Unsafe.AddByteOffset(ref Unsafe.As<int, byte>(ref thisRef), i >> BitShiftPerByte)));
+                        Vector512<byte> shuffled = Vector512.Shuffle(bits.AsByte(), shuffleMask);
+                        Vector512<byte> extracted = shuffled & bitMask;
+
+                        // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
+                        // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
+                        Vector512<byte> normalized = Vector512.Min(extracted, ones);
+                        normalized.StoreUnsafe(ref Unsafe.As<bool, byte>(ref boolRef), i);
                     }
                 }
-                else if (Avx2.IsSupported && (uint)m_length >= Vector256<byte>.Count)
+                else if (Vector256.IsHardwareAccelerated && (uint)thisLength >= (uint)Vector256<byte>.Count)
                 {
-                    Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
-                    Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
-                    //Internal.Console.WriteLine(bitMask);
+                    Vector256<byte> shuffleMask;//This should be chosen so that with AVX2, vpshufb can be emitted.
+                    Vector256<byte> bitMask;
                     Vector256<byte> ones = Vector256.Create((byte)1);
-
-                    fixed (bool* destination = &boolArray[index])
+                    if (BitConverter.IsLittleEndian)
                     {
-                        for (; (i + Vector256<byte>.Count) <= (uint)m_length; i += (uint)Vector256<byte>.Count)
-                        {
-                            int bits = m_array[i / (uint)BitsPerInt32];
-                            Vector256<int> scalar = Vector256.Create(bits);
-                            Vector256<byte> shuffled = Avx2.Shuffle(scalar.AsByte(), shuffleMask);
-                            Vector256<byte> extracted = Avx2.And(shuffled, bitMask);
+                        shuffleMask = Vector256.Create(0x00000000_04040404, 0x09090909_0D0D0D0D, 0x12121212_16161616, 0x1B1B1B1B_1F1F1F1F).AsByte();
+                        bitMask = Vector256.Create(0x80402010_08040201).AsByte();
+                    }
+                    else
+                    {
+                        shuffleMask = Vector256.Create(0x03030303_07070707, 0x0A0A0A0A_0E0E0E0E, 0x11111111_15151515, 0x18181818_1C1C1C1C).AsByte();
+                        bitMask = Vector256.Create(0x01020408_10204080).AsByte();
+                    }
 
-                            // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
-                            // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
-                            Vector256<byte> normalized = Avx2.Min(extracted, ones);
-                            Avx.Store((byte*)destination + i, normalized);
-                        }
+                    for (; i < (uint)thisLength - ((uint)Vector256<byte>.Count - 1u); i += (uint)Vector256<byte>.Count)
+                    {
+                        Vector256<int> bits = Vector256.Create(Unsafe.AddByteOffset(ref thisRef, i >> BitShiftPerByte));
+                        Vector256<byte> shuffled = Vector256.Shuffle(bits.AsByte(), shuffleMask);
+                        Vector256<byte> extracted = shuffled & bitMask;
+
+                        // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
+                        // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
+                        Vector256<byte> normalized = Vector256.Min(extracted, ones);
+                        normalized.StoreUnsafe(ref Unsafe.As<bool, byte>(ref boolRef), i);
                     }
                 }
-                else if (Ssse3.IsSupported && ((uint)m_length >= Vector128<byte>.Count * 2u))
+                else if (Vector128.IsHardwareAccelerated && (uint)thisLength >= (uint)Vector128<byte>.Count * 2u)
                 {
-                    Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
-                    Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;
+                    Vector128<byte> lowerShuffleMask;
+                    Vector128<byte> upperShuffleMask;
+                    Vector128<byte> bitMask;
                     Vector128<byte> ones = Vector128.Create((byte)1);
-                    Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
-                                                 Vector128.Create(0x80402010_08040201).AsByte() :
-                                                 Vector128.Create(0x01020408_10204080).AsByte();
-
-                    fixed (bool* destination = &boolArray[index])
+                    if (BitConverter.IsLittleEndian)
                     {
-                        for (; (i + Vector128<byte>.Count * 2u) <= (uint)m_length; i += (uint)Vector128<byte>.Count * 2u)
-                        {
-                            int bits = m_array[i / (uint)BitsPerInt32];
-                            Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
-
-                            Vector128<byte> shuffledLower = Ssse3.Shuffle(scalar.AsByte(), lowerShuffleMask);
-                            Vector128<byte> extractedLower = Sse2.And(shuffledLower, bitMask128);
-                            Vector128<byte> normalizedLower = Sse2.Min(extractedLower, ones);
-                            Sse2.Store((byte*)destination + i, normalizedLower);
-
-                            Vector128<byte> shuffledHigher = Ssse3.Shuffle(scalar.AsByte(), upperShuffleMask);
-                            Vector128<byte> extractedHigher = Sse2.And(shuffledHigher, bitMask128);
-                            Vector128<byte> normalizedHigher = Sse2.Min(extractedHigher, ones);
-                            Sse2.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
-                        }
+                        lowerShuffleMask = Vector128.Create(0x00000000_00000000, 0x01010101_01010101).AsByte();
+                        upperShuffleMask = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
+                        bitMask = Vector128.Create(0x80402010_08040201).AsByte();
                     }
-                }
-                else if (AdvSimd.Arm64.IsSupported)
-                {
-                    Vector128<byte> ones = Vector128.Create((byte)1);
-                    Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
-                                                 Vector128.Create(0x80402010_08040201).AsByte() :
-                                                 Vector128.Create(0x01020408_10204080).AsByte();
-
-                    fixed (bool* destination = &boolArray[index])
+                    else
                     {
-                        for (; (i + Vector128<byte>.Count * 2u) <= (uint)m_length; i += (uint)Vector128<byte>.Count * 2u)
-                        {
-                            int bits = m_array[i / (uint)BitsPerInt32];
-                            // Same logic as SSSE3 path, except we do not have Shuffle instruction.
-                            // (TableVectorLookup could be an alternative - dotnet/runtime#1277)
-                            // Instead we use chained ZIP1/2 instructions:
-                            // (A0 is the byte containing LSB, A3 is the byte containing MSB)
-                            // bits (on Big endian)                 - A3 A2 A1 A0
-                            // bits (Little endian) / Byte reversal - A0 A1 A2 A3
-                            // v1 = Vector128.Create                - A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3
-                            // v2 = ZipLow(v1, v1)                  - A0 A0 A1 A1 A2 A2 A3 A3 A0 A0 A1 A1 A2 A2 A3 A3
-                            // v3 = ZipLow(v2, v2)                  - A0 A0 A0 A0 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3 A3
-                            // shuffledLower = ZipLow(v3, v3)       - A0 A0 A0 A0 A0 A0 A0 A0 A1 A1 A1 A1 A1 A1 A1 A1
-                            // shuffledHigher = ZipHigh(v3, v3)     - A2 A2 A2 A2 A2 A2 A2 A2 A3 A3 A3 A3 A3 A3 A3 A3
-                            if (!BitConverter.IsLittleEndian)
-                            {
-                                bits = BinaryPrimitives.ReverseEndianness(bits);
-                            }
-                            Vector128<byte> vector = Vector128.Create(bits).AsByte();
-                            vector = AdvSimd.Arm64.ZipLow(vector, vector);
-                            vector = AdvSimd.Arm64.ZipLow(vector, vector);
+                        lowerShuffleMask = Vector128.Create(0x03030303_03030303, 0x02020202_02020202).AsByte();
+                        upperShuffleMask = Vector128.Create(0x01010101_01010101, 0x00000000_00000000).AsByte();
+                        bitMask = Vector128.Create(0x01020408_10204080).AsByte();
+                    }
 
-                            Vector128<byte> shuffledLower = AdvSimd.Arm64.ZipLow(vector, vector);
-                            Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, bitMask128);
-                            Vector128<byte> normalizedLower = AdvSimd.Min(extractedLower, ones);
+                    while (i < (uint)thisLength - ((uint)Vector128<byte>.Count * 2u - 1u))
+                    {
+                        Vector128<int> bits = Vector128.CreateScalarUnsafe(Unsafe.AddByteOffset(ref thisRef, i >> BitShiftPerByte));
 
-                            Vector128<byte> shuffledHigher = AdvSimd.Arm64.ZipHigh(vector, vector);
-                            Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, bitMask128);
-                            Vector128<byte> normalizedHigher = AdvSimd.Min(extractedHigher, ones);
 
-                            AdvSimd.Arm64.StorePair((byte*)destination + i, normalizedLower, normalizedHigher);
-                        }
+                        Vector128<byte> shuffledLower = Vector128.Shuffle(bits.AsByte(), lowerShuffleMask);
+                        Vector128<byte> extractedLower = shuffledLower & bitMask;
+
+                        // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
+                        // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
+                        Vector128<byte> normalizedLower = Vector128.Min(extractedLower, ones);
+                        normalizedLower.StoreUnsafe(ref Unsafe.As<bool, byte>(ref boolRef), i);
+                        i += (uint)Vector128<byte>.Count;
+
+
+                        Vector128<byte> shuffledUpper = Vector128.Shuffle(bits.AsByte(), upperShuffleMask);
+                        Vector128<byte> extractedUpper = shuffledUpper & bitMask;
+
+                        // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
+                        // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
+                        Vector128<byte> normalizedUpper = Vector128.Min(extractedUpper, ones);
+                        normalizedUpper.StoreUnsafe(ref Unsafe.As<bool, byte>(ref boolRef), i);
+                        i += (uint)Vector128<byte>.Count;
                     }
                 }
 
             LessThan32:
-                for (; i < (uint)m_length; i++)
+                for (; i < (uint)thisLength; i++)
                 {
                     int elementIndex = Div32Rem((int)i, out int extraBits);
-                    boolArray[(uint)index + i] = ((m_array[elementIndex] >> extraBits) & 0x00000001) != 0;
+                    Unsafe.Add(ref boolRef, i) = ((Unsafe.Add(ref thisRef, elementIndex) >> extraBits) & 0x00000001) != 0;
                 }
             }
             else
