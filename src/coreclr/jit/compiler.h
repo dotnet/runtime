@@ -2527,6 +2527,7 @@ class Compiler
     friend class Promotion;
     friend class ReplaceVisitor;
     friend class FlowGraphNaturalLoop;
+    friend class LiveVarAnalysis;
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct GenTreeHWIntrinsic;

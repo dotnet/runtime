@@ -602,6 +602,7 @@ class LiveVarAnalysis
                 if (varDsc->lvTracked)
                 {
                     VarSetOps::AddElemD(m_compiler, m_liveOut, varDsc->lvVarIndex);
+                    VarSetOps::AddElemD(m_compiler, m_compiler->fgTrueUseSet, varDsc->lvVarIndex);
                 }
             }
         }
