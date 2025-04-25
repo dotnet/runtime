@@ -24,6 +24,7 @@ public static class CompareTestInt
     [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool Ge2((int, float) x) => (x.Item1 >= 2);
 
+
     [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool Lt0((int, float) x) => (x.Item1 < 0);
     
@@ -41,6 +42,45 @@ public static class CompareTestInt
 
     [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool Ne0((int, float) x) => (x.Item1 != 0);
+
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Lt1((int, float) x) => (x.Item1 < 1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Gt1((int, float) x) => (x.Item1 > 1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Le1((int, float) x) => (x.Item1 <= 1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Ge1((int, float) x) => (x.Item1 >= 1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Eq1((int, float) x) => (x.Item1 == 1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Ne1((int, float) x) => (x.Item1 != 1);
+
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool LtMinus1((int, float) x) => (x.Item1 < -1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool GtMinus1((int, float) x) => (x.Item1 > -1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool LeMinus1((int, float) x) => (x.Item1 <= -1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool GeMinus1((int, float) x) => (x.Item1 >= -1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool EqMinus1((int, float) x) => (x.Item1 == -1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool NeMinus1((int, float) x) => (x.Item1 != -1);
+
 
     [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool Eq2048((int, float) x) => (x.Item1 == 2048);
@@ -70,6 +110,20 @@ public static class CompareTestInt
         Assert.True((bool)type.GetMethod("Ge0").Invoke(null, args));
         Assert.True((bool)type.GetMethod("Eq0").Invoke(null, args));
         Assert.False((bool)type.GetMethod("Ne0").Invoke(null, args));
+        args = new object[] {(1, 0f)};
+        Assert.False((bool)type.GetMethod("Lt1").Invoke(null, args));
+        Assert.False((bool)type.GetMethod("Gt1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("Le1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("Ge1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("Eq1").Invoke(null, args));
+        Assert.False((bool)type.GetMethod("Ne1").Invoke(null, args));
+        args = new object[] {(-1, 0f)};
+        Assert.False((bool)type.GetMethod("LtMinus1").Invoke(null, args));
+        Assert.False((bool)type.GetMethod("GtMinus1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("LeMinus1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("GeMinus1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("EqMinus1").Invoke(null, args));
+        Assert.False((bool)type.GetMethod("NeMinus1").Invoke(null, args));
         args = new object[] {(2048, 0f)};
         Assert.True((bool)type.GetMethod("Eq2048").Invoke(null, args));
         Assert.False((bool)type.GetMethod("Ne2048").Invoke(null, args));
@@ -93,6 +147,7 @@ public static class CompareTestUint
     [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool Ge2((uint, float) x) => (x.Item1 >= 2);
 
+
     [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool Lt0((uint, float) x) => (x.Item1 < 0);
 
@@ -110,6 +165,45 @@ public static class CompareTestUint
 
     [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool Ne0((uint, float) x) => (x.Item1 != 0);
+
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Lt1((uint, float) x) => (x.Item1 < 1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Gt1((uint, float) x) => (x.Item1 > 1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Le1((uint, float) x) => (x.Item1 <= 1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Ge1((uint, float) x) => (x.Item1 >= 1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Eq1((uint, float) x) => (x.Item1 == 1);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool Ne1((uint, float) x) => (x.Item1 != 1);
+
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool LtMinus1((uint, float) x) => (x.Item1 < 0xFFFF_FFFFu);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool GtMinus1((uint, float) x) => (x.Item1 > 0xFFFF_FFFFu);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool LeMinus1((uint, float) x) => (x.Item1 <= 0xFFFF_FFFFu);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool GeMinus1((uint, float) x) => (x.Item1 >= 0xFFFF_FFFFu);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool EqMinus1((uint, float) x) => (x.Item1 == 0xFFFF_FFFFu);
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static bool NeMinus1((uint, float) x) => (x.Item1 != 0xFFFF_FFFFu);
+
 
     [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool Eq2048((uint, float) x) => (x.Item1 == 2048);
@@ -139,6 +233,20 @@ public static class CompareTestUint
         Assert.True((bool)type.GetMethod("Ge0").Invoke(null, args));
         Assert.True((bool)type.GetMethod("Eq0").Invoke(null, args));
         Assert.False((bool)type.GetMethod("Ne0").Invoke(null, args));
+        args = new object[] {(1u, 0f)};
+        Assert.False((bool)type.GetMethod("Lt1").Invoke(null, args));
+        Assert.False((bool)type.GetMethod("Gt1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("Le1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("Ge1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("Eq1").Invoke(null, args));
+        Assert.False((bool)type.GetMethod("Ne1").Invoke(null, args));
+        args = new object[] {(0xFFFF_FFFFu, 0f)};
+        Assert.False((bool)type.GetMethod("LtMinus1").Invoke(null, args));
+        Assert.False((bool)type.GetMethod("GtMinus1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("LeMinus1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("GeMinus1").Invoke(null, args));
+        Assert.True((bool)type.GetMethod("EqMinus1").Invoke(null, args));
+        Assert.False((bool)type.GetMethod("NeMinus1").Invoke(null, args));
         args = new object[] {(2048u, 0f)};
         Assert.True((bool)type.GetMethod("Eq2048").Invoke(null, args));
         Assert.False((bool)type.GetMethod("Ne2048").Invoke(null, args));
