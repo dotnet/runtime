@@ -3,39 +3,44 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    public abstract class SlhDsaConstructionTestsBase : SlhDsaTestsBase
+    [ConditionalClass(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+    public sealed class SlhDsaImplementationTests : SlhDsaTests
     {
+        [Theory]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public static void SlhDsaIsOnlyPublicAncestor_GenerateKey(SlhDsaAlgorithm algorithm)
+        {
+            AssertSlhDsaIsOnlyPublicAncestor(() => SlhDsa.GenerateKey(algorithm));
+        }
+
+        [Theory]
+        [MemberData(nameof(NistKeyGenTestVectorsData))]
+        public static void SlhDsaIsOnlyPublicAncestor_Import(SlhDsaTestData.SlhDsaKeyGenTestVector vector)
+        {
+            AssertSlhDsaIsOnlyPublicAncestor(() => SlhDsa.ImportSlhDsaSecretKey(vector.Algorithm, vector.SecretKey));
+            AssertSlhDsaIsOnlyPublicAncestor(() => SlhDsa.ImportSlhDsaPublicKey(vector.Algorithm, vector.PublicKey));
+        }
+
+        private static void AssertSlhDsaIsOnlyPublicAncestor(Func<SlhDsa> createKey)
+        {
+            using SlhDsa key = createKey();
+            Type keyType = key.GetType();
+            while (keyType != null && keyType != typeof(SlhDsa))
+            {
+                AssertExtensions.FalseExpression(keyType.IsPublic);
+                keyType = keyType.BaseType;
+            }
+
+            Assert.Equal(typeof(SlhDsa), keyType);
+        }
+
         public static IEnumerable<object[]> NistKeyGenTestVectorsData =>
             from vector in SlhDsaTestData.NistKeyGenTestVectors
             select new object[] { vector };
-
-        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void AlgorithmMatches_GenerateKey(SlhDsaAlgorithm algorithm)
-        {
-            using SlhDsa slhDsa = SlhDsa.GenerateKey(algorithm);
-            Assert.Equal(algorithm, slhDsa.Algorithm);
-        }
-
-        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
-        [MemberData(nameof(NistKeyGenTestVectorsData))]
-        public void AlgorithmMatches_Import(SlhDsaTestData.SlhDsaKeyGenTestVector vector)
-        {
-            using (SlhDsa slhDsa = SlhDsa.ImportSlhDsaSecretKey(vector.Algorithm, vector.SecretKey))
-            {
-               Assert.Equal(vector.Algorithm, slhDsa.Algorithm);
-            }
-
-            using (SlhDsa slhDsa = SlhDsa.ImportSlhDsaPublicKey(vector.Algorithm, vector.PublicKey))
-            {
-                Assert.Equal(vector.Algorithm, slhDsa.Algorithm);
-            }
-        }
 
         [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         [MemberData(nameof(NistKeyGenTestVectorsData))]
@@ -77,5 +82,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 Assert.Throws<CryptographicException>(() => publicSlhDsa.ExportSlhDsaSecretKey(secretKey));
             }
         }
+
+        protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) => SlhDsa.GenerateKey(algorithm);
+        protected override SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => SlhDsa.ImportSlhDsaPublicKey(algorithm, source);
+        protected override SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => SlhDsa.ImportSlhDsaSecretKey(algorithm, source);
     }
 }

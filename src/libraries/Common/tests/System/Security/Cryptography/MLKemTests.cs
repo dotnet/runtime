@@ -464,7 +464,7 @@ namespace System.Security.Cryptography.Tests
                 gJoH9z0+/Z9WzLU8ix8F7B+HWwRhib5Cd6si+AX6DsNelMq2zP1NO7Un416dkg==");
 
             Assert.Throws<CryptographicException>(() =>
-                MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER", new ReadOnlySpan<byte>(ecP256Key)));
+                MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER", ecP256Key));
 
             Assert.Throws<CryptographicException>(() =>
                 MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER".AsSpan(), new ReadOnlySpan<byte>(ecP256Key)));
@@ -618,6 +618,16 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.SequenceEqual(decapKey, decapsulationKey);
                 AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, seed);
             }
+        }
+
+        [Fact]
+        public static void ImportEncryptedPkcs8PrivateKey_NullArgs()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", static () =>
+                MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword, (byte[])null));
+
+            AssertExtensions.Throws<ArgumentNullException>("password", static () =>
+                MLKem.ImportEncryptedPkcs8PrivateKey((string)null, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
         }
 
         [Fact]
