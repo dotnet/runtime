@@ -9,7 +9,7 @@
   <Import Project="..\..\subproject.props" />
 
   <ItemGroup>
-    <ProjectReference Include="..\src\cdacreader.csproj" AdditionalProperties="$(SplitSubprojectProps)" />
+    <ProjectReference Include="..\mscordaccore_universal\mscordaccore_universal.csproj" AdditionalProperties="$(SplitSubprojectProps)" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
