@@ -22,16 +22,16 @@ public class PreloadingTests : WasmTemplateTestsBase
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void PreloadAssets(bool isPublish, bool fingerprintAssets)
+    public void PreloadAssets(bool isPublish, bool fingerprintDotnetJs)
     {
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "PreloadAssets");
 
-        string extraMSBuildArgs = $"-p:WasmFingerprintAssets={fingerprintAssets}";
+        string extraMSBuildArgs = $"-p:WasmFingerprintDotnetJs={fingerprintDotnetJs}";
         if (isPublish)
-            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: extraMSBuildArgs), wasmFingerprintDotnetJs: fingerprintAssets);
+            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: extraMSBuildArgs), wasmFingerprintDotnetJs: fingerprintDotnetJs);
         else
-            BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraMSBuildArgs), wasmFingerprintDotnetJs: fingerprintAssets);
+            BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraMSBuildArgs), wasmFingerprintDotnetJs: fingerprintDotnetJs);
 
         string? indexHtmlPath = null;
         if (isPublish)
