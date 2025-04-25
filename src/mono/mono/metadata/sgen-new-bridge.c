@@ -654,6 +654,7 @@ static void
 reset_data (void)
 {
 	dyn_array_ptr_empty (&registered_bridges);
+	free_data ();
 }
 
 static void
