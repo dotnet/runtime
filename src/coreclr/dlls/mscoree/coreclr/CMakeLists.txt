@@ -109,9 +109,15 @@ set(CORECLR_LIBRARIES
 )
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
-    list(APPEND CORECLR_LIBRARIES
-        gc_vxsort
-    )
+    if (CLR_CMAKE_HOST_ANDROID)
+        list(APPEND CORECLR_LIBRARIES
+            gc_vxsort_objects
+        )
+    else()
+        list(APPEND CORECLR_LIBRARIES
+            gc_vxsort
+        )
+    endif(CLR_CMAKE_HOST_ANDROID)
 endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if(CLR_CMAKE_TARGET_WIN32)

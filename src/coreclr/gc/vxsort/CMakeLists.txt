@@ -26,4 +26,8 @@ set (VXSORT_SOURCES
   do_vxsort.h
 )
 
-add_library(gc_vxsort OBJECT ${VXSORT_SOURCES})
+if (CLR_CMAKE_HOST_ANDROID)
+    add_library(gc_vxsort_objects OBJECT ${VXSORT_SOURCES})
+endif()
+
+add_library(gc_vxsort STATIC ${VXSORT_SOURCES})
