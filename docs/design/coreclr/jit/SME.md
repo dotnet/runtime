@@ -609,26 +609,6 @@ These naming conventions ensure clarity and consistency across the API surface. 
 - **Azure Cobalt / AWS Graviton**
   - Suitable for validating vector-agnostic support, which forms the foundation for SME validation.
 
-## Kleidi: Alternative approach to .NET support
-
-Arm understands that SME is complicated and does not expect the average developer to understand all the concepts and edge cases required to write  SME code. Writing performant SME code is even harder. As such, Arm provides the [Kleidi libraries](https://www.arm.com/products/development-tools/embedded-and-software/kleidi-libraries), Kleidi AI and Kleidi CV (computer vision). These libraries are written in C and low level assembly, and are open source on Arm gitlab under the Apache 2 license. They aim to provide provide the most performant versions of common AI and CV routines on Arm hardware, automatically utilising SME when it is available.
-
-A lot of functions in Kleidi CV are simply standard SVE routines running in streaming mode to take care of the extra vector length.
-
-One option would be to wrap Kleidi in a C# wrapper and provide this as an external package on NuGet. It would require regular maintainence, however it may be possible to mostly automate this.
-
-Pros:
-- No need for any compiler changes or any large scale work items in CoreCLR.
-- The wrapper will be fairly easy to write and maintain when compared to implementing a full SME API.
-- Expected good performance immediately.
-
-Cons:
-- C# libraries or any code within coreCLR cannot use Kleidi due to the dependency on an external library. Although there are lot of [external libraries](https://github.com/dotnet/runtime/tree/main/src/native/external) in .NET runtime, taking dependencies for Kleidi should provide high value to offset the maintainence cost.
-- The library may be missing relevant use cases for C#
-- Long term maintenance - what happens if the library is abandoned or simply removed?
-
-This approach could be used as a stepping stone until an eventual SME API is implemented.
-
 ## References
 - [Overview](https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/scalable-matrix-extension-armv9-a-architecture)
 
@@ -819,5 +799,26 @@ Instead of relying on the developer to specify where the streaming mode should b
     SME.method2();
     // Streaming mode stopped
     ```
+
+
+## 5. Using C++ SME libraries via C# wrappers
+
+SME is complex, and it's difficult for the average developer to fully understand the concepts and edge cases needed to write performant SME code. C++ already offers a complete set of SME APIs. In most cases, developers will likely rely on known routines that are already implemented in external libraries. One potential approach is to wrap these libraries in a C# layer and distribute them as external packages on NuGet.
+
+There are many open-source tensor libraries available that could be wrapped.
+
+Arm also provides the Kleidi libraries — Kleidi AI and Kleidi CV (Computer Vision) — which are written in C++, open-source under the Apache 2.0 license, and hosted on Arm's GitLab. These libraries aim to deliver highly optimized implementations of common AI and CV operations on Arm hardware, automatically leveraging SME where available.
+
+Pros:
+- No compiler changes or large-scale work items needed in CoreCLR.
+- Wrappers would be relatively simple to write and maintain compared to building a full SME API.
+- Expected to deliver strong performance.
+
+Cons:
+- C# libraries or CoreCLR code can't directly use these wrappers unless the native libraries are fully integrated into the runtime. While .NET does already include several external native libraries, adding new ones comes with maintenance costs that need to be justified by the benefits.
+- The libraries may not cover all relevant C# use cases.
+- Long-term maintenance risk if the external libraries are abandoned or removed.
+
+This approach could serve as an interim solution until a full SME API is eventually developed.
 
 -------
