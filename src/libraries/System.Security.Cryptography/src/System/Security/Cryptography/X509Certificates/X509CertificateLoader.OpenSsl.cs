@@ -66,6 +66,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.Rsa or Oids.RsaPss => new RSAOpenSsl(),
                 Oids.EcPublicKey or Oids.EcDiffieHellman => new ECDiffieHellmanOpenSsl(),
                 Oids.Dsa => new DSAOpenSsl(),
+                Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 => new MLKemAsymmetricAlgorithm(),
                 _ => null,
             };
         }
@@ -80,6 +81,11 @@ namespace System.Security.Cryptography.X509Certificates
             if (key is DSAOpenSsl dsa)
             {
                 return dsa.DuplicateKeyHandle();
+            }
+
+            if (key is MLKemAsymmetricAlgorithm { Key: MLKemImplementation kem })
+            {
+                return kem.DuplicateHandle();
             }
 
             return ((ECDiffieHellmanOpenSsl)key).DuplicateKeyHandle();

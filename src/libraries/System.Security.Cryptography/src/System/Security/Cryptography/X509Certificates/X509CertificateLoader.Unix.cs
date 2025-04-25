@@ -492,6 +492,8 @@ namespace System.Security.Cryptography.X509Certificates
                             publicKeyInfo.Algorithm.Parameters.Value.Span.SequenceEqual(certKeyParameters);
                 }
 
+                // ML-KEM requires parameters to match exactly. ML-KEM also prohibits parameters, but that is checked
+                // by MLKem when loading the key.
                 // Any other algorithm matches null/empty parameters as equivalent
                 if (!publicKeyInfo.Algorithm.Parameters.HasValue)
                 {

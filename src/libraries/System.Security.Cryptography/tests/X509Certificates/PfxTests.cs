@@ -387,7 +387,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKemPrivateKey_Pfx(X509KeyStorageFlags keyStorageFlags)
+        public static void ReadMLKem512PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
             byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeySeedPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
@@ -396,6 +396,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (MLKem kem = cert.GetMLKemPrivateKey())
             {
                 Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem512, kem.Algorithm);
+                Assert.Equal(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            }
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeyExpandedKeyPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = new(pfxBytes, pfxPassword, keyStorageFlags))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem512, kem.Algorithm);
+            }
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem512PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeyBothPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = new(pfxBytes, pfxPassword, keyStorageFlags))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem512, kem.Algorithm);
             }
         }
 
