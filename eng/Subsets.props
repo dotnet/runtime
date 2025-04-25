@@ -60,6 +60,7 @@
   <PropertyGroup>
     <DefaultPrimaryRuntimeFlavor>CoreCLR</DefaultPrimaryRuntimeFlavor>
     <DefaultPrimaryRuntimeFlavor Condition="'$(CoreCLRSupported)' != 'true'">Mono</DefaultPrimaryRuntimeFlavor>
+    <DefaultPrimaryRuntimeFlavor Condition="'$(TargetsBrowser)' == 'true' and !$(Subset.ToLowerInvariant().Contains('clr'))">Mono</DefaultPrimaryRuntimeFlavor>
     <PrimaryRuntimeFlavor Condition="'$(PrimaryRuntimeFlavor)' == ''">$(DefaultPrimaryRuntimeFlavor)</PrimaryRuntimeFlavor>
   </PropertyGroup>
 
