@@ -8,6 +8,7 @@
 
 FrameDataAllocator::FrameDataFragment::FrameDataFragment(size_t size)
 {
+    // Amortize allocation cost by allocating a larger chunk of memory
     if (size < INTERP_STACK_FRAGMENT_SIZE)
     {
         size = INTERP_STACK_FRAGMENT_SIZE;

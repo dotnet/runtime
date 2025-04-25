@@ -57,6 +57,14 @@ struct InterpThreadContext
 
     // This is an allocator for the dynamic stack memory
     FrameDataAllocator *pFrameDataAllocator;
+
+    ~InterpThreadContext() {
+        if (pFrameDataAllocator)
+        {
+            delete pFrameDataAllocator;
+            pFrameDataAllocator = NULL;
+        }
+    }
 };
 
 InterpThreadContext* InterpGetThreadContext();

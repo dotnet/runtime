@@ -1204,8 +1204,6 @@ EXIT_FRAME:
         goto MAIN_LOOP;
     }
 
-    // Interpreter-TODO: FrameDataAllocator is owned by the current thread, free it when the thread exits instead of here
-    delete pThreadContext->pFrameDataAllocator;
     pThreadContext->pStackPointer = pFrame->pStack;
 }
 
