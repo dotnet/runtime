@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
         /// </exception>
         protected MLKem(MLKemAlgorithm algorithm)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
             Algorithm = algorithm;
         }
 
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
             ThrowIfNotSupported();
             return MLKemImplementation.GenerateKeyImpl(algorithm);
         }
@@ -233,7 +233,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] Decapsulate(byte[] ciphertext)
         {
-            ThrowIfNull(ciphertext);
+            ArgumentNullException.ThrowIfNull(ciphertext);
 
             if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidCiphertextLength, nameof(ciphertext));
@@ -337,7 +337,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidSeedLength, nameof(source));
@@ -370,7 +370,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return ImportPrivateSeed(algorithm, new ReadOnlySpan<byte>(source));
         }
@@ -396,7 +396,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.DecapsulationKeySizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidDecapsulationKeyLength, nameof(source));
@@ -428,7 +428,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportDecapsulationKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
@@ -453,7 +453,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.EncapsulationKeySizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidEncapsulationKeyLength, nameof(source));
@@ -485,7 +485,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return ImportEncapsulationKey(algorithm, new ReadOnlySpan<byte>(source));
         }
@@ -803,7 +803,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
@@ -856,7 +856,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
             return TryExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters, destination, out bytesWritten);
         }
 
@@ -902,7 +902,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
@@ -942,7 +942,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
@@ -982,7 +982,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
@@ -1022,7 +1022,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(string password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
             return ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters);
         }
 
@@ -1056,7 +1056,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public string ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
@@ -1097,7 +1097,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public string ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
@@ -1138,7 +1138,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public string ExportEncryptedPkcs8PrivateKeyPem(string password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
             return ExportEncryptedPkcs8PrivateKeyPem(password.AsSpan(), pbeParameters);
         }
 
@@ -1200,7 +1200,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(source));
         }
 
@@ -1250,7 +1250,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPkcs8PrivateKey(byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(source));
         }
 
@@ -1362,7 +1362,7 @@ namespace System.Security.Cryptography
         ///   The imported key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="password" /> is <see langword="null" />.
+        ///   <paramref name="password" /> or <paramref name="source" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
@@ -1385,9 +1385,10 @@ namespace System.Security.Cryptography
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports ML-KEM.
         /// </exception>
-        public static MLKem ImportEncryptedPkcs8PrivateKey(string password, ReadOnlySpan<byte> source)
+        public static MLKem ImportEncryptedPkcs8PrivateKey(string password, byte[] source)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(source);
             ThrowIfTrailingData(source);
             ThrowIfNotSupported();
 
@@ -1449,7 +1450,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportFromPem(string source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportFromPem(source.AsSpan());
         }
 
@@ -1580,8 +1581,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportFromEncryptedPem(string source, string password)
         {
-            ThrowIfNull(source);
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(password);
 
             return ImportFromEncryptedPem(source.AsSpan(), password.AsSpan());
         }
@@ -1592,8 +1593,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportFromEncryptedPem(string source, byte[] passwordBytes)
         {
-            ThrowIfNull(source);
-            ThrowIfNull(passwordBytes);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(passwordBytes);
 
             return ImportFromEncryptedPem(source.AsSpan(), new ReadOnlySpan<byte>(passwordBytes));
         }
@@ -1748,20 +1749,6 @@ namespace System.Security.Cryptography
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
-        }
-
-        private static void ThrowIfNull(
-            [NotNull] object? argument,
-            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
-        {
-#if NET
-            ArgumentNullException.ThrowIfNull(argument, paramName);
-#else
-            if (argument is null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
-#endif
         }
 
         private protected void ThrowIfDisposed()

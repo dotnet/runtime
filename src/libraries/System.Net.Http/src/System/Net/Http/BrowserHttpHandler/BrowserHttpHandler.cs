@@ -487,7 +487,7 @@ namespace System.Net.Http
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(stream, nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream);
 
             byte[] data = await GetResponseData(cancellationToken).ConfigureAwait(false);
             await stream.WriteAsync(data, cancellationToken).ConfigureAwait(false);

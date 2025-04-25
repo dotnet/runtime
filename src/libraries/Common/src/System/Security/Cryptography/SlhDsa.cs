@@ -366,7 +366,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -409,7 +409,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -462,7 +462,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
@@ -515,7 +515,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
@@ -557,7 +557,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -603,7 +603,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -685,7 +685,7 @@ namespace System.Security.Cryptography
         /// </returns>
         public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
             ThrowIfNotSupported();
 
             return SlhDsaImplementation.GenerateKeyCore(algorithm);
@@ -995,7 +995,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PublicKeySizeInBytes)
             {
@@ -1034,7 +1034,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.SecretKeySizeInBytes)
             {
@@ -1209,19 +1209,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void ThrowIfNull(
-            [NotNull] object? argument,
-            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
-        {
-#if NET
-            ArgumentNullException.ThrowIfNull(argument, paramName);
-#else
-            if (argument is null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
-#endif
-        }
 
         internal static string GetEncodedPemString(AsnWriter writer, string label)
         {
