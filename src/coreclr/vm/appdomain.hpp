@@ -1962,7 +1962,7 @@ public:
 template<>
 struct cdac_data<SystemDomain>
 {
-    static constexpr void* SystemDomain = (void*)&SystemDomain::m_pSystemDomain;
+    static constexpr PTR_SystemDomain* const SystemDomain = &SystemDomain::m_pSystemDomain;
 };
 
 #include "comreflectioncache.inl"
