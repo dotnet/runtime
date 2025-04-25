@@ -119,7 +119,7 @@ namespace AppHost.Bundle.Tests
                 string[] names = [GetLibraryName(null), GetLibraryName(DllImportSearchPath.AssemblyDirectory), GetLibraryName(DllImportSearchPath.System32)];
                 foreach (string name in names)
                 {
-                    string fileName = Binaries.GetSharedLibraryFileNameForCurrentPlatform(name);
+                    string fileName = $"{name}{Path.GetExtension(Binaries.HostPolicy.MockName)}";
                     File.Copy(Binaries.HostPolicy.MockPath, Path.Combine(_frameworkDependentApp.NonBundledLocation, fileName));
                     File.Copy(Binaries.HostPolicy.MockPath, Path.Combine(_selfContainedApp.NonBundledLocation, fileName));
                 }

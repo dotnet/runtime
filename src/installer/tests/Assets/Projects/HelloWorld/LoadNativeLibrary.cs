@@ -45,12 +45,15 @@ namespace HelloWorld
         }
 
         private static string GetLibraryName(DllImportSearchPath? flags)
-            => flags switch
+        {
+            string name = flags switch
             {
                 DllImportSearchPath.AssemblyDirectory => LibraryName_AssemblyDirectory,
                 DllImportSearchPath.System32 => LibraryName_System32,
                 _ => LibraryName
             };
+            return OperatingSystem.IsWindows() ? name : $"lib{name}";
+        }
 
         [DllImport(LibraryName)]
         private static extern int corehost_unload();
