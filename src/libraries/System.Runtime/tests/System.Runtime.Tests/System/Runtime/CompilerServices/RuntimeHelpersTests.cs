@@ -149,9 +149,14 @@ namespace System.Runtime.CompilerServices.Tests
                 Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(IList).GetMethod("Add").MethodHandle));
             }
 
-            if (PlatformDetection.IsNotWindows)
+            try
             {
-                Assert.Throws<PlatformNotSupportedException>(() => RuntimeHelpers.PrepareMethod(typeof(ComClass).GetMethod("Func").MethodHandle));
+                // This is expected to either succeed or throw PlatformNotSupportedException depending on the platform
+                // and runtime flavor
+                RuntimeHelpers.PrepareMethod(typeof(ComClass).GetMethod("Func").MethodHandle);
+            }
+            catch (PlatformNotSupportedException)
+            {
             }
         }
 
