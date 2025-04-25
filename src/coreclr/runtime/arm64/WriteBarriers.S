@@ -266,6 +266,7 @@ LEAF_ENTRY RhpAssignRef, _TEXT
         b       C_FUNC(RhpAssignRefArm64)
 LEAF_END RhpAssignRef, _TEXT
 
+#ifdef FEATURE_NATIVEAOT
 
 // Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 // successful updates.
@@ -395,3 +396,4 @@ LOCAL_LABEL(NoBarrierXchg):
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
 .arch_extension nolse
 #endif
+#endif // FEATURE_NATIVEAOT
