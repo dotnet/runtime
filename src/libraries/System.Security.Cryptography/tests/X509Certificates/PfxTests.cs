@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.XUnitExtensions;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using Test.Cryptography;
-using Microsoft.DotNet.RemoteExecutor;
-using Xunit;
 using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography.Tests;
+using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
+using Test.Cryptography;
+using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -381,6 +382,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // And verify that the public key isn't accidentally a private key.
                 Assert.ThrowsAny<CryptographicException>(() => pubKey.SignData(data, HashAlgorithmName.SHA1));
+            }
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKemPrivateKey_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeySeedPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = new(pfxBytes, pfxPassword, keyStorageFlags))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
             }
         }
 
