@@ -4,7 +4,7 @@
     <RunAOTCompilation>false</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <MainLibraryFileName>Android.Device_Emulator.JIT.Test.dll</MainLibraryFileName>
+    <MainLibraryFileName>Android.Device_Emulator.JIT.Static.Test.dll</MainLibraryFileName>
     <ExpectedExitCode>42</ExpectedExitCode>
     <StaticLinkedRuntime>true</StaticLinkedRuntime>
   </PropertyGroup>
