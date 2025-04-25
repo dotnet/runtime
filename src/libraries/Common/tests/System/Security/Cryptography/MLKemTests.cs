@@ -227,6 +227,7 @@ namespace System.Security.Cryptography.Tests
             byte[] spki = new byte[MLKemTestData.IetfMlKem512Spki.Length + 1];
             MLKemTestData.IetfMlKem512Spki.AsSpan().CopyTo(spki);
             Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(spki));
+            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(spki)));
         }
 
         [Fact]
