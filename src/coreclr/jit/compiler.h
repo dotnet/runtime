@@ -6709,8 +6709,9 @@ private:
 
     //----------------------- Liveness analysis -------------------------------
 
-    VARSET_TP fgCurUseSet; // vars used     by block (before a def)
-    VARSET_TP fgCurDefSet; // vars assigned by block (before a use)
+    VARSET_TP fgCurUseSet;   // vars used     by block (before a def)
+    VARSET_TP fgCurDefSet;   // vars assigned by block (before a use)
+    VARSET_TP fgTrueUseSet;  // vars with non-useasg uses 
 
     MemoryKindSet fgCurMemoryUse;   // True iff the current basic block uses memory.
     MemoryKindSet fgCurMemoryDef;   // True iff the current basic block modifies memory.

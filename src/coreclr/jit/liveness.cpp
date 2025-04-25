@@ -65,6 +65,12 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
             // This is a def, add it to the set of defs.
             VarSetOps::AddElemD(this, fgCurDefSet, varDsc->lvVarIndex);
         }
+
+        if (isUse && !isDef)
+        {
+            // Variable is actually used
+            VarSetOps::AddElemD(this, fgTrueUseSet, varDsc->lvVarIndex);
+        }
     }
     else
     {
@@ -371,6 +377,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
     // Avoid allocations in the long case.
     VarSetOps::AssignNoCopy(this, fgCurUseSet, VarSetOps::MakeEmpty(this));
     VarSetOps::AssignNoCopy(this, fgCurDefSet, VarSetOps::MakeEmpty(this));
+    VarSetOps::AssignNoCopy(this, fgTrueUseSet, VarSetOps::MakeEmpty(this));
 
     // GC Heap and ByrefExposed can share states unless we see a def of byref-exposed
     // memory that is not a GC Heap def.
@@ -910,7 +917,8 @@ bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
     assert(varDsc.lvTracked);
 
     const unsigned varIndex = varDsc.lvVarIndex;
-    if (VarSetOps::IsMember(this, life, varIndex))
+    bool           isLive   = VarSetOps::IsMember(this, life, varIndex);
+    if (isLive)
     {
         // The variable is live
         if ((node->gtFlags & GTF_VAR_USEASG) == 0)
@@ -932,8 +940,20 @@ bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
             }
 #endif // DEBUG
         }
+        else
+        {
+            // If the only uses are useasg defs, then the variable is not live unless artificially kept alive.
+            isLive =
+                VarSetOps::IsMember(this, fgTrueUseSet, varIndex) || VarSetOps::IsMember(this, keepAliveVars, varIndex);
+
+            if (!isLive)
+            {
+                VarSetOps::RemoveElemD(this, life, varIndex);
+            }
+        }
     }
-    else
+
+    if (!isLive)
     {
         // Dead store
         node->gtFlags |= GTF_VAR_DEATH;
