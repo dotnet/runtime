@@ -242,8 +242,10 @@ void CompatMethod()
 
 **API Marking Model**
 
-- All SME intrinsic APIs will be annotated with `[SME_Streaming]`.
-- All SVE/SVE2 APIs that are valid in streaming mode will be marked as `[SME_Streaming_Compatible]`.
+- All SME intrinsic APIs that are only valid in streaming mode will be annotated with `[SME_Streaming]`.
+- All other SME intrinsic APIs will be annotated with `[SME_Streaming_Compatible]`.
+- All SVE/SVE2/AdvSimd APIs that are valid in streaming mode will be annotated with `[SME_Streaming_Compatible]`.
+- All SVE/SVE2/AdvSimd APIs that are not valid in streaming mode will not be annotated.
 
 This model ensures that calling `[SME_Streaming_Compatible]` intrinsics from non-streaming methods does not incur any streaming state change penalties. As a result, existing .NET libraries that use SVE APIs remain unaffected and continue to operate efficiently.
 
@@ -293,53 +295,6 @@ This model ensures that calling `[SME_Streaming_Compatible]` intrinsics from non
 - **Platform Compatibility**: When compiling streaming methods for platforms that lack SME support, the code generator can insert a `throw PlatformNotSupportedException` at the beginning of the method to ensure compatibility.
 
 There were few more options explored and they are described in Appendix section, along with their pros and cons.
-
-### Missing APIs in Streaming Mode
-
-There are a number of APIs that are not available when in streaming mode. This is mostly because these instructions would likely exhibit poor performance characteristics if implemented on the SME unit.
-
-The list includes instructions in both AdvSimd and SVE:
-  - SVE gather loads / scatter stores
-  - SVE Non-temporal memory access
-  - SVE First faulting loads and the FFR register
-  - Most AdvSimd instructions
-  - TODO: Come up with actual list
-
-There are a number of ways this could be handled:
-
-#### 1. MethodAttribute
-
-When using the MethodAttribute implementation, all SVE and AdvSimd APIs that are valid in streaming mode would be marked as streaming-compatible.
-
-**Pros:**
-- It will be clear when looking at the API definition which methods are valid for SME.
-- Any future changes in restrictions can be marked with different attributes.
-- This will cause an API break, but since SVE APIs are `[Experimental]`, it should be fine to do it.
-
-#### 2. Subclassing
-
-Put all non-streaming APIs into a separate class.  
-For example, `SVENonStreaming.GatherLoad()` or `SVE.NonStreaming.GatherLoad()`.
-
-**Pros:**
-- It's clear which methods are valid.
-
-**Cons:**
-- There would have to be an API break. Existing AdvSimd routines would have to be moved into `AdvSimd.NonStreaming`.
-- Additional complication for AdvSimd/SVE users who don't use or know about SME. It will not be clear why a given routine is in a slightly different class.
-- If `FEAT_SME_FA64` were ever implemented, all AdvSimd/SVE APIs would become valid on that platform. The simple solution here would be to still treat those APIs as invalid.
-- A future Arm architecture extension could introduce more restrictions or a different set of restrictions.
-
-
-#### 3. Implicit (Code Generator Tracks SM State)
-
-All AdvSimd/SVE APIs are valid because the JIT compiler automatically inserts the correct mode changes.
-
-**Pros:**
-- Everything is always valid.
-
-**Cons:**
-- Poor performance due to frequent mode switches will be hard to debug.
 
 
 ### Code Generation for Agnostic VL
@@ -769,8 +724,27 @@ The hybrid approach combines the use of method attributes (`[SME_Streaming]` and
 - **Error Case Complexity**:
    - Ensuring all possible error cases are correctly handled may be challenging. For instance, mismatches between explicit streaming state controls and attribute expectations could still occur in some scenarios.
 
+### 4. Subclassing APIs
 
-#### 4. Implicit (Code Generator Tracks SM State)
+In the Expose and RAII approaches discussed earlier, a program can crash if an API is called while in the wrong mode. To reduce this risk, the SME/SVE/AdvSimd APIs could be split into separate groups.
+
+All SVE and AdvSimd APIs that are invalid in streaming mode would be moved into a distinct NonStreaming subclass.
+
+For example, `Sve.GatherLoad()` would become either `SveNonStreaming.GatherLoad()` or `Sve.NonStreaming.GatherLoad()`.
+
+SME APIs would be organized into three classes: streaming, non-streaming, and streaming-compatible.
+
+Pros:
+- Makes it clear which methods are valid in each mode.
+
+Cons:
+- Users could still make mistakes and cause crashes.
+- Would require breaking changes to the existing AdvSimd API.
+- Adds complexity for AdvSimd and SVE users who aren't working with SME; it may not be obvious why some routines are separated into different classes.
+- If `FEAT_SME_FA64` is ever implemented, all AdvSimd/SVE APIs would become valid in streaming mode. A simple solution would be to continue treating them as invalid for consistency.
+- Future Arm extensions could introduce new restrictions or alter existing ones, complicating the model further.
+
+#### 5. Implicit (Code Generator Tracks SM State)
 
 Instead of relying on the developer to specify where the streaming mode should be changed, the code generator can take on the responsibility of tracking the streaming mode implicitly. It would be responsible for injecting appropriate streaming state change instructions at the correct locations. For instance, every time an SME intrinsic is called, the code generator can insert `SMSTART` before and `SMSTOP` after the call. It can also optimize by batching multiple state changes.
 
@@ -801,7 +775,7 @@ Instead of relying on the developer to specify where the streaming mode should b
     ```
 
 
-## 5. Using C++ SME libraries via C# wrappers
+## 6. Using C++ SME libraries via C# wrappers
 
 SME is complex, and it's difficult for the average developer to fully understand the concepts and edge cases needed to write performant SME code. C++ already offers a complete set of SME APIs. In most cases, developers will likely rely on known routines that are already implemented in external libraries. One potential approach is to wrap these libraries in a C# layer and distribute them as external packages on NuGet.
 
