@@ -114,7 +114,7 @@ namespace System
         static abstract TValue NegativeInfinity { get; }
         static abstract TValue Zero { get; }
         static abstract TValue MaxSignificand { get; }
-        static abstract TValue NumberToSignificand(ref Number.NumberBuffer number);
+        static abstract TValue NumberToSignificand(ref Number.NumberBuffer number, int digits);
         static abstract unsafe byte* ToDecChars(byte* p, TValue significand);
         static abstract int ConvertToExponent(TValue value);
         static abstract TValue Power10(int exponent);

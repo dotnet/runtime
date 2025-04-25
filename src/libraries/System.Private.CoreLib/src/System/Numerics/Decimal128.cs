@@ -291,17 +291,15 @@ namespace System.Numerics
             return Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower));
         }
 
-        static unsafe UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberToSignificand(ref Number.NumberBuffer number)
+        static unsafe UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
-            int count = Math.Min(number.DigitsCount, Precision);
-
-            if (count <= 19)
+            if (digits <= 19)
             {
-                return Number.DigitsToUInt64(number.DigitsPtr, count);
+                return Number.DigitsToUInt64(number.DigitsPtr, digits);
             }
             else
             {
-                Number.AccumulateDecimalDigitsIntoBigInteger(ref number, 0, (uint)count, out Number.BigInteger result);
+                Number.AccumulateDecimalDigitsIntoBigInteger(ref number, 0, (uint)digits, out Number.BigInteger result);
                 return result.ToUInt128();
             }
         }

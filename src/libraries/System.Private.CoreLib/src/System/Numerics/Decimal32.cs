@@ -259,10 +259,9 @@ namespace System.Numerics
             return Number.UnpackDecimalIeee754<Decimal32, uint>(_value);
         }
 
-        static unsafe uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NumberToSignificand(ref Number.NumberBuffer number)
+        static unsafe uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
-            int count = Math.Min(number.DigitsCount, Precision);
-            return Number.DigitsToUInt32(number.DigitsPtr, count);
+            return Number.DigitsToUInt32(number.DigitsPtr, digits);
         }
 
         static Decimal32 IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Construct(uint value) => new Decimal32(value);

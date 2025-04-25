@@ -260,10 +260,9 @@ namespace System.Numerics
             return Number.UnpackDecimalIeee754<Decimal64, ulong>(_value);
         }
 
-        static unsafe ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberToSignificand(ref Number.NumberBuffer number)
+        static unsafe ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
-            int count = Math.Min(number.DigitsCount, Precision);
-            return Number.DigitsToUInt64(number.DigitsPtr, count);
+            return Number.DigitsToUInt64(number.DigitsPtr, digits);
         }
 
         static Decimal64 IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Construct(ulong value) => new Decimal64(value);

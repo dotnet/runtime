@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace System.Tests
 {
@@ -41,11 +42,16 @@ namespace System.Tests
             yield return new object[] { (567.89).ToString(), defaultStyle, null, new Decimal32(56789, -2) };
             yield return new object[] { (-567.89).ToString(), defaultStyle, null, new Decimal32(-56789, -2) };
             yield return new object[] { "0.6666666500000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(6666666, -7) };
-
+            
             yield return new object[] { "0." + new string('0', 101) + "1", defaultStyle, invariantFormat, new Decimal32(0, 0) };
             yield return new object[] { "-0." + new string('0', 101) + "1", defaultStyle, invariantFormat, new Decimal32(0, 0) };
             yield return new object[] { "0." + new string('0', 100) + "1", defaultStyle, invariantFormat, new Decimal32(1, -101) };
             yield return new object[] { "-0." + new string('0', 100) + "1", defaultStyle, invariantFormat, new Decimal32(-1, -101) };
+
+            yield return new object[] { "0." + new string('0', 99) + "12345", defaultStyle, invariantFormat, new Decimal32(12, -101) };
+            yield return new object[] { "-0." + new string('0', 99) + "12345", defaultStyle, invariantFormat, new Decimal32(-12, -101) };
+            yield return new object[] { "0." + new string('0', 99) + "12562", defaultStyle, invariantFormat, new Decimal32(13, -101) };
+            yield return new object[] { "-0." + new string('0', 99) + "12562", defaultStyle, invariantFormat, new Decimal32(-13, -101) };
 
             yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, new Decimal32(234, -3) };
             yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal32(234, 0) };
@@ -219,6 +225,15 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Parse_Rounding()
+        {
+            Assert.Equal(Decimal32.Parse(new string('9', 8)), new Decimal32(1, 8));
+            Assert.Equal(Decimal32.Parse(new string('9', 8) + new string('0', 88)), new Decimal32(1_000_000, 90));
+            Assert.Equal(Decimal32.Parse(new string('9', 7) + '5' + new string('0', 88)), new Decimal32(1_000_000, 90));
+            Assert.Equal(Decimal32.Parse(new string('9', 7) + '4' + new string('0', 88)), new Decimal32(9_999_999, 89));
+        }
+
+        [Fact]
         public static void Midpoint_Rounding()
         {
             var number = new Decimal32(12345685, 0);
@@ -233,6 +248,9 @@ namespace System.Tests
 
             number = new Decimal32(12345671, 0);
             Assert.Equal(new Decimal32(1234567, 1), number);
+
+            number = new Decimal32(12345650, -103);
+            Assert.Equal(new Decimal32(123456, -101), number);
         }
 
         [Fact]
@@ -269,6 +287,17 @@ namespace System.Tests
         {
             var d = new Decimal32(10, 20);
             Assert.Equal(d.GetHashCode(), d.GetHashCode());
+        }
+
+        [Fact]
+        public static void CompareToZero()
+        {
+            var zero = new Decimal32(0, 1);
+            Assert.Equal(zero, new Decimal32(0, 20));
+            Assert.Equal(zero, new Decimal32(1, -102));
+            Assert.Equal(zero, new Decimal32(234, -1000));
+            Assert.Equal(zero, new Decimal32(-1, -102));
+            Assert.Equal(zero, new Decimal32(-234, -1000));
         }
 
         public static IEnumerable<object[]> ToString_TestData()

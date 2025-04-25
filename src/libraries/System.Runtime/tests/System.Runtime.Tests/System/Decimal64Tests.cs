@@ -41,11 +41,17 @@ namespace System.Tests
             yield return new object[] { (567.89).ToString(), defaultStyle, null, new Decimal64(56789, -2) };
             yield return new object[] { (-567.89).ToString(), defaultStyle, null, new Decimal64(-56789, -2) };
             yield return new object[] { "0.6666666666666666500000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal64(6666666666666666, -16) };
+            yield return new object[] { new string('9', 17), defaultStyle, invariantFormat, new Decimal64(1, 17) };
 
             yield return new object[] { "0." + new string('0', 398) + "1", defaultStyle, invariantFormat, new Decimal64(0, 0) };
             yield return new object[] { "-0." + new string('0', 398) + "1", defaultStyle, invariantFormat, new Decimal64(0, 0) };
             yield return new object[] { "0." + new string('0', 397) + "1", defaultStyle, invariantFormat, new Decimal64(1, -398) };
             yield return new object[] { "-0." + new string('0', 397) + "1", defaultStyle, invariantFormat, new Decimal64(-1, -398) };
+
+            yield return new object[] { "0." + new string('0', 396) + "12345", defaultStyle, invariantFormat, new Decimal64(12, -398) };
+            yield return new object[] { "-0." + new string('0', 396) + "12345", defaultStyle, invariantFormat, new Decimal64(-12, -398) };
+            yield return new object[] { "0." + new string('0', 396) + "12562", defaultStyle, invariantFormat, new Decimal64(13, -398) };
+            yield return new object[] { "-0." + new string('0', 396) + "12562", defaultStyle, invariantFormat, new Decimal64(-13, -398) };
 
             yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, new Decimal64(234, -3) };
             yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal64(234, 0) };
@@ -227,6 +233,15 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Parse_Rounding()
+        {
+            Assert.Equal(Decimal64.Parse(new string('9', 17)), new Decimal64(1, 17));
+            Assert.Equal(Decimal64.Parse(new string('9', 17) + new string('0', 367)), new Decimal64(1_000_000_000_000_000, 369));
+            Assert.Equal(Decimal64.Parse(new string('9', 16) + '5' + new string('0', 367)), new Decimal64(1_000_000_000_000_000, 369));
+            Assert.Equal(Decimal64.Parse(new string('9', 16) + '4' + new string('0', 367)), new Decimal64(9_999_999_999_999_999, 368));
+        }
+
+        [Fact]
         public static void Rounding()
         {
             var number = new Decimal64(12345677777777778, 0);
@@ -234,6 +249,9 @@ namespace System.Tests
 
             number = new Decimal64(12345677777777771, 0);
             Assert.Equal(new Decimal64(1234567777777777, 1), number);
+
+            number = new Decimal64(12345677777777771, -399);
+            Assert.Equal(new Decimal64(1234567777777777, -398), number);
         }
 
         [Fact]
@@ -270,6 +288,17 @@ namespace System.Tests
         {
             var d = new Decimal64(10, 20);
             Assert.Equal(d.GetHashCode(), d.GetHashCode());
+        }
+
+        [Fact]
+        public static void CompareToZero()
+        {
+            var zero = new Decimal64(0, 1);
+            Assert.Equal(zero, new Decimal64(0, 20));
+            Assert.Equal(zero, new Decimal64(1, -399));
+            Assert.Equal(zero, new Decimal64(234, -1000));
+            Assert.Equal(zero, new Decimal64(-1, -399));
+            Assert.Equal(zero, new Decimal64(-234, -1000));
         }
 
         public static IEnumerable<object[]> ToString_TestData()
