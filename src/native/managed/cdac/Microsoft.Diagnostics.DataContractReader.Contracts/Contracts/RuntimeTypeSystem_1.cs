@@ -109,11 +109,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             Address = methodDescPointer;
 
             Token = ComputeToken(target, desc, chunk);
+            Size = ComputeSize(target, desc);
         }
 
         public TargetPointer MethodTable => _chunk.MethodTable;
         public ushort Slot => _desc.Slot;
         public uint Token { get; }
+        public uint Size { get; }
 
         private static uint ComputeToken(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
         {
@@ -126,6 +128,21 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             uint tokenRemainder = (uint)(desc.Flags3AndTokenRemainder & tokenRemainderMask);
             uint tokenRange = ((uint)(chunk.FlagsAndTokenRange & tokenRangeMask)) << tokenRemainderBitCount;
             return EcmaMetadataUtils.CreateMethodDef(tokenRange | tokenRemainder);
+        }
+
+        private static uint ComputeSize(Target target, Data.MethodDesc desc)
+        {
+            // Size of the MethodDesc is variable, read it from the targets lookup table
+            // See MethodDesc::SizeOf in method.cpp for details
+            // TODO(cdac): make sure this value is stored in minidumps
+            TargetPointer methodDescSizeTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable));
+
+            ushort arrayOffset = (ushort)(desc.Flags & (ushort)(
+                MethodDescFlags_1.MethodDescFlags.ClassificationMask |
+                MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot |
+                MethodDescFlags_1.MethodDescFlags.HasMethodImpl |
+                MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot));
+            return (uint)target.ReadNUInt(methodDescSizeTable + arrayOffset * (ulong)target.PointerSize).Value;
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
@@ -327,7 +344,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             case MethodTableFlags_1.EEClassOrCanonMTBits.EEClass:
                 return methodTable.EEClassOrCanonMT;
             case MethodTableFlags_1.EEClassOrCanonMTBits.CanonMT:
-                TargetPointer canonMTPtr =MethodTableFlags_1.UntagEEClassOrCanonMT(methodTable.EEClassOrCanonMT);
+                TargetPointer canonMTPtr = MethodTableFlags_1.UntagEEClassOrCanonMT(methodTable.EEClassOrCanonMT);
                 TypeHandle canonMTHandle = GetTypeHandle(canonMTPtr);
                 MethodTable canonMT = _methodTables[canonMTHandle.Address];
                 return canonMT.EEClassOrCanonMT; // canonical method table EEClassOrCanonMT is always EEClass
@@ -964,6 +981,31 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
         return md.HasNativeCodeSlot;
+    }
+
+    // Based on MethodTable::IntroducedMethodIterator
+    private IEnumerable<MethodDescHandle> GetIntroducedMethods(TypeHandle typeHandle)
+    {
+        Debug.Assert(typeHandle.IsMethodTable());
+
+        EEClass eeClass = GetClassData(typeHandle);
+
+        TargetPointer chunkAddr = eeClass.MethodDescChunk;
+        while (chunkAddr != TargetPointer.Null)
+        {
+            MethodDescChunk chunk = _target.ProcessedData.GetOrAdd<MethodDescChunk>(chunkAddr);
+            TargetPointer methodDescPtr = chunk.FirstMethodDesc;
+            // chunk.Count is the number of MethodDescs in the chunk - 1
+            for (int i = 0; i < chunk.Count + 1; i++)
+            {
+                MethodDescHandle methodDescHandle = GetMethodDescHandle(methodDescPtr);
+                MethodDesc md = _methodDescs[methodDescHandle.Address];
+                methodDescPtr += md.Size;
+                yield return methodDescHandle;
+            }
+
+            chunkAddr = chunk.Next;
+        }
     }
 
     MethodDescHandle IRuntimeTypeSystem.GetMethodDescForSlot(TypeHandle typeHandle, ushort slot)
