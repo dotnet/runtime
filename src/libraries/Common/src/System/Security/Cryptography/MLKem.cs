@@ -1170,6 +1170,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
+            ThrowIfTrailingData(source);
             ThrowIfNotSupported();
 
             unsafe
@@ -1743,9 +1744,12 @@ namespace System.Security.Cryptography
 
         private static void ThrowIfTrailingData(ReadOnlySpan<byte> data)
         {
-            AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out int bytesRead);
+            // The only thing we are checking here is that TryReadEncodedValue was able to decode it and that, given
+            // the length of the data, that it the same length as the span. The encoding rules don't matter for length
+            // checking, so just use BER.
+            bool success = AsnDecoder.TryReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out _, out int bytesRead);
 
-            if (bytesRead != data.Length)
+            if (!success || bytesRead != data.Length)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
@@ -1801,17 +1805,17 @@ namespace System.Security.Cryptography
             // Decapsulation keys are always larger than the seed, so if we end up with a seed export it should
             // fit in the initial buffer.
             int size = Algorithm.DecapsulationKeySizeInBytes + 32;
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(size); // Released to callers, do not use CryptoPool.
+            byte[] buffer = CryptoPool.Rent(size); // Only passed out as span, callees can't keep a reference to it
             int written;
 
             while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
-                ClearAndReturnToPool(buffer, written);
+                CryptoPool.Return(buffer);
                 size = checked(size * 2);
                 buffer = ArrayPool<byte>.Shared.Rent(size);
             }
 
-            if (written > buffer.Length)
+            if (written < 0 || written > buffer.Length)
             {
                 // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
                 CryptographicOperations.ZeroMemory(buffer);
@@ -1819,14 +1823,8 @@ namespace System.Security.Cryptography
             }
 
             TResult result = func(buffer.AsSpan(0, written));
-            ClearAndReturnToPool(buffer, written);
+            CryptoPool.Return(buffer, written);
             return result;
-
-            static void ClearAndReturnToPool(byte[] buffer, int clearSize)
-            {
-                CryptographicOperations.ZeroMemory(buffer.AsSpan(0, clearSize));
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
         }
 
         private static string EncodeAsnWriterToPem(string label, AsnWriter writer, bool clear = true)
