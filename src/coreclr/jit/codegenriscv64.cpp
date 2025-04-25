@@ -3380,19 +3380,8 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
                 {
                     regNumber tmpRegOp1 = rsGetRsvdReg();
                     assert(regOp1 != tmpRegOp1);
-                    if (cond.IsUnsigned())
-                    {
-                        imm = static_cast<uint32_t>(imm);
-
-                        assert(regOp1 != tmpRegOp1);
-                        emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
-                        emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-                    }
-                    else
-                    {
-                        imm = static_cast<int32_t>(imm);
-                        emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-                    }
+                    imm = static_cast<int32_t>(imm);
+                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                     regOp1 = tmpRegOp1;
                     break;
                 }
@@ -3428,15 +3417,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             {
                 regNumber tmpRegOp1 = rsGetRsvdReg();
                 assert(regOp1 != tmpRegOp1);
-                if (cond.IsUnsigned())
-                {
-                    emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
-                    emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-                }
-                else
-                {
-                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-                }
+                emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                 regOp1 = tmpRegOp1;
             }
         }
@@ -3485,20 +3466,8 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             regNumber tmpRegOp2 = rsGetRsvdReg();
             assert(regOp1 != tmpRegOp2);
             assert(regOp2 != tmpRegOp2);
-
-            if (cond.IsUnsigned())
-            {
-                emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
-                emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-                emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp2, regOp2, 32);
-                emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp2, tmpRegOp2, 32);
-            }
-            else
-            {
-                emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp1, regOp1, 0);
-                emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp2, regOp2, 0);
-            }
-
+            emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
+            emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp2, regOp2);
             regOp1 = tmpRegOp1;
             regOp2 = tmpRegOp2;
         }
