@@ -7,8 +7,6 @@ using System.Linq;
 using System.Security.Cryptography.Asn1;
 using Xunit;
 
-using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
-
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
     public static class SlhDsaContractTests
@@ -237,14 +235,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             slhDsa.Dispose();
             slhDsa.Dispose(); // no throw
 
-            VerifyDisposed(slhDsa);
+            SlhDsaTestHelpers.VerifyDisposed(slhDsa);
         }
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public static void ExportPkcs8PrivateKey_CallsExportSlhDsaSecretKey(SlhDsaAlgorithm algorithm)
         {
-            AssertExportPkcs8PrivateKey(export =>
+            SlhDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
             {
                 using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -264,7 +262,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 PrivateKeyInfoAsn exportedPkcs8 = PrivateKeyInfoAsn.Decode(exported, AsnEncodingRules.DER);
                 AssertExtensions.SequenceEqual(CreateFilledArray(algorithm.SecretKeySizeInBytes, 1), exportedPkcs8.PrivateKey.Span);
                 Assert.Equal(0, exportedPkcs8.Version);
-                Assert.Equal(AlgorithmToOid(algorithm), exportedPkcs8.PrivateKeyAlgorithm.Algorithm);
+                Assert.Equal(SlhDsaTestHelpers.AlgorithmToOid(algorithm), exportedPkcs8.PrivateKeyAlgorithm.Algorithm);
                 Assert.Equal(default(ReadOnlyMemory<byte>?), exportedPkcs8.PrivateKeyAlgorithm.Parameters);
                 Assert.Null(exportedPkcs8.Attributes);
             });
@@ -279,14 +277,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(algorithm),
+                    Algorithm = SlhDsaTestHelpers.AlgorithmToOid(algorithm),
                     Parameters = null,
                 },
                 PrivateKey = secretKeyBytes,
             };
             byte[] minimalEncoding = pkcs8.Encode();
 
-            AssertExportPkcs8PrivateKey(export =>
+            SlhDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
             {
                 using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -324,7 +322,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public static void ExportSubjectPublicKeyInfo_CallsExportSlhDsaPublicKey(SlhDsaAlgorithm algorithm)
         {
-            AssertExportSubjectPublicKeyInfo(export =>
+            SlhDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
             {
                 using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -337,7 +335,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
                 SubjectPublicKeyInfoAsn exportedPkcs8 = SubjectPublicKeyInfoAsn.Decode(exported, AsnEncodingRules.DER);
                 AssertExtensions.SequenceEqual(CreateFilledArray(algorithm.PublicKeySizeInBytes, 1), exportedPkcs8.SubjectPublicKey.Span);
-                Assert.Equal(AlgorithmToOid(algorithm), exportedPkcs8.Algorithm.Algorithm);
+                Assert.Equal(SlhDsaTestHelpers.AlgorithmToOid(algorithm), exportedPkcs8.Algorithm.Algorithm);
                 Assert.Equal(default(ReadOnlyMemory<byte>?), exportedPkcs8.Algorithm.Parameters);
             });
         }
@@ -359,7 +357,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(AlgorithmWithPbeParametersData))]
         public static void ExportEncryptedPkcs8PrivateKey_CallsExportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm, PbeParameters pbeParameters)
         {
-            AssertEncryptedExportPkcs8PrivateKey(export =>
+            SlhDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(export =>
             {
                 using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -378,7 +376,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertExtensions.GreaterThan(slhDsa.ExportSlhDsaSecretKeyCoreCallCount, 0);
                 AssertExtensions.GreaterThan(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount, 0);
 
-                AssertEncryptedPkcs8PrivateKeyContents(pbeParameters, exported);
+                SlhDsaTestHelpers.AssertEncryptedPkcs8PrivateKeyContents(pbeParameters, exported);
             });
         }
 
@@ -404,7 +402,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
+                    Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
                     Parameters = null,
                 },
                 PrivateKey = secretKeyBytes,
@@ -448,7 +446,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
+                    Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
                     Parameters = null,
                 },
                 PrivateKey = secretKeyBytes,

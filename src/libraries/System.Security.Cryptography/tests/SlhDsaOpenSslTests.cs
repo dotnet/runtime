@@ -6,8 +6,6 @@ using System.Linq;
 using Test.Cryptography;
 using Xunit;
 
-using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
-
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
     /// <summary>
@@ -67,14 +65,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     VerifyInstanceIsUsable(two);
                 }
 
-                VerifyDisposed(one);
+                SlhDsaTestHelpers.VerifyDisposed(one);
                 Assert.Throws<ObjectDisposedException>(() => one.DuplicateKeyHandle());
 
                 VerifyInstanceIsUsable(two);
                 ExerciseSuccessfulVerify(two, data, oneSignature, context);
             }
 
-            VerifyDisposed(two);
+            SlhDsaTestHelpers.VerifyDisposed(two);
             Assert.Throws<ObjectDisposedException>(() => two.DuplicateKeyHandle());
         }
 

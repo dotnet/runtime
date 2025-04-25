@@ -6,8 +6,6 @@ using System.Linq;
 using System.Text;
 using Xunit;
 
-using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
-
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
     [ConditionalClass(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
@@ -126,7 +124,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public void EncryptedPkcs8PrivateKey_RoundTrip(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
             using SlhDsa slhDsa = SlhDsa.ImportSlhDsaSecretKey(info.Algorithm, info.SecretKey);
-            AssertEncryptedExportPkcs8PrivateKey(slhDsa, info.EncryptionPassword, info.EncryptionParameters, pkcs8 =>
+            SlhDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(slhDsa, info.EncryptionPassword, info.EncryptionParameters, pkcs8 =>
             {
                 using SlhDsa importedSlhDsa = SlhDsa.ImportEncryptedPkcs8PrivateKey(info.EncryptionPassword, pkcs8);
 
@@ -134,7 +132,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 importedSlhDsa.ExportSlhDsaSecretKey(secretKey);
                 AssertExtensions.SequenceEqual(info.SecretKey, secretKey);
 
-                AssertEncryptedPkcs8PrivateKeyContents(info.EncryptionParameters, pkcs8);
+                SlhDsaTestHelpers.AssertEncryptedPkcs8PrivateKeyContents(info.EncryptionParameters, pkcs8);
             });
         }
 
@@ -315,7 +313,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public void ImportSecretKey_ExportPkcs8PrivateKey(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
             using SlhDsa slhDsa = ImportSlhDsaSecretKey(info.Algorithm, info.SecretKey);
-            AssertExportPkcs8PrivateKey(slhDsa, pkcs8 => AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey, pkcs8));
+            SlhDsaTestHelpers.AssertExportPkcs8PrivateKey(slhDsa, pkcs8 => AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey, pkcs8));
         }
 
         [Theory]
@@ -323,7 +321,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public void ImportSecretKey_ExportPkcs8PublicKey(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
             using SlhDsa slhDsa = ImportSlhDsaSecretKey(info.Algorithm, info.SecretKey);
-            AssertExportSubjectPublicKeyInfo(slhDsa, spki => AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, spki));
+            SlhDsaTestHelpers.AssertExportSubjectPublicKeyInfo(slhDsa, spki => AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, spki));
         }
 
         [Theory]
@@ -331,7 +329,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public void ImportPublicKey_ExportPkcs8PublicKey(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
             using SlhDsa slhDsa = ImportSlhDsaPublicKey(info.Algorithm, info.PublicKey);
-            AssertExportSubjectPublicKeyInfo(slhDsa, spki => AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, spki));
+            SlhDsaTestHelpers.AssertExportSubjectPublicKeyInfo(slhDsa, spki => AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, spki));
         }
 
         [Theory]
@@ -339,9 +337,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public void ExportEncryptedPkcs8PrivateKey_PbeParameters(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
             using SlhDsa slhDsa = ImportSlhDsaSecretKey(info.Algorithm, info.SecretKey);
-            AssertEncryptedExportPkcs8PrivateKey(slhDsa, info.EncryptionPassword, info.EncryptionParameters, pkcs8 =>
+            SlhDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(slhDsa, info.EncryptionPassword, info.EncryptionParameters, pkcs8 =>
             {
-                AssertEncryptedPkcs8PrivateKeyContents(info.EncryptionParameters, pkcs8);
+                SlhDsaTestHelpers.AssertEncryptedPkcs8PrivateKeyContents(info.EncryptionParameters, pkcs8);
             });
         }
 

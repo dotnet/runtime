@@ -6,8 +6,6 @@ using System.Security.Cryptography.Asn1;
 using Xunit;
 using Xunit.Sdk;
 
-using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
-
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
     public static class SlhDsaFactoryTests
@@ -126,7 +124,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
             AlgorithmIdentifierAsn algorithmIdentifier = new AlgorithmIdentifierAsn
             {
-                Algorithm = AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
+                Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
             };
             algorithmIdentifier.Encode(writer);
             byte[] wrongAsnType = writer.Encode();
@@ -159,7 +157,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 Algorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
+                    Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
                     Parameters = rsaSpkiBytes, // <-- Invalid
                 },
                 SubjectPublicKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes]
@@ -195,7 +193,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
+                    Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
                     Parameters = someEncodedBytes, // <-- Invalid
                 },
                 PrivateKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes]
@@ -236,7 +234,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             if (publicKey.Length == 0)
             {
-                testDirectCall(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, []));
+                testDirectCall(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, Array.Empty<byte>()));
                 testDirectCall(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, ReadOnlySpan<byte>.Empty));
             }
             else
@@ -248,7 +246,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 Algorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
+                    Algorithm = SlhDsaTestHelpers.AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
                     Parameters = default(ReadOnlyMemory<byte>?),
                 },
                 SubjectPublicKey = publicKey,
@@ -282,7 +280,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             if (secretKey.Length == 0)
             {
-                testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, []));
+                testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, Array.Empty<byte>()));
                 testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, ReadOnlySpan<byte>.Empty));
             }
             else
@@ -294,7 +292,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
+                    Algorithm = SlhDsaTestHelpers.AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
                     Parameters = default(ReadOnlyMemory<byte>?),
                 },
                 PrivateKey = secretKey,
@@ -366,13 +364,13 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 {
                     test();
                 }
-                catch (PlatformNotSupportedException)
+                catch (PlatformNotSupportedException pnse)
                 {
-                    // Expected exception
+                    Assert.Contains("SlhDsa", pnse.Message);
                 }
-                catch (ThrowsException te) when (te.InnerException is PlatformNotSupportedException)
+                catch (ThrowsException te) when (te.InnerException is PlatformNotSupportedException pnse)
                 {
-                    // Expected exception
+                    Assert.Contains("SlhDsa", pnse.Message);
                 }
             }
         }

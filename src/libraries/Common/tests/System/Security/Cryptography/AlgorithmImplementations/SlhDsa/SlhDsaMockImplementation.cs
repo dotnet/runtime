@@ -3,8 +3,6 @@
 
 using Xunit;
 
-using static System.Security.Cryptography.SLHDsa.Tests.SlhDsaTestHelpers;
-
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
     /// <summary>
@@ -125,28 +123,28 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             ExportSlhDsaPublicKeyCoreHook = (Span<byte> destination) =>
             {
                 oldExportSlhDsaPublicKeyCoreHook(destination);
-                AssertSameBuffer(buffer.Span, destination);
+                AssertExtensions.Same(buffer.Span, destination);
             };
 
             ExportSlhDsaSecretKeyCoreAction oldExportSlhDsaSecretKeyCoreHook = ExportSlhDsaSecretKeyCoreHook;
             ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
             {
                 oldExportSlhDsaSecretKeyCoreHook(destination);
-                AssertSameBuffer(buffer.Span, destination);
+                AssertExtensions.Same(buffer.Span, destination);
             };
 
             SignDataCoreAction oldSignDataCoreHook = SignDataCoreHook;
             SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
                 oldSignDataCoreHook(data, context, destination);
-                AssertSameBuffer(buffer.Span, destination);
+                AssertExtensions.Same(buffer.Span, destination);
             };
 
             TryExportPkcs8PrivateKeyCoreFunc oldTryExportPkcs8PrivateKeyCoreHook = TryExportPkcs8PrivateKeyCoreHook;
             TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
             {
                 bool ret = oldTryExportPkcs8PrivateKeyCoreHook(destination, out bytesWritten);
-                AssertSameBuffer(buffer.Span, destination);
+                AssertExtensions.Same(buffer.Span, destination);
                 return ret;
             };
         }
@@ -157,14 +155,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
                 oldSignDataCoreHook(data, context, destination);
-                AssertSameBuffer(buffer.Span, context);
+                AssertExtensions.Same(buffer.Span, context);
             };
 
             VerifyDataCoreFunc oldVerifyDataCoreHook = VerifyDataCoreHook;
             VerifyDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             {
                 bool ret = oldVerifyDataCoreHook(data, context, signature);
-                AssertSameBuffer(buffer.Span, context);
+                AssertExtensions.Same(buffer.Span, context);
                 return ret;
             };
         }
@@ -175,7 +173,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             VerifyDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             {
                 bool ret = oldVerifyDataCoreHook(data, context, signature);
-                AssertSameBuffer(buffer.Span, signature);
+                AssertExtensions.Same(buffer.Span, signature);
                 return ret;
             };
         }
@@ -186,14 +184,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SignDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             {
                 oldSignDataCoreHook(data, context, destination);
-                AssertSameBuffer(buffer.Span, data);
+                AssertExtensions.Same(buffer.Span, data);
             };
 
             VerifyDataCoreFunc oldVerifyDataCoreHook = VerifyDataCoreHook;
             VerifyDataCoreHook = (ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             {
                 bool ret = oldVerifyDataCoreHook(data, context, signature);
-                AssertSameBuffer(buffer.Span, data);
+                AssertExtensions.Same(buffer.Span, data);
                 return ret;
             };
         }
