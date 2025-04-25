@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
                 using (one)
                 {
-                    Assert.Equal(oneSignature.Length, one.SignData(data, oneSignature, context));
+                    one.SignData(data, oneSignature, context);
                     VerifyInstanceIsUsable(one);
                     VerifyInstanceIsUsable(two);
                 }
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         private static void VerifyInstanceIsUsable(SlhDsaOpenSsl slhDsa)
         {
             byte[] secretKey = new byte[slhDsa.Algorithm.SecretKeySizeInBytes];
-            Assert.Equal(slhDsa.Algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey)); // does not throw
+            slhDsa.ExportSlhDsaSecretKey(secretKey); // does not throw
 
             // usable
             byte[] data = [1, 2, 3];

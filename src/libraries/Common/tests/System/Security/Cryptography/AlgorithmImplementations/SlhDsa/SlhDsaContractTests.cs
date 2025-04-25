@@ -28,12 +28,21 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 slhDsa.Dispose();
             }
 
+            PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 42);
+
+            AssertExtensions.Throws<ArgumentNullException>("password", () => slhDsa.ExportEncryptedPkcs8PrivateKey((string)null, pbeParameters));
+            AssertExtensions.Throws<ArgumentNullException>("password", () => slhDsa.ExportEncryptedPkcs8PrivateKeyPem((string)null, pbeParameters));
+            AssertExtensions.Throws<ArgumentNullException>("password", () => slhDsa.TryExportEncryptedPkcs8PrivateKey((string)null, pbeParameters, Span<byte>.Empty, out _));
+
             AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, null));
             AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, null));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => slhDsa.ExportEncryptedPkcs8PrivateKey(string.Empty, null));
             AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte>.Empty, null));
             AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char>.Empty, null));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(string.Empty, null));
             AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, null, Span<byte>.Empty, out _));
             AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, null, Span<byte>.Empty, out _));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => slhDsa.TryExportEncryptedPkcs8PrivateKey(string.Empty, null, Span<byte>.Empty, out _));
         }
 
         [Theory]
@@ -73,43 +82,30 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 slhDsa.Dispose();
             }
 
-            AssertEncryptedExportPkcs8PrivateKey(
-                new PbeParameters(PbeEncryptionAlgorithm.Unknown, HashAlgorithmName.SHA1, 42),
-                exportAction => AssertExtensions.Throws<CryptographicException>(exportAction));
-
-            // TripleDes3KeyPkcs12 only works with SHA1
-            AssertEncryptedExportPkcs8PrivateKey(
-                new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA256, 42),
-                exportAction => AssertExtensions.Throws<CryptographicException>(exportAction));
-
-            // Chars not allowed in TripleDes3KeyPkcs12
-            PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 42);
-            AssertExtensions.Throws<CryptographicException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey("password"u8, pbeParameters));
-            AssertExtensions.Throws<CryptographicException>(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem("password"u8, pbeParameters));
-            AssertExtensions.Throws<CryptographicException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey("password"u8, pbeParameters, Span<byte>.Empty, out _));
-
-            void AssertEncryptedExportPkcs8PrivateKey(PbeParameters pbeParameters, Action<Action> exportAction)
+            SlhDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(export =>
             {
-                exportAction(() => slhDsa.ExportEncryptedPkcs8PrivateKey("password"u8, pbeParameters));
-                exportAction(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem("password"u8, pbeParameters));
-                exportAction(() => slhDsa.TryExportEncryptedPkcs8PrivateKey("password"u8, pbeParameters, Span<byte>.Empty, out _));
+                // Unknown algorithm
+                AssertExtensions.Throws<CryptographicException>(() => 
+                    export(slhDsa, "password", new PbeParameters(PbeEncryptionAlgorithm.Unknown, HashAlgorithmName.SHA1, 42)));
 
-                exportAction(() => slhDsa.ExportEncryptedPkcs8PrivateKey("password", pbeParameters));
-                exportAction(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem("password", pbeParameters));
-                exportAction(() => slhDsa.TryExportEncryptedPkcs8PrivateKey("password", pbeParameters, Span<byte>.Empty, out _));
-            }
+                // TripleDes3KeyPkcs12 only works with SHA1
+                AssertExtensions.Throws<CryptographicException>(() =>
+                    export(slhDsa, "password", new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA512, 42)));
+            });
+
+            SlhDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(export =>
+            {
+                // Bytes not allowed in TripleDes3KeyPkcs12
+                AssertExtensions.Throws<CryptographicException>(() =>
+                    export(slhDsa, "password", new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 42)));
+            }, SlhDsaTestHelpers.EncryptionPasswordType.Byte);
         }
-
-        public static IEnumerable<object[]> ApiWithDestinationSpanTestData =>
-            from algorithm in SlhDsaTestData.AlgorithmsRaw
-            from destinationLargerThanRequired in new[] { true, false }
-            select new object[] { algorithm, destinationLargerThanRequired };
 
         private const int PaddingSize = 10;
 
         [Theory]
-        [MemberData(nameof(ApiWithDestinationSpanTestData))]
-        public static void ExportSlhDsaPublicKey_CallsCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public static void ExportSlhDsaPublicKey_CallsCore(SlhDsaAlgorithm algorithm)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -117,8 +113,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] publicKey = CreatePaddedFilledArray(publicKeySize, 42);
 
             // Extra bytes in destination buffer should not be touched
-            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
-            Memory<byte> destination = publicKey.AsMemory(PaddingSize, publicKeySize + extraBytes);
+            Memory<byte> destination = publicKey.AsMemory(PaddingSize, publicKeySize);
 
             slhDsa.ExportSlhDsaPublicKeyCoreHook = _ => { };
             slhDsa.AddDestinationBufferIsSameAssertion(destination[..publicKeySize]);
@@ -130,8 +125,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ApiWithDestinationSpanTestData))]
-        public static void ExportSlhDsaSecretKey_CallsCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public static void ExportSlhDsaSecretKey_CallsCore(SlhDsaAlgorithm algorithm)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -139,8 +134,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] secretKey = CreatePaddedFilledArray(secretKeySize, 42);
 
             // Extra bytes in destination buffer should not be touched
-            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
-            Memory<byte> destination = secretKey.AsMemory(PaddingSize, secretKeySize + extraBytes);
+            Memory<byte> destination = secretKey.AsMemory(PaddingSize, secretKeySize);
 
             slhDsa.ExportSlhDsaSecretKeyCoreHook = _ => { };
             slhDsa.AddDestinationBufferIsSameAssertion(destination[..secretKeySize]);
@@ -152,8 +146,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ApiWithDestinationSpanTestData))]
-        public static void SignData_CallsCore(SlhDsaAlgorithm algorithm, bool destinationLargerThanRequired)
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public static void SignData_CallsCore(SlhDsaAlgorithm algorithm)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -161,8 +155,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] signature = CreatePaddedFilledArray(signatureSize, 42);
 
             // Extra bytes in destination buffer should not be touched
-            int extraBytes = destinationLargerThanRequired ? PaddingSize / 2 : 0;
-            Memory<byte> destination = signature.AsMemory(PaddingSize, signatureSize + extraBytes);
+            Memory<byte> destination = signature.AsMemory(PaddingSize, signatureSize);
             byte[] testData = [2];
             byte[] testContext = [3];
 
@@ -172,7 +165,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             slhDsa.AddDestinationBufferIsSameAssertion(destination[..signatureSize]);
             slhDsa.AddFillDestination(1);
 
-            slhDsa.SignData(testData, signature.AsSpan(PaddingSize, signatureSize + extraBytes), testContext);
+            slhDsa.SignData(testData, signature.AsSpan(PaddingSize, signatureSize), testContext);
             Assert.Equal(1, slhDsa.SignDataCoreCallCount);
             AssertExpectedFill(signature, fillElement: 1, paddingElement: 42, PaddingSize, signatureSize);
         }
@@ -250,15 +243,19 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 slhDsa.AddLengthAssertion();
                 slhDsa.AddFillDestination(1);
 
-                // The test implementation overrides TryExportPkcs8PrivateKeyCore with a stub. In order to replicate the
-                // non-overridden behavior, we will replace the stub with a call to base.TryExportPkcs8PrivateKeyCore:
+                // SlhDsaMockImplementation overrides TryExportPkcs8PrivateKeyCore with a stub. In order to replicate the
+                // non-overridden behavior, we will replace the stub with a call to base.TryExportPkcs8PrivateKeyCore.
+                // We can then assert that base.TryExportPkcs8PrivateKeyCore calls ExportSlhDsaSecretKeyCore as expected.
                 slhDsa.TryExportPkcs8PrivateKeyCoreHook = slhDsa.BaseTryExportPkcs8PrivateKeyCore;
 
+                // Invoke the export
                 byte[] exported = export(slhDsa);
 
+                // Assert that the core methods were called
                 AssertExtensions.GreaterThan(slhDsa.ExportSlhDsaSecretKeyCoreCallCount, 0);
                 AssertExtensions.GreaterThan(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount, 0);
 
+                // And check the returned data
                 PrivateKeyInfoAsn exportedPkcs8 = PrivateKeyInfoAsn.Decode(exported, AsnEncodingRules.DER);
                 AssertExtensions.SequenceEqual(CreateFilledArray(algorithm.SecretKeySizeInBytes, 1), exportedPkcs8.PrivateKey.Span);
                 Assert.Equal(0, exportedPkcs8.Version);
@@ -288,6 +285,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
+                // Override the TryExport method to return our test data
                 slhDsa.TryExportPkcs8PrivateKeyCoreHook = (dest, out bytesWritten) =>
                 {
                     if (dest.Length >= minimalEncoding.Length)
@@ -305,7 +303,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
                 byte[] exported = export(slhDsa);
 
-                // The PKCS#8 private key is NOT generated with the secret key but from our test callback
+                // Assert that the PKCS#8 private key is NOT generated with the secret key but from our test callback
                 Assert.Equal(0, slhDsa.ExportSlhDsaSecretKeyCoreCallCount);
                 AssertExtensions.GreaterThan(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount, 0);
 
@@ -357,7 +355,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(AlgorithmWithPbeParametersData))]
         public static void ExportEncryptedPkcs8PrivateKey_CallsExportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm, PbeParameters pbeParameters)
         {
-            SlhDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(export =>
+            Action<SlhDsaTestHelpers.ExportEncryptedPkcs8PrivateKeyCallback> test = export =>
             {
                 using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -365,19 +363,20 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 slhDsa.AddLengthAssertion();
                 slhDsa.AddFillDestination(1);
 
-                // The test implementation overrides TryExportPkcs8PrivateKeyCore with a stub. In order to replicate the
-                // non-overridden behavior, we will replace the stub with a call to base.TryExportPkcs8PrivateKeyCore:
+                // SlhDsaMockImplementation overrides TryExportPkcs8PrivateKeyCore with a stub. In order to replicate the
+                // non-overridden behavior, we will replace the stub with a call to base.TryExportPkcs8PrivateKeyCore.
+                // We can then assert that base.TryExportPkcs8PrivateKeyCore calls ExportSlhDsaSecretKeyCore as expected.
                 slhDsa.TryExportPkcs8PrivateKeyCoreHook = slhDsa.BaseTryExportPkcs8PrivateKeyCore;
 
-                // If the export function is a byte[] password accepting variation and pbeParameters is 3DES, it will bail out.
-                if (!export(slhDsa, "password", pbeParameters).TryGetValue(out byte[] exported))
-                    return;
+                byte[] exported = export(slhDsa, "password", pbeParameters);
 
                 AssertExtensions.GreaterThan(slhDsa.ExportSlhDsaSecretKeyCoreCallCount, 0);
                 AssertExtensions.GreaterThan(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount, 0);
 
                 SlhDsaTestHelpers.AssertEncryptedPkcs8PrivateKeyContents(pbeParameters, exported);
-            });
+            };
+
+            SlhDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(test, SlhDsaTestHelpers.GetValidPasswordTypes(pbeParameters));
         }
 
         [Theory]
@@ -510,13 +509,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 return ret;
             };
 
+            // The loop should terminate with an OverflowException or OutOfMemoryException
             AssertExtensions.ThrowsAny<OverflowException, OutOfMemoryException>(() => slhDsa.ExportPkcs8PrivateKey());
-            AssertExtensions.TrueExpression(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount > 0);
+            AssertExtensions.GreaterThan(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount, 0);
         }
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void ExportPkcs8PrivateKey_BadReturnValue(SlhDsaAlgorithm algorithm)
+        public static void ExportPkcs8PrivateKey_HandleBadReturnValue(SlhDsaAlgorithm algorithm)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
@@ -551,6 +551,44 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             getBadReturnValue = (int destinationLength) => -1;
             Assert.Throws<CryptographicException>(slhDsa.ExportPkcs8PrivateKey);
             Assert.Equal(3, slhDsa.TryExportPkcs8PrivateKeyCoreCallCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public static void ExportPkcs8PrivateKey_HandleBadReturnBuffer(SlhDsaAlgorithm algorithm)
+        {
+            SlhDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(exportEncrypted =>
+            {
+                using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
+
+                // Create a bad encoding
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                writer.WriteBitString("some string"u8);
+                byte[] validEncoding = writer.Encode();
+                Memory<byte> badEncoding = validEncoding.AsMemory(0, validEncoding.Length - 1); // Chop off the last byte
+
+                SlhDsaMockImplementation.TryExportPkcs8PrivateKeyCoreFunc hook = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    bool ret = badEncoding.Span.TryCopyTo(destination);
+                    bytesWritten = ret ? badEncoding.Length : 0;
+                    return ret;
+                };
+
+                slhDsa.TryExportPkcs8PrivateKeyCoreHook = hook;
+
+                // Exporting the key should work without any issues because there's no validation
+                AssertExtensions.SequenceEqual(badEncoding.Span, slhDsa.ExportPkcs8PrivateKey().AsSpan());
+
+                int numberOfCalls = slhDsa.TryExportPkcs8PrivateKeyCoreCallCount;
+                slhDsa.TryExportPkcs8PrivateKeyCoreCallCount = 0;
+
+                // However, exporting the encrypted key should fail because it validates the PKCS#8 private key encoding first
+                AssertExtensions.Throws<CryptographicException>(() =>
+                        exportEncrypted(slhDsa, "password", new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA1, 1)));
+
+                // Sanity check that the code to export the private key was called
+                Assert.Equal(numberOfCalls, slhDsa.TryExportPkcs8PrivateKeyCoreCallCount);
+            });
         }
 
         private static void AssertExpectedFill(ReadOnlySpan<byte> source, byte fillElement, byte paddingElement, int startIndex, int length)

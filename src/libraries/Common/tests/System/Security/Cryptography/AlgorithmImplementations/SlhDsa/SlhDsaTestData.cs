@@ -79,6 +79,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             public byte[] Pkcs8PublicKey => Convert.FromBase64String(Pkcs8PublicKeyBase64);
             public byte[] Pkcs8EncryptedPrivateKey => Convert.FromBase64String(Pkcs8EncryptedPrivateKeyBase64);
             public byte[] EncryptionPasswordBytes => Encoding.UTF8.GetBytes(EncryptionPassword); // Assuming UTF-8 encoding
+            public string EncryptedPem => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey);
+            public string PrivateKeyPem => PemEncoding.WriteString("PRIVATE KEY", Pkcs8PrivateKey);
+            public string PublicKeyPem => PemEncoding.WriteString("PUBLIC KEY", Pkcs8PublicKey);
 
             public override string ToString() =>
                 $"{nameof(SlhDsaGeneratedKeyInfo)} {{ {nameof(Id)} = {Id}, {nameof(Algorithm)} = \"{Algorithm.Name}\" }}";

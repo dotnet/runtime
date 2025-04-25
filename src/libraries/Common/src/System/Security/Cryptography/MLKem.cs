@@ -56,7 +56,7 @@ namespace System.Security.Cryptography
         ///   The specific ML-KEM algorithm for this key.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         protected MLKem(MLKemAlgorithm algorithm)
         {
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography
         ///   The generated key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred generating the ML-KEM key.
@@ -326,7 +326,7 @@ namespace System.Security.Cryptography
         ///   <see cref="MLKemAlgorithm.PrivateSeedSizeInBytes" /> from <paramref name="algorithm" />.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -357,9 +357,9 @@ namespace System.Security.Cryptography
         ///   <see cref="MLKemAlgorithm.PrivateSeedSizeInBytes" /> from <paramref name="algorithm" />.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para><paramref name="algorithm" /> is <see langword="null" />.</para>
         ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        ///   <para><paramref name="source" /> is <see langword="null" />.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -385,7 +385,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -415,9 +415,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para><paramref name="algorithm" /> is <see langword="null" />.</para>
         ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        ///   <para><paramref name="source" /> is <see langword="null" />.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -442,7 +442,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -472,9 +472,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para><paramref name="algorithm" /> is <see langword="null" />.</para>
         ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        ///   <para><paramref name="source" /> is <see langword="null" />.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -502,7 +502,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   <para>The current instance cannot export a decapsulation key.</para>
         ///   <para>-or-</para>
-        ///   <para>An error occurred while importing the key.</para>
+        ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void ExportDecapsulationKey(Span<byte> destination)
@@ -1201,7 +1201,7 @@ namespace System.Security.Cryptography
 
         /// <inheritdoc cref="ImportSubjectPublicKeyInfo(ReadOnlySpan{byte})" />
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="source" /> is <see langword="null" />
+        ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(byte[] source)
         {
@@ -1251,7 +1251,7 @@ namespace System.Security.Cryptography
 
         /// <inheritdoc cref="ImportPkcs8PrivateKey(ReadOnlySpan{byte})" />
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="source" /> is <see langword="null" />
+        ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
         public static MLKem ImportPkcs8PrivateKey(byte[] source)
         {
@@ -1362,41 +1362,9 @@ namespace System.Security.Cryptography
                 out _);
         }
 
-        /// <summary>
-        ///   Imports an ML-KEM private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
-        /// </summary>
-        /// <param name="password">
-        ///   The password to use when decrypting the key material.
-        /// </param>
-        /// <param name="source">
-        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
-        /// </param>
-        /// <returns>
-        ///   The imported key.
-        /// </returns>
+        /// <inheritdoc cref="ImportEncryptedPkcs8PrivateKey(ReadOnlySpan{char}, ReadOnlySpan{byte})" />
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="password" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The specified password is incorrect.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The value does not represent an ML-KEM key.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The algorithm-specific import failed.
-        ///   </para>
-        /// </exception>
-        /// <exception cref="PlatformNotSupportedException">
-        ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports ML-KEM.
         /// </exception>
         public static MLKem ImportEncryptedPkcs8PrivateKey(string password, ReadOnlySpan<byte> source)
         {
@@ -1606,7 +1574,7 @@ namespace System.Security.Cryptography
 
         /// <inheritdoc cref="ImportFromEncryptedPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="source" /> or <paramref name="password" /> is <see langword="null" />
+        ///   <paramref name="source" /> or <paramref name="password" /> is <see langword="null" />.
         /// </exception>
         public static MLKem ImportFromEncryptedPem(string source, string password)
         {
@@ -1619,7 +1587,7 @@ namespace System.Security.Cryptography
 
         /// <inheritdoc cref="ImportFromEncryptedPem(ReadOnlySpan{char}, ReadOnlySpan{byte})" />
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="source" /> or <paramref name="passwordBytes" /> is <see langword="null" />
+        ///   <paramref name="source" /> or <paramref name="passwordBytes" /> is <see langword="null" />.
         /// </exception>
         public static MLKem ImportFromEncryptedPem(string source, byte[] passwordBytes)
         {
