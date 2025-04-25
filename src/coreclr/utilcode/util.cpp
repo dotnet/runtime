@@ -731,8 +731,8 @@ DWORD LCM(DWORD u, DWORD v)
     if (m_nGroups > 1)
     {
         m_enableGCCPUGroups = TRUE;
-        m_threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups, groupCount > 1) != 0;
-        m_threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
+        m_threadUseAllCpuGroups = Configuration::GetKnobBooleanValue(W("System.Threading.Thread.UseAllCpuGroups"), CLRConfig::EXTERNAL_Thread_UseAllCpuGroups, groupCount > 1) != 0;
+        m_threadAssignCpuGroups = Configuration::GetKnobBooleanValue(W("System.Threading.Thread.AssignCpuGroups"), CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
 
         // Save the processor group affinity of the initial thread
         GROUP_AFFINITY groupAffinity;

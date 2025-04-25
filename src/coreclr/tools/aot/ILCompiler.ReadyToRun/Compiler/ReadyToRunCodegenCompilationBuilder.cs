@@ -8,6 +8,7 @@ using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.Win32Resources;
 using Internal.IL;
 using Internal.JitInterface;
@@ -247,7 +248,7 @@ namespace ILCompiler
             });
 
             ReadyToRunFlags flags = ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
-            if (inputModules.All(module => module.IsPlatformNeutral))
+            if (inputModules.All(module => module.IsPlatformNeutral || module.PEReader.IsReadyToRunPlatformNeutralSource()))
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }

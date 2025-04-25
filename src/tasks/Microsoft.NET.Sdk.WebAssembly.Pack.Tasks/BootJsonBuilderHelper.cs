@@ -9,12 +9,17 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Sdk.WebAssembly
 {
     public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsMultiThreaded, bool IsPublish)
     {
+#pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
+        internal static readonly Regex mergeWithPlaceholderRegex = new Regex(@"/\*!\s*dotnetBootConfig\s*\*/\s*{}");
+#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
+
         private static readonly string[] coreAssemblyNames = [
             "System.Private.CoreLib",
             "System.Runtime.InteropServices.JavaScript",
@@ -56,7 +61,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             if (mergeWith != null)
             {
                 string existingContent = File.ReadAllText(mergeWith);
-                output = existingContent.Replace("/*! dotnetBootConfig */{}", $"/*json-start*/{output}/*json-end*/");
+                output = mergeWithPlaceholderRegex.Replace(existingContent, e => $"/*json-start*/{output}/*json-end*/");
                 if (existingContent.Equals(output))
                     Log.LogError($"Merging boot config into '{mergeWith}' failed to find the placeholder.");
             }
