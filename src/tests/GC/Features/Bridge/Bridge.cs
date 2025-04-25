@@ -405,7 +405,7 @@ public class BridgeTest
 
     public static int Main(string[] args)
     {
-        TestLinkedList(); // Crashes, but only in this multithreaded variant, also only on osx for me
+        TestLinkedList();
         RunGraphTest(SetupFragmentation<Bridge14, NonBridge14>);
         RunGraphTest(SetupFragmentation<Bridge, NonBridge>);
         RunGraphTest(SetupLinks);
