@@ -346,10 +346,7 @@ namespace System.Diagnostics
         /// <param name="listener"> The <see cref="ActivityListener"/> object to use for listening to the <see cref="Activity"/> events.</param>
         public static void AddActivityListener(ActivityListener listener)
         {
-            if (listener is null)
-            {
-                throw new ArgumentNullException(nameof(listener));
-            }
+            ArgumentNullException.ThrowIfNull(listener);
 
             if (s_allListeners.AddIfNotExist(listener))
             {

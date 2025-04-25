@@ -322,7 +322,7 @@ namespace System.IO.Compression.Tests
         public static FileStream CreateFileStreamRead(bool async, string fileName) =>
             new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: async);
 
-        public static void DirsEqual(string actual, string expected)
+        public static async Task DirsEqual(string actual, string expected)
         {
             var expectedList = FileData.InPath(expected);
             var actualList = Directory.GetFiles(actual, "*.*", SearchOption.AllDirectories);
@@ -330,8 +330,8 @@ namespace System.IO.Compression.Tests
             var actualCount = actualList.Length + actualFolders.Length;
             Assert.Equal(expectedList.Count, actualCount);
 
-            ItemEqual(actualList, expectedList, isFile: true);
-            ItemEqual(actualFolders, expectedList, isFile: false);
+            await ItemEqual(actualList, expectedList, isFile: true);
+            await ItemEqual(actualFolders, expectedList, isFile: false);
         }
 
         public static void DirFileNamesEqual(string actual, string expected)
@@ -341,7 +341,7 @@ namespace System.IO.Compression.Tests
             AssertExtensions.SequenceEqual(expectedEntries.Select(Path.GetFileName).ToArray(), actualEntries.Select(Path.GetFileName).ToArray());
         }
 
-        private static void ItemEqual(string[] actualList, List<FileData> expectedList, bool isFile)
+        private static async Task ItemEqual(string[] actualList, List<FileData> expectedList, bool isFile)
         {
             for (int i = 0; i < actualList.Length; i++)
             {
@@ -362,8 +362,8 @@ namespace System.IO.Compression.Tests
                 //contents same
                 if (isFile)
                 {
-                    Stream sa = StreamHelpers.CreateTempCopyStream(aEntry).Result;
-                    Stream sb = StreamHelpers.CreateTempCopyStream(bEntry).Result;
+                    Stream sa = await StreamHelpers.CreateTempCopyStream(aEntry);
+                    Stream sb = await StreamHelpers.CreateTempCopyStream(bEntry);
                     StreamsEqual(sa, sb); // Not testing zip features, can always be async
                 }
             }
@@ -597,9 +597,9 @@ namespace System.IO.Compression.Tests
             }
 
             foreach (object[] e in SharedComment_Data())
-                {
-                    yield return e;
-                }
+            {
+                yield return e;
+            }
         }
 
         // Returns pairs as expected by Latin1
@@ -617,9 +617,9 @@ namespace System.IO.Compression.Tests
             }
 
             foreach (object[] e in SharedComment_Data())
-                {
-                    yield return e;
-                }
+            {
+                yield return e;
+            }
         }
 
         // Returns pairs encoded with Latin1, but decoded with UTF8.
