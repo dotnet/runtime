@@ -760,7 +760,7 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
 
-            ExportSlhDsaPublicKeyCore(destination);
+            ExportSlhDsaPublicKeyCore(destination.Slice(0, publicKeySizeInBytes));
             return publicKeySizeInBytes;
         }
 

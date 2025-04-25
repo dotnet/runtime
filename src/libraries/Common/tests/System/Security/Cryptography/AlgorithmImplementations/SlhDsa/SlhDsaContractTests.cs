@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Memory<byte> destination = publicKey.AsMemory(PaddingSize, publicKeySize + extraBytes);
 
             slhDsa.ExportSlhDsaPublicKeyCoreHook = _ => { };
-            slhDsa.AddDestinationBufferIsSameAssertion(destination);
+            slhDsa.AddDestinationBufferIsSameAssertion(destination[..publicKeySize]);
             slhDsa.AddFillDestination(1);
 
             Assert.Equal(algorithm.PublicKeySizeInBytes, slhDsa.ExportSlhDsaPublicKey(destination.Span));
@@ -144,7 +144,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Memory<byte> destination = secretKey.AsMemory(PaddingSize, secretKeySize + extraBytes);
 
             slhDsa.ExportSlhDsaSecretKeyCoreHook = _ => { };
-            slhDsa.AddDestinationBufferIsSameAssertion(destination);
+            slhDsa.AddDestinationBufferIsSameAssertion(destination[..secretKeySize]);
             slhDsa.AddFillDestination(1);
 
             Assert.Equal(algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(destination.Span));
