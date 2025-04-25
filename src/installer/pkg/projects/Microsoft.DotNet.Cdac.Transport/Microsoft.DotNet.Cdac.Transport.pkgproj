@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(DotNetCDacBinDir)$(LibPrefix)mscordaccore_universal$(LibSuffix)">
+    <File Include="$(DotNetCdacBinDir)$(LibPrefix)mscordaccore_universal$(LibSuffix)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       <IsNative>true</IsNative>
     </File>
