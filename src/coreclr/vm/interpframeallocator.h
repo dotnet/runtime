@@ -45,12 +45,11 @@ private:
     bool PushInfo(InterpMethodContextFrame *pFrame);
     void FreeFragments(FrameDataFragment *pFrag);
 public:
-    FrameDataAllocator(size_t size);
+    FrameDataAllocator();
     ~FrameDataAllocator();
 
     void *Alloc(InterpMethodContextFrame *pFrame, size_t size);
     void PopInfo(InterpMethodContextFrame *pFrame);
-    bool IsAllocated();
 };
 
 #endif

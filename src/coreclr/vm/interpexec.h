@@ -55,19 +55,12 @@ struct InterpThreadContext
     // stack, and also needed for the GC to be able to scan the stack.
     int8_t *pStackPointer;
 
-    // This is an allocator for the dynamic stack memory
-    FrameDataAllocator *pFrameDataAllocator;
+    FrameDataAllocator frameDataAllocator;
 
-    ~InterpThreadContext() {
-        if (pFrameDataAllocator)
-        {
-            delete pFrameDataAllocator;
-            pFrameDataAllocator = NULL;
-        }
-    }
+    InterpThreadContext();
+    ~InterpThreadContext();
 };
 
-InterpThreadContext* InterpGetThreadContext();
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext);
 
 #endif

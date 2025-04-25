@@ -28,10 +28,9 @@ FrameDataAllocator::FrameDataFragment::~FrameDataFragment()
     free(pFrameStart);
 }
 
-FrameDataAllocator::FrameDataAllocator(size_t size)
+FrameDataAllocator::FrameDataAllocator()
 {
-    pFirst = new FrameDataFragment(size);
-    pCurrent = pFirst;
+    pFirst = pCurrent = nullptr;
     pInfos = nullptr;
     infosLen = 0;
     infosCapacity = 0;
@@ -39,9 +38,12 @@ FrameDataAllocator::FrameDataAllocator(size_t size)
 
 FrameDataAllocator::~FrameDataAllocator()
 {
-    assert(pCurrent == pFirst && pCurrent->pFramePos == pCurrent->pFrameStart);
-    FreeFragments(pFirst);
-    free(pInfos);
+    if (pFirst != nullptr)
+    {
+        assert(pCurrent == pFirst && pCurrent->pFramePos == pCurrent->pFrameStart);
+        FreeFragments(pFirst);
+        free(pInfos);
+    }
 }
 
 void FrameDataAllocator::FreeFragments(FrameDataFragment *pFrag)
@@ -77,6 +79,16 @@ bool FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
 
 void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
 {
+    if (pFirst == nullptr)
+    {
+        pFirst = new (nothrow) FrameDataFragment(size);
+        if (pFirst == nullptr || pFirst->pFrameStart == nullptr)
+        {
+            return nullptr;
+        }
+        pCurrent = pFirst;
+    }
+
     if (!infosLen || pInfos[infosLen - 1].pFrame != pFrame)
     {
         if (!PushInfo(pFrame))
@@ -100,8 +112,8 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
             FreeFragments(pCurrent->pNext);
             pCurrent->pNext = nullptr;
 
-            FrameDataFragment *pNewFrag = new FrameDataFragment(size);
-            if (pNewFrag->pFrameStart == nullptr)
+            FrameDataFragment *pNewFrag = new (nothrow) FrameDataFragment(size);
+            if (pNewFrag == nullptr || pNewFrag->pFrameStart == nullptr)
             {
                 return nullptr;
             }
@@ -125,11 +137,6 @@ void FrameDataAllocator::PopInfo(InterpMethodContextFrame *pFrame)
         pCurrent = pInfo->pFrag;
         pCurrent->pFramePos = pInfo->pFramePos;
     }
-}
-
-bool FrameDataAllocator::IsAllocated()
-{
-    return pFirst != nullptr && pFirst->pFrameStart != nullptr;
 }
 
 #endif // FEATURE_INTERPRETER

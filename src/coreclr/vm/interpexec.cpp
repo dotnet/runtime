@@ -9,32 +9,16 @@
 
 typedef void* (*HELPER_FTN_PP)(void*);
 
-thread_local InterpThreadContext *t_pThreadContext = NULL;
-
-InterpThreadContext* InterpGetThreadContext()
+InterpThreadContext::InterpThreadContext()
 {
-    InterpThreadContext *threadContext = t_pThreadContext;
+    // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
+    pStackStart = pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
+    pStackEnd = pStackStart + INTERP_STACK_SIZE;
+}
 
-    if (!threadContext)
-    {
-        threadContext = new InterpThreadContext;
-        // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
-        threadContext->pStackStart = threadContext->pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
-        threadContext->pStackEnd = threadContext->pStackStart + INTERP_STACK_SIZE;
-        threadContext->pFrameDataAllocator = new FrameDataAllocator(INTERP_STACK_FRAGMENT_SIZE);
-        if (!threadContext->pFrameDataAllocator->IsAllocated())
-        {
-            // Interpreter-TODO: OutOfMemoryException
-            assert(0);
-        }
-
-        t_pThreadContext = threadContext;
-        return threadContext;
-    }
-    else
-    {
-        return threadContext;
-    }
+InterpThreadContext::~InterpThreadContext()
+{
+    free(pStackStart);
 }
 
 #ifdef DEBUG
@@ -1160,20 +1144,24 @@ CALL_TARGET_IP:
             case INTOP_LOCALLOC:
             {
                 int32_t len = LOCAL_VAR(ip[2], int32_t);
-                len = ALIGN_UP(len, INTERP_STACK_ALIGNMENT);
+                len = ALIGN_UP(len, sizeof(void*));
+                void* pMemory = NULL;
 
-                void* mem = pThreadContext->pFrameDataAllocator->Alloc(pFrame, len);
-                if (mem == NULL)
+                if (len > 0)
                 {
-                    // Interpreter-TODO: OutOfMemoryException
-                    assert(0);
-                }
-                if (pMethod->initLocals)
-                {
-                    memset(mem, 0, len);
+                    pMemory = pThreadContext->frameDataAllocator.Alloc(pFrame, len);
+                    if (pMemory == NULL)
+                    {
+                        // Interpreter-TODO: OutOfMemoryException
+                        assert(0);
+                    }
+                    if (pMethod->initLocals)
+                    {
+                        memset(pMemory, 0, len);
+                    }
                 }
 
-                LOCAL_VAR(ip[1], void*) = mem;
+                LOCAL_VAR(ip[1], void*) = pMemory;
                 ip += 3;
                 break;
             }
@@ -1189,7 +1177,7 @@ CALL_TARGET_IP:
 EXIT_FRAME:
 
     // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
-    pThreadContext->pFrameDataAllocator->PopInfo(pFrame);
+    pThreadContext->frameDataAllocator.PopInfo(pFrame);
     if (pFrame->pParent && pFrame->pParent->ip)
     {
         // Return to the main loop after a non-recursive interpreter call
