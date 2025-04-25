@@ -135,7 +135,7 @@
     <!-- Respect the DotNetBuildTests product flag when building the product. -->
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildTests)' == 'true'">$(DefaultLibrariesSubsets)+libs.tests</DefaultLibrariesSubsets>
 
-    <DefaultToolsSubsets>tools.illink+tools.cdacreader</DefaultToolsSubsets>
+    <DefaultToolsSubsets>tools.illink+tools.cdac</DefaultToolsSubsets>
 
     <DefaultHostSubsets>host.native+host.tools+host.pkg</DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(DefaultHostSubsets)+host.pretest+host.tests</DefaultHostSubsets>
@@ -228,10 +228,9 @@
     <!-- Tools -->
     <SubsetName Include="Tools" Description="Additional runtime tools projects. Equivalent to: $(DefaultToolsSubsets)" />
     <SubsetName Include="Tools.ILLink" Description="The projects that produce illink and analyzer tools for trimming." />
-    <SubsetName Include="Tools.CdacReader" Description="The cDAC reader." />
+    <SubsetName Include="Tools.Cdac" Description="Diagnostic data contract reader and related projects." />
     <SubsetName Include="Tools.ILLinkTests" OnDemand="true" Description="Unit tests for the tools.illink subset." />
-
-    <SubsetName Include="Tools.CdacReaderTests" OnDemand="true" Description="Units tests for the cDAC reader." />
+    <SubsetName Include="Tools.CdacTests" OnDemand="true" Description="Unit tests for the diagnostic data contract reader." />
 
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests. Equivalent to: $(DefaultHostSubsets)" />
@@ -313,7 +312,7 @@
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrILToolsSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(_subset.Contains('+tools.cdacreader+'))">
+  <PropertyGroup Condition="$(_subset.Contains('+tools.cdac+'))">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrCdacSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
@@ -472,12 +471,16 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+tools.cdacreader+'))">
+  <PropertyGroup Condition="$(_subset.Contains('+tools.cdac+'))">
+    <_CDacToolsBuilt Condition="'$(_CDacToolsBuilt)' != 'true'">true</_CDacToolsBuilt>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.cdac+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)managed\compile-native.proj" Category="tools" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+tools.cdacreadertests+'))">
-    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdacreader\tests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
+  <ItemGroup Condition="$(_subset.Contains('+tools.cdactests+'))">
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">
@@ -637,6 +640,8 @@
             <_BuildCoreCLRRuntimePack Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(CoreCLRSupported)' == 'true'">true</_BuildCoreCLRRuntimePack>
             <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildHostPack>
+            <_BuildCDacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and '$(TargetsLinuxMusl)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCDacPack>
+            <_BuildCDacPack Condition="'$(DotNetBuildSourceOnly)' == 'true' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'riscv64'">false</_BuildCDacPack>
             <_BuildBundle Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
           </PropertyGroup>
 
@@ -669,6 +674,7 @@
           </ItemGroup>
           <ItemGroup>
             <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and '$(RuntimeFlavor)' != 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'" Include="$(InstallerProjectRoot)\pkg\projects\nativeaot-packages.proj" Category="packs" />
+            <ProjectToBuild Condition="'$(_BuildCDacPack)' == 'true'" Include="$(InstallerProjectRoot)pkg\projects\cdac-packages.proj" Category="packs" />
           </ItemGroup>
           <ItemGroup>
             <!--
