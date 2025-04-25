@@ -1691,54 +1691,64 @@ namespace System.Security.Cryptography
             MLKemAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
             MLKemPrivateKeyAsn kemKey = MLKemPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER);
 
-            try
+            if (kemKey.Seed is ReadOnlyMemory<byte> seed)
             {
-                if (kemKey.Seed is ReadOnlyMemory<byte> seed)
-                {
-                    kem = ImportPrivateSeed(algorithm, seed.Span);
-                }
-                else if (kemKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
-                {
-                    kem = ImportDecapsulationKey(algorithm, expandedKey.Span);
-                }
-                else if (kemKey.Both is MLKemPrivateKeyBothAsn both)
-                {
-                    MLKem key = ImportPrivateSeed(algorithm, both.Seed.Span);
-                    int decapsulationKeySize = key.Algorithm.DecapsulationKeySizeInBytes;
-                    byte[] rent = CryptoPool.Rent(decapsulationKeySize);
-                    Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
-
-                    try
-                    {
-                        key.ExportDecapsulationKey(buffer);
-
-                        if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
-                        {
-                            kem = key;
-                        }
-                        else
-                        {
-                            throw new CryptographicException(SR.Cryptography_KemPkcs8KeyMismatch);
-                        }
-                    }
-                    catch
-                    {
-                        key.Dispose();
-                        throw;
-                    }
-                    finally
-                    {
-                        CryptoPool.Return(rent, decapsulationKeySize);
-                    }
-                }
-                else
+                if (seed.Length != algorithm.PrivateSeedSizeInBytes)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
+
+                kem = MLKemImplementation.ImportPrivateSeedImpl(algorithm, seed.Span);
             }
-            catch (ArgumentException ae)
+            else if (kemKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
+                if (expandedKey.Length != algorithm.DecapsulationKeySizeInBytes)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                kem = MLKemImplementation.ImportDecapsulationKeyImpl(algorithm, expandedKey.Span);
+            }
+            else if (kemKey.Both is MLKemPrivateKeyBothAsn both)
+            {
+                int decapsulationKeySize = algorithm.DecapsulationKeySizeInBytes;
+
+                if (both.Seed.Length != algorithm.PrivateSeedSizeInBytes ||
+                    both.ExpandedKey.Length != decapsulationKeySize)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                MLKem key = MLKemImplementation.ImportPrivateSeedImpl(algorithm, both.Seed.Span);
+                byte[] rent = CryptoPool.Rent(decapsulationKeySize);
+                Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
+
+                try
+                {
+                    key.ExportDecapsulationKey(buffer);
+
+                    if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
+                    {
+                        kem = key;
+                    }
+                    else
+                    {
+                        throw new CryptographicException(SR.Cryptography_KemPkcs8KeyMismatch);
+                    }
+                }
+                catch
+                {
+                    key.Dispose();
+                    throw;
+                }
+                finally
+                {
+                    CryptoPool.Return(rent, decapsulationKeySize);
+                }
+            }
+            else
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
         }
 
