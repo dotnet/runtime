@@ -178,7 +178,7 @@
 
   <PropertyGroup>
     <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRID).$(HostConfiguration)', 'corehost'))</DotNetHostBinDir>
-    <DotNetCDacBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mscordaccore_universal', '$(Configuration)', '$(NetCoreAppCurrent)', '$(OutputRID)', 'publish'))</DotNetCDacBinDir>
+    <DotNetCdacBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mscordaccore_universal', '$(Configuration)', '$(NetCoreAppCurrent)', '$(OutputRID)', 'publish'))</DotNetCdacBinDir>
   </PropertyGroup>
 
   <!--Feature switches -->
