@@ -363,7 +363,7 @@ namespace System.Formats.Tar.Tests
             if (entryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
                 entry.DataStream = new MemoryStream();
-                byte[] buffer = new byte[] { 72, 101, 108, 108, 111 }; // values don't matter, only length (5)
+                byte[] buffer = [ 72, 101, 108, 108, 111 ]; // values don't matter, only length (5)
 
                 // '0000000005\0' = 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 53 + 0 = 533
                 entry.DataStream.Write(buffer);
@@ -377,9 +377,9 @@ namespace System.Formats.Tar.Tests
             }
 
             // If V7 regular file:            '\0' = 0
-                // If Ustar/Pax/Gnu regular file: '0'  = 48
-                // If block device:               '4'  = 52
-                expectedChecksum += (byte)entryType;
+            // If Ustar/Pax/Gnu regular file: '0'  = 48
+            // If block device:               '4'  = 52
+            expectedChecksum += (byte)entryType;
 
             // Checksum so far: 256 + 351 + 353 + 359 + 571 = decimal 1890
             // If V7RegularFile: 1890 + 533 + 0  = 2423 (octal 4567) => '004567\0'
@@ -440,7 +440,7 @@ namespace System.Formats.Tar.Tests
 
                     gnuEntry.ChangeTime = expectedTimestampToTest;
                     checksum += expectedTimestampChecksumToTest;
-                    // Total: UnixEpoch = 0, otherwise = 1142
+                    // Total: UnixEpoch = 1056, otherwise = 1142
 
                     void GetTimestampToTest(bool testEpoch, out DateTimeOffset expectedTimestampToTest, out int expectedTimestampChecksumToTest)
                     {
@@ -452,8 +452,8 @@ namespace System.Formats.Tar.Tests
                             expectedTimestampToTest = TimestampForChecksum; // ToUnixTimeSeconds() = decimal 1641095100, octal 14164217674;
                         }
 
-                        expectedTimestampChecksumToTest = 0;
-                        // '\0\0\0\0\0\0\0\0\0\0\0\0' = 0
+                        expectedTimestampChecksumToTest = 528;
+                        // '00000000000\0' = 0
                         expectedTimestampToTest = UnixEpochTimestampForChecksum; // ToUnixTimeSeconds() = decimal 0, octal 0;
                     }
                 }
@@ -466,7 +466,9 @@ namespace System.Formats.Tar.Tests
             // Gnu RegularFile: 623 + 1004 + 1142 = 2769
             // Ustar BlockDevice: 655 + 1004 + 686 = 2345
             // Pax BlockDevice: 655 + 1004 + 686 = 2345
-            // Gnu BlockDevice: 623 + 1004 + 686 + 1142 = 3455
+            // Gnu BlockDevice:
+            //    No epoch: 623 + 1004 + 686 + 1142 = 3455
+            //    Epoch: 623 + 1004 + 686 + 1056 = 3369
             return checksum;
         }
     }
