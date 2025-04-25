@@ -99,7 +99,6 @@
     <MicrosoftDotNetBuildTasksTemplatingVersion>10.0.0-beta.25224.104</MicrosoftDotNetBuildTasksTemplatingVersion>
     <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>10.0.0-beta.25224.104</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
     <MicrosoftDotNetRemoteExecutorVersion>10.0.0-beta.25224.104</MicrosoftDotNetRemoteExecutorVersion>
-    <MicrosoftDotNetVersionToolsTasksVersion>10.0.0-beta.25178.2</MicrosoftDotNetVersionToolsTasksVersion>
     <MicrosoftDotNetPackageTestingVersion>10.0.0-beta.25224.104</MicrosoftDotNetPackageTestingVersion>
     <MicrosoftDotNetXliffTasksVersion>10.0.0-beta.25224.104</MicrosoftDotNetXliffTasksVersion>
     <!-- TODO: Remove pinned xunit.analyzers version: https://github.com/dotnet/runtime/issues/97088 -->
