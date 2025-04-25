@@ -654,7 +654,6 @@ static void
 reset_data (void)
 {
 	dyn_array_ptr_empty (&registered_bridges);
-	free_data ();
 }
 
 static void
@@ -676,6 +675,15 @@ processing_stw_step (void)
 
 	dyn_array_ptr_init (&dfs_stack);
 	dyn_array_int_init (&merge_array);
+
+	/*
+	Overflow collections can call processing_stw_step twice. If that happens we have to reset
+	the hash table to the initial state. The previously processed data are no longer valid and
+	we get a new set of of registered bridges.
+	*/
+	if (sgen_hash_table_num_entries(&hash_table) != 0) {
+		free_data();
+	}
 
 	current_time = 0;
 	/*
