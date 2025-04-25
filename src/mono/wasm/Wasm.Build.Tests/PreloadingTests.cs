@@ -29,9 +29,9 @@ public class PreloadingTests : WasmTemplateTestsBase
 
         string extraMSBuildArgs = $"-p:WasmFingerprintAssets={fingerprintAssets}";
         if (isPublish)
-            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: extraMSBuildArgs, AssertAppBundle: fingerprintAssets));
+            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: extraMSBuildArgs), wasmFingerprintDotnetJs: fingerprintAssets);
         else
-            BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraMSBuildArgs, AssertAppBundle: fingerprintAssets));
+            BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraMSBuildArgs), wasmFingerprintDotnetJs: fingerprintAssets);
 
         string? indexHtmlPath = null;
         if (isPublish)
