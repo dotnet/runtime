@@ -9,11 +9,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 {
     public static class SlhDsaTestData
     {
-        /// <summary>
-        /// Gets the negation of <see cref="SlhDsa.IsSupported"/>. This can be used to conditionally skip tests.
-        /// </summary>
-        public static bool IsNotSupported => !SlhDsa.IsSupported;
-
         public static IEnumerable<object[]> AlgorithmsData => AlgorithmsRaw.Select(a => new[] { a });
 
         public static SlhDsaAlgorithm[] AlgorithmsRaw =
@@ -50,7 +45,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             public override string ToString() => $"{nameof(SlhDsaKeyGenTestVector)} {{ {nameof(TestCaseId)} = {TestCaseId}, {nameof(Algorithm)} = \"{Algorithm.Name}\" }}";
         }
-
 
         // The vectors below are generated from the NIST ACVP projections.
         // https://github.com/usnistgov/ACVP-Server/blob/85f8742965b2691862079172982683757d8d91db/gen-val/json-files/SLH-DSA-keyGen-FIPS205/internalProjection.json
