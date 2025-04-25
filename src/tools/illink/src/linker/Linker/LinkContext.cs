@@ -200,8 +200,10 @@ namespace Mono.Linker
 
 		protected LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory, UnintializedContextFactory factory)
 		{
+			ArgumentNullException.ThrowIfNull (logger);
+
 			_pipeline = pipeline;
-			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
+			_logger = logger;
 
 			_resolver = factory.CreateResolver (this);
 			_actions = new Dictionary<string, AssemblyAction> ();

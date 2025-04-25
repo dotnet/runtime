@@ -896,7 +896,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ScopedRefAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\SkipLocalsInitAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\StackAllocatedBox.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\StateMachineAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\StringFreezingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\StrongBox.cs" />
@@ -2751,7 +2750,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' == 'true')" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Portable.cs" Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmManagedThreads)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
@@ -2761,6 +2760,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandleOverlapped.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolCallbackWrapper.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
+  </ItemGroup>
+  <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(FeatureWasmManagedThreads)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Browser.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Browser.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Browser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCMarshal.cs" />

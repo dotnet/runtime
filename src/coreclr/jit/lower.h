@@ -111,6 +111,11 @@ private:
     bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
     bool      TryContainingGetActiveElementCount(GenTreeOp* node);
 #endif
+#ifdef TARGET_RISCV64
+    bool TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next);
+    bool TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next);
+    bool TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next);
+#endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTreeUnOp* node);
     void ContainCheckCallOperands(GenTreeCall* call);
