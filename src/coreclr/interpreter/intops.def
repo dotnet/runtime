@@ -255,6 +255,7 @@ OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 5, 1, 0, InterpOpThreeInts)
 OPDEF(INTOP_ZEROBLK_IMM, "zeroblk.imm", 3, 0, 1, InterpOpInt)
 OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_GC_COLLECT, "gc.collect", 1, 0, 0, InterpOpNoArgs)
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)

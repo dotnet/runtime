@@ -3900,6 +3900,8 @@ bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
     // check changes from being enclosed in a try to being
     // enclosed in a finally.
     //
+    // Filter ACDs should always remain in filter regions.
+    //
     const bool inHnd = acdHndIndex > 0;
     const bool inTry = acdTryIndex > 0;
 
@@ -3909,26 +3911,35 @@ bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
     {
         // Non-funclet case
         //
+        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
         newDsg = inTry ? AcdKeyDesignator::KD_TRY : AcdKeyDesignator::KD_NONE;
     }
     else if (!inTry && !inHnd)
     {
         // Moved outside of all EH regions.
         //
+        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
         newDsg = AcdKeyDesignator::KD_NONE;
     }
     else if (inTry && (!inHnd || (acdTryIndex < acdHndIndex)))
     {
         // Moved into a parent try region.
         //
+        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
         newDsg = AcdKeyDesignator::KD_TRY;
     }
     else
     {
-        // Moved into a parent handler region.
-        // Note this cannot be a filter region.
+        // Moved into a parent or renumbered handler or filter region.
         //
-        newDsg = AcdKeyDesignator::KD_HND;
+        if (acdKeyDsg == AcdKeyDesignator::KD_FLT)
+        {
+            newDsg = AcdKeyDesignator::KD_FLT;
+        }
+        else
+        {
+            newDsg = AcdKeyDesignator::KD_HND;
+        }
     }
 
     bool result = (newDsg != acdKeyDsg);
