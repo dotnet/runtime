@@ -116,6 +116,12 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
                     {
                         VarSetOps::AddElemD(this, fgCurDefSet, varIndex);
                     }
+
+                    if (isUse && !isDef)
+                    {
+                        // Variable is actually used
+                        VarSetOps::AddElemD(this, fgTrueUseSet, varIndex);
+                    }
                 }
             }
         }
