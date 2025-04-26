@@ -33,6 +33,7 @@
     <EmbeddedResource Include="IdnMapping\Data\Unicode_13_0\IdnaTest_13.txt" />
     <EmbeddedResource Include="IdnMapping\Data\Unicode_15_0\IdnaTest_15_0.txt" />
     <EmbeddedResource Include="IdnMapping\Data\Unicode_15_1\IdnaTest_15_1.txt" />
+    <EmbeddedResource Include="IdnMapping\Data\Unicode_16_0\IdnaTest_16.txt" />
     <EmbeddedResource Include="Normalization\Data\win8.txt">
       <LogicalName>NormalizationDataWin8</LogicalName>
     </EmbeddedResource>
