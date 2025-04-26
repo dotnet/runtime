@@ -133,7 +133,7 @@ unsigned ObjectAllocator::LocalToIndex(unsigned lclNum)
 {
     unsigned result = BAD_VAR_NUM;
 
-    if (lclNum < comp->lvaCount)
+    if (lclNum < m_firstPseudoLocalNum)
     {
         assert(IsTrackedLocal(lclNum));
         LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
@@ -1136,10 +1136,10 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 continue;
             }
 
-            bool         canStack     = false;
-            bool         bashCall     = false;
-            const char*  onHeapReason = nullptr;
-            unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
+            bool               canStack     = false;
+            bool               bashCall     = false;
+            const char*        onHeapReason = nullptr;
+            const unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
 
             // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
             //
@@ -1324,6 +1324,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(data->AsAllocObj());
                     stmtExpr->AsLclVar()->Data() = newData;
                     stmtExpr->AddAllEffectsFlags(newData);
+                }
+
+                if (IsTrackedLocal(lclNum))
+                {
+                    AddConnGraphEdge(lclNum, m_unknownSourceLocalNum);
                 }
             }
         }
