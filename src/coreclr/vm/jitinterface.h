@@ -291,9 +291,10 @@ extern "C"
 
 // JIThelp.asm/JIThelp.s
 #define X86_WRITE_BARRIER_REGISTER(reg) \
-    void STDCALL JIT_CheckedWriteBarrier##reg(); \
     void STDCALL JIT_DebugWriteBarrier##reg(); \
-    void STDCALL JIT_WriteBarrier##reg();
+    void STDCALL JIT_WriteBarrier##reg(); \
+    void FASTCALL RhpAssignRef##reg(Object**, Object*); \
+    void FASTCALL RhpCheckedAssignRef##reg(Object**, Object*);
 
     ENUM_X86_WRITE_BARRIER_REGISTERS()
 #undef X86_WRITE_BARRIER_REGISTER
