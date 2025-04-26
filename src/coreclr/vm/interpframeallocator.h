@@ -48,7 +48,7 @@ public:
     FrameDataAllocator();
     ~FrameDataAllocator();
 
-    void *Alloc(InterpMethodContextFrame *pFrame, size_t size);
+    void *Alloc(InterpMethodContextFrame *pFrame, size_t *size);
     void PopInfo(InterpMethodContextFrame *pFrame);
 };
 

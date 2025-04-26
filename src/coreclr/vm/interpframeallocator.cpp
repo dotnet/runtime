@@ -61,6 +61,10 @@ bool FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
     if (infosLen == infosCapacity)
     {
         size_t newCapacity = infosCapacity == 0 ? 8 : infosCapacity * 2;
+        if (newCapacity > SIZE_MAX / sizeof(FrameDataInfo))
+        {
+            return false;
+        }
         FrameDataInfo* newInfos = (FrameDataInfo*)realloc(pInfos, newCapacity * sizeof(FrameDataInfo));
         if (newInfos == nullptr)
         {
@@ -77,11 +81,19 @@ bool FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
     return true;
 }
 
-void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
+void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t *size)
 {
+    if (size == nullptr || *size == 0)
+    {
+        return nullptr;
+    }
+
+    *size = ALIGN_UP(*size, sizeof(void*));
+    size_t alignedSize = *size;
+
     if (pFirst == nullptr)
     {
-        pFirst = new (nothrow) FrameDataFragment(size);
+        pFirst = new (nothrow) FrameDataFragment(alignedSize);
         if (pFirst == nullptr || pFirst->pFrameStart == nullptr)
         {
             return nullptr;
@@ -99,10 +111,10 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
 
     uint8_t *pFramePos = pCurrent->pFramePos;
 
-    if (pFramePos + size > pCurrent->pFrameEnd)
+    if (pFramePos + alignedSize > pCurrent->pFrameEnd)
     {
         // Move to the next fragment or create a new one if necessary
-        if (pCurrent->pNext && ((pCurrent->pNext->pFrameStart + size) <= pCurrent->pNext->pFrameEnd))
+        if (pCurrent->pNext && ((pCurrent->pNext->pFrameStart + alignedSize) <= pCurrent->pNext->pFrameEnd))
         {
             pCurrent = pCurrent->pNext;
             pFramePos = pCurrent->pFramePos = pCurrent->pFrameStart;
@@ -112,7 +124,7 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
             FreeFragments(pCurrent->pNext);
             pCurrent->pNext = nullptr;
 
-            FrameDataFragment *pNewFrag = new (nothrow) FrameDataFragment(size);
+            FrameDataFragment *pNewFrag = new (nothrow) FrameDataFragment(alignedSize);
             if (pNewFrag == nullptr || pNewFrag->pFrameStart == nullptr)
             {
                 return nullptr;
@@ -125,7 +137,7 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
     }
 
     void *pMemory = (void*)pFramePos;
-    pCurrent->pFramePos = (uint8_t*)(pFramePos + size);
+    pCurrent->pFramePos = (uint8_t*)(pCurrent->pFramePos + alignedSize);
     return pMemory;
 }
 

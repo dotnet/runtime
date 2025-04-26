@@ -1143,13 +1143,12 @@ CALL_TARGET_IP:
                 break;
             case INTOP_LOCALLOC:
             {
-                int32_t len = LOCAL_VAR(ip[2], int32_t);
-                len = ALIGN_UP(len, sizeof(void*));
+                size_t len = LOCAL_VAR(ip[2], size_t);
                 void* pMemory = NULL;
 
                 if (len > 0)
                 {
-                    pMemory = pThreadContext->frameDataAllocator.Alloc(pFrame, len);
+                    pMemory = pThreadContext->frameDataAllocator.Alloc(pFrame, &len);
                     if (pMemory == NULL)
                     {
                         // Interpreter-TODO: OutOfMemoryException

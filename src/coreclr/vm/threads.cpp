@@ -2525,13 +2525,6 @@ Thread::~Thread()
 
     // Wait for another thread to leave its loop in DeadlockAwareLock::TryBeginEnterLock
     CrstHolder lock(&g_DeadlockAwareCrst);
-
-#ifdef FEATURE_INTERPRETER
-    if (m_pInterpThreadContext != nullptr)
-    {
-        delete m_pInterpThreadContext;
-    }
-#endif // FEATURE_INTERPRETER
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -2816,6 +2809,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     Thread *pCurrentThread = GetThreadNULLOk();
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
+
+#ifdef FEATURE_INTERPRETER
+    if (m_pInterpThreadContext != nullptr)
+    {
+        delete m_pInterpThreadContext;
+    }
+#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // If the currently running thread is the thread that died and it is an STA thread, then we

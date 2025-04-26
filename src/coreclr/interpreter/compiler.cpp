@@ -3147,8 +3147,12 @@ retry_emit:
                     case CEE_LOCALLOC:
                         CHECK_STACK(1);
 #if TARGET_64BIT
-                        if (m_pStackPointer[-1].type == StackTypeI8)
-                            EmitConv(m_pStackPointer - 1, NULL, StackTypeI4, INTOP_MOV_8);
+                        // Length is natural unsigned int
+                        if (m_pStackPointer[-1].type == StackTypeI4)
+                        {
+                            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
+                            m_pStackPointer[-1].type = StackTypeI8;
+                        }
 #endif
                         AddIns(INTOP_LOCALLOC);
                         m_pStackPointer--;
