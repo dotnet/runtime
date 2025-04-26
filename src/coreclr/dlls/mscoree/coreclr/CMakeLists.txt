@@ -81,9 +81,9 @@ if (CLR_CMAKE_HOST_UNIX)
 endif (CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_HOST_ANDROID)
-    list(LIB_GCPAL gc_pal_objects)
+    set(LIB_GCPAL gc_pal_objects)
 else()
-    list(LIB_GCPAL gc_pal)
+    set(LIB_GCPAL gc_pal)
 endif()
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
