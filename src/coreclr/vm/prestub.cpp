@@ -1044,6 +1044,8 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 
 bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
 {
+    STANDARD_VM_CONTRACT;
+
     if (TryGenerateAsyncThunk(resolver, methodILDecoder))
     {
         return true;
