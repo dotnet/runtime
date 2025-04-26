@@ -1148,7 +1148,7 @@ CALL_TARGET_IP:
 
                 if (len > 0)
                 {
-                    pMemory = pThreadContext->frameDataAllocator.Alloc(pFrame, &len);
+                    pMemory = pThreadContext->frameDataAllocator.Alloc(pFrame, len);
                     if (pMemory == NULL)
                     {
                         // Interpreter-TODO: OutOfMemoryException

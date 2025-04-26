@@ -81,19 +81,13 @@ bool FrameDataAllocator::PushInfo(InterpMethodContextFrame *pFrame)
     return true;
 }
 
-void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t *size)
+void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t size)
 {
-    if (size == nullptr || *size == 0)
-    {
-        return nullptr;
-    }
-
-    *size = ALIGN_UP(*size, sizeof(void*));
-    size_t alignedSize = *size;
+    size = ALIGN_UP(size, sizeof(void*));
 
     if (pFirst == nullptr)
     {
-        pFirst = new (nothrow) FrameDataFragment(alignedSize);
+        pFirst = new (nothrow) FrameDataFragment(size);
         if (pFirst == nullptr || pFirst->pFrameStart == nullptr)
         {
             return nullptr;
@@ -111,10 +105,10 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t *size)
 
     uint8_t *pFramePos = pCurrent->pFramePos;
 
-    if (pFramePos + alignedSize > pCurrent->pFrameEnd)
+    if (pFramePos + size > pCurrent->pFrameEnd)
     {
         // Move to the next fragment or create a new one if necessary
-        if (pCurrent->pNext && ((pCurrent->pNext->pFrameStart + alignedSize) <= pCurrent->pNext->pFrameEnd))
+        if (pCurrent->pNext && ((pCurrent->pNext->pFrameStart + size) <= pCurrent->pNext->pFrameEnd))
         {
             pCurrent = pCurrent->pNext;
             pFramePos = pCurrent->pFramePos = pCurrent->pFrameStart;
@@ -124,7 +118,7 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t *size)
             FreeFragments(pCurrent->pNext);
             pCurrent->pNext = nullptr;
 
-            FrameDataFragment *pNewFrag = new (nothrow) FrameDataFragment(alignedSize);
+            FrameDataFragment *pNewFrag = new (nothrow) FrameDataFragment(size);
             if (pNewFrag == nullptr || pNewFrag->pFrameStart == nullptr)
             {
                 return nullptr;
@@ -137,7 +131,7 @@ void *FrameDataAllocator::Alloc(InterpMethodContextFrame *pFrame, size_t *size)
     }
 
     void *pMemory = (void*)pFramePos;
-    pCurrent->pFramePos = (uint8_t*)(pCurrent->pFramePos + alignedSize);
+    pCurrent->pFramePos = (uint8_t*)(pCurrent->pFramePos + size);
     return pMemory;
 }
 
