@@ -238,6 +238,7 @@ namespace System.Security.Cryptography
         public bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten)
         {
             ThrowIfDisposed();
+
             return ExportSubjectPublicKeyInfoCore().TryEncode(destination, out bytesWritten);
         }
 
@@ -258,6 +259,7 @@ namespace System.Security.Cryptography
         public string ExportSubjectPublicKeyInfoPem()
         {
             ThrowIfDisposed();
+
             AsnWriter writer = ExportSubjectPublicKeyInfoCore();
             // SPKI does not contain sensitive data.
             return EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
@@ -278,6 +280,7 @@ namespace System.Security.Cryptography
         public byte[] ExportPkcs8PrivateKey()
         {
             ThrowIfDisposed();
+
             return ExportPkcs8PrivateKeyCallback(static pkcs8 => pkcs8.ToArray());
         }
 
@@ -306,9 +309,14 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            // An SLH-DSA-SHA2-128s private key export with no attributes is 84 bytes. A buffer smaller than that cannot hold a
+            // A private key export with no attributes has at least 8 bytes overhead so a buffer smaller than that cannot hold a
             // PKCS#8 encoded key. If we happen to get a buffer smaller than that, it won't export.
-            const int MinimumPossiblePkcs8SlhDsaKey = 84;
+            int MinimumPossiblePkcs8SlhDsaKey =
+                2 + // PrivateKeyInfo Sequence
+                2 + // AlgorithmIdentifier Sequence
+                3 + // AlgorithmIdentifier OID value, undervalued to be safe
+                2 + // Secret key Octet String prefix, undervalued to be safe
+                Algorithm.SecretKeySizeInBytes;
 
             if (destination.Length < MinimumPossiblePkcs8SlhDsaKey)
             {
@@ -392,6 +400,7 @@ namespace System.Security.Cryptography
         public string ExportPkcs8PrivateKeyPem()
         {
             ThrowIfDisposed();
+
             return ExportPkcs8PrivateKeyCallback(static pkcs8 => PemEncoding.WriteString(PemLabels.Pkcs8PrivateKey, pkcs8));
         }
 
@@ -414,13 +423,13 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        ///   <para>-or-</para>
         ///   <para>This instance only represents a public key.</para>
         ///   <para>-or-</para>
         ///   <para>The private key is not exportable.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
@@ -459,13 +468,15 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
+        ///   <para><paramref name="pbeParameters"/> specifies a KDF that requires a char-based password.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        ///   <para>-or-</para>
         ///   <para>This instance only represents a public key.</para>
         ///   <para>-or-</para>
         ///   <para>The private key is not exportable.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
@@ -492,6 +503,7 @@ namespace System.Security.Cryptography
         public byte[] ExportEncryptedPkcs8PrivateKey(string password, PbeParameters pbeParameters)
         {
             ArgumentNullException.ThrowIfNull(password);
+
             return ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters);
         }
 
@@ -523,13 +535,13 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        ///   <para>-or-</para>
         ///   <para>This instance only represents a public key.</para>
         ///   <para>-or-</para>
         ///   <para>The private key is not exportable.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
         /// </exception>
         public bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
@@ -581,13 +593,15 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
+        ///   <para><paramref name="pbeParameters"/> specifies a KDF that requires a char-based password.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        ///   <para>-or-</para>
         ///   <para>This instance only represents a public key.</para>
         ///   <para>-or-</para>
         ///   <para>The private key is not exportable.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
         /// </exception>
         public bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
@@ -622,6 +636,7 @@ namespace System.Security.Cryptography
             out int bytesWritten)
         {
             ArgumentNullException.ThrowIfNull(password);
+
             return TryExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters, destination, out bytesWritten);
         }
 
@@ -645,6 +660,8 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        ///   <para>-or-</para>
         ///   <para>This instance only represents a public key.</para>
         ///   <para>-or-</para>
         ///   <para>The private key is not exportable.</para>
@@ -694,6 +711,8 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   <para><paramref name="pbeParameters"/> specifies a KDF that requires a char-based password.</para>
         ///   <para>-or-</para>
+        ///   <para><paramref name="pbeParameters"/> does not represent a valid password-based encryption algorithm.</para>
+        ///   <para>-or-</para>
         ///   <para>This instance only represents a public key.</para>
         ///   <para>-or-</para>
         ///   <para>The private key is not exportable.</para>
@@ -730,6 +749,7 @@ namespace System.Security.Cryptography
             PbeParameters pbeParameters)
         {
             ArgumentNullException.ThrowIfNull(password);
+
             return ExportEncryptedPkcs8PrivateKeyPem(password.AsSpan(), pbeParameters);
         }
 
@@ -743,7 +763,7 @@ namespace System.Security.Cryptography
         ///   The number of bytes written to <paramref name="destination"/>.
         /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is the incorrect length to receive the public key.
+        ///   <paramref name="destination"/> is too small to hold the public key.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>An error occurred while exporting the key.</para>
@@ -768,7 +788,7 @@ namespace System.Security.Cryptography
         ///   Exports the public-key portion of the current key in the FIPS 205 public key format.
         /// </summary>
         /// <returns>
-        ///   The public key.
+        ///   The FIPS 205 public key.
         /// </returns>
         /// <exception cref="CryptographicException">
         ///   <para>An error occurred while exporting the key.</para>
@@ -793,7 +813,7 @@ namespace System.Security.Cryptography
         ///   The number of bytes written to <paramref name="destination"/>.
         /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is the incorrect length to receive the secret key.
+        ///   <paramref name="destination"/> is too small to hold the secret key.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>The current instance cannot export a secret key.</para>
@@ -820,7 +840,7 @@ namespace System.Security.Cryptography
         ///   Exports the current key in the FIPS 205 secret key format.
         /// </summary>
         /// <returns>
-        ///   The secret key.
+        ///   The FIPS 205 secret key.
         /// </returns>
         /// <exception cref="CryptographicException">
         ///   <para>The current instance cannot export a secret key.</para>
@@ -857,6 +877,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(algorithm);
             ThrowIfNotSupported();
+
             return SlhDsaImplementation.GenerateKeyCore(algorithm);
         }
 
@@ -925,6 +946,7 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportSubjectPublicKeyInfo(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
+
             return ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(source));
         }
 
@@ -980,6 +1002,7 @@ namespace System.Security.Cryptography
                 },
                 out int read,
                 out SlhDsa kem);
+
             Debug.Assert(read == source.Length);
             return kem;
         }
@@ -991,6 +1014,7 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportPkcs8PrivateKey(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
+
             return ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(source));
         }
 
@@ -1105,6 +1129,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(password);
             ArgumentNullException.ThrowIfNull(source);
+
             return ImportEncryptedPkcs8PrivateKey(password.AsSpan(), new ReadOnlySpan<byte>(source));
         }
 
@@ -1165,6 +1190,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(source);
             ThrowIfNotSupported();
+
             return ImportFromPem(source.AsSpan());
         }
 
@@ -1373,6 +1399,7 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
+
             return ImportSlhDsaPublicKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
@@ -1422,6 +1449,7 @@ namespace System.Security.Cryptography
         public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
+
             return ImportSlhDsaSecretKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
@@ -1588,7 +1616,7 @@ namespace System.Security.Cryptography
 
             while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
-                CryptoPool.Return(buffer, 0);
+                CryptoPool.Return(buffer);
                 size = checked(size * 2);
                 buffer = CryptoPool.Rent(size);
             }

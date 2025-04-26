@@ -3,6 +3,7 @@
 
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
+using Test.Cryptography;
 using Xunit;
 using Xunit.Sdk;
 
@@ -60,13 +61,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             // Generate a valid ASN.1 encoding
             byte[] encodedBytes = CreateAsn1EncodedBytes();
+            int actualEncodedLength = encodedBytes.Length;
 
             // Add a trailing byte so the length indicated in the encoding will be larger than the actual data.
-            Array.Resize(ref encodedBytes, encodedBytes.Length + 1);
+            Array.Resize(ref encodedBytes, actualEncodedLength + 1);
             AssertThrows(encodedBytes);
 
             // Remove the last byte so the length indicated in the encoding will be larger than the actual data.
-            Array.Resize(ref encodedBytes, encodedBytes.Length - 2);
+            Array.Resize(ref encodedBytes, actualEncodedLength - 1);
             AssertThrows(encodedBytes);
 
             static void AssertThrows(byte[] encodedBytes)
@@ -80,8 +82,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(encodedBytes))));
 
                 SlhDsaTestHelpers.AssertImportEncryptedPkcs8PrivateKey(
-                    import => Assert.Throws<CryptographicException>(() => import("password", encodedBytes)),
-                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import("password", encodedBytes))));
+                    import => Assert.Throws<CryptographicException>(() => import("PLACEHOLDER", encodedBytes)),
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import("PLACEHOLDER", encodedBytes))));
             }
         }
 
@@ -114,7 +116,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(wrongAsnType))));
 
             SlhDsaTestHelpers.AssertImportEncryptedPkcs8PrivateKey(
-                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import("password", wrongAsnType))));
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import("PLACEHOLDER", wrongAsnType))));
         }
 
         [Fact]
@@ -136,6 +138,13 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 },
                 SubjectPublicKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes]
             };
+
+            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
+
+            AsnWriter nullWriter = new AsnWriter(AsnEncodingRules.DER);
+            nullWriter.WriteNull();
+            spki.Algorithm.Parameters = nullWriter.Encode();
 
             SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
@@ -213,13 +222,13 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             static void AssertThrows(string encryptedPem)
             {
                 AssertThrowIfNotSupported(() =>
-                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem, "password")));
+                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER")));
                 AssertThrowIfNotSupported(() =>
-                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem, "password"u8)));
+                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER"u8)));
                 AssertThrowIfNotSupported(() =>
-                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem.AsSpan(), "password")));
+                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem.AsSpan(), "PLACEHOLDER")));
                 AssertThrowIfNotSupported(() =>
-                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem, "password"u8.ToArray())));
+                    AssertExtensions.Throws<ArgumentException>("source", () => SlhDsa.ImportFromEncryptedPem(encryptedPem, "PLACEHOLDER"u8.ToArray())));
             }
         }
 

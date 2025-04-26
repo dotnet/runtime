@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Linq;
-using System.Text;
+using System.Security.Cryptography.Asn1;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
@@ -157,7 +159,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SlhDsaTestHelpers.AssertImportEncryptedPkcs8PrivateKey(import =>
                 {
                     // Roundtrip it using encrypted PKCS#8
-                    using SlhDsa roundTrippedSlhDsa = import("password", export(slhDsa, "password", pbeParameters));
+                    using SlhDsa roundTrippedSlhDsa = import("PLACEHOLDER", export(slhDsa, "PLACEHOLDER", pbeParameters));
 
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
@@ -225,7 +227,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SlhDsaTestHelpers.AssertImportFromEncryptedPem(import =>
                 {
                     // Roundtrip it using encrypted PKCS#8
-                    using SlhDsa roundTrippedSlhDsa = import(export(slhDsa, "password", pbeParameters), "password");
+                    using SlhDsa roundTrippedSlhDsa = import(export(slhDsa, "PLACEHOLDER", pbeParameters), "PLACEHOLDER");
 
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
@@ -411,13 +413,13 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.Throws<CryptographicException>(() => SlhDsa.ImportSubjectPublicKeyInfo(publicKey));
 
             PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA1, 42);
-            byte[] encryptedPrivateKeyCharPassword = slhDsa.ExportEncryptedPkcs8PrivateKey("password", pbeParameters);
+            byte[] encryptedPrivateKeyCharPassword = slhDsa.ExportEncryptedPkcs8PrivateKey("PLACEHOLDER", pbeParameters);
             Array.Resize(ref encryptedPrivateKeyCharPassword, encryptedPrivateKeyCharPassword.Length + 1);
-            AssertExtensions.Throws<CryptographicException>(() => SlhDsa.ImportEncryptedPkcs8PrivateKey("password", encryptedPrivateKeyCharPassword));
+            AssertExtensions.Throws<CryptographicException>(() => SlhDsa.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER", encryptedPrivateKeyCharPassword));
 
-            byte[] encryptedPrivateKeyBytePassword = slhDsa.ExportEncryptedPkcs8PrivateKey("password"u8, pbeParameters);
+            byte[] encryptedPrivateKeyBytePassword = slhDsa.ExportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, pbeParameters);
             Array.Resize(ref encryptedPrivateKeyBytePassword, encryptedPrivateKeyBytePassword.Length + 1);
-            AssertExtensions.Throws<CryptographicException>(() => SlhDsa.ImportEncryptedPkcs8PrivateKey("password"u8, encryptedPrivateKeyBytePassword));
+            AssertExtensions.Throws<CryptographicException>(() => SlhDsa.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, encryptedPrivateKeyBytePassword));
         }
 
         [Theory]
@@ -433,7 +435,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 byte[] pkcs8 = export(slhDsa, info.EncryptionPassword, info.EncryptionParameters);
 
                 // Verify that the Asn1 structure matches the provided parameters
-                SlhDsaTestHelpers.AssertEncryptedPkcs8PrivateKeyContents(info.EncryptionParameters, pkcs8);
+                EncryptedPrivateKeyInfoAsn epki = EncryptedPrivateKeyInfoAsn.Decode(pkcs8, AsnEncodingRules.BER);
+                AsnUtils.AssertEncryptedPkcs8PrivateKeyContents(epki, info.EncryptionParameters);
             }, passwordTypeToTest);
         }
 
@@ -470,25 +473,25 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.Equal(spki.Length, bytesWritten);
 
             // TryExportEncryptedPkcs8PrivateKey (string password)
-            AssertExtensions.FalseExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("password", info.EncryptionParameters, Span<byte>.Empty, out bytesWritten));
+            AssertExtensions.FalseExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER", info.EncryptionParameters, Span<byte>.Empty, out bytesWritten));
             AssertExtensions.Equal(0, bytesWritten);
-            AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("password", info.EncryptionParameters, largeBuffer, out bytesWritten));
+            AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER", info.EncryptionParameters, largeBuffer, out bytesWritten));
             AssertExtensions.Equal(encryptedPkcs8.Length, bytesWritten);
-            AssertExtensions.FalseExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("password", info.EncryptionParameters, encryptedPkcs8.AsSpan(0..^1), out bytesWritten));
+            AssertExtensions.FalseExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER", info.EncryptionParameters, encryptedPkcs8.AsSpan(0..^1), out bytesWritten));
             AssertExtensions.Equal(0, bytesWritten);
-            AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("password", info.EncryptionParameters, encryptedPkcs8, out bytesWritten));
+            AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER", info.EncryptionParameters, encryptedPkcs8, out bytesWritten));
             AssertExtensions.Equal(encryptedPkcs8.Length, bytesWritten);
 
             if (info.EncryptionParameters.EncryptionAlgorithm is not PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)
             {
                 // TryExportEncryptedPkcs8PrivateKey (byte[] password)
-                AssertExtensions.FalseExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("password"u8, info.EncryptionParameters, Span<byte>.Empty, out bytesWritten));
+                AssertExtensions.FalseExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, info.EncryptionParameters, Span<byte>.Empty, out bytesWritten));
                 AssertExtensions.Equal(0, bytesWritten);
-                AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("password"u8, info.EncryptionParameters, largeBuffer, out bytesWritten));
+                AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, info.EncryptionParameters, largeBuffer, out bytesWritten));
                 AssertExtensions.Equal(encryptedPkcs8.Length, bytesWritten);
-                AssertExtensions.FalseExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("password"u8, info.EncryptionParameters, encryptedPkcs8.AsSpan(0..^1), out bytesWritten));
+                AssertExtensions.FalseExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, info.EncryptionParameters, encryptedPkcs8.AsSpan(0..^1), out bytesWritten));
                 AssertExtensions.Equal(0, bytesWritten);
-                AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("password"u8, info.EncryptionParameters, encryptedPkcs8, out bytesWritten));
+                AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, info.EncryptionParameters, encryptedPkcs8, out bytesWritten));
                 AssertExtensions.Equal(encryptedPkcs8.Length, bytesWritten);
             }
         }

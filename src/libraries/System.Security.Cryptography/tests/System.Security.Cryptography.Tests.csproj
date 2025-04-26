@@ -394,6 +394,8 @@
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AesGcmTests.cs"
              Link="CommonTest\System\Security\Cryptography\AesGcmTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AsnUtils.cs"
+             Link="CommonTest\System\Security\Cryptography\AsnUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CommonAEADTests.cs"

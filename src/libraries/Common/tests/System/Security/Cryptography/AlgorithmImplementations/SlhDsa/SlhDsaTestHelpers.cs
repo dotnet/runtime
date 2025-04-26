@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Drawing;
 using System.Formats.Asn1;
-using System.Linq;
-using System.Reflection.Emit;
 using System.Security.Cryptography.Asn1;
 using System.Text;
+using Test.Cryptography;
 using Xunit;
 using Xunit.Sdk;
 
@@ -15,12 +12,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 {
     internal static class SlhDsaTestHelpers
     {
-        /// <summary>
-        /// Gets the negation of <see cref="SlhDsa.IsSupported"/>. This can be used to conditionally skip tests.
-        /// </summary>
-        public static bool IsNotSupported => !SlhDsa.IsSupported;
-
-        public static void VerifyDisposed(SlhDsa slhDsa)
+        internal static void VerifyDisposed(SlhDsa slhDsa)
         {
             // A signature-sized buffer can be reused for keys as well
             byte[] tempBuffer = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
@@ -45,10 +37,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportSubjectPublicKeyInfo([], out _));
         }
 
-        public static void AssertImportPublicKey(Action<Func<SlhDsa>> test, SlhDsaAlgorithm algorithm, byte[] publicKey) =>
+        internal static void AssertImportPublicKey(Action<Func<SlhDsa>> test, SlhDsaAlgorithm algorithm, byte[] publicKey) =>
             AssertImportPublicKey(test, test, algorithm, publicKey);
 
-        public static void AssertImportPublicKey(Action<Func<SlhDsa>> testDirectCall, Action<Func<SlhDsa>> testEmbeddedCall, SlhDsaAlgorithm algorithm, byte[] publicKey)
+        internal static void AssertImportPublicKey(Action<Func<SlhDsa>> testDirectCall, Action<Func<SlhDsa>> testEmbeddedCall, SlhDsaAlgorithm algorithm, byte[] publicKey)
         {
             testDirectCall(() => SlhDsa.ImportSlhDsaPublicKey(algorithm, publicKey));
 
@@ -76,10 +68,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         internal delegate SlhDsa ImportSubjectKeyPublicInfoCallback(byte[] spki);
-        public static void AssertImportSubjectKeyPublicInfo(Action<ImportSubjectKeyPublicInfoCallback> test) =>
+        internal static void AssertImportSubjectKeyPublicInfo(Action<ImportSubjectKeyPublicInfoCallback> test) =>
             AssertImportSubjectKeyPublicInfo(test, test);
 
-        public static void AssertImportSubjectKeyPublicInfo(
+        internal static void AssertImportSubjectKeyPublicInfo(
             Action<ImportSubjectKeyPublicInfoCallback> testDirectCall,
             Action<ImportSubjectKeyPublicInfoCallback> testEmbeddedCall)
         {
@@ -90,10 +82,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             testEmbeddedCall(spki => SlhDsa.ImportFromPem(PemEncoding.WriteString("PUBLIC KEY", spki).AsSpan()));
         }
 
-        public static void AssertImportSecretKey(Action<Func<SlhDsa>> test, SlhDsaAlgorithm algorithm, byte[] secretKey) =>
+        internal static void AssertImportSecretKey(Action<Func<SlhDsa>> test, SlhDsaAlgorithm algorithm, byte[] secretKey) =>
             AssertImportSecretKey(test, test, algorithm, secretKey);
 
-        public static void AssertImportSecretKey(Action<Func<SlhDsa>> testDirectCall, Action<Func<SlhDsa>> testEmbeddedCall, SlhDsaAlgorithm algorithm, byte[] secretKey)
+        internal static void AssertImportSecretKey(Action<Func<SlhDsa>> testDirectCall, Action<Func<SlhDsa>> testEmbeddedCall, SlhDsaAlgorithm algorithm, byte[] secretKey)
         {
             testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, secretKey));
 
@@ -122,10 +114,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         internal delegate SlhDsa ImportPkcs8PrivateKeyCallback(ReadOnlySpan<byte> pkcs8);
-        public static void AssertImportPkcs8PrivateKey(Action<ImportPkcs8PrivateKeyCallback> callback) =>
+        internal static void AssertImportPkcs8PrivateKey(Action<ImportPkcs8PrivateKeyCallback> callback) =>
             AssertImportPkcs8PrivateKey(callback, callback);
 
-        public static void AssertImportPkcs8PrivateKey(
+        internal static void AssertImportPkcs8PrivateKey(
             Action<ImportPkcs8PrivateKeyCallback> testDirectCall,
             Action<ImportPkcs8PrivateKeyCallback> testEmbeddedCall)
         {
@@ -138,19 +130,19 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             });
         }
 
-        public static void AssertImportFromPem(Action<Func<string, SlhDsa>> callback)
+        internal static void AssertImportFromPem(Action<Func<string, SlhDsa>> callback)
         {
             callback(static (string pem) => SlhDsa.ImportFromPem(pem));
             callback(static (string pem) => SlhDsa.ImportFromPem(pem.AsSpan()));
         }
 
-        public static void AssertImportEncryptedPkcs8PrivateKey(
+        internal static void AssertImportEncryptedPkcs8PrivateKey(
             Action<ImportEncryptedPkcs8PrivateKeyCallback> test,
             EncryptionPasswordType passwordTypeToTest = EncryptionPasswordType.All) =>
             AssertImportEncryptedPkcs8PrivateKey(test, test, passwordTypeToTest);
 
         internal delegate SlhDsa ImportEncryptedPkcs8PrivateKeyCallback(string password, ReadOnlySpan<byte> pkcs8);
-        public static void AssertImportEncryptedPkcs8PrivateKey(
+        internal static void AssertImportEncryptedPkcs8PrivateKey(
             Action<ImportEncryptedPkcs8PrivateKeyCallback> testDirectCall,
             Action<ImportEncryptedPkcs8PrivateKeyCallback> testEmbeddedCall,
             EncryptionPasswordType passwordTypeToTest = EncryptionPasswordType.All)
@@ -177,9 +169,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             });
         }
 
-        internal delegate SlhDsa ImportFrpmEncryptedPemCallback(string source, string password);
-        public static void AssertImportFromEncryptedPem(
-            Action<ImportFrpmEncryptedPemCallback> callback,
+        internal delegate SlhDsa ImportFromEncryptedPemCallback(string source, string password);
+        internal static void AssertImportFromEncryptedPem(
+            Action<ImportFromEncryptedPemCallback> callback,
             EncryptionPasswordType passwordTypeToTest = EncryptionPasswordType.All)
         {
             if ((passwordTypeToTest & EncryptionPasswordType.Char) != 0)
@@ -197,42 +189,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
         }
 
-        public static void AssertEncryptedPkcs8PrivateKeyContents(PbeParameters pbeParameters, ReadOnlyMemory<byte> contents)
-        {
-            EncryptedPrivateKeyInfoAsn epki = EncryptedPrivateKeyInfoAsn.Decode(contents, AsnEncodingRules.BER);
-            AlgorithmIdentifierAsn algorithmIdentifier = epki.EncryptionAlgorithm;
-
-            if (pbeParameters.EncryptionAlgorithm == PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)
-            {
-                // pbeWithSHA1And3-KeyTripleDES-CBC
-                Assert.Equal("1.2.840.113549.1.12.1.3", algorithmIdentifier.Algorithm);
-                PBEParameter pbeParameterAsn = PBEParameter.Decode(algorithmIdentifier.Parameters.Value, AsnEncodingRules.BER);
-
-                Assert.Equal(pbeParameters.IterationCount, pbeParameterAsn.IterationCount);
-            }
-            else
-            {
-                Assert.Equal("1.2.840.113549.1.5.13", algorithmIdentifier.Algorithm); // PBES2
-                PBES2Params pbes2Params = PBES2Params.Decode(algorithmIdentifier.Parameters.Value, AsnEncodingRules.BER);
-                Assert.Equal("1.2.840.113549.1.5.12", pbes2Params.KeyDerivationFunc.Algorithm); // PBKDF2
-                Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(
-                    pbes2Params.KeyDerivationFunc.Parameters.Value,
-                    AsnEncodingRules.BER);
-                string expectedEncryptionOid = pbeParameters.EncryptionAlgorithm switch
-                {
-                    PbeEncryptionAlgorithm.Aes128Cbc => "2.16.840.1.101.3.4.1.2",
-                    PbeEncryptionAlgorithm.Aes192Cbc => "2.16.840.1.101.3.4.1.22",
-                    PbeEncryptionAlgorithm.Aes256Cbc => "2.16.840.1.101.3.4.1.42",
-                    _ => throw new CryptographicException(),
-                };
-
-                Assert.Equal(pbeParameters.IterationCount, pbkdf2Params.IterationCount);
-                Assert.Equal(pbeParameters.HashAlgorithm, GetHashAlgorithmFromPbkdf2Params(pbkdf2Params));
-                Assert.Equal(expectedEncryptionOid, pbes2Params.EncryptionScheme.Algorithm);
-            }
-        }
-
-        public static void AssertExportSlhDsaPublicKey(Action<Func<SlhDsa, byte[]>> callback)
+        internal static void AssertExportSlhDsaPublicKey(Action<Func<SlhDsa, byte[]>> callback)
         {
             callback(slhDsa => slhDsa.ExportSlhDsaPublicKey());
             callback(slhDsa =>
@@ -247,7 +204,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     SubjectPublicKeyInfoAsn.Decode(exportSpki(slhDsa), AsnEncodingRules.DER).SubjectPublicKey.Span.ToArray()));
         }
 
-        public static void AssertExportSlhDsaSecretKey(Action<Func<SlhDsa, byte[]>> callback)
+        internal static void AssertExportSlhDsaSecretKey(Action<Func<SlhDsa, byte[]>> callback)
         {
             callback(slhDsa => slhDsa.ExportSlhDsaSecretKey());
             callback(slhDsa =>
@@ -262,10 +219,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     PrivateKeyInfoAsn.Decode(exportPkcs8(slhDsa), AsnEncodingRules.DER).PrivateKey.Span.ToArray()));
         }
 
-        public static void AssertExportPkcs8PrivateKey(SlhDsa slhDsa, Action<byte[]> callback) =>
+        internal static void AssertExportPkcs8PrivateKey(SlhDsa slhDsa, Action<byte[]> callback) =>
             AssertExportPkcs8PrivateKey(export => callback(export(slhDsa)));
 
-        public static void AssertExportPkcs8PrivateKey(Action<Func<SlhDsa, byte[]>> callback)
+        internal static void AssertExportPkcs8PrivateKey(Action<Func<SlhDsa, byte[]>> callback)
         {
             callback(slhDsa => DoTryUntilDone(slhDsa.TryExportPkcs8PrivateKey));
             callback(slhDsa => slhDsa.ExportPkcs8PrivateKey());
@@ -280,10 +237,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
         }
 
-        public static void AssertExportSubjectPublicKeyInfo(SlhDsa slhDsa, Action<byte[]> callback) =>
+        internal static void AssertExportSubjectPublicKeyInfo(SlhDsa slhDsa, Action<byte[]> callback) =>
             AssertExportSubjectPublicKeyInfo(export => callback(export(slhDsa)));
 
-        public static void AssertExportSubjectPublicKeyInfo(Action<Func<SlhDsa, byte[]>> callback)
+        internal static void AssertExportSubjectPublicKeyInfo(Action<Func<SlhDsa, byte[]>> callback)
         {
             callback(slhDsa => DoTryUntilDone(slhDsa.TryExportSubjectPublicKeyInfo));
             callback(slhDsa => slhDsa.ExportSubjectPublicKeyInfo());
@@ -299,7 +256,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
         }
 
-        public static void AssertEncryptedExportPkcs8PrivateKey(
+        internal static void AssertEncryptedExportPkcs8PrivateKey(
             SlhDsa slhDsa,
             string password,
             PbeParameters pbeParameters,
@@ -307,7 +264,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertEncryptedExportPkcs8PrivateKey(export => callback(export(slhDsa, password, pbeParameters)));
 
         internal delegate byte[] ExportEncryptedPkcs8PrivateKeyCallback(SlhDsa slhDsa, string password, PbeParameters pbeParameters);
-        public static void AssertEncryptedExportPkcs8PrivateKey(
+        internal static void AssertEncryptedExportPkcs8PrivateKey(
             Action<ExportEncryptedPkcs8PrivateKeyCallback> callback,
             EncryptionPasswordType passwordTypesToTest = EncryptionPasswordType.All)
         {
@@ -351,7 +308,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         internal delegate string ExportToPemCallback(SlhDsa slhDsa, string password, PbeParameters pbeParameters);
-        public static void AssertExportToEncryptedPem(
+        internal static void AssertExportToEncryptedPem(
             Action<ExportToPemCallback> callback,
             EncryptionPasswordType passwordTypesToTest = EncryptionPasswordType.All)
         {
@@ -370,10 +327,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
         }
 
-        public static void AssertExportToPrivateKeyPem(Action<Func<SlhDsa, string>> callback) =>
+        internal static void AssertExportToPrivateKeyPem(Action<Func<SlhDsa, string>> callback) =>
             callback(slhDsa => slhDsa.ExportPkcs8PrivateKeyPem());
 
-        public static void AssertExportToPublicKeyPem(Action<Func<SlhDsa, string>> callback) =>
+        internal static void AssertExportToPublicKeyPem(Action<Func<SlhDsa, string>> callback) =>
             callback(slhDsa => slhDsa.ExportSubjectPublicKeyInfoPem());
 
         [Flags]
@@ -384,13 +341,13 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             All = Char | Byte,
         }
 
-        public static EncryptionPasswordType GetValidPasswordTypes(PbeParameters pbeParameters)
+        internal static EncryptionPasswordType GetValidPasswordTypes(PbeParameters pbeParameters)
             => pbeParameters.EncryptionAlgorithm == PbeEncryptionAlgorithm.TripleDes3KeyPkcs12
             ? EncryptionPasswordType.Char
             : EncryptionPasswordType.All;
 
-        public delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
-        public static byte[] DoTryUntilDone(TryExportFunc func)
+        internal delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
+        internal static byte[] DoTryUntilDone(TryExportFunc func)
         {
             byte[] buffer = new byte[512];
             int written;
@@ -403,19 +360,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             return buffer.AsSpan(0, written).ToArray();
         }
 
-        private static HashAlgorithmName GetHashAlgorithmFromPbkdf2Params(Pbkdf2Params pbkdf2Params)
-        {
-            return pbkdf2Params.Prf.Algorithm switch
-            {
-                "1.2.840.113549.2.7" => HashAlgorithmName.SHA1,
-                "1.2.840.113549.2.9" => HashAlgorithmName.SHA256,
-                "1.2.840.113549.2.10" => HashAlgorithmName.SHA384,
-                "1.2.840.113549.2.11" => HashAlgorithmName.SHA512,
-                string other => throw new XunitException($"Unknown hash algorithm OID '{other}'."),
-            };
-        }
-
-        public static string? AlgorithmToOid(SlhDsaAlgorithm algorithm)
+        internal static string? AlgorithmToOid(SlhDsaAlgorithm algorithm)
         {
             return algorithm?.Name switch
             {
@@ -433,28 +378,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 "SLH-DSA-SHAKE-256f" => "2.16.840.1.101.3.4.3.31",
                 _ => null,
             };
-        }
-
-        extension(SubjectPublicKeyInfoAsn subjectPublicKeyInfoAsn)
-        {
-            internal byte[] Encode()
-            {
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                subjectPublicKeyInfoAsn.Encode(writer);
-                byte[] encoded = writer.Encode();
-                return encoded;
-            }
-        }
-
-        extension(PrivateKeyInfoAsn privateKeyInfoAsn)
-        {
-            internal byte[] Encode()
-            {
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                privateKeyInfoAsn.Encode(writer);
-                byte[] encoded = writer.Encode();
-                return encoded;
-            }
         }
     }
 }
