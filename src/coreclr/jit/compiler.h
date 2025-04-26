@@ -5520,7 +5520,7 @@ public:
         return !opts.MinOpts() || m_pLinearScan->willEnregisterLocalVars();
     }
 
-    void fgLocalVarLiveness(bool partialDefsAreUses);
+    void fgLocalVarLiveness();
 
     void fgLocalVarLivenessInit();
 
@@ -6720,6 +6720,7 @@ private:
 
     PhaseStatus fgEarlyLiveness();
 
+    template<bool ssaLiveness>
     void fgMarkUseDef(GenTreeLclVarCommon* tree);
 
     //-------------------------------------------------------------------------
@@ -10001,7 +10002,6 @@ public:
 
     bool fgLocalVarLivenessDone = false; // Note that this one is used outside of debug.
     bool fgLocalVarLivenessChanged;
-    bool fgLocalVarLivenessPartialDefsAreUses = false;
     bool fgIsDoingEarlyLiveness         = false;
     bool fgDidEarlyLiveness             = false;
     bool compPostImportationCleanupDone = false;

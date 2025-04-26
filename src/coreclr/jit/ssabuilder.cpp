@@ -1185,7 +1185,7 @@ void SsaBuilder::Build()
     JITDUMP("*************** In SsaBuilder::Build()\n");
 
     // Compute liveness on the graph.
-    m_pCompiler->fgLocalVarLiveness(true);
+    m_pCompiler->fgLocalVarLiveness();
     EndPhase(PHASE_BUILD_SSA_LIVENESS);
 
     m_pCompiler->optRemoveRedundantZeroInits();
