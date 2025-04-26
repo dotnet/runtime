@@ -449,6 +449,7 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             MethodDesc* pMeth = (MethodDesc*) getMethodHandle.Call_RetLPVOID(&GetMethodHandleArg);
             if (pMeth)
             {
+                // TODO: (async) revisit and examine if this needs to be supported somehow
                 if (pMeth->IsAsyncMethod())
                     ThrowHR(COR_E_NOTSUPPORTED);
 
@@ -833,6 +834,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
 
     GCX_PREEMP();
 
+    // TODO: (async) revisit and examine if this needs to be supported somehow
     if (pMD->IsAsyncMethod())
         ThrowHR(COR_E_NOTSUPPORTED);
 
@@ -2586,6 +2588,7 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
+        // TODO: (async) revisit and examine if this needs to be supported somehow
         if (pMDForProperty->IsAsyncVariantMethod())
         {
             return false;

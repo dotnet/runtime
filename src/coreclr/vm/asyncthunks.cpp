@@ -148,7 +148,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
                     SigBuilder typeSigBuilder;
                     typeSigBuilder.AppendElementType(ELEMENT_TYPE_GENERICINST);
                     typeSigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
-                    // TODO: Encoding potentially shared method tables in
+                    // TODO: (async) Encoding potentially shared method tables in
                     // signatures of tokens seems odd, but this hits assert
                     // with the typical method table.
                     typeSigBuilder.AppendPointer(pAsyncOtherVariant->GetMethodTable());
@@ -412,7 +412,7 @@ int MethodDesc::GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream
     SigBuilder typeSigBuilder;
     typeSigBuilder.AppendData(ELEMENT_TYPE_GENERICINST);
     typeSigBuilder.AppendData(ELEMENT_TYPE_INTERNAL);
-    // TODO: Encoding potentially shared method tables in
+    // TODO: (async) Encoding potentially shared method tables in
     // signatures of tokens seems odd, but this hits assert
     // with the typical method table.
     typeSigBuilder.AppendPointer(md->GetMethodTable());
@@ -509,7 +509,7 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
             SigBuilder typeSigBuilder;
             typeSigBuilder.AppendElementType(ELEMENT_TYPE_GENERICINST);
             typeSigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
-            // TODO: Encoding potentially shared method tables in
+            // TODO: (async) Encoding potentially shared method tables in
             // signatures of tokens seems odd, but this hits assert
             // with the typical method table.
             typeSigBuilder.AppendPointer(pAsyncOtherVariant->GetMethodTable());
