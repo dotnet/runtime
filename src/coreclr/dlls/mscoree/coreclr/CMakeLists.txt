@@ -80,6 +80,12 @@ if (CLR_CMAKE_HOST_UNIX)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX)
 
+if (CLR_CMAKE_HOST_ANDROID)
+    list(LIB_GCPAL gc_pal_objects)
+else()
+    list(LIB_GCPAL gc_pal)
+endif()
+
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
@@ -104,6 +110,7 @@ set(CORECLR_LIBRARIES
     System.Globalization.Native-Static
     interop
     coreclrminipal
+    ${LIB_GCPAL}
     cdac_contract_descriptor
 )
 
@@ -188,12 +195,6 @@ endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
 if (CLR_CMAKE_TARGET_OSX)
     find_library(FOUNDATION Foundation REQUIRED)
-endif()
-
-if (CLR_CMAKE_HOST_ANDROID)
-    list(APPEND CORECLR_LIBRARIES gc_pal_objects)
-else()
-    list(APPEND CORECLR_LIBRARIES gc_pal)
 endif()
 
 target_sources(coreclr PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
