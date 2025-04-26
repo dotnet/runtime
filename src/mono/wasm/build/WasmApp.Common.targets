@@ -259,6 +259,9 @@
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasmDebuggerSupport> <!-- publish -->
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == ''">true</_WasmDebuggerSupport>
+    <WasmPerfInstrumentation Condition="'$(WasmPerfInstrumentation)' == 'true'">all</WasmPerfInstrumentation>
+    <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">browser:eventpipe,callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
+    <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(_WasmProfilers);$(WasmProfilers)</_WasmProfilers>
   </PropertyGroup>
   <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
     <_MonoComponent Include="debugger" />
@@ -711,7 +714,7 @@
       AOTProfilePath="$(AOTProfilePath)"
       AotModulesTablePath="$(_DriverGenCPath)"
       UseLLVM="true"
-      Profilers="$(WasmProfilers)"
+      Profilers="$(_WasmProfilers)"
       DisableParallelAot="$(DisableParallelAot)"
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"

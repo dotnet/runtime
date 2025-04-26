@@ -6,7 +6,7 @@
 #define __GCINFOTYPES_H__
 
 // HACK: debugreturn.h breaks constexpr
-#ifdef debug_instrumented_return
+#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
 #undef return
 #endif // debug_instrumented_return
 
@@ -643,6 +643,8 @@ struct AMD64GcInfoEncoding {
     static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
     static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
     static const int CODE_LENGTH_ENCBASE = 8;
+    static const int SIZE_OF_RETURN_KIND_IN_SLIM_HEADER = 2;
+    static const int SIZE_OF_RETURN_KIND_IN_FAT_HEADER = 4;
     static const int STACK_BASE_REGISTER_ENCBASE = 3;
     static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
     static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 4;
@@ -698,6 +700,8 @@ struct ARM32GcInfoEncoding {
     static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 5;
     static const int GS_COOKIE_STACK_SLOT_ENCBASE = 5;
     static const int CODE_LENGTH_ENCBASE = 7;
+    static const int SIZE_OF_RETURN_KIND_IN_SLIM_HEADER = 2;
+    static const int SIZE_OF_RETURN_KIND_IN_FAT_HEADER = 2;
     static const int STACK_BASE_REGISTER_ENCBASE = 1;
     static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
     static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
@@ -754,6 +758,8 @@ struct ARM64GcInfoEncoding {
     static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
     static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
     static const int CODE_LENGTH_ENCBASE = 8;
+    static const int SIZE_OF_RETURN_KIND_IN_SLIM_HEADER = 2;
+    static const int SIZE_OF_RETURN_KIND_IN_FAT_HEADER = 4;
     // FP encoded as 0, SP as 2.
     static const int STACK_BASE_REGISTER_ENCBASE = 2;
     static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
@@ -811,6 +817,8 @@ struct LoongArch64GcInfoEncoding {
     static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
     static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
     static const int CODE_LENGTH_ENCBASE = 8;
+    static const int SIZE_OF_RETURN_KIND_IN_SLIM_HEADER = 2;
+    static const int SIZE_OF_RETURN_KIND_IN_FAT_HEADER = 4;
     // FP/SP encoded as 0 or 1.
     static const int STACK_BASE_REGISTER_ENCBASE = 2;
     static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
@@ -867,6 +875,8 @@ struct RISCV64GcInfoEncoding {
     static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
     static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
     static const int CODE_LENGTH_ENCBASE = 8;
+    static const int SIZE_OF_RETURN_KIND_IN_SLIM_HEADER = 2;
+    static const int SIZE_OF_RETURN_KIND_IN_FAT_HEADER = 4;
     static const int STACK_BASE_REGISTER_ENCBASE = 2;
     // FP encoded as 0, SP as 1
     static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
@@ -927,6 +937,8 @@ struct X86GcInfoEncoding {
     static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
     static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
     static const int CODE_LENGTH_ENCBASE = 6;
+    static const int SIZE_OF_RETURN_KIND_IN_SLIM_HEADER = 2;
+    static const int SIZE_OF_RETURN_KIND_IN_FAT_HEADER = 2;
     static const int STACK_BASE_REGISTER_ENCBASE = 3;
     static const int SIZE_OF_STACK_AREA_ENCBASE = 6;
     static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
@@ -952,6 +964,62 @@ struct X86GcInfoEncoding {
 };
 
 #endif // defined(TARGET_xxx)
+
+#ifdef FEATURE_INTERPRETER
+
+struct InterpreterGcInfoEncoding {
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
+
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
+    // Interpreter-FIXME: Interpreter has fixed-size stack slots so we could normalize them based on that.
+    static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return (x); }
+    static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return (x); }
+    // Interpreter-FIXME: Interpreter has fixed-size opcodes so code length is a multiple of that.
+    static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
+
+    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (x); }
+    // Interpreter-FIXME: Interpreter has fixed-size stack slots so we could normalize them based on that.
+    static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return (x); }
+    static const bool CODE_OFFSETS_NEED_NORMALIZATION = false;
+    // Interpreter-FIXME: Interpreter has fixed-size opcodes so code length is a multiple of that.
+    static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
+
+    static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
+    static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
+    static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
+    static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
+    static const int CODE_LENGTH_ENCBASE = 8;
+    static const int STACK_BASE_REGISTER_ENCBASE = 3;
+    static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
+    static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 4;
+    // Interpreter-FIXME: This constant is only used on certain architectures.
+    static const int SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE = 4;
+    static const int REVERSE_PINVOKE_FRAME_ENCBASE = 6;
+    static const int NUM_REGISTERS_ENCBASE = 2;
+    static const int NUM_STACK_SLOTS_ENCBASE = 2;
+    static const int NUM_UNTRACKED_SLOTS_ENCBASE = 1;
+    static const int NORM_PROLOG_SIZE_ENCBASE = 5;
+    static const int NORM_EPILOG_SIZE_ENCBASE = 3;
+    static const int NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
+    static const int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 6;
+    static const int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 6;
+    static const int REGISTER_ENCBASE = 3;
+    static const int REGISTER_DELTA_ENCBASE = 2;
+    static const int STACK_SLOT_ENCBASE = 6;
+    static const int STACK_SLOT_DELTA_ENCBASE = 4;
+    static const int NUM_SAFE_POINTS_ENCBASE = 2;
+    static const int NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
+    static const int NUM_EH_CLAUSES_ENCBASE = 2;
+    static const int POINTER_SIZE_ENCBASE = 3;
+    static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
+    static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+};
+
+#endif // FEATURE_INTERPRETER
 
 #ifdef debug_instrumented_return
 #define return debug_instrumented_return

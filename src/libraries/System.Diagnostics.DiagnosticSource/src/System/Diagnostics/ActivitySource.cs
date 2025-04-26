@@ -59,21 +59,18 @@ namespace System.Diagnostics
 
             s_activeSources.Add(this);
 
-            if (s_allListeners.Count > 0)
+            s_allListeners.EnumWithAction((listener, source) =>
             {
-                s_allListeners.EnumWithAction((listener, source) =>
+                Func<ActivitySource, bool>? shouldListenTo = listener.ShouldListenTo;
+                if (shouldListenTo != null)
                 {
-                    Func<ActivitySource, bool>? shouldListenTo = listener.ShouldListenTo;
-                    if (shouldListenTo != null)
+                    var activitySource = (ActivitySource)source;
+                    if (shouldListenTo(activitySource))
                     {
-                        var activitySource = (ActivitySource)source;
-                        if (shouldListenTo(activitySource))
-                        {
-                            activitySource.AddListener(listener);
-                        }
+                        activitySource.AddListener(listener);
                     }
-                }, this);
-            }
+                }
+            }, this);
 
             GC.KeepAlive(DiagnosticSourceEventSource.Log);
         }
@@ -349,10 +346,7 @@ namespace System.Diagnostics
         /// <param name="listener"> The <see cref="ActivityListener"/> object to use for listening to the <see cref="Activity"/> events.</param>
         public static void AddActivityListener(ActivityListener listener)
         {
-            if (listener is null)
-            {
-                throw new ArgumentNullException(nameof(listener));
-            }
+            ArgumentNullException.ThrowIfNull(listener);
 
             if (s_allListeners.AddIfNotExist(listener))
             {

@@ -1653,7 +1653,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD);
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
     }
     else
 #endif
@@ -1674,7 +1674,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
         {
             CPUSTUBLINKER sl;
             sl.EmitUnboxMethodStub(pUnboxedMD);
-            pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+            pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
         }
 #endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
     }
@@ -1726,7 +1726,7 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD);
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
     }
     else
 #endif
@@ -1738,7 +1738,7 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitInstantiatingMethodStub(pSharedMD, extraArg);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
 #endif
     }
 
@@ -1916,12 +1916,9 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         }
         EX_CATCH
         {
-            if (g_isNewExceptionHandlingEnabled)
-            {
-                OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-                _ASSERTE(ohThrowable);
-                StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
-            }
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            _ASSERTE(ohThrowable);
+            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
         }
         EX_END_CATCH(SwallowAllExceptions)
@@ -1949,12 +1946,27 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
     InterpThreadContext *threadContext = InterpGetThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
-    InterpMethodContextFrame interpFrame = {0};
-    interpFrame.startIp = (int32_t*)byteCodeAddr;
-    interpFrame.pStack = sp;
-    interpFrame.pRetVal = sp;
+    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
+    // InterpMethodContextFrame. This is important for the stack walking code.
+    struct Frames
+    {
+        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpreterFrame interpreterFrame;
 
-    InterpExecMethod(&interpFrame, threadContext);
+        Frames(TransitionBlock* pTransitionBlock)
+        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
+        {
+        }
+    }
+    frames(pTransitionBlock);
+
+    frames.interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
+    frames.interpMethodContextFrame.pStack = sp;
+    frames.interpMethodContextFrame.pRetVal = sp;
+
+    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
+
+    frames.interpreterFrame.Pop();
 }
 #endif // FEATURE_INTERPRETER
 

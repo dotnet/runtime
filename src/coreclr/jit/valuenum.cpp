@@ -2610,6 +2610,37 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             {
                 *resultVN = VNForIntCon(knownSize);
             }
+
+            // Case 4: ARR_LENGTH(new T[(long)size]) -> size
+            VNFuncApp newArrFuncApp;
+            if (GetVNFunc(arg0VN, &newArrFuncApp) && (newArrFuncApp.m_func == VNF_JitNewArr))
+            {
+                ValueNum  actualSizeVN     = newArrFuncApp.m_args[1];
+                var_types actualSizeVNType = TypeOfVN(actualSizeVN);
+
+                // JitNewArr's size argument (args[1]) is typically upcasted to TYP_LONG via VNF_Cast.
+                if (actualSizeVNType == TYP_LONG)
+                {
+                    VNFuncApp castFuncApp;
+                    if (GetVNFunc(actualSizeVN, &castFuncApp) && (castFuncApp.m_func == VNF_Cast))
+                    {
+                        var_types castToType;
+                        bool      srcIsUnsigned;
+                        GetCastOperFromVN(castFuncApp.m_args[1], &castToType, &srcIsUnsigned);
+
+                        // Make sure we have exactly (TYP_LONG)myInt32 cast:
+                        if (!srcIsUnsigned && (castToType == TYP_LONG) && TypeOfVN(castFuncApp.m_args[0]) == TYP_INT)
+                        {
+                            // If that is the case, return the original size argument
+                            *resultVN = castFuncApp.m_args[0];
+                        }
+                    }
+                }
+                else if (actualSizeVNType == TYP_INT)
+                {
+                    *resultVN = actualSizeVN;
+                }
+            }
         }
 
         // Try to perform constant-folding.
@@ -6923,6 +6954,9 @@ bool ValueNumStore::IsVNConstantBound(ValueNum vn)
         {
             const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
             const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
+
+            // Technically, we can allow both to be constants,
+            // but such relops are expected to be constant folded anyway.
             return op1IsConst != op2IsConst;
         }
     }
@@ -6940,6 +6974,8 @@ bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
             case VNF_LE_UN:
             case VNF_GE_UN:
             case VNF_GT_UN:
+                // Technically, we can allow both to be constants,
+                // but such relops are expected to be constant folded anyway.
                 return IsVNPositiveInt32Constant(funcApp.m_args[0]) != IsVNPositiveInt32Constant(funcApp.m_args[1]);
             default:
                 break;
@@ -9133,7 +9169,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN)
 {
     assert(arg0VN == VNNormalValue(arg0VN));
-    assert(m_pComp->IsMathIntrinsic(gtMathFN));
+    assert(m_pComp->IsMathIntrinsic(gtMathFN) RISCV64_ONLY(|| m_pComp->IsBitCountingIntrinsic(gtMathFN)));
 
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
@@ -9385,10 +9421,8 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                         unreached();
                 }
             }
-            else
+            else if (gtMathFN == NI_System_Math_Round)
             {
-                assert(gtMathFN == NI_System_Math_Round);
-
                 switch (TypeOfVN(arg0VN))
                 {
                     case TYP_DOUBLE:
@@ -9409,6 +9443,58 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                         unreached();
                 }
             }
+            else if (gtMathFN == NI_PRIMITIVE_LeadingZeroCount)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_LONG:
+                        res = BitOperations::LeadingZeroCount((uint64_t)GetConstantInt64(arg0VN));
+                        break;
+
+                    case TYP_INT:
+                        res = BitOperations::LeadingZeroCount((uint32_t)GetConstantInt32(arg0VN));
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else if (gtMathFN == NI_PRIMITIVE_TrailingZeroCount)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_LONG:
+                        res = BitOperations::TrailingZeroCount((uint64_t)GetConstantInt64(arg0VN));
+                        break;
+
+                    case TYP_INT:
+                        res = BitOperations::TrailingZeroCount((uint32_t)GetConstantInt32(arg0VN));
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else if (gtMathFN == NI_PRIMITIVE_PopCount)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_LONG:
+                        res = BitOperations::PopCount((uint64_t)GetConstantInt64(arg0VN));
+                        break;
+
+                    case TYP_INT:
+                        res = BitOperations::PopCount((uint32_t)GetConstantInt32(arg0VN));
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else
+            {
+                unreached();
+            }
 
             return VNForIntCon(res);
         }
@@ -9416,7 +9502,10 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
     else
     {
         assert((typ == TYP_DOUBLE) || (typ == TYP_FLOAT) ||
-               ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round))));
+               ((typ == TYP_INT) && ((gtMathFN == NI_System_Math_ILogB) || (gtMathFN == NI_System_Math_Round))) ||
+               (((typ == TYP_INT) || (typ == TYP_LONG)) &&
+                ((gtMathFN == NI_PRIMITIVE_LeadingZeroCount) || (gtMathFN == NI_PRIMITIVE_TrailingZeroCount) ||
+                 (gtMathFN == NI_PRIMITIVE_PopCount))));
 
         VNFunc vnf = VNF_Boundary;
         switch (gtMathFN)
@@ -9508,6 +9597,15 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
             case NI_System_Math_Truncate:
                 vnf = VNF_Truncate;
                 break;
+            case NI_PRIMITIVE_LeadingZeroCount:
+                vnf = VNF_LeadingZeroCount;
+                break;
+            case NI_PRIMITIVE_TrailingZeroCount:
+                vnf = VNF_TrailingZeroCount;
+                break;
+            case NI_PRIMITIVE_PopCount:
+                vnf = VNF_PopCount;
+                break;
             default:
                 unreached(); // the above are the only math intrinsics at the time of this writing.
         }
@@ -9518,7 +9616,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
 
 ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN, ValueNum arg1VN)
 {
-    assert(varTypeIsFloating(typ));
+    assert(varTypeIsArithmetic(typ));
     assert(arg0VN == VNNormalValue(arg0VN));
     assert(arg1VN == VNNormalValue(arg1VN));
     assert(m_pComp->IsMathIntrinsic(gtMathFN));
@@ -9624,10 +9722,9 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 
             return VNForDoubleCon(res);
         }
-        else
+        else if (typ == TYP_FLOAT)
         {
             // Both operand and its result must be of the same floating point type.
-            assert(typ == TYP_FLOAT);
             assert(typ == TypeOfVN(arg0VN));
             float arg0Val = GetConstantSingle(arg0VN);
 
@@ -9721,6 +9818,45 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 
             return VNForFloatCon(res);
         }
+        else
+        {
+#ifdef TARGET_RISCV64
+            // Both operands and its result must be of the same integer type.
+            assert(typ == TypeOfVN(arg0VN));
+            assert(typ == TypeOfVN(arg1VN));
+            // Note: GetConstantInt64 sign-extends 'uint' but for comparison purposes that's ok
+            INT64 arg0Val = GetConstantInt64(arg0VN);
+            INT64 arg1Val = GetConstantInt64(arg1VN);
+            INT64 result  = 0;
+
+            switch (gtMathFN)
+            {
+                case NI_System_Math_Min:
+                    result = std::min<INT64>(arg0Val, arg1Val);
+                    break;
+
+                case NI_System_Math_MinUnsigned:
+                    result = std::min<UINT64>(arg0Val, arg1Val);
+                    break;
+
+                case NI_System_Math_Max:
+                    result = std::max<INT64>(arg0Val, arg1Val);
+                    break;
+
+                case NI_System_Math_MaxUnsigned:
+                    result = std::max<UINT64>(arg0Val, arg1Val);
+                    break;
+
+                default:
+                    // the above are the only binary math intrinsics at the time of this writing.
+                    unreached();
+            }
+            return (typ == TYP_LONG) || (typ == TYP_ULONG) ? VNForLongCon(result)
+                                                           : VNForIntCon(static_cast<INT32>(result));
+#else  // !TARGET_RISCV64
+            unreached();
+#endif // !TARGET_RISCV64
+        }
     }
     else
     {
@@ -9763,6 +9899,16 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
             case NI_System_Math_MinNumber:
                 vnf = VNF_MinNumber;
                 break;
+
+#ifdef TARGET_RISCV64
+            case NI_System_Math_MaxUnsigned:
+                vnf = VNF_Max_UN;
+                break;
+
+            case NI_System_Math_MinUnsigned:
+                vnf = VNF_Min_UN;
+                break;
+#endif // TARGET_RISCV64
 
             case NI_System_Math_Pow:
                 vnf = VNF_Pow;
@@ -12829,7 +12975,7 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         vnStore->VNPUnpackExc(intrinsic->AsOp()->gtOp2->gtVNPair, &arg1VNP, &arg1VNPx);
     }
 
-    if (IsMathIntrinsic(intrinsic->gtIntrinsicName))
+    if (IsMathIntrinsic(intrinsic->gtIntrinsicName) || IsBitCountingIntrinsic(intrinsic->gtIntrinsicName))
     {
         // GT_INTRINSIC is a currently a subtype of binary operators. But most of
         // the math intrinsics are actually unary operations.

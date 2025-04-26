@@ -414,6 +414,21 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Validates that the actual span is the same as the expected span.
+        /// </summary>
+        /// <param name="expected">The expected span.</param>
+        /// <param name="actual">The actual span.</param>
+        public static void Same<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
+        {
+            if (expected.Length != actual.Length)
+            {
+                throw new XunitException($"Expected length: {expected.Length}{Environment.NewLine}Actual length: {actual.Length}");
+            }
+
+            AssertExtensions.TrueExpression(expected.Overlaps(actual, out int offset) && offset == 0);
+        }
+
         // NOTE: Consider using SequenceEqual below instead, as it will give more useful information about what
         // the actual differences are, especially for large arrays/spans.
         /// <summary>
@@ -676,6 +691,16 @@ namespace System
             E exception = AssertThrows<E, T>(span, action);
             Assert.Equal(expectedParamName, exception.ParamName);
             return exception;
+        }
+
+        public static void FalseExpression(bool expr, [CallerArgumentExpression(nameof(expr))] string exprString = null)
+        {
+            Assert.False(expr, $"Expected \"false\" from the expression: \"{exprString}\".");
+        }
+
+        public static void TrueExpression(bool expr, [CallerArgumentExpression(nameof(expr))] string exprString = null)
+        {
+            Assert.True(expr, $"Expected \"true\" from the expression: \"{exprString}\".");
         }
 
         private class ItemCount

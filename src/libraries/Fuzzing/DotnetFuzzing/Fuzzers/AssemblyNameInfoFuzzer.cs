@@ -61,8 +61,30 @@ namespace DotnetFuzzing.Fuzzers
                 Assert.Equal(fromTryParse.ToAssemblyName().CultureName, fromParse.ToAssemblyName().CultureName);
 
                 Assert.Equal(fromTryParse.Name, fromParse.ToAssemblyName().Name);
-                Assert.Equal(fromTryParse.CultureName, fromParse.ToAssemblyName().CultureName);
                 Assert.Equal(fromTryParse.Version, fromParse.ToAssemblyName().Version);
+
+                if (fromTryParse.CultureName is not null)
+                {
+                    // When converting to AssemblyName, the culture name is lower-cased
+                    // by the CultureInfo ctor that calls CultureData.GetCultureData
+                    // which lowers the name for caching and normalization purposes.
+
+                    string lowerCase = fromTryParse.CultureName.ToLower();
+                    if (lowerCase != "c")
+                    {
+                        Assert.Equal(lowerCase, fromParse.ToAssemblyName().CultureName);
+                    }
+                    else
+                    {
+                        // Cultures "c" and "C" get mapped to Invariant Culture.
+                        Assert.Equal("", fromParse.ToAssemblyName().CultureName);
+                        Assert.Equal(CultureInfo.InvariantCulture, fromParse.ToAssemblyName().CultureInfo);
+                    }
+                }
+                else
+                {
+                    Assert.True(fromParse.ToAssemblyName().CultureName is null);
+                }
 
                 // AssemblyNameInfo.FullName can be different than AssemblyName.FullName:
                 // AssemblyNameInfo includes public key, AssemblyName only its Token.
