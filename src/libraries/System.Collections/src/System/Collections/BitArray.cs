@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Collections
@@ -861,26 +860,38 @@ namespace System.Collections
                     //                             Vector512<byte>.Zero)
                     // Unfortunately Avx512F.CreateMask does not exist. See dotnet/runtime#87097
 
-                    Vector512<byte> shuffleMask;//This should be chosen so that with AVX512, vpshufb can be emitted instead of the slower, less avaliable(AVX512_VBMI) vpermb.
                     Vector512<byte> bitMask;
                     Vector512<byte> ones = Vector512.Create((byte)1);
                     if (BitConverter.IsLittleEndian)
                     {
-                        shuffleMask = Vector512.Create(0x00000000_00000000, 0x09090909_09090909, 0x12121212_12121212, 0x1B1B1B1B_1B1B1B1B,
-                                                       0x24242424_24242424, 0x2D2D2D2D_2D2D2D2D, 0x36363636_36363636, 0x3F3F3F3F_3F3F3F3F).AsByte();
                         bitMask = Vector512.Create(0x80402010_08040201).AsByte();
                     }
                     else
                     {
-                        shuffleMask = Vector512.Create(0x03030303_03030303, 0x0A0A0A0A_0A0A0A0A, 0x11111111_11111111, 0x18181818_18181818,
-                                                       0x27272727_27272727, 0x2E2E2E2E_2E2E2E2E, 0x35353535_35353535, 0x3C3C3C3C_3C3C3C3C).AsByte();
                         bitMask = Vector512.Create(0x01020408_10204080).AsByte();
                     }
 
                     for (; i < (uint)thisLength - ((uint)Vector512<byte>.Count - 1u); i += (uint)Vector512<byte>.Count)
                     {
                         Vector512<long> bits = Vector512.Create(Unsafe.ReadUnaligned<long>(ref Unsafe.AddByteOffset(ref Unsafe.As<int, byte>(ref thisRef), i >> BitShiftPerByte)));
-                        Vector512<byte> shuffled = Vector512.Shuffle(bits.AsByte(), shuffleMask);
+
+                        Vector512<byte> shuffled;
+                        // Feed the shuffle indices directly to Vector512.Shuffle() for the best codegen.
+                        // See dotnet/runtime#115078
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            shuffled = Vector512.Shuffle(bits.AsByte(),
+                                // The shuffle indices should be chosen so that with AVX512, vpshufb can be emitted instead of the slower, less avaliable(AVX512_VBMI) vpermb.
+                                Vector512.Create(0x00000000_00000000, 0x09090909_09090909, 0x12121212_12121212, 0x1B1B1B1B_1B1B1B1B,
+                                                 0x24242424_24242424, 0x2D2D2D2D_2D2D2D2D, 0x36363636_36363636, 0x3F3F3F3F_3F3F3F3F).AsByte());
+                        }
+                        else
+                        {
+                            shuffled = Vector512.Shuffle(bits.AsByte(),
+                                Vector512.Create(0x03030303_03030303, 0x0A0A0A0A_0A0A0A0A, 0x11111111_11111111, 0x18181818_18181818,
+                                                 0x27272727_27272727, 0x2E2E2E2E_2E2E2E2E, 0x35353535_35353535, 0x3C3C3C3C_3C3C3C3C).AsByte());
+                        }
+
                         Vector512<byte> extracted = shuffled & bitMask;
 
                         // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
@@ -891,24 +902,36 @@ namespace System.Collections
                 }
                 else if (Vector256.IsHardwareAccelerated && (uint)thisLength >= (uint)Vector256<byte>.Count)
                 {
-                    Vector256<byte> shuffleMask;//This should be chosen so that with AVX2, vpshufb can be emitted.
                     Vector256<byte> bitMask;
                     Vector256<byte> ones = Vector256.Create((byte)1);
                     if (BitConverter.IsLittleEndian)
                     {
-                        shuffleMask = Vector256.Create(0x00000000_04040404, 0x09090909_0D0D0D0D, 0x12121212_16161616, 0x1B1B1B1B_1F1F1F1F).AsByte();
                         bitMask = Vector256.Create(0x80402010_08040201).AsByte();
                     }
                     else
                     {
-                        shuffleMask = Vector256.Create(0x03030303_07070707, 0x0A0A0A0A_0E0E0E0E, 0x11111111_15151515, 0x18181818_1C1C1C1C).AsByte();
                         bitMask = Vector256.Create(0x01020408_10204080).AsByte();
                     }
 
                     for (; i < (uint)thisLength - ((uint)Vector256<byte>.Count - 1u); i += (uint)Vector256<byte>.Count)
                     {
                         Vector256<int> bits = Vector256.Create(Unsafe.AddByteOffset(ref thisRef, i >> BitShiftPerByte));
-                        Vector256<byte> shuffled = Vector256.Shuffle(bits.AsByte(), shuffleMask);
+
+                        Vector256<byte> shuffled;
+                        // Feed the shuffle indices directly to Vector256.Shuffle() for the best codegen.
+                        // See dotnet/runtime#115078
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            shuffled = Vector256.Shuffle(bits.AsByte(),
+                                // The shuffle indices should be chosen so that with AVX2, vpshufb can be emitted.
+                                Vector256.Create(0x00000000_04040404, 0x09090909_0D0D0D0D, 0x12121212_16161616, 0x1B1B1B1B_1F1F1F1F).AsByte());
+                        }
+                        else
+                        {
+                            shuffled = Vector256.Shuffle(bits.AsByte(),
+                                Vector256.Create(0x03030303_07070707, 0x0A0A0A0A_0E0E0E0E, 0x11111111_15151515, 0x18181818_1C1C1C1C).AsByte());
+                        }
+
                         Vector256<byte> extracted = shuffled & bitMask;
 
                         // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
@@ -917,22 +940,18 @@ namespace System.Collections
                         normalized.StoreUnsafe(ref Unsafe.As<bool, byte>(ref boolRef), i);
                     }
                 }
-                else if (Vector128.IsHardwareAccelerated && (uint)thisLength >= (uint)Vector128<byte>.Count * 2u)
+                else if (Vector128.IsHardwareAccelerated
+                      && (Ssse3.IsSupported || !Sse.IsSupported)// We need SSSE3 for pshufb
+                      && (uint)thisLength >= (uint)Vector128<byte>.Count * 2u)
                 {
-                    Vector128<byte> lowerShuffleMask;
-                    Vector128<byte> upperShuffleMask;
                     Vector128<byte> bitMask;
                     Vector128<byte> ones = Vector128.Create((byte)1);
                     if (BitConverter.IsLittleEndian)
                     {
-                        lowerShuffleMask = Vector128.Create(0x00000000_00000000, 0x01010101_01010101).AsByte();
-                        upperShuffleMask = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
                         bitMask = Vector128.Create(0x80402010_08040201).AsByte();
                     }
                     else
                     {
-                        lowerShuffleMask = Vector128.Create(0x03030303_03030303, 0x02020202_02020202).AsByte();
-                        upperShuffleMask = Vector128.Create(0x01010101_01010101, 0x00000000_00000000).AsByte();
                         bitMask = Vector128.Create(0x01020408_10204080).AsByte();
                     }
 
@@ -941,7 +960,18 @@ namespace System.Collections
                         Vector128<int> bits = Vector128.CreateScalarUnsafe(Unsafe.AddByteOffset(ref thisRef, i >> BitShiftPerByte));
 
 
-                        Vector128<byte> shuffledLower = Vector128.Shuffle(bits.AsByte(), lowerShuffleMask);
+                        Vector128<byte> shuffledLower;
+                        // Feed the shuffle indices directly to Vector128.Shuffle() for the best codegen.
+                        // See dotnet/runtime#115078
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            shuffledLower = Vector128.Shuffle(bits.AsByte(), Vector128.Create(0x00000000_00000000, 0x01010101_01010101).AsByte());
+                        }
+                        else
+                        {
+                            shuffledLower = Vector128.Shuffle(bits.AsByte(), Vector128.Create(0x03030303_03030303, 0x02020202_02020202).AsByte());
+                        }
+
                         Vector128<byte> extractedLower = shuffledLower & bitMask;
 
                         // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
@@ -951,7 +981,18 @@ namespace System.Collections
                         i += (uint)Vector128<byte>.Count;
 
 
-                        Vector128<byte> shuffledUpper = Vector128.Shuffle(bits.AsByte(), upperShuffleMask);
+                        Vector128<byte> shuffledUpper;
+                        // Feed the shuffle indices directly to Vector128.Shuffle() for the best codegen.
+                        // See dotnet/runtime#115078
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            shuffledUpper = Vector128.Shuffle(bits.AsByte(), Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte());
+                        }
+                        else
+                        {
+                            shuffledUpper = Vector128.Shuffle(bits.AsByte(), Vector128.Create(0x01010101_01010101, 0x00000000_00000000).AsByte());
+                        }
+
                         Vector128<byte> extractedUpper = shuffledUpper & bitMask;
 
                         // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
@@ -966,7 +1007,7 @@ namespace System.Collections
                 for (; i < (uint)thisLength; i++)
                 {
                     int elementIndex = Div32Rem((int)i, out int extraBits);
-                    Unsafe.Add(ref boolRef, i) = ((Unsafe.Add(ref thisRef, elementIndex) >> extraBits) & 0x00000001) != 0;
+                    boolArray[(uint)index + i] = ((thisArray[elementIndex] >> extraBits) & 0x00000001) != 0;
                 }
             }
             else
