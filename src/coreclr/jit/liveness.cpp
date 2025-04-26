@@ -36,7 +36,8 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
     }
 
     const bool isDef = (tree->gtFlags & GTF_VAR_DEF) != 0;
-    const bool isUse = !isDef || ((tree->gtFlags & GTF_VAR_USEASG) != 0);
+    bool isFullDef = isDef && ((tree->gtFlags & GTF_VAR_USEASG) == 0);
+    const bool isUse = fgLocalVarLivenessPartialDefsAreUses ? !isFullDef : !isDef;
 
     if (varDsc->lvTracked)
     {
@@ -60,7 +61,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
             VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
         }
 
-        if (isDef)
+        if (fgLocalVarLivenessPartialDefsAreUses ? isDef : isFullDef)
         {
             // This is a def, add it to the set of defs.
             VarSetOps::AddElemD(this, fgCurDefSet, varDsc->lvVarIndex);
@@ -106,7 +107,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
                         VarSetOps::AddElemD(this, fgCurUseSet, varIndex);
                     }
 
-                    if (isDef)
+                    if (fgLocalVarLivenessPartialDefsAreUses ? isDef : isFullDef)
                     {
                         VarSetOps::AddElemD(this, fgCurDefSet, varIndex);
                     }
@@ -117,7 +118,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 }
 
 /*****************************************************************************/
-void Compiler::fgLocalVarLiveness()
+void Compiler::fgLocalVarLiveness(bool partialDefsAreUses)
 {
 #ifdef DEBUG
     if (verbose)
@@ -130,6 +131,8 @@ void Compiler::fgLocalVarLiveness()
         }
     }
 #endif // DEBUG
+
+    fgLocalVarLivenessPartialDefsAreUses = partialDefsAreUses;
 
     // Init liveness data structures.
     fgLocalVarLivenessInit();
@@ -2087,7 +2090,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
                         assert(cur->OperIsAnyLocal());
-                        bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0) && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
+                        bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0); // && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
                         bool conditional = cur != dst;
                         // Ignore conditional defs that would otherwise
                         // (incorrectly) interfere with liveness in other
@@ -2224,6 +2227,7 @@ PhaseStatus Compiler::fgEarlyLiveness()
     }
 #endif
 
+    fgLocalVarLivenessPartialDefsAreUses = false;
     fgIsDoingEarlyLiveness = true;
     lvaSortByRefCount();
 
