@@ -28,6 +28,6 @@ set (VXSORT_SOURCES
 
 if (CLR_CMAKE_HOST_ANDROID)
     add_library(gc_vxsort_objects OBJECT ${VXSORT_SOURCES})
+else()
+    add_library(gc_vxsort STATIC ${VXSORT_SOURCES})
 endif()
-
-add_library(gc_vxsort STATIC ${VXSORT_SOURCES})
