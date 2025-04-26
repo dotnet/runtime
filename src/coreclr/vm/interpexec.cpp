@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <math.h>
-
 #ifdef FEATURE_INTERPRETER
 
+#include "threads.h"
+#include "gcenv.h"
 #include "interpexec.h"
 
 typedef void* (*HELPER_FTN_PP)(void*);
@@ -1105,6 +1105,17 @@ CALL_TARGET_IP:
                 memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
                 ip += 3;
                 break;
+            case INTOP_GC_COLLECT: {
+                // HACK: blocking gc of all generations to enable early stackwalk testing
+                // Interpreter-TODO: Remove this
+                {
+                    pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+                    GCX_COOP();
+                    GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, 0x00000002);
+                }
+                ip++;
+                break;
+            }
             case INTOP_FAILFAST:
                 assert(0);
                 break;
