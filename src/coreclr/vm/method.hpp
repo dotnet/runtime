@@ -247,6 +247,9 @@ enum class MethodReturnKind
     NonGenericTaskReturningMethod
 };
 
+bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk);
+MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask);
+
 inline bool IsTaskReturning(MethodReturnKind input)
 {
     return (input == MethodReturnKind::GenericTaskReturningMethod) ||

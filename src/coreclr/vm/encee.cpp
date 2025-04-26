@@ -344,6 +344,12 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     }
     CONTRACTL_END;
 
+    if (pMethod->HasAsyncMethodData())
+    {
+        LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
+        return E_FAIL;
+    }
+
     // Notify the debugger of the update
     if (CORDebuggerAttached())
     {
