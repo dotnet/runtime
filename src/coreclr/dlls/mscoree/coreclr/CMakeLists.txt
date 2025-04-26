@@ -104,7 +104,6 @@ set(CORECLR_LIBRARIES
     System.Globalization.Native-Static
     interop
     coreclrminipal
-    gc_pal
     cdac_contract_descriptor
 )
 
@@ -189,6 +188,12 @@ endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
 if (CLR_CMAKE_TARGET_OSX)
     find_library(FOUNDATION Foundation REQUIRED)
+endif()
+
+if (CLR_CMAKE_HOST_ANDROID)
+    list(APPEND CORECLR_LIBRARIES gc_pal_objects)
+else()
+    list(APPEND CORECLR_LIBRARIES gc_pal)
 endif()
 
 target_sources(coreclr PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
