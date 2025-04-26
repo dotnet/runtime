@@ -2729,26 +2729,6 @@ static bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
     return false;
 }
 
-static bool IsTypeDefOrRefAByRefStruct(Module* pModule, mdToken tk)
-{
-    if (TypeFromToken(tk) == mdtTypeRef)
-    {
-        if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModule, &tk))
-        {
-            return false;
-        }
-    }
-
-    HRESULT hr = pModule->GetCustomAttribute(tk, 
-        WellKnownAttribute::IsByRefLike,
-        NULL, NULL);
-
-    if (hr == S_OK)
-        return true;
-    
-    return false;
-}
-
 static MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
 {
     // Without FEATURE_RUNTIME_ASYNC every declared method is classified as a NormalMethod.
@@ -2871,7 +2851,11 @@ MethodTableBuilder::EnumerateClassMethods()
     if ((DWORD)MAX_SLOT_INDEX <= cMethAndGaps)
         BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
 
-    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethAndGaps * 2;
+    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethAndGaps;
+#ifdef FEATURE_RUNTIME_ASYNC
+    // TODO: (async) the index is uint16 and can potentially overflow. This needs to be more robust.
+    bmtMethod->m_cMaxDeclaredMethods *= 2;
+#endif
     bmtMethod->m_cDeclaredMethods = 0;
     bmtMethod->m_rgDeclaredMethods = new (GetStackingAllocator())
         bmtMDMethod *[bmtMethod->m_cMaxDeclaredMethods];
