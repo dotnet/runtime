@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">此類型會實作至少一個類型，具有 'GeneratedComInterfaceAttribute' 屬性或其基底類型有 'GeneratedComClassAttribute' 屬性。新增 'GeneratedComClassAttribute' 以啟用將此類型傳遞到 COM，並公開具有此類型物件之 'GeneratedComInterfaceAttribute' 類型的 COM 介面。</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyMessage">
         <source>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</source>
-        <target state="new">The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</target>
+        <target state="translated">類型 '{0}' 已有在不同組件中定義的基礎介面 '{1}'。在某些情況下，這可能會造成各種難以診斷的問題</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyTitle">
         <source>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</source>
-        <target state="new">Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</target>
+        <target state="translated">不支援在已於另一個組件中定義基礎介面的介面上指定 'GeneratedComInterfaceAttribute'</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
@@ -504,7 +504,7 @@
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
-        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
+        <target state="translated">在未受控對受控呼叫中，從 VARIANT 封送處理為 'in' 參數的物件將不會傳播回更新的結果，即使 VARIANT 是 VT_BYREF 變數亦然。使用 'ref' 參數而非 'in' 參數，以將更新的值傳播回呼叫者。</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -842,9 +842,9 @@
         <target state="translated">受控類型 '{1}' 的封送處理器進入點類型 '{0}' 必須具有大於受控類型的 arity。</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
-        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">以非受控傳回值傳遞之值的所有封送處理常式，都必須具有相同的非受控類型。</target>
+      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
+        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
+        <target state="translated">所有作為非受控傳回值或參數傳遞之值的 marshaller 必須具有相同的非受控類型。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">

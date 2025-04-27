@@ -517,17 +517,6 @@ extern "C" void PalAttachThread(void* thread)
     UnmaskActivationSignal();
 }
 
-// Detach thread from OS notifications.
-// Parameters:
-//  thread        - thread to detach
-// Return:
-//  true if the thread was detached, false if there was no attached thread
-extern "C" bool PalDetachThread(void* thread)
-{
-    UNREFERENCED_PARAMETER(thread);
-    return true;
-}
-
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
@@ -834,8 +823,10 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
         flags |= MAP_JIT;
     }
 #endif
-
-    return mmap(NULL, size, unixProtect, flags, -1, 0);
+    void* pMappedMemory = mmap(NULL, size, unixProtect, flags, -1, 0);
+    if (pMappedMemory == MAP_FAILED)
+        return NULL;
+    return pMappedMemory;
 }
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size)

@@ -43,7 +43,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "valuenum.h"
 #include "scev.h"
 #include "namedintrinsiclist.h"
-#include "structsegments.h"
+#include "segmentlist.h"
 #ifdef LATE_DISASM
 #include "disasm.h"
 #endif
@@ -87,6 +87,7 @@ class OptBoolsDsc;          // defined in optimizer.cpp
 struct JumpThreadInfo;      // defined in redundantbranchopts.cpp
 class ProfileSynthesis;     // defined in profilesynthesis.h
 class LoopLocalOccurrences; // defined in inductionvariableopts.cpp
+class RangeCheck;           // defined in rangecheck.h
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -114,6 +115,7 @@ void* operator new[](size_t n, Compiler* context, CompMemKind cmk);
 
 // Requires the definitions of "operator new" so including "LoopCloning.h" after the definitions.
 #include "loopcloning.h"
+#include "rangecheckcloning.h"
 
 /*****************************************************************************/
 
@@ -504,24 +506,11 @@ enum class AddressExposedReason
 class LclVarDsc
 {
 public:
-    // The constructor. Most things can just be zero'ed.
-    //
-    // Initialize the ArgRegs to REG_STK.
-    LclVarDsc()
-        : _lvArgReg(REG_STK)
-#if FEATURE_MULTIREG_ARGS
-        , _lvOtherArgReg(REG_STK)
-#endif // FEATURE_MULTIREG_ARGS
-        , lvClassHnd(NO_CLASS_HANDLE)
-        , lvPerSsaData()
-    {
-    }
-
     // note this only packs because var_types is a typedef of unsigned char
     var_types lvType : 5; // TYP_INT/LONG/FLOAT/DOUBLE/REF
 
     unsigned char lvIsParam           : 1; // is this a parameter?
-    unsigned char lvIsRegArg          : 1; // is this an argument that was passed by register?
+    unsigned char lvIsRegArg          : 1; // is any part of this parameter passed in a register?
     unsigned char lvIsParamRegTarget  : 1; // is this the target of a param reg to local mapping?
     unsigned char lvFramePointerBased : 1; // 0 = off of REG_SPBASE (e.g., ESP), 1 = off of REG_FPBASE (e.g., EBP)
 
@@ -568,10 +557,6 @@ public:
     unsigned char lvIsLastUseCopyOmissionCandidate : 1;
 #endif // FEATURE_IMPLICIT_BYREFS
 
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    unsigned char lvIsSplit : 1; // Set if the argument is split across last integer register and stack.
-#endif                           // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-
     unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
                                    // updates
 
@@ -611,8 +596,9 @@ public:
     unsigned char lvIsStructField : 1; // Is this local var a field of a promoted struct local?
     unsigned char lvContainsHoles : 1; // Is this a promoted struct whose fields do not cover the struct local?
 
-    unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
-    unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
+    unsigned char lvIsMultiRegArg  : 1; // true if this is a multireg LclVar struct used in an argument context
+    unsigned char lvIsMultiRegRet  : 1; // true if this is a multireg LclVar struct assigned from a multireg call
+    unsigned char lvIsMultiRegDest : 1; // true if this is a multireg LclVar struct that is stored from a multireg node
 
 #ifdef DEBUG
     unsigned char lvHiddenBufferStructArg : 1; // True when this struct (or its field) are passed as hidden buffer
@@ -624,7 +610,7 @@ public:
 #endif                                     // FEATURE_HFA_FIELDS_PRESENT
 
 #ifdef DEBUG
-    // TODO-Cleanup: See the note on lvSize() - this flag is only in use by asserts that are checking for struct
+    // TODO-Cleanup: this flag is only in use by asserts that are checking for struct
     // types, and is needed because of cases where TYP_STRUCT is bashed to an integral type.
     // Consider cleaning this up so this workaround is not required.
     unsigned char lvUnusedStruct : 1; // All references to this promoted struct are through its field locals.
@@ -667,6 +653,9 @@ public:
 
     unsigned char lvRedefinedInEmbeddedStatement : 1; // Local has redefinitions inside embedded statements that
                                                       // disqualify it from local copy prop.
+
+    unsigned char lvIsEnumerator : 1; // Local is assigned exact class where : IEnumerable<T> via GDV
+
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
 
@@ -694,117 +683,19 @@ public:
     unsigned char lvAllDefsAreNoGc       : 1; // For pinned locals: true if all defs of this local are no-gc
     unsigned char lvStackAllocatedObject : 1; // Local is a stack allocated object (class, box, array, ...)
 
-#if FEATURE_MULTIREG_ARGS
-    regNumber lvRegNumForSlot(unsigned slotNum)
-    {
-        if (slotNum == 0)
-        {
-            return (regNumber)_lvArgReg;
-        }
-        else if (slotNum == 1)
-        {
-            return GetOtherArgReg();
-        }
-        else
-        {
-            assert(false && "Invalid slotNum!");
-        }
-
-        unreached();
-    }
-#endif // FEATURE_MULTIREG_ARGS
-
-    CorInfoHFAElemType GetLvHfaElemKind() const
-    {
-#ifdef FEATURE_HFA_FIELDS_PRESENT
-        return _lvHfaElemKind;
-#else
-        NOWAY_MSG("GetLvHfaElemKind");
-        return CORINFO_HFA_ELEM_NONE;
-#endif // FEATURE_HFA_FIELDS_PRESENT
-    }
-
-    void SetLvHfaElemKind(CorInfoHFAElemType elemKind)
-    {
-#ifdef FEATURE_HFA_FIELDS_PRESENT
-        _lvHfaElemKind = elemKind;
-#else
-        NOWAY_MSG("SetLvHfaElemKind");
-#endif // FEATURE_HFA_FIELDS_PRESENT
-    }
-
-    bool lvIsHfa() const
-    {
-        if (GlobalJitOptions::compFeatureHfa)
-        {
-            return IsHfa(GetLvHfaElemKind());
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    bool lvIsHfaRegArg() const
-    {
-        if (GlobalJitOptions::compFeatureHfa)
-        {
-            return lvIsRegArg && lvIsHfa();
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    //------------------------------------------------------------------------------
-    // lvHfaSlots: Get the number of slots used by an HFA local
-    //
-    // Return Value:
-    //    On Arm64 - Returns 1-4 indicating the number of register slots used by the HFA
-    //    On Arm32 - Returns the total number of single FP register slots used by the HFA, max is 8
-    //
-    unsigned lvHfaSlots() const
-    {
-        assert(lvIsHfa());
-        assert(varTypeIsStruct(lvType));
-        unsigned slots = 0;
-#ifdef TARGET_ARM
-        slots = lvExactSize() / sizeof(float);
-        assert(slots <= 8);
-#elif defined(TARGET_ARM64)
-        switch (GetLvHfaElemKind())
-        {
-            case CORINFO_HFA_ELEM_NONE:
-                assert(!"lvHfaSlots called for non-HFA");
-                break;
-            case CORINFO_HFA_ELEM_FLOAT:
-                assert((lvExactSize() % 4) == 0);
-                slots = lvExactSize() >> 2;
-                break;
-            case CORINFO_HFA_ELEM_DOUBLE:
-            case CORINFO_HFA_ELEM_VECTOR64:
-                assert((lvExactSize() % 8) == 0);
-                slots = lvExactSize() >> 3;
-                break;
-            case CORINFO_HFA_ELEM_VECTOR128:
-                assert((lvExactSize() % 16) == 0);
-                slots = lvExactSize() >> 4;
-                break;
-            default:
-                unreached();
-        }
-        assert(slots <= 4);
-#endif //  TARGET_ARM64
-        return slots;
-    }
-
     // lvIsMultiRegArgOrRet()
     //     returns true if this is a multireg LclVar struct used in an argument context
     //               or if this is a multireg LclVar struct assigned from a multireg call
     bool lvIsMultiRegArgOrRet()
     {
         return lvIsMultiRegArg || lvIsMultiRegRet;
+    }
+
+    void SetIsMultiRegDest()
+    {
+        lvIsMultiRegDest = true;
+        // TODO-Quirk: Set the old lvIsMultiRegRet, which is used for heuristics
+        lvIsMultiRegRet = true;
     }
 
     bool IsStackAllocatedObject() const
@@ -874,13 +765,6 @@ private:
     regNumberSmall _lvOtherReg; // Used for "upper half" of long var.
 #endif                          // !defined(TARGET_64BIT)
 
-    regNumberSmall _lvArgReg; // The (first) register in which this argument is passed.
-
-#if FEATURE_MULTIREG_ARGS
-    regNumberSmall _lvOtherArgReg; // Used for the second part of the struct passed in a register.
-                                   // Note this is defined but not used by ARM32
-#endif                             // FEATURE_MULTIREG_ARGS
-
     regNumberSmall _lvArgInitReg; // the register into which the argument is moved at entry
 
 public:
@@ -931,31 +815,6 @@ public:
 #endif // !TARGET_64BIT
 
     /////////////////////
-
-    regNumber GetArgReg() const
-    {
-        return (regNumber)_lvArgReg;
-    }
-
-    void SetArgReg(regNumber reg)
-    {
-        _lvArgReg = (regNumberSmall)reg;
-        assert(_lvArgReg == reg);
-    }
-
-#if FEATURE_MULTIREG_ARGS
-
-    regNumber GetOtherArgReg() const
-    {
-        return (regNumber)_lvOtherArgReg;
-    }
-
-    void SetOtherArgReg(regNumber reg)
-    {
-        _lvOtherArgReg = (regNumberSmall)reg;
-        assert(_lvOtherArgReg == reg);
-    }
-#endif // FEATURE_MULTIREG_ARGS
 
 #ifdef FEATURE_SIMD
     // Is this is a SIMD struct which is used for SIMD intrinsic?
@@ -1114,14 +973,11 @@ public:
     }
 
     unsigned lvExactSize() const;
-    unsigned lvSize() const;
-
-    size_t lvArgStackSize() const;
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
     // class handle for the local or null if not known or not a class
-    CORINFO_CLASS_HANDLE lvClassHnd;
+    CORINFO_CLASS_HANDLE lvClassHnd = NO_CLASS_HANDLE;
 
 private:
     ClassLayout* m_layout; // layout info for structs
@@ -1155,30 +1011,6 @@ public:
 
     void incRefCnts(weight_t weight, Compiler* pComp, RefCountState state = RCS_NORMAL, bool propagate = true);
 
-    var_types GetHfaType() const
-    {
-        if (GlobalJitOptions::compFeatureHfa)
-        {
-            assert(lvIsHfa());
-            return HfaTypeFromElemKind(GetLvHfaElemKind());
-        }
-        else
-        {
-            return TYP_UNDEF;
-        }
-    }
-
-    void SetHfaType(var_types type)
-    {
-        if (GlobalJitOptions::compFeatureHfa)
-        {
-            CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
-            SetLvHfaElemKind(elemKind);
-            // Ensure we've allocated enough bits.
-            assert(GetLvHfaElemKind() == elemKind);
-        }
-    }
-
     // Returns true if this variable contains GC pointers (including being a GC pointer itself).
     bool HasGCPtr() const
     {
@@ -1201,6 +1033,13 @@ public:
     {
         assert(varTypeIsStruct(lvType));
         assert((m_layout == nullptr) || ClassLayout::AreCompatible(m_layout, layout));
+        m_layout = layout;
+    }
+
+    // Change the layout to one that may not be compatible.
+    void ChangeLayout(ClassLayout* layout)
+    {
+        assert(varTypeIsStruct(lvType));
         m_layout = layout;
     }
 
@@ -1864,7 +1703,7 @@ struct FuncInfoDsc
     UnwindInfo  uwi;     // Unwind information for this function/funclet's hot  section
     UnwindInfo* uwiCold; // Unwind information for this function/funclet's cold section
                          //   Note: we only have a pointer here instead of the actual object,
-                         //   to save memory in the JIT case (compared to the NGEN case),
+                         //   to save memory in the JIT case (compared to the AOT case),
                          //   where we don't have any cold section.
                          //   Note 2: we currently don't support hot/cold splitting in functions
                          //   with EH, so uwiCold will be NULL for all funclets.
@@ -1935,12 +1774,16 @@ class FlowGraphDfsTree
     // Whether the DFS that produced the tree found any backedges.
     bool m_hasCycle;
 
+    // Whether the DFS that produced the tree used edge likelihoods to influence successor visitation order.
+    bool m_profileAware;
+
 public:
-    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle)
+    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle, bool profileAware)
         : m_comp(comp)
         , m_postOrder(postOrder)
         , m_postOrderCount(postOrderCount)
         , m_hasCycle(hasCycle)
+        , m_profileAware(profileAware)
     {
     }
 
@@ -1973,6 +1816,11 @@ public:
     bool HasCycle() const
     {
         return m_hasCycle;
+    }
+
+    bool IsProfileAware() const
+    {
+        return m_profileAware;
     }
 
 #ifdef DEBUG
@@ -2852,7 +2700,7 @@ public:
 
     bool ehNeedsShadowSPslots()
     {
-        return (info.compXcptnsCount || opts.compDbgEnC);
+        return ((compHndBBtabCount > 0) || opts.compDbgEnC);
     }
 
     // 0 for methods with no EH
@@ -2861,7 +2709,14 @@ public:
     // etc.
     unsigned ehMaxHndNestingCount = 0;
 
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, EHblkDsc*> EHIDtoEHblkDscMap;
+    EHIDtoEHblkDscMap* m_EHIDtoEHblkDsc = nullptr;
+
 #endif // FEATURE_EH_WINDOWS_X86
+
+    EHblkDsc* ehFindEHblkDscById(unsigned short ehID);
+    bool ehTableFinalized = false;
+    void FinalizeEH();
 
     static bool jitIsBetween(unsigned value, unsigned start, unsigned end);
     static bool jitIsBetweenInclusive(unsigned value, unsigned start, unsigned end);
@@ -2884,6 +2739,9 @@ public:
 
     // Returns true if "block" is the start of a handler or filter region.
     bool bbIsHandlerBeg(const BasicBlock* block);
+
+    // Returns true if "block" is the start of a funclet.
+    bool bbIsFuncletBeg(const BasicBlock* block);
 
     bool ehHasCallableHandlers();
 
@@ -2923,6 +2781,9 @@ public:
     // Find the true enclosing try index, ignoring 'mutual protect' try. Uses IL ranges to check.
     unsigned ehTrueEnclosingTryIndexIL(unsigned regionIndex);
 
+    // Find the true enclosing try index, ignoring 'mutual protect' try. Uses blocks to check.
+    unsigned ehTrueEnclosingTryIndex(unsigned regionIndex);
+
     // Return the index of the most nested enclosing region for a particular EH region. Returns NO_ENCLOSING_INDEX
     // if there is no enclosing region. If the returned index is not NO_ENCLOSING_INDEX, then '*inTryRegion'
     // is set to 'true' if the enclosing region is a 'try', or 'false' if the enclosing region is a handler.
@@ -2958,21 +2819,6 @@ public:
     // 'true' if the BBJ_CALLFINALLY is in the correct EH region.
     bool ehCallFinallyInCorrectRegion(BasicBlock* blockCallFinally, unsigned finallyIndex);
 #endif // DEBUG
-
-    // Do we need a PSPSym in the main function? For codegen purposes, we only need one
-    // if there is a filter that protects a region with a nested EH clause (such as a
-    // try/catch nested in the 'try' body of a try/filter/filter-handler). See
-    // genFuncletProlog() for more details. However, the VM seems to use it for more
-    // purposes, maybe including debugging. Until we are sure otherwise, always create
-    // a PSPSym for functions with any EH.
-    bool ehNeedsPSPSym() const
-    {
-#ifdef TARGET_X86
-        return false;
-#else  // TARGET_X86
-        return compHndBBtabCount > 0;
-#endif // TARGET_X86
-    }
 
     bool     ehAnyFunclets();  // Are there any funclets in this function?
     unsigned ehFuncletCount(); // Return the count of funclets in the function
@@ -3048,7 +2894,7 @@ public:
 
     void fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast);
 
-    void fgRebuildEHRegions();
+    void fgFindTryRegionEnds();
 
     void fgSkipRmvdBlocks(EHblkDsc* handlerTab);
 
@@ -3106,7 +2952,7 @@ public:
     Statement* gtNewStmt(GenTree* expr, const DebugInfo& di);
 
     // For unary opers.
-    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1);
+    GenTreeUnOp* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1);
 
     // For binary opers.
     GenTreeOp* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
@@ -3195,7 +3041,7 @@ public:
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
 
-    GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
+    GenTreeUnOp* gtNewBitCastNode(var_types type, GenTree* arg);
 
 public:
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
@@ -3221,6 +3067,8 @@ public:
 
     GenTreeConditional* gtNewConditionalNode(
         genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type);
+
+    GenTreeFieldList* gtNewFieldList();
 
 #ifdef FEATURE_SIMD
     void SetOpLclRelatedToSIMDIntrinsic(GenTree* op);
@@ -3487,11 +3335,19 @@ public:
     GenTree* gtNewSimdRoundNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
+    GenTree* gtNewSimdShuffleVariableNode(var_types   type,
+                                          GenTree*    op1,
+                                          GenTree*    op2,
+                                          CorInfoType simdBaseJitType,
+                                          unsigned    simdSize,
+                                          bool        isShuffleNative);
+
     GenTree* gtNewSimdShuffleNode(var_types   type,
                                   GenTree*    op1,
                                   GenTree*    op2,
                                   CorInfoType simdBaseJitType,
-                                  unsigned    simdSize);
+                                  unsigned    simdSize,
+                                  bool        isShuffleNative);
 
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3711,6 +3567,8 @@ public:
         return gtNewStmt(exprClone, stmt->GetDebugInfo());
     }
 
+    Statement* gtLatestStatement(Statement* stmt1, Statement* stmt2);
+
     // Internal helper for cloning a call
     GenTreeCall* gtCloneExprCallHelper(GenTreeCall* call);
 
@@ -3790,12 +3648,12 @@ public:
                                    bool         ignoreRoot       = false);
 
     bool gtSplitTree(
-        BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse);
+        BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse, bool early = false);
 
     bool gtStoreDefinesField(
         LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
 
-    void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq = nullptr);
+    void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq = nullptr) const;
 
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
@@ -3916,6 +3774,7 @@ public:
     const char* gtGetWellKnownArgNameForArgMsg(WellKnownArg arg);
     void gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength);
     void gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength);
+    void gtPrintABILocation(const ABIPassingInformation& abiInfo, char** bufp, unsigned* bufLength);
     void gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, IndentStack* indentStack);
     void gtDispFieldSeq(FieldSeq* fieldSeq, ssize_t offset);
 
@@ -4014,7 +3873,7 @@ public:
 
     // false: we can add new tracked variables.
     // true: We cannot add new 'tracked' variable
-    bool     lvaTrackedFixed = false; 
+    bool     lvaTrackedFixed = false;
 
     unsigned lvaCount;        // total number of locals, which includes function arguments,
                               // special arguments, IL local variables, and JIT temporary variables
@@ -4091,6 +3950,8 @@ public:
     unsigned lvaInlineeReturnSpillTemp = BAD_VAR_NUM; // The temp to spill the non-VOID return expression
                                         // in case there are multiple BBJ_RETURN blocks in the inlinee
                                         // or if the inlinee has GC ref locals.
+
+    bool lvaInlineeReturnSpillTempFreshlyCreated = false; // True if the temp was freshly created for the inlinee return
 
 #if FEATURE_FIXED_OUT_ARGS
     unsigned            lvaOutgoingArgSpaceVar = BAD_VAR_NUM;  // var that represents outgoing argument space
@@ -4186,7 +4047,7 @@ public:
 
 #ifdef DEBUG
     void lvaDumpRegLocation(unsigned lclNum);
-    void lvaDumpFrameLocation(unsigned lclNum);
+    void lvaDumpFrameLocation(unsigned lclNum, int minLength);
     void lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t refCntWtdWidth = 6);
     void lvaTableDump(FrameLayoutState curState = NO_FRAME_LAYOUT); // NO_FRAME_LAYOUT means use the current frame
                                                                     // layout state defined by lvaDoneFrameLayout
@@ -4219,12 +4080,12 @@ public:
 
     void lvaInitTypeRef();
 
-    void lvaInitArgs(InitVarDscInfo* varDscInfo);
-    void lvaInitThisPtr(InitVarDscInfo* varDscInfo);
-    void lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBufReg);
-    void lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, unsigned takeArgs);
-    void lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo);
-    void lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo);
+    void lvaInitArgs(bool hasRetBuffArg);
+    void lvaInitThisPtr(unsigned* curVarNum);
+    void lvaInitRetBuffArg(unsigned* curVarNum, bool useFixedRetBufReg);
+    void lvaInitUserArgs(unsigned* curVarNum, unsigned skipArgs, unsigned takeArgs);
+    void lvaInitGenericsCtxt(unsigned* curVarNum);
+    void lvaInitVarArgsHandle(unsigned* curVarNum);
 
     void lvaInitVarDsc(LclVarDsc*              varDsc,
                        unsigned                varNum,
@@ -4238,7 +4099,7 @@ public:
 
     void lvaClassifyParameterABI();
 
-    bool lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
+    bool lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, unsigned lclNum, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
     bool lvaHasAnySwiftStackParamToReassemble();
 
     var_types lvaGetActualType(unsigned lclNum);
@@ -4292,7 +4153,7 @@ public:
         return varNum;
     }
 
-    unsigned lvaLclSize(unsigned varNum);
+    unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
@@ -4344,18 +4205,14 @@ public:
     bool lvaIsImplicitByRefLocal(unsigned lclNum) const;
     bool lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const;
 
-    // Returns true if this local var is a multireg struct
-    bool lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVararg);
-
     // If the local is a TYP_STRUCT, get/set a class handle describing it
     void lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeValueClsCheck);
     void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck);
-    void lvaSetStructUsedAsVarArg(unsigned varNum);
 
     // If the local is TYP_REF, set or update the associated class information.
     void lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact = false);
     void lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHandle = nullptr);
-    void lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact = false);
+    void lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact = false, bool singleDefOnly = true);
     void lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHandle = nullptr);
 
 #define MAX_NumOfFieldsInPromotableStruct 4 // Maximum number of fields in promotable struct
@@ -4417,6 +4274,8 @@ public:
         bool ShouldPromoteStructVar(unsigned lclNum);
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
+        bool IsArmHfaParameter(unsigned lclNum);
+        bool IsSysVMultiRegType(ClassLayout* layout);
 
         var_types TryPromoteValueClassAsPrimitive(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t index);
         void AdvanceSubTree(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t* index);
@@ -4437,27 +4296,26 @@ public:
     bool lvaIsGCTracked(const LclVarDsc* varDsc);
 
 #if defined(FEATURE_SIMD)
-    bool lvaMapSimd12ToSimd16(const LclVarDsc* varDsc)
+    bool lvaMapSimd12ToSimd16(unsigned varNum)
     {
-        assert(varDsc->lvType == TYP_SIMD12);
+        LclVarDsc* varDsc = lvaGetDesc(varNum);
+        assert(varDsc->TypeGet() == TYP_SIMD12);
 
-#if defined(TARGET_64BIT)
-        assert(compAppleArm64Abi() || varDsc->lvSize() == 16);
-#endif // defined(TARGET_64BIT)
+        unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 
         // We make local variable SIMD12 types 16 bytes instead of just 12.
-        // lvSize() will return 16 bytes for SIMD12, even for fields.
+        // lvaLclStackHomeSize() will return 16 bytes for SIMD12, even for fields.
         // However, we can't do that mapping if the var is a dependently promoted struct field.
         // Such a field must remain its exact size within its parent struct unless it is a single
         // field *and* it is the only field in a struct of 16 bytes.
-        if (varDsc->lvSize() != 16)
+        if (stackHomeSize != 16)
         {
             return false;
         }
         if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
         {
             LclVarDsc* parentVarDsc = lvaGetDesc(varDsc->lvParentLcl);
-            return (parentVarDsc->lvFieldCnt == 1) && (parentVarDsc->lvSize() == 16);
+            return (parentVarDsc->lvFieldCnt == 1) && (lvaLclStackHomeSize(varDsc->lvParentLcl) == 16);
         }
         return true;
     }
@@ -4477,8 +4335,6 @@ public:
     }
 
     unsigned lvaStubArgumentVar = BAD_VAR_NUM; // variable representing the secret stub argument
-
-    unsigned lvaPSPSym = BAD_VAR_NUM; // variable representing the PSPSym
 
     InlineInfo*     impInlineInfo; // Only present for inlinees
     InlineStrategy* m_inlineStrategy;
@@ -4603,6 +4459,26 @@ protected:
     //-------------------- Stack manipulation ---------------------------------
 
     unsigned impStkSize; // Size of the full stack
+
+    // Enumerator de-abstraction support
+    //
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
+
+    // Map is only set on the root instance.
+    //
+    NodeToUnsignedMap* impEnumeratorGdvLocalMap = nullptr;
+    bool hasImpEnumeratorGdvLocalMap() { return impInlineRoot()->impEnumeratorGdvLocalMap != nullptr; }
+    NodeToUnsignedMap* getImpEnumeratorGdvLocalMap()
+    {
+        Compiler* compiler = impInlineRoot();
+        if (compiler->impEnumeratorGdvLocalMap == nullptr)
+        {
+            CompAllocator alloc(compiler->getAllocator(CMK_Generic));
+            compiler->impEnumeratorGdvLocalMap = new (alloc) NodeToUnsignedMap(alloc);
+        }
+
+        return compiler->impEnumeratorGdvLocalMap;
+    }
 
 #define SMALL_STACK_SIZE 16 // number of elements in impSmallStack
 
@@ -4763,7 +4639,8 @@ protected:
                               R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                               var_types             callType,
                               NamedIntrinsic        intrinsicName,
-                              bool                  tailCall);
+                              bool                  tailCall,
+                              bool*                 isSpecial);
     GenTree* impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                                 CORINFO_SIG_INFO*     sig,
                                 CorInfoType           callJitType,
@@ -4793,7 +4670,11 @@ protected:
                                         bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
-    bool IsValidForShuffle(GenTreeVecCon* vecCon, unsigned simdSize, var_types simdBaseType) const;
+    bool IsValidForShuffle(GenTree* indices,
+                           unsigned simdSize,
+                           var_types simdBaseType,
+                           bool* canBecomeValid,
+                           bool isShuffleNative) const;
 
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
                             CORINFO_CLASS_HANDLE  clsHnd,
@@ -4901,7 +4782,7 @@ public:
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
-    GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel);
+    GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags);
 
@@ -4953,14 +4834,13 @@ public:
     bool VarTypeIsMultiByteAndCanEnreg(var_types                type,
                                        CORINFO_CLASS_HANDLE     typeClass,
                                        unsigned*                typeSize,
-                                       bool                     forReturn,
                                        bool                     isVarArg,
                                        CorInfoCallConvExtension callConv);
 
     bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName);
     bool IsTargetIntrinsic(NamedIntrinsic intrinsicName);
     bool IsMathIntrinsic(NamedIntrinsic intrinsicName);
-    bool IsMathIntrinsic(GenTree* tree);
+    bool IsBitCountingIntrinsic(NamedIntrinsic intrinsicName);
 
 private:
     //----------------- Importing the method ----------------------------------
@@ -5114,6 +4994,8 @@ private:
         SpillCliqueSucc
     };
 
+    friend class SubstitutePlaceholdersAndDevirtualizeWalker;
+
     // Abstract class for receiving a callback while walking a spill clique
     class SpillCliqueWalker
     {
@@ -5189,8 +5071,8 @@ private:
     static LONG jitNestingLevel;
 #endif // DEBUG
 
-    static bool impIsInvariant(const GenTree* tree);
-    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut = nullptr);
+    bool impIsInvariant(const GenTree* tree);
+    bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut = nullptr);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 
@@ -5205,10 +5087,11 @@ private:
                            CORINFO_METHOD_HANDLE  fncHandle,
                            unsigned               methAttr,
                            CORINFO_CONTEXT_HANDLE exactContextHnd,
+                           InlineContext*         inlinersContext,
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
-    void impInlineRecordArgInfo(InlineInfo* pInlineInfo, CallArg* arg, unsigned argNum, InlineResult* inlineResult);
+    void impInlineRecordArgInfo(InlineInfo* pInlineInfo, CallArg* arg, InlArgInfo* argInfo, InlineResult* inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
 
@@ -5226,13 +5109,15 @@ private:
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
-                                CORINFO_CALL_INFO*     callInfo);
+                                CORINFO_CALL_INFO*     callInfo,
+                                InlineContext*         inlinersContext);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
+                                      InlineContext*         inlinersContext,
                                       InlineResult*          inlineResult);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,
@@ -5396,9 +5281,11 @@ public:
     // - Rationalization links all nodes into linear form which is kept until
     //   the end of compilation. The first and last nodes are stored in the block.
     NodeThreading fgNodeThreading = NodeThreading::None;
-    weight_t      fgCalledCount = BB_ZERO_WEIGHT;          // count of the number of times this method was called
-                                          // This is derived from the profile data
-                                          // or is BB_UNITY_WEIGHT when we don't have profile data
+    weight_t      fgCalledCount = BB_UNITY_WEIGHT; // count of the number of times this method was called
+                                                   // This is derived from the profile data
+                                                   // or is BB_UNITY_WEIGHT when we don't have profile data
+
+    bool fgImportDone = false;  // true once importation has finished
 
     bool fgFuncletsCreated = false; // true if the funclet creation phase has been run
 
@@ -5489,6 +5376,8 @@ public:
     };
 
     FoldResult fgFoldConditional(BasicBlock* block);
+
+    bool fgFoldCondToReturnBlock(BasicBlock* block);
 
     struct MorphUnreachableInfo
     {
@@ -5607,6 +5496,7 @@ public:
     void fgExpandQmarkNodes();
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
+    bool fgSimpleLowerBswap16(LIR::Range& range, GenTree* op);
 
 #if FEATURE_LOOP_ALIGN
     bool shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top);
@@ -5743,11 +5633,6 @@ public:
         }
         return m_signatureToLookupInfoMap;
     }
-
-    const StructSegments& GetSignificantSegments(ClassLayout* layout);
-
-    typedef JitHashTable<ClassLayout*, JitPtrKeyFuncs<ClassLayout>, class StructSegments*> ClassLayoutStructSegmentsMap;
-    ClassLayoutStructSegmentsMap* m_significantSegmentsMap = nullptr;
 
 #ifdef SWIFT_SUPPORT
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, CORINFO_SWIFT_LOWERING*> SwiftLoweringMap;
@@ -6039,19 +5924,7 @@ public:
     // A "primitive" type is one of the scalar types: byte, short, int, long, ref, float, double
     // If we can't or shouldn't use a "primitive" type then TYP_UNKNOWN is returned.
     //
-    // isVarArg is passed for use on Windows Arm64 to change the decision returned regarding
-    // hfa types.
-    //
-    var_types getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd, bool isVarArg);
-
-    // Get the type that is used to pass values of the given struct type.
-    // isVarArg is passed for use on Windows Arm64 to change the decision returned regarding
-    // hfa types.
-    //
-    var_types getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                  structPassingKind*   wbPassStruct,
-                                  bool                 isVarArg,
-                                  unsigned             structSize);
+    var_types getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd);
 
     // Get the type that is used to return values of the given struct type.
     // If the size is unknown, pass 0 and it will be determined from 'clsHnd'.
@@ -6256,8 +6129,6 @@ public:
 
     void fgCompactBlock(BasicBlock* block);
 
-    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
-
     bool fgRenumberBlocks();
 
     bool fgExpandRarelyRunBlocks();
@@ -6284,9 +6155,6 @@ public:
     void fgInsertFuncletPrologBlock(BasicBlock* block);
     void        fgCreateFuncletPrologBlocks();
     PhaseStatus fgCreateFunclets();
-#if defined(FEATURE_EH_WINDOWS_X86)
-    bool fgRelocateEHRegions();
-#endif // FEATURE_EH_WINDOWS_X86
 
     bool fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock* target);
     bool fgFoldSimpleCondByForwardSub(BasicBlock* block);
@@ -6303,56 +6171,54 @@ public:
 
     bool fgOptimizeSwitchBranches(BasicBlock* block);
 
-    bool fgOptimizeSwitchJumps();
+    void fgPeelSwitch(BasicBlock* block);
 #ifdef DEBUG
     void fgPrintEdgeWeights();
 #endif
     PhaseStatus fgComputeBlockWeights();
-    bool fgComputeMissingBlockWeights(weight_t* returnWeight);
-    bool fgComputeCalledCount(weight_t returnWeight);
+    bool fgComputeMissingBlockWeights();
 
-    bool fgReorderBlocks(bool useProfile);
-    void fgDoReversePostOrderLayout();
-    void fgMoveColdBlocks();
-    void fgSearchImprovedLayout();
+    PhaseStatus fgSearchImprovedLayout();
 
+    template <bool hasEH>
     class ThreeOptLayout
     {
         static bool EdgeCmp(const FlowEdge* left, const FlowEdge* right);
+        static constexpr unsigned maxSwaps = 1000;
 
         Compiler* compiler;
         PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
         BasicBlock** blockOrder;
         BasicBlock** tempOrder;
         unsigned numCandidateBlocks;
-        unsigned currEHRegion;
 
-#ifdef DEBUG
-        weight_t GetLayoutCost(unsigned startPos, unsigned endPos);
-#endif // DEBUG
+        bool IsCandidateBlock(BasicBlock* block) const;
 
+        INDEBUG(weight_t GetLayoutCost(unsigned startPos, unsigned endPos);)
         weight_t GetCost(BasicBlock* block, BasicBlock* next);
-        weight_t GetPartitionCostDelta(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+        weight_t GetPartitionCostDelta(unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
         void SwapPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
 
-        void ConsiderEdge(FlowEdge* edge);
+        template <bool addToQueue = true>
+        bool ConsiderEdge(FlowEdge* edge);
         void AddNonFallthroughSuccs(unsigned blockPos);
         void AddNonFallthroughPreds(unsigned blockPos);
         bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
 
-        bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
+        void RunThreeOpt();
+        void CompactHotJumps();
+        bool ReorderBlockList();
 
     public:
-        ThreeOptLayout(Compiler* comp);
-        void Run();
+        ThreeOptLayout(Compiler* comp, BasicBlock** initialLayout, unsigned numHotBlocks);
+        bool Run();
     };
-
-    template <bool hasEH>
-    void fgMoveHotJumps();
 
     bool fgFuncletsAreCold();
 
     PhaseStatus fgDetermineFirstColdBlock();
+
+    bool fgDedupReturnComparison(BasicBlock* block);
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc = nullptr);
 
@@ -6615,6 +6481,7 @@ public:
     }
 
     void fgRemoveProfileData(const char* reason);
+    PhaseStatus fgRepairProfile();
     void fgRepairProfileCondToUncond(BasicBlock* block, FlowEdge* retainedEdge, FlowEdge* removedEdge, int* metric = nullptr);
 
 //-------- Insert a statement at the start or end of a basic block --------
@@ -6636,12 +6503,12 @@ public:
     void fgInsertStmtAfter(BasicBlock* block, Statement* insertionPoint, Statement* stmt);
     void fgInsertStmtBefore(BasicBlock* block, Statement* insertionPoint, Statement* stmt);
 
-private:
-    Statement* fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAfter, Statement* stmtList);
-
     //                  Create a new temporary variable to hold the result of *ppTree,
     //                  and transform the graph accordingly.
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree);
+
+private:
+    Statement* fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAfter, Statement* stmtList);
     TempInfo fgMakeTemp(GenTree* value);
     GenTree* fgMakeMultiUse(GenTree** ppTree);
 
@@ -6665,33 +6532,6 @@ private:
 
     //------------------------- Morphing --------------------------------------
 
-    unsigned fgPtrArgCntMax = 0;
-
-public:
-    //------------------------------------------------------------------------
-    // fgGetPtrArgCntMax: Return the maximum number of pointer-sized stack arguments that calls inside this method
-    // can push on the stack. This value is calculated during morph.
-    //
-    // Return Value:
-    //    Returns fgPtrArgCntMax, that is a private field.
-    //
-    unsigned fgGetPtrArgCntMax() const
-    {
-        return fgPtrArgCntMax;
-    }
-
-    //------------------------------------------------------------------------
-    // fgSetPtrArgCntMax: Set the maximum number of pointer-sized stack arguments that calls inside this method
-    // can push on the stack. This function is used during StackLevelSetter to fix incorrect morph calculations.
-    //
-    void fgSetPtrArgCntMax(unsigned argCntMax)
-    {
-        fgPtrArgCntMax = argCntMax;
-    }
-
-    bool compCanEncodePtrArgCntMax();
-
-private:
     hashBv*               fgAvailableOutgoingArgTemps;
     ArrayStack<unsigned>* fgUsedSharedTemps = nullptr;
 
@@ -6746,7 +6586,7 @@ private:
 #endif // FEATURE_SIMD
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
-    GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
+    GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
@@ -6760,6 +6600,7 @@ private:
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
+    bool fgAddrCouldBeHeap(GenTree* addr);
     void fgAssignSetVarDef(GenTree* tree);
 
 private:
@@ -6820,7 +6661,7 @@ public:
     GenTree* fgMorphCopyBlock(GenTree* tree);
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
-    void fgTryReplaceStructLocalWithField(GenTree* tree);
+    bool fgTryReplaceStructLocalWithFields(GenTree** use);
     GenTree* fgMorphFinalizeIndir(GenTreeIndir* indir);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnStore(GenTree* store);
@@ -6923,7 +6764,7 @@ public:
     unsigned acdCount = 0;
 
     // Get the index to use as part of the AddCodeDsc key for sharing throw blocks
-    unsigned bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg); 
+    unsigned bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg);
 
     struct AddCodeDscKey
     {
@@ -6931,7 +6772,7 @@ public:
         AddCodeDscKey(): acdKind(SCK_NONE), acdData(0) {}
         AddCodeDscKey(SpecialCodeKind kind, BasicBlock* block, Compiler* comp);
         AddCodeDscKey(AddCodeDsc* add);
-        
+
         static bool Equals(const AddCodeDscKey& x, const AddCodeDscKey& y)
         {
             return (x.acdData == y.acdData) && (x.acdKind == y.acdKind);
@@ -7161,13 +7002,13 @@ private:
 
 public:
     PhaseStatus optOptimizeBools();
-    PhaseStatus optSwitchRecognition();
+    PhaseStatus optRecognizeAndOptimizeSwitchJumps();
     bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest);
-    bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
+    bool optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion = false);
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
-    PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
+    PhaseStatus optOptimizePreLayout(); // Optimize flow before running block layout
     PhaseStatus optOptimizePostLayout(); // Run optimizations after block layout is finalized
     PhaseStatus optSetBlockWeights();
     PhaseStatus optFindLoopsPhase(); // Finds loops and records them in the loop table
@@ -7185,6 +7026,7 @@ public:
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
 
     PhaseStatus optCloneLoops();
+    PhaseStatus optRangeCheckCloning();
     bool optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
@@ -7533,7 +7375,6 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP               0x00000080 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT                     0x00000100 // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS                      0x00000200 // Method needs GC polls
-#define OMF_HAS_FROZEN_OBJECTS                 0x00000400 // Method has frozen objects (REF constant int)
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
@@ -7544,6 +7385,7 @@ public:
 #define OMF_HAS_RECURSIVE_TAILCALL             0x00040000 // Method contains recursive tail call
 #define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 #define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
+#define OMF_HAS_BOUNDS_CHECKS                  0x00200000 // Method contains bounds checks
 
     // clang-format on
 
@@ -7564,16 +7406,6 @@ public:
 
     void addFatPointerCandidate(GenTreeCall* call);
 
-    bool doesMethodHaveFrozenObjects() const
-    {
-        return (optMethodFlags & OMF_HAS_FROZEN_OBJECTS) != 0;
-    }
-
-    void setMethodHasFrozenObjects()
-    {
-        optMethodFlags |= OMF_HAS_FROZEN_OBJECTS;
-    }
-
     bool doesMethodHaveStaticInit()
     {
         return (optMethodFlags & OMF_HAS_STATIC_INIT) != 0;
@@ -7582,6 +7414,16 @@ public:
     void setMethodHasStaticInit()
     {
         optMethodFlags |= OMF_HAS_STATIC_INIT;
+    }
+
+    bool doesMethodHaveBoundsChecks()
+    {
+        return (optMethodFlags & OMF_HAS_BOUNDS_CHECKS) != 0;
+    }
+
+    void setMethodHasBoundsChecks()
+    {
+        optMethodFlags |= OMF_HAS_BOUNDS_CHECKS;
     }
 
     bool doesMethodHaveExpandableCasts()
@@ -7847,7 +7689,7 @@ public:
     ASSERT_TP     apLocal;
     ASSERT_TP     apLocalIfTrue;
 
-    enum optAssertionKind
+    enum optAssertionKind : uint8_t
     {
         OAK_INVALID,
         OAK_EQUAL,
@@ -7857,10 +7699,11 @@ public:
         OAK_COUNT
     };
 
-    enum optOp1Kind
+    enum optOp1Kind : uint8_t
     {
         O1K_INVALID,
         O1K_LCLVAR,
+        O1K_VN,
         O1K_ARR_BND,
         O1K_BOUND_OPER_BND,
         O1K_BOUND_LOOP_BND,
@@ -7869,15 +7712,15 @@ public:
         O1K_EXACT_TYPE,
         O1K_SUBTYPE,
         O1K_COUNT
+        // NOTE: as of today, only LCLVAR is used by both Local and Global assertion prop
+        // the rest are used only by Global assertion prop.
     };
 
-    enum optOp2Kind : uint16_t
+    enum optOp2Kind : uint8_t
     {
         O2K_INVALID,
         O2K_LCLVAR_COPY,
-        O2K_IND_CNS_INT,
         O2K_CONST_INT,
-        O2K_CONST_LONG,
         O2K_CONST_DOUBLE,
         O2K_ZEROOBJ,
         O2K_SUBRANGE,
@@ -7887,11 +7730,6 @@ public:
     struct AssertionDsc
     {
         optAssertionKind assertionKind;
-        struct SsaVar
-        {
-            unsigned lclNum; // assigned to or property of this local var number
-            unsigned ssaNum;
-        };
         struct ArrBnd
         {
             ValueNum vnIdx;
@@ -7903,8 +7741,8 @@ public:
             ValueNum   vn;
             union
             {
-                SsaVar lcl;
-                ArrBnd bnd;
+                unsigned lclNum;
+                ArrBnd   bnd;
             };
         } op1;
         struct AssertionDscOp2
@@ -7916,17 +7754,13 @@ public:
             ValueNum vn;
             struct IntVal
             {
-                ssize_t iconVal; // integer
-#if !defined(HOST_64BIT)
-                unsigned padding; // unused; ensures iconFlags does not overlap lconVal
-#endif
+                ssize_t   iconVal; // integer
                 FieldSeq* fieldSeq;
             };
             union
             {
-                SsaVar        lcl;
+                unsigned      lclNum;
                 IntVal        u1;
-                int64_t       lconVal;
                 double        dconVal;
                 IntegralRange u2;
             };
@@ -7985,7 +7819,8 @@ public:
 
         bool IsConstantInt32Assertion()
         {
-            return ((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL)) && (op2.kind == O2K_CONST_INT);
+            return ((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL)) && (op2.kind == O2K_CONST_INT) &&
+                   ((op1.kind == O1K_LCLVAR) || (op1.kind == O1K_VN));
         }
 
         bool CanPropLclVar()
@@ -8005,7 +7840,7 @@ public:
 
         bool CanPropBndsCheck()
         {
-            return op1.kind == O1K_ARR_BND;
+            return (op1.kind == O1K_ARR_BND) || (op1.kind == O1K_VN);
         }
 
         bool CanPropSubRange()
@@ -8043,10 +7878,14 @@ public:
                 assert(vnBased);
                 return (op1.bnd.vnIdx == that->op1.bnd.vnIdx) && (op1.bnd.vnLen == that->op1.bnd.vnLen);
             }
+            else if (op1.kind == O1K_VN)
+            {
+                assert(vnBased);
+                return (op1.vn == that->op1.vn);
+            }
             else
             {
-                return ((vnBased && (op1.vn == that->op1.vn)) ||
-                        (!vnBased && (op1.lcl.lclNum == that->op1.lcl.lclNum)));
+                return ((vnBased && (op1.vn == that->op1.vn)) || (!vnBased && (op1.lclNum == that->op1.lclNum)));
             }
         }
 
@@ -8059,12 +7898,8 @@ public:
 
             switch (op2.kind)
             {
-                case O2K_IND_CNS_INT:
                 case O2K_CONST_INT:
                     return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.GetIconFlag() == that->op2.GetIconFlag()));
-
-                case O2K_CONST_LONG:
-                    return (op2.lconVal == that->op2.lconVal);
 
                 case O2K_CONST_DOUBLE:
                     // exact match because of positive and negative zero.
@@ -8074,8 +7909,7 @@ public:
                     return true;
 
                 case O2K_LCLVAR_COPY:
-                    return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
-                           (!vnBased || (op2.lcl.ssaNum == that->op2.lcl.ssaNum));
+                    return op2.lclNum == that->op2.lclNum;
 
                 case O2K_SUBRANGE:
                     return op2.u2.Equals(that->op2.u2);
@@ -8139,6 +7973,9 @@ protected:
     bool           optCanPropBndsChk;
     bool           optCanPropSubRange;
 
+    RangeCheck* optRangeCheck = nullptr;
+    RangeCheck* GetRangeCheck();
+
 public:
     void         optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
     fgWalkResult optVNBasedFoldCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
@@ -8177,10 +8014,7 @@ public:
     AssertionIndex optAssertionGenCast(GenTreeCast* cast);
     AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo  optAssertionGenJtrue(GenTree* tree);
-    AssertionIndex optCreateJtrueAssertions(GenTree*                   op1,
-                                            GenTree*                   op2,
-                                            Compiler::optAssertionKind assertionKind,
-                                            bool                       helperCallArgs = false);
+    AssertionIndex optCreateJtrueAssertions(GenTree* op1, GenTree* op2, optAssertionKind assertionKind);
     AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
     void           optMapComplementary(AssertionIndex assertionIndex, AssertionIndex index);
 
@@ -8189,19 +8023,13 @@ public:
     ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
 
     // Assertion creation functions.
-    AssertionIndex optCreateAssertion(GenTree*         op1,
-                                      GenTree*         op2,
-                                      optAssertionKind assertionKind,
-                                      bool             helperCallArgs = false);
+    AssertionIndex optCreateAssertion(GenTree* op1, GenTree* op2, optAssertionKind assertionKind);
 
     AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
 
     bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 
-    void optCreateComplementaryAssertion(AssertionIndex assertionIndex,
-                                         GenTree*       op1,
-                                         GenTree*       op2,
-                                         bool           helperCallArgs = false);
+    void optCreateComplementaryAssertion(AssertionIndex assertionIndex, GenTree* op1, GenTree* op2);
 
     bool           optAssertionVnInvolvesNan(AssertionDsc* assertion);
     AssertionIndex optAddAssertion(AssertionDsc* assertion);
@@ -8214,10 +8042,8 @@ public:
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
-    AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
     bool           optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions);
-    bool           optAssertionIsNonNull(GenTree*                    op,
-                                         ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
+    bool           optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1);
@@ -8241,30 +8067,43 @@ public:
     GenTree* optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
     GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
-    GenTree* optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt);
+    GenTree* optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
+    GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
-    GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
+                                          GenTree*         tree,
+                                          Statement*       stmt,
+                                          BasicBlock*      block);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
     bool     optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
     bool     optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir);
 
+    enum class AssertVisit
+    {
+        Continue,
+        Abort,
+    };
+    template <typename TAssertVisitor>
+    AssertVisit optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor);
+
     void optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
+                                          Statement*       stmt,
+                                          BasicBlock*      block,
                                           bool*            isKnownNonZero,
                                           bool*            isKnownNonNegative);
 
     // Implied assertion functions.
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
     void optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions);
-    void optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionDsc* depAssertion, ASSERT_TP& result);
+    bool optCreateJumpTableImpliedAssertions(BasicBlock* switchBb);
     void optImpliedByConstAssertion(AssertionDsc* curAssertion, ASSERT_TP& result);
 
 #ifdef DEBUG
@@ -8274,6 +8113,8 @@ public:
     void optDebugCheckAssertion(AssertionDsc* assertion);
     void optDebugCheckAssertions(AssertionIndex AssertionIndex);
 #endif
+
+    ASSERT_VALRET_TP optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const;
 
     static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
     static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);
@@ -8306,6 +8147,7 @@ public:
 
     bool optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
     bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
+    bool optExtractSpanIndex(GenTree* tree, SpanIndex* result);
     bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool optReconstructArrIndex(GenTree* tree, ArrIndex* result);
     bool optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
@@ -8528,16 +8370,8 @@ public:
             reg     = REG_EAX;
             regMask = RBM_EAX;
 #elif defined(TARGET_AMD64)
-            if (isNativeAOT)
-            {
-                reg     = REG_R10;
-                regMask = RBM_R10;
-            }
-            else
-            {
-                reg     = REG_R11;
-                regMask = RBM_R11;
-            }
+            reg     = REG_R11;
+            regMask = RBM_R11;
 #elif defined(TARGET_ARM)
             if (isNativeAOT)
             {
@@ -8590,7 +8424,7 @@ public:
         // We explicitly block these APIs from being expanded in R2R
         // since we know they are non-deterministic across hardware
 
-        if (opts.IsReadyToRun() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (IsReadyToRun())
         {
             if (mustExpand)
             {
@@ -9208,7 +9042,7 @@ private:
 
     bool isOpaqueSIMDType(ClassLayout* layout) const
     {
-        if (layout->IsBlockLayout())
+        if (layout->IsCustomLayout())
         {
             return true;
         }
@@ -9756,7 +9590,7 @@ private:
     //
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES && !defined(UNIX_X86_ABI)
         LclVarDsc* lcl = lvaGetDesc(varNum);
         if (varTypeIsSIMD(lcl))
         {
@@ -9812,7 +9646,7 @@ private:
     // on which the function is executed (except for CoreLib, where there are special rules)
     bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
     {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         if ((opts.compSupportsISAReported.HasInstructionSet(isa)) == false)
         {
             if (notifyInstructionSetUsage(isa, (opts.compSupportsISA.HasInstructionSet(isa))))
@@ -10012,10 +9846,10 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // canUseRex2Encoding - Answer the question: Is Rex2 encoding supported on this target.
+    // canUseApxEncoding - Answer the question: Are APX encodings supported on this target.
     //
     // Returns:
-    //    `true` if Rex2 encoding is supported, `false` if not.
+    //    `true` if APX encoding is supported, `false` if not.
     //
     bool canUseApxEncoding() const
     {
@@ -10082,12 +9916,29 @@ private:
     // JitStressEvexEncoding- Answer the question: Is Evex stress knob set
     //
     // Returns:
-    //    `true` if user requests REX2 encoding.
+    //    `true` if user requests EVEX encoding.
     //
     bool JitStressEvexEncoding() const
     {
 #ifdef DEBUG
         return JitConfig.JitStressEvexEncoding() || JitConfig.JitStressRex2Encoding();
+#endif // DEBUG
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressPromotedEvexEncoding- Answer the question: Do we force promoted EVEX encoding.
+    //
+    // Returns:
+    //    `true` if user requests promoted EVEX encoding.
+    //
+    bool DoJitStressPromotedEvexEncoding() const
+    {
+#ifdef DEBUG
+        if (JitConfig.JitStressPromotedEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_APX))
+        {
+            return true;
+        }
 #endif // DEBUG
 
         return false;
@@ -10294,18 +10145,6 @@ public:
             return !!(compFlags & optFlag);
         }
 
-#ifdef FEATURE_READYTORUN
-        bool IsReadyToRun() const
-        {
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN);
-        }
-#else
-        bool IsReadyToRun() const
-        {
-            return false;
-        }
-#endif
-
         // Check if the compilation is control-flow guard enabled.
         bool IsCFGEnabled() const
         {
@@ -10313,8 +10152,14 @@ public:
             // On these platforms we assume the register that the target is
             // passed in is preserved by the validator and take care to get the
             // target from the register for the call (even in debug mode).
+            // RBM_INT_CALLEE_TRASH is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
+#if defined(TARGET_AMD64)
+            static_assert_no_msg(
+                (RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == RBM_NONE);
+#else
             static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
                                  RBM_NONE);
+#endif
             if (JitConfig.JitForceControlFlowGuard())
                 return true;
 
@@ -10431,7 +10276,7 @@ public:
 
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-        bool compReloc; // Generate relocs for pointers in code, true for all ngen/prejit codegen
+        bool compReloc; // Generate relocs for pointers in code, true for all AOT codegen
 
 #ifdef DEBUG
 #if defined(TARGET_XARCH)
@@ -10480,7 +10325,7 @@ public:
         bool disasmWithGC;             // Display GC info interleaved with disassembly.
         bool disAddr;                  // Display process address next to each instruction in disassembly code
         bool disAsm2;                  // Display native code after it is generated using external disassembler
-        bool dspOrder;                 // Display names of each of the methods that we ngen/jit
+        bool dspOrder;                 // Display names of each of the methods that we compile
         bool dspUnwind;                // Display the unwind info output
         bool compLongAddress;          // Force using large pseudo instructions for long address
                                        // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
@@ -10583,7 +10428,25 @@ public:
         // Collect 64 bit counts for PGO data.
         bool compCollect64BitCounts;
 
+        // Allow inlining of methods with EH.
+        bool compInlineMethodsWithEH;
+
     } opts;
+
+    bool IsAot() const
+    {
+        return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_AOT);
+    }
+
+    bool IsNativeAot()
+    {
+        return IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    }
+
+    bool IsReadyToRun()
+    {
+        return IsAot() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    }
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
     static AssemblyNamesList2* s_pAltJitExcludeAssembliesList;
@@ -10787,7 +10650,7 @@ public:
     {
 #if 0
         // Switching between size & speed has measurable throughput impact
-        // (3.5% on NGen CoreLib when measured). It used to be enabled for
+        // (3.5% on AOT CoreLib when measured). It used to be enabled for
         // DEBUG, but should generate identical code between CHK & RET builds,
         // so that's not acceptable.
         // TODO-Throughput: Figure out what to do about size vs. speed & throughput.
@@ -10863,10 +10726,6 @@ public:
         unsigned  compILargsCount;   // Number of arguments (incl. implicit but not hidden)
         unsigned  compArgsCount;     // Number of arguments (incl. implicit and     hidden)
 
-#if FEATURE_FASTTAILCALL
-        unsigned compArgStackSize; // Incoming argument stack size in bytes
-#endif                             // FEATURE_FASTTAILCALL
-
         unsigned compRetBuffArg;    // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
         unsigned compTypeCtxtArg;   // position of hidden param for type context for generic code
                                     // (CORINFO_CALLCONV_PARAMTYPE)
@@ -10922,7 +10781,15 @@ public:
     {
         return info.compMethodSuperPMIIndex != -1;
     }
-#endif // DEBUG
+#else  // !DEBUG
+    // Are we running a replay under SuperPMI?
+    // Note: you can certainly run a SuperPMI replay with a non-DEBUG JIT, and if necessary and useful we could
+    // make compMethodSuperPMIIndex always available.
+    bool RunningSuperPmiReplay() const
+    {
+        return false;
+    }
+#endif // !DEBUG
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
 
@@ -11049,14 +10916,18 @@ public:
     ClassLayout* typGetLayoutByNum(unsigned layoutNum);
     // Get the layout number of the specified layout.
     unsigned typGetLayoutNum(ClassLayout* layout);
+    // Get the layout for the specified class handle.
+    ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
+    // Get the number of a layout for the specified class handle.
+    unsigned     typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
+    ClassLayout* typGetCustomLayout(const ClassLayoutBuilder& builder);
+    unsigned     typGetCustomLayoutNum(const ClassLayoutBuilder& builder);
     // Get the layout having the specified size but no class handle.
     ClassLayout* typGetBlkLayout(unsigned blockSize);
     // Get the number of a layout having the specified size but no class handle.
     unsigned typGetBlkLayoutNum(unsigned blockSize);
-    // Get the layout for the specified class handle.
-    ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
-    // Get the number of a layout for the specified class handle.
-    unsigned typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
+    // Get the layout for the specified array of known length
+    ClassLayout* typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsigned length);
 
     var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
     var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
@@ -11084,9 +10955,10 @@ public:
     size_t compInfoBlkSize;
     BYTE*  compInfoBlkAddr;
 
-    EHblkDsc* compHndBBtab           = nullptr; // array of EH data
-    unsigned  compHndBBtabCount      = 0;       // element count of used elements in EH data array
-    unsigned  compHndBBtabAllocCount = 0;       // element count of allocated elements in EH data array
+    EHblkDsc*      compHndBBtab           = nullptr; // array of EH data
+    unsigned       compHndBBtabCount      = 0;       // element count of used elements in EH data array
+    unsigned       compHndBBtabAllocCount = 0;       // element count of allocated elements in EH data array
+    unsigned short compEHID               = 0;       // unique ID for EH data array entries
 
 #if defined(FEATURE_EH_WINDOWS_X86)
 
@@ -11123,12 +10995,6 @@ public:
 // Bytes of padding between save-reg area and locals.
 #define VSQUIRK_STACK_PAD (2 * REGSIZE_BYTES)
     unsigned compVSQuirkStackPaddingNeeded;
-#endif
-
-    unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
-
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
-    bool compHasSplitParam;
 #endif
 
     unsigned compMapILargNum(unsigned ILargNum);      // map accounting for hidden args
@@ -11538,9 +11404,11 @@ public:
 
 #define DEFAULT_MAX_INLINE_SIZE                                                                                        \
     100 // Methods with >  DEFAULT_MAX_INLINE_SIZE IL bytes will never be inlined.
-        // This can be overwritten by setting DOTNET_JITInlineSize env variable.
+        // This can be overwritten by setting DOTNET_JitInlineSize env variable.
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
+
+#define DEFAULT_INLINE_BUDGET 20 // Maximum estimated compile time increase via inlining
 
 #define DEFAULT_MAX_FORCE_INLINE_DEPTH 1 // Methods at more than this level deep will not be force inlined
 
@@ -11571,12 +11439,10 @@ private:
 
 #if defined(DEBUG)
     // These variables are associated with maintaining SQM data about compile time.
-    uint64_t m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
-                                          // in the current compilation.
-    uint64_t m_compCycles;                // Net cycle count for current compilation
-    DWORD m_compTickCountAtEndOfInlining; // The result of GetTickCount() (# ms since some epoch marker) at the end of
-                                          // the inlining phase in the current compilation.
-#endif                                    // defined(DEBUG)
+    int64_t m_compCyclesAtEndOfInlining; // Raw timer count at the end of the inlining phase
+                                         // in the current compilation.
+    int64_t m_compCycles;                // Wall clock elapsed time for current compilation (microseconds)
+#endif                                   // defined(DEBUG)
 
     // Records the SQM-relevant (cycles and tick count).  Should be called after inlining is complete.
     // (We do this after inlining because this marks the last point at which the JIT is likely to cause
@@ -11646,8 +11512,6 @@ public:
         }
         return compRoot->m_fieldSeqStore;
     }
-
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 
@@ -11722,8 +11586,7 @@ public:
     const CORINFO_FPSTRUCT_LOWERING* GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle);
 #endif // defined(UNIX_AMD64_ABI)
 
-    void     fgMorphMultiregStructArgs(GenTreeCall* call);
-    GenTree* fgMorphMultiregStructArg(CallArg* arg);
+    bool fgTryMorphStructArg(CallArg* arg);
 
     bool killGCRefs(GenTree* tree);
 
@@ -11751,6 +11614,10 @@ private:
     regMaskTP rbmFltCalleeTrash;
     unsigned  cntCalleeTrashFloat;
 
+    regMaskTP rbmAllInt;
+    regMaskTP rbmIntCalleeTrash;
+    unsigned  cntCalleeTrashInt;
+    regNumber regIntLast;
 public:
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -11765,6 +11632,27 @@ public:
         return this->cntCalleeTrashFloat;
     }
 
+    FORCEINLINE regMaskTP get_RBM_ALLINT() const
+    {
+        return this->rbmAllInt;
+    }
+    FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
+    {
+        return this->rbmIntCalleeTrash;
+    }
+    FORCEINLINE unsigned get_CNT_CALLEE_TRASH_INT() const
+    {
+        return this->cntCalleeTrashInt;
+    }
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return this->regIntLast;
+    }
+#else
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return REG_INT_LAST;
+    }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
@@ -11976,6 +11864,7 @@ public:
             case GT_IL_OFFSET:
             case GT_NOP:
             case GT_SWIFT_ERROR:
+            case GT_GCPOLL:
                 break;
 
             // Lclvar unary operators

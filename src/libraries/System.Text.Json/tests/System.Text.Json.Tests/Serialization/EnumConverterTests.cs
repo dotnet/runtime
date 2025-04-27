@@ -1207,5 +1207,55 @@ namespace System.Text.Json.Serialization.Tests
             [JsonStringEnumMemberName("Comma separators not allowed, in flags enums")]
             Value
         }
+
+        [Theory]
+        [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.SnakeCaseUpper)]
+        [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.SnakeCaseLower)]
+        [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.KebabCaseUpper)]
+        [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.KebabCaseLower)]
+        [InlineData("\"pAsCaLcAsE\"", EnumWithVaryingNamingPolicies.PascalCase, JsonKnownNamingPolicy.SnakeCaseUpper)]
+        [InlineData("\"pAsCaLcAsE\"", EnumWithVaryingNamingPolicies.PascalCase, JsonKnownNamingPolicy.SnakeCaseLower)]
+        [InlineData("\"pAsCaLcAsE\"", EnumWithVaryingNamingPolicies.PascalCase, JsonKnownNamingPolicy.KebabCaseUpper)]
+        [InlineData("\"pAsCaLcAsE\"", EnumWithVaryingNamingPolicies.PascalCase, JsonKnownNamingPolicy.KebabCaseLower)]
+        [InlineData("\"sNaKe_CaSe_UpPeR\"", EnumWithVaryingNamingPolicies.SNAKE_CASE_UPPER, JsonKnownNamingPolicy.SnakeCaseUpper)]
+        [InlineData("\"sNaKe_CaSe_LoWeR\"", EnumWithVaryingNamingPolicies.snake_case_lower, JsonKnownNamingPolicy.SnakeCaseLower)]
+        [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.CamelCase)]
+        [InlineData("\"a\"", EnumWithVaryingNamingPolicies.A, JsonKnownNamingPolicy.CamelCase)]
+        [InlineData("\"a\"", EnumWithVaryingNamingPolicies.A, JsonKnownNamingPolicy.SnakeCaseUpper)]
+        [InlineData("\"a\"", EnumWithVaryingNamingPolicies.A, JsonKnownNamingPolicy.SnakeCaseLower)]
+        [InlineData("\"a\"", EnumWithVaryingNamingPolicies.A, JsonKnownNamingPolicy.KebabCaseUpper)]
+        [InlineData("\"a\"", EnumWithVaryingNamingPolicies.A, JsonKnownNamingPolicy.KebabCaseLower)]
+        [InlineData("\"B\"", EnumWithVaryingNamingPolicies.b, JsonKnownNamingPolicy.CamelCase)]
+        [InlineData("\"B\"", EnumWithVaryingNamingPolicies.b, JsonKnownNamingPolicy.SnakeCaseUpper)]
+        [InlineData("\"B\"", EnumWithVaryingNamingPolicies.b, JsonKnownNamingPolicy.SnakeCaseLower)]
+        [InlineData("\"B\"", EnumWithVaryingNamingPolicies.b, JsonKnownNamingPolicy.KebabCaseUpper)]
+        [InlineData("\"B\"", EnumWithVaryingNamingPolicies.b, JsonKnownNamingPolicy.KebabCaseLower)]
+        public static void StringConverterWithNamingPolicyIsCaseInsensitive(string json, EnumWithVaryingNamingPolicies expectedValue, JsonKnownNamingPolicy namingPolicy)
+        {
+            JsonNamingPolicy policy = namingPolicy switch
+            {
+                JsonKnownNamingPolicy.CamelCase => JsonNamingPolicy.CamelCase,
+                JsonKnownNamingPolicy.SnakeCaseLower => JsonNamingPolicy.SnakeCaseLower,
+                JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
+                JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
+                JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
+                _ => throw new ArgumentOutOfRangeException(nameof(namingPolicy)),
+            };
+
+            JsonSerializerOptions options = new() { Converters = { new JsonStringEnumConverter(policy) } };
+
+            EnumWithVaryingNamingPolicies value = JsonSerializer.Deserialize<EnumWithVaryingNamingPolicies>(json, options);
+            Assert.Equal(expectedValue, value);
+        }
+
+        public enum EnumWithVaryingNamingPolicies
+        {
+            SNAKE_CASE_UPPER,
+            snake_case_lower,
+            camelCase,
+            PascalCase,
+            A,
+            b,
+        }
     }
 }

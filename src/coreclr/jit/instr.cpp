@@ -901,7 +901,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     // handle other cases recursively.
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_CNS_INT, GT_CNS_LNG))
+                    if (hwintrinsicChild->IsIntegralConst())
                     {
                         // a special case is when the operand of CreateScalarUnsafe is an integer type,
                         // CreateScalarUnsafe node will be folded, so we directly match a pattern of
@@ -920,6 +920,9 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     break;
                 }
 
+                case NI_Vector128_CreateScalar:
+                case NI_Vector256_CreateScalar:
+                case NI_Vector512_CreateScalar:
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
                 case NI_Vector512_CreateScalarUnsafe:
@@ -927,7 +930,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     // The hwintrinsic should be contained and its
                     // op1 should be either contained or spilled. This
                     // allows us to transparently "look through" the
-                    // CreateScalarUnsafe and treat it directly like
+                    // CreateScalar/Unsafe and treat it directly like
                     // a load from memory.
 
                     assert(hwintrinsic->isContained());
@@ -1614,9 +1617,9 @@ bool CodeGen::arm_Valid_Imm_For_Add_SP(target_ssize_t imm)
 bool CodeGenInterface::validImmForBL(ssize_t addr)
 {
     return
-        // If we are running the altjit for NGEN, then assume we can use the "BL" instruction.
-        // This matches the usual behavior for NGEN, since we normally do generate "BL".
-        (!compiler->info.compMatchedVM && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) ||
+        // If we are running the altjit for AOT, then assume we can use the "BL" instruction.
+        // This matches the usual behavior for AOT, since we normally do generate "BL".
+        (!compiler->info.compMatchedVM && compiler->IsAot()) ||
         (compiler->eeGetRelocTypeHint((void*)addr) == IMAGE_REL_BASED_THUMB_BRANCH24);
 }
 
@@ -1628,7 +1631,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
     // On arm64, we always assume a call target is in range and generate a 28-bit relative
     // 'bl' instruction. If this isn't sufficient range, the VM will generate a jump stub when
     // we call recordRelocation(). See the IMAGE_REL_ARM64_BRANCH26 case in jitinterface.cpp
-    // (for JIT) or zapinfo.cpp (for NGEN). If we cannot allocate a jump stub, it is fatal.
+    // (for JIT) or zapinfo.cpp (for AOT). If we cannot allocate a jump stub, it is fatal.
     return true;
 }
 #endif // TARGET_ARM64
@@ -2414,89 +2417,50 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 // Arguments:
 //    to - Destination type.
 //    from - Source type.
-//    attr - Input size.
 //
 // Returns:
 //    The correct conversion instruction to use based on src and dst types.
 //
-instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
+instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 {
     // AVX: Supports following conversions
     //   srcType = int16/int64                     castToType = float
     // AVX512: Supports following conversions
     //   srcType = ulong                           castToType = double/float
-
+    bool isAvx10v2 = false;
     switch (from)
     {
-        // int/long -> float/double use the same instruction but type size would be different.
         case TYP_INT:
+            switch (to)
+            {
+                case TYP_FLOAT:
+                    return INS_cvtsi2ss32;
+                case TYP_DOUBLE:
+                    return INS_cvtsi2sd32;
+                default:
+                    unreached();
+            }
+            break;
+
         case TYP_LONG:
             switch (to)
             {
                 case TYP_FLOAT:
-                {
-                    if (EA_SIZE(attr) == EA_4BYTE)
-                    {
-                        return INS_cvtsi2ss32;
-                    }
-                    else if (EA_SIZE(attr) == EA_8BYTE)
-                    {
-                        return INS_cvtsi2ss64;
-                    }
-                    unreached();
-                }
+                    return INS_cvtsi2ss64;
                 case TYP_DOUBLE:
-                {
-                    if (EA_SIZE(attr) == EA_4BYTE)
-                    {
-                        return INS_cvtsi2sd32;
-                    }
-                    else if (EA_SIZE(attr) == EA_8BYTE)
-                    {
-                        return INS_cvtsi2sd64;
-                    }
-                    unreached();
-                }
+                    return INS_cvtsi2sd64;
                 default:
                     unreached();
             }
             break;
 
-        case TYP_FLOAT:
+        case TYP_UINT:
             switch (to)
             {
-                case TYP_INT:
-                    return INS_cvttss2si32;
-                case TYP_LONG:
-                    return INS_cvttss2si64;
                 case TYP_FLOAT:
-                    return ins_Move_Extend(TYP_FLOAT, false);
+                    return INS_vcvtusi2ss32;
                 case TYP_DOUBLE:
-                    return INS_cvtss2sd;
-                case TYP_ULONG:
-                    return INS_vcvttss2usi64;
-                case TYP_UINT:
-                    return INS_vcvttss2usi32;
-                default:
-                    unreached();
-            }
-            break;
-
-        case TYP_DOUBLE:
-            switch (to)
-            {
-                case TYP_INT:
-                    return INS_cvttsd2si32;
-                case TYP_LONG:
-                    return INS_cvttsd2si64;
-                case TYP_FLOAT:
-                    return INS_cvtsd2ss;
-                case TYP_DOUBLE:
-                    return ins_Move_Extend(TYP_DOUBLE, false);
-                case TYP_ULONG:
-                    return INS_vcvttsd2usi64;
-                case TYP_UINT:
-                    return INS_vcvttsd2usi32;
+                    return INS_vcvtusi2sd32;
                 default:
                     unreached();
             }
@@ -2505,13 +2469,66 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
         case TYP_ULONG:
             switch (to)
             {
-                case TYP_DOUBLE:
-                    return INS_vcvtusi2sd64;
                 case TYP_FLOAT:
                     return INS_vcvtusi2ss64;
+                case TYP_DOUBLE:
+                    return INS_vcvtusi2sd64;
                 default:
                     unreached();
             }
+            break;
+
+        case TYP_FLOAT:
+            if (to == TYP_FLOAT)
+            {
+                return ins_Move_Extend(TYP_FLOAT, false);
+            }
+            else if (to == TYP_DOUBLE)
+            {
+                return INS_cvtss2sd;
+            }
+            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+
+            switch (to)
+            {
+                case TYP_INT:
+                    return isAvx10v2 ? INS_vcvttss2sis32 : INS_cvttss2si32;
+                case TYP_LONG:
+                    return isAvx10v2 ? INS_vcvttss2sis64 : INS_cvttss2si64;
+                case TYP_ULONG:
+                    return isAvx10v2 ? INS_vcvttss2usis64 : INS_vcvttss2usi64;
+                case TYP_UINT:
+                    return isAvx10v2 ? INS_vcvttss2usis32 : INS_vcvttss2usi32;
+                default:
+                    unreached();
+            }
+            break;
+
+        case TYP_DOUBLE:
+            if (to == TYP_FLOAT)
+            {
+                return INS_cvtsd2ss;
+            }
+            else if (to == TYP_DOUBLE)
+            {
+                return ins_Move_Extend(TYP_DOUBLE, false);
+            }
+            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+
+            switch (to)
+            {
+                case TYP_INT:
+                    return isAvx10v2 ? INS_vcvttsd2sis32 : INS_cvttsd2si32;
+                case TYP_LONG:
+                    return isAvx10v2 ? INS_vcvttsd2sis64 : INS_cvttsd2si64;
+                case TYP_ULONG:
+                    return isAvx10v2 ? INS_vcvttsd2usis64 : INS_vcvttsd2usi64;
+                case TYP_UINT:
+                    return isAvx10v2 ? INS_vcvttsd2usis32 : INS_vcvttsd2usi32;
+                default:
+                    unreached();
+            }
+            break;
 
         default:
             unreached();

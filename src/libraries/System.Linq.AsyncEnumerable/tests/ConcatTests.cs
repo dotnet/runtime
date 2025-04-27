@@ -17,6 +17,17 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("second", () => AsyncEnumerable.Concat(AsyncEnumerable.Empty<int>(), null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            IAsyncEnumerable<int> empty = AsyncEnumerable.Empty<int>();
+            IAsyncEnumerable<int> nonEmpty = CreateSource(1, 3, 5);
+
+            Assert.Same(empty, empty.Concat(empty));
+            Assert.Same(nonEmpty, nonEmpty.Concat(empty));
+            Assert.Same(nonEmpty, empty.Concat(nonEmpty));
+        }
+
         [Theory]
         [InlineData(new int[0], new int[0])]
         [InlineData(new int[0], new int[] { 42 })]

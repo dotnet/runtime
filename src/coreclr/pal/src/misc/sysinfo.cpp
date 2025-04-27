@@ -221,6 +221,8 @@ GetSystemInfo(
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) VM_MAX_PAGE_ADDRESS;
 #elif defined(__HAIKU__)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) 0x7fffffe00000ul;
+#elif defined(__wasm__)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) (1ul << 31);
 #elif defined(USERLIMIT)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USERLIMIT;
 #elif defined(HOST_64BIT)

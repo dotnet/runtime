@@ -292,6 +292,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         return;
     }
 
+    JITDUMP("\nUpdating ACDs before removing EH#%u\n", XTnum);
+
     EHblkDsc* const      ebd = ehGetDsc(XTnum);
     AddCodeDscMap* const map = fgGetAddCodeDscMap();
     for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
@@ -411,6 +413,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             JITDUMPEXEC(add->Dump());
         }
     }
+
+    JITDUMP("... done updating ACDs\n");
 }
 
 //------------------------------------------------------------------------
@@ -690,7 +694,9 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // Handler index of any nested blocks will update when we
         // remove the EH table entry.  Change handler exits to jump to
         // the continuation.  Clear catch type on handler entry.
-        // Decrement nesting level of enclosed GT_END_LFINs.
+        //
+        // GT_END_LFIN no longer need updates here, now their gtVal1 fields refer to EH IDs.
+        //
         for (BasicBlock* const block : Blocks(firstHandlerBlock, lastHandlerBlock))
         {
             if (block == firstHandlerBlock)
@@ -725,25 +731,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     }
                 }
             }
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-            if (!UsesFunclets())
-            {
-                // If we're in a non-funclet model, decrement the nesting
-                // level of any GT_END_LFIN we find in the handler region,
-                // since we're removing the enclosing handler.
-                for (Statement* const stmt : block->Statements())
-                {
-                    GenTree* expr = stmt->GetRootNode();
-                    if (expr->gtOper == GT_END_LFIN)
-                    {
-                        const size_t nestLevel = expr->AsVal()->gtVal1;
-                        assert(nestLevel > 0);
-                        expr->AsVal()->gtVal1 = nestLevel - 1;
-                    }
-                }
-            }
-#endif // FEATURE_EH_WINDOWS_X86
         }
 
         // (6) Update any impacted ACDs.
@@ -1661,27 +1648,28 @@ PhaseStatus Compiler::fgCloneFinally()
 
             for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
             {
-                if (block->hasProfileWeight())
-                {
-                    weight_t const blockWeight = block->bbWeight;
-                    block->setBBProfileWeight(blockWeight * originalScale);
-                    JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
+                weight_t const blockWeight = block->bbWeight;
+                block->setBBProfileWeight(blockWeight * originalScale);
+                JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
 
-                    BasicBlock* const clonedBlock = blockMap[block];
-                    clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
-                    JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);
-                }
+                BasicBlock* const clonedBlock = blockMap[block];
+                clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
+                JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);
+            }
+
+            if (!retargetedAllCalls)
+            {
+                JITDUMP(
+                    "Reduced flow out of EH%u needs to be propagated to continuation block(s). Data %s inconsistent.\n",
+                    XTnum, fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
             }
         }
 
         // Update flow into normalCallFinallyReturn
         if (normalCallFinallyReturn->hasProfileWeight())
         {
-            normalCallFinallyReturn->bbWeight = BB_ZERO_WEIGHT;
-            for (FlowEdge* const predEdge : normalCallFinallyReturn->PredEdges())
-            {
-                normalCallFinallyReturn->increaseBBProfileWeight(predEdge->getLikelyWeight());
-            }
+            normalCallFinallyReturn->setBBProfileWeight(normalCallFinallyReturn->computeIncomingWeight());
         }
 
         // Done!
@@ -2202,33 +2190,13 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     //
     if (block->hasProfileWeight())
     {
-        // Add weight to the canonical call finally pair.
+        // Add weight to the canonical call-finally.
         //
-        weight_t const canonicalWeight =
-            canonicalCallFinally->hasProfileWeight() ? canonicalCallFinally->bbWeight : BB_ZERO_WEIGHT;
-        weight_t const newCanonicalWeight = block->bbWeight + canonicalWeight;
+        canonicalCallFinally->increaseBBProfileWeight(block->bbWeight);
 
-        canonicalCallFinally->setBBProfileWeight(newCanonicalWeight);
-
-        BasicBlock* const canonicalLeaveBlock = canonicalCallFinally->Next();
-
-        weight_t const canonicalLeaveWeight =
-            canonicalLeaveBlock->hasProfileWeight() ? canonicalLeaveBlock->bbWeight : BB_ZERO_WEIGHT;
-        weight_t const newLeaveWeight = block->bbWeight + canonicalLeaveWeight;
-
-        canonicalLeaveBlock->setBBProfileWeight(newLeaveWeight);
-
-        // Remove weight from the old call finally pair.
+        // Remove weight from the old call-finally.
         //
-        if (callFinally->hasProfileWeight())
-        {
-            callFinally->decreaseBBProfileWeight(block->bbWeight);
-        }
-
-        if (leaveBlock->hasProfileWeight())
-        {
-            leaveBlock->decreaseBBProfileWeight(block->bbWeight);
-        }
+        callFinally->decreaseBBProfileWeight(block->bbWeight);
     }
 
     return true;
@@ -2552,6 +2520,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     auto addBlockToClone = [=, &blocks, &visited, &numberOfBlocksToClone](BasicBlock* block, const char* msg) {
         if (!BitVecOps::TryAddElemD(traits, visited, block->bbID))
         {
+            JITDUMP("[already seen]  %s block " FMT_BB "\n", msg, block->bbNum);
             return false;
         }
 
@@ -2696,8 +2665,8 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 if (bbIsTryBeg(block))
                 {
                     assert(added);
-                    JITDUMP("==> found try entry for EH#%02u nested in handler at " FMT_BB "\n", block->bbNum,
-                            block->getTryIndex());
+                    JITDUMP("==> found try entry for EH#%02u nested in handler at " FMT_BB "\n", block->getTryIndex(),
+                            block->bbNum);
                     regionsToProcess.Push(block->getTryIndex());
                 }
             }
@@ -2735,7 +2704,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 break;
             }
             outermostEbd = ehGetDsc(enclosingTryIndex);
-            if (!EHblkDsc::ebdIsSameILTry(outermostEbd, tryEbd))
+            if (!EHblkDsc::ebdIsSameTry(outermostEbd, tryEbd))
             {
                 break;
             }
@@ -2761,19 +2730,33 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // this is cheaper than any other insertion point, as no existing regions get renumbered.
     //
     unsigned insertBeforeIndex = enclosingTryIndex;
-    if (insertBeforeIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+    if ((enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) && (enclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX))
     {
-        JITDUMP("Cloned EH clauses will go at the end of the EH table\n");
+        JITDUMP("No enclosing EH region; cloned EH clauses will go at the end of the EH table\n");
         insertBeforeIndex = compHndBBtabCount;
+    }
+    else if ((enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) || (enclosingHndIndex < enclosingTryIndex))
+    {
+        JITDUMP("Cloned EH clauses will go before enclosing handler region EH#%02u\n", enclosingHndIndex);
+        insertBeforeIndex = enclosingHndIndex;
     }
     else
     {
-        JITDUMP("Cloned EH clauses will go before enclosing region EH#%02u\n", enclosingTryIndex);
+        JITDUMP("Cloned EH clauses will go before enclosing try region EH#%02u\n", enclosingTryIndex);
+        assert(insertBeforeIndex == enclosingTryIndex);
+    }
+
+    if (insertBeforeIndex != compHndBBtabCount)
+    {
+        JITDUMP("Existing EH region(s) EH#%02u...EH#%02u will become EH#%02u...EH#%02u\n", insertBeforeIndex,
+                compHndBBtabCount - 1, insertBeforeIndex + regionCount, compHndBBtabCount + regionCount - 1);
     }
 
     // Once we call fgTryAddEHTableEntries with deferCloning = false,
     // all the EH indicies at or above insertBeforeIndex will shift,
     // and the EH table may reallocate.
+    //
+    // This addition may also fail, if the table would become too large...
     //
     EHblkDsc* const clonedOutermostEbd =
         fgTryAddEHTableEntries(insertBeforeIndex, regionCount, /* deferAdding */ deferCloning);
@@ -2861,12 +2844,14 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         compHndBBtab[XTnum]    = compHndBBtab[originalXTnum];
         EHblkDsc* const ebd    = &compHndBBtab[XTnum];
 
+        ebd->ebdID = impInlineRoot()->compEHID++;
+
         // Note the outermost region enclosing indices stay the same, because the original
         // clause entries got adjusted when we inserted the new clauses.
         //
         if (ebd->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            if (XTnum < clonedOutermostRegionIndex)
+            if (ebd->ebdEnclosingTryIndex < clonedOutermostRegionIndex)
             {
                 ebd->ebdEnclosingTryIndex += (unsigned short)indexShift;
             }
@@ -2879,7 +2864,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 
         if (ebd->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            if (XTnum < clonedOutermostRegionIndex)
+            if (ebd->ebdEnclosingHndIndex < clonedOutermostRegionIndex)
             {
                 ebd->ebdEnclosingHndIndex += (unsigned short)indexShift;
             }
@@ -2989,13 +2974,11 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
             const unsigned originalTryIndex = block->getTryIndex();
             unsigned       cloneTryIndex    = originalTryIndex;
 
-            if (originalTryIndex <= outermostTryIndex)
+            if (originalTryIndex < enclosingTryIndex)
             {
                 cloneTryIndex += indexShift;
             }
 
-            EHblkDsc* const originalEbd = ehGetDsc(originalTryIndex);
-            EHblkDsc* const clonedEbd   = ehGetDsc(cloneTryIndex);
             newBlock->setTryIndex(cloneTryIndex);
             updateBlockReferences(cloneTryIndex);
         }
@@ -3003,11 +2986,13 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         if (block->hasHndIndex())
         {
             const unsigned originalHndIndex = block->getHndIndex();
+            unsigned       cloneHndIndex    = originalHndIndex;
 
-            // if (originalHndIndex ==
-            const unsigned  cloneHndIndex = originalHndIndex + indexShift;
-            EHblkDsc* const originalEbd   = ehGetDsc(originalHndIndex);
-            EHblkDsc* const clonedEbd     = ehGetDsc(cloneHndIndex);
+            if (originalHndIndex < enclosingHndIndex)
+            {
+                cloneHndIndex += indexShift;
+            }
+
             newBlock->setHndIndex(cloneHndIndex);
             updateBlockReferences(cloneHndIndex);
 
@@ -3019,6 +3004,22 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 newBlock->bbRefs++;
             }
         }
+
+#if defined(FEATURE_EH_WINDOWS_X86)
+        // Update the EH ID for any cloned GT_END_LFIN.
+        //
+        for (Statement* const stmt : newBlock->Statements())
+        {
+            GenTree* const rootNode = stmt->GetRootNode();
+            if (rootNode->OperIs(GT_END_LFIN))
+            {
+                GenTreeVal* const endNode = rootNode->AsVal();
+                EHblkDsc* const   oldEbd  = ehFindEHblkDscById((unsigned short)endNode->gtVal1);
+                EHblkDsc* const   newEbd  = oldEbd + indexShift;
+                endNode->gtVal1           = newEbd->ebdID;
+            }
+        }
+#endif
     }
     JITDUMP("Done fixing region indices\n");
 

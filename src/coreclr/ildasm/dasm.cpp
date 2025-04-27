@@ -5157,10 +5157,10 @@ void DumpCodeManager(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
     ULONG iCount = VAL32(CORHeader->CodeManagerTable.Size) / sizeof(GUID);
     for (ULONG i=0;  i<iCount;  i++)
     {
-        CHAR         rcguid[GUID_STR_BUFFER_LEN];
+        CHAR         rcguid[MINIPAL_GUID_BUFFER_LEN];
         GUID         Guid = *pcm;
         SwapGuid(&Guid);
-        GuidToLPSTR(Guid, rcguid);
+        minipal_guid_as_string(Guid, rcguid, MINIPAL_GUID_BUFFER_LEN);
         sprintf_s(szString,SZSTRING_SIZE,"//   [0x%08x]    %s", i, rcguid);
         printLine(GUICookie,szStr);
         pcm++;

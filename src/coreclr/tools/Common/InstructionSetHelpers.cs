@@ -20,7 +20,6 @@ namespace System.CommandLine
             string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool optimizingForSize = false)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
-            InstructionSetSupportFlags flags = 0;
 
             // Ready to run images are built with certain instruction set baselines
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
@@ -44,6 +43,8 @@ namespace System.CommandLine
             // We seed this from optimizingForSize - if we're size-optimizing, we don't want to unnecessarily
             // compile both branches of IsSupported checks.
             bool allowOptimistic = !optimizingForSize;
+
+            bool throttleAvx512 = false;
 
             if (instructionSet == "native")
             {
@@ -92,7 +93,7 @@ namespace System.CommandLine
                                     // * Cascade Lake
                                     // * Cooper Lake
 
-                                    flags |= InstructionSetSupportFlags.Vector512Throttling;
+                                    throttleAvx512 = true;
                                 }
                             }
                             else if (extendedModel == 0x06)
@@ -101,13 +102,13 @@ namespace System.CommandLine
                                 {
                                     // * Cannon Lake
 
-                                    flags |= InstructionSetSupportFlags.Vector512Throttling;
+                                    throttleAvx512 = true;
                                 }
                             }
                         }
                     }
 
-                    if ((flags & InstructionSetSupportFlags.Vector512Throttling) != 0 && logger.IsVerbose)
+                    if (throttleAvx512 && logger.IsVerbose)
                         logger.LogMessage("Vector512 is throttled");
                 }
 
@@ -180,7 +181,7 @@ namespace System.CommandLine
             InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(instructionSetSupportBuilder);
 
             // Optimistically assume some instruction sets are present.
-            if (allowOptimistic && (targetArchitecture == TargetArchitecture.X86 || targetArchitecture == TargetArchitecture.X64))
+            if (allowOptimistic && targetArchitecture is TargetArchitecture.X86 or TargetArchitecture.X64)
             {
                 // We set these hardware features as opportunistically enabled as most of hardware in the wild supports them.
                 // Note that we do not indicate support for AVX, or any other instruction set which uses the VEX encodings as
@@ -235,7 +236,7 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
                 }
             }
-            else if (targetArchitecture == TargetArchitecture.ARM64)
+            else if (allowOptimistic && targetArchitecture is TargetArchitecture.ARM64)
             {
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("crc");
@@ -252,12 +253,42 @@ namespace System.CommandLine
             optimisticInstructionSet.Remove(unsupportedInstructionSet);
             optimisticInstructionSet.Add(supportedInstructionSet);
 
+            if (throttleAvx512)
+            {
+                Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X86_AVX512F))
+                {
+                    Debug.Assert(InstructionSet.X86_Vector256 == InstructionSet.X64_Vector256);
+                    Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);
+                    Debug.Assert(InstructionSet.X86_VectorT512 == InstructionSet.X64_VectorT512);
+
+                    // AVX-512 is supported, but we are compiling specifically for hardware that has a performance penalty for
+                    // using 512-bit ops. We want to tell JIT not to consider Vector512 to be hardware accelerated, which we do
+                    // by passing a PreferredVectorBitWidth value, in the form of a virtual vector ISA of the appropriate size.
+                    //
+                    // If we are downgrading the max accelerated vector size, we also need to downgrade Vector<T> size.
+
+                    supportedInstructionSet.AddInstructionSet(InstructionSet.X86_Vector256);
+
+                    if (supportedInstructionSet.HasInstructionSet(InstructionSet.X86_VectorT512))
+                    {
+                        supportedInstructionSet.RemoveInstructionSet(InstructionSet.X86_VectorT512);
+                        supportedInstructionSet.AddInstructionSet(InstructionSet.X86_VectorT256);
+                    }
+
+                    if (optimisticInstructionSet.HasInstructionSet(InstructionSet.X86_VectorT512))
+                    {
+                        optimisticInstructionSet.RemoveInstructionSet(InstructionSet.X86_VectorT512);
+                        optimisticInstructionSet.AddInstructionSet(InstructionSet.X86_VectorT256);
+                    }
+                }
+            }
+
             return new InstructionSetSupport(supportedInstructionSet,
                 unsupportedInstructionSet,
                 optimisticInstructionSet,
                 InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(targetArchitecture),
-                targetArchitecture,
-                flags);
+                targetArchitecture);
         }
     }
 }

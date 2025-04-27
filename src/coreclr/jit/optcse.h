@@ -29,6 +29,13 @@ protected:
 #ifdef DEBUG
     jitstd::vector<unsigned>* m_sequence;
 #endif
+#if defined(TARGET_AMD64)
+    unsigned             cntCalleeTrashInt;
+    FORCEINLINE unsigned get_CNT_CALLEE_TRASH_INT() const
+    {
+        return this->cntCalleeTrashInt;
+    }
+#endif // TARGET_AMD64
 
 public:
     virtual void Initialize()

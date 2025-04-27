@@ -786,7 +786,7 @@ enum CorInfoFlag
 enum CorInfoMethodRuntimeFlags
 {
     CORINFO_FLG_BAD_INLINEE         = 0x00000001, // The method is not suitable for inlining
-    // unused                       = 0x00000002,
+    CORINFO_FLG_INTERPRETER         = 0x00000002, // The method was compiled by the interpreter
     // unused                       = 0x00000004,
     CORINFO_FLG_SWITCHED_TO_MIN_OPT = 0x00000008, // The JIT decided to switch to MinOpt for this method, when it was not requested
     CORINFO_FLG_SWITCHED_TO_OPTIMIZED = 0x00000010, // The JIT decided to switch to tier 1 for this method, when a different tier was requested
@@ -813,13 +813,14 @@ enum CORINFO_ACCESS_FLAGS
 };
 
 // These are the flags set on an CORINFO_EH_CLAUSE
+// Keep values in sync with COR_ILEXCEPTION_CLAUSE flags
 enum CORINFO_EH_CLAUSE_FLAGS
 {
     CORINFO_EH_CLAUSE_NONE      = 0,
     CORINFO_EH_CLAUSE_FILTER    = 0x0001, // If this bit is on, then this EH entry is for a filter
     CORINFO_EH_CLAUSE_FINALLY   = 0x0002, // This clause is a finally clause
     CORINFO_EH_CLAUSE_FAULT     = 0x0004, // This clause is a fault clause
-    CORINFO_EH_CLAUSE_DUPLICATE = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
+    // UNUSED                   = 0x0008,
     CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one
 };
 
@@ -1650,8 +1651,6 @@ struct CORINFO_EE_INFO
         // Size of the Frame structure when it also contains the secret stub arg
         unsigned    sizeWithSecretStubArg;
 
-        unsigned    offsetOfGSCookie;
-        unsigned    offsetOfFrameVptr;
         unsigned    offsetOfFrameLink;
         unsigned    offsetOfCallSiteSP;
         unsigned    offsetOfCalleeSavedFP;
@@ -2480,14 +2479,6 @@ public:
 
     // Boxing nullable<T> actually returns a boxed<T> not a boxed Nullable<T>.
     virtual CORINFO_CLASS_HANDLE getTypeForBox(
-            CORINFO_CLASS_HANDLE        cls
-            ) = 0;
-
-    // Get a representation for a stack-allocated boxed value type.
-    //
-    // This differs from getTypeForBox in that it includes an explicit field
-    // for the method table pointer.
-    virtual CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
@@ -3350,6 +3341,17 @@ public:
 // So, the value of offset correction is 12
 //
 #define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
+
+//
+// LOONGARCH64 relocation types
+//
+#define IMAGE_REL_LOONGARCH64_PC        0x0003
+#define IMAGE_REL_LOONGARCH64_JIR       0x0004
+
+//
+// RISCV64 relocation types
+//
+#define IMAGE_REL_RISCV64_PC            0x0003
 
 /**********************************************************************************/
 #ifdef TARGET_64BIT

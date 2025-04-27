@@ -25,14 +25,23 @@ namespace System
 
             public override int Next() => _prng.InternalSample();
 
-            public override int Next(int maxValue) => (int)(_prng.Sample() * maxValue);
+            public override int Next(int maxValue)
+            {
+                // We can use ConvertToIntegerNative here since we know the result of
+                // scaling the sample is in the range [0, int.MaxValue) and therefore
+                // the integer portion is exactly representable since it's < 2^52.
+                return double.ConvertToIntegerNative<int>(_prng.Sample() * maxValue);
+            }
 
             public override int Next(int minValue, int maxValue)
             {
+                // We can use ConvertToIntegerNative here since we know the result of
+                // scaling the sample is in the range [0, uint.MaxValue) and therefore
+                // the integer portion is exactly representable since it's < 2^52.
                 long range = (long)maxValue - minValue;
                 return range <= int.MaxValue ?
-                    (int)(_prng.Sample() * range) + minValue :
-                    (int)((long)(_prng.GetSampleForLargeRange() * range) + minValue);
+                    double.ConvertToIntegerNative<int>(_prng.Sample() * range) + minValue :
+                    (int)(double.ConvertToIntegerNative<long>(_prng.GetSampleForLargeRange() * range) + minValue);
             }
 
             public override long NextInt64()
@@ -136,17 +145,23 @@ namespace System
 
             public override int Next(int maxValue)
             {
+                // We can use ConvertToIntegerNative here since we know the result of
+                // scaling the sample is in the range [0, int.MaxValue) and therefore
+                // the integer portion is exactly representable since it's < 2^52.
                 _prng.EnsureInitialized(_seed);
-                return (int)(_parent.Sample() * maxValue);
+                return double.ConvertToIntegerNative<int>(_parent.Sample() * maxValue);
             }
 
             public override int Next(int minValue, int maxValue)
             {
+                // We can use ConvertToIntegerNative here since we know the result of
+                // scaling the sample is in the range [0, uint.MaxValue) and therefore
+                // the integer portion is exactly representable since it's < 2^52.
                 _prng.EnsureInitialized(_seed);
                 long range = (long)maxValue - minValue;
                 return range <= int.MaxValue ?
-                    (int)(_parent.Sample() * range) + minValue :
-                    (int)((long)(_prng.GetSampleForLargeRange() * range) + minValue);
+                    double.ConvertToIntegerNative<int>(_parent.Sample() * range) + minValue :
+                    (int)(double.ConvertToIntegerNative<long>(_prng.GetSampleForLargeRange() * range) + minValue);
             }
 
             public override long NextInt64()

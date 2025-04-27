@@ -24,6 +24,15 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => AsyncEnumerable.SkipWhile(AsyncEnumerable.Empty<int>(), (Func<int, int, CancellationToken, ValueTask<bool>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SkipWhile(i => true));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SkipWhile((i, index) => true));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SkipWhile(async (i, ct) => true));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SkipWhile(async (i, index, ct) => true));
+        }
+
         [Theory]
         [InlineData(new int[0])]
         [InlineData(new int[] { 42 })]
@@ -129,6 +138,22 @@ namespace System.Linq.Tests
                     }
                 }
             }
+        }
+
+        [Fact]
+        public async Task Callbacks_InvokedOnOriginalContext()
+        {
+            await Task.Run(async () =>
+            {
+                TrackingSynchronizationContext ctx = new();
+                SynchronizationContext.SetSynchronizationContext(ctx);
+
+                await ConsumeAsync(CreateSource(2, 4, 8, 16).Yield().SkipWhile(i =>
+                {
+                    Assert.Same(ctx, SynchronizationContext.Current);
+                    return true;
+                }));
+            });
         }
     }
 }

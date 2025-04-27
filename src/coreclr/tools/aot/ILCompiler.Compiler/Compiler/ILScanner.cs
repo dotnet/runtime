@@ -436,6 +436,7 @@ namespace ILCompiler
         private sealed class ScannedDevirtualizationManager : DevirtualizationManager
         {
             private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _reflectionVisibleGenericDefinitionMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
@@ -454,6 +455,11 @@ namespace ILCompiler
                     if (node is IMethodBodyNode { Method.IsVirtual: true, Method.HasInstantiation: false } virtualMethodBody)
                     {
                         _generatedVirtualMethods.Add(virtualMethodBody.Method);
+                    }
+
+                    if (node is ReflectionVisibleGenericDefinitionEETypeNode reflectionVisibleMT)
+                    {
+                        _reflectionVisibleGenericDefinitionMethodTables.Add(reflectionVisibleMT.Type);
                     }
 
                     TypeDesc type = node switch
@@ -630,8 +636,7 @@ namespace ILCompiler
                 }
 
                 if (baseType.IsCanonicalSubtype(CanonicalFormKind.Any)
-                    || baseType.ConvertToCanonForm(CanonicalFormKind.Specific) != baseType
-                    || baseType.Context.SupportsUniversalCanon)
+                    || baseType.ConvertToCanonForm(CanonicalFormKind.Specific) != baseType)
                 {
                     // If the interface has a canonical form, we might not have a full view of all implementers.
                     // E.g. if we have:
@@ -734,6 +739,12 @@ namespace ILCompiler
                 Debug.Assert(type.NormalizeInstantiation() == type);
                 Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
                 return _constructedMethodTables.Contains(type) || _canonConstructedMethodTables.Contains(type);
+            }
+
+            public override bool IsGenericDefinitionMethodTableReflectionVisible(TypeDesc type)
+            {
+                Debug.Assert(type.IsGenericDefinition);
+                return _reflectionVisibleGenericDefinitionMethodTables.Contains(type);
             }
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)

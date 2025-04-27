@@ -256,7 +256,8 @@
     <Compile Include="IBC\ReaderExtensions.cs" />
     <Compile Include="Compiler\ProfileData.cs" />
     <Compile Include="Compiler\ProfileDataManager.cs" />
-    <Compile Include="Compiler\ReadyToRunHashCode.cs" />
+    <Compile Include="Compiler\VersionResilientHashCode.ReadyToRun.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs" />
     <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
@@ -269,6 +270,7 @@
     <Compile Include="Compiler\ReadyToRunXmlRootProvider.cs" />
     <Compile Include="IBC\IBCProfileData.cs" />
     <Compile Include="IBC\IBCProfileParser.cs" />
+    <Compile Include="IL\Stubs\InstanceCalliHelperIntrinsics.cs" />
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />

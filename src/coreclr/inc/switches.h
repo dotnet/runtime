@@ -43,7 +43,7 @@
 #define GC_STATS
 #endif
 
-#if defined(TARGET_X86) || defined(TARGET_ARM)
+#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_BROWSER)
     #define USE_LAZY_PREFERRED_RANGE       0
 
 #elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64) || defined(TARGET_RISCV64)
@@ -158,3 +158,11 @@
 #endif
 
 #define FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+#define CHAIN_LOOKUP
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+
+// If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
+// of stub-based interface dispatch.
+//#define STUB_LOGGING

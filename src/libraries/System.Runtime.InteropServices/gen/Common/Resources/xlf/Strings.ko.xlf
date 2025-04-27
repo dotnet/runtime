@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">이 유형은 'GeneratedComInterfaceAttribute' 특성을 갖는 하나 이상의 유형을 구현하거나 기본 유형에 'GeneratedComClassAttribute' 특성이 있습니다. 'GeneratedComClassAttribute'를 추가하여 이 유형을 COM에 전달하고 이 유형의 개체에서 'GeneratedComInterfaceAttribute'가 있는 유형에 대해 COM 인터페이스를 노출할 수 있도록 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyMessage">
         <source>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</source>
-        <target state="new">The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</target>
+        <target state="translated">'{0}' 유형에 다른 어셈블리에서 정의된 기본 인터페이스 '{1}'이(가) 있습니다. 일부 시나리오에서는 이로 인해 진단하기 어려운 다양한 문제가 발생할 수 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyTitle">
         <source>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</source>
-        <target state="new">Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</target>
+        <target state="translated">다른 어셈블리에 정의된 기본 인터페이스가 있는 인터페이스에서 'GeneratedComInterfaceAttribute'를 지정하는 것은 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
@@ -504,7 +504,7 @@
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
-        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
+        <target state="translated">관리되지 않는 호출에서 관리되는 호출로의 VARIANT에서 'in' 매개 변수로 마샬링된 개체는 VARIANT가 VT_BYREF 변형인 경우에도 업데이트된 결과를 다시 전파하지 않습니다. 'in' 매개 변수 대신 'ref' 매개 변수를 사용하여 업데이트된 값을 호출자에게 다시 전파합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -842,9 +842,9 @@
         <target state="translated">관리 유형 '{1}'에 대한 마샬러 진입점 유형 '{0}'에는 관리 유형보다 1이 더 커야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
-        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">관리되지 않는 반환 값으로 전달되는 값에 대한 모든 마샬러는 관리되지 않는 형식이 동일해야 합니다.</target>
+      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
+        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
+        <target state="translated">관리되지 않는 반환 값이나 매개 변수로 전달되는 값에 대한 모든 마샬러는 동일한 관리되지 않는 형식을 가져야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">

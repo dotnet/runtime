@@ -169,7 +169,6 @@ namespace System.Text.Json.Serialization.Metadata
                         try
                         {
                             isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
-                            writer.Flush();
 
                             if (state.SuppressFlush)
                             {
@@ -179,6 +178,7 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                             else
                             {
+                                writer.Flush();
                                 FlushResult result = await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
                                 if (result.IsCanceled || result.IsCompleted)
                                 {
@@ -230,6 +230,9 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 catch
                 {
+                    // Reset the writer in exception cases as we don't want the writer.Dispose() call to flush any pending bytes.
+                    writer.Reset();
+                    writer.Dispose();
                     // On exception, walk the WriteStack for any orphaned disposables and try to dispose them.
                     await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
                     throw;
@@ -298,32 +301,37 @@ namespace System.Text.Json.Serialization.Metadata
                     supportContinuation: true,
                     supportAsync: false);
 
-                using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
-
+                Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(Options, out PooledByteBufferWriter bufferWriter);
                 Debug.Assert(bufferWriter.CanGetUnflushedBytes);
 
-                state.PipeWriter = bufferWriter;
-                state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
-
-                do
+                try
                 {
-                    isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
-                    writer.Flush();
+                    state.PipeWriter = bufferWriter;
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
 
-                    bufferWriter.WriteToStream(utf8Json);
-                    bufferWriter.Clear();
+                    do
+                    {
+                        isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
+                        writer.Flush();
 
-                    Debug.Assert(state.PendingTask == null);
-                } while (!isFinalBlock);
+                        bufferWriter.WriteToStream(utf8Json);
+                        bufferWriter.Clear();
 
-                if (CanUseSerializeHandler)
+                        Debug.Assert(state.PendingTask == null);
+                    } while (!isFinalBlock);
+
+                    if (CanUseSerializeHandler)
+                    {
+                        // On successful serialization, record the serialization size
+                        // to determine potential suitability of the type for
+                        // fast-path serialization in streaming methods.
+                        Debug.Assert(writer.BytesPending == 0);
+                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    }
+                }
+                finally
                 {
-                    // On successful serialization, record the serialization size
-                    // to determine potential suitability of the type for
-                    // fast-path serialization in streaming methods.
-                    Debug.Assert(writer.BytesPending == 0);
-                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, bufferWriter);
                 }
             }
         }

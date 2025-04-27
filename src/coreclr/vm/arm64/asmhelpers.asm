@@ -8,7 +8,9 @@
     IMPORT ExternalMethodFixupWorker
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT VSD_ResolveWorker
+#endif
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler
@@ -21,6 +23,9 @@
 #endif
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
+#ifdef FEATURE_INTERPRETER
+    IMPORT ExecuteInterpretedMethod
+#endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     IMPORT  g_sw_ww_table
@@ -35,7 +40,9 @@
     IMPORT  g_lowest_address
     IMPORT  g_highest_address
     IMPORT  g_card_table
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT  g_dispatch_cache_chain_success_counter
+#endif
     IMPORT  g_pGetGCStaticBase
     IMPORT  g_pGetNonGCStaticBase
 
@@ -432,7 +439,7 @@ NoFloatingPointRetVal
     GBLA ComCallPreStub_ErrorReturnOffset
     GBLA ComCallPreStub_FirstStackAdjust
 
-ComCallPreStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+ComCallPreStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
 ComCallPreStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8) ; x8, reg args , fp & lr already pushed
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_FrameSize - ComCallPreStub_FirstStackAdjust
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_StackAlloc + SIZEOF__FloatArgumentRegisters + 8; 8 for ErrorReturn
@@ -502,7 +509,7 @@ ComCallPreStub_ErrorExit
     GBLA GenericComCallStub_FrameOffset
     GBLA GenericComCallStub_FirstStackAdjust
 
-GenericComCallStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+GenericComCallStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
 GenericComCallStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8)
 GenericComCallStub_StackAlloc        SETA GenericComCallStub_FrameSize - GenericComCallStub_FirstStackAdjust
 GenericComCallStub_StackAlloc        SETA GenericComCallStub_StackAlloc + SIZEOF__FloatArgumentRegisters
@@ -696,7 +703,7 @@ COMToCLRDispatchHelper_RegSetup
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
 
-        ; Using below prolog instead of PROLOG_SAVE_REG_PAIR fp,lr, #-16!
+        ; Using below prolog instead of PROLOG_SAVE_REG_PAIR fp,lr, #-96!
         ; is intentional. Above statement would also emit instruction to save
         ; sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
         ; of method. However, this method needs to be able to change fp before calling funclet.
@@ -735,21 +742,23 @@ COMToCLRDispatchHelper_RegSetup
 
         NESTED_END CallEHFunclet
 
-        ; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-        ; frame pointer for accessing the locals in the parent method.
+        ; This helper enables us to call into a filter funclet after restoring Fp register
         NESTED_ENTRY CallEHFilterFunclet
 
-        PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
+        PROLOG_SAVE_REG_PAIR_NO_FP   fp, lr, #-16!
 
         ; On entry:
         ;
         ; X0 = throwable
-        ; X1 = SP of the caller of the method/funclet containing the filter
+        ; X1 = FP of the main function
         ; X2 = PC to invoke
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
         ; Save the SP of this function
+        mov fp, sp
         str fp, [x3]
+        ; Restore frame pointer
+        mov fp, x1
         ; Invoke the filter funclet
         blr x2
 
@@ -762,8 +771,8 @@ COMToCLRDispatchHelper_RegSetup
         GBLA FaultingExceptionFrame_StackAlloc
         GBLA FaultingExceptionFrame_FrameOffset
 
-FaultingExceptionFrame_StackAlloc         SETA (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
+FaultingExceptionFrame_StackAlloc         SETA (SIZEOF__FaultingExceptionFrame)
+FaultingExceptionFrame_FrameOffset        SETA  0
 
         MACRO
         GenerateRedirectedStubWithFrame $STUB, $TARGET
@@ -834,6 +843,7 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
         GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 ; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
 ;
@@ -925,6 +935,7 @@ Fail
         EPILOG_BRANCH_REG  x9
 
         NESTED_END
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_READYTORUN
 
@@ -1139,6 +1150,24 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         EPILOG_BRANCH_REG x9
     NESTED_END
 
+    IMPORT JIT_PatchpointWorkerWorkerWithPolicy
+
+    NESTED_ENTRY JIT_Patchpoint
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
+        bl      JIT_PatchpointWorkerWorkerWithPolicy
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+    NESTED_END
+
+    // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+    LEAF_ENTRY JIT_PartialCompilationPatchpoint
+        mov x1, x0
+        mov x0, #0
+        b JIT_Patchpoint
+    LEAF_END
+
 #endif ; FEATURE_TIERED_COMPILATION
 
     LEAF_ENTRY  JIT_ValidateIndirectCall
@@ -1193,6 +1222,30 @@ JIT_PollGCRarePath
         br x9
     LEAF_END
 
+#ifdef FEATURE_INTERPRETER
+    NESTED_ENTRY InterpreterStub
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        mov         x1, METHODDESC_REGISTER         ; pMethodDesc
+
+        bl          ExecuteInterpretedMethod
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+    NESTED_END
+#endif // FEATURE_INTERPRETER
+
+;x0 -This pointer
+;x1 -ReturnBuffer
+    LEAF_ENTRY ThisPtrRetBufPrecodeWorker
+        ldr  x12, [METHODDESC_REGISTER, #ThisPtrRetBufPrecodeData__Target]
+        mov  x11, x0     ; Move first arg pointer to temp register
+        mov  x0,  x1     ; Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
+        mov  x1, x11     ; Move temp register to first arg register for static method with return buffer
+        EPILOG_BRANCH_REG x12
+    LEAF_END
 
 ; Must be at very end of file
     END

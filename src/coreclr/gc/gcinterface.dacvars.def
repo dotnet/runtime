@@ -88,6 +88,9 @@ GC_DAC_VAL        (int,                   total_bookkeeping_elements)
 GC_DAC_VAL        (int,                   count_free_region_kinds)
 GC_DAC_VAL        (size_t,                card_table_info_size)
 
+// Here is where v5.4 fields starts
+GC_DAC_VAR        (int,                   dynamic_adaptation_mode)
+
 #undef GC_DAC_VAR
 #undef GC_DAC_ARRAY_VAR
 #undef GC_DAC_PTR_VAR

@@ -4421,36 +4421,25 @@ IS_VALUETYPE:
                     }
                 }
 
-                // Set the field offset
-                DWORD rva;
-                IfFailThrow(pInternalImport->GetFieldRVA(pFD->GetMemberDef(), &rva));
-
                 // The PE should be loaded by now.
                 _ASSERT(GetModule()->GetPEAssembly()->IsLoaded());
 
-                DWORD fldSize;
-                if (FieldDescElementType == ELEMENT_TYPE_VALUETYPE)
+#ifdef FEATURE_METADATA_UPDATER
+                // This is a special case for EnC. The RVA field is not actually in the image, but
+                // is instead registered in a dynamic map. We need to set the RVA to a special
+                // value so when the address is looked up, it will be found in the dynamic map.
+                if (GetModule()->GetDynamicRvaField(pFD->GetMemberDef()) != (TADDR)NULL)
                 {
-                    if (IsSelfRef(pByValueClass))
-                    {
-                        _ASSERTE(bmtFP->fHasSelfReferencingStaticValueTypeField_WithRVA);
-
-                        // We do not known the size yet
-                        _ASSERTE(bmtFP->NumInstanceFieldBytes == 0);
-                        // We will check just the RVA with size 0 now, the full size verification will happen in code:VerifySelfReferencingStaticValueTypeFields_WithRVA
-                        fldSize = 0;
-                    }
-                    else
-                    {
-                        fldSize = pByValueClass->GetNumInstanceFieldBytes();
-                    }
+                    pFD->SetDynamicRVA();
                 }
                 else
+#endif // FEATURE_METADATA_UPDATER
                 {
-                    fldSize = GetSizeForCorElementType(FieldDescElementType);
+                    // Set the field offset
+                    DWORD rva;
+                    IfFailThrow(pInternalImport->GetFieldRVA(pFD->GetMemberDef(), &rva));
+                    pFD->SetOffsetRVA(rva);
                 }
-
-                pFD->SetOffsetRVA(rva);
             }
             else if (fIsThreadStatic)
             {
@@ -7870,7 +7859,6 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
         bmtFP->NumRegularStaticFieldsOfSize[i]    = 0;
     }
 
-
     if (dwCumulativeStaticFieldPos > FIELD_OFFSET_LAST_REAL_OFFSET)
         BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
 
@@ -7894,8 +7882,8 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
     for (i = 0; i < bmtEnumFields->dwNumStaticFields - bmtEnumFields->dwNumThreadStaticFields; i++)
     {
         FieldDesc * pCurField   = &pFieldDescList[bmtEnumFields->dwNumInstanceFields+i];
-        DWORD dwLog2FieldSize   = (DWORD)(DWORD_PTR&)pCurField->m_pMTOfEnclosingClass; // log2(field size)
-        DWORD dwOffset          = (DWORD) pCurField->m_dwOffset; // offset or type of field
+        DWORD dwLog2FieldSize   = (DWORD)(DWORD_PTR)pCurField->m_pMTOfEnclosingClass; // log2(field size)
+        DWORD dwOffset          = (DWORD) pCurField->GetOffsetRaw(); // offset or type of field
 
         switch (dwOffset)
         {
@@ -7903,7 +7891,7 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
             // Place GC reference static field
             pCurField->SetOffset(dwCumulativeStaticGCFieldPos + dwGCOffset);
             dwCumulativeStaticGCFieldPos += 1<<LOG2_PTRSIZE;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at GC offset\n"));
 
             break;
 
@@ -7911,7 +7899,7 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
             // Place boxed GC reference static field
             pCurField->SetOffset(dwCumulativeStaticBoxFieldPos + dwGCOffset);
             dwCumulativeStaticBoxFieldPos += 1<<LOG2_PTRSIZE;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at GC offset\n"));
 
             break;
 
@@ -7921,15 +7909,16 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
                                  (bmtFP->NumRegularStaticFieldsOfSize[dwLog2FieldSize] << dwLog2FieldSize) +
                                  dwNonGCOffset);
             bmtFP->NumRegularStaticFieldsOfSize[dwLog2FieldSize]++;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at non GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at non GC offset\n"));
             break;
 
         default:
             // RVA field
+            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: RVA field\n"));
             break;
         }
 
-        LOG((LF_CLASSLOADER, LL_INFO1000000, "Offset of %s: %i\n", pCurField->m_debugName, pCurField->GetOffset()));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Offset of %s: 0x%x\n", pCurField->m_debugName, pCurField->GetOffsetRaw()));
     }
 
     _ASSERTE(dwNonGCOffset == 0 || (dwNonGCOffset == sizeof(TADDR) * 2));
@@ -7937,14 +7926,13 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
     LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Static field bytes needed %i\n", bmtProp->dwNonGCRegularStaticFieldBytes));
 }
 
-
 VOID MethodTableBuilder::PlaceThreadStaticFields()
 {
     STANDARD_VM_CONTRACT;
 
     DWORD i;
 
-    LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Placing ThreadStatics for %s\n", this->GetDebugClassName()));
+    LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Placing ThreadStatics for %s\n", this->GetDebugClassName()));
 
     //
     // Place gc refs and value types first, as they need to have handles created for them.
@@ -7998,8 +7986,8 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
     for (i = 0; i < bmtEnumFields->dwNumThreadStaticFields; i++)
     {
         FieldDesc * pCurField   = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + bmtEnumFields->dwNumStaticFields - bmtEnumFields->dwNumThreadStaticFields + i];
-        DWORD dwLog2FieldSize   = (DWORD)(DWORD_PTR&)pCurField->m_pMTOfEnclosingClass; // log2(field size)
-        DWORD dwOffset          = (DWORD) pCurField->m_dwOffset; // offset or type of field
+        DWORD dwLog2FieldSize   = (DWORD)(DWORD_PTR)pCurField->m_pMTOfEnclosingClass; // log2(field size)
+        DWORD dwOffset          = (DWORD) pCurField->GetOffsetRaw(); // offset or type of field
 
         switch (dwOffset)
         {
@@ -8007,7 +7995,7 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
             // Place GC reference static field
             pCurField->SetOffset(dwCumulativeStaticGCFieldPos + dwGCOffset);
             dwCumulativeStaticGCFieldPos += 1<<LOG2_PTRSIZE;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at GC offset\n"));
 
             break;
 
@@ -8015,7 +8003,7 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
             // Place boxed GC reference static field
             pCurField->SetOffset(dwCumulativeStaticBoxFieldPos + dwGCOffset);
             dwCumulativeStaticBoxFieldPos += 1<<LOG2_PTRSIZE;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at GC offset\n"));
 
             break;
 
@@ -8025,15 +8013,16 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
                                  (bmtFP->NumThreadStaticFieldsOfSize[dwLog2FieldSize] << dwLog2FieldSize) +
                                  dwNonGCOffset);
             bmtFP->NumThreadStaticFieldsOfSize[dwLog2FieldSize]++;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at non GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at non GC offset\n"));
             break;
 
         default:
             // RVA field
+            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: RVA field\n"));
             break;
         }
 
-        LOG((LF_CLASSLOADER, LL_INFO1000000, "Offset of %s: %i\n", pCurField->m_debugName, pCurField->GetOffset()));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Offset of %s: 0x%x\n", pCurField->m_debugName, pCurField->GetOffsetRaw()));
     }
 
     if (dwCumulativeStaticFieldPos != 0)
@@ -8045,7 +8034,7 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
     {
         bmtProp->dwNonGCThreadStaticFieldBytes = 0;
     }
-    LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: ThreadStatic field bytes needed (0 is normal for non dynamic case)%i\n", bmtProp->dwNonGCThreadStaticFieldBytes));
+    LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: ThreadStatic field bytes needed (0 is normal for non dynamic case)%i\n", bmtProp->dwNonGCThreadStaticFieldBytes));
 }
 
 //*******************************************************************************
@@ -8677,30 +8666,19 @@ MethodTableBuilder::HandleExplicitLayout(
             else
             {
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
-                if (pByValueMT->IsByRefLike() || pByValueMT->ContainsGCPointers())
+                if (pByValueMT->ContainsGCPointers() || pByValueMT->IsByRefLike())
                 {
-                    if ((pFD->GetOffset() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
-                    {
-                        // If we got here, then a ByRefLike valuetype or a valuetype containing an OREF was misaligned.
-                        badOffset = pFD->GetOffset();
-                        fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
-                        break;
-                    }
-
-                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset()]);
+                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset()], pFD->GetOffset());
                     fieldTrust.SetTrust(trust);
 
-                    if (trust != ExplicitFieldTrust::kNone)
-                    {
-                        continue;
-                    }
-                    else
+                    if (trust == ExplicitFieldTrust::kNone)
                     {
                         // If we got here, then an OREF/BYREF inside the valuetype illegally overlapped a non-OREF field. THROW.
                         badOffset = pFD->GetOffset();
                         break;
                     }
-                    break;
+
+                    continue;
                 }
                 // no pointers so fall through to do standard checking
                 fieldSize = pByValueMT->GetNumInstanceFieldBytes();
@@ -8855,13 +8833,13 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // make sure that no object fields are overlapped incorrectly, returns the trust level
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout, UINT fieldBaseOffset)
 {
     STANDARD_VM_CONTRACT;
 
     // ByRefLike types need to be checked for ByRef fields.
     if (pMT->IsByRefLike())
-        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout);
+        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout, fieldBaseOffset);
 
     // Build a layout of the value class (vc). Don't know the sizes of all the fields easily, but
     // do know (a) vc is already consistent so don't need to check it's overlaps and
@@ -8873,10 +8851,18 @@ MethodTableBuilder::HandleExplicitLayout(
     bmtFieldLayoutTag *vcLayout = (bmtFieldLayoutTag*) qb.AllocThrows(fieldSize * sizeof(bmtFieldLayoutTag));
     memset((void*)vcLayout, nonoref, fieldSize);
 
-    // If the type contains pointers fill it out from the GC data
+    // If the type contains pointers fill it out from the GC data and validate OREF alignment.
     if (pMT->ContainsGCPointers())
     {
-        // use pointer series to locate the orefs
+        // If the type contains pointers, it has to start at an aligned offset.
+        // The alignment of the pointer series itself was checked earlier.
+        if (fieldBaseOffset % TARGET_POINTER_SIZE != 0)
+        {
+            // If we got here, then an OREF is misaligned.
+            return ExplicitFieldTrust::kNone;
+        }
+
+        // Use pointer series to locate the OREFs
         CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
         CGCDescSeries *pSeries = map->GetLowestSeries();
 
@@ -8884,6 +8870,7 @@ MethodTableBuilder::HandleExplicitLayout(
         {
             CONSISTENCY_CHECK(pSeries <= map->GetHighestSeries());
 
+            // Get offset into the value class of the first pointer field (includes a +Object)
             memset((void*)&vcLayout[pSeries->GetSeriesOffset() - OBJECT_SIZE], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
             pSeries++;
         }
@@ -8947,7 +8934,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // make sure that no byref/object fields are overlapped, returns the trust level
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout, UINT fieldBaseOffset)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pMT->IsByRefLike());
@@ -8964,17 +8951,21 @@ MethodTableBuilder::HandleExplicitLayout(
         if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
         {
             MethodTable *pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex]);
+            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex], fieldBaseOffset + fieldStartIndex);
         }
         else if (pFD->IsObjRef())
         {
-            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
-            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, oref);
+            UINT absOffset = fieldBaseOffset + fieldStartIndex;
+            trust = (absOffset % TARGET_POINTER_SIZE == 0)
+                ? MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, oref)
+                : ExplicitFieldTrust::kNone;
         }
         else if (pFD->IsByRef())
         {
-            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
-            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, byref);
+            UINT absOffset = fieldBaseOffset + fieldStartIndex;
+            trust = (absOffset % TARGET_POINTER_SIZE == 0)
+                ? MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, byref)
+                : ExplicitFieldTrust::kNone;
         }
         else
         {
@@ -10179,6 +10170,8 @@ void MethodTableBuilder::CheckForSystemTypes()
             // although applying 16 byte alignment is consistent with treatment of 128 bit SSE types
             // even on X86
             pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+#elif defined(TARGET_WASM)
+            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(v128)
 #else
 #error Unknown architecture
 #endif // TARGET_64BIT

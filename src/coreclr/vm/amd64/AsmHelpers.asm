@@ -11,6 +11,9 @@ extern  ProfileLeave:proc
 extern  ProfileTailcall:proc
 extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
+ifdef FEATURE_INTERPRETER
+extern ExecuteInterpretedMethod:proc
+endif
 
 extern g_pPollGC:QWORD
 extern g_TrapReturningThreads:DWORD
@@ -447,6 +450,25 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT
         TAILJMP_RAX
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+extern JIT_PatchpointWorkerWorkerWithPolicy:proc
+
+NESTED_ENTRY JIT_Patchpoint, _TEXT
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea     rcx, [rsp + __PWTB_TransitionBlock] ; TransitionBlock *
+        call    JIT_PatchpointWorkerWorkerWithPolicy
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+        TAILJMP_RAX
+NESTED_END JIT_Patchpoint, _TEXT
+
+; first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+        mov rdx, rcx
+        xor rcx, rcx
+        jmp JIT_Patchpoint
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+
 endif ; FEATURE_TIERED_COMPILATION
 
 LEAF_ENTRY JIT_PollGC, _TEXT
@@ -457,5 +479,85 @@ JIT_PollGCRarePath:
     mov rax, g_pPollGC
     TAILJMP_RAX
 LEAF_END JIT_PollGC, _TEXT
+
+ifdef FEATURE_INTERPRETER
+NESTED_ENTRY InterpreterStub, _TEXT
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        ;
+        ; call ExecuteInterpretedMethod
+        ;
+        lea             rcx, [rsp + __PWTB_TransitionBlock]     ; pTransitionBlock*
+        mov             rdx, METHODDESC_REGISTER
+        call            ExecuteInterpretedMethod
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+endif ; FEATURE_INTERPRETER
+
+; rcx -This pointer
+; rdx -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    mov  METHODDESC_REGISTER, [METHODDESC_REGISTER + ThisPtrRetBufPrecodeData__Target]
+    mov r11, rcx
+    mov rcx, rdx
+    mov rdx, r11
+    jmp METHODDESC_REGISTER
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+; This helper enables us to call into a funclet after restoring Fp register
+NESTED_ENTRY CallEHFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = PC to invoke
+        ; R8 = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        push_nonvol_reg rbp
+        alloc_stack     20h ; argument scratch space for the call
+        END_PROLOGUE
+
+        ; Restore RBP
+        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
+        ; Save the SP of this function.
+        mov     [r9], rsp
+        ; Invoke the funclet
+        call    rdx
+
+        add     rsp, 20h
+        pop     rbp
+        ret
+NESTED_END CallEHFunclet, _TEXT
+
+; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
+; frame pointer for accessing the locals in the parent method.
+NESTED_ENTRY CallEHFilterFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = RBP of main function
+        ; R8 = PC to invoke
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        push_nonvol_reg rbp
+        alloc_stack     20h ; argument scratch space for the call
+        END_PROLOGUE
+
+        ; Save the SP of this function
+        mov     [r9], rsp
+        ; Restore RBP to match main function RBP
+        mov     rbp, rdx
+        ; Invoke the filter funclet
+        call    r8
+
+        add     rsp, 20h
+        pop     rbp
+        ret
+NESTED_END CallEHFilterFunclet, _TEXT
 
         end

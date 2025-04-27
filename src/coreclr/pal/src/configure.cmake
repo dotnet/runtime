@@ -40,6 +40,7 @@ check_include_files(procfs.h HAVE_PROCFS_H)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
+check_include_files(sys/membarrier.h HAVE_SYS_MEMBARRIER_H)
 check_include_files(sys/lwp.h HAVE_SYS_LWP_H)
 check_include_files(lwp.h HAVE_LWP_H)
 check_include_files(runetype.h HAVE_RUNETYPE_H)
@@ -512,6 +513,7 @@ int main(void)
 
   exit(ret != 1);
 }" ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS)
+
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_runs("
 #include <errno.h>
@@ -935,9 +937,12 @@ elseif(CLR_CMAKE_TARGET_HAIKU)
   # Haiku does not have ptrace.
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
+elseif(CLR_CMAKE_TARGET_BROWSER)
+  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
+  set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 else() # Anything else is Linux
   # LTTNG is not available on Android, so don't error out
-  if(NOT HAVE_LTTNG_TRACEPOINT_H AND NOT CLR_CMAKE_TARGET_ANDROID AND FEATURE_EVENT_TRACE)
+  if(FEATURE_EVENTSOURCE_XPLAT AND NOT HAVE_LTTNG_TRACEPOINT_H)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
     message(FATAL_ERROR "Cannot find liblttng-ust-dev. Try installing liblttng-ust-dev  (or the appropriate packages for your platform)")
   endif()

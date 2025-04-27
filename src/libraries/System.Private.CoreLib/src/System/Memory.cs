@@ -20,9 +20,6 @@ namespace System
     [DebuggerDisplay("{ToString(),raw}")]
     public readonly struct Memory<T> : IEquatable<Memory<T>>
     {
-        // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
-        // as code uses Unsafe.As to cast between them.
-
         // The highest order bit of _index is used to discern whether _object is a pre-pinned array.
         // (_index < 0) => _object is a pre-pinned array, so Pin() will not allocate a new GCHandle
         //       (else) => Pin() needs to allocate a new GCHandle to pin the object.
@@ -187,7 +184,7 @@ namespace System
         /// Defines an implicit conversion of a <see cref="Memory{T}"/> to a <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
         public static implicit operator ReadOnlyMemory<T>(Memory<T> memory) =>
-            Unsafe.As<Memory<T>, ReadOnlyMemory<T>>(ref memory);
+            new ReadOnlyMemory<T>(memory._object, memory._index, memory._length);
 
         /// <summary>
         /// Returns an empty <see cref="Memory{T}"/>

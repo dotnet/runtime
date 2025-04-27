@@ -369,7 +369,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
     // of method. However, this method needs to be able to change fp before calling funclet.
     // This is required to access locals in funclet.
-    PROLOG_SAVE_REG_PAIR_INDEXED   x29, lr, -96
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   x29, lr, -96
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, 16
@@ -403,21 +403,23 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFunclet, _TEXT
 
-// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-// frame pointer for accessing the locals in the parent method.
+// This helper enables us to call into a filter funclet after restoring Fp register
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
 
     // On entry:
     //
     // X0 = throwable
-    // X1 = SP of the caller of the method/funclet containing the filter
+    // X1 = FP of main function
     // X2 = PC to invoke
     // X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
     // Save the SP of this function
+    mov fp, sp
     str fp, [x3]
+    // Restore frame pointer
+    mov fp, x1
     // Invoke the filter funclet
     blr x2
 
@@ -426,8 +428,8 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFilterFunclet, _TEXT
 
-#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__FaultingExceptionFrame)
+#define FaultingExceptionFrame_FrameOffset 0
 
 .macro GenerateRedirectedStubWithFrame stub, target
 
@@ -522,6 +524,7 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 //   x12       contains our contract (DispatchToken)
 //   x16,x17   will be trashed
 //
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 
 #define BACKPATCH_FLAG      1
 #define PROMOTE_CHAIN_FLAG  2
@@ -586,7 +589,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  x9
 
 NESTED_END ResolveWorkerAsmStub, _TEXT
-
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
@@ -747,6 +750,22 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG x9
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
+    bl      C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+NESTED_END JIT_Patchpoint, _TEXT
+
+// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+    mov x1, x0
+    mov x0, #0
+    b C_FUNC(JIT_Patchpoint)
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+
 #endif // FEATURE_TIERED_COMPILATION
 
 LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
@@ -819,3 +838,28 @@ LOCAL_LABEL(JIT_PollGCRarePath):
         ldr     x9, [x9]
         br x9
 LEAF_END  JIT_PollGC, _TEXT
+
+#ifdef FEATURE_INTERPRETER
+NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+    mov x1, METHODDESC_REGISTER // pMethodDesc
+
+    bl  C_FUNC(ExecuteInterpretedMethod)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+#endif // FEATURE_INTERPRETER
+
+//x0 -This pointer
+//x1 -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    ldr  x12, [METHODDESC_REGISTER, #ThisPtrRetBufPrecodeData__Target]
+    mov  x11, x0     // Move first arg pointer to temp register
+    mov  x0,  x1     // Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
+    mov  x1, x11     // Move temp register to first arg register for static method with return buffer
+    EPILOG_BRANCH_REG x12
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT

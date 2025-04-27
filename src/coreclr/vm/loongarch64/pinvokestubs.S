@@ -76,8 +76,7 @@
 
 // ------------------------------------------------------------------
 // IN:
-// InlinedCallFrame ($a0) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
-//                         before actual InlinedCallFrame data)
+// InlinedCallFrame ($a0) = pointer to the InlinedCallFrame data
 //
 //
 NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
@@ -87,15 +86,11 @@ NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
     //                $s0=23.
     PROLOG_SAVE_REG    23, 16           //the stack slot at $sp+24 is empty for 16 byte alignment
 
-    PREPARE_EXTERNAL_VAR  s_gsCookie, $t0
-    ld.d  $t4, $t0, 0
-    st.d  $t4, $a0, 0
-    addi.d  $s0, $a0, SIZEOF__GSCookie
+    move  $s0, $a0
 
     // s0 = pFrame
-    // set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
-    PREPARE_EXTERNAL_VAR  _ZTV16InlinedCallFrame, $t0
-    addi.d  $t4, $t0, 16
+    // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+    li.d  $t4, FRAMETYPE_InlinedCallFrame
     st.d  $t4, $s0, 0
 
     st.d  $zero, $s0, InlinedCallFrame__m_Datum
@@ -136,7 +131,6 @@ NESTED_END JIT_PInvokeBegin, _TEXT
 //
 LEAF_ENTRY JIT_PInvokeEnd, _TEXT
 
-    addi.d  $a0, $a0, SIZEOF__GSCookie
     ld.d      $a1, $a0, InlinedCallFrame__m_pThread
     // $a0 = pFrame
     // $a1 = pThread

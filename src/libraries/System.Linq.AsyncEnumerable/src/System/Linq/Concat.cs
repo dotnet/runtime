@@ -20,22 +20,25 @@ namespace System.Linq
         public static IAsyncEnumerable<TSource> Concat<TSource>(
             this IAsyncEnumerable<TSource> first, IAsyncEnumerable<TSource> second)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
 
-            return Impl(first, second, default);
+            return
+                first.IsKnownEmpty() ? second :
+                second.IsKnownEmpty() ? first :
+                Impl(first, second, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> first,
                 IAsyncEnumerable<TSource> second,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource item in first.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource item in first.WithCancellation(cancellationToken))
                 {
                     yield return item;
                 }
 
-                await foreach (TSource item in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource item in second.WithCancellation(cancellationToken))
                 {
                     yield return item;
                 }

@@ -222,6 +222,10 @@ namespace System.Net.Http
                     {
                         await writesClosed.WaitAsync(_requestBodyCancellationSource.Token).ConfigureAwait(false);
                     }
+                    catch (QuicException qex) when (qex.QuicError == QuicError.StreamAborted && qex.ApplicationErrorCode == (long)Http3ErrorCode.NoError)
+                    {
+                        // The server doesn't need the whole request to respond so it's aborting its reading side gracefully, see https://datatracker.ietf.org/doc/html/rfc9114#section-4.1-15.
+                    }
                     catch (OperationCanceledException)
                     {
                         // If the request got cancelled before WritesClosed completed, avoid leaking an unobserved task exception.
@@ -474,6 +478,10 @@ namespace System.Net.Http
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(bytesWritten);
+            }
+            catch (HttpRequestException hex) when (hex.InnerException is QuicException qex && qex.QuicError == QuicError.StreamAborted && qex.ApplicationErrorCode == (long)Http3ErrorCode.NoError)
+            {
+                // The server doesn't need the whole request to respond so it's aborting its reading side gracefully, see https://datatracker.ietf.org/doc/html/rfc9114#section-4.1-15.
             }
             finally
             {

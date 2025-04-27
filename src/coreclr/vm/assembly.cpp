@@ -1226,10 +1226,7 @@ static void RunMainInternal(Param* pParam)
 
     GCPROTECT_END();
 
-    //<TODO>
-    // When we get mainCRTStartup from the C++ then this should be able to go away.</TODO>
-    fflush(stdout);
-    fflush(stderr);
+    minipal_log_flush_all();
 }
 
 /* static */
@@ -1513,7 +1510,7 @@ MethodDesc* Assembly::GetEntryPoint()
         // This code needs a class init frame, because without it, the
         // debugger will assume any code that results from searching for a
         // type handle (ie, loading an assembly) is the first line of a program.
-        FrameWithCookie<DebuggerClassInitMarkFrame> __dcimf;
+        DebuggerClassInitMarkFrame __dcimf;
 
         MethodTable * pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
                                                                        ClassLoader::ThrowIfNotFound,

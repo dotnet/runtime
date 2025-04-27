@@ -19,11 +19,6 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(RoslynApiVersion)" />
-    <!-- Ensure we are using live dependencies for CodeAnalysis rather than old packages -->
-    <PackageReference Include="NETStandard.Library" Version="$(NETStandardLibraryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition\src\System.Composition.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
     <PackageReference Include="SQLitePCLRaw.bundle_green" Version="$(SQLitePCLRawbundle_greenVersion)" />
   </ItemGroup>
 

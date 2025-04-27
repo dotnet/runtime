@@ -124,7 +124,7 @@
       </CoreCLRCrossTargetFiles>
     </ItemGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" Exclude="$(MonoArtifactsPath)\*cdacreader*" />
+      <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" Exclude="$(MonoArtifactsPath)\*cdac*" />
       <RuntimeFiles>
         <IsNative>true</IsNative>
       </RuntimeFiles>
@@ -209,6 +209,8 @@
         $(LibrariesNativeArtifactsPath)dotnet.native.js;
         $(LibrariesNativeArtifactsPath)dotnet.runtime.js;
         $(LibrariesNativeArtifactsPath)dotnet.runtime.js.map;
+        $(LibrariesNativeArtifactsPath)dotnet.diagnostics.js;
+        $(LibrariesNativeArtifactsPath)dotnet.diagnostics.js.map;
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.native.wasm;

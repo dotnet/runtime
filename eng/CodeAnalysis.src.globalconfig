@@ -1139,8 +1139,7 @@ dotnet_diagnostic.RS2008.severity = warning
 dotnet_diagnostic.SA0001.severity = none
 
 # SA1000: Spacing around keywords
-# suggestion until https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3478 is resolved
-dotnet_diagnostic.SA1000.severity = suggestion
+dotnet_diagnostic.SA1000.severity = warning
 
 # SA1001: Commas should not be preceded by whitespace
 dotnet_diagnostic.SA1001.severity = warning
@@ -1179,7 +1178,7 @@ dotnet_diagnostic.SA1013.severity = none
 dotnet_diagnostic.SA1014.severity = warning
 
 # SA1015: Closing generic bracket should not be followed by a space
-dotnet_diagnostic.SA1015.severity = none
+dotnet_diagnostic.SA1015.severity = warning
 
 # SA1018: Nullable type symbol should not be preceded by a space
 dotnet_diagnostic.SA1018.severity = warning
@@ -1334,8 +1333,8 @@ dotnet_diagnostic.SA1204.severity = none
 # SA1205: Partial elements should declare an access modifier
 dotnet_diagnostic.SA1205.severity = warning
 
-# SA1206: Keyword ordering - TODO Re-enable as warning after https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3527
-dotnet_diagnostic.SA1206.severity = suggestion
+# SA1206: Keyword ordering
+dotnet_diagnostic.SA1206.severity = warning
 
 # SA1208: Using directive ordering
 dotnet_diagnostic.SA1208.severity = none

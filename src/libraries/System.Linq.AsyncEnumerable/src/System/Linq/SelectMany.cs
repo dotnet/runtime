@@ -28,17 +28,19 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, IEnumerable<TResult>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
                 Func<TSource, IEnumerable<TResult>> selector,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
                     foreach (TResult subElement in selector(element))
                     {
@@ -66,19 +68,21 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<IEnumerable<TResult>>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
                 Func<TSource, CancellationToken, ValueTask<IEnumerable<TResult>>> selector,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    foreach (TResult subElement in await selector(element, cancellationToken).ConfigureAwait(false))
+                    foreach (TResult subElement in await selector(element, cancellationToken))
                     {
                         yield return subElement;
                     }
@@ -104,19 +108,21 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, IAsyncEnumerable<TResult>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
                 Func<TSource, IAsyncEnumerable<TResult>> selector,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    await foreach (TResult subElement in selector(element).WithCancellation(cancellationToken).ConfigureAwait(false))
+                    await foreach (TResult subElement in selector(element).WithCancellation(cancellationToken))
                     {
                         yield return subElement;
                     }
@@ -143,10 +149,12 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, IEnumerable<TResult>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -154,7 +162,7 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 int index = -1;
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
                     foreach (TResult subElement in selector(element, checked(++index)))
                     {
@@ -183,10 +191,12 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, CancellationToken, ValueTask<IEnumerable<TResult>>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -194,9 +204,9 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 int index = -1;
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    foreach (TResult subElement in await selector(element, checked(++index), cancellationToken).ConfigureAwait(false))
+                    foreach (TResult subElement in await selector(element, checked(++index), cancellationToken))
                     {
                         yield return subElement;
                     }
@@ -223,10 +233,12 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, IAsyncEnumerable<TResult>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -234,9 +246,9 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 int index = -1;
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    await foreach (TResult subElement in selector(element, checked(++index)).WithCancellation(cancellationToken).ConfigureAwait(false))
+                    await foreach (TResult subElement in selector(element, checked(++index)).WithCancellation(cancellationToken))
                     {
                         yield return subElement;
                     }
@@ -270,11 +282,13 @@ namespace System.Linq
             Func<TSource, IEnumerable<TCollection>> collectionSelector,
             Func<TSource, TCollection, TResult> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -282,7 +296,7 @@ namespace System.Linq
                 Func<TSource, TCollection, TResult> resultSelector,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
                     foreach (TCollection subElement in collectionSelector(element))
                     {
@@ -318,11 +332,13 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<IEnumerable<TCollection>>> collectionSelector,
             Func<TSource, TCollection, CancellationToken, ValueTask<TResult>> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -330,11 +346,11 @@ namespace System.Linq
                 Func<TSource, TCollection, CancellationToken, ValueTask<TResult>> resultSelector,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    foreach (TCollection subElement in await collectionSelector(element, cancellationToken).ConfigureAwait(false))
+                    foreach (TCollection subElement in await collectionSelector(element, cancellationToken))
                     {
-                        yield return await resultSelector(element, subElement, cancellationToken).ConfigureAwait(false);
+                        yield return await resultSelector(element, subElement, cancellationToken);
                     }
                 }
             }
@@ -366,11 +382,13 @@ namespace System.Linq
             Func<TSource, IAsyncEnumerable<TCollection>> collectionSelector,
             Func<TSource, TCollection, TResult> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -378,9 +396,9 @@ namespace System.Linq
                 Func<TSource, TCollection, TResult> resultSelector,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    await foreach (TCollection subElement in collectionSelector(element).WithCancellation(cancellationToken).ConfigureAwait(false))
+                    await foreach (TCollection subElement in collectionSelector(element).WithCancellation(cancellationToken))
                     {
                         yield return resultSelector(element, subElement);
                     }
@@ -414,11 +432,13 @@ namespace System.Linq
             Func<TSource, IAsyncEnumerable<TCollection>> collectionSelector,
             Func<TSource, TCollection, CancellationToken, ValueTask<TResult>> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -426,11 +446,11 @@ namespace System.Linq
                 Func<TSource, TCollection, CancellationToken, ValueTask<TResult>> resultSelector,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    await foreach (TCollection subElement in collectionSelector(element).WithCancellation(cancellationToken).ConfigureAwait(false))
+                    await foreach (TCollection subElement in collectionSelector(element).WithCancellation(cancellationToken))
                     {
-                        yield return await resultSelector(element, subElement, cancellationToken).ConfigureAwait(false);
+                        yield return await resultSelector(element, subElement, cancellationToken);
                     }
                 }
             }
@@ -461,11 +481,13 @@ namespace System.Linq
             Func<TSource, int, IEnumerable<TCollection>> collectionSelector,
             Func<TSource, TCollection, TResult> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -474,7 +496,7 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 int index = -1;
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
                     foreach (TCollection subElement in collectionSelector(element, checked(++index)))
                     {
@@ -509,11 +531,13 @@ namespace System.Linq
             Func<TSource, int, CancellationToken, ValueTask<IEnumerable<TCollection>>> collectionSelector,
             Func<TSource, TCollection, CancellationToken, ValueTask<TResult>> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -522,11 +546,11 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 int index = -1;
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    foreach (TCollection subElement in await collectionSelector(element, checked(++index), cancellationToken).ConfigureAwait(false))
+                    foreach (TCollection subElement in await collectionSelector(element, checked(++index), cancellationToken))
                     {
-                        yield return await resultSelector(element, subElement, cancellationToken).ConfigureAwait(false);
+                        yield return await resultSelector(element, subElement, cancellationToken);
                     }
                 }
             }
@@ -557,11 +581,13 @@ namespace System.Linq
             Func<TSource, int, IAsyncEnumerable<TCollection>> collectionSelector,
             Func<TSource, TCollection, CancellationToken, ValueTask<TResult>> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -570,11 +596,11 @@ namespace System.Linq
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 int index = -1;
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    await foreach (TCollection subElement in collectionSelector(element, checked(++index)).WithCancellation(cancellationToken).ConfigureAwait(false))
+                    await foreach (TCollection subElement in collectionSelector(element, checked(++index)).WithCancellation(cancellationToken))
                     {
-                        yield return await resultSelector(element, subElement, cancellationToken).ConfigureAwait(false);
+                        yield return await resultSelector(element, subElement, cancellationToken);
                     }
                 }
             }

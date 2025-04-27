@@ -1,98 +1,87 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
-
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <OptimizeForSize Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</OptimizeForSize>
-    <DefineConstants Condition="'$(OptimizeForSize)' == 'true'">$(DefineConstants);OPTIMIZE_FOR_SIZE</DefineConstants>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(OptimizeForSize)' == true">
-    <Compile Include="System\Linq\Skip.SizeOpt.cs" />
-    <Compile Include="System\Linq\Take.SizeOpt.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(OptimizeForSize)' != true">
-    <Compile Include="System\Linq\AppendPrepend.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Cast.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Concat.SpeedOpt.cs" />
-    <Compile Include="System\Linq\DefaultIfEmpty.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Distinct.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Grouping.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Iterator.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Lookup.SpeedOpt.cs" />
-    <Compile Include="System\Linq\OfType.SpeedOpt.cs" />
-    <Compile Include="System\Linq\OrderedEnumerable.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Range.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Repeat.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Reverse.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Select.SpeedOpt.cs" />
-    <Compile Include="System\Linq\SelectMany.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Skip.SpeedOpt.cs" />
-    <Compile Include="System\Linq\SkipTake.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Take.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Union.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Where.SpeedOpt.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="System\Linq\Aggregate.cs" />
     <Compile Include="System\Linq\AnyAll.cs" />
     <Compile Include="System\Linq\AppendPrepend.cs" />
+    <Compile Include="System\Linq\AppendPrepend.SpeedOpt.cs" />
     <Compile Include="System\Linq\Average.cs" />
     <Compile Include="System\Linq\Cast.cs" />
+    <Compile Include="System\Linq\Cast.SpeedOpt.cs" />
     <Compile Include="System\Linq\Chunk.cs" />
     <Compile Include="System\Linq\Concat.cs" />
+    <Compile Include="System\Linq\Concat.SpeedOpt.cs" />
     <Compile Include="System\Linq\Contains.cs" />
     <Compile Include="System\Linq\AggregateBy.cs" />
     <Compile Include="System\Linq\CountBy.cs" />
     <Compile Include="System\Linq\Count.cs" />
     <Compile Include="System\Linq\DebugView.cs" />
     <Compile Include="System\Linq\DefaultIfEmpty.cs" />
+    <Compile Include="System\Linq\DefaultIfEmpty.SpeedOpt.cs" />
     <Compile Include="System\Linq\Distinct.cs" />
+    <Compile Include="System\Linq\Distinct.SpeedOpt.cs" />
     <Compile Include="System\Linq\ElementAt.cs" />
     <Compile Include="System\Linq\Enumerable.cs" />
     <Compile Include="System\Linq\Except.cs" />
     <Compile Include="System\Linq\First.cs" />
     <Compile Include="System\Linq\Grouping.cs" />
+    <Compile Include="System\Linq\Grouping.SpeedOpt.cs" />
     <Compile Include="System\Linq\GroupJoin.cs" />
     <Compile Include="System\Linq\Index.cs" />
     <Compile Include="System\Linq\Intersect.cs" />
     <Compile Include="System\Linq\Iterator.cs" />
+    <Compile Include="System\Linq\Iterator.SpeedOpt.cs" />
     <Compile Include="System\Linq\Join.cs" />
     <Compile Include="System\Linq\Last.cs" />
     <Compile Include="System\Linq\LeftJoin.cs" />
     <Compile Include="System\Linq\Lookup.cs" />
+    <Compile Include="System\Linq\Lookup.SpeedOpt.cs" />
     <Compile Include="System\Linq\Max.cs" />
     <Compile Include="System\Linq\MaxMin.cs" />
     <Compile Include="System\Linq\Min.cs" />
     <Compile Include="System\Linq\OfType.cs" />
+    <Compile Include="System\Linq\OfType.SpeedOpt.cs" />
     <Compile Include="System\Linq\OrderBy.cs" />
     <Compile Include="System\Linq\OrderedEnumerable.cs" />
+    <Compile Include="System\Linq\OrderedEnumerable.SpeedOpt.cs" />
     <Compile Include="System\Linq\PartialArrayEnumerator.cs" />
     <Compile Include="System\Linq\Range.cs" />
+    <Compile Include="System\Linq\Range.SpeedOpt.cs" />
     <Compile Include="System\Linq\Repeat.cs" />
+    <Compile Include="System\Linq\Repeat.SpeedOpt.cs" />
+    <Compile Include="System\Linq\Shuffle.SpeedOpt.cs" />
+    <Compile Include="System\Linq\Shuffle.cs" />
     <Compile Include="System\Linq\Reverse.cs" />
+    <Compile Include="System\Linq\Reverse.SpeedOpt.cs" />
     <Compile Include="System\Linq\RightJoin.cs" />
     <Compile Include="System\Linq\SegmentedArrayBuilder.cs" />
     <Compile Include="System\Linq\Select.cs" />
+    <Compile Include="System\Linq\Select.SpeedOpt.cs" />
     <Compile Include="System\Linq\SelectMany.cs" />
+    <Compile Include="System\Linq\SelectMany.SpeedOpt.cs" />
     <Compile Include="System\Linq\SequenceEqual.cs" />
     <Compile Include="System\Linq\Single.cs" />
     <Compile Include="System\Linq\SingleLinkedNode.cs" />
     <Compile Include="System\Linq\Skip.cs" />
+    <Compile Include="System\Linq\Skip.SizeOpt.cs" />
+    <Compile Include="System\Linq\Skip.SpeedOpt.cs" />
+    <Compile Include="System\Linq\SkipTake.SpeedOpt.cs" />
     <Compile Include="System\Linq\Sum.cs" />
     <Compile Include="System\Linq\Take.cs" />
+    <Compile Include="System\Linq\Take.SizeOpt.cs" />
+    <Compile Include="System\Linq\Take.SpeedOpt.cs" />
     <Compile Include="System\Linq\ThrowHelper.cs" />
     <Compile Include="System\Linq\ToCollection.cs" />
     <Compile Include="System\Linq\Union.cs" />
+    <Compile Include="System\Linq\Union.SpeedOpt.cs" />
     <Compile Include="System\Linq\Utilities.cs" />
     <Compile Include="System\Linq\Where.cs" />
+    <Compile Include="System\Linq\Where.SpeedOpt.cs" />
     <Compile Include="System\Linq\Zip.cs" />
   </ItemGroup>
 

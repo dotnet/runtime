@@ -33,7 +33,7 @@ namespace Microsoft.Android.Build
 
         public AndroidProject(string projectName, string runtimeIdentifier, string androidNdkPath, TaskLoggingHelper logger)
         {
-            androidToolchainPath = Path.Combine(androidNdkPath, "build", "cmake", "android.toolchain.cmake");
+            androidToolchainPath = Path.Combine(androidNdkPath, "build", "cmake", "android.toolchain.cmake").Replace('\\', '/');
             abi = DetermineAbi(runtimeIdentifier);
             targetArchitecture = GetTargetArchitecture(runtimeIdentifier);
 
@@ -57,7 +57,9 @@ namespace Microsoft.Android.Build
 
         public void GenerateCMake(string workingDir, string apiLevel = DefaultMinApiLevel, bool stripDebugSymbols = false)
         {
-            string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchainPath} -DANDROID_ABI=\"{Abi}\" -DANDROID_STL=none -DTARGETS_ANDROID=1 " +
+            // force ninja generator on Windows, the VS generator causes issues with the built-in Android support in VS
+            var generator = Utils.IsWindows() ? "-G Ninja" : "";
+            string cmakeGenArgs = $"{generator} -DCMAKE_TOOLCHAIN_FILE={androidToolchainPath} -DANDROID_ABI=\"{Abi}\" -DANDROID_STL=none -DTARGETS_ANDROID=1 " +
                 $"-DANDROID_PLATFORM=android-{apiLevel} -B {projectName}";
 
             if (stripDebugSymbols)
@@ -95,30 +97,30 @@ namespace Microsoft.Android.Build
         {
             StringBuilder ret = new StringBuilder();
 
-            foreach(string compilerArg in buildOptions.CompilerArguments)
+            foreach (string compilerArg in buildOptions.CompilerArguments)
             {
                 ret.Append(compilerArg);
                 ret.Append(' ');
             }
 
-            foreach(string includeDir in buildOptions.IncludePaths)
+            foreach (string includeDir in buildOptions.IncludePaths)
             {
                 ret.Append($"-I {includeDir} ");
             }
 
-            foreach(string linkerArg in buildOptions.LinkerArguments)
+            foreach (string linkerArg in buildOptions.LinkerArguments)
             {
                 ret.Append($"-Xlinker {linkerArg} ");
             }
 
-            foreach(string source in buildOptions.Sources)
+            foreach (string source in buildOptions.Sources)
             {
                 ret.Append(source);
                 ret.Append(' ');
             }
 
             HashSet<string> libDirs = new HashSet<string>();
-            foreach(string lib in buildOptions.NativeLibraryPaths)
+            foreach (string lib in buildOptions.NativeLibraryPaths)
             {
                 string rootPath = Path.GetDirectoryName(lib)!;
                 string libName = Path.GetFileName(lib);

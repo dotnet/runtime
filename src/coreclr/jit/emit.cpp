@@ -752,6 +752,8 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 
 #if defined(TARGET_AMD64)
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
+    rbmIntCalleeTrash = emitComp->rbmIntCalleeTrash;
+    rbmAllInt         = emitComp->rbmAllInt;
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
@@ -1006,7 +1008,13 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         emitPrevGCrefRegs = emitThisGCrefRegs;
         emitPrevByrefRegs = emitThisByrefRegs;
 
-        emitForceStoreGCState = false;
+        if (emitAddedLabel)
+        {
+            // Reset emitForceStoreGCState only after seeing label. It will keep
+            // marking IGs with IGF_GC_VARS flag until that.
+            emitForceStoreGCState = false;
+            emitAddedLabel        = false;
+        }
     }
 
 #ifdef DEBUG
@@ -1275,6 +1283,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitPrevByrefRegs = RBM_NONE;
 
     emitForceStoreGCState = false;
+    emitAddedLabel        = false;
 
 #ifdef DEBUG
 
@@ -1620,7 +1629,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     //     ARM - This is currently broken on TARGET_ARM
     //     When nopSize is odd we misalign emitCurIGsize
     //
-    if (!emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !emitInInstrumentation &&
+    if (!emitComp->IsAot() && !emitInInstrumentation &&
         !emitIGisInProlog(emitCurIG) && // don't do this in prolog or epilog
         !emitIGisInEpilog(emitCurIG) &&
         emitRandomNops // sometimes we turn off where exact codegen is needed (pinvoke inline)
@@ -1753,7 +1762,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         id->idOpSize(EA_SIZE(opsz));
     }
 
-    // Amd64: ip-relative addressing is supported even when not generating relocatable ngen code
+    // Amd64: ip-relative addressing is supported even when not generating relocatable AOT code
     if (EA_IS_DSP_RELOC(opsz)
 #ifndef TARGET_AMD64
         && emitComp->opts.compReloc
@@ -2809,6 +2818,8 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BasicBlock* prevBlock)
 {
+    bool currIGWasNonEmpty = emitCurIGnonEmpty();
+
     // if starting a new block that can be a target of a branch and the last instruction was GC-capable call.
     if ((prevBlock != nullptr) && emitComp->compCurBB->HasFlag(BBF_HAS_LABEL) && emitLastInsIsCallWithGC())
     {
@@ -2837,10 +2848,27 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
         }
     }
 
+    emitAddedLabel = true;
+
     /* Create a new IG if the current one is non-empty */
 
     if (emitCurIGnonEmpty())
     {
+#if FEATURE_LOOP_ALIGN
+
+        if (!currIGWasNonEmpty && (emitAlignLast != nullptr) && (emitAlignLast->idaLoopHeadPredIG != nullptr) &&
+            (emitAlignLast->idaLoopHeadPredIG->igNext == emitCurIG))
+        {
+            // If the emitCurIG was thought to be a loop-head, but if it didn't turn out that way and we end up
+            // creating a new IG from which the loop starts, make sure to update the LoopHeadPred of last align
+            // instruction emitted. This will guarantee that the information stays up-to-date. Later if we
+            // notice a loop that encloses another loop, this information helps in removing the align field from
+            // such loops.
+            // We need to only update emitAlignLast because we do not align intermingled or overlapping loops.
+            emitAlignLast->idaLoopHeadPredIG = emitCurIG;
+        }
+#endif // FEATURE_LOOP_ALIGN
+
         emitNxtIG();
     }
     else
@@ -6513,7 +6541,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 
             // Only to the first block of the finally (which is properly marked)
             BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
-            assert(tgtBlk->HasFlag(BBF_FUNCLET_BEG));
+            assert(emitComp->bbIsFuncletBeg(tgtBlk));
 
             // And now we made it back to where we started
             assert(tgtIG == emitCodeGetCookie(tgtBlk));
@@ -6764,9 +6792,9 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     // These are the heuristics we use to decide whether or not to force the
     // code to be 16-byte aligned.
     //
-    // 1. For ngen code with IBC data, use 16-byte alignment if the method
+    // 1. For AOT code with IBC data, use 16-byte alignment if the method
     //    has been called more than ScenarioHotWeight times.
-    // 2. For JITed code and ngen code without IBC data, use 16-byte alignment
+    // 2. For JITed code and AOT code without IBC data, use 16-byte alignment
     //    when the code is 16 bytes or smaller. We align small getters/setters
     //    because of they are penalized heavily on certain hardware when not 16-byte
     //    aligned (VSWhidbey #373938). To minimize size impact of this optimization,
@@ -6862,9 +6890,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #ifdef DEBUG
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
-        // For prejit, codeBlock will not be necessarily aligned, but it is aligned
-        // in final obj file.
-        assert((((size_t)codeBlock & 31) == 0) || emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
+        // For AOT, codeBlock will not be necessarily aligned, but it is aligned in final obj file.
+        assert((((size_t)codeBlock & 31) == 0) || emitComp->IsAot());
     }
 #if 0
     // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
@@ -8468,7 +8495,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                 switch (data->dsDataType)
                 {
                     case TYP_FLOAT:
-                        assert(data->dsSize >= 4);
+                        if (data->dsSize < 4)
+                        {
+                            printf("\t<Unexpected data size %d (expected >= 4)\n", data->dsSize);
+                        }
                         printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
                         printf("\t; %9.6g",
                                FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->dsCont[i])));
@@ -8476,7 +8506,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                         break;
 
                     case TYP_DOUBLE:
-                        assert(data->dsSize >= 8);
+                        if (data->dsSize < 8)
+                        {
+                            printf("\t<Unexpected data size %d (expected >= 8)\n", data->dsSize);
+                        }
                         printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
                         printf("\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont[i]));
                         i += 8;
@@ -8497,7 +8530,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 break;
 
                             case 2:
-                                assert((data->dsSize % 2) == 0);
+                                if ((data->dsSize % 2) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%2 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdw\t%04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i]));
                                 for (j = 2; j < 24; j += 2)
                                 {
@@ -8510,7 +8546,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
 
                             case 12:
                             case 4:
-                                assert((data->dsSize % 4) == 0);
+                                if ((data->dsSize % 4) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%4 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdd\t%08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
                                 for (j = 4; j < 24; j += 4)
                                 {
@@ -8525,7 +8564,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                             case 32:
                             case 16:
                             case 8:
-                                assert((data->dsSize % 8) == 0);
+                                if ((data->dsSize % 8) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%8 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
                                 for (j = 8; j < 64; j += 8)
                                 {
@@ -8537,7 +8579,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 break;
 
                             default:
-                                assert(!"unexpected elemSize");
+                                printf("\t<Unexpected elemSize %d)\n", elemSize);
                                 break;
                         }
                 }
@@ -9981,7 +10023,6 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
 
     unsigned argStkCnt;
     S_UINT16 argRecCnt(0); // arg count for ESP, ptr-arg count for EBP
-    unsigned gcrefRegs, byrefRegs;
 
 #ifdef JIT32_GCENCODER
     // For the general encoder, we always need to record calls, so we make this call
@@ -10023,26 +10064,19 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
         return;
 #endif
 
-    // Do we have any interesting (i.e., callee-saved) registers live here?
+    // Do we have any interesting registers live here?
 
-    gcrefRegs = byrefRegs = 0;
+    unsigned gcrefRegs = emitThisGCrefRegs.GetIntRegSet() >> REG_INT_FIRST;
+    unsigned byrefRegs = emitThisByrefRegs.GetIntRegSet() >> REG_INT_FIRST;
 
-    // We make a bitmask whose bits correspond to callee-saved register indices (in the sequence
-    // of callee-saved registers only).
-    for (unsigned calleeSavedRegIdx = 0; calleeSavedRegIdx < CNT_CALL_GC_REGS; calleeSavedRegIdx++)
-    {
-        regMaskTP calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
-        if (emitThisGCrefRegs & calleeSavedRbm)
-        {
-            gcrefRegs |= (1 << calleeSavedRegIdx);
-        }
-        if (emitThisByrefRegs & calleeSavedRbm)
-        {
-            byrefRegs |= (1 << calleeSavedRegIdx);
-        }
-    }
+    assert(regMaskTP::FromIntRegSet(SingleTypeRegSet(gcrefRegs << REG_INT_FIRST)) == emitThisGCrefRegs);
+    assert(regMaskTP::FromIntRegSet(SingleTypeRegSet(byrefRegs << REG_INT_FIRST)) == emitThisByrefRegs);
 
 #ifdef JIT32_GCENCODER
+    // x86 does not report GC refs/byrefs in return registers at call sites
+    gcrefRegs &= ~(1u << (REG_INTRET - REG_INT_FIRST));
+    byrefRegs &= ~(1u << (REG_INTRET - REG_INT_FIRST));
+
     // For the general encoder, we always have to record calls, so we don't take this early return.    /* Are there any
     // args to pop at this call site?
 

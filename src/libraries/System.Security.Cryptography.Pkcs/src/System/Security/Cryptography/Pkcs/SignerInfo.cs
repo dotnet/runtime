@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
@@ -59,14 +60,16 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public CryptographicAttributeObjectCollection SignedAttributes =>
-            _parsedSignedAttrs ??= MakeAttributeCollection(_signedAttributes);
+            _parsedSignedAttrs ??= PkcsHelpers.MakeAttributeCollection(_signedAttributes);
 
         public CryptographicAttributeObjectCollection UnsignedAttributes =>
-            _parsedUnsignedAttrs ??= MakeAttributeCollection(_unsignedAttributes);
+            _parsedUnsignedAttrs ??= PkcsHelpers.MakeAttributeCollection(_unsignedAttributes);
 
         internal ReadOnlyMemory<byte> GetSignatureMemory() => _signature;
 
+#if NET || NETSTANDARD2_1
         public byte[] GetSignature() => _signature.ToArray();
+#endif
 
         public X509Certificate2? Certificate =>
             _signerCertificate ??= FindSignerCertificate();
@@ -89,7 +92,12 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid DigestAlgorithm => new Oid(_digestAlgorithm, null);
 
-        public Oid SignatureAlgorithm => new Oid(_signatureAlgorithm, null);
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        Oid SignatureAlgorithm => new Oid(_signatureAlgorithm, null);
 
         private delegate void WithSelfInfoDelegate(ref SignerInfoAsn mySigned);
 
@@ -167,7 +175,12 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public void AddUnsignedAttribute(AsnEncodedData unsignedAttribute)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void AddUnsignedAttribute(AsnEncodedData unsignedAttribute)
         {
             WithSelfInfo((ref SignerInfoAsn mySigner) =>
                 {
@@ -208,7 +221,12 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public void RemoveUnsignedAttribute(AsnEncodedData unsignedAttribute)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void RemoveUnsignedAttribute(AsnEncodedData unsignedAttribute)
         {
             WithSelfInfo((ref SignerInfoAsn mySigner) =>
                 {
@@ -407,10 +425,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void RemoveCounterSignature(SignerInfo counterSignerInfo)
         {
-            if (counterSignerInfo is null)
-            {
-                throw new ArgumentNullException(nameof(counterSignerInfo));
-            }
+            ArgumentNullException.ThrowIfNull(counterSignerInfo);
 
             SignerInfoCollection docSigners = _document.SignerInfos;
             int index = docSigners.FindIndexForSigner(this);
@@ -436,10 +451,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void CheckSignature(X509Certificate2Collection extraStore, bool verifySignatureOnly)
         {
-            if (extraStore is null)
-            {
-                throw new ArgumentNullException(nameof(extraStore));
-            }
+            ArgumentNullException.ThrowIfNull(extraStore);
 
             X509Certificate2? certificate = Certificate;
 
@@ -623,7 +635,7 @@ namespace System.Security.Cryptography.Pkcs
 
                         if (attr.AttrType == Oids.MessageDigest)
                         {
-                            CryptographicAttributeObject obj = MakeAttribute(attr);
+                            CryptographicAttributeObject obj = PkcsHelpers.MakeAttribute(attr);
 
                             if (obj.Values.Count != 1)
                             {
@@ -654,11 +666,7 @@ namespace System.Security.Cryptography.Pkcs
                         writer.PopSetOf();
 
 #if NET9_0_OR_GREATER
-                        writer.Encode(hasher, static (hasher, encoded) =>
-                        {
-                            hasher.AppendData(encoded);
-                            return (object?)null;
-                        });
+                        writer.Encode(hasher, static (hasher, encoded) => hasher.AppendData(encoded));
 #else
                         hasher.AppendData(writer.Encode());
 #endif
@@ -798,34 +806,6 @@ namespace System.Security.Cryptography.Pkcs
         private HashAlgorithmName GetDigestAlgorithm()
         {
             return PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm.Value!, forVerification: true);
-        }
-
-        internal static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[]? attributes)
-        {
-            var coll = new CryptographicAttributeObjectCollection();
-
-            if (attributes == null)
-                return coll;
-
-            foreach (AttributeAsn attribute in attributes)
-            {
-                coll.AddWithoutMerge(MakeAttribute(attribute));
-            }
-
-            return coll;
-        }
-
-        private static CryptographicAttributeObject MakeAttribute(AttributeAsn attribute)
-        {
-            Oid type = new Oid(attribute.AttrType);
-            AsnEncodedDataCollection valueColl = new AsnEncodedDataCollection();
-
-            foreach (ReadOnlyMemory<byte> attrValue in attribute.AttrValues)
-            {
-                valueColl.Add(PkcsHelpers.CreateBestPkcs9AttributeObjectAvailable(type, attrValue.ToArray()));
-            }
-
-            return new CryptographicAttributeObject(type, valueColl);
         }
 
         private static int FindAttributeIndexByOid(AttributeAsn[] attributes, Oid oid, int startIndex = 0)

@@ -28,8 +28,8 @@ namespace System.Linq
             IComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return Impl(source, keySelector, comparer ?? Comparer<TKey>.Default, cancellationToken);
 
@@ -39,47 +39,61 @@ namespace System.Linq
                 IComparer<TKey> comparer,
                 CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    if (!await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        if (default(TSource) is not null)
-                        {
-                            ThrowHelper.ThrowNoElementsException();
-                        }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                        return default;
+                if (!await e.MoveNextAsync())
+                {
+                    if (default(TSource) is not null)
+                    {
+                        ThrowHelper.ThrowNoElementsException();
                     }
 
-                    TSource value = e.Current;
-                    TKey key = keySelector(value);
+                    return default;
+                }
 
-                    if (default(TKey) is null)
+                TSource value = e.Current;
+                TKey key = keySelector(value);
+
+                if (default(TKey) is null)
+                {
+                    if (key is null)
                     {
-                        if (key is null)
+                        TSource firstValue = value;
+
+                        do
                         {
-                            TSource firstValue = value;
-
-                            do
+                            if (!await e.MoveNextAsync())
                             {
-                                if (!await e.MoveNextAsync().ConfigureAwait(false))
-                                {
-                                    // All keys are null, surface the first element.
-                                    return firstValue;
-                                }
-
-                                value = e.Current;
-                                key = keySelector(value);
+                                // All keys are null, surface the first element.
+                                return firstValue;
                             }
-                            while (key is null);
-                        }
 
-                        while (await e.MoveNextAsync().ConfigureAwait(false))
+                            value = e.Current;
+                            key = keySelector(value);
+                        }
+                        while (key is null);
+                    }
+
+                    while (await e.MoveNextAsync())
+                    {
+                        TSource nextValue = e.Current;
+                        TKey nextKey = keySelector(nextValue);
+                        if (nextKey is not null && comparer.Compare(nextKey, key) < 0)
+                        {
+                            key = nextKey;
+                            value = nextValue;
+                        }
+                    }
+                }
+                else
+                {
+                    if (comparer == Comparer<TKey>.Default)
+                    {
+                        while (await e.MoveNextAsync())
                         {
                             TSource nextValue = e.Current;
                             TKey nextKey = keySelector(nextValue);
-                            if (nextKey is not null && comparer.Compare(nextKey, key) < 0)
+                            if (Comparer<TKey>.Default.Compare(nextKey, key) < 0)
                             {
                                 key = nextKey;
                                 value = nextValue;
@@ -88,40 +102,20 @@ namespace System.Linq
                     }
                     else
                     {
-                        if (comparer == Comparer<TKey>.Default)
+                        while (await e.MoveNextAsync())
                         {
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
+                            TSource nextValue = e.Current;
+                            TKey nextKey = keySelector(nextValue);
+                            if (comparer.Compare(nextKey, key) < 0)
                             {
-                                TSource nextValue = e.Current;
-                                TKey nextKey = keySelector(nextValue);
-                                if (Comparer<TKey>.Default.Compare(nextKey, key) < 0)
-                                {
-                                    key = nextKey;
-                                    value = nextValue;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
-                            {
-                                TSource nextValue = e.Current;
-                                TKey nextKey = keySelector(nextValue);
-                                if (comparer.Compare(nextKey, key) < 0)
-                                {
-                                    key = nextKey;
-                                    value = nextValue;
-                                }
+                                key = nextKey;
+                                value = nextValue;
                             }
                         }
                     }
+                }
 
-                    return value;
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
-                }
+                return value;
             }
         }
 
@@ -144,8 +138,8 @@ namespace System.Linq
             IComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return Impl(source, keySelector, comparer ?? Comparer<TKey>.Default, cancellationToken);
 
@@ -155,47 +149,61 @@ namespace System.Linq
                 IComparer<TKey> comparer,
                 CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    if (!await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        if (default(TSource) is not null)
-                        {
-                            ThrowHelper.ThrowNoElementsException();
-                        }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                        return default;
+                if (!await e.MoveNextAsync())
+                {
+                    if (default(TSource) is not null)
+                    {
+                        ThrowHelper.ThrowNoElementsException();
                     }
 
-                    TSource value = e.Current;
-                    TKey key = await keySelector(value, cancellationToken).ConfigureAwait(false);
+                    return default;
+                }
 
-                    if (default(TKey) is null)
+                TSource value = e.Current;
+                TKey key = await keySelector(value, cancellationToken);
+
+                if (default(TKey) is null)
+                {
+                    if (key is null)
                     {
-                        if (key is null)
+                        TSource firstValue = value;
+
+                        do
                         {
-                            TSource firstValue = value;
-
-                            do
+                            if (!await e.MoveNextAsync())
                             {
-                                if (!await e.MoveNextAsync().ConfigureAwait(false))
-                                {
-                                    // All keys are null, surface the first element.
-                                    return firstValue;
-                                }
-
-                                value = e.Current;
-                                key = await keySelector(value, cancellationToken).ConfigureAwait(false);
+                                // All keys are null, surface the first element.
+                                return firstValue;
                             }
-                            while (key is null);
-                        }
 
-                        while (await e.MoveNextAsync().ConfigureAwait(false))
+                            value = e.Current;
+                            key = await keySelector(value, cancellationToken);
+                        }
+                        while (key is null);
+                    }
+
+                    while (await e.MoveNextAsync())
+                    {
+                        TSource nextValue = e.Current;
+                        TKey nextKey = await keySelector(nextValue, cancellationToken);
+                        if (nextKey is not null && comparer.Compare(nextKey, key) < 0)
+                        {
+                            key = nextKey;
+                            value = nextValue;
+                        }
+                    }
+                }
+                else
+                {
+                    if (comparer == Comparer<TKey>.Default)
+                    {
+                        while (await e.MoveNextAsync())
                         {
                             TSource nextValue = e.Current;
-                            TKey nextKey = await keySelector(nextValue, cancellationToken).ConfigureAwait(false);
-                            if (nextKey is not null && comparer.Compare(nextKey, key) < 0)
+                            TKey nextKey = await keySelector(nextValue, cancellationToken);
+                            if (Comparer<TKey>.Default.Compare(nextKey, key) < 0)
                             {
                                 key = nextKey;
                                 value = nextValue;
@@ -204,40 +212,20 @@ namespace System.Linq
                     }
                     else
                     {
-                        if (comparer == Comparer<TKey>.Default)
+                        while (await e.MoveNextAsync())
                         {
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
+                            TSource nextValue = e.Current;
+                            TKey nextKey = await keySelector(nextValue, cancellationToken);
+                            if (comparer.Compare(nextKey, key) < 0)
                             {
-                                TSource nextValue = e.Current;
-                                TKey nextKey = await keySelector(nextValue, cancellationToken).ConfigureAwait(false);
-                                if (Comparer<TKey>.Default.Compare(nextKey, key) < 0)
-                                {
-                                    key = nextKey;
-                                    value = nextValue;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
-                            {
-                                TSource nextValue = e.Current;
-                                TKey nextKey = await keySelector(nextValue, cancellationToken).ConfigureAwait(false);
-                                if (comparer.Compare(nextKey, key) < 0)
-                                {
-                                    key = nextKey;
-                                    value = nextValue;
-                                }
+                                key = nextKey;
+                                value = nextValue;
                             }
                         }
                     }
+                }
 
-                    return value;
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
-                }
+                return value;
             }
         }
     }

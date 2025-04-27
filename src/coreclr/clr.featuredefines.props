@@ -1,13 +1,12 @@
 <Project>
     <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
-        <FeatureEventTrace>true</FeatureEventTrace>
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-        <FeatureXplatEventSource Condition="'$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
+        <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
         <FeatureComWrappers>true</FeatureComWrappers>
     </PropertyGroup>
 

@@ -55,12 +55,6 @@ jobs:
       runAOT: true
       alwaysRun: true
 
-  # Disabled for now
-  #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
-    #parameters:
-      #runProfile: 'v8'
-      #onlySanityCheck: true
-
 #
 # ********** For !rolling builds, IOW - PR builds *************
 # - run everything, if relevant paths changed
@@ -77,6 +71,22 @@ jobs:
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      scenarios:
+        - WasmTestOnChrome
+
+  # Library tests with full threading
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+        #- browser_wasm_win
+      nameSuffix: _Threading
+      extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      extraHelixArguments: /p:WasmEnableThreads=true
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      shouldRunSmokeOnly: onLibrariesAndIllinkChanges
       scenarios:
         - WasmTestOnChrome
 
@@ -168,7 +178,6 @@ jobs:
         - browser_wasm_win
       nameSuffix: MultiThreaded
       extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      condition: ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true)
       publishArtifactsForWorkload: true
       publishWBT: false
 
@@ -196,12 +205,6 @@ jobs:
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-
-  # Disable for now
-  #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
-    #parameters:
-      #runProfile: 'v8'
-      #onlySanityCheck: true
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml

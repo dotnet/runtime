@@ -20,15 +20,12 @@ namespace System
     [DebuggerDisplay("{ToString(),raw}")]
     public readonly struct ReadOnlyMemory<T> : IEquatable<ReadOnlyMemory<T>>
     {
-        // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
-        // as code uses Unsafe.As to cast between them.
-
         // The highest order bit of _index is used to discern whether _object is a pre-pinned array.
         // (_index < 0) => _object is a pre-pinned array, so Pin() will not allocate a new GCHandle
         //       (else) => Pin() needs to allocate a new GCHandle to pin the object.
-        private readonly object? _object;
-        private readonly int _index;
-        private readonly int _length;
+        internal readonly object? _object;
+        internal readonly int _index;
+        internal readonly int _length;
 
         internal const int RemoveFlagsBitMask = 0x7FFFFFFF;
 

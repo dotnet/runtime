@@ -11,7 +11,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -95,7 +94,7 @@ static bool InitDLL(HANDLE hPalInstance)
     //
     // Initialize interface dispatch.
     //
-    if (!InitializeInterfaceDispatch())
+    if (!InterfaceDispatch_Initialize())
         return false;
 #endif
 
@@ -372,6 +371,10 @@ extern "C" bool RhInitialize(bool isDll)
 #endif
 
 #if defined(HOST_WINDOWS) || defined(FEATURE_PERFTRACING)
+#if defined(DEBUG) && defined(HOST_WINDOWS)
+    // quick_exit works around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640
+    at_quick_exit(&OnProcessExit);
+#endif
     atexit(&OnProcessExit);
 #endif
 
