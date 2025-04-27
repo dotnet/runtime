@@ -50,7 +50,7 @@ GVAL_DECL(TADDR, g_MiniMetaDataBuffAddress);
 
 EXTERN_C VOID STDCALL NDirectImportThunk();
 
-#define METHOD_TOKEN_REMAINDER_BIT_COUNT 11
+#define METHOD_TOKEN_REMAINDER_BIT_COUNT 12
 #define METHOD_TOKEN_REMAINDER_MASK ((1 << METHOD_TOKEN_REMAINDER_BIT_COUNT) - 1)
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
@@ -1763,11 +1763,8 @@ protected:
     enum {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
         // have a fairly strong justification for existence.
-        enum_flag3_TokenRemainderMask                       = 0x07FF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
+        enum_flag3_TokenRemainderMask                       = 0x0FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
                                                                       // for this method.
-        // Method was added via Edit And Continue
-        enum_flag3_EnCAddedMethod                           = 0x0800,
-
         // enum_flag3_HasPrecode implies that enum_flag3_HasStableEntryPoint is set.
         enum_flag3_HasStableEntryPoint                      = 0x1000,   // The method entrypoint is stable (either precode or actual code)
         enum_flag3_HasPrecode                               = 0x2000,   // Precode has been allocated for this method
@@ -1783,6 +1780,7 @@ protected:
         enum_flag4_ComputedRequiresStableEntryPoint         = 0x01,
         enum_flag4_RequiresStableEntryPoint                 = 0x02,
         enum_flag4_TemporaryEntryPointAssigned              = 0x04,
+        enum_flag4_EnCAddedMethod                           = 0x08,
     };
 
     void InterlockedSetFlags4(BYTE mask, BYTE newValue);
@@ -1923,13 +1921,15 @@ public:
     inline BOOL IsEnCAddedMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags3AndTokenRemainder & enum_flag3_EnCAddedMethod) != 0;
+        return (m_bFlags4 & enum_flag4_EnCAddedMethod) != 0;
     }
 
     inline void SetIsEnCAddedMethod()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags3AndTokenRemainder |= enum_flag3_EnCAddedMethod;
+#ifndef DACCESS_COMPILE
+        InterlockedUpdateFlags4(enum_flag4_EnCAddedMethod, TRUE);
+#endif
     }
 #else
     inline BOOL IsEnCAddedMethod()
@@ -2402,7 +2402,7 @@ class MethodDescChunk
     friend class MethodDesc;
 
     enum {
-        enum_flag_TokenRangeMask                           = 0x1FFF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
+        enum_flag_TokenRangeMask                           = 0x0FFF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
                                                                      // These are separate to allow the flags space available and used to be obvious here
                                                                      // and for the logic that splits the token to be algorithmically generated based on the
                                                                      // #define
