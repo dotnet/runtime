@@ -1149,13 +1149,6 @@ BOOL IJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     {
          GetNextEHClause(&pEnumState, &EHClause);
 
-        // Duplicate clauses are always listed at the end, so when we hit a duplicate clause,
-        // we have already visited all of the normal clauses.
-        if (IsDuplicateClause(&EHClause))
-        {
-            break;
-        }
-
         if (IsFilterHandler(&EHClause))
         {
             if (EHClause.FilterOffset == funcletStartOffset)
@@ -3496,7 +3489,7 @@ GCInfoToken InterpreterJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // The JIT-ed code always has the current version of GCInfo
+    // The Interpreter IR always has the current version of GCInfo
     return{ GetCodeHeader(MethodToken)->GetGCInfo(), GCINFO_VERSION };
 }
 #endif // FEATURE_INTERPRETER

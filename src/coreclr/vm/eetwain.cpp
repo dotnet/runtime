@@ -247,7 +247,6 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     // =======================================
     //             <--- RSP == RBP (invariant: localalloc disallowed before remap)
     // Arguments for next call (if there is one)
-    // PSPSym (optional)
     // JIT temporaries (if any)
     // Security object (if any)
     // Local variables (if any)
@@ -273,7 +272,6 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     // So we start at RSP, and zero out:
     //     GetFixedStackSize() - GetSizeOfEditAndContinuePreservedArea() bytes.
     //
-    // We'll need to restore PSPSym; location gotten from GCInfo.
     // We'll need to copy security object; location gotten from GCInfo.
     //
     // On ARM64 the JIT generates a slightly different frame and we do not have
@@ -283,7 +281,6 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     // Arguments for next call (if there is one)     <- SP
     // JIT temporaries
     // Locals
-    // PSPSym
     // ---------------------------------------    ^ zeroed area
     // MonitorAcquired (for synchronized methods)
     // Saved FP                                      <- FP
@@ -300,14 +297,14 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     // GCInfo for old method
     GcInfoDecoder oldGcDecoder(
         pOldCodeInfo->GetGCInfoToken(),
-        GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_PSP_SYM | DECODE_EDIT_AND_CONTINUE),
+        GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_EDIT_AND_CONTINUE),
         0       // Instruction offset (not needed)
         );
 
     // GCInfo for new method
     GcInfoDecoder newGcDecoder(
         pNewCodeInfo->GetGCInfoToken(),
-        GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_PSP_SYM | DECODE_EDIT_AND_CONTINUE),
+        GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_EDIT_AND_CONTINUE),
         0       // Instruction offset (not needed)
         );
 
@@ -375,22 +372,6 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     }
 
     TADDR callerSP = oldStackBase + oldFixedStackSize;
-
-#ifdef _DEBUG
-    // If the old method has a PSPSym, then its value should == initial-SP (i.e.
-    // oldStackBase) for x64 and callerSP for arm64
-    INT32 nOldPspSymStackSlot = oldGcDecoder.GetPSPSymStackSlot();
-    if (nOldPspSymStackSlot != NO_PSP_SYM)
-    {
-#if defined(TARGET_AMD64)
-        TADDR oldPSP = *PTR_TADDR(oldStackBase + nOldPspSymStackSlot);
-        _ASSERTE(oldPSP == oldStackBase);
-#else
-        TADDR oldPSP = *PTR_TADDR(callerSP + nOldPspSymStackSlot);
-        _ASSERTE(oldPSP == callerSP);
-#endif
-    }
-#endif // _DEBUG
 
 #else
     PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
@@ -765,20 +746,6 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         memset((void*)(size_t)(pCtx->Esp), 0, newInfo->stackSize - frameHeaderSize );
 #elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
         memset((void*)newStackBase, 0, newFixedStackSize - frameHeaderSize);
-
-        // Restore PSPSym for the new function. Its value should be set to our new FP. But
-        // first, we gotta find PSPSym's location on the stack
-        INT32 nNewPspSymStackSlot = newGcDecoder.GetPSPSymStackSlot();
-        if (nNewPspSymStackSlot != NO_PSP_SYM)
-        {
-#if defined(TARGET_AMD64)
-            *PTR_TADDR(newStackBase + nNewPspSymStackSlot) = newStackBase;
-#elif defined(TARGET_ARM64)
-            *PTR_TADDR(callerSP + nNewPspSymStackSlot) = callerSP;
-#else
-            PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
-#endif
-        }
 #else   // !X86, !X64, !ARM64
         PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
 #endif
@@ -1693,11 +1660,14 @@ PTR_VOID EECodeManager::GetExactGenericsToken(PREGDISPLAY     pContext,
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return EECodeManager::GetExactGenericsToken(GetCallerSp(pContext), pCodeInfo);
+    return EECodeManager::GetExactGenericsToken(GetSP(pContext->pCurrentContext),
+                                                GetFP(pContext->pCurrentContext),
+                                                pCodeInfo);
 }
 
 //static
-PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
+PTR_VOID EECodeManager::GetExactGenericsToken(TADDR           sp,
+                                              TADDR           fp,
                                               EECodeInfo *    pCodeInfo)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1706,47 +1676,14 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
-            GcInfoDecoderFlags (DECODE_PSP_SYM | DECODE_GENERICS_INST_CONTEXT)
+            GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT)
             );
 
     INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
     if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
     {
-
-        TADDR taSlot;
-        if (pCodeInfo->IsFunclet())
-        {
-            INT32 spOffsetPSPSym = gcInfoDecoder.GetPSPSymStackSlot();
-            _ASSERTE(spOffsetPSPSym != NO_PSP_SYM);
-
-#ifdef TARGET_AMD64
-            // On AMD64 the spOffsetPSPSym is relative to the "Initial SP": the stack
-            // pointer at the end of the prolog before and dynamic allocations, so it
-            // can be the same for funclets and the main function.
-            // However, we have a caller SP, so we need to convert
-            baseStackSlot -= pCodeInfo->GetFixedStackSize();
-
-#endif // TARGET_AMD64
-
-            // For funclets we have to do an extra dereference to get the PSPSym first.
-            TADDR newBaseStackSlot = *PTR_TADDR(baseStackSlot + spOffsetPSPSym);
-
-#ifdef TARGET_AMD64
-            // On AMD64 the PSPSym stores the "Initial SP": the stack pointer at the end of
-            // prolog, before any dynamic allocations.
-            // However, the GenericsContext offset is relative to the caller SP for all
-            // platforms.  So here we adjust to convert AMD64's initial sp to a caller SP.
-            // But we have to be careful to use the main function's EECodeInfo, not the
-            // funclet's EECodeInfo because they have different stack sizes!
-            newBaseStackSlot += pCodeInfo->GetMainFunctionInfo().GetFixedStackSize();
-#endif // TARGET_AMD64
-
-            taSlot = (TADDR)( spOffsetGenericsContext + newBaseStackSlot );
-        }
-        else
-        {
-            taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
-        }
+        TADDR baseStackSlot = gcInfoDecoder.HasStackBaseRegister() ? fp : sp;
+        TADDR taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
         TADDR taExactGenericsToken = *PTR_TADDR(taSlot);
         return PTR_VOID(taExactGenericsToken);
     }
@@ -2060,12 +1997,11 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 
 #ifndef TARGET_WASM
 
-#ifdef USE_FUNCLET_CALL_HELPER
 // This is an assembly helper that enables us to call into EH funclets.
 EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
 
 // This is an assembly helper that enables us to call into EH filter funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR CallerSP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
+EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 
@@ -2080,7 +2016,9 @@ static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 
 static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextRecord)
 {
-#if defined(TARGET_ARM)
+#if defined(TARGET_AMD64)
+    return (UINT_PTR*)&(pContextRecord->Rbx);
+#elif defined(TARGET_ARM)
     return (UINT_PTR*)&(pContextRecord->R4);
 #elif defined(TARGET_ARM64)
     return (UINT_PTR*)&(pContextRecord->X19);
@@ -2096,47 +2034,6 @@ static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextReco
 #endif
 }
 
-static inline TADDR GetFrameRestoreBase(PCONTEXT pContextRecord)
-{
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    return GetSP(pContextRecord);
-#elif defined(TARGET_X86)
-    return pContextRecord->Ebp;
-#else
-    PORTABILITY_ASSERT("GetFrameRestoreBase");
-    return NULL;
-#endif
-}
-
-#endif // USE_FUNCLET_CALL_HELPER
-
-typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
-static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
-{
-#ifdef HOST_AMD64
-    _ASSERTE(exInfo->m_frameIter.m_crawl.GetRegisterSet() == pvRegDisplay);
-    if (exInfo->m_frameIter.m_crawl.GetCodeInfo()->HasFrameRegister())
-    {
-        ULONG frameOffset = exInfo->m_frameIter.m_crawl.GetCodeInfo()->GetFrameOffsetFromUnwindInfo();
-        return pvRegDisplay->pCurrentContext->Rbp - 16 * frameOffset;
-    }
-    else
-    {
-        return pvRegDisplay->SP;
-    }
-#elif defined(HOST_ARM64)
-    return pvRegDisplay->SP;
-#elif defined(HOST_ARM)
-    return pvRegDisplay->SP;
-#elif defined(HOST_X86)
-    return pvRegDisplay->SP;
-#elif defined(HOST_RISCV64)
-    return pvRegDisplay->SP;
-#elif defined(HOST_LOONGARCH64)
-    return pvRegDisplay->SP;
-#endif
-}
-
 #endif // TARGET_WASM
 
 // Call catch, finally or filter funclet.
@@ -2144,18 +2041,6 @@ static UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 // * Catch funclet: address to resume at after the catch returns
 // * Finally funclet: unused
 // * Filter funclet: result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
-#ifndef USE_FUNCLET_CALL_HELPER
-// NOTE: This function must be prevented from calling the actual funclet via a tail call to ensure
-// that the m_csfEHClause is really set to what is a SP of the caller frame of the funclet. The
-// StackFrameIterator relies on this.
-#ifdef _MSC_VER
-#pragma optimize("", off)
-#elif defined(__clang__)
-[[clang::disable_tail_calls]]
-#else
-[[gnu::optimize("O0")]]
-#endif
-#endif // USE_FUNCLET_CALL_HELPER
 DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
 {
     DWORD_PTR dwResult = 0;
@@ -2164,7 +2049,6 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
 #else
     HandlerFn* pfnHandler = (HandlerFn*)pHandler;
 
-#ifdef USE_FUNCLET_CALL_HELPER
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
@@ -2175,11 +2059,7 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
         // it will retrieve the framepointer for accessing the locals in the parent
         // method.
         dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
-#ifdef USE_CURRENT_CONTEXT_IN_FILTER
-                                       GetFrameRestoreBase(pRD->pCurrentContext),
-#else
-                                       GetFrameRestoreBase(pRD->pCallerContext),
-#endif
+                                       GetFP(pRD->pCurrentContext),
                                        CastHandlerFn(pfnHandler),
                                        pFuncletCallerSP);
     }
@@ -2190,21 +2070,10 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
                                  GetFirstNonVolatileRegisterAddress(pRD->pCurrentContext),
                                  pFuncletCallerSP);
     }
-#else
-    pExInfo->m_csfEHClause = CallerStackFrame((UINT_PTR)GetCurrentSP());
-
-    UINT_PTR establisherFrame = GetEstablisherFrame(pRD, pExInfo);
-    dwResult = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
-#endif
 
 #endif // TARGET_WASM
     return dwResult;
 }
-#ifndef USE_FUNCLET_CALL_HELPER
-#ifdef _MSC_VER
-#pragma optimize("", on)
-#endif
-#endif // USE_FUNCLET_CALL_HELPER
 
 #ifdef FEATURE_INTERPRETER
 DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
@@ -2441,8 +2310,112 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
                                         LPVOID          hCallBack,
                                         DWORD           relOffsetOverride)
 {
-    // Interpreter-TODO: Implement this
-    return false;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    unsigned curOffs = pCodeInfo->GetRelOffset();
+
+#ifdef _DEBUG
+    // Get the name of the current method
+    const char * methodName = pCodeInfo->GetMethodDesc()->GetName();
+    LOG((LF_GCINFO, LL_INFO1000, "Reporting GC refs for %s at offset %04x.\n",
+        methodName, curOffs));
+#endif
+
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+
+#ifdef _DEBUG
+    if (flags & ActiveStackFrame)
+    {
+        InterpreterGcInfoDecoder _gcInfoDecoder(
+                                                gcInfoToken,
+                                                DECODE_INTERRUPTIBILITY,
+                                                curOffs
+                                                );
+        _ASSERTE(_gcInfoDecoder.IsInterruptible() || _gcInfoDecoder.CouldBeSafePoint());
+    }
+#endif
+
+    // Check if we have been given an override value for relOffset
+    if (relOffsetOverride != NO_OVERRIDE_OFFSET)
+    {
+        // We've been given an override offset for GC Info
+#ifdef _DEBUG
+        InterpreterGcInfoDecoder _gcInfoDecoder(
+                                                gcInfoToken,
+                                                DECODE_CODE_LENGTH
+                                                );
+
+        // We only use override offset for wantsReportOnlyLeaf
+        _ASSERTE(_gcInfoDecoder.WantsReportOnlyLeaf());
+#endif // _DEBUG
+
+        curOffs = relOffsetOverride;
+
+        LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset to provided override offset. Now reporting GC refs for %s at offset %04x.\n",
+            methodName, curOffs));
+    }
+
+
+#if defined(FEATURE_EH_FUNCLETS)   // funclets
+    if (pCodeInfo->GetJitManager()->IsFilterFunclet(pCodeInfo))
+    {
+        // Filters are the only funclet that run during the 1st pass, and must have
+        // both the leaf and the parent frame reported.  In order to avoid double
+        // reporting of the untracked variables, do not report them for the filter.
+        flags |= NoReportUntracked;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+    bool reportScratchSlots;
+
+    // We report scratch slots only for leaf frames.
+    // A frame is non-leaf if we are executing a call, or a fault occurred in the function.
+    // The only case in which we need to report scratch slots for a non-leaf frame
+    //   is when execution has to be resumed at the point of interruption (via ResumableFrame)
+    _ASSERTE( sizeof( BOOL ) >= sizeof( ActiveStackFrame ) );
+    reportScratchSlots = (flags & ActiveStackFrame) != 0;
+
+
+    InterpreterGcInfoDecoder gcInfoDecoder(
+                                           gcInfoToken,
+                                           GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+                                           curOffs
+                                           );
+
+    if (!gcInfoDecoder.EnumerateLiveSlots(
+                                          pContext,
+                                          reportScratchSlots,
+                                          flags,
+                                          pCallback,
+                                          hCallBack
+                                          ))
+    {
+        return false;
+    }
+
+#ifdef FEATURE_EH_FUNCLETS   // funclets
+    //
+    // If we're in a funclet, we do not want to report the incoming varargs.  This is
+    // taken care of by the parent method and the funclet should access those arguments
+    // by way of the parent method's stack frame.
+    //
+    if(pCodeInfo->IsFunclet())
+    {
+        return true;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+    if (gcInfoDecoder.GetIsVarArg())
+    {
+        // Interpreter-TODO: Implement this
+        _ASSERTE(false);
+        return false;
+    }
+
+    return true;
 }
 
 OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,

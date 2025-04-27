@@ -494,7 +494,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     }
     CONTRACTL_END;
 
-    if (fIsRuntimeWrappedException && (!pAssembly->GetModule()->IsRuntimeWrapExceptions()))
+    if (fIsRuntimeWrappedException && (!pAssembly->GetModule()->IsRuntimeWrapExceptionsDuringEH()))
     {
         // We already created the instance, fetched the field.  We know it is
         // not marshal by ref, or any of the other cases that might trigger GC.
@@ -2876,20 +2876,17 @@ void SetupWatsonBucket(UINT_PTR currentIP, CrawlFrame* pCf)
 #endif // !TARGET_UNIX
 
 // Ensure that there is space for neededSize elements in the stack trace array.
-void StackTraceInfo::EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t neededSize)
+void StackTraceInfo::EnsureStackTraceArray(StackTraceArrayProtect *pStackTraceProtected, size_t neededSize)
 {
     CONTRACTL
     {
         GC_TRIGGERS;
         THROWS;
-        PRECONDITION(CheckPointer(pStackTrace));
+        PRECONDITION(CheckPointer(pStackTraceProtected));
     }
     CONTRACTL_END;
 
-    StackTraceArray newStackTrace;
-    GCPROTECT_BEGIN(newStackTrace);
-
-    size_t stackTraceCapacity = pStackTrace->Capacity();
+    size_t stackTraceCapacity = pStackTraceProtected->m_pStackTraceArray.Capacity();
     if (neededSize > stackTraceCapacity)
     {
         S_SIZE_T newCapacity = S_SIZE_T(stackTraceCapacity) * S_SIZE_T(2);
@@ -2905,17 +2902,16 @@ void StackTraceInfo::EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t 
         stackTraceCapacity = newCapacity.Value();
 
         // Allocate a new array with the needed size
-        newStackTrace.Allocate(stackTraceCapacity);
-        if (pStackTrace->Get() != NULL)
+        pStackTraceProtected->m_pStackTraceArrayNew.Allocate(stackTraceCapacity);
+        if (pStackTraceProtected->m_pStackTraceArray.Get() != NULL)
         {
             // Copy the original array to the new one
-            newStackTrace.CopyDataFrom(*pStackTrace);
-            _ASSERTE(newStackTrace.Size() == (neededSize - 1));
+            pStackTraceProtected->m_pStackTraceArrayNew.CopyDataFrom(pStackTraceProtected->m_pStackTraceArray);
+            _ASSERTE(pStackTraceProtected->m_pStackTraceArrayNew.Size() == (neededSize - 1));
         }
         // Update the stack trace array
-        pStackTrace->Set(newStackTrace.Get());
+        pStackTraceProtected->m_pStackTraceArray.Set(pStackTraceProtected->m_pStackTraceArrayNew.Get());
     }
-    GCPROTECT_END();
 }
 
 // Ensure that there is space for the neededSize elements in the keepAlive array.
@@ -3073,7 +3069,7 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     {
         struct
         {
-            StackTraceArray stackTrace;
+            StackTraceArrayProtect stackTrace;
             PTRARRAYREF pKeepAliveArray = NULL; // Object array of Managed Resolvers / Loader Allocators of methods that can be collected
             OBJECTREF keepAliveObject = NULL;
         } gc;
@@ -3082,30 +3078,30 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
 
         // Fetch the stacktrace and the keepAlive array from the exception object. It returns clones of those arrays in case the
         // stack trace was created by a different thread.
-        ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace, &gc.pKeepAliveArray);
+        ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace.m_pStackTraceArray, &gc.pKeepAliveArray, pThread);
 
         // The stack trace returned by the GetStackTrace has to be created by the current thread or be NULL.
-        _ASSERTE((gc.stackTrace.Get() == NULL) || (gc.stackTrace.GetObjectThread() == pThread));
+        _ASSERTE((gc.stackTrace.m_pStackTraceArray.Get() == NULL) || (gc.stackTrace.m_pStackTraceArray.GetObjectThread() == pThread));
 
-        EnsureStackTraceArray(&gc.stackTrace, gc.stackTrace.Size() + 1);
+        EnsureStackTraceArray(&gc.stackTrace, gc.stackTrace.m_pStackTraceArray.Size() + 1);
 
         if (fRaisingForeignException)
         {
             // Just before we append to the stack trace, mark the last recorded frame to be from
             // the foreign thread so that we can insert an annotation indicating so when building
             // the stack trace string.
-            size_t numCurrentFrames = gc.stackTrace.Size();
+            size_t numCurrentFrames = gc.stackTrace.m_pStackTraceArray.Size();
             if (numCurrentFrames > 0)
             {
                 // "numCurrentFrames" can be zero if the user created an EDI using
                 // an unthrown exception.
-                StackTraceElement & refLastElementFromForeignStackTrace = gc.stackTrace[numCurrentFrames - 1];
+                StackTraceElement & refLastElementFromForeignStackTrace = gc.stackTrace.m_pStackTraceArray[numCurrentFrames - 1];
                 refLastElementFromForeignStackTrace.flags |= STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE;
             }
         }
 
-        uint32_t keepAliveItemsCount = gc.stackTrace.GetKeepAliveItemsCount();
-        _ASSERTE(keepAliveItemsCount == gc.stackTrace.ComputeKeepAliveItemsCount());
+        uint32_t keepAliveItemsCount = gc.stackTrace.m_pStackTraceArray.GetKeepAliveItemsCount();
+        _ASSERTE(keepAliveItemsCount == gc.stackTrace.m_pStackTraceArray.ComputeKeepAliveItemsCount());
 
         gc.keepAliveObject = GetKeepAliveObject(pFunc);
         if (gc.keepAliveObject != NULL)
@@ -3131,21 +3127,21 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
             gc.pKeepAliveArray = NULL;
         }
 
-        gc.stackTrace.SetKeepAliveItemsCount(keepAliveItemsCount);
+        gc.stackTrace.m_pStackTraceArray.SetKeepAliveItemsCount(keepAliveItemsCount);
 
-        gc.stackTrace.Append(&stackTraceElem);
-       _ASSERTE(gc.stackTrace.ComputeKeepAliveItemsCount() == keepAliveItemsCount);
+        gc.stackTrace.m_pStackTraceArray.Append(&stackTraceElem);
+       _ASSERTE(gc.stackTrace.m_pStackTraceArray.ComputeKeepAliveItemsCount() == keepAliveItemsCount);
 
         if (gc.pKeepAliveArray != NULL)
         {
             _ASSERTE(keepAliveItemsCount > 0);
-            gc.pKeepAliveArray->SetAt(0, gc.stackTrace.Get());
+            gc.pKeepAliveArray->SetAt(0, gc.stackTrace.m_pStackTraceArray.Get());
             ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepAliveArray));
         }
         else
         {
             _ASSERTE(keepAliveItemsCount == 0);
-            ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.Get()));
+            ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.m_pStackTraceArray.Get()));
         }
 
         // Clear the _stackTraceString field as it no longer matches the stack trace
@@ -4793,9 +4789,9 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
         {
             message.Append(exceptionMessage);
         }
-        message.Append(W("\n"));
 
         PrintToStdErrW(message.GetUnicode());
+        PrintToStdErrA("\n");
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
         // Send the log to Windows Event Log
@@ -11310,6 +11306,11 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 {
     LIMITED_METHOD_CONTRACT;
 
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    m_Context.SegCs = 0;
+    m_Context.SegSs = 0;
+    m_Context.EFlags = 0;
+    m_Context.Eax = 0;    
     m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
     m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
     m_ContextPointers.Ecx = &m_Context.Ecx;

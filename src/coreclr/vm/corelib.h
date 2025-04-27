@@ -307,10 +307,6 @@ DEFINE_METHOD(ENVIRONMENT,       INITIALIZE_COMMAND_LINE_ARGS, InitializeCommand
 
 DEFINE_CLASS(EVENT,                 Reflection,             RuntimeEventInfo)
 
-DEFINE_CLASS(EVENT_ARGS,            System,                 EventArgs)
-
-DEFINE_CLASS(EVENT_HANDLERGENERIC,  System,                 EventHandler`1)
-
 DEFINE_CLASS(EVENT_INFO,            Reflection,             EventInfo)
 
 DEFINE_CLASS_U(System,                 Exception,      ExceptionObject)
