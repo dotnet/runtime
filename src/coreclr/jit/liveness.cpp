@@ -249,7 +249,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                     break;
                 }
 
-                fgMarkUseDef<false>(tree->AsLclVarCommon());
+                fgMarkUseDef<!lowered>(tree->AsLclVarCommon());
             }
             break;
 
