@@ -564,11 +564,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeySeedPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            Assert.Throws<CryptographicException>(
-                () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
+            // Windows when using the DefaultKeySet delays throwing no private key and instead acts as it the
+            // keyset does not exist. Exporting it again to PFX forces Windows to reconcile the fact the key
+            // didn't actually load.
+            if (PlatformDetection.IsWindows && keyStorageFlags == X509KeyStorageFlags.DefaultKeySet)
+            {
+                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+                {
+                    Assert.Throws<CryptographicException>(
+                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, "PLACEHOLDER"));
+                }
 
-            Assert.Throws<CryptographicException>(
-                () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
+                using (X509Certificate2 cert = new(pfxBytes, pfxPassword, keyStorageFlags))
+                {
+                    Assert.Throws<CryptographicException>(
+                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, "PLACEHOLDER"));
+                }
+            }
+            else
+            {
+                Assert.Throws<CryptographicException>(
+                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
+
+                Assert.Throws<CryptographicException>(
+                    () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
+            }
         }
 
 #if !NO_EPHEMERALKEYSET_AVAILABLE
