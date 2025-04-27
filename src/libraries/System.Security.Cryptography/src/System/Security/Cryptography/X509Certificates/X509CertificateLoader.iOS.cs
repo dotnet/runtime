@@ -87,25 +87,41 @@ namespace System.Security.Cryptography.X509Certificates
         {
             AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
 
-            if (certAndKey.Key is not null)
+            if (certAndKey.Key is Pkcs12Key pkcs12Key)
             {
-                AppleCertificatePal newPal = AppleCertificatePal.ImportPkcs12(pal, certAndKey.Key);
-                pal.Dispose();
-                pal = newPal;
+                if (pkcs12Key is { Key: AsymmetricAlgorithm alg })
+                {
+                    AppleCertificatePal newPal = AppleCertificatePal.ImportPkcs12(pal, alg);
+                    pal.Dispose();
+                    pal = newPal;
+                }
+                else
+                {
+                    Debug.Fail("Unhandled key type.");
+                    throw new CryptographicException();
+                }
             }
 
             return new Pkcs12Return(pal);
         }
 
-        private static partial AsymmetricAlgorithm? CreateKey(string algorithm)
+        private static partial Pkcs12Key? CreateKey(string algorithm, ReadOnlySpan<byte> pkcs8)
         {
-            return algorithm switch
+            switch (algorithm)
             {
-                Oids.Rsa or Oids.RsaPss => new RSAImplementation.RSASecurityTransforms(),
-                Oids.EcPublicKey or Oids.EcDiffieHellman => new ECDsaImplementation.ECDsaSecurityTransforms(),
-                // There's no DSA support on iOS/tvOS.
-                _ => null,
-            };
+                case Oids.Rsa or Oids.RsaPss:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(
+                        pkcs8,
+                        static () => new RSAImplementation.RSASecurityTransforms());
+                case Oids.EcPublicKey or Oids.EcDiffieHellman:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(
+                        pkcs8,
+                        static () => new ECDsaImplementation.ECDsaSecurityTransforms());
+
+                default:
+                    // No DSA or PQC support on iOS / tvOS.
+                    return null;
+            }
         }
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data)

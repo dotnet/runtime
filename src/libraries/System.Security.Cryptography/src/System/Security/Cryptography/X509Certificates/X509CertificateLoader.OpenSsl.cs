@@ -59,36 +59,38 @@ namespace System.Security.Cryptography.X509Certificates
             return new Pkcs12Return(pal);
         }
 
-        private static partial AsymmetricAlgorithm? CreateKey(string algorithm)
+        private static partial Pkcs12Key? CreateKey(string algorithm, ReadOnlySpan<byte> pkcs8)
         {
             return algorithm switch
             {
-                Oids.Rsa or Oids.RsaPss => new RSAOpenSsl(),
-                Oids.EcPublicKey or Oids.EcDiffieHellman => new ECDiffieHellmanOpenSsl(),
-                Oids.Dsa => new DSAOpenSsl(),
-                Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 => new MLKemAsymmetricAlgorithm(),
+                Oids.Rsa or Oids.RsaPss => new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, () => new RSAOpenSsl()),
+                Oids.EcPublicKey or Oids.EcDiffieHellman =>  new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, () => new ECDiffieHellmanOpenSsl()),
+                Oids.Dsa => new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, () => new DSAOpenSsl()),
+                Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 => new MLKemPkcs12PrivateKey(pkcs8),
                 _ => null,
             };
         }
 
-        internal static SafeEvpPKeyHandle GetPrivateKey(AsymmetricAlgorithm key)
+        internal static SafeEvpPKeyHandle GetPrivateKey(Pkcs12Key key)
         {
-            if (key is RSAOpenSsl rsa)
+            if (key.Key is RSAOpenSsl rsa)
             {
                 return rsa.DuplicateKeyHandle();
             }
 
-            if (key is DSAOpenSsl dsa)
+            if (key.Key is DSAOpenSsl dsa)
             {
                 return dsa.DuplicateKeyHandle();
             }
 
-            if (key is MLKemAsymmetricAlgorithm { Key: MLKemImplementation kem })
+            if (key.Key is MLKem kem)
             {
-                return kem.DuplicateHandle();
+                MLKemImplementation? impl = kem as MLKemImplementation;
+                Debug.Assert(impl is not null, "MLKem implementation is not handled for duplicating a handle.");
+                return impl.DuplicateHandle();
             }
 
-            return ((ECDiffieHellmanOpenSsl)key).DuplicateKeyHandle();
+            return ((ECDiffieHellmanOpenSsl)key.Key).DuplicateKeyHandle();
         }
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data)
