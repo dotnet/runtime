@@ -24,6 +24,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // We don't know for sure this is a correct Windows version when this support was added but
         // we know for a fact lower versions don't support it.
         public static bool Pkcs12PBES2Supported => !PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1703OrGreater;
+        public static bool MLKemIsNotSupported => !MLKem.IsSupported;
 
         public static IEnumerable<object[]> BrainpoolCurvesPfx
         {
@@ -554,6 +555,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     MLKemTestData.IetfMlKem1024PrivateKeyDecapsulationKey,
                     kem.ExportDecapsulationKey());
             }
+        }
+
+        [ConditionalTheory(nameof(MLKemIsNotSupported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem512PrivateKey_NotSupported(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeySeedPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            Assert.Throws<CryptographicException>(
+                () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
+
+            Assert.Throws<CryptographicException>(
+                () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
         }
 
 #if !NO_EPHEMERALKEYSET_AVAILABLE

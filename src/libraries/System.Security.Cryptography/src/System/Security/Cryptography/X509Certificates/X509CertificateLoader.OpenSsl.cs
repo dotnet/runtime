@@ -61,14 +61,19 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static partial Pkcs12Key? CreateKey(string algorithm, ReadOnlySpan<byte> pkcs8)
         {
-            return algorithm switch
+            switch (algorithm)
             {
-                Oids.Rsa or Oids.RsaPss => new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, () => new RSAOpenSsl()),
-                Oids.EcPublicKey or Oids.EcDiffieHellman =>  new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, () => new ECDiffieHellmanOpenSsl()),
-                Oids.Dsa => new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, () => new DSAOpenSsl()),
-                Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 => new MLKemPkcs12PrivateKey(pkcs8),
-                _ => null,
-            };
+                case Oids.Rsa or Oids.RsaPss:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, static () => new RSAOpenSsl());
+                case Oids.EcPublicKey or Oids.EcDiffieHellman:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, static () => new ECDiffieHellmanOpenSsl());
+                case Oids.Dsa:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, static () => new DSAOpenSsl());
+                case Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024:
+                    return new MLKemPkcs12PrivateKey(pkcs8);
+                default:
+                    return null;
+            }
         }
 
         internal static SafeEvpPKeyHandle GetPrivateKey(Pkcs12Key key)
@@ -85,6 +90,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (key.Key is MLKem kem)
             {
+                // We should always get back an MLKemImplementation from PKCS8 loading.
                 MLKemImplementation? impl = kem as MLKemImplementation;
                 Debug.Assert(impl is not null, "MLKem implementation is not handled for duplicating a handle.");
                 return impl.DuplicateHandle();
