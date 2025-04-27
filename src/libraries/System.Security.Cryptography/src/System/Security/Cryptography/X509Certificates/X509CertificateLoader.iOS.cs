@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 else
                 {
-                    Debug.Fail("Unhandled key type.");
+                    Debug.Fail($"Unhandled key type '{pkcs12Key.Key?.GetType()?.FullName}'.");
                     throw new CryptographicException();
                 }
             }

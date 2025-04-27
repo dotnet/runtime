@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 else
                 {
-                    Debug.Fail("Unhandled key type.");
+                    Debug.Fail($"Unhandled key type '{pkcs12Key.Key?.GetType()?.FullName}'.");
                     throw new CryptographicException();
                 }
             }
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case Oids.Dsa:
                     return new AsymmetricAlgorithmPkcs12PrivateKey(
                         pkcs8,
-                        () => new DSAImplementation.DSAAndroid());
+                        static () => new DSAImplementation.DSAAndroid());
                 default:
                     // No PQC support on Android.
                     return null;
