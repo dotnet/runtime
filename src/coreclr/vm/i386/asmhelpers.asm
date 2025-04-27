@@ -1290,14 +1290,17 @@ _GenericCLRToCOMCallStub@0 proc public
 
     ; Get pCLRToCOMCallInfo for return thunk
     mov         ecx, [ebx + CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo]
+    ; Get size of arguments to pop
+    movzx       ecx, word ptr [ecx + CLRToCOMCallInfo__m_cbStackPop]
 
     STUB_EPILOG_RETURN
 
-    ; Tailcall return thunk
-    jmp [ecx + CLRToCOMCallInfo__m_pRetThunk]
+    ; Pop the incoming arguments off the stack and push back the return
+    ; address on the last slot
+    lea         esp, [esp + ecx + 4]
+    xor         ecx, -1
+    push        dword ptr [esp + ecx - 3]
 
-    ; This will never be executed. It is just to help out stack-walking logic
-    ; which disassembles the epilog to unwind the stack.
     ret
 
 _GenericCLRToCOMCallStub@0 endp

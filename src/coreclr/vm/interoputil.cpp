@@ -3673,9 +3673,6 @@ void InitializeComInterop()
 
     InitializeSListHead(&RCW::s_RCWStandbyList);
     ComCall::Init();
-#ifdef TARGET_X86
-    CLRToCOMCall::Init();
-#endif
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
