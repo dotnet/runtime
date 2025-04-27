@@ -346,6 +346,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
 
     if (pMethod->HasAsyncMethodData())
     {
+        // TODO: (async) revisit and examine if this can be supported
         LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
         return E_FAIL;
     }
