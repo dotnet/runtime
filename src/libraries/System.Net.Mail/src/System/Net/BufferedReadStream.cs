@@ -83,7 +83,10 @@ namespace System.Net
             throw new NotSupportedException(SR.WriteNotSupported);
         }
 
-        // Push method remains the same
+        // adds additional content to the beginning of the buffer
+        // so the layout of the storedBuffer will be
+        // <buffer><existingBuffer>
+        // after calling push
         internal void Push(ReadOnlySpan<byte> buffer)
         {
             if (buffer.Length == 0)

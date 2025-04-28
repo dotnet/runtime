@@ -5,7 +5,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Buffers; // Required for Span/Memory operations
+using System.Buffers;
 
 namespace System.Net.Mime
 {
@@ -116,7 +116,7 @@ namespace System.Net.Mime
                 }
                 else
                 {
-                    // Just regular eight bit data
+                    // Just regular seven bit data
                     WriteState.Append(buffer[i]);
                 }
             }

@@ -106,7 +106,6 @@ namespace System.Net
         public abstract override void Write(ReadOnlySpan<byte> buffer);
         public abstract override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default);
 
-
         // Sealed implementations using the abstract Span/Memory methods
         public sealed override int Read(byte[] buffer, int offset, int count)
         {

@@ -189,7 +189,7 @@ namespace System.Net.Mime
         public override void Flush()
         {
             FlushInternal();
-            base.Flush(); // Calls BaseStream.Flush()
+            base.Flush();
         }
 
         public override async Task FlushAsync(CancellationToken cancellationToken)
