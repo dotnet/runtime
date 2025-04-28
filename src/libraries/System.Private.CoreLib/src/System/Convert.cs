@@ -2907,7 +2907,7 @@ namespace System
                 1 => 2,
                 2 => 1,
                 _ => throw new FormatException(SR.Format_BadBase64Char)
-            }
+            };
 
             // Done:
             return (usefulInputLength / 4) * 3 + padding;
