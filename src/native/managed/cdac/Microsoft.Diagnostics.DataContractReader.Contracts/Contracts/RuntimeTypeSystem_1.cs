@@ -1038,9 +1038,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         // FCall path, look up address in the FCall table
-        {
-
-        }
+        // TODO(cdac): FCall path if relevant
 
         // stub path, read address as a Precode and read MethodDesc from it
         {
