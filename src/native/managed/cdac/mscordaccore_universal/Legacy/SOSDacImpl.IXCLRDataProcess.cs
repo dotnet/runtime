@@ -403,15 +403,23 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                 return hrLocal;
         }
 
-        if (emi.methodEnumerator.MoveNext())
+        try
         {
-            MethodDescHandle methodDesc = emi.methodEnumerator.Current;
-            method = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain, legacyMethod);
+            if (emi.methodEnumerator.MoveNext())
+            {
+                MethodDescHandle methodDesc = emi.methodEnumerator.Current;
+                method = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain, legacyMethod);
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
         }
-        else
+        catch (System.Exception ex)
         {
-            hr = HResults.S_FALSE;
+            hr = ex.HResult;
         }
+
 
         if (legacyMethod is not null)
         {

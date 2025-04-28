@@ -135,14 +135,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             // Size of the MethodDesc is variable, read it from the targets lookup table
             // See MethodDesc::SizeOf in method.cpp for details
             // TODO(cdac): make sure this value is stored in minidumps
-            TargetPointer methodDescSizeTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable));
+            TargetPointer methodDescSizeTable = target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable);
 
             ushort arrayOffset = (ushort)(desc.Flags & (ushort)(
                 MethodDescFlags_1.MethodDescFlags.ClassificationMask |
                 MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot |
                 MethodDescFlags_1.MethodDescFlags.HasMethodImpl |
                 MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot));
-            return (uint)target.ReadNUInt(methodDescSizeTable + arrayOffset * (ulong)target.PointerSize).Value;
+            return target.Read<byte>(methodDescSizeTable + arrayOffset);
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
@@ -1018,8 +1018,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         if (pCode == TargetCodePointer.Null)
         {
-            // TODO(cdac): Implement this path
             // if pCode is null, we iterate through the method descs in the MT.
+            foreach (MethodDescHandle mdh in GetIntroducedMethods(typeHandle))
+            {
+                MethodDesc md = _methodDescs[mdh.Address];
+                if (md.Slot == slot)
+                {
+                    return mdh;
+                }
+            }
         }
 
         // standard path, ask ExecutionManager for the MethodDesc
@@ -1031,8 +1038,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         // FCall path, look up address in the FCall table
+        {
+
+        }
 
         // stub path, read address as a Precode and read MethodDesc from it
+        {
+            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
+            return GetMethodDescHandle(methodDescPtr);
+        }
 
         throw new NotImplementedException("MethodDesc for slot is not implemented yet");
     }
