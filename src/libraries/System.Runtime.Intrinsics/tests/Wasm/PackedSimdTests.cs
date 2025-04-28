@@ -20,7 +20,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(PackedSimd))]
         public unsafe void PackedSimdIsSupported()
         {
-            MethodInfo methodInfo = typeof(Vector128).GetMethod("get_IsSupported");
+            MethodInfo methodInfo = typeof(PackedSimd).GetMethod("get_IsSupported");
             Assert.Equal(PackedSimd.IsSupported, methodInfo.Invoke(null, null));
             Assert.Equal(PackedSimd.IsSupported, Vector128.IsHardwareAccelerated);
             Assert.True(PackedSimd.IsSupported);
