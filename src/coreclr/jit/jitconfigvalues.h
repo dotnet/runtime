@@ -708,7 +708,7 @@ CONFIG_INTEGER(JitRandomGuardedDevirtualization, "JitRandomGuardedDevirtualizati
 RELEASE_CONFIG_INTEGER(TC_OnStackReplacement, "TC_OnStackReplacement", 1)
 #else
 RELEASE_CONFIG_INTEGER(TC_OnStackReplacement, "TC_OnStackReplacement", 0)
-#endif // defined(FEATURE_ON_STACK_REPLACEMENT)
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 // Initial patchpoint counter value used by jitted code
 RELEASE_CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, "TC_OnStackReplacement_InitialCounter", 1000)
