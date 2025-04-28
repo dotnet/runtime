@@ -61,15 +61,23 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj" />
   </ItemGroup>
 
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">
+    <ProjectExclusions Include="$(MonoProjectRoot)sample/wasm/**/*.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)src/tests/FunctionalTests/WebAssembly/Browser/HotReload/WebAssembly.Browser.HotReload.Test.csproj" />
+  </ItemGroup>
+
   <!-- Samples that require a multi-threaded runtime -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' != 'true'" >
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
-    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'" >
     <!-- https://github.com/dotnet/runtime/issues/91676 -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-minimal-config\Wasm.Browser.Config.Sample.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/98026 -->
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'" >
+    <!-- https://github.com/dotnet/runtime/issues/103524 -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
   </ItemGroup>
 

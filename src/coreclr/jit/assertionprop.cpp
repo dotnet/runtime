@@ -675,6 +675,8 @@ void Compiler::optAssertionInit(bool isLocalProp)
             {
                 optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((3 * lvaTrackedCount / 128) + 1) * 64);
             }
+
+            JITDUMP("Cross-block table size %u (for %u tracked locals)\n", optMaxAssertionCount, lvaTrackedCount);
         }
         else
         {
@@ -1337,6 +1339,22 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     assertion.assertionKind = assertionKind;
 
                     goto DONE_ASSERTION;
+                }
+
+                case GT_CALL:
+                {
+                    if (optLocalAssertionProp)
+                    {
+                        GenTreeCall* const call = op2->AsCall();
+                        if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(call->GetHelperNum()))
+                        {
+                            assertion.assertionKind  = OAK_NOT_EQUAL;
+                            assertion.op2.kind       = O2K_CONST_INT;
+                            assertion.op2.u1.iconVal = 0;
+                            goto DONE_ASSERTION;
+                        }
+                    }
+                    break;
                 }
 
                 default:
@@ -5657,14 +5675,6 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             continue;
         }
 
-        // Make sure we don't have any PHI nodes in the target block.
-#if DEBUG
-        for (Statement* stmt : target->Statements())
-        {
-            assert(!stmt->IsPhiDefnStmt());
-        }
-#endif
-
         AssertionInfo newAssertIdx = NO_ASSERTION_INDEX;
 
         // Is this target a default case?
@@ -5683,7 +5693,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             //           default: %name.Length is >= 8 here%
             //       }
             //
-            if (value > 0)
+            if ((value > 0) && !vnStore->IsVNConstant(opVN))
             {
                 AssertionDsc dsc   = {};
                 dsc.assertionKind  = OAK_NOT_EQUAL;
@@ -5691,17 +5701,19 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
                 dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
                 dsc.op2.u1.iconVal = 0;
                 dsc.op2.SetIconFlag(GTF_EMPTY);
-                if (vnStore->IsVNCheckedBound(opVN))
+                if (vnStore->IsVNNeverNegative(opVN))
                 {
-                    // Create "arrBnd >= value" assertion
+                    // Create "X >= value" assertion (both operands are never negative)
                     dsc.op1.kind = O1K_CONSTANT_LOOP_BND;
                     dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
+                    assert(vnStore->IsVNConstantBound(dsc.op1.vn));
                 }
                 else
                 {
                     // Create "X u>= value" assertion
                     dsc.op1.kind = O1K_CONSTANT_LOOP_BND_UN;
                     dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
+                    assert(vnStore->IsVNConstantBoundUnsigned(dsc.op1.vn));
                 }
                 newAssertIdx = optAddAssertion(&dsc);
             }
@@ -5731,6 +5743,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             // It limits the ability to create multiple assertions for the same node.
             GenTree* tree = gtNewNothingNode();
             fgInsertStmtAtBeg(target, fgNewStmtFromTree(tree));
+
             modified = true;
             tree->SetAssertionInfo(newAssertIdx);
         }

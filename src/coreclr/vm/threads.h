@@ -349,7 +349,7 @@ DWORD GetRuntimeId();
 // One-time initialization. Called during Dll initialization.
 //---------------------------------------------------------------------------
 void InitThreadManager();
-
+void InitThreadManagerPerfMapData();
 
 // When we want to take control of a thread at a safe point, the thread will
 // eventually come back to us in one of the following trip functions:
@@ -481,6 +481,7 @@ class Thread
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #ifdef FEATURE_THREAD_ACTIVATION
     friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext);
+    friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger);
     friend BOOL CheckActivationSafePoint(SIZE_T ip);
 #endif // FEATURE_THREAD_ACTIVATION
 
@@ -495,7 +496,6 @@ class Thread
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
 
-    friend class ExceptionTracker;
     friend class ThreadExceptionState;
 
     friend class StackFrameIterator;
@@ -549,7 +549,7 @@ public:
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
 #endif // FEATURE_HIJACK
 
-        // unused                 = 0x00000100,
+        TS_SSToExitApcCall        = 0x00000100,    // Enable SS and resume the thread to exit an APC Call and keep the thread in suspend state
         TS_Background             = 0x00000200,    // Thread is a background thread
         TS_Unstarted              = 0x00000400,    // Thread has never been started
         TS_Dead                   = 0x00000800,    // Thread is dead
@@ -566,7 +566,7 @@ public:
         TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
         TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
 
-        // unused                 = 0x00040000,
+        TS_SSToExitApcCallDone    = 0x00040000,    // The thread exited an APC Call and it is already resumed and paused on SS
 
         TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
         TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
@@ -2570,7 +2570,9 @@ private:
     //-------------------------------------------------------------
     // Waiting & Synchronization
     //-------------------------------------------------------------
-
+friend class DebuggerController;
+protected:
+    void MarkForSuspensionAndWait(ULONG bit);
     // For suspends.  The thread waits on this event.  A client sets the event to cause
     // the thread to resume.
     void    WaitSuspendEvents();
@@ -3695,7 +3697,7 @@ private:
 private:
     // At the end of a catch, we may raise ThreadAbortException.  If catch clause set IP to resume in the
     // corresponding try block, our exception system will execute the same catch clause again and again.
-    // So we save reference to the clause post which TA was reraised, which is used in ExceptionTracker::ProcessManagedCallFrame
+    // So we save reference to the clause post which TA was reraised, which is used in ExInfo::ProcessManagedCallFrame
     // to make ThreadAbort proceed ahead instead of going in a loop.
     // This problem only happens on Win64 due to JIT64.  The common scenario is VB's "On error resume next"
 #ifdef FEATURE_EH_FUNCLETS
@@ -4029,7 +4031,6 @@ typedef SList<Thread, false, PTR_Thread> ThreadList;
 #define CHECK_ONE_STORE()       _ASSERTE(this == ThreadStore::s_pThreadStore);
 
 typedef DPTR(class ThreadStore) PTR_ThreadStore;
-typedef DPTR(class ExceptionTracker) PTR_ExceptionTracker;
 
 class ThreadStore
 {
@@ -5487,12 +5488,8 @@ struct ManagedThreadCallState;
 
 struct ManagedThreadBase
 {
-    // The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
     static void KickOff(ADCallBackFcnType pTarget,
                         LPVOID args);
-
-    // The Finalizer thread uses this path
-    static void FinalizerBase(ADCallBackFcnType pTarget);
 };
 
 

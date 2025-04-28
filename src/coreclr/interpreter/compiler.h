@@ -89,11 +89,12 @@ struct InterpInst
     {
         InterpBasicBlock *pTargetBB; // target basic block for branch instructions
         InterpBasicBlock **ppTargetBBTable; // basic block table for switch instruction
-        InterpCallInfo *pCallInfo; // additional information for call instructions 
+        InterpCallInfo *pCallInfo; // additional information for call instructions
     } info;
 
     int32_t opcode;
     int32_t ilOffset;
+    int32_t nativeOffset;
     uint32_t flags;
     int32_t dVar;
     int32_t sVars[3]; // Currently all instructions have at most 3 sregs
@@ -179,8 +180,8 @@ struct InterpVar
     int offset;
     int size;
     // live_start and live_end are used by the offset allocator
-    int liveStart;
-    int liveEnd;
+    InterpInst* liveStart;
+    InterpInst* liveEnd;
     // index of first basic block where this var is used
     int bbIndex;
     // If var is callArgs, this is the call instruction using it.
@@ -199,7 +200,7 @@ struct InterpVar
         this->clsHnd = clsHnd;
         this->size = size;
         offset = -1;
-        liveStart = -1;
+        liveStart = NULL;
         bbIndex = -1;
         indirects = 0;
 
@@ -258,14 +259,21 @@ struct Reloc
 
 typedef class ICorJitInfo* COMP_HANDLE;
 
+class InterpIAllocator;
+
 class InterpCompiler
 {
+    friend class InterpIAllocator;
+
 private:
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
+#ifdef DEBUG
+    const char *m_methodName;
     bool m_verbose;
+#endif
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
@@ -285,11 +293,17 @@ private:
 
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
 
+    void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
+    CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
+    CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
+
     void* AllocMethodData(size_t numBytes);
+public:
     // FIXME Mempool allocation currently leaks. We need to add an allocator and then
     // free all memory when method is finished compilling.
     void* AllocMemPool(size_t numBytes);
     void* AllocMemPool0(size_t numBytes);
+private:
     void* AllocTemporary(size_t numBytes);
     void* AllocTemporary0(size_t numBytes);
     void* ReallocTemporary(void* ptr, size_t numBytes);
@@ -297,7 +311,7 @@ private:
 
     // Instructions
     InterpBasicBlock *m_pCBB, *m_pEntryBB;
-    InterpInst* m_pLastIns;
+    InterpInst* m_pLastNewIns;
 
     int32_t     GetInsLength(InterpInst *pIns);
     bool        InsIsNop(InterpInst *pIns);
@@ -318,6 +332,9 @@ private:
     int m_BBCount = 0;
     InterpBasicBlock**  m_ppOffsetToBB;
 
+    ICorDebugInfo::OffsetMapping* m_pILToNativeMap = NULL;
+    int32_t m_ILToNativeMapSize = 0;
+
     InterpBasicBlock*   AllocBB(int32_t ilOffset);
     InterpBasicBlock*   GetBB(int32_t ilOffset);
     void                LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to);
@@ -335,6 +352,7 @@ private:
     InterpVar *m_pVars = NULL;
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
+    int32_t m_numILVars = 0;
 
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
@@ -343,6 +361,8 @@ private:
     int32_t m_ILLocalsOffset, m_ILLocalsSize;
     void    AllocVarOffsetCB(int *pVar, void *pData);
     int32_t AllocVarOffset(int var, int32_t *pPos);
+    int32_t GetLiveStartOffset(int var);
+    int32_t GetLiveEndOffset(int var);
 
     int32_t GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
     void    CreateILVars();
@@ -369,6 +389,11 @@ private:
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall);
     bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
+    void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
+    void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
+    void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken);
+    void    EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad);
+    void    EmitLdLocA(int32_t var);
 
     // Var Offset allocator
     TArray<InterpInst*> *m_pActiveCalls;
@@ -376,7 +401,7 @@ private:
     TSList<InterpInst*> *m_pDeferredCalls;
 
     int32_t AllocGlobalVarOffset(int var);
-    void    SetVarLiveRange(int32_t var, int insIndex);
+    void    SetVarLiveRange(int32_t var, InterpInst* ins);
     void    SetVarLiveRangeCB(int32_t *pVar, void *pData);
     void    InitializeGlobalVar(int32_t var, int bbIndex);
     void    InitializeGlobalVarCB(int32_t *pVar, void *pData);
@@ -390,6 +415,7 @@ private:
 
     void AllocOffsets();
     int32_t ComputeCodeSize();
+    uint32_t ConvertOffset(int32_t offset);
     void EmitCode();
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*> *relocs);
     void PatchRelocations(TArray<Reloc*> *relocs);
@@ -407,11 +433,28 @@ private:
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, bool verbose);
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
 
     InterpMethod* CompileMethod();
+    void BuildGCInfo(InterpMethod *pInterpMethod);
 
     int32_t* GetCode(int32_t *pCodeSize);
 };
+
+/*****************************************************************************
+ *  operator new
+ *
+ *  Uses the compiler's AllocMemPool0, which will eventually free automatically at the end of compilation (doesn't yet).
+ */
+
+ inline void* operator new(size_t sz, InterpCompiler* compiler)
+ {
+    return compiler->AllocMemPool0(sz);
+}
+
+ inline void* operator new[](size_t sz, InterpCompiler* compiler)
+ {
+     return compiler->AllocMemPool0(sz);
+ }
 
 #endif //_COMPILER_H_

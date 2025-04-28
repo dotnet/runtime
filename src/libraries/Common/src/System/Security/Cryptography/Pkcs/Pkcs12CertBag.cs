@@ -89,10 +89,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static byte[] EncodeBagValue(Oid certificateType, ReadOnlyMemory<byte> encodedCertificate)
         {
-            if (certificateType is null)
-            {
-                throw new ArgumentNullException(nameof(certificateType));
-            }
+            ArgumentNullException.ThrowIfNull(certificateType);
 
             if (certificateType.Value == null)
                 throw new CryptographicException(SR.Argument_InvalidOidValue);

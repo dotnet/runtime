@@ -104,7 +104,6 @@ set(CORECLR_LIBRARIES
     ceefgen
     comfloat_wks
     corguids
-    gcinfo
     utilcode
     v3binder
     System.Globalization.Native-Static

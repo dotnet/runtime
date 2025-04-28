@@ -20,6 +20,8 @@ namespace System.Reflection.Metadata
             }
         }
 #pragma warning restore CA1822
+
+        internal bool IsAssemblyGetType { get; set; }
     }
 }
 

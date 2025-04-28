@@ -222,9 +222,11 @@ InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
     }
     CONTRACTL_END;
 
-    SIZE_T size = sizeof(InterpreterPrecode);
-    InterpreterPrecode* pPrecode = (InterpreterPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(size, 1));
+    InterpreterPrecode* pPrecode = (InterpreterPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
     pPrecode->Init(pPrecode, byteCode);
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pPrecode, sizeof(InterpreterPrecode), PerfMapStubType::IndividualWithinBlock);
+#endif
     return pPrecode;
 }
 #endif // FEATURE_INTERPRETER
@@ -245,23 +247,32 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
 
     if (t == PRECODE_FIXUP)
     {
-        pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetFixupPrecodeHeap()->AllocAlignedMem(sizeof(FixupPrecode), 1));
+        pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetFixupPrecodeHeap()->AllocStub());
         pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
+#ifdef FEATURE_PERFMAP
+        PerfMap::LogStubs(__FUNCTION__, "FixupPrecode", (PCODE)pPrecode, sizeof(FixupPrecode), PerfMapStubType::IndividualWithinBlock);
+#endif
     }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     else if (t == PRECODE_THISPTR_RETBUF)
     {
-        ThisPtrRetBufPrecode* pThisPtrRetBufPrecode = (ThisPtrRetBufPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(sizeof(ThisPtrRetBufPrecode), 1));
+        ThisPtrRetBufPrecode* pThisPtrRetBufPrecode = (ThisPtrRetBufPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
         ThisPtrRetBufPrecodeData *pData = (ThisPtrRetBufPrecodeData*)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ThisPtrRetBufPrecodeData))));
         pThisPtrRetBufPrecode->Init(pData, pMD, pLoaderAllocator);
         pPrecode = (Precode*)pThisPtrRetBufPrecode;
-    }
+#ifdef FEATURE_PERFMAP
+        PerfMap::LogStubs(__FUNCTION__, "ThisPtrRetBuf", (PCODE)pPrecode, sizeof(ThisPtrRetBufPrecodeData), PerfMapStubType::IndividualWithinBlock);
+#endif
+        }
 #endif // HAS_THISPTR_RETBUF_PRECODE
     else
     {
         _ASSERTE(t == PRECODE_STUB || t == PRECODE_NDIRECT_IMPORT);
-        pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(sizeof(StubPrecode), 1));
+        pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
         pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
+#ifdef FEATURE_PERFMAP
+        PerfMap::LogStubs(__FUNCTION__, t == PRECODE_STUB ? "StubPrecode" : "PInvokeImportPrecode", (PCODE)pPrecode, sizeof(StubPrecode), PerfMapStubType::IndividualWithinBlock);
+#endif
     }
 
     return pPrecode;

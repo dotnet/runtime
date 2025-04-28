@@ -1036,6 +1036,13 @@ public:
         m_layout = layout;
     }
 
+    // Change the layout to one that may not be compatible.
+    void ChangeLayout(ClassLayout* layout)
+    {
+        assert(varTypeIsStruct(lvType));
+        m_layout = layout;
+    }
+
     // Grow the size of a block layout local.
     void GrowBlockLayout(ClassLayout* layout)
     {
@@ -2813,21 +2820,6 @@ public:
     bool ehCallFinallyInCorrectRegion(BasicBlock* blockCallFinally, unsigned finallyIndex);
 #endif // DEBUG
 
-    // Do we need a PSPSym in the main function? For codegen purposes, we only need one
-    // if there is a filter that protects a region with a nested EH clause (such as a
-    // try/catch nested in the 'try' body of a try/filter/filter-handler). See
-    // genFuncletProlog() for more details. However, the VM seems to use it for more
-    // purposes, maybe including debugging. Until we are sure otherwise, always create
-    // a PSPSym for functions with any EH.
-    bool ehNeedsPSPSym() const
-    {
-#ifdef TARGET_X86
-        return false;
-#else  // TARGET_X86
-        return compHndBBtabCount > 0;
-#endif // TARGET_X86
-    }
-
     bool     ehAnyFunclets();  // Are there any funclets in this function?
     unsigned ehFuncletCount(); // Return the count of funclets in the function
 
@@ -4344,8 +4336,6 @@ public:
 
     unsigned lvaStubArgumentVar = BAD_VAR_NUM; // variable representing the secret stub argument
 
-    unsigned lvaPSPSym = BAD_VAR_NUM; // variable representing the PSPSym
-
     InlineInfo*     impInlineInfo; // Only present for inlinees
     InlineStrategy* m_inlineStrategy;
 
@@ -4850,7 +4840,7 @@ public:
     bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName);
     bool IsTargetIntrinsic(NamedIntrinsic intrinsicName);
     bool IsMathIntrinsic(NamedIntrinsic intrinsicName);
-    bool IsMathIntrinsic(GenTree* tree);
+    bool IsBitCountingIntrinsic(NamedIntrinsic intrinsicName);
 
 private:
     //----------------- Importing the method ----------------------------------
@@ -6139,8 +6129,6 @@ public:
 
     void fgCompactBlock(BasicBlock* block);
 
-    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
-
     bool fgRenumberBlocks();
 
     bool fgExpandRarelyRunBlocks();
@@ -7016,7 +7004,7 @@ public:
     PhaseStatus optOptimizeBools();
     PhaseStatus optRecognizeAndOptimizeSwitchJumps();
     bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest);
-    bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
+    bool optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion = false);
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
@@ -10793,7 +10781,15 @@ public:
     {
         return info.compMethodSuperPMIIndex != -1;
     }
-#endif // DEBUG
+#else  // !DEBUG
+    // Are we running a replay under SuperPMI?
+    // Note: you can certainly run a SuperPMI replay with a non-DEBUG JIT, and if necessary and useful we could
+    // make compMethodSuperPMIIndex always available.
+    bool RunningSuperPmiReplay() const
+    {
+        return false;
+    }
+#endif // !DEBUG
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
 
@@ -10932,8 +10928,6 @@ public:
     unsigned typGetBlkLayoutNum(unsigned blockSize);
     // Get the layout for the specified array of known length
     ClassLayout* typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsigned length);
-    // Get the number of a layout for the specified array of known length
-    unsigned typGetArrayLayoutNum(CORINFO_CLASS_HANDLE classHandle, unsigned length);
 
     var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
     var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
@@ -11414,7 +11408,7 @@ public:
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
 
-#define DEFAULT_INLINE_BUDGET 10 // Maximum estimated compile time increase via inlining
+#define DEFAULT_INLINE_BUDGET 20 // Maximum estimated compile time increase via inlining
 
 #define DEFAULT_MAX_FORCE_INLINE_DEPTH 1 // Methods at more than this level deep will not be force inlined
 
@@ -11445,12 +11439,10 @@ private:
 
 #if defined(DEBUG)
     // These variables are associated with maintaining SQM data about compile time.
-    uint64_t m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
-                                          // in the current compilation.
-    uint64_t m_compCycles;                // Net cycle count for current compilation
-    DWORD m_compTickCountAtEndOfInlining; // The result of GetTickCount() (# ms since some epoch marker) at the end of
-                                          // the inlining phase in the current compilation.
-#endif                                    // defined(DEBUG)
+    int64_t m_compCyclesAtEndOfInlining; // Raw timer count at the end of the inlining phase
+                                         // in the current compilation.
+    int64_t m_compCycles;                // Wall clock elapsed time for current compilation (microseconds)
+#endif                                   // defined(DEBUG)
 
     // Records the SQM-relevant (cycles and tick count).  Should be called after inlining is complete.
     // (We do this after inlining because this marks the last point at which the JIT is likely to cause

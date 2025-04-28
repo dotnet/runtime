@@ -320,8 +320,64 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     ContainCheckBinary(binOp);
 
+#ifdef TARGET_AMD64
+    if (JitConfig.EnableApxConditionalChaining())
+    {
+        if (binOp->OperIs(GT_AND, GT_OR))
+        {
+            GenTree* next;
+            if (TryLowerAndOrToCCMP(binOp, &next))
+            {
+                return next;
+            }
+        }
+    }
+#endif // TARGET_AMD64
+
     return binOp->gtNext;
 }
+
+#ifdef TARGET_AMD64
+//------------------------------------------------------------------------
+// TruthifyingFlags: Get a flags immediate that will make a specified condition true.
+//
+// Arguments:
+//    condition - the condition.
+//
+// Returns:
+//    A flags immediate that, if those flags were set, would cause the specified condition to be true.
+//    (NOTE: This just has to make the condition be true, i.e., if the condition calls for (SF ^ OF), then
+//    returning one will suffice
+insCflags Lowering::TruthifyingFlags(GenCondition condition)
+{
+    switch (condition.GetCode())
+    {
+        case GenCondition::EQ:
+            return INS_FLAGS_ZF;
+        case GenCondition::NE:
+            return INS_FLAGS_NONE;
+        case GenCondition::SGE: // !(SF ^ OF)
+            return INS_FLAGS_NONE;
+        case GenCondition::SGT: // !(SF ^ OF) && !ZF
+            return INS_FLAGS_NONE;
+        case GenCondition::SLE: // !(SF ^ OF) || ZF
+            return INS_FLAGS_ZF;
+        case GenCondition::SLT: // (SF ^ OF)
+            return INS_FLAGS_SF;
+        case GenCondition::UGE: // !CF
+            return INS_FLAGS_NONE;
+        case GenCondition::UGT: // !CF && !ZF
+            return INS_FLAGS_NONE;
+        case GenCondition::ULE: // CF || ZF
+            return INS_FLAGS_ZF;
+        case GenCondition::ULT: // CF
+            return INS_FLAGS_CF;
+        default:
+            NO_WAY("unexpected condition type");
+            return INS_FLAGS_NONE;
+    }
+}
+#endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
@@ -3414,6 +3470,37 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
             blendVariableId = NI_EVEX_BlendVariableMask;
             op1             = maskNode;
         }
+        else if (op2->IsVectorZero() || op3->IsVectorZero())
+        {
+            // If either of the value operands is const zero, we can optimize down to AND or AND_NOT.
+            GenTree* binOp = nullptr;
+
+            if (op3->IsVectorZero())
+            {
+                binOp = comp->gtNewSimdBinOpNode(GT_AND, simdType, op1, op2, simdBaseJitType, simdSize);
+                BlockRange().Remove(op3);
+            }
+            else
+            {
+                binOp = comp->gtNewSimdBinOpNode(GT_AND_NOT, simdType, op3, op1, simdBaseJitType, simdSize);
+                BlockRange().Remove(op2);
+            }
+
+            BlockRange().InsertAfter(node, binOp);
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                use.ReplaceWith(binOp);
+            }
+            else
+            {
+                binOp->SetUnusedValue();
+            }
+
+            BlockRange().Remove(node);
+            return LowerNode(binOp);
+        }
         else if (simdSize == 32)
         {
             // For Vector256 (simdSize == 32), BlendVariable for floats/doubles
@@ -3788,6 +3875,20 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                 }
 
                 assert(varTypeIsMask(condition));
+
+                // The TernaryLogic node normalizes small SIMD base types on import. To optimize
+                // to BlendVariableMask, we need to "un-normalize". We no longer have the original
+                // base type, so we use the mask base type instead.
+                NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+                assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId));
+
+                if (!condition->OperIsHWIntrinsic())
+                {
+                    break;
+                }
+
+                node->SetSimdBaseJitType(condition->AsHWIntrinsic()->GetSimdBaseJitType());
+
                 node->ResetHWIntrinsicId(NI_EVEX_BlendVariableMask, comp, selectFalse, selectTrue, condition);
                 BlockRange().Remove(op4);
                 break;
@@ -4063,7 +4164,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     // The most likely case is that op1 is a cast from int/long to the base type:
                     // *  CAST      int <- short <- int/long
                     // If the base type is signed, that cast will be sign-extending, but we need zero extension,
-                    // so we can simply retype the cast to the unsigned type of the same size.
+                    // so we may be able to simply retype the cast to the unsigned type of the same size.
+                    // This is valid only if the cast is not checking overflow and is not containing a load.
                     //
                     // It's also possible we have a memory load of the base type:
                     // *  IND       short
@@ -4076,7 +4178,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                     var_types unsignedType = varTypeToUnsigned(simdBaseType);
 
-                    if (op1->OperIs(GT_CAST) && !op1->gtOverflow() &&
+                    if (op1->OperIs(GT_CAST) && !op1->gtOverflow() && !op1->AsCast()->CastOp()->isContained() &&
                         (genTypeSize(op1->CastToType()) == genTypeSize(simdBaseType)))
                     {
                         op1->AsCast()->gtCastType = unsignedType;
@@ -9805,7 +9907,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             for (GenTree* longOp : op1->Operands())
                             {
-                                if (IsContainableMemoryOp(longOp) && IsSafeToContainMem(node, longOp))
+                                if (!varTypeIsSmall(longOp) && IsContainableMemoryOp(longOp) &&
+                                    IsSafeToContainMem(node, longOp))
                                 {
                                     MakeSrcContained(node, longOp);
                                 }
