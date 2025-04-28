@@ -9,10 +9,6 @@
 #define FEATURE_CFI_SUPPORT
 #endif
 
-#ifdef TARGET_64BIT
-#define FEATURE_ON_STACK_REPLACEMENT
-#endif
-
 // Undefine all of the target OS macros
 // Within the JIT codebase we use the TargetOS features
 #ifdef TARGET_UNIX

@@ -48,6 +48,8 @@
 
 #elif defined(TARGET_64BIT)
 
+#define FEATURE_ON_STACK_REPLACEMENT
+
 #if defined(HOST_UNIX)
     // In PAL we have a smechanism that reserves memory on start up that is
     // close to libcoreclr and intercepts calls to VirtualAlloc to serve back
