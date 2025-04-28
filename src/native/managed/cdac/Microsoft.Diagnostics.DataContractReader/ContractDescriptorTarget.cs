@@ -17,7 +17,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// </summary>
 /// <remarks>
 /// This class provides APIs used by contracts for reading from the target and getting type and globals
-/// information based on the target's contract descriptor. Like the contracts themselves in cdacreader,
+/// information based on the target's contract descriptor. Like the contracts themselves in the cdac,
 /// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
 /// should handle any exceptions.
 /// </remarks>

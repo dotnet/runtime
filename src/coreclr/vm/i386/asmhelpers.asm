@@ -92,6 +92,7 @@ endif
 
 ifdef FEATURE_EH_FUNCLETS
 EXTERN @IL_Throw_x86@8:PROC
+EXTERN @IL_ThrowExact_x86@8:PROC
 EXTERN @IL_Rethrow_x86@4:PROC
 endif ; FEATURE_EH_FUNCLETS
 
@@ -1905,6 +1906,23 @@ FASTCALL_FUNC IL_Throw, 4
     STUB_EPILOG
     ret     4
 FASTCALL_ENDFUNC IL_Throw
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_ThrowExact
+; implementation written in C.
+;
+; Input state:
+;   ECX = Pointer to exception object
+;==========================================================================
+FASTCALL_FUNC IL_ThrowExact, 4
+    STUB_PROLOG
+
+    mov     edx, esp
+    call    @IL_ThrowExact_x86@8
+
+    STUB_EPILOG
+    ret     4
+FASTCALL_ENDFUNC IL_ThrowExact
 
 ;==========================================================================
 ; Capture a transition block with register values and call the IL_Rethrow

@@ -229,6 +229,13 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
         WrapperTypeArr = (I4ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I4, numArgs);
 
         GCX_PREEMP();
+        
+        
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMD->IsAsyncMethod())
+        {
+            ThrowHR(COR_E_NOTSUPPORTED);
+        }
 
         // Collects ParamDef information in an indexed array where element 0 represents
         // the return type.
@@ -503,6 +510,12 @@ UINT32 CLRToCOMLateBoundWorker(
     mdProperty propToken;
     LPCUTF8 strMemberName;
     ULONG uSemantic;
+
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    if (pItfMD->IsAsyncMethod())
+    {
+        ThrowHR(COR_E_NOTSUPPORTED);
+    }
 
     // See if there is property information for this member.
     hr = pItfMT->GetMDImport()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);

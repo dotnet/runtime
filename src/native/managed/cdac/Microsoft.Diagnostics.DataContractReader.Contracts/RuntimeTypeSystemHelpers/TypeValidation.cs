@@ -122,7 +122,7 @@ internal sealed class TypeValidation
             // TODO(cdac): maybe don't swallow all exceptions? We could consider a richer contract that
             // helps to track down what sort of memory corruption caused the validation to fail.
             // TODO(cdac): we could also consider a more fine-grained exception type so we don't mask
-            // programmer mistakes in cdacreader.
+            // programmer mistakes in the cdac.
             return false;
         }
         return true;
