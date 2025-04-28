@@ -104,7 +104,6 @@ set(CORECLR_LIBRARIES
     ceefgen
     comfloat_wks
     corguids
-    gcinfo
     utilcode
     v3binder
     System.Globalization.Native-Static
@@ -125,6 +124,12 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         )
     endif(CLR_CMAKE_HOST_ANDROID)
 endif(CLR_CMAKE_TARGET_ARCH_AMD64)
+
+if (CLR_CMAKE_HOST_ANDROID)
+    list(APPEND CORECLR_LIBRARIES
+        gcinfo
+    )
+endif(CLR_CMAKE_HOST_ANDROID)
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
