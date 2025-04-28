@@ -435,6 +435,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     TrackAllocation *pTracker = NULL;
 
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
 #ifdef FEATURE_INTERPRETER
     if (pInfo->IsInterpreted())
     {
@@ -443,8 +444,6 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     else
 #endif // FEATURE_INTERPRETER
     {
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
-
         pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
         if (pTracker == NULL)
         {
@@ -455,9 +454,8 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
         }
 
         pHp->CLRPersonalityRoutine = (BYTE *)(pTracker + 1);
-
-#endif
     }
+#endif
 
     pHp->hpNext = NULL;
     pHp->pHeap = (PTR_CodeHeap)this;
