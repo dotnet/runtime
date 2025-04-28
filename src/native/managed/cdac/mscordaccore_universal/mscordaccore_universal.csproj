@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName Condition="'$(TargetsWindows)' != 'true'">lib$(MSBuildProjectName)</AssemblyName>
+    <AssemblyName>$(LibPrefix)$(MSBuildProjectName)</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
     <Nullable>enable</Nullable>

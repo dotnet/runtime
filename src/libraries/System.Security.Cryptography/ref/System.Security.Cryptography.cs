@@ -1909,7 +1909,7 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.MLKem ImportEncapsulationKey(System.Security.Cryptography.MLKemAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) { throw null; }
-        public static System.Security.Cryptography.MLKem ImportEncryptedPkcs8PrivateKey(string password, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.MLKem ImportEncryptedPkcs8PrivateKey(string password, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLKem ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<byte> passwordBytes) { throw null; }
         public static System.Security.Cryptography.MLKem ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> password) { throw null; }
         public static System.Security.Cryptography.MLKem ImportFromEncryptedPem(string source, byte[] passwordBytes) { throw null; }
