@@ -4,6 +4,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Buffers; // Required for Span/Memory operations
 
 namespace System.Net
 {
@@ -23,91 +24,65 @@ namespace System.Net
             _readMore = readMore;
         }
 
-        public override bool CanWrite
+        public override bool CanWrite => false;
+
+        public override bool CanSeek => false;
+
+        public override int Read(Span<byte> buffer)
         {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool CanSeek
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
-
-        public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToAsyncResult.End<int>(asyncResult);
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            int read = 0;
             if (_storedOffset < _storedLength)
             {
-                read = Math.Min(count, _storedLength - _storedOffset);
-                Buffer.BlockCopy(_storedBuffer!, _storedOffset, buffer, offset, read);
+                int read = Math.Min(buffer.Length, _storedLength - _storedOffset);
+                _storedBuffer.AsSpan(_storedOffset, read).CopyTo(buffer);
                 _storedOffset += read;
-                if (read == count || !_readMore)
+                if (read == buffer.Length || !_readMore)
                 {
                     return read;
                 }
 
-                offset += read;
-                count -= read;
+                // Need to read more from the underlying stream
+                return read + BaseStream.Read(buffer.Slice(read));
             }
-            return read + base.Read(buffer, offset, count);
+
+            return BaseStream.Read(buffer);
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            int read;
             if (_storedOffset >= _storedLength)
             {
-                return base.ReadAsync(buffer, offset, count, cancellationToken);
+                return BaseStream.ReadAsync(buffer, cancellationToken);
             }
 
-            read = Math.Min(count, _storedLength - _storedOffset);
-            Buffer.BlockCopy(_storedBuffer!, _storedOffset, buffer, offset, read);
+            int read = Math.Min(buffer.Length, _storedLength - _storedOffset);
+            _storedBuffer.AsMemory(_storedOffset, read).CopyTo(buffer);
             _storedOffset += read;
-            if (read == count || !_readMore)
+            if (read == buffer.Length || !_readMore)
             {
-                return Task.FromResult<int>(read);
+                return new ValueTask<int>(read);
             }
 
-            offset += read;
-            count -= read;
-
-            return ReadMoreAsync(read, buffer, offset, count, cancellationToken);
+            // Need to read more from the underlying stream
+            return ReadMoreAsync(read, buffer.Slice(read), cancellationToken);
         }
 
-        private async Task<int> ReadMoreAsync(int bytesAlreadyRead, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private async ValueTask<int> ReadMoreAsync(int bytesAlreadyRead, Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            int returnValue = await base.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
+            int returnValue = await BaseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
             return bytesAlreadyRead + returnValue;
         }
 
-        public override int ReadByte()
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
-            if (_storedOffset < _storedLength)
-            {
-                return _storedBuffer![_storedOffset++];
-            }
-            else
-            {
-                return base.ReadByte();
-            }
+            throw new NotSupportedException(SR.WriteNotSupported);
         }
 
-        // adds additional content to the beginning of the buffer
-        // so the layout of the storedBuffer will be
-        // <buffer><existingBuffer>
-        // after calling push
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException(SR.WriteNotSupported);
+        }
+
+        // Push method remains the same
         internal void Push(byte[] buffer, int offset, int count)
         {
             if (count == 0)

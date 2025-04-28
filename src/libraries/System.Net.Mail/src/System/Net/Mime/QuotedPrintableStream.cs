@@ -78,12 +78,12 @@ namespace System.Net.Mime
             _encodeCRLF = encodeCRLF;
         }
 
+        public override bool CanRead => false;
+        public override bool CanWrite => BaseStream.CanWrite;
+
         private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState => _writeState ??= new WriteStateInfoBase(1024, null, null, _lineLength);
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override void Close()
         {
@@ -300,9 +300,6 @@ namespace System.Net.Mime
 
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
 
-        public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToAsyncResult.End(asyncResult);
-
         public override void Flush()
         {
             FlushInternal();
@@ -311,33 +308,46 @@ namespace System.Net.Mime
 
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
+            await FlushInternalAsync(cancellationToken).ConfigureAwait(false);
+            await base.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private async ValueTask FlushInternalAsync(CancellationToken cancellationToken)
+        {
             if (_writeState != null && _writeState.Length > 0)
             {
-                await base.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
+                await BaseStream.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
                 WriteState.BufferFlushed();
             }
-
-            await base.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private void FlushInternal()
         {
             if (_writeState != null && _writeState.Length > 0)
             {
-                base.Write(WriteState.Buffer, 0, WriteState.Length);
+                BaseStream.Write(WriteState.Buffer, 0, WriteState.Length);
                 WriteState.BufferFlushed();
             }
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
+        public override int Read(Span<byte> buffer)
         {
-            ValidateBufferArguments(buffer, offset, count);
+            throw new NotSupportedException(SR.ReadNotSupported);
+        }
 
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException(SR.ReadNotSupported);
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
             int written = 0;
             while (true)
             {
-                written += EncodeBytes(buffer.AsSpan(offset + written, count - written));
-                if (written < count)
+                written += EncodeBytes(buffer.Slice(written));
+                // TODO: what is this condition?
+                if (written < buffer.Length)
                 {
                     FlushInternal();
                 }
@@ -348,27 +358,28 @@ namespace System.Net.Mime
             }
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            ValidateBufferArguments(buffer, offset, count);
-            return WriteAsyncCore(buffer, offset, count, cancellationToken);
-
-            async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            int written = 0;
+            while (true)
             {
-                int written = 0;
-                while (true)
+                written += EncodeBytes(buffer.Span.Slice(written));
+                if (written < buffer.Length)
                 {
-                    written += EncodeBytes(buffer.AsSpan(offset + written, count - written));
-                    if (written < count)
-                    {
-                        await FlushAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    return FlushAndContinueAsync(buffer.Slice(written), cancellationToken);
+                }
+                else
+                {
+                    return ValueTask.CompletedTask;
                 }
             }
+
+            async ValueTask FlushAndContinueAsync(ReadOnlyMemory<byte> remainingBuffer, CancellationToken cancellationToken)
+            {
+                await FlushInternalAsync(cancellationToken).ConfigureAwait(false);
+                await WriteAsync(remainingBuffer, cancellationToken).ConfigureAwait(false);
+            }
+
         }
 
         private sealed class ReadStateInfo

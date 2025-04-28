@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -17,12 +18,35 @@ namespace System.Net
             _onClose = onClose;
         }
 
+        public override bool CanRead => BaseStream.CanRead;
+        public override bool CanWrite => BaseStream.CanWrite;
+
         public override void Close()
         {
             if (Interlocked.Increment(ref _closed) == 1)
             {
                 _onClose?.Invoke(this, new EventArgs());
             }
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            BaseStream.Write(buffer);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return BaseStream.WriteAsync(buffer, cancellationToken);
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            return BaseStream.Read(buffer);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return BaseStream.ReadAsync(buffer, cancellationToken);
         }
     }
 }

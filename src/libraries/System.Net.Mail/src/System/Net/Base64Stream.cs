@@ -7,6 +7,7 @@ using System.Net.Mime;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Buffers;
 
 namespace System.Net
 {
@@ -52,6 +53,9 @@ namespace System.Net
             _encoder = new Base64Encoder(_writeState, writeStateInfo.MaxLineLength);
         }
 
+        public override bool CanRead => BaseStream.CanRead;
+        public override bool CanWrite => BaseStream.CanWrite;
+
         private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState
@@ -62,12 +66,6 @@ namespace System.Net
                 return _writeState;
             }
         }
-
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override void Close()
         {
@@ -145,12 +143,6 @@ namespace System.Net
 
         public string GetEncodedString() => _encoder.GetEncodedString();
 
-        public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToAsyncResult.End<int>(asyncResult);
-
-        public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToAsyncResult.End(asyncResult);
-
         public override void Flush()
         {
             if (_writeState != null && WriteState.Length > 0)
@@ -165,7 +157,7 @@ namespace System.Net
         {
             if (_writeState != null && WriteState.Length > 0)
             {
-                await base.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
+                await BaseStream.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
                 WriteState.Reset();
             }
 
@@ -174,79 +166,66 @@ namespace System.Net
 
         private void FlushInternal()
         {
-            base.Write(WriteState.Buffer, 0, WriteState.Length);
+            BaseStream.Write(WriteState.Buffer.AsSpan(0, WriteState.Length));
             WriteState.Reset();
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(Span<byte> buffer)
         {
-            ValidateBufferArguments(buffer, offset, count);
-
             while (true)
             {
                 // read data from the underlying stream
-                int read = base.Read(buffer, offset, count);
+                int read = BaseStream.Read(buffer);
 
                 // if the underlying stream returns 0 then there
-                // is no more data - ust return 0.
+                // is no more data - just return 0.
                 if (read == 0)
                 {
                     return 0;
                 }
 
-                // while decoding, we may end up not having
-                // any bytes to return pending additional data
-                // from the underlying stream.
-                read = DecodeBytes(buffer.AsSpan(offset, read));
+                // Decode the read bytes and update the input buffer with decoded bytes
+                read = DecodeBytes(buffer.Slice(0, read));
                 if (read > 0)
                 {
                     return read;
                 }
             }
         }
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            ValidateBufferArguments(buffer, offset, count);
-            return ReadAsyncCore(buffer, offset, count, cancellationToken);
-
-            async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            while (true)
             {
-                while (true)
+                // read data from the underlying stream
+                int read = await BaseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+                // if the underlying stream returns 0 then there
+                // is no more data - just return 0.
+                if (read == 0)
                 {
-                    // read data from the underlying stream
-                    int read = await base.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
+                    return 0;
+                }
 
-                    // if the underlying stream returns 0 then there
-                    // is no more data - ust return 0.
-                    if (read == 0)
-                    {
-                        return 0;
-                    }
-
-                    // while decoding, we may end up not having
-                    // any bytes to return pending additional data
-                    // from the underlying stream.
-                    read = DecodeBytes(buffer.AsSpan(offset, read));
-                    if (read > 0)
-                    {
-                        return read;
-                    }
+                // Decode the read bytes and update the input buffer with decoded bytes
+                read = DecodeBytes(buffer.Span.Slice(0, read));
+                if (read > 0)
+                {
+                    return read;
                 }
             }
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
-            ValidateBufferArguments(buffer, offset, count);
-
             int written = 0;
 
             // do not append a space when writing from a stream since this means
             // it's writing the email body
             while (true)
             {
-                written += EncodeBytes(buffer.AsSpan(offset + written, count - written), false, false);
-                if (written < count)
+                written += EncodeBytes(buffer.Slice(written), false, false);
+                if (written < buffer.Length)
                 {
                     FlushInternal();
                 }
@@ -257,28 +236,22 @@ namespace System.Net
             }
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            ValidateBufferArguments(buffer, offset, count);
-            return WriteAsyncCore(buffer, offset, count, cancellationToken);
+            int written = 0;
 
-            async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            // do not append a space when writing from a stream since this means
+            // it's writing the email body
+            while (true)
             {
-                int written = 0;
-
-                // do not append a space when writing from a stream since this means
-                // it's writing the email body
-                while (true)
+                written += EncodeBytes(buffer.Span.Slice(written), false, false);
+                if (written < buffer.Length)
                 {
-                    written += EncodeBytes(buffer.AsSpan(offset + written, count - written), false, false);
-                    if (written < count)
-                    {
-                        await FlushAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    await FlushAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    break;
                 }
             }
         }
