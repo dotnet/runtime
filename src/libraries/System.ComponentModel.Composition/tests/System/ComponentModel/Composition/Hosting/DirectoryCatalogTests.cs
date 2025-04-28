@@ -321,7 +321,6 @@ namespace System.ComponentModel.Composition
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void LoadedFiles_ContainsMultipleDllsAndSomeNonDll_ShouldOnlyContainDlls()
         {
                 // Add one text file

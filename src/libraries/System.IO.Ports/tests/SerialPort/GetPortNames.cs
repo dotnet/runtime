@@ -20,7 +20,7 @@ namespace System.IO.Ports.Tests
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34490", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34490", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android")]
         public void OpenEveryPortName()
         {
             foreach (string portName in SerialPort.GetPortNames())
@@ -42,7 +42,7 @@ namespace System.IO.Ports.Tests
         /// (On Windows, the latter uses a different technique to SerialPort to find ports).
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34490", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android")]
         public void AllHelperPortsAreInGetPortNames()
         {
             if (PlatformDetection.IsWindows && PlatformDetection.IsArmOrArm64Process)
@@ -65,7 +65,7 @@ namespace System.IO.Ports.Tests
         /// eg https://github.com/dotnet/corefx/pull/18928 / https://github.com/dotnet/corefx/pull/20668
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34490", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android")]
         public void AllGetPortNamesAreInHelperPorts()
         {
             string[] helperPortNames = PortHelper.GetPorts();

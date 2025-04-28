@@ -127,7 +127,6 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void LoadedFiles_ContainsMultipleDllsAndSomeNonDll_ShouldOnlyContainDlls()
         {
             string directoryPath = TemporaryFileCopier.GetNewTemporaryDirectory();
