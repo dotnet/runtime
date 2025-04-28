@@ -22,6 +22,10 @@
 
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
+
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
 
 bool ThreadSuspend::s_fSuspended = false;
@@ -4562,17 +4566,6 @@ static inline void* PacSignPtr(void* ptr)
                       );
     return ptr;
 }
-
-static inline void* PacStripPtr(void* ptr)
-{
-    __asm__ volatile (".arch_extension pauth\n"
-                      "xpaci %0"
-                      : "+r" (ptr)
-                      :
-                      : "memory"                // Memory is affected, prevent reordering
-                      );
-    return ptr;
-}
 #endif // TARGET_ARM64 && __GNUC__
 
 // Client is responsible for suspending the thread before calling
@@ -4632,9 +4625,9 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
 
     // Remember the place that the return would have gone
     m_pvHJRetAddr = *esb->m_ppvRetAddrPtr;
-#if defined(TARGET_ARM64) && defined(__GNUC__)
+#if defined(TARGET_ARM64)
     m_pvHJRetAddr = PacStripPtr(m_pvHJRetAddr);
-#endif // TARGET_ARM64 && __GNUC__
+#endif // TARGET_ARM64
 
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
     // TODO [DAVBR]: For the full fix for VsWhidbey 450273, the below

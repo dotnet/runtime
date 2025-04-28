@@ -38,6 +38,10 @@ static Thread* g_RuntimeInitializingThread;
 
 #endif //!DACCESS_COMPILE
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
+
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
 {
     minipal_xoshiro128pp_init(&random_state, (uint32_t)PalGetTickCount64());
@@ -798,17 +802,6 @@ static inline void* PacSignPtr(void* ptr)
                       );
     return ptr;
 }
-
-static inline void* PacStripPtr(void* ptr)
-{
-    __asm__ volatile (".arch_extension pauth\n"
-                      "xpaci %0"
-                      : "+r" (ptr)
-                      :
-                      : "memory"                // Memory is affected, prevent reordering
-                      );
-    return ptr;
-}
 #endif // TARGET_ARM64 && __GNUC__
 
 void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction)
@@ -830,9 +823,9 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         CrossThreadUnhijack();
 
         void* pvRetAddr = *ppvRetAddrLocation;
-#if defined(TARGET_ARM64) && defined(__GNUC__)
+#if defined(TARGET_ARM64)
         pvRetAddr = PacStripPtr(pvRetAddr);
-#endif // TARGET_ARM64 && __GNUC__
+#endif // TARGET_ARM64
 
         ASSERT(pvRetAddr != NULL);
         ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));

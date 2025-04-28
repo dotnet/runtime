@@ -3,3 +3,10 @@
 
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
+
+// void* PacStripPtr(void *);
+.arch_extension pauth
+    LEAF_ENTRY PacStripPtr, _TEXT
+        xpaci    x0
+        ret     lr
+    LEAF_END PacStripPtr, _TEXT

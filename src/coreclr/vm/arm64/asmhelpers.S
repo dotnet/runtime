@@ -337,6 +337,13 @@ NESTED_END OnHijackTripThread, _TEXT
 
 #endif // FEATURE_HIJACK
 
+// void* PacStripPtr(void *);
+.arch_extension pauth
+    LEAF_ENTRY PacStripPtr, _TEXT
+        xpaci    x0
+        ret     lr
+    LEAF_END PacStripPtr, _TEXT
+
 // ------------------------------------------------------------------
 // Redirection Stub for GC in fully interruptible method
 //GenerateRedirectedHandledJITCaseStub GCThreadControl

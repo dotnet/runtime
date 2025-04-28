@@ -10,6 +10,9 @@
 #include "gcrefmap.h"
 #include "threads.h"
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
 
 FCIMPL2(void*, TailCallHelp::AllocTailCallArgBufferWorker, INT32 size, void* gcDesc)
 {
@@ -19,19 +22,6 @@ FCIMPL2(void*, TailCallHelp::AllocTailCallArgBufferWorker, INT32 size, void* gcD
 }
 FCIMPLEND
 
-#if defined(TARGET_ARM64) && defined(__GNUC__)
-static inline void* PacStripPtr(void* ptr)
-{
-    __asm__ volatile (".arch_extension pauth\n"
-                      "xpaci %0"
-                      : "+r" (ptr)
-                      :
-                      : "memory"                // Memory is affected, prevent reordering
-                      );
-    return ptr;
-}
-#endif // TARGET_ARM64 && __GNUC__
-
 FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr)
 {
     FCALL_CONTRACT;
@@ -40,11 +30,11 @@ FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr
 
     *retAddr = thread->GetReturnAddress(retAddrSlot);
 
-#if defined(TARGET_ARM64) && defined(__GNUC__)
+#if defined(TARGET_ARM64)
     *retAddr = PacStripPtr(*retAddr);
     void* tailCallAwareReturnAddress = thread->GetTailCallTls()->GetFrame()->TailCallAwareReturnAddress;
     tailCallAwareReturnAddress = PacStripPtr(tailCallAwareReturnAddress);
-#endif // TARGET_ARM64 && __GNUC__
+#endif // TARGET_ARM64
 
     return thread->GetTailCallTls();
 }

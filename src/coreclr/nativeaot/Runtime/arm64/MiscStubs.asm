@@ -5,4 +5,11 @@
 
     TEXTAREA
 
+; void* PacStripPtr(void *);
+    LEAF_ENTRY PacStripPtr
+        ; xpaci    x0
+        DCD     0xDAC143E0
+        ret     lr
+    LEAF_END PacStripPtr
+
     end
