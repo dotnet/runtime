@@ -160,8 +160,27 @@ namespace
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
 
             // Append the new type to the signature.
+            Instantiation inst = newType->GetInstantiation();
+
+            // We have a generic element, mark GENERICINST.
+            if (!inst.IsEmpty())
+                newSig.AppendElementType(ELEMENT_TYPE_GENERICINST);
+
+            // Append the new type to the signature.
             newSig.AppendElementType(ELEMENT_TYPE_INTERNAL);
             newSig.AppendPointer(newType);
+
+            // Append the instantiation types to the signature.
+            if (!inst.IsEmpty())
+            {
+                newSig.AppendData(inst.GetNumArgs());
+                for (DWORD i = 0; i < inst.GetNumArgs(); i++)
+                {
+                    TypeVarTypeDesc* typeVar = inst[i].AsGenericVariable();
+                    newSig.AppendElementType(typeVar->GetInternalCorElementType());
+                    newSig.AppendData(typeVar->GetIndex());
+                }
+            }
         }
 
         // Create a copy of the new signature and store it on the context.
@@ -236,10 +255,22 @@ namespace
             // assembly for the purposes of lifetime tracking of collectible types.
             TypeHandle typeHandle = TypeName::GetTypeReferencedByCustomAttribute(
                 typeStringUtf8.GetUnicode(),
-                cxt.Declaration->GetAssembly());
+                cxt.Declaration->GetAssembly(),
+                cxt.Declaration /* unsafeAccessorMethod */);
             _ASSERTE(!typeHandle.IsNull());
 
             MethodTable* targetType = typeHandle.AsMethodTable();
+
+            // Any instantiation on the type must be a generic variable.
+            // We do this since the runtime will be instantiating the type
+            // with the generic parameters associated with the UnsafeAccessorAttribute
+            // definition.
+            Instantiation targetTypeInst = targetType->GetInstantiation();
+            for (DWORD i = 0; i < targetTypeInst.GetNumArgs(); i++)
+            {
+                if (!targetTypeInst[i].IsGenericVariable())
+                    ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE);
+            }
 
             // Future versions of the runtime may support
             // UnsafeAccessorTypeAttribute on value types.
@@ -297,14 +328,14 @@ namespace
         uint32_t cSig1;
         cxt.DeclarationSig.GetSignature(&pSig1, &cSig1);
         PCCOR_SIGNATURE pEndSig1 = pSig1 + cSig1;
-        ModuleBase* pModule1 = cxt.Declaration->GetModule();
+        Module* pModule1 = cxt.Declaration->GetModule();
         const Substitution* pSubst1 = NULL;
 
         PCCOR_SIGNATURE pSig2;
         DWORD cSig2;
         method->GetSig(&pSig2, &cSig2);
         PCCOR_SIGNATURE pEndSig2 = pSig2 + cSig2;
-        ModuleBase* pModule2 = method->GetModule();
+        Module* pModule2 = method->GetModule();
         const Substitution* pSubst2 = NULL;
 
         //
@@ -510,7 +541,6 @@ namespace
             TokenPairList list { nullptr };
             MetaSig::CompareState state{ &list };
             state.IgnoreCustomModifiers = ignoreCustomModifiers;
-            state.InternalToGenericInstContext = { cxt.Declaration->GetClassInstantiation(), cxt.Declaration->GetMethodInstantiation() };
             if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
                 continue;
 
@@ -983,4 +1013,32 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     // Generate the IL for the accessor.
     GenerateAccessor(context, resolver, methodILDecoder);
     return true;
+}
+
+extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, int paramIndex)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(unsafeAccessorMethod != NULL);
+
+    TypeHandle ret;
+
+    BEGIN_QCALL;
+
+    Instantiation genericParams;
+    MethodDesc* typicalMD = unsafeAccessorMethod->LoadTypicalMethodDefinition();
+    if (isMethodParam)
+    {
+        genericParams = typicalMD->GetMethodInstantiation();
+    }
+    else
+    {
+        genericParams = typicalMD->GetMethodTable()->GetInstantiation();
+    }
+
+    if (0 <= paramIndex && paramIndex < genericParams.GetNumArgs())
+        ret = genericParams[paramIndex];
+
+    END_QCALL;
+
+    return ret.AsPtr();
 }

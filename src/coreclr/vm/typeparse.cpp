@@ -7,7 +7,7 @@
 #include "common.h"
 #include "typeparse.h"
 
-static TypeHandle GetTypeHelper(LPCWSTR szTypeName, Assembly* pRequestingAssembly, BOOL bThrowIfNotFound, BOOL bRequireAssemblyQualifiedName)
+static TypeHandle GetTypeHelper(LPCWSTR szTypeName, Assembly* pRequestingAssembly, BOOL bThrowIfNotFound, BOOL bRequireAssemblyQualifiedName, MethodDesc* unsafeAccessorMethod)
 {
     CONTRACTL
     {
@@ -37,6 +37,7 @@ static TypeHandle GetTypeHelper(LPCWSTR szTypeName, Assembly* pRequestingAssembl
     args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(objRequestingAssembly);
     args[ARGNUM_2] = BOOL_TO_ARGHOLDER(bThrowIfNotFound);
     args[ARGNUM_3] = BOOL_TO_ARGHOLDER(bRequireAssemblyQualifiedName);
+    args[ARGNUM_4] = PTR_TO_ARGHOLDER(unsafeAccessorMethod);
 
     REFLECTCLASSBASEREF objType = NULL;
     CALL_MANAGED_METHOD_RETREF(objType, REFLECTCLASSBASEREF, args);
@@ -55,17 +56,17 @@ TypeHandle TypeName::GetTypeReferencedByCustomAttribute(LPCUTF8 szTypeName, Asse
 {
     WRAPPER_NO_CONTRACT;
     StackSString sszAssemblyQualifiedName(SString::Utf8, szTypeName);
-    return GetTypeHelper(sszAssemblyQualifiedName.GetUnicode(), pRequestingAssembly, TRUE /* bThrowIfNotFound */, FALSE /* bRequireAssemblyQualifiedName */);
+    return GetTypeHelper(sszAssemblyQualifiedName.GetUnicode(), pRequestingAssembly, TRUE /* bThrowIfNotFound */, FALSE /* bRequireAssemblyQualifiedName */, NULL /* unsafeAccessorMethod */);
 }
 
-TypeHandle TypeName::GetTypeReferencedByCustomAttribute(LPCWSTR szTypeName, Assembly* pRequestingAssembly)
+TypeHandle TypeName::GetTypeReferencedByCustomAttribute(LPCWSTR szTypeName, Assembly* pRequestingAssembly, MethodDesc* unsafeAccessorMethod)
 {
     WRAPPER_NO_CONTRACT;
-    return GetTypeHelper(szTypeName, pRequestingAssembly, TRUE /* bThrowIfNotFound */, FALSE /* bRequireAssemblyQualifiedName */);
+    return GetTypeHelper(szTypeName, pRequestingAssembly, TRUE /* bThrowIfNotFound */, FALSE /* bRequireAssemblyQualifiedName */, unsafeAccessorMethod);
 }
 
 TypeHandle TypeName::GetTypeFromAsmQualifiedName(LPCWSTR szFullyQualifiedName, BOOL bThrowIfNotFound)
 {
     WRAPPER_NO_CONTRACT;
-    return GetTypeHelper(szFullyQualifiedName, NULL, bThrowIfNotFound, TRUE /* bRequireAssemblyQualifiedName */);
+    return GetTypeHelper(szFullyQualifiedName, NULL, bThrowIfNotFound, TRUE /* bRequireAssemblyQualifiedName */, NULL /* unsafeAccessorMethod */);
 }

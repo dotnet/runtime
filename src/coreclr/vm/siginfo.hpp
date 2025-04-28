@@ -972,16 +972,11 @@ class MetaSig
             // be compared.
             bool IgnoreCustomModifiers;
 
-            // Context to use when comparing generic instantiations against
-            // ELEMENT_TYPE_INTERNAL types.
-            SigTypeContext InternalToGenericInstContext;
-
             CompareState() = default;
 
             CompareState(TokenPairList* list)
                 : Visited{ list }
                 , IgnoreCustomModifiers{ false }
-                , InternalToGenericInstContext{}
             { }
         };
 

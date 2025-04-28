@@ -22,7 +22,7 @@ namespace PrivateLib
 
         static Class1 GetClass() => new Class1();
 
-        List<Class2> GetListOfClass2() => new List<Class2>();
+        Class2 GetClass2() => new Class2();
     }
 
     class Class2 { }

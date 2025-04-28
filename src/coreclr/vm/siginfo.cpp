@@ -3948,47 +3948,16 @@ MetaSig::CompareElementType(
                         pOtherModule,
                         tkOther,
                         ClassLoader::ReturnNullIfNotFound,
-                        ClassLoader::FailIfUninstDefOrRef);
+                        ClassLoader::PermitUninstDefOrRef);
+
+                    // If the return type is a generic type definition, we need to
+                    // compare it to the typical method table of the internal type.
+                    if (!hOtherType.IsNull() && hOtherType.IsGenericTypeDefinition())
+                    {
+                        hInternal = TypeHandle{ hInternal.AsMethodTable()->GetTypicalMethodTable() };
+                    }
 
                     return (hInternal == hOtherType);
-                }
-                case ELEMENT_TYPE_GENERICINST:
-                {
-                    // Generic instantiation types are a special case. We need
-                    // additional context to compare them correctly.
-                    if (state == NULL)
-                        return FALSE;
-
-                    // Due to how SigPointer works, we need to fiddle with the signature pointer
-                    // to get the ELEMENT_TYPE_GENERICINST element type back in the stream.
-                    // Since we know the size of the element type, we can just subtract one byte from the
-                    // signature pointer to get the correct value.
-                    PCCOR_SIGNATURE genericInstSig;
-                    uint32_t genericInstSigLen;
-                    if (Type1 == ELEMENT_TYPE_INTERNAL)
-                    {
-                        const BYTE* sigRaw = (const BYTE*)pSig2;
-                        genericInstSig = (PCCOR_SIGNATURE)(sigRaw - 1);
-                        genericInstSigLen = (uint32_t)((intptr_t)pEndSig2 - (intptr_t)genericInstSig);
-                    }
-                    else
-                    {
-                        const BYTE* sigRaw = (const BYTE*)pSig1;
-                        genericInstSig = (PCCOR_SIGNATURE)(sigRaw - 1);
-                        genericInstSigLen = (uint32_t)((intptr_t)pEndSig1 - (intptr_t)genericInstSig);
-                    }
-                    // Assert we are in the same state as before.
-                    _ASSERTE(*genericInstSig == ELEMENT_TYPE_GENERICINST);
-
-                    SigPointer inst{ genericInstSig, genericInstSigLen };
-                    TypeHandle hOtherType = inst.GetTypeHandleThrowing(
-                        pOtherModule,
-                        &state->InternalToGenericInstContext);
-
-                    // Compare canonical method tables to handle shared generics.
-                    MethodTable* canonicalInternalMT = hInternal.AsMethodTable()->GetCanonicalMethodTable();
-                    MethodTable* canonicalOtherMT = hOtherType.AsMethodTable()->GetCanonicalMethodTable();
-                    return canonicalInternalMT == canonicalOtherMT;
                 }
                 default:
                 {
@@ -5777,6 +5746,20 @@ TokenPairList TokenPairList::AdjustForTypeSpec(TokenPairList *pTemplate, ModuleB
             IfFailThrow(pModule->GetMDImport()->GetTypeDefProps(tkType, &dwAttrType, NULL));
 
             result.m_bInTypeEquivalenceForbiddenScope = !IsTdInterface(dwAttrType);
+        }
+    }
+    else if (elemType == ELEMENT_TYPE_INTERNAL)
+    {
+        TypeHandle typeHandle;
+        IfFailThrow(sig.GetPointer((void**)&typeHandle));
+
+        if (typeHandle.IsTypeDesc())
+        {
+            result.m_bInTypeEquivalenceForbiddenScope = TRUE;
+        }
+        else
+        {
+            result.m_bInTypeEquivalenceForbiddenScope = !typeHandle.AsMethodTable()->IsInterface();
         }
     }
     else
