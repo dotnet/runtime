@@ -893,7 +893,9 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
     for (int i = 0; i < numDataItems; i++)
         pDataItems[i] = m_dataItems.Get(i);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems);
+    bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
+
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems, initLocals);
 
     return pMethod;
 }
@@ -1443,7 +1445,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
     }
     else
     {
-#if SIZEOF_VOID_P == 8
+#if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
             EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
@@ -2686,6 +2688,14 @@ retry_emit:
                 EmitBinaryArithmeticOp(INTOP_MUL_I4);
                 m_ip++;
                 break;
+            case CEE_MUL_OVF:
+                EmitBinaryArithmeticOp(INTOP_MUL_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_MUL_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_MUL_OVF_UN_I4);
+                m_ip++;
+                break;
             case CEE_DIV:
                 EmitBinaryArithmeticOp(INTOP_DIV_I4);
                 m_ip++;
@@ -3224,6 +3234,29 @@ retry_emit:
                         m_ip += 5;
                         break;
                     }
+                    case CEE_LOCALLOC:
+                        CHECK_STACK(1);
+#if TARGET_64BIT
+                        // Length is natural unsigned int
+                        if (m_pStackPointer[-1].type == StackTypeI4)
+                        {
+                            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
+                            m_pStackPointer[-1].type = StackTypeI8;
+                        }
+#endif
+                        AddIns(INTOP_LOCALLOC);
+                        m_pStackPointer--;
+                        if (m_pStackPointer != m_pStackBase)
+                        {
+                            m_hasInvalidCode = true;
+                            goto exit_bad_code;
+                        }
+
+                        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                        PushStackType(StackTypeByRef, NULL);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_ip++;
+                        break;
                     default:
                         assert(0);
                         break;
