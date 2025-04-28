@@ -179,7 +179,7 @@ namespace System.Net.Mime
             }
         }
 
-        public int EncodeBytes(byte[] buffer, int offset, int count) => _encoder.EncodeBytes(buffer.AsSpan(offset, count), true, true);
+        public int EncodeBytes(ReadOnlySpan<byte> buffer) => _encoder.EncodeBytes(buffer, true, true);
 
         public int EncodeString(string value, Encoding encoding) => _encoder.EncodeString(value, encoding);
 
@@ -221,7 +221,7 @@ namespace System.Net.Mime
             int written = 0;
             while (true)
             {
-                written += EncodeBytes(buffer, offset + written, count - written);
+                written += EncodeBytes(buffer.AsSpan(offset + written, count - written));
                 if (written < count)
                 {
                     FlushInternal();
@@ -243,7 +243,7 @@ namespace System.Net.Mime
                 int written = 0;
                 while (true)
                 {
-                    written += EncodeBytes(buffer, offset + written, count - written);
+                    written += EncodeBytes(buffer.AsSpan(offset + written, count - written));
                     if (written < count)
                     {
                         await FlushAsync(cancellationToken).ConfigureAwait(false);

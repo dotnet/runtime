@@ -15,7 +15,7 @@ namespace System.Net.Mime.Tests
         {
             var s = new Base64Stream(new Base64WriteStateInfo());
             var testHeaderBytes = Encoding.UTF8.GetBytes(testHeader);
-            s.EncodeBytes(testHeaderBytes, 0, testHeaderBytes.Length);
+            s.EncodeBytes(testHeaderBytes);
 
             string encodedString = s.GetEncodedString();
             for (int i = 0; i < encodedString.Length; i++)
@@ -55,7 +55,7 @@ namespace System.Net.Mime.Tests
             const string TestString = "0123456789abcdef";
 
             byte[] buffer = Encoding.UTF8.GetBytes(TestString);
-            s.EncodeBytes(buffer, 0, buffer.Length);
+            s.EncodeBytes(buffer);
             string encodedString = s.GetEncodedString();
 
             Assert.Equal("MDEyMzQ1Njc4OWFiY2RlZg==", encodedString);
@@ -91,7 +91,7 @@ namespace System.Net.Mime.Tests
             var s = new Base64Stream(writeStateInfo);
 
             byte[] buffer = Encoding.UTF8.GetBytes(LongString);
-            s.EncodeBytes(buffer, 0, buffer.Length);
+            s.EncodeBytes(buffer);
             string encodedString = s.GetEncodedString();
 
             byte[] stringToDecode = Encoding.ASCII.GetBytes(encodedString);

@@ -132,7 +132,7 @@ namespace System.Net.Mime
 
         public int DecodeBytes(Span<byte> buffer) { throw new NotImplementedException(); }
 
-        public int EncodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
+        public int EncodeBytes(ReadOnlySpan<byte> buffer) { throw new NotImplementedException(); }
 
         public int EncodeString(string value, Encoding encoding) { throw new NotImplementedException(); }
 

@@ -201,20 +201,20 @@ namespace System.Net.Mime
             }
         }
 
-        public int EncodeBytes(byte[] buffer, int offset, int count)
+        public int EncodeBytes(ReadOnlySpan<byte> buffer)
         {
-            int cur = offset;
-            for (; cur < count + offset; cur++)
+            int processed = 0;
+            for (; processed < buffer.Length; processed++)
             {
                 //only fold if we're before a whitespace or if we're at the line limit
                 //add two to the encoded Byte Length to be conservative so that we guarantee that the line length is acceptable
-                if ((_lineLength != -1 && WriteState.CurrentLineLength + SizeOfEncodedChar + 2 >= _lineLength && (buffer[cur] == ' ' ||
-                    buffer[cur] == '\t' || buffer[cur] == '\r' || buffer[cur] == '\n')) ||
+                if ((_lineLength != -1 && WriteState.CurrentLineLength + SizeOfEncodedChar + 2 >= _lineLength && (buffer[processed] == ' ' ||
+                    buffer[processed] == '\t' || buffer[processed] == '\r' || buffer[processed] == '\n')) ||
                     _writeState!.CurrentLineLength + SizeOfEncodedChar + 2 >= EncodedStreamFactory.DefaultMaxLineLength)
                 {
                     if (WriteState.Buffer.Length - WriteState.Length < SizeOfSoftCRLF)
                     {
-                        return cur - offset;  //ok because folding happens externally
+                        return processed;  //ok because folding happens externally
                     }
 
                     WriteState.Append((byte)'=');
@@ -225,13 +225,13 @@ namespace System.Net.Mime
                 // it is done by the underlying 7BitStream
 
                 //detect a CRLF in the input and encode it.
-                if (buffer[cur] == '\r' && cur + 1 < count + offset && buffer[cur + 1] == '\n')
+                if (buffer[processed] == '\r' && processed + 1 < buffer.Length && buffer[processed + 1] == '\n')
                 {
                     if (WriteState.Buffer.Length - WriteState.Length < (_encodeCRLF ? SizeOfEncodedCRLF : SizeOfNonEncodedCRLF))
                     {
-                        return cur - offset;
+                        return processed;
                     }
-                    cur++;
+                    processed++;
 
                     if (_encodeCRLF)
                     {
@@ -244,58 +244,58 @@ namespace System.Net.Mime
                     }
                 }
                 //ascii chars less than 32 (control chars) and greater than 126 (non-ascii) are not allowed so we have to encode
-                else if ((buffer[cur] < 32 && buffer[cur] != '\t') ||
-                    buffer[cur] == '=' ||
-                    buffer[cur] > 126)
+                else if ((buffer[processed] < 32 && buffer[processed] != '\t') ||
+                    buffer[processed] == '=' ||
+                    buffer[processed] > 126)
                 {
                     if (WriteState.Buffer.Length - WriteState.Length < SizeOfSoftCRLF)
                     {
-                        return cur - offset;
+                        return processed;
                     }
 
                     //append an = to indicate an encoded character
                     WriteState.Append((byte)'=');
                     //shift 4 to get the first four bytes only and look up the hex digit
-                    WriteState.Append(HexEncodeMap[buffer[cur] >> 4]);
+                    WriteState.Append(HexEncodeMap[buffer[processed] >> 4]);
                     //clear the first four bytes to get the last four and look up the hex digit
-                    WriteState.Append(HexEncodeMap[buffer[cur] & 0xF]);
+                    WriteState.Append(HexEncodeMap[buffer[processed] & 0xF]);
                 }
                 else
                 {
                     if (WriteState.Buffer.Length - WriteState.Length < 1)
                     {
-                        return cur - offset;
+                        return processed;
                     }
 
                     //detect special case:  is whitespace at end of line?  we must encode it if it is
-                    if ((buffer[cur] == (byte)'\t' || buffer[cur] == (byte)' ') &&
-                        (cur + 1 >= count + offset))
+                    if ((buffer[processed] == (byte)'\t' || buffer[processed] == (byte)' ') &&
+                        (processed + 1 >= buffer.Length))
                     {
                         if (WriteState.Buffer.Length - WriteState.Length < SizeOfEncodedChar)
                         {
-                            return cur - offset;
+                            return processed;
                         }
 
                         //append an = to indicate an encoded character
                         WriteState.Append((byte)'=');
                         //shift 4 to get the first four bytes only and look up the hex digit
-                        WriteState.Append(HexEncodeMap[buffer[cur] >> 4]);
+                        WriteState.Append(HexEncodeMap[buffer[processed] >> 4]);
                         //clear the first four bytes to get the last four and look up the hex digit
-                        WriteState.Append(HexEncodeMap[buffer[cur] & 0xF]);
+                        WriteState.Append(HexEncodeMap[buffer[processed] & 0xF]);
                     }
                     else
                     {
-                        WriteState.Append(buffer[cur]);
+                        WriteState.Append(buffer[processed]);
                     }
                 }
             }
-            return cur - offset;
+            return processed;
         }
 
         public int EncodeString(string value, Encoding encoding)
         {
             byte[] buffer = encoding.GetBytes(value);
-            return EncodeBytes(buffer, 0, buffer.Length);
+            return EncodeBytes(buffer);
         }
 
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
@@ -336,7 +336,7 @@ namespace System.Net.Mime
             int written = 0;
             while (true)
             {
-                written += EncodeBytes(buffer, offset + written, count - written);
+                written += EncodeBytes(buffer.AsSpan(offset + written, count - written));
                 if (written < count)
                 {
                     FlushInternal();
@@ -358,7 +358,7 @@ namespace System.Net.Mime
                 int written = 0;
                 while (true)
                 {
-                    written += EncodeBytes(buffer, offset + written, count - written);
+                    written += EncodeBytes(buffer.AsSpan(offset + written, count - written));
                     if (written < count)
                     {
                         await FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -370,7 +370,6 @@ namespace System.Net.Mime
                 }
             }
         }
-
 
         private sealed class ReadStateInfo
         {
