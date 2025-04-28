@@ -25,6 +25,7 @@ namespace System.Net
         }
 
         public override bool CanWrite => false;
+        public override bool CanRead => BaseStream.CanRead;
 
         public override bool CanSeek => false;
 
@@ -83,10 +84,12 @@ namespace System.Net
         }
 
         // Push method remains the same
-        internal void Push(byte[] buffer, int offset, int count)
+        internal void Push(ReadOnlySpan<byte> buffer)
         {
-            if (count == 0)
+            if (buffer.Length == 0)
                 return;
+
+            int count = buffer.Length;
 
             if (_storedOffset == _storedLength)
             {
@@ -121,7 +124,7 @@ namespace System.Net
                 }
             }
 
-            Buffer.BlockCopy(buffer, offset, _storedBuffer!, _storedOffset, count);
+            buffer.CopyTo(_storedBuffer.AsSpan(_storedOffset));
         }
     }
 }
