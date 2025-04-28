@@ -138,7 +138,7 @@ namespace System.Net
 
         internal int EncodeBytes(byte[] buffer, int offset, int count, bool dontDeferFinalBytes, bool shouldAppendSpaceToCRLF)
         {
-            return _encoder.EncodeBytes(buffer, offset, count, dontDeferFinalBytes, shouldAppendSpaceToCRLF);
+            return _encoder.EncodeBytes(buffer.AsSpan(offset, count), dontDeferFinalBytes, shouldAppendSpaceToCRLF);
         }
 
         public int EncodeString(string value, Encoding encoding) => _encoder.EncodeString(value, encoding);
