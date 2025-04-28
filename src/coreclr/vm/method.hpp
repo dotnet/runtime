@@ -1902,7 +1902,7 @@ public:
 };
 
 #ifndef DACCESS_COMPILE
-extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, int paramIndex);
+extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex);
 #endif // DACCESS_COMPILE
 
 template<> struct cdac_data<MethodDesc>

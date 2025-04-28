@@ -197,7 +197,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "UnsafeAccessors_ResolveGenericParamToTypeHandle")]
-        private static partial IntPtr ResolveGenericParamToTypeHandle(IntPtr unsafeAccessorMethod, [MarshalAs(UnmanagedType.Bool)] bool isMethodParam, int paramIndex);
+        private static partial IntPtr ResolveGenericParamToTypeHandle(IntPtr unsafeAccessorMethod, [MarshalAs(UnmanagedType.Bool)] bool isMethodParam, uint paramIndex);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "TypeNameResolver.GetType is marked as RequiresUnreferencedCode.")]
@@ -259,9 +259,9 @@ namespace System.Reflection
 
                         // At this point we expect either another '!' and then a number or a number.
                         bool isMethodParam = escapedTypeName[1] == '!';
-                        int paramIndex = isMethodParam
-                            ? int.Parse(escapedTypeName.AsSpan(2))  // Skip over "!!"
-                            : int.Parse(escapedTypeName.AsSpan(1)); // Skip over "!"
+                        uint paramIndex = isMethodParam
+                            ? uint.Parse(escapedTypeName.AsSpan(2))  // Skip over "!!"
+                            : uint.Parse(escapedTypeName.AsSpan(1)); // Skip over "!"
 
                         Debug.Assert(_unsafeAccessorMethod != IntPtr.Zero);
                         IntPtr typeHandle = ResolveGenericParamToTypeHandle(_unsafeAccessorMethod, isMethodParam, paramIndex);
