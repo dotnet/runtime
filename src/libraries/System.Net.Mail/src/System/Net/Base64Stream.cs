@@ -80,14 +80,14 @@ namespace System.Net
             base.Close();
         }
 
-        public unsafe int DecodeBytes(byte[] buffer, int offset, int count)
+        public unsafe int DecodeBytes(Span<byte> buffer)
         {
             fixed (byte* pBuffer = buffer)
             {
-                byte* start = pBuffer + offset;
+                byte* start = pBuffer;
                 byte* source = start;
                 byte* dest = start;
-                byte* end = start + count;
+                byte* end = start + buffer.Length;
 
                 while (source < end)
                 {
@@ -197,7 +197,7 @@ namespace System.Net
                 // while decoding, we may end up not having
                 // any bytes to return pending additional data
                 // from the underlying stream.
-                read = DecodeBytes(buffer, offset, read);
+                read = DecodeBytes(buffer.AsSpan(offset, read));
                 if (read > 0)
                 {
                     return read;
@@ -226,7 +226,7 @@ namespace System.Net
                     // while decoding, we may end up not having
                     // any bytes to return pending additional data
                     // from the underlying stream.
-                    read = DecodeBytes(buffer, offset, read);
+                    read = DecodeBytes(buffer.AsSpan(offset, read));
                     if (read > 0)
                     {
                         return read;

@@ -61,14 +61,14 @@ namespace System.Net.Mime
             base.Close();
         }
 
-        public unsafe int DecodeBytes(byte[] buffer, int offset, int count)
+        public unsafe int DecodeBytes(Span<byte> buffer)
         {
             fixed (byte* pBuffer = buffer)
             {
-                byte* start = pBuffer + offset;
+                byte* start = pBuffer;
                 byte* source = start;
                 byte* dest = start;
-                byte* end = start + count;
+                byte* end = start + buffer.Length;
 
                 // if the last read ended in a partially decoded
                 // sequence, pick up where we left off.
@@ -81,7 +81,7 @@ namespace System.Net.Mime
                         // if we only read one byte from the underlying
                         // stream, we'll need to save the byte and
                         // ask for more.
-                        if (count == 1)
+                        if (buffer.Length == 1)
                         {
                             ReadState.Byte = *source;
                             return 0;

@@ -130,7 +130,7 @@ namespace System.Net.Mime
             }
         }
 
-        public int DecodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
+        public int DecodeBytes(Span<byte> buffer) { throw new NotImplementedException(); }
 
         public int EncodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
 
