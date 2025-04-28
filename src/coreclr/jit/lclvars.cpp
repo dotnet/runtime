@@ -6739,7 +6739,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         offset += codeGen->genCallerSPtoInitialSPdelta();
     }
 
-#ifdef TARGET_64BIT
+#ifdef FEATURE_ON_STACK_REPLACEMENT
     if (forRootFrame && opts.IsOSR())
     {
         const PatchpointInfo* const ppInfo = info.compPatchpointInfo;
