@@ -292,6 +292,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         return;
     }
 
+    JITDUMP("\nUpdating ACDs before removing EH#%u\n", XTnum);
+
     EHblkDsc* const      ebd = ehGetDsc(XTnum);
     AddCodeDscMap* const map = fgGetAddCodeDscMap();
     for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
@@ -411,6 +413,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             JITDUMPEXEC(add->Dump());
         }
     }
+
+    JITDUMP("... done updating ACDs\n");
 }
 
 //------------------------------------------------------------------------

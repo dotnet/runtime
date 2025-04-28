@@ -133,7 +133,7 @@ unsigned ObjectAllocator::LocalToIndex(unsigned lclNum)
 {
     unsigned result = BAD_VAR_NUM;
 
-    if (lclNum < comp->lvaCount)
+    if (lclNum < m_firstPseudoLocalNum)
     {
         assert(IsTrackedLocal(lclNum));
         LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
@@ -297,6 +297,7 @@ void ObjectAllocator::MarkLclVarAsEscaping(unsigned int lclNum)
 void ObjectAllocator::MarkLclVarAsPossiblyStackPointing(unsigned int lclNum)
 {
     const unsigned bvIndex = LocalToIndex(lclNum);
+    JITDUMP("Marking V%02u (0x%02x) as possibly stack-pointing\n", lclNum, bvIndex);
     BitVecOps::AddElemD(&m_bitVecTraits, m_PossiblyStackPointingPointers, bvIndex);
 }
 
@@ -839,6 +840,11 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
 
 void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
 {
+    // Keep track of locals that we know may point at the heap
+    //
+    BitVec possiblyHeapPointingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
+    BitVecOps::AddElemD(bitVecTraits, possiblyHeapPointingPointers, m_unknownSourceIndex);
+
     bool     changed = true;
     unsigned pass    = 0;
     while (changed)
@@ -859,23 +865,36 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
                                                 m_ConnGraphAdjacencyMatrix[lclIndex]))
             {
                 // We discovered a new pointer that may point to the stack.
+                JITDUMPEXEC(DumpIndex(lclIndex));
+                JITDUMP(" may point to the stack\n");
                 MarkLclVarAsPossiblyStackPointing(lclNum);
+                changed = true;
+            }
 
-                // If all locals assignable to this local are stack pointing, so is this local.
-                //
-                const bool isStackPointing = BitVecOps::IsSubset(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclIndex],
-                                                                 m_DefinitelyStackPointingPointers);
-
-                if (isStackPointing)
-                {
-                    MarkLclVarAsDefinitelyStackPointing(lclNum);
-                    JITDUMP("V%02u is stack pointing\n", lclNum);
-                }
-
+            if (!BitVecOps::IsMember(bitVecTraits, possiblyHeapPointingPointers, lclIndex) &&
+                !BitVecOps::IsEmptyIntersection(bitVecTraits, possiblyHeapPointingPointers,
+                                                m_ConnGraphAdjacencyMatrix[lclIndex]))
+            {
+                // We discovered a new pointer that may point to the heap.
+                JITDUMPEXEC(DumpIndex(lclIndex));
+                JITDUMP(" may point to the heap\n");
+                BitVecOps::AddElemD(bitVecTraits, possiblyHeapPointingPointers, lclIndex);
                 changed = true;
             }
         }
     }
+    JITDUMP("\n---- done computing stack pointing locals\n");
+
+    // If a local is possibly stack pointing and not possibly heap pointing, then it is definitely stack pointing.
+    //
+    BitVec newDefinitelyStackPointingPointers = BitVecOps::UninitVal();
+    BitVecOps::Assign(bitVecTraits, newDefinitelyStackPointingPointers, m_PossiblyStackPointingPointers);
+    BitVecOps::DiffD(bitVecTraits, newDefinitelyStackPointingPointers, possiblyHeapPointingPointers);
+
+    // We should have only added to the set of things that are definitely stack pointing.
+    //
+    assert(BitVecOps::IsSubset(bitVecTraits, m_DefinitelyStackPointingPointers, newDefinitelyStackPointingPointers));
+    BitVecOps::AssignNoCopy(bitVecTraits, m_DefinitelyStackPointingPointers, newDefinitelyStackPointingPointers);
 
 #ifdef DEBUG
     if (comp->verbose)
@@ -1117,10 +1136,10 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 continue;
             }
 
-            bool         canStack     = false;
-            bool         bashCall     = false;
-            const char*  onHeapReason = nullptr;
-            unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
+            bool               canStack     = false;
+            bool               bashCall     = false;
+            const char*        onHeapReason = nullptr;
+            const unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
 
             // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
             //
@@ -1305,6 +1324,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(data->AsAllocObj());
                     stmtExpr->AsLclVar()->Data() = newData;
                     stmtExpr->AddAllEffectsFlags(newData);
+                }
+
+                if (IsTrackedLocal(lclNum))
+                {
+                    AddConnGraphEdge(lclNum, m_unknownSourceLocalNum);
                 }
             }
         }
