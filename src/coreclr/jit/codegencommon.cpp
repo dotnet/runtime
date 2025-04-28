@@ -2107,7 +2107,7 @@ void CodeGen::genEmitMachineCode()
 
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
-#if defined(TARGET_64BIT)
+#ifdef TARGET_64BIT
     trackedStackPtrsContig = false;
 #elif defined(TARGET_ARM)
     // On arm due to prespilling of arguments, tracked stk-ptrs may not be contiguous

@@ -9121,7 +9121,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
         return true;
     }
 
-#if defined(TARGET_64BIT)
+#ifdef TARGET_64BIT
     // Jit64 compat:
     if (callerRetType == TYP_VOID)
     {
