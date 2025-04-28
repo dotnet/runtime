@@ -924,12 +924,12 @@ namespace System.Collections
                         {
                             shuffled = Vector256.Shuffle(bits.AsByte(),
                                 // The shuffle indices should be chosen so that with AVX2, vpshufb can be emitted.
-                                Vector256.Create(0x00000000_04040404, 0x09090909_0D0D0D0D, 0x12121212_16161616, 0x1B1B1B1B_1F1F1F1F).AsByte());
+                                Vector256.Create(0x00000000_00000000, 0x09090909_09090909, 0x12121212_12121212, 0x1B1B1B1B_1B1B1B1B).AsByte());
                         }
                         else
                         {
                             shuffled = Vector256.Shuffle(bits.AsByte(),
-                                Vector256.Create(0x03030303_07070707, 0x0A0A0A0A_0E0E0E0E, 0x11111111_15151515, 0x18181818_1C1C1C1C).AsByte());
+                                Vector256.Create(0x03030303_03030303, 0x0A0A0A0A_0A0A0A0A, 0x11111111_11111111, 0x18181818_18181818).AsByte());
                         }
 
                         Vector256<byte> extracted = shuffled & bitMask;
