@@ -1959,11 +1959,13 @@ public:
     friend struct ::cdac_data<SystemDomain>;
 };  // class SystemDomain
 
+#ifndef DACCESS_COMPILE
 template<>
 struct cdac_data<SystemDomain>
 {
-    static constexpr PTR_SystemDomain* const SystemDomain = &SystemDomain::m_pSystemDomain;
+    static constexpr PTR_SystemDomain* SystemDomain = &SystemDomain::m_pSystemDomain;
 };
+#endif // DACCESS_COMPILE
 
 #include "comreflectioncache.inl"
 
