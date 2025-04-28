@@ -495,6 +495,9 @@ bool runWithSPMIErrorTrap(
 void getEEInfo(
           CORINFO_EE_INFO* pEEInfoOut) override;
 
+void getAsyncInfo(
+          CORINFO_ASYNC_INFO* pAsyncInfoOut) override;
+
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 
@@ -656,6 +659,8 @@ bool getTailCallHelpers(
           CORINFO_SIG_INFO* sig,
           CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
           CORINFO_TAILCALL_HELPERS* pResult) override;
+
+CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
 
 bool convertPInvokeCalliToCall(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
