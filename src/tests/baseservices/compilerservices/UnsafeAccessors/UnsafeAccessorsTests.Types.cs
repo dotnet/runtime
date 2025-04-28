@@ -223,6 +223,14 @@ public static unsafe class UnsafeAccessorsTestsTypes
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M2")]
         [return: UnsafeAccessorType("System.Collections.Generic.List`1[[!!0]]")]
         public extern static object CallGenericClassM2<U>([UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object a);
+
+        // Bound type variables
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M3")]
+        public extern static List<int> CallGenericClassM3([UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M4")]
+        [return: UnsafeAccessorType("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")]
+        public extern static object CallGenericClassM4([UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object a);
     }
 
     private static bool TypeNameEquals(TypeName typeName1, TypeName typeName2)
@@ -257,9 +265,9 @@ public static unsafe class UnsafeAccessorsTestsTypes
 
     // Skip private types and Generic support on Mono runtime
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotMonoRuntime))]
-    public static void Verify_Type_CallPrivateLibGenerics()
+    public static void Verify_Type_CallPrivateLibTypeGenericParams()
     {
-        Console.WriteLine($"Running {nameof(Verify_Type_CallPrivateLibGenerics)}");
+        Console.WriteLine($"Running {nameof(Verify_Type_CallPrivateLibTypeGenericParams)}");
 
         {
             object genericClass = Accessors<int>.CreateGenericClass();
@@ -269,6 +277,43 @@ public static unsafe class UnsafeAccessorsTestsTypes
             object genericListT = Accessors<int>.CallGenericClassM1(genericClass);
             TypeName genericListTName = TypeName.Parse(genericListT.GetType().FullName);
             Assert.True(TypeNameEquals(genericListTName, TypeName.Parse("System.Collections.Generic.List`1[[System.Int32]]")));
+
+            List<int> boundListInt = Accessors<int>.CallGenericClassM3(genericClass);
+            Assert.Empty(boundListInt);
+
+            object genericListClass2 = Accessors<int>.CallGenericClassM4(genericClass);
+            TypeName genericListClass2Name = TypeName.Parse(genericListClass2.GetType().FullName);
+            Assert.True(TypeNameEquals(genericListClass2Name, TypeName.Parse("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")));
+        }
+
+        {
+            object genericClass = Accessors<string>.CreateGenericClass();
+            TypeName genericClassName = TypeName.Parse(genericClass.GetType().FullName);
+            Assert.True(TypeNameEquals(genericClassName, TypeName.Parse("PrivateLib.GenericClass`1[[System.String]]")));
+
+            object genericListT = Accessors<string>.CallGenericClassM1(genericClass);
+            TypeName genericListTName = TypeName.Parse(genericListT.GetType().FullName);
+            Assert.True(TypeNameEquals(genericListTName, TypeName.Parse("System.Collections.Generic.List`1[[System.String]]")));
+
+            List<int> boundListInt = Accessors<string>.CallGenericClassM3(genericClass);
+            Assert.Empty(boundListInt);
+
+            object genericListClass2 = Accessors<string>.CallGenericClassM4(genericClass);
+            TypeName genericListClass2Name = TypeName.Parse(genericListClass2.GetType().FullName);
+            Assert.True(TypeNameEquals(genericListClass2Name, TypeName.Parse("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")));
+        }
+    }
+
+    // Skip private types and Generic support on Mono runtime
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotMonoRuntime))]
+    public static void Verify_Type_CallPrivateLibTypeAndMethodGenericParams()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Type_CallPrivateLibTypeAndMethodGenericParams)}");
+
+        {
+            object genericClass = Accessors<int>.CreateGenericClass();
+            TypeName genericClassName = TypeName.Parse(genericClass.GetType().FullName);
+            Assert.True(TypeNameEquals(genericClassName, TypeName.Parse("PrivateLib.GenericClass`1[[System.Int32]]")));
 
             object genericListInt = Accessors<int>.CallGenericClassM2<int>(genericClass);
             TypeName genericListIntName = TypeName.Parse(genericListInt.GetType().FullName);
@@ -283,10 +328,6 @@ public static unsafe class UnsafeAccessorsTestsTypes
             object genericClass = Accessors<string>.CreateGenericClass();
             TypeName genericClassName = TypeName.Parse(genericClass.GetType().FullName);
             Assert.True(TypeNameEquals(genericClassName, TypeName.Parse("PrivateLib.GenericClass`1[[System.String]]")));
-
-            object genericListT = Accessors<string>.CallGenericClassM1(genericClass);
-            TypeName genericListTName = TypeName.Parse(genericListT.GetType().FullName);
-            Assert.True(TypeNameEquals(genericListTName, TypeName.Parse("System.Collections.Generic.List`1[[System.String]]")));
 
             object genericListInt = Accessors<string>.CallGenericClassM2<int>(genericClass);
             TypeName genericListIntName = TypeName.Parse(genericListInt.GetType().FullName);

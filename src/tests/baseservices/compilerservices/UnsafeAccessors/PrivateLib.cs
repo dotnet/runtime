@@ -32,5 +32,9 @@ namespace PrivateLib
         List<T> M1() => new List<T>();
 
         List<U> M2<U>() => new List<U>();
+
+        List<int> M3() => new List<int>();
+
+        List<Class2> M4() => new List<Class2>();
     }
 }

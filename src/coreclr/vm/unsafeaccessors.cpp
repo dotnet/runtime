@@ -162,8 +162,9 @@ namespace
             // Append the new type to the signature.
             Instantiation inst = newType->GetInstantiation();
 
-            // We have a generic element, mark GENERICINST.
-            if (!inst.IsEmpty())
+            // We have at least one generic variable, mark GENERICINST.
+            BOOL hasGenericVariables = inst.ContainsGenericVariables();
+            if (hasGenericVariables)
                 newSig.AppendElementType(ELEMENT_TYPE_GENERICINST);
 
             // Append the new type to the signature.
@@ -171,11 +172,14 @@ namespace
             newSig.AppendPointer(newType);
 
             // Append the instantiation types to the signature.
-            if (!inst.IsEmpty())
+            if (hasGenericVariables)
             {
                 newSig.AppendData(inst.GetNumArgs());
                 for (DWORD i = 0; i < inst.GetNumArgs(); i++)
                 {
+                    if (!inst[i].IsGenericVariable())
+                        continue;
+
                     TypeVarTypeDesc* typeVar = inst[i].AsGenericVariable();
                     newSig.AppendElementType(typeVar->GetInternalCorElementType());
                     newSig.AppendData(typeVar->GetIndex());
@@ -260,17 +264,6 @@ namespace
             _ASSERTE(!typeHandle.IsNull());
 
             MethodTable* targetType = typeHandle.AsMethodTable();
-
-            // Any instantiation on the type must be a generic variable.
-            // We do this since the runtime will be instantiating the type
-            // with the generic parameters associated with the UnsafeAccessorAttribute
-            // definition.
-            Instantiation targetTypeInst = targetType->GetInstantiation();
-            for (DWORD i = 0; i < targetTypeInst.GetNumArgs(); i++)
-            {
-                if (!targetTypeInst[i].IsGenericVariable())
-                    ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE);
-            }
 
             // Future versions of the runtime may support
             // UnsafeAccessorTypeAttribute on value types.

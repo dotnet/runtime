@@ -719,12 +719,22 @@ public:
 
     bool ContainsAllOneType(TypeHandle th)
     {
-        for (auto i = GetNumArgs(); i > 0;)
+        for (DWORD i = GetNumArgs(); i > 0;)
         {
             if ((*this)[--i] != th)
                 return false;
         }
         return true;
+    }
+
+    bool ContainsGenericVariables()
+    {
+        for (DWORD i = GetNumArgs(); i > 0;)
+        {
+            if ((*this)[--i].IsGenericVariable())
+                return true;
+        }
+        return false;
     }
 
 private:
