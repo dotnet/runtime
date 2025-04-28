@@ -53,16 +53,16 @@ namespace System.Security.Cryptography.X509Certificates
         {
             AndroidCertificatePal pal = (AndroidCertificatePal)certAndKey.Cert!;
 
-            if (certAndKey.Key is Pkcs12Key pkcs12Key)
+            if (certAndKey.Key is not null)
             {
-                if (pkcs12Key is { Key: AsymmetricAlgorithm alg })
+                if (certAndKey.Key is { Key: AsymmetricAlgorithm alg })
                 {
                     pal.SetPrivateKey(GetPrivateKey(alg));
                     certAndKey.Key.Dispose();
                 }
                 else
                 {
-                    Debug.Fail($"Unhandled key type '{pkcs12Key.Key?.GetType()?.FullName}'.");
+                    Debug.Fail($"Unhandled key type '{certAndKey.Key.Key?.GetType()?.FullName}'.");
                     throw new CryptographicException();
                 }
             }

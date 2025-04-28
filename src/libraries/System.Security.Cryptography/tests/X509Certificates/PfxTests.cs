@@ -564,10 +564,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeySeedPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            // Windows when using the DefaultKeySet delays throwing no private key and instead acts as it the
+            // Windows when using non-ephemeral delays throwing no private key and instead acts as it the
             // keyset does not exist. Exporting it again to PFX forces Windows to reconcile the fact the key
             // didn't actually load.
-            if (PlatformDetection.IsWindows && keyStorageFlags == X509KeyStorageFlags.DefaultKeySet)
+            if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
             {
                 using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
                 {

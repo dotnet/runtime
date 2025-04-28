@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.X509Certificates
                         pkcs8,
                         static () => new DSAImplementation.DSASecurityTransforms());
                 default:
-                    // No  PQC support on iOS / tvOS.
+                    // No PQC support on macOS.
                     return null;
             }
         }

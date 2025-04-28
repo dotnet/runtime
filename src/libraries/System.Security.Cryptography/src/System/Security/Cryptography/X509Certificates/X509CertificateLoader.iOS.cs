@@ -87,9 +87,9 @@ namespace System.Security.Cryptography.X509Certificates
         {
             AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
 
-            if (certAndKey.Key is Pkcs12Key pkcs12Key)
+            if (certAndKey.Key is not null)
             {
-                if (pkcs12Key is { Key: AsymmetricAlgorithm alg })
+                if (certAndKey.Key is { Key: AsymmetricAlgorithm alg })
                 {
                     AppleCertificatePal newPal = AppleCertificatePal.ImportPkcs12(pal, alg);
                     pal.Dispose();
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 else
                 {
-                    Debug.Fail($"Unhandled key type '{pkcs12Key.Key?.GetType()?.FullName}'.");
+                    Debug.Fail($"Unhandled key type '{certAndKey.Key.Key?.GetType()?.FullName}'.");
                     throw new CryptographicException();
                 }
             }
