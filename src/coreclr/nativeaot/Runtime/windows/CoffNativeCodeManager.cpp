@@ -970,6 +970,7 @@ GCRefKind CoffNativeCodeManager::GetReturnValueKind(MethodInfo *   pMethodInfo, 
     hdrInfo infoBuf;
     size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
 
+    ASSERT(infoBuf.returnKind != RT_Float); // See TODO above
     return (GCRefKind)infoBuf.returnKind;
 }
 #endif
