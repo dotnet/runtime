@@ -210,7 +210,7 @@ internal readonly struct Loader_1 : ILoader
         if (module.InstMethodHashTable == TargetPointer.Null)
             return typeParams;
 
-        InstMethodHashTable methodHashTable = _target.ProcessedData.GetOrAdd<InstMethodHashTable>(module.AvailableTypeParams);
+        InstMethodHashTable methodHashTable = _target.ProcessedData.GetOrAdd<InstMethodHashTable>(module.InstMethodHashTable);
 
         foreach (InstMethodHashTable.InstMethodHashTableEntry entry in methodHashTable.Entries)
         {
