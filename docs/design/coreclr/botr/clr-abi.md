@@ -96,6 +96,34 @@ There is no defined/enforced/declared ordering between the generic parameter and
 call(["this" pointer] [return buffer pointer] [generics context|varargs cookie] [userargs]*)
 ```
 
+## Async
+
+Async calling convention is additive to other calling conventions when supported. The set of scenarios is constrained to regular static/virtual calls and does not, for example, support PInvokes or varargs. At the minimum ordinary static calls, calls with `this` parameter or generic hidden parameters are supported.
+
+Async calling convention adds an extra `Continuation` parameter and an extra return, which sematically takes precedence when not `null`. A non-null `Continuation` upon return signals that the computation is not complete and the formal result is not ready. A non-null argument means that the function is resuming and should extract the state from the `Continuation` and continue execution (while ignoring all other arguments).
+
+The `Continuation` is a managed object and needs to be tracked accordingly. The GC info includes the continuation result as live at Async call sites.
+
+### Returning `Continuation`
+To return `Continuation` we use a volatile/calee-trash register that cannot be used to return the actual result.
+
+| arch | `REG_ASYNC_CONTINUATION_RET` |
+| ------------- | ------------- |
+| x86  | ecx  |
+| x64  | rcx  |
+| arm | r2  |
+| arm64  | x2  |
+| risc-v  | a2  |
+
+### Passing `Continuation` argument
+The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present.
+
+```
+call(["this" pointer] [return buffer pointer] [generics context] [continuation] [userargs])   // not x86
+
+call(["this" pointer] [return buffer pointer] [userargs] [generics context] [continuation])   // x86
+```
+
 ## AMD64-only: by-value value types
 
 Just like native, AMD64 has implicit-byrefs. Any structure (value type in IL parlance) that is not 1, 2, 4, or 8 bytes in size (i.e., 3, 5, 6, 7, or >= 9 bytes in size) that is declared to be passed by value, is instead passed by reference. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack. However, there are some cases within remoting or reflection where apparently stackalloc is too hard, and so they pass in pointers within the GC heap, thus the JITed code must report these implicit byref parameters as interior pointers (BYREFs in JIT parlance), in case the callee is one of these reflection paths. Similarly, all writes must use checked write barriers.
