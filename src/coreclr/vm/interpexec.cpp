@@ -1162,6 +1162,8 @@ CALL_TARGET_IP:
 
                 LOCAL_VAR(ip[1], void*) = pMemory;
                 ip += 3;
+                break;
+            }
             case INTOP_GC_COLLECT: {
                 // HACK: blocking gc of all generations to enable early stackwalk testing
                 // Interpreter-TODO: Remove this
