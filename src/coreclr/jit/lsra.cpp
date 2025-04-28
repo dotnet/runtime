@@ -839,10 +839,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
     isApxSupported    = compiler->canUseApxEncoding();
     if (isApxSupported)
     {
-        regIndices = new regNumber[ACTUAL_REG_COUNT];
-        for (int i = 0; i < (int)ACTUAL_REG_COUNT; i++)
+        regIndices = theCompiler->getAllocator(CMK_LSRA).allocate<regNumber>(ACTUAL_REG_COUNT + 1);
+        for (int i = 0; i <= ACTUAL_REG_COUNT; i++)
         {
-            regIndices[i] = (regNumber)i;
+            regIndices[i] = static_cast<regNumber>(i);
         }
     }
     else
@@ -857,7 +857,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
                             (regNumber)52, (regNumber)53, (regNumber)54, (regNumber)55, (regNumber)56, (regNumber)57,
                             (regNumber)58, (regNumber)59, (regNumber)60, (regNumber)61, (regNumber)62, (regNumber)63,
                             (regNumber)64, (regNumber)65, (regNumber)66, (regNumber)67, (regNumber)68, (regNumber)69,
-                            (regNumber)70, (regNumber)71};
+                            (regNumber)70, (regNumber)71, (regNumber)72};
     }
 #endif // TARGET_AMD64
 
@@ -11923,7 +11923,7 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
         // If this is occupied by a double interval, skip the corresponding float reg.
         if ((assignedInterval != nullptr) && (assignedInterval->registerType == TYP_DOUBLE))
         {
-            NEXT_REGISTER(reg, regIndex);
+            reg = REG_NEXT(reg);
         }
 #endif
     }
