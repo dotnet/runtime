@@ -534,7 +534,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
     if (popGCFrames)
     {
         GCFrame* pGCFrame = pThread->GetGCFrame();
-        while (pGCFrame && pGCFrame < targetSp)
+        while ((pGCFrame != GCFRAME_TOP) && pGCFrame < targetSp)
         {
             pGCFrame->Pop();
             pGCFrame = pThread->GetGCFrame();
@@ -3009,6 +3009,67 @@ VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int
     longjmp(*pJmpBuf, retVal);
 }
 
+void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1, size_t arg2)
+{
+    UINT_PTR targetSp = GetSP(pContext);
+#if defined(HOST_AMD64)
+    ULONG64* returnAddress = (ULONG64*)(targetSp - 8);
+    *returnAddress = pContext->Rip;
+#ifdef HOST_WINDOWS
+    if (targetSSP != 0)
+    {
+        targetSSP -= sizeof(size_t);
+    }
+#endif // HOST_WINDOWS
+    SetSP(pContext, targetSp - 8);
+#elif defined(HOST_X86)
+
+#ifdef HOST_WINDOWS
+    // Disarm the managed code SEH handler installed in CallDescrWorkerInternal
+    if (IsCallDescrWorkerInternalReturnAddress(pContext->Eip))
+    {
+        PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
+        if (currentContext->Handler == (PEXCEPTION_ROUTINE)ProcessCLRException)
+            currentContext->Handler = (PEXCEPTION_ROUTINE)CallDescrWorkerUnwindFrameChainHandler;
+    }
+#endif
+
+    ULONG32* returnAddress = (ULONG32*)(targetSp - 4);
+    *returnAddress = pContext->Eip;
+    SetSP(pContext, targetSp - 4);
+#elif defined(HOST_ARM64)
+    pContext->Lr = GetIP(pContext);
+#elif defined(HOST_ARM)
+    pContext->Lr = GetIP(pContext);
+#elif defined(HOST_RISCV64) || defined(HOST_LOONGARCH64)
+    pContext->Ra = GetIP(pContext);
+#endif
+
+// The SECOND_ARG_REG is defined only for Windows, it is used to handle longjmp propagation over managed frames
+#ifdef HOST_AMD64
+#ifdef UNIX_AMD64_ABI
+#define FIRST_ARG_REG Rdi
+#else
+#define FIRST_ARG_REG Rcx
+#define SECOND_ARG_REG Rdx
+#endif
+#elif defined(HOST_X86)
+#define FIRST_ARG_REG Ecx
+#define SECOND_ARG_REG Edx
+#elif defined(HOST_ARM64)
+#define FIRST_ARG_REG X0
+#define SECOND_ARG_REG X1
+#elif defined(HOST_ARM)
+#define FIRST_ARG_REG R0
+#elif defined(HOST_RISCV64) || defined(HOST_LOONGARCH64)
+#define FIRST_ARG_REG A0
+#endif
+    pContext->FIRST_ARG_REG = arg1;
+    pContext->SECOND_ARG_REG = arg2;
+    SetIP(pContext, functionPtr);
+
+    ClrRestoreNonvolatileContext(pContext, targetSSP);
+}
 // This is a personality routine that the RtlRestoreContext calls when it is called with
 // pExceptionRecord->ExceptionCode == STATUS_UNWIND_CONSOLIDATE.
 // Before calling this function, it creates a machine frame that hides all the frames
@@ -3160,53 +3221,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     ExInfo::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
     if (pHandlerIP != NULL)
     {
-        UINT_PTR uAbortAddr = 0;
-        if (!fIntercepted)
-        {
-            CopyOSContext(pThread->m_OSContext, pvRegDisplay->pCurrentContext);
-            SetIP(pThread->m_OSContext, (PCODE)dwResumePC);
-            uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(dwResumePC);
-        }
-
-        if (!uAbortAddr)
-        {
-            STRESS_LOG2(LF_EH, LL_INFO100, "Resuming after exception at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
-        }
-
-        // Prepare the context for the resume after catch. For the interpreter case,
-        // the context IP and SP contain to the interpreter PC and SP and we need
-        // to set them back to the InterpExecMethod frame in which we are resuming
-        // the execution.
-        pCodeManager->PrepareForResumeAfterCatch(pvRegDisplay->pCurrentContext);
-
-        if (uAbortAddr)
-        {
-            STRESS_LOG2(LF_EH, LL_INFO10, "Thread abort in progress, resuming under control: IP=%p, SP=%p\n", dwResumePC, GetSP(pvRegDisplay->pCurrentContext));
-
-            // For non-interpreter case, the following line is a no-op. For the interpreter,
-            // it sets the dwResumePC to an IP of native code in the InterpExecMethod frame.
-            dwResumePC = GetIP(pvRegDisplay->pCurrentContext);
-
-            // The dwResumePC is passed to the THROW_CONTROL_FOR_THREAD_FUNCTION ASM helper so that
-            // it can establish it as its return address and native stack unwinding can work properly.
-#ifdef TARGET_AMD64
-#ifdef TARGET_UNIX
-            pvRegDisplay->pCurrentContext->Rdi = dwResumePC;
-#else
-            pvRegDisplay->pCurrentContext->Rcx = dwResumePC;
-#endif
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
-            // On ARM & ARM64, we save off the original PC in Lr. This is the same as done
-            // in HandleManagedFault for H/W generated exceptions.
-            pvRegDisplay->pCurrentContext->Lr = dwResumePC;
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            pvRegDisplay->pCurrentContext->Ra = dwResumePC;
-#endif
-
-            SetIP(pvRegDisplay->pCurrentContext, uAbortAddr);
-        }
-
-        ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
+        pCodeManager->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, fIntercepted);
     }
     else
     {
@@ -3250,75 +3265,19 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         }
 #endif // HOST_WINDOWS
 
-#if defined(HOST_AMD64)
-        ULONG64* returnAddress = (ULONG64*)(targetSp - 8);
-        *returnAddress = pvRegDisplay->pCurrentContext->Rip;
-#ifdef HOST_WINDOWS
-        if (targetSSP != 0)
-        {
-            targetSSP -= sizeof(size_t);
-        }
-#endif // HOST_WINDOWS
-        SetSP(pvRegDisplay->pCurrentContext, targetSp - 8);
-#elif defined(HOST_X86)
-
-#ifdef HOST_WINDOWS
-        // Disarm the managed code SEH handler installed in CallDescrWorkerInternal
-        if (IsCallDescrWorkerInternalReturnAddress(pvRegDisplay->pCurrentContext->Eip))
-        {
-            PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
-            if (currentContext->Handler == (PEXCEPTION_ROUTINE)ProcessCLRException)
-                currentContext->Handler = (PEXCEPTION_ROUTINE)CallDescrWorkerUnwindFrameChainHandler;
-        }
-#endif
-
-        ULONG32* returnAddress = (ULONG32*)(targetSp - 4);
-        *returnAddress = pvRegDisplay->pCurrentContext->Eip;
-        SetSP(pvRegDisplay->pCurrentContext, targetSp - 4);
-#elif defined(HOST_ARM64)
-        pvRegDisplay->pCurrentContext->Lr = GetIP(pvRegDisplay->pCurrentContext);
-#elif defined(HOST_ARM)
-        pvRegDisplay->pCurrentContext->Lr = GetIP(pvRegDisplay->pCurrentContext);
-#elif defined(HOST_RISCV64) || defined(HOST_LOONGARCH64)
-        pvRegDisplay->pCurrentContext->Ra = GetIP(pvRegDisplay->pCurrentContext);
-#endif
-
-// The SECOND_ARG_REG is defined only for Windows, it is used to handle longjmp propagation over managed frames
-#ifdef HOST_AMD64
-#ifdef UNIX_AMD64_ABI
-#define FIRST_ARG_REG Rdi
-#else
-#define FIRST_ARG_REG Rcx
-#define SECOND_ARG_REG Rdx
-#endif
-#elif defined(HOST_X86)
-#define FIRST_ARG_REG Ecx
-#define SECOND_ARG_REG Edx
-#elif defined(HOST_ARM64)
-#define FIRST_ARG_REG X0
-#define SECOND_ARG_REG X1
-#elif defined(HOST_ARM)
-#define FIRST_ARG_REG R0
-#elif defined(HOST_RISCV64) || defined(HOST_LOONGARCH64)
-#define FIRST_ARG_REG A0
-#endif
 #ifdef HOST_WINDOWS
         if (pLongJmpBuf != NULL)
         {
             STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of longjmp through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
-            SetIP(pvRegDisplay->pCurrentContext, (PCODE)PropagateLongJmpThroughNativeFrames);
-            pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)pLongJmpBuf;
-            pvRegDisplay->pCurrentContext->SECOND_ARG_REG = (size_t)longJmpReturnValue;
+            ExecuteFunctionBelowContext((PCODE)PropagateLongJmpThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)pLongJmpBuf, longJmpReturnValue);
         }
         else
 #endif
         {
             STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of managed exception through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
-            SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))PropagateExceptionThroughNativeFrames);
-            pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)OBJECTREFToObject(exceptionObj.Get());
+            ExecuteFunctionBelowContext((PCODE)PropagateExceptionThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)OBJECTREFToObject(exceptionObj.Get()));
         }
 #undef FIRST_ARG_REG
-        ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
     }
     END_QCALL;
     return NULL;

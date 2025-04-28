@@ -307,7 +307,7 @@ virtual void            LeaveCatch(GCInfoToken gcInfoToken,
                                    PCONTEXT pCtx)=0;
 #else // FEATURE_EH_FUNCLETS
 virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter) = 0;
-virtual void PrepareForResumeAfterCatch(CONTEXT *pContext) = 0;
+virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted) = 0;
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
 virtual void UpdateSSP(PREGDISPLAY pRD) = 0;
 #endif // HOST_AMD64 && HOST_WINDOWS
@@ -557,10 +557,7 @@ virtual void LeaveCatch(GCInfoToken gcInfoToken,
                          PCONTEXT pCtx);
 #else // FEATURE_EH_FUNCLETS
 virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
-virtual void PrepareForResumeAfterCatch(CONTEXT *pContext)
-{
-    // Nothing to do for non-interpreter code manager.
-}
+virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted);
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
 virtual void UpdateSSP(PREGDISPLAY pRD);
@@ -774,7 +771,7 @@ virtual void LeaveCatch(GCInfoToken gcInfoToken,
 }
 #else // FEATURE_EH_FUNCLETS
 virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
-virtual void PrepareForResumeAfterCatch(CONTEXT *pContext);
+virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted);
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
 virtual void UpdateSSP(PREGDISPLAY pRD);
 #endif // HOST_AMD64 && HOST_WINDOWS

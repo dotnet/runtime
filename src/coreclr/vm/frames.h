@@ -220,6 +220,7 @@ class ComCallMethodDesc;
 // whenever we compare it to a PTR_Frame value (the usual use of the value).
 #define FRAME_TOP_VALUE  ~0     // we want to say -1 here, but gcc has trouble with the signed value
 #define FRAME_TOP (PTR_Frame(FRAME_TOP_VALUE))
+#define GCFRAME_TOP (PTR_GCFrame(FRAME_TOP_VALUE))
 
 
 enum class FrameIdentifier : TADDR
@@ -2888,9 +2889,7 @@ public:
 #ifndef DACCESS_COMPILE
     InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
         : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
-        m_pTopInterpMethodContextFrame(pContextFrame),
-        m_resumeIP(0),
-        m_resumeSP(0)
+        m_pTopInterpMethodContextFrame(pContextFrame)
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
         , m_SSP(0)
 #endif
@@ -2905,6 +2904,21 @@ public:
     }
 
 #endif // DACCESS_COMPILE
+
+    BOOL NeedsUpdateRegDisplay_Impl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return GetTransitionBlock() != NULL;
+    }
+
+    PCODE GetReturnAddressPtr_Impl()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (GetTransitionBlock() == NULL)
+            return 0;
+
+        return FramedMethodFrame::GetReturnAddressPtr_Impl();
+    }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
 #ifndef DACCESS_COMPILE
@@ -2923,22 +2937,6 @@ public:
         SetIP(pContext, m_interpExecMethodIP);
         SetFP(pContext, m_interpExecMethodFP);
         SetFirstArgReg(pContext, m_interpExecMethodFirstArgReg);
-    }
-
-    void SetResumeContext(TADDR resumeSP, TADDR resumeIP)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_resumeSP = resumeSP;
-        m_resumeIP = resumeIP;
-    }
-
-    void GetAndClearResumeContext(TADDR * pResumeSP, TADDR * pResumeIP)
-    {
-        LIMITED_METHOD_CONTRACT;
-        *pResumeSP = m_resumeSP;
-        *pResumeIP = m_resumeIP;
-        m_resumeSP = 0;
-        m_resumeIP = 0;
     }
 
     TADDR GetInterpExecMethodIP()
@@ -2971,9 +2969,6 @@ private:
     TADDR m_interpExecMethodSP;
     TADDR m_interpExecMethodFP;
     TADDR m_interpExecMethodFirstArgReg;
-    // Interpreter IP and SP for resuming after catch into interpreter frames.
-    TADDR m_resumeIP;
-    TADDR m_resumeSP;
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;
