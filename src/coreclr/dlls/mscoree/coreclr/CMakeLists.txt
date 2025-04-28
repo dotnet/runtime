@@ -80,6 +80,12 @@ if (CLR_CMAKE_HOST_UNIX)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX)
 
+if (CLR_CMAKE_HOST_ANDROID)
+    set(LIB_GCPAL gc_pal_objects)
+else()
+    set(LIB_GCPAL gc_pal)
+endif()
+
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
@@ -104,7 +110,7 @@ set(CORECLR_LIBRARIES
     System.Globalization.Native-Static
     interop
     coreclrminipal
-    gc_pal
+    ${LIB_GCPAL}
     cdac_contract_descriptor
 )
 
