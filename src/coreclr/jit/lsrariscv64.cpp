@@ -445,17 +445,8 @@ int LinearScan::BuildNode(GenTree* tree)
             if (!varTypeIsFloating(op1Type))
             {
                 emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
-                if (tree->gtGetOp2()->isContainedIntOrIImmed())
-                {
-                    bool isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
-                    if (cmpSize == EA_4BYTE && isUnsigned)
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-                else
-                {
-                    if (cmpSize == EA_4BYTE)
-                        buildInternalIntRegisterDefForNode(tree);
-                }
+                if (cmpSize == EA_4BYTE)
+                    buildInternalIntRegisterDefForNode(tree);
             }
             buildInternalRegisterUses();
         }

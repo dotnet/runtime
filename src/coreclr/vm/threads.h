@@ -142,6 +142,7 @@ class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
+struct    InterpThreadContext;
 
 typedef void(*ADCallBackFcnType)(LPVOID);
 
@@ -2669,7 +2670,7 @@ public:
 
 private:
 #ifdef FEATURE_HIJACK
-    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind));
+    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
@@ -3846,20 +3847,23 @@ private:
     // By the time a frame is scanned by the runtime, m_pHijackReturnKind always
     // identifies the gc-ness of the return register(s)
     ReturnKind m_HijackReturnKind;
+    bool m_HijackHasAsyncRet;
 
 public:
-    ReturnKind GetHijackReturnKind()
+    ReturnKind GetHijackReturnKind(bool* hasAsyncRet)
     {
         LIMITED_METHOD_CONTRACT;
 
+        *hasAsyncRet = m_HijackHasAsyncRet;
         return m_HijackReturnKind;
     }
 
-    void SetHijackReturnKind(ReturnKind returnKind)
+    void SetHijackReturnKind(ReturnKind returnKind, bool hasAsyncRet)
     {
         LIMITED_METHOD_CONTRACT;
 
         m_HijackReturnKind = returnKind;
+        m_HijackHasAsyncRet = hasAsyncRet;
     }
 #endif
 #endif // FEATURE_HIJACK
@@ -3979,6 +3983,14 @@ private:
     bool m_hasPendingActivation;
 
     friend struct ::cdac_data<Thread>;
+
+#ifdef FEATURE_INTERPRETER
+private:
+    InterpThreadContext *m_pInterpThreadContext;
+
+public:
+    InterpThreadContext* GetInterpThreadContext();
+#endif // FEATURE_INTERPRETER
 };
 
 template<>
