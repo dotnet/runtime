@@ -36,6 +36,9 @@
 #ifdef HOST_UNIX
 #define RtlZeroMemory ZeroMemory
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
 typedef enum ARM64_FNPDATA_FLAGS {
     PdataRefToFullXdata = 0,
     PdataPackedUnwindFunction = 1,
@@ -293,15 +296,7 @@ Return Value:
 
 {
    // Inline assembly to invoke the `xpaci` instruction.
-   // The pointer is passed as an argument and modified in-place.
-   ULONG64 StrippedPointer = *Pointer;
-   asm volatile (".arch_extension pauth\n"
-                 "xpaci %0"
-                 : "+r" (StrippedPointer)
-                 :
-                 : "memory"
-                );
-    *Pointer = StrippedPointer;
+    *Pointer = (ULONG64)PacStripPtr((void *) (*Pointer));
 }
 #else
 
