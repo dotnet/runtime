@@ -86,6 +86,12 @@ namespace System.Security.Cryptography.X509Certificates
             return null;
         }
 
+        public MLKem? GetMLKemPrivateKey()
+        {
+            // MLKem is not supported on Windows.
+            return null;
+        }
+
         public ICertificatePal CopyWithPrivateKey(DSA dsa)
         {
             DSACng? dsaCng = dsa as DSACng;
@@ -178,6 +184,11 @@ namespace System.Security.Cryptography.X509Certificates
         {
             throw new PlatformNotSupportedException(
                 SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
         }
 
         public ICertificatePal CopyWithPrivateKey(RSA rsa)

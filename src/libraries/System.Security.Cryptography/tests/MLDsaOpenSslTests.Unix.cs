@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void MLDsaOpenSsl_Ctor_InvalidHandle()
         {
-            AssertExtensions.Throws<ArgumentException>(static () => new MLDsaOpenSsl(new SafeEvpPKeyHandle()));
+            AssertExtensions.Throws<ArgumentException>("pkeyHandle", static () => new MLDsaOpenSsl(new SafeEvpPKeyHandle()));
         }
 
         [Fact]
