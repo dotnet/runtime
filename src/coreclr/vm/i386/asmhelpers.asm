@@ -1292,14 +1292,16 @@ _GenericCLRToCOMCallStub@0 proc public
     mov         ecx, [ebx + CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo]
     ; Get size of arguments to pop
     movzx       ecx, word ptr [ecx + CLRToCOMCallInfo__m_cbStackPop]
+    ; Get the return address, pushed registers on stack are 24 bytes big
+    mov         ebx, [esp + 24]
+    ; Set the return address on stack at the last stack slot
+    mov         [esp + ecx + 24], ebx
 
     STUB_EPILOG_RETURN
 
-    ; Pop the incoming arguments off the stack and push back the return
-    ; address on the last slot
-    lea         esp, [esp + ecx + 4]
-    xor         ecx, -1
-    push        dword ptr [esp + ecx - 3]
+    ; Move esp to point to the last stack slot where we put the return
+    ; address earlier
+    lea         esp, [esp + ecx]
 
     ret
 
