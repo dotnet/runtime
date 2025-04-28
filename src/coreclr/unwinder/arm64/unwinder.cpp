@@ -33,12 +33,13 @@
 #define FIELD_OFFSET(type, field)    ((LONG)__builtin_offsetof(type, field))
 #endif
 
-#ifdef HOST_UNIX
-#define RtlZeroMemory ZeroMemory
-
 #if defined(TARGET_ARM64)
 extern "C" void* PacStripPtr(void* ptr);
 #endif // TARGET_ARM64
+
+#ifdef HOST_UNIX
+#define RtlZeroMemory ZeroMemory
+
 typedef enum ARM64_FNPDATA_FLAGS {
     PdataRefToFullXdata = 0,
     PdataPackedUnwindFunction = 1,
