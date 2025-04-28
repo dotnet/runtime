@@ -32,7 +32,7 @@ static TypeHandle GetTypeHelper(LPCWSTR szTypeName, Assembly* pRequestingAssembl
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__TYPE_NAME_RESOLVER__GET_TYPE_HELPER);
-    DECLARE_ARGHOLDER_ARRAY(args, 4);
+    DECLARE_ARGHOLDER_ARRAY(args, 5);
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(szTypeName);
     args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(objRequestingAssembly);
     args[ARGNUM_2] = BOOL_TO_ARGHOLDER(bThrowIfNotFound);
