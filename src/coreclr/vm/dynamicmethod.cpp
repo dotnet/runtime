@@ -399,7 +399,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     // Add TrackAllocation, HeapList and very conservative padding to make sure we have enough for the allocation
     ReserveBlockSize += sizeof(TrackAllocation) + HOST_CODEHEAP_SIZE_ALIGN + 0x100;
 
-#if defined(TARGET_64BIT) || defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     ReserveBlockSize += JUMP_ALLOCATE_SIZE;
 #endif
 
@@ -443,7 +443,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     else
 #endif // FEATURE_INTERPRETER
     {
-#if defined(TARGET_64BIT) || defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
 
         pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
         if (pTracker == NULL)
