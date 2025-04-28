@@ -20,6 +20,8 @@
 
 #include "gchandletableimpl.h"
 
+#include "gcbridge.h"
+
 HandleTableMap g_HandleTableMap;
 
 // Array of contexts used while scanning dependent handles for promotion. There are as many contexts as GC
@@ -1535,9 +1537,6 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
 
 #ifdef FEATURE_GCBRIDGE
 
-uint8_t** g_bridgeObjectsToPromote = 0;
-size_t g_bridgeNumObjs = 0;
-
 void CALLBACK GetBridgeObjectsForProcessing(_UNCHECKED_OBJECTREF* pObjRef, uintptr_t* pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
     WRAPPER_NO_CONTRACT;
@@ -1545,7 +1544,7 @@ void CALLBACK GetBridgeObjectsForProcessing(_UNCHECKED_OBJECTREF* pObjRef, uintp
     Object** ppRef = (Object**)pObjRef;
     if (!g_theGCHeap->IsPromoted(*ppRef))
     {
-        // add to g_bridgeObjectsToPromote.
+        RegisterBridgeObject(*ppRef, *pExtraInfo);
     }
 }
 
@@ -1556,6 +1555,8 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
     LOG((LF_GC | LF_CORPROF, LL_INFO10000, "Building bridge object graphs.\n"));
     uint32_t flags = HNDGCF_NORMAL;
     uint32_t type = HNDTYPE_CROSSREFERENCE;
+
+    BridgeResetData();
 
     HandleTableMap* walk = &g_HandleTableMap;
     while (walk) {
@@ -1573,15 +1574,12 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
         walk = walk->pNext;
     }
 
-    //
-    // Build graph here.
-    //
     // The callee here will free the allocated memory.
-    GCToEEInterface::TriggerGCBridge(0, nullptr, 0, nullptr);
+    BridgeProcessorResult bpResult = ProcessBridgeObjects();
 
-    *numObjs = g_bridgeNumObjs;
+    GCToEEInterface::TriggerGCBridge(bpResult.sccsLen, bpResult.sccs, bpResult.ccrsLen, bpResult.ccrs);
 
-    return g_bridgeObjectsToPromote;
+    return GetRegisteredBridges(numObjs);
 }
 #endif //FEATURE_GCBRIDGE
 

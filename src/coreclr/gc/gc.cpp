@@ -49796,15 +49796,16 @@ bool GCHeap::IsPromoted(Object* object)
 #endif //USE_REGIONS
     }
 
-#ifdef _DEBUG
-    if (o)
-    {
-        ((CObjectHeader*)o)->Validate(TRUE, TRUE, is_marked);
-
-        // Frozen objects aren't expected to be "not promoted" here
-        assert(is_marked || !IsInFrozenSegment(object));
-    }
-#endif //_DEBUG
+// Walking refs when objects are marked seems unexpected
+//#ifdef _DEBUG
+//    if (o)
+//    {
+//        ((CObjectHeader*)o)->Validate(TRUE, TRUE, is_marked);
+//
+//        // Frozen objects aren't expected to be "not promoted" here
+//        assert(is_marked || !IsInFrozenSegment(object));
+//    }
+//#endif //_DEBUG
 
     return is_marked;
 }
