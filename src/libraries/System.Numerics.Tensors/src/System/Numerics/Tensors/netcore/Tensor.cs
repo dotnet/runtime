@@ -2189,7 +2189,7 @@ namespace System.Numerics.Tensors
             if (dimension < 0)
                 dimension = tensors[0].Rank - dimension;
 
-            if (dimension < 0 || dimension > tensors[0].Rank)
+            if (dimension < 0 || dimension >= tensors[0].Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
 
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
