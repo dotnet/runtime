@@ -206,7 +206,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1
 ;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-    LEAF_ENTRY RhpByRefAssignRefArm64, _TEXT
+    LEAF_ENTRY RhpByRefAssignRefArm64
 
     ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
         ldr     x15, [x13], 8
