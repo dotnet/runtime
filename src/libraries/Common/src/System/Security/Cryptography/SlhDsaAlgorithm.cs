@@ -46,14 +46,6 @@ namespace System.Security.Cryptography
         public int SignatureSizeInBytes { get; }
 
         /// <summary>
-        ///  Gets the size of the private seed in bytes for this algorithm.
-        /// </summary>
-        /// <value>
-        ///  The size of the private seed in bytes for this algorithm.
-        /// </value>
-        public int PrivateSeedSizeInBytes { get; }
-
-        /// <summary>
         ///  Gets the Object Identifier (OID) for this algorithm.
         /// </summary>
         /// <value>
@@ -80,9 +72,8 @@ namespace System.Security.Cryptography
         {
             Name = name;
 
-            // The seed, secret key and public key sizes are shown to be 3n, 4n and 2n respectively in
+            // The secret key and public key sizes are shown to be 4n and 2n respectively in
             // section 9.1 "Key Generation", particularly figure 15 and 16.
-            PrivateSeedSizeInBytes = 3 * n;
             SecretKeySizeInBytes = 4 * n;
             PublicKeySizeInBytes = 2 * n;
             SignatureSizeInBytes = signatureSizeInBytes;

@@ -28,7 +28,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     {
         var result = new SortedDictionary<string, bool>()
         {
-            { "dotnet.js", false },
+            { "dotnet.js", true },
             { "dotnet.js.map", false },
             { "dotnet.native.js", true },
             { "dotnet.native.js.symbols", false },
@@ -40,8 +40,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             { "dotnet.diagnostics.js.map", false },
         };
 
-        if (assertOptions.BuildOptions.BootConfigFileName.EndsWith(".js"))
-            result[assertOptions.BuildOptions.BootConfigFileName] = false;
+        if (assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js") ?? false)
+            result[assertOptions.BuildOptions.BootConfigFileName] = true;
 
         return result;
     }
@@ -76,7 +76,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                 res.Add("dotnet.diagnostics.js.map");
         }
 
-        if (assertOptions.BuildOptions.BootConfigFileName.EndsWith(".js"))
+        if (assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js") ?? false)
             res.Add(assertOptions.BuildOptions.BootConfigFileName);
 
         return res;
@@ -90,7 +90,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         (config == Configuration.Release) ? NativeFilesType.Relinked :
         NativeFilesType.FromRuntimePack;
 
-    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null)
+    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, bool? wasmFingerprintDotnetJs = null)
     {
         string frameworkDir = string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir) ?
             GetBinFrameworkDir(config, buildOptions.IsPublish, _defaultTargetFramework) :
@@ -103,7 +103,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             BinFrameworkDir: frameworkDir,
             ExpectSymbolsFile: true,
             AssertIcuAssets: true,
-            AssertSymbolsFile: false
+            AssertSymbolsFile: false,
+            ExpectDotnetJsFingerprinting: wasmFingerprintDotnetJs
         ));
     }
 
@@ -172,14 +173,14 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         }
     }
 
-    public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, string? buildOutput = null)
+    public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, bool? wasmFingerprintDotnetJs = null, string? buildOutput = null)
     {
         if (isUsingWorkloads && buildOutput is not null)
         {
             // In no-workload case, the path would be from a restored nuget
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework, buildOptions.RuntimeType);
         }
-        AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild);
+        AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs);
     }
 
     public BuildPaths GetBuildPaths(Configuration configuration, bool forPublish)

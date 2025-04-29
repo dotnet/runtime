@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -266,6 +268,133 @@ MII
             }
         }
 
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CreateFromPem_MLKem_Pkcs8_Success()
+        {
+            (string CertificatePem, string PrivateKeyPem, string Thumbprint)[] cases =
+            [
+                (
+                    MLKemTestData.IetfMlKem512CertificatePem,
+                    MLKemTestData.IetfMlKem512PrivateKeySeedPem,
+                    "877316CB8B7E5C389E99B1094DE4F60E3BBFDA12D2E4ACB8C014D84CFC009E6F"
+                ),
+                (
+                    MLKemTestData.IetfMlKem512CertificatePem,
+                    MLKemTestData.IetfMlKem512PrivateKeyExpandedKeyPem,
+                    "877316CB8B7E5C389E99B1094DE4F60E3BBFDA12D2E4ACB8C014D84CFC009E6F"
+                ),
+                (
+                    MLKemTestData.IetfMlKem512CertificatePem,
+                    MLKemTestData.IetfMlKem512PrivateKeyBothPem,
+                    "877316CB8B7E5C389E99B1094DE4F60E3BBFDA12D2E4ACB8C014D84CFC009E6F"
+                ),
+                (
+                    MLKemTestData.IetfMlKem768CertificatePem,
+                    MLKemTestData.IetfMlKem768PrivateKeySeedPem,
+                    "0E9DFBEDB039156B568D8F59953DD4DA6B81E30EC8E071A775DF6BC2E77B2DCE"
+                ),
+                (
+                    MLKemTestData.IetfMlKem768CertificatePem,
+                    MLKemTestData.IetfMlKem768PrivateKeyExpandedKeyPem,
+                    "0E9DFBEDB039156B568D8F59953DD4DA6B81E30EC8E071A775DF6BC2E77B2DCE"
+                ),
+                (
+                    MLKemTestData.IetfMlKem768CertificatePem,
+                    MLKemTestData.IetfMlKem768PrivateKeyBothPem,
+                    "0E9DFBEDB039156B568D8F59953DD4DA6B81E30EC8E071A775DF6BC2E77B2DCE"
+                ),
+                (
+                    MLKemTestData.IetfMlKem1024CertificatePem,
+                    MLKemTestData.IetfMlKem1024PrivateKeySeedPem,
+                    "32819AD8477F3620619B1E97744AA26AA9617760A8694E1BD8D17DE8B49A8E8A"
+                ),
+                (
+                    MLKemTestData.IetfMlKem1024CertificatePem,
+                    MLKemTestData.IetfMlKem1024PrivateKeyExpandedKeyPem,
+                    "32819AD8477F3620619B1E97744AA26AA9617760A8694E1BD8D17DE8B49A8E8A"
+                ),
+                (
+                    MLKemTestData.IetfMlKem1024CertificatePem,
+                    MLKemTestData.IetfMlKem1024PrivateKeyBothPem,
+                    "32819AD8477F3620619B1E97744AA26AA9617760A8694E1BD8D17DE8B49A8E8A"
+                ),
+            ];
+
+            foreach((string CertificatePem, string PrivateKeyPem, string Thumbprint) in cases)
+            {
+                using (X509Certificate2 cert = X509Certificate2.CreateFromPem(CertificatePem, PrivateKeyPem))
+                {
+                    Assert.Equal(Thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
+                    AssertKeysMatch(PrivateKeyPem, cert.GetMLKemPrivateKey);
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CreateFromEncryptedPem_MLKem_Pkcs8_Success()
+        {
+            (string CertificatePem, string EncryptedPrivateKeyPem, string Thumbprint)[] cases =
+            [
+                (
+                    MLKemTestData.IetfMlKem512CertificatePem,
+                    MLKemTestData.IetfMlKem512EncryptedPrivateKeySeedPem,
+                    "877316CB8B7E5C389E99B1094DE4F60E3BBFDA12D2E4ACB8C014D84CFC009E6F"
+                ),
+                (
+                    MLKemTestData.IetfMlKem512CertificatePem,
+                    MLKemTestData.IetfMlKem512EncryptedPrivateKeyExpandedKeyPem,
+                    "877316CB8B7E5C389E99B1094DE4F60E3BBFDA12D2E4ACB8C014D84CFC009E6F"
+                ),
+                (
+                    MLKemTestData.IetfMlKem512CertificatePem,
+                    MLKemTestData.IetfMlKem512EncryptedPrivateKeyBothPem,
+                    "877316CB8B7E5C389E99B1094DE4F60E3BBFDA12D2E4ACB8C014D84CFC009E6F"
+                ),
+                (
+                    MLKemTestData.IetfMlKem768CertificatePem,
+                    MLKemTestData.IetfMlKem768EncryptedPrivateKeySeedPem,
+                    "0E9DFBEDB039156B568D8F59953DD4DA6B81E30EC8E071A775DF6BC2E77B2DCE"
+                ),
+                (
+                    MLKemTestData.IetfMlKem768CertificatePem,
+                    MLKemTestData.IetfMlKem768EncryptedPrivateKeyExpandedKeyPem,
+                    "0E9DFBEDB039156B568D8F59953DD4DA6B81E30EC8E071A775DF6BC2E77B2DCE"
+                ),
+                (
+                    MLKemTestData.IetfMlKem768CertificatePem,
+                    MLKemTestData.IetfMlKem768EncryptedPrivateKeyBothPem,
+                    "0E9DFBEDB039156B568D8F59953DD4DA6B81E30EC8E071A775DF6BC2E77B2DCE"
+                ),
+                (
+                    MLKemTestData.IetfMlKem1024CertificatePem,
+                    MLKemTestData.IetfMlKem1024EncryptedPrivateKeySeedPem,
+                    "32819AD8477F3620619B1E97744AA26AA9617760A8694E1BD8D17DE8B49A8E8A"
+                ),
+                (
+                    MLKemTestData.IetfMlKem1024CertificatePem,
+                    MLKemTestData.IetfMlKem1024EncryptedPrivateKeyExpandedKeyPem,
+                    "32819AD8477F3620619B1E97744AA26AA9617760A8694E1BD8D17DE8B49A8E8A"
+                ),
+                (
+                    MLKemTestData.IetfMlKem1024CertificatePem,
+                    MLKemTestData.IetfMlKem1024EncryptedPrivateKeyBothPem,
+                    "32819AD8477F3620619B1E97744AA26AA9617760A8694E1BD8D17DE8B49A8E8A"
+                ),
+            ];
+
+            foreach((string CertificatePem, string PrivateKeyPem, string Thumbprint) in cases)
+            {
+                using (X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
+                    CertificatePem,
+                    PrivateKeyPem,
+                    MLKemTestData.EncryptedPrivateKeyPassword))
+                {
+                    Assert.Equal(Thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
+                    AssertKeysMatch(PrivateKeyPem, cert.GetMLKemPrivateKey, MLKemTestData.EncryptedPrivateKeyPassword);
+                }
+            }
+        }
+
         [Fact]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void CreateFromPem_Dsa_Pkcs8_Success()
@@ -449,32 +578,48 @@ MII
                 X509Certificate2.CreateFromPem(certContents));
         }
 
-        private static void AssertKeysMatch<T>(string keyPem, Func<T> keyLoader, string password = null) where T : AsymmetricAlgorithm
+        private static void AssertKeysMatch<T>(string keyPem, Func<T> keyLoader, string password = null) where T : IDisposable
         {
-            AsymmetricAlgorithm key = keyLoader();
+            IDisposable key = keyLoader();
             Assert.NotNull(key);
-            AsymmetricAlgorithm alg = key switch
+            IDisposable alg;
+
+            if (key is AsymmetricAlgorithm)
             {
-                RSA => RSA.Create(),
-                DSA => DSA.Create(),
-                ECDsa => ECDsa.Create(),
-                ECDiffieHellman => ECDiffieHellman.Create(),
-                _ => null
-            };
+                AsymmetricAlgorithm asymmetricAlg = key switch
+                {
+                    RSA => RSA.Create(),
+                    DSA => DSA.Create(),
+                    ECDsa => ECDsa.Create(),
+                    ECDiffieHellman => ECDiffieHellman.Create(),
+                    _ => null,
+                };
+
+                if (password is null)
+                {
+                    asymmetricAlg.ImportFromPem(keyPem);
+                }
+                else
+                {
+                    asymmetricAlg.ImportFromEncryptedPem(keyPem, password);
+                }
+
+                alg = asymmetricAlg;
+            }
+            else if (key is MLKem)
+            {
+                alg = password is null ? MLKem.ImportFromPem(keyPem) : MLKem.ImportFromEncryptedPem(keyPem, password);
+            }
+            else
+            {
+                Assert.Fail($"Unhandled key type {key.GetType()}.");
+                throw new UnreachableException();
+            }
 
             using (key)
             using (alg)
             {
-                if (password is null)
-                {
-                    alg.ImportFromPem(keyPem);
-                }
-                else
-                {
-                    alg.ImportFromEncryptedPem(keyPem, password);
-                }
-
-                byte[] data = alg.ExportPkcs8PrivateKey();
+                byte[] data = RandomNumberGenerator.GetBytes(32);
 
                 switch ((alg, key))
                 {
@@ -504,6 +649,15 @@ MII
                             byte[] key2 = ecdhPem.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256);
                             Assert.Equal(key1, key2);
                         }
+                        break;
+                    case (MLKem kem, MLKem kemPem):
+                        kem.Encapsulate(out byte[] ciphertext, out byte[] sharedSecret1);
+                        byte[] sharedSecret2 = kemPem.Decapsulate(ciphertext);
+                        AssertExtensions.SequenceEqual(sharedSecret1, sharedSecret2);
+
+                        kemPem.Encapsulate(out ciphertext, out sharedSecret1);
+                        sharedSecret2 = kem.Decapsulate(ciphertext);
+                        AssertExtensions.SequenceEqual(sharedSecret1, sharedSecret2);
                         break;
                     default:
                         throw new CryptographicException("Unknown key algorithm");

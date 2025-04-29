@@ -730,7 +730,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
             return LowerArrLength(node->AsArrCommon());
-            break;
 
         default:
             break;
@@ -2745,6 +2744,15 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
         BlockRange().InsertBefore(call, std::move(controlExprRange));
         call->gtControlExpr = controlExpr;
+
+#ifdef TARGET_RISCV64
+        // If controlExpr is a constant, we should contain it inside the call so that we can move the lower 12-bits of
+        // the value to call instruction's (JALR) offset.
+        if (controlExpr->IsCnsIntOrI() && !controlExpr->AsIntCon()->ImmedValNeedsReloc(comp) && !call->IsFastTailCall())
+        {
+            MakeSrcContained(call, controlExpr);
+        }
+#endif // TARGET_RISCV64
     }
 
     if (comp->opts.IsCFGEnabled())
@@ -4113,6 +4121,20 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 }
             }
 #endif
+        }
+        else if (andOp2->IsIntegralConst() && GenTree::Compare(andOp2, op2))
+        {
+            //
+            // Transform EQ|NE(AND(x, y), y) into EQ|NE(AND(NOT(x), y), 0) when y is a constant.
+            //
+
+            GenTree* notNode               = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
+            cmp->gtGetOp1()->AsOp()->gtOp1 = notNode;
+            BlockRange().InsertAfter(andOp1, notNode);
+            op2->BashToZeroConst(op2->TypeGet());
+
+            andOp1   = notNode;
+            op2Value = 0;
         }
     }
 
@@ -7196,6 +7218,21 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
     }
 #endif // TARGET_ARM64
 
+#ifdef TARGET_RISCV64
+    if (comp->compOpportunisticallyDependsOn(InstructionSet_Zba))
+    {
+        GenTree* next;
+        if (TryLowerShiftAddToShxadd(node, &next))
+        {
+            return next;
+        }
+        else if (TryLowerZextAddToAddUw(node, &next))
+        {
+            return next;
+        }
+    }
+#endif
+
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
@@ -7942,6 +7979,14 @@ void Lowering::LowerShift(GenTreeOp* shift)
                 MakeSrcContained(shift, cast);
             }
         }
+    }
+#endif
+
+#ifdef TARGET_RISCV64
+    if (comp->compOpportunisticallyDependsOn(InstructionSet_Zba))
+    {
+        GenTree* next;
+        TryLowerZextLeftShiftToSlliUw(shift, &next);
     }
 #endif
 }

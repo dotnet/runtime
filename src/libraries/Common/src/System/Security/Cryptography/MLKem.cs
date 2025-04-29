@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
         /// </exception>
         protected MLKem(MLKemAlgorithm algorithm)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
             Algorithm = algorithm;
         }
 
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
             ThrowIfNotSupported();
             return MLKemImplementation.GenerateKeyImpl(algorithm);
         }
@@ -136,113 +136,29 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Creates an encapsulation ciphertext and shared secret, writing them into the provided buffers.
-        /// </summary>
-        /// <param name="ciphertext">
-        ///   The buffer to receive the ciphertext.
-        /// </param>
-        /// <param name="sharedSecret">
-        ///   The buffer to receive the shared secret.
-        /// </param>
-        /// <param name="ciphertextBytesWritten">
-        ///   When this method returns, the total number of bytes written into <paramref name="ciphertext"/>.
-        /// </param>
-        /// <param name="sharedSecretBytesWritten">
-        ///   When this method returns, the total number of bytes written into <paramref name="sharedSecret"/>.
-        /// </param>
-        /// <exception cref="CryptographicException">
-        ///   <para>An error occurred during encapsulation.</para>
-        ///   <para>-or -</para>
-        ///   <para><paramref name="ciphertext"/> overlaps with <paramref name="sharedSecret"/>.</para>
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <para><paramref name="ciphertext" /> is too small to hold the ciphertext.</para>
-        ///   <para> -or- </para>
-        ///   <para><paramref name="sharedSecret" /> is too small to hold the shared secret.</para>
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void Encapsulate(
-            Span<byte> ciphertext,
-            Span<byte> sharedSecret,
-            out int ciphertextBytesWritten,
-            out int sharedSecretBytesWritten)
-        {
-            if (ciphertext.Length < Algorithm.CiphertextSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(ciphertext));
-
-            if (sharedSecret.Length < Algorithm.SharedSecretSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(sharedSecret));
-
-            Span<byte> ciphertextExact = ciphertext.Slice(0, Algorithm.CiphertextSizeInBytes);
-            Span<byte> sharedSecretExact = sharedSecret.Slice(0, Algorithm.SharedSecretSizeInBytes);
-
-            if (ciphertextExact.Overlaps(sharedSecretExact))
-            {
-                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
-            }
-
-            ThrowIfDisposed();
-            EncapsulateCore(ciphertextExact, sharedSecretExact);
-            ciphertextBytesWritten = ciphertextExact.Length;
-            sharedSecretBytesWritten = sharedSecretExact.Length;
-        }
-
-        /// <summary>
         ///   Creates an encapsulation ciphertext and shared secret.
         /// </summary>
+        /// <param name="ciphertext">
+        ///   When this method returns, the ciphertext.
+        /// </param>
         /// <param name="sharedSecret">
         ///   When this method returns, the shared secret.
         /// </param>
-        /// <returns>
-        ///   The ciphertext.
-        /// </returns>
         /// <exception cref="CryptographicException">
         ///   <para>An error occurred during encapsulation.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public byte[] Encapsulate(out byte[] sharedSecret)
+        public void Encapsulate(out byte[] ciphertext, out byte[] sharedSecret)
         {
             ThrowIfDisposed();
 
-            byte[] ciphertext = new byte[Algorithm.CiphertextSizeInBytes];
+            byte[] localCiphertext = new byte[Algorithm.CiphertextSizeInBytes];
             byte[] localSharedSecret = new byte[Algorithm.SharedSecretSizeInBytes];
 
-            EncapsulateCore(ciphertext, localSharedSecret);
+            EncapsulateCore(localCiphertext, localSharedSecret);
 
             sharedSecret = localSharedSecret;
-            return ciphertext;
-        }
-
-        /// <summary>
-        ///   Creates an encapsulation ciphertext and shared secret, writing the shared secret into a buffer.
-        /// </summary>
-        /// <param name="sharedSecret">
-        ///   When this method returns, the shared secret.
-        /// </param>
-        /// <returns>
-        ///   The ciphertext.
-        /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="sharedSecret" /> is not the correct size.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   <para>An error occurred during encapsulation.</para>
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public byte[] Encapsulate(Span<byte> sharedSecret)
-        {
-            ThrowIfDisposed();
-
-            if (sharedSecret.Length != Algorithm.SharedSecretSizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SharedSecretSizeInBytes),
-                    nameof(sharedSecret));
-            }
-
-            byte[] ciphertext = new byte[Algorithm.CiphertextSizeInBytes];
-            EncapsulateCore(ciphertext, sharedSecret);
-            return ciphertext;
+            ciphertext = localCiphertext;
         }
 
         /// <summary>
@@ -302,42 +218,6 @@ namespace System.Security.Cryptography
         /// <param name="ciphertext">
         ///   The ciphertext.
         /// </param>
-        /// <param name="sharedSecret">
-        ///   The buffer to receive the shared secret.
-        /// </param>
-        /// <param name="sharedSecretBytesWritten">
-        ///   When this method returns, the total number of bytes written into <paramref name="sharedSecret"/>.
-        /// </param>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred during decapsulation.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <para><paramref name="ciphertext" /> is not the correct size.</para>
-        ///   <para> -or- </para>
-        ///   <para><paramref name="sharedSecret" /> is too small to hold the shared secret.</para>
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void Decapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret, out int sharedSecretBytesWritten)
-        {
-            if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
-                throw new ArgumentException(SR.Argument_KemInvalidCiphertextLength, nameof(ciphertext));
-
-            if (sharedSecret.Length < Algorithm.SharedSecretSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(sharedSecret));
-
-            ThrowIfDisposed();
-
-            Span<byte> sharedSecretExact = sharedSecret.Slice(0, Algorithm.SharedSecretSizeInBytes);
-            DecapsulateCore(ciphertext, sharedSecretExact);
-            sharedSecretBytesWritten = sharedSecretExact.Length;
-        }
-
-        /// <summary>
-        ///   Decapsulates a shared secret from a provided ciphertext.
-        /// </summary>
-        /// <param name="ciphertext">
-        ///   The ciphertext.
-        /// </param>
         /// <returns>
         ///   The shared secret.
         /// </returns>
@@ -353,7 +233,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] Decapsulate(byte[] ciphertext)
         {
-            ThrowIfNull(ciphertext);
+            ArgumentNullException.ThrowIfNull(ciphertext);
 
             if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidCiphertextLength, nameof(ciphertext));
@@ -378,21 +258,6 @@ namespace System.Security.Cryptography
         ///   An error occurred during decapsulation.
         /// </exception>
         protected abstract void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret);
-
-        /// <summary>
-        ///   Throws <see cref="ObjectDisposedException" /> if the current instance is disposed.
-        /// </summary>
-        protected void ThrowIfDisposed()
-        {
-#if NET
-            ObjectDisposedException.ThrowIf(_disposed, typeof(MLKem));
-#else
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(typeof(MLKem).FullName);
-            }
-#endif
-        }
 
         /// <summary>
         ///   Exports the private seed into the provided buffer.
@@ -472,7 +337,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidSeedLength, nameof(source));
@@ -505,7 +370,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return ImportPrivateSeed(algorithm, new ReadOnlySpan<byte>(source));
         }
@@ -531,7 +396,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.DecapsulationKeySizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidDecapsulationKeyLength, nameof(source));
@@ -563,7 +428,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportDecapsulationKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
@@ -588,7 +453,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.EncapsulationKeySizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidEncapsulationKeyLength, nameof(source));
@@ -620,7 +485,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return ImportEncapsulationKey(algorithm, new ReadOnlySpan<byte>(source));
         }
@@ -938,7 +803,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
@@ -991,7 +856,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
             return TryExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters, destination, out bytesWritten);
         }
 
@@ -1037,7 +902,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
@@ -1077,7 +942,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
@@ -1117,7 +982,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
@@ -1157,7 +1022,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(string password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
             return ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters);
         }
 
@@ -1191,7 +1056,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public string ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
@@ -1232,7 +1097,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public string ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
@@ -1273,7 +1138,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public string ExportEncryptedPkcs8PrivateKeyPem(string password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
             return ExportEncryptedPkcs8PrivateKeyPem(password.AsSpan(), pbeParameters);
         }
 
@@ -1316,7 +1181,14 @@ namespace System.Security.Cryptography
                         AsnValueReader reader = new(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
                         MLKemAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
-                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, spki.SubjectPublicKey.Span);
+                        ReadOnlySpan<byte> subjectPublicKey = spki.SubjectPublicKey.Span;
+
+                        if (subjectPublicKey.Length != algorithm.EncapsulationKeySizeInBytes)
+                        {
+                            throw new CryptographicException(SR.Argument_KemInvalidEncapsulationKeyLength);
+                        }
+
+                        return MLKemImplementation.ImportEncapsulationKeyImpl(algorithm, subjectPublicKey);
                     }
                 }
             }
@@ -1328,7 +1200,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(source));
         }
 
@@ -1378,7 +1250,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPkcs8PrivateKey(byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(source));
         }
 
@@ -1490,7 +1362,7 @@ namespace System.Security.Cryptography
         ///   The imported key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="password" /> is <see langword="null" />.
+        ///   <paramref name="password" /> or <paramref name="source" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
@@ -1513,9 +1385,10 @@ namespace System.Security.Cryptography
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports ML-KEM.
         /// </exception>
-        public static MLKem ImportEncryptedPkcs8PrivateKey(string password, ReadOnlySpan<byte> source)
+        public static MLKem ImportEncryptedPkcs8PrivateKey(string password, byte[] source)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(source);
             ThrowIfTrailingData(source);
             ThrowIfNotSupported();
 
@@ -1577,7 +1450,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportFromPem(string source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportFromPem(source.AsSpan());
         }
 
@@ -1708,8 +1581,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportFromEncryptedPem(string source, string password)
         {
-            ThrowIfNull(source);
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(password);
 
             return ImportFromEncryptedPem(source.AsSpan(), password.AsSpan());
         }
@@ -1720,8 +1593,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportFromEncryptedPem(string source, byte[] passwordBytes)
         {
-            ThrowIfNull(source);
-            ThrowIfNull(passwordBytes);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(passwordBytes);
 
             return ImportFromEncryptedPem(source.AsSpan(), new ReadOnlySpan<byte>(passwordBytes));
         }
@@ -1878,16 +1751,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void ThrowIfNull(
-            [NotNull] object? argument,
-            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        private protected void ThrowIfDisposed()
         {
 #if NET
-            ArgumentNullException.ThrowIfNull(argument, paramName);
+            ObjectDisposedException.ThrowIf(_disposed, typeof(MLKem));
 #else
-            if (argument is null)
+            if (_disposed)
             {
-                throw new ArgumentNullException(paramName);
+                throw new ObjectDisposedException(typeof(MLKem).FullName);
             }
 #endif
         }

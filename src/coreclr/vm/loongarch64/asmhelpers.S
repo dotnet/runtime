@@ -868,23 +868,26 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 96
     EPILOG_RETURN
+
 NESTED_END CallEHFunclet, _TEXT
 
 // This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
 // frame pointer for accessing the locals in the parent method.
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     //                             $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16, 0
 
     // On entry:
     //
     // $a0 = throwable
-    // $a1 = SP of the caller of the method/funclet containing the filter
+    // $a1 = FP of main function
     // $a2 = PC to invoke
     // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
     // Save the SP of this function
-    st.d  $fp, $a3, 0
+    st.d  $sp, $a3, 0
+    // Restore frame pointer
+    move  $fp, $a1
     // Invoke the filter funclet
     jirl  $ra, $a2, 0
 
@@ -1095,11 +1098,11 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
 NESTED_END JIT_Patchpoint, _TEXT
 
 // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
     move    $a1, $a0
     li.d    $a0, 0
     b C_FUNC(JIT_Patchpoint)
-LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_END JIT_PatchpointForced, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
 

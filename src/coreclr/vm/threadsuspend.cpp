@@ -16,6 +16,10 @@
 #include "dbginterface.h"
 #include <minipal/time.h>
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif
+
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -3786,7 +3790,7 @@ ThrowControlForThread(
     exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
     exceptionRecord.ExceptionFlags = 0;
 
-    OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
+    OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     DispatchManagedException(throwable, pfef->GetExceptionContext());
 #else // FEATURE_EH_FUNCLETS
@@ -4547,7 +4551,7 @@ struct ExecutionState
 };
 
 // Client is responsible for suspending the thread before calling
-void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
+void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet))
 {
     CONTRACTL {
         NOTHROW;
@@ -4572,7 +4576,7 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
         pvHijackAddr = reinterpret_cast<VOID *>(OnHijackFPTripThread);
     }
 
-    SetHijackReturnKind(returnKind);
+    SetHijackReturnKind(returnKind, hasAsyncRet);
 #endif // TARGET_X86
 
     // Don't hijack if are in the first level of running a filter/finally/catch.
@@ -4912,10 +4916,17 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind))
+static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
+    X86_ONLY(*hasAsyncRet = false);
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    return pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind));
+    if (!pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind)))
+        return false;
+
+    MethodDesc* pMD = pCodeInfo->GetMethodDesc();
+    X86_ONLY(*hasAsyncRet = pMD->IsAsyncMethod());
+
+    return true;
 }
 
 #ifndef TARGET_UNIX
@@ -5316,9 +5327,10 @@ BOOL Thread::HandledJITCase()
             EECodeInfo codeInfo(ip);
 
             X86_ONLY(ReturnKind returnKind;)
-            if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind)))
+            X86_ONLY(bool hasAsyncRet;)
+            if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
             {
-                HijackThread(&esb X86_ARG(returnKind));
+                HijackThread(&esb X86_ARG(returnKind) X86_ARG(hasAsyncRet));
             }
         }
     }
@@ -5881,7 +5893,8 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
             return;
 
         X86_ONLY(ReturnKind returnKind;)
-        if (!GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind)))
+        X86_ONLY(bool hasAsyncRet;)
+        if (!GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
         {
             return;
         }
@@ -5895,7 +5908,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        pThread->HijackThread(&executionState X86_ARG(returnKind));
+        pThread->HijackThread(&executionState X86_ARG(returnKind) X86_ARG(hasAsyncRet));
     }
 }
 
