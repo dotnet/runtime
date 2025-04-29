@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
-using System.Net.Http.Metrics;
 using System.Net.Quic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -177,31 +176,21 @@ namespace System.Net.Http
             }
         }
 
-        /// <summary>
-        /// When EnableMultipleHttp3Connections is false: always reserve a stream, return a bool indicating if the stream is immediately available.
-        /// When EnableMultipleHttp3Connections is true: reserve a stream only if it's available meaning that the return value also indicates whether it has been reserved.
-        /// </summary>
         public bool TryReserveStream()
         {
-            bool singleConnection = !_pool.Settings.EnableMultipleHttp3Connections;
-
             lock (SyncObj)
             {
-                // For the single connection case, we allow the counter to go below zero.
-                Debug.Assert(singleConnection || _availableRequestStreamsCount >= 0);
+                Debug.Assert(_availableRequestStreamsCount >= 0);
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount}");
 
-                bool streamAvailable = _availableRequestStreamsCount > 0;
-
-                // Do not let the counter to go below zero when EnableMultipleHttp3Connections is true.
-                // This equivalent to an immediate ReleaseStream() for the case no stream is immediately available.
-                if (singleConnection || _availableRequestStreamsCount > 0)
+                if (_availableRequestStreamsCount == 0)
                 {
-                    --_availableRequestStreamsCount;
+                    return false;
                 }
 
-                return streamAvailable;
+                --_availableRequestStreamsCount;
+                return true;
             }
         }
 
@@ -209,7 +198,7 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                Debug.Assert(!_pool.Settings.EnableMultipleHttp3Connections || _availableRequestStreamsCount >= 0);
+                Debug.Assert(_availableRequestStreamsCount >= 0);
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount}");
                 ++_availableRequestStreamsCount;
@@ -225,12 +214,10 @@ namespace System.Net.Http
 
             lock (SyncObj)
             {
-                Debug.Assert(_availableStreamsWaiter is null || _availableRequestStreamsCount >= 0);
+                Debug.Assert(_availableRequestStreamsCount >= 0);
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount} + bidirectionalStreamsCountIncrement = {args.BidirectionalIncrement}");
 
-                // Since _availableStreamsWaiter is only used in the multi-connection case, when _availableRequestStreamsCount cannot go below zero,
-                // we don't need to check the value of _availableRequestStreamsCount here.
                 _availableRequestStreamsCount += args.BidirectionalIncrement;
                 _availableStreamsWaiter?.SetResult(!ShuttingDown);
                 _availableStreamsWaiter = null;
@@ -239,9 +226,6 @@ namespace System.Net.Http
 
         public Task<bool> WaitForAvailableStreamsAsync()
         {
-            // In the single connection case, _availableStreamsWaiter notifications do not guarantee that _availableRequestStreamsCount >= 0.
-            Debug.Assert(_pool.Settings.EnableMultipleHttp3Connections, "Calling WaitForAvailableStreamsAsync() is invalid when EnableMultipleHttp3Connections is false.");
-
             lock (SyncObj)
             {
                 Debug.Assert(_availableRequestStreamsCount >= 0);
@@ -261,7 +245,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, WaitForHttp3ConnectionActivity waitForConnectionActivity, bool streamAvailable, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, Activity? waitForConnectionActivity, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -269,18 +253,11 @@ namespace System.Net.Http
 
             try
             {
-                Exception? exception = null;
                 try
                 {
                     QuicConnection? conn = _connection;
                     if (conn != null)
                     {
-                        // We found a connection in the pool, but it did not have available streams, OpenOutboundStreamAsync() is expected to wait.
-                        if (!waitForConnectionActivity.Started && !streamAvailable)
-                        {
-                            waitForConnectionActivity.Start();
-                        }
-
                         quicStream = await conn.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, cancellationToken).ConfigureAwait(false);
 
                         requestStream = new Http3RequestStream(request, this, quicStream);
@@ -298,15 +275,26 @@ namespace System.Net.Http
                 // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
                 catch (ObjectDisposedException e)
                 {
-                    exception = e;
+                    ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, e);
                 }
                 catch (QuicException e) when (e.QuicError != QuicError.OperationAborted)
                 {
-                    exception = e;
+                    ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, e);
                 }
                 finally
                 {
-                    waitForConnectionActivity.Stop(request, Pool, exception);
+                    waitForConnectionActivity?.Stop();
+                    if (queueStartingTimestamp != 0)
+                    {
+                        TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
+
+                        _pool.Settings._metrics!.RequestLeftQueue(request, Pool, duration, versionMajor: 3);
+
+                        if (HttpTelemetry.Log.IsEnabled())
+                        {
+                            HttpTelemetry.Log.RequestLeftQueue(versionMajor: 3, duration);
+                        }
+                    }
                 }
 
                 if (quicStream == null)
@@ -327,7 +315,7 @@ namespace System.Net.Http
                     throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
-                waitForConnectionActivity.AssertActivityNotRunning();
+                Debug.Assert(waitForConnectionActivity?.IsStopped != false);
                 if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
@@ -936,65 +924,6 @@ namespace System.Net.Http
                     payloadLength -= readLength;
                 }
             }
-        }
-    }
-
-    /// <summary>
-    /// Tracks telemetry signals associated with the time period an HTTP/3 request spends waiting for a usable HTTP/3 connection:
-    /// the wait_for_connection Activity, the RequestLeftQueue EventSource event and the http.client.request.time_in_queue metric.
-    /// </summary>
-    internal struct WaitForHttp3ConnectionActivity
-    {
-        // The HttpConnectionSettings -> SocketsHttpHandlerMetrics indirection is needed for the trimmer.
-        private HttpConnectionSettings _settings;
-        private readonly HttpAuthority _authority;
-        private Activity? _activity;
-        private long _startTimestamp;
-
-        public WaitForHttp3ConnectionActivity(HttpConnectionSettings settings, HttpAuthority authority)
-        {
-            _settings = settings;
-            _authority = authority;
-        }
-
-        public bool Started { get; private set; }
-
-        public void Start()
-        {
-            Debug.Assert(!Started);
-            _startTimestamp = HttpTelemetry.Log.IsEnabled() || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && _settings._metrics!.RequestsQueueDuration.Enabled) ? Stopwatch.GetTimestamp() : 0;
-            _activity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(_authority);
-            Started = true;
-        }
-
-        public void Stop(HttpRequestMessage request, HttpConnectionPool pool, Exception? exception)
-        {
-            if (exception is not null)
-            {
-                ConnectionSetupDistributedTracing.ReportError(_activity, exception);
-            }
-
-            _activity?.Stop();
-
-            if (_startTimestamp != 0)
-            {
-                TimeSpan duration = Stopwatch.GetElapsedTime(_startTimestamp);
-
-                if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
-                {
-                    _settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor: 3);
-                }
-                if (HttpTelemetry.Log.IsEnabled())
-                {
-                    HttpTelemetry.Log.RequestLeftQueue(3, duration);
-                }
-            }
-        }
-
-        [Conditional("DEBUG")]
-        public void AssertActivityNotRunning()
-        {
-            Debug.Assert(_activity?.IsStopped != false);
         }
     }
 }

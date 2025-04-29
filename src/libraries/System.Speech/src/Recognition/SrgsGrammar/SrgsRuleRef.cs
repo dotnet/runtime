@@ -40,7 +40,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
         public SrgsRuleRef(SrgsRule rule)
         {
-            ArgumentNullException.ThrowIfNull(rule);
+            Helpers.ThrowIfNull(rule, nameof(rule));
 
             _uri = new Uri("#" + rule.Id, UriKind.Relative);
         }
@@ -242,7 +242,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         private void UriInit(Uri uri, string rule, string semanticKey, string initParameters)
         {
-            ArgumentNullException.ThrowIfNull(uri);
+            Helpers.ThrowIfNull(uri, nameof(uri));
 
             if (string.IsNullOrEmpty(rule))
             {

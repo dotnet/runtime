@@ -25,7 +25,10 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public static IJsonTypeInfoResolver Combine(params IJsonTypeInfoResolver?[] resolvers)
         {
-            ArgumentNullException.ThrowIfNull(resolvers);
+            if (resolvers is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(resolvers));
+            }
 
             return Combine((ReadOnlySpan<IJsonTypeInfoResolver?>)resolvers);
         }
@@ -67,8 +70,14 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public static IJsonTypeInfoResolver WithAddedModifier(this IJsonTypeInfoResolver resolver, Action<JsonTypeInfo> modifier)
         {
-            ArgumentNullException.ThrowIfNull(resolver);
-            ArgumentNullException.ThrowIfNull(modifier);
+            if (resolver is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(resolver));
+            }
+            if (modifier is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(modifier));
+            }
 
             return resolver is JsonTypeInfoResolverWithAddedModifiers resolverWithModifiers
                 ? resolverWithModifiers.WithAddedModifier(modifier)

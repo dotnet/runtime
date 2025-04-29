@@ -161,9 +161,9 @@ jobs:
       - src/coreclr/tools/ILVerification/*
       - global.json
 
-    - subset: tools_cdac
+    - subset: tools_cdacreader
       include:
-      - src/native/managed/cdac/*
+      - src/native/managed/cdacreader/*
 
     - subset: installer
       include:

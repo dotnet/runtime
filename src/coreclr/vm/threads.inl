@@ -27,20 +27,19 @@ EXTERN_C UINT32 _tls_index;
 #endif
 
 #ifdef _MSC_VER
-__declspec(selectany)
+__declspec(selectany) __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
 #else
-EXTERN_C
+EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
 #endif
-thread_local ThreadLocalInfo t_CurrentThreadInfo;
 
 inline Thread* GetThreadNULLOk()
 {
-    return t_CurrentThreadInfo.m_pThread;
+    return gCurrentThreadInfo.m_pThread;
 }
 
 inline Thread* GetThread()
 {
-    Thread* pThread = t_CurrentThreadInfo.m_pThread;
+    Thread* pThread = gCurrentThreadInfo.m_pThread;
     _ASSERTE(pThread);
     return pThread;
 }

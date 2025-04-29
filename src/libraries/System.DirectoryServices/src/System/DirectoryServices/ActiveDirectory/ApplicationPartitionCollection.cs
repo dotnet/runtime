@@ -21,7 +21,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ApplicationPartition applicationPartition)
         {
-            ArgumentNullException.ThrowIfNull(applicationPartition);
+            if (applicationPartition == null)
+            {
+                throw new ArgumentNullException(nameof(applicationPartition));
+            }
 
             for (int i = 0; i < InnerList.Count; i++)
             {
@@ -36,7 +39,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ApplicationPartition applicationPartition)
         {
-            ArgumentNullException.ThrowIfNull(applicationPartition);
+            if (applicationPartition == null)
+            {
+                throw new ArgumentNullException(nameof(applicationPartition));
+            }
 
             for (int i = 0; i < InnerList.Count; i++)
             {

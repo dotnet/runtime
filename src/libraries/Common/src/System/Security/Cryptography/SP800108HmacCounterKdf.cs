@@ -92,7 +92,8 @@ namespace System.Security.Cryptography
             // This constructor doesn't defer to the span constructor because SP800108HmacCounterKdfImplementationCng
             // has a constructor for byte[] key to avoid a byte[]->span->byte[] conversion.
 
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+                throw new ArgumentNullException(nameof(key));
 
             CheckHashAlgorithm(hashAlgorithm);
             _implementation = CreateImplementation(key, hashAlgorithm);
@@ -139,9 +140,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] DeriveBytes(byte[] key, HashAlgorithmName hashAlgorithm, byte[] label, byte[] context, int derivedKeyLengthInBytes)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(label);
-            ArgumentNullException.ThrowIfNull(context);
+            if (key is null)
+                throw new ArgumentNullException(nameof(key));
+
+            if (label is null)
+                throw new ArgumentNullException(nameof(label));
+
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
 
             CheckPrfOutputLength(derivedKeyLengthInBytes, nameof(derivedKeyLengthInBytes));
             CheckHashAlgorithm(hashAlgorithm);
@@ -200,9 +206,14 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] DeriveBytes(byte[] key, HashAlgorithmName hashAlgorithm, string label, string context, int derivedKeyLengthInBytes)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(label);
-            ArgumentNullException.ThrowIfNull(context);
+            if (key is null)
+                throw new ArgumentNullException(nameof(key));
+
+            if (label is null)
+                throw new ArgumentNullException(nameof(label));
+
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
 
             CheckPrfOutputLength(derivedKeyLengthInBytes, nameof(derivedKeyLengthInBytes));
             CheckHashAlgorithm(hashAlgorithm);
@@ -378,8 +389,11 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] DeriveKey(byte[] label, byte[] context, int derivedKeyLengthInBytes)
         {
-            ArgumentNullException.ThrowIfNull(label);
-            ArgumentNullException.ThrowIfNull(context);
+            if (label is null)
+                throw new ArgumentNullException(nameof(label));
+
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
 
             CheckPrfOutputLength(derivedKeyLengthInBytes, nameof(derivedKeyLengthInBytes));
 
@@ -513,8 +527,11 @@ namespace System.Security.Cryptography
         /// </remarks>
         public byte[] DeriveKey(string label, string context, int derivedKeyLengthInBytes)
         {
-            ArgumentNullException.ThrowIfNull(label);
-            ArgumentNullException.ThrowIfNull(context);
+            if (label is null)
+                throw new ArgumentNullException(nameof(label));
+
+            if (context is null)
+                throw new ArgumentNullException(nameof(context));
 
             return DeriveKey(label.AsSpan(), context.AsSpan(), derivedKeyLengthInBytes);
         }

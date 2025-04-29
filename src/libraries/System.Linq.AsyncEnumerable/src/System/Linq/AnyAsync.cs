@@ -20,7 +20,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
 
             return Impl(source, cancellationToken);
 
@@ -50,8 +50,8 @@ namespace System.Linq
             Func<TSource, bool> predicate,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(predicate);
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(predicate);
 
             return Impl(source.WithCancellation(cancellationToken), predicate);
 
@@ -87,8 +87,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(predicate);
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(predicate);
 
             return Impl(source, predicate, cancellationToken);
 

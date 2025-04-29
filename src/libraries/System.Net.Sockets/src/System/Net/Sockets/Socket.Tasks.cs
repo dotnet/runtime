@@ -434,7 +434,7 @@ namespace System.Net.Sockets
         public ValueTask<int> ReceiveFromAsync(Memory<byte> buffer, SocketFlags socketFlags, SocketAddress receivedAddress, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(receivedAddress);
+            ArgumentNullException.ThrowIfNull(receivedAddress, nameof(receivedAddress));
 
             if (receivedAddress.Size < SocketAddress.GetMaximumAddressSize(AddressFamily))
             {

@@ -99,7 +99,10 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyEmbedded(AsymmetricAlgorithm key, ReadOnlySpan<byte> associatedData)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
             if (Message.IsDetached)
             {
@@ -139,7 +142,10 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyEmbedded(AsymmetricAlgorithm key, byte[]? associatedData = null)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
             if (Message.IsDetached)
             {
@@ -180,9 +186,15 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyDetached(AsymmetricAlgorithm key, byte[] detachedContent, byte[]? associatedData = null)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
 
             if (!Message.IsDetached)
             {
@@ -223,7 +235,10 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyDetached(AsymmetricAlgorithm key, ReadOnlySpan<byte> detachedContent, ReadOnlySpan<byte> associatedData = default)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
             if (!Message.IsDetached)
             {
@@ -272,9 +287,15 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyDetached(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlySpan<byte> associatedData = default)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
 
             if (!detachedContent.CanRead)
             {
@@ -334,8 +355,14 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public Task<bool> VerifyDetachedAsync(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
 
             if (!detachedContent.CanRead)
             {

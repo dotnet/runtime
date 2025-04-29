@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
 
@@ -53,43 +52,24 @@ namespace System.Security.Cryptography.X509Certificates
         {
             AndroidCertificatePal pal = (AndroidCertificatePal)certAndKey.Cert!;
 
-            if (certAndKey.Key is not null)
+            if (certAndKey.Key != null)
             {
-                if (certAndKey.Key is { Key: AsymmetricAlgorithm alg })
-                {
-                    pal.SetPrivateKey(GetPrivateKey(alg));
-                    certAndKey.Key.Dispose();
-                }
-                else
-                {
-                    Debug.Fail($"Unhandled key type '{certAndKey.Key.Key?.GetType()?.FullName}'.");
-                    throw new CryptographicException();
-                }
+                pal.SetPrivateKey(GetPrivateKey(certAndKey.Key));
+                certAndKey.Key.Dispose();
             }
 
             return new Pkcs12Return(pal);
         }
 
-        private static partial Pkcs12Key? CreateKey(string algorithm, ReadOnlySpan<byte> pkcs8)
+        private static partial AsymmetricAlgorithm? CreateKey(string algorithm)
         {
-            switch (algorithm)
+            return algorithm switch
             {
-                case Oids.Rsa or Oids.RsaPss:
-                    return new AsymmetricAlgorithmPkcs12PrivateKey(
-                        pkcs8,
-                        static () => new RSAImplementation.RSAAndroid());
-                case Oids.EcPublicKey or Oids.EcDiffieHellman:
-                    return new AsymmetricAlgorithmPkcs12PrivateKey(
-                        pkcs8,
-                        static () => new ECDsaImplementation.ECDsaAndroid());
-                case Oids.Dsa:
-                    return new AsymmetricAlgorithmPkcs12PrivateKey(
-                        pkcs8,
-                        static () => new DSAImplementation.DSAAndroid());
-                default:
-                    // No PQC support on Android.
-                    return null;
-            }
+                Oids.Rsa or Oids.RsaPss => new RSAImplementation.RSAAndroid(),
+                Oids.EcPublicKey or Oids.EcDiffieHellman => new ECDsaImplementation.ECDsaAndroid(),
+                Oids.Dsa => new DSAImplementation.DSAAndroid(),
+                _ => null,
+            };
         }
 
         internal static SafeKeyHandle GetPrivateKey(AsymmetricAlgorithm key)

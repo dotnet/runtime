@@ -27,7 +27,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             int size)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNegativeOrZero(size);
 
             return

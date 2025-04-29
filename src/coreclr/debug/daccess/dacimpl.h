@@ -1417,7 +1417,7 @@ public:
     ULONG32 m_instanceAge;
     bool m_debugMode;
 
-    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdac
+    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdacreader
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
     CDAC m_cdac;
 
@@ -3420,7 +3420,12 @@ private:
 //
 //----------------------------------------------------------------------------
 
+#ifdef FEATURE_EH_FUNCLETS
+typedef ExceptionTrackerBase ClrDataExStateType;
+#else // FEATURE_EH_FUNCLETS
 typedef ExInfo ClrDataExStateType;
+#endif // FEATURE_EH_FUNCLETS
+
 
 class ClrDataExceptionState : public IXCLRDataExceptionState
 {

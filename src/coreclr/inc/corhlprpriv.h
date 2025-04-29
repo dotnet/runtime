@@ -573,16 +573,6 @@ public:
         return m_curSize;
     }
 
-    T* Ptr()
-    {
-        return (T*) CQuickBytesBase::Ptr();
-    }
-
-    const T* Ptr() const
-    {
-        return (T*) CQuickBytesBase::Ptr();
-    }
-
     void Shrink()
     {
         CQuickArray<T>::Shrink(m_curSize);

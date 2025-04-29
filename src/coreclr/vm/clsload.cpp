@@ -2801,10 +2801,7 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
         {
             MethodDesc * pMD = it.GetMethodDesc();
             CONSISTENCY_CHECK(pMD != NULL && pMD->GetMethodTable() == pMT);
-            // For {Task-returning, Async} variants of the same definition
-            // we associate the methoddef with the Task-returning variant since it
-            // matches the methadata signature.
-            if (!pMD->IsUnboxingStub() && !pMD->IsAsyncVariantMethod())
+            if (!pMD->IsUnboxingStub())
             {
                 pModule->EnsuredStoreMethodDef(pMD->GetMemberDef(), pMD);
             }

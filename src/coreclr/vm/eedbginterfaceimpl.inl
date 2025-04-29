@@ -29,7 +29,7 @@ class EEToDebuggerExceptionInterfaceWrapper
         CONTRACTL_END;
 
         ThreadExceptionState* pExState = pThread->GetExceptionState();
-        pExState->SetDebuggerIndicatedFramePointer((LPVOID)currentSP);
+        pExState->GetDebuggerState()->SetDebuggerIndicatedFramePointer((LPVOID)currentSP);
 
         if (CORDebuggerAttached())
         {
@@ -56,7 +56,7 @@ class EEToDebuggerExceptionInterfaceWrapper
 
 
         ThreadExceptionState* pExState = pThread->GetExceptionState();
-        pExState->SetDebuggerIndicatedFramePointer((LPVOID)currentSP);
+        pExState->GetDebuggerState()->SetDebuggerIndicatedFramePointer((LPVOID)currentSP);
 
         if (CORDebuggerAttached())
         {

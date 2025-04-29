@@ -28,67 +28,37 @@ HRESULT ClassLoad::Initialize(IUnknown* pICorProfilerInfoUnk)
 
 HRESULT ClassLoad::ClassLoadStarted(ClassID classId)
 {
-    SHUTDOWNGUARD();
-
-    // Increment only UnloadLibrary.TestClass classes
-    std::wstring className = GetClassIDName(classId).ToCStr();
-    if (className.find(L"UnloadLibrary.TestClass") != std::wstring::npos)
-    {
-        wprintf(L"ClassLoadStarted: %ls\n", className.c_str());
-        _classLoadStartedCount++;
-    }
-
+    _classLoadStartedCount++;
     return S_OK;
 }
 
 HRESULT ClassLoad::ClassLoadFinished(ClassID classId, HRESULT hrStatus)
 {
-    SHUTDOWNGUARD();
-
-    // Increment only UnloadLibrary.TestClass classes
-    std::wstring className = GetClassIDName(classId).ToCStr();
-    if (className.find(L"UnloadLibrary.TestClass") != std::wstring::npos)
-    {
-        _classLoadFinishedCount++;
-    }
-
+    _classLoadFinishedCount++;
     return S_OK;
 }
 
 HRESULT ClassLoad::ClassUnloadStarted(ClassID classId)
 {
-    SHUTDOWNGUARD();
-
-    // Increment only UnloadLibrary.TestClass classes
-    std::wstring className = GetClassIDName(classId).ToCStr();
-    if (className.find(L"UnloadLibrary.TestClass") != std::wstring::npos)
-    {
-        wprintf(L"ClassUnloadStarted: %ls\n", className.c_str());
-        _classUnloadStartedCount++;
-    }
+    _classUnloadStartedCount++;
+    wprintf(L"ClassUnloadStarted: %s\n", GetClassIDName(classId).ToCStr());
 
     return S_OK;
 }
 
 HRESULT ClassLoad::ClassUnloadFinished(ClassID classID, HRESULT hrStatus)
 {
-    SHUTDOWNGUARD();
-
-    // Increment only UnloadLibrary.TestClass classes
-    std::wstring className = GetClassIDName(classID).ToCStr();
-    if (className.find(L"UnloadLibrary.TestClass") != std::wstring::npos)
-    {
-        _classUnloadFinishedCount++;
-    }
-
+    _classUnloadFinishedCount++;
     return S_OK;
 }
+
 
 HRESULT ClassLoad::Shutdown()
 {
     Profiler::Shutdown();
 
     if(_failures == 0 
+        && (_classLoadStartedCount != 0)
         // Expect unloading of UnloadLibrary.TestClass and
         // List<UnloadLibrary.TestClass> with all its base classes with everything used in List constructor:
         // - UnloadLibrary.TestClass
@@ -97,11 +67,10 @@ HRESULT ClassLoad::Shutdown()
         // - System.Collections.Generic.IReadOnlyCollection`1<UnloadLibrary.TestClass>
         // - System.Collections.Generic.IReadOnlyList`1<UnloadLibrary.TestClass>
         // - System.Collections.Generic.List`1<UnloadLibrary.TestClass>
-        // - System.Collections.Generic.ICollection`1<UnloadLibrary.TestClass>
+        // - System.Collections.Generic.ICollection`1<UnloadLibrary.TestClass>        
+        && (_classUnloadStartedCount == 7)
         && (_classLoadStartedCount == _classLoadFinishedCount)
-        && (_classLoadStartedCount == 7)
-        && (_classUnloadStartedCount == _classUnloadFinishedCount)
-        && (_classUnloadStartedCount == 7))
+        && (_classUnloadStartedCount == _classUnloadFinishedCount))
     {
         printf("PROFILER TEST PASSES\n");
     }

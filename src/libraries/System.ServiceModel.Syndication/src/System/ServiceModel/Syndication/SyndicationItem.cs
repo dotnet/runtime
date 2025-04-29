@@ -50,7 +50,10 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationItem(SyndicationItem source)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
 
             _extensions = source._extensions.Clone();
             _authors = FeedUtils.ClonePersons(source._authors);
@@ -154,7 +157,10 @@ namespace System.ServiceModel.Syndication
 
         public static TSyndicationItem Load<TSyndicationItem>(XmlReader reader) where TSyndicationItem : SyndicationItem, new()
         {
-            ArgumentNullException.ThrowIfNull(reader);
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
 
             Atom10ItemFormatter<TSyndicationItem> atomSerializer = new Atom10ItemFormatter<TSyndicationItem>();
             if (atomSerializer.CanRead(reader))
@@ -175,7 +181,10 @@ namespace System.ServiceModel.Syndication
 
         public void AddPermalink(Uri permalink)
         {
-            ArgumentNullException.ThrowIfNull(permalink);
+            if (permalink is null)
+            {
+                throw new ArgumentNullException(nameof(permalink));
+            }
 
             Id = permalink.AbsoluteUri;
             Links.Add(SyndicationLink.CreateAlternateLink(permalink));

@@ -263,7 +263,10 @@ namespace System.Text.Json.Nodes
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(writer);
+            if (writer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
+            }
 
             GetUnderlyingRepresentation(out List<JsonNode?>? list, out JsonElement? jsonElement);
 

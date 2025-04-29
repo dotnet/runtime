@@ -23,10 +23,6 @@
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
 
-#ifdef FEATURE_EH_FUNCLETS
-#include "exinfo.h"
-#endif // FEATURE_EH_FUNCLETS
-
 typedef IDacDbiInterface::StackWalkHandle StackWalkHandle;
 
 
@@ -622,9 +618,9 @@ BOOL DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePoi
 
     StackFrame sfParent  = StackFrame((UINT_PTR)fpParent.GetSPValue());
 
-    // Ask the ExInfo to figure out the answer.
+    // Ask the ExceptionTracker to figure out the answer.
     // Don't try to compare the StackFrames/FramePointers ourselves.
-    return ExInfo::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
+    return ExceptionTracker::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
 
 #else // !FEATURE_EH_FUNCLETS
     return FALSE;
@@ -977,12 +973,12 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
     if (pCF->IsFunclet())
     {
         DWORD dwParentOffset;
-        StackFrame sfParent = ExInfo::FindParentStackFrameEx(pCF, &dwParentOffset);
+        StackFrame sfParent = ExceptionTracker::FindParentStackFrameEx(pCF, &dwParentOffset);
 
         //
         // For funclets, fpParentOrSelf is the FramePointer of the parent.
         // Don't mess around with this FramePointer.  The only thing we can do with it is to pass it back
-        // to the ExInfo when we are checking if a particular frame is the parent frame.
+        // to the ExceptionTracker when we are checking if a particular frame is the parent frame.
         //
 
         pJITFuncData->fpParentOrSelf = FramePointer::MakeFramePointer(sfParent.SP);
@@ -990,12 +986,12 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
     }
     else
     {
-        StackFrame sfSelf = ExInfo::GetStackFrameForParentCheck(pCF);
+        StackFrame sfSelf = ExceptionTracker::GetStackFrameForParentCheck(pCF);
 
         //
         // For non-funclets, fpParentOrSelf is the FramePointer of the current frame itself.
         // Don't mess around with this FramePointer.  The only thing we can do with it is to pass it back
-        // to the ExInfo when we are checking if a particular frame is the parent frame.
+        // to the ExceptionTracker when we are checking if a particular frame is the parent frame.
         //
 
         pJITFuncData->fpParentOrSelf = FramePointer::MakeFramePointer(sfSelf.SP);

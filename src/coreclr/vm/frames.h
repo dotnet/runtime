@@ -593,7 +593,7 @@ private:
     friend Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
 #endif
 #ifdef FEATURE_EH_FUNCLETS
-    friend struct ExInfo;
+    friend class ExceptionTracker;
 #endif
 #if defined(DACCESS_COMPILE)
     friend class DacDbiInterfaceImpl;
@@ -1041,10 +1041,8 @@ typedef DPTR(class SoftwareExceptionFrame) PTR_SoftwareExceptionFrame;
 class SoftwareExceptionFrame : public Frame
 {
     TADDR                           m_ReturnAddress;
-    T_KNONVOLATILE_CONTEXT_POINTERS m_ContextPointers;
-    // This T_CONTEXT field needs to be the last field in the class because it is a
-    // different size between Linux (pal.h) and the Windows cross-DAC (winnt.h).
     T_CONTEXT                       m_Context;
+    T_KNONVOLATILE_CONTEXT_POINTERS m_ContextPointers;
 
 public:
 #ifndef DACCESS_COMPILE

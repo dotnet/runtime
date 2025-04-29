@@ -18,7 +18,10 @@ namespace System.Security.Cryptography.Xml
 
         public EncryptionProperty(XmlElement elementProperty)
         {
-            ArgumentNullException.ThrowIfNull(elementProperty);
+            if (elementProperty is null)
+            {
+                throw new ArgumentNullException(nameof(elementProperty));
+            }
 
             if (elementProperty.LocalName != "EncryptionProperty" || elementProperty.NamespaceURI != EncryptedXml.XmlEncNamespaceUrl)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidEncryptionProperty);
@@ -78,7 +81,10 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             if (value.LocalName != "EncryptionProperty" || value.NamespaceURI != EncryptedXml.XmlEncNamespaceUrl)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidEncryptionProperty);

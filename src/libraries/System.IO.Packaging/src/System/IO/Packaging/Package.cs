@@ -854,7 +854,10 @@ namespace System.IO.Packaging
             FileAccess packageAccess,
             FileShare packageShare)
         {
-            ArgumentNullException.ThrowIfNull(path);
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
 
             ThrowIfFileModeInvalid(packageMode);
             ThrowIfFileAccessInvalid(packageAccess);
@@ -915,7 +918,10 @@ namespace System.IO.Packaging
         /// <exception cref="IOException">If package to be created should have readwrite/write access and underlying stream is read only</exception>
         public static Package Open(Stream stream, FileMode packageMode, FileAccess packageAccess)
         {
-            ArgumentNullException.ThrowIfNull(stream);
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
 
             Package? package = null;
             try

@@ -321,7 +321,10 @@ namespace System.Runtime.Caching
 
         public MemoryCache(string name, NameValueCollection config = null)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
             if (name.Length == 0)
             {
@@ -339,7 +342,10 @@ namespace System.Runtime.Caching
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the config system.
         public MemoryCache(string name, NameValueCollection config, bool ignoreConfigSection)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
             if (name.Length == 0)
             {
@@ -368,7 +374,10 @@ namespace System.Runtime.Caching
 
         private object AddOrGetExistingInternal(string key, object value, CacheItemPolicy policy)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
@@ -414,7 +423,10 @@ namespace System.Runtime.Caching
             {
                 throw new NotSupportedException(SR.RegionName_not_supported);
             }
-            ArgumentNullException.ThrowIfNull(keys);
+            if (keys == null)
+            {
+                throw new ArgumentNullException(nameof(keys));
+            }
             List<string> keysClone = new List<string>(keys);
             if (keysClone.Count == 0)
             {
@@ -462,7 +474,10 @@ namespace System.Runtime.Caching
             {
                 throw new NotSupportedException(SR.RegionName_not_supported);
             }
-            ArgumentNullException.ThrowIfNull(key);
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
             MemoryCacheEntry entry = GetEntry(key);
             return entry?.Value;
         }
@@ -569,7 +584,10 @@ namespace System.Runtime.Caching
 
         public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy policy)
         {
-            ArgumentNullException.ThrowIfNull(item);
+            if (item is null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
 
             return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value, policy));
         }
@@ -607,7 +625,10 @@ namespace System.Runtime.Caching
 
         public override void Set(CacheItem item, CacheItemPolicy policy)
         {
-            ArgumentNullException.ThrowIfNull(item);
+            if (item is null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
 
             Set(item.Key, item.Value, policy);
         }
@@ -618,7 +639,10 @@ namespace System.Runtime.Caching
             {
                 throw new NotSupportedException(SR.RegionName_not_supported);
             }
-            ArgumentNullException.ThrowIfNull(key);
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
             CacheItemPriority priority = CacheItemPriority.Default;
@@ -664,7 +688,10 @@ namespace System.Runtime.Caching
                           TimeSpan slidingExpiration,
                           CacheEntryUpdateCallback onUpdateCallback)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
             if (changeMonitors == null
                 && absoluteExpiration == ObjectCache.InfiniteAbsoluteExpiration
@@ -672,7 +699,10 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentException(SR.Invalid_argument_combination);
             }
-            ArgumentNullException.ThrowIfNull(onUpdateCallback);
+            if (onUpdateCallback == null)
+            {
+                throw new ArgumentNullException(nameof(onUpdateCallback));
+            }
             if (IsDisposed)
             {
                 if (changeMonitors != null)
@@ -732,7 +762,10 @@ namespace System.Runtime.Caching
             {
                 throw new NotSupportedException(SR.RegionName_not_supported);
             }
-            ArgumentNullException.ThrowIfNull(key);
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
             if (IsDisposedOrThrow())
             {
                 return null;
@@ -776,7 +809,10 @@ namespace System.Runtime.Caching
             {
                 throw new NotSupportedException(SR.RegionName_not_supported);
             }
-            ArgumentNullException.ThrowIfNull(keys);
+            if (keys == null)
+            {
+                throw new ArgumentNullException(nameof(keys));
+            }
 
             Dictionary<string, object> values = null;
 
@@ -804,7 +840,10 @@ namespace System.Runtime.Caching
         // config system.
         internal void UpdateConfig(NameValueCollection config)
         {
-            ArgumentNullException.ThrowIfNull(config);
+            if (config is null)
+            {
+                throw new ArgumentNullException(nameof(config));
+            }
 
             if (!IsDisposed)
             {

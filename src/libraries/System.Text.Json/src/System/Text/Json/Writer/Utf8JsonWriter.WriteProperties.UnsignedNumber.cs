@@ -53,7 +53,10 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public void WriteNumber(string propertyName, ulong value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
             WriteNumber(propertyName.AsSpan(), value);
         }
 
@@ -145,7 +148,10 @@ namespace System.Text.Json
         [CLSCompliant(false)]
         public void WriteNumber(string propertyName, uint value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
             WriteNumber(propertyName.AsSpan(), (ulong)value);
         }
 

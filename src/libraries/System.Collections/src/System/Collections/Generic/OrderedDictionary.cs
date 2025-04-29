@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 #if NET
+using static System.ArgumentNullException;
 using static System.ArgumentOutOfRangeException;
 #else
 using static System.Collections.ThrowHelper;
@@ -165,7 +166,7 @@ namespace System.Collections.Generic
         public OrderedDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer) :
             this(dictionary?.Count ?? 0, comparer)
         {
-            ArgumentNullException.ThrowIfNull(dictionary);
+            ThrowIfNull(dictionary);
 
             AddRange(dictionary);
         }
@@ -199,7 +200,7 @@ namespace System.Collections.Generic
         public OrderedDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer) :
             this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
         {
-            ArgumentNullException.ThrowIfNull(collection);
+            ThrowIfNull(collection);
 
             AddRange(collection);
         }
@@ -292,7 +293,7 @@ namespace System.Collections.Generic
             get => GetAt(index);
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
+                ThrowIfNull(value);
 
                 if (value is not KeyValuePair<TKey, TValue> tpair)
                 {
@@ -308,7 +309,7 @@ namespace System.Collections.Generic
         {
             get
             {
-                ArgumentNullException.ThrowIfNull(key);
+                ThrowIfNull(key);
 
                 if (key is TKey tkey && TryGetValue(tkey, out TValue? value))
                 {
@@ -319,10 +320,10 @@ namespace System.Collections.Generic
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(key);
+                ThrowIfNull(key);
                 if (default(TValue) is not null)
                 {
-                    ArgumentNullException.ThrowIfNull(value);
+                    ThrowIfNull(value);
                 }
 
                 if (key is not TKey tkey)
@@ -374,7 +375,7 @@ namespace System.Collections.Generic
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(key);
+                ThrowIfNull(key);
 
                 bool modified = TryInsert(index: -1, key, value, InsertionBehavior.OverwriteExisting, out _);
                 Debug.Assert(modified);
@@ -483,7 +484,7 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentException">An element with the same key already exists in the <see cref="OrderedDictionary{TKey, TValue}"/>.</exception>
         public void Add(TKey key, TValue value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             TryInsert(index: -1, key, value, InsertionBehavior.ThrowOnExisting, out _);
         }
@@ -503,7 +504,7 @@ namespace System.Collections.Generic
         /// <returns><see langword="true"/> if the key didn't exist and the key and value were added to the dictionary; otherwise, <see langword="false"/>.</returns>
         public bool TryAdd(TKey key, TValue value, out int index)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             return TryInsert(index: -1, key, value, InsertionBehavior.IgnoreInsertion, out index);
         }
@@ -610,7 +611,7 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public int IndexOf(TKey key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             uint _ = 0;
             return IndexOf(key, ref _, ref _);
@@ -727,7 +728,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowIndexArgumentOutOfRange();
             }
 
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             TryInsert(index, key, value, InsertionBehavior.ThrowOnExisting, out _);
         }
@@ -745,7 +746,7 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             // Find the key.
             int index = IndexOf(key);
@@ -821,7 +822,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowIndexArgumentOutOfRange();
             }
 
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             Debug.Assert(_entries is not null);
             ref Entry e = ref _entries[index];
@@ -931,7 +932,7 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value, out int index)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             // Find the key.
             index = IndexOf(key);
@@ -1174,7 +1175,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         int IList<KeyValuePair<TKey, TValue>>.IndexOf(KeyValuePair<TKey, TValue> item)
         {
-            ArgumentNullException.ThrowIfNull(item.Key, nameof(item));
+            ThrowIfNull(item.Key, nameof(item));
 
             int index = IndexOf(item.Key);
             if (index >= 0)
@@ -1198,7 +1199,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item)
         {
-            ArgumentNullException.ThrowIfNull(item.Key, nameof(item));
+            ThrowIfNull(item.Key, nameof(item));
 
             return
                 TryGetValue(item.Key, out TValue? value) &&
@@ -1208,7 +1209,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            ArgumentNullException.ThrowIfNull(array);
+            ThrowIfNull(array);
             ThrowIfNegative(arrayIndex);
             if (array.Length - arrayIndex < _count)
             {
@@ -1231,10 +1232,10 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         void IDictionary.Add(object key, object? value)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
             if (default(TValue) is not null)
             {
-                ArgumentNullException.ThrowIfNull(value);
+                ThrowIfNull(value);
             }
 
             if (key is not TKey tkey)
@@ -1244,7 +1245,7 @@ namespace System.Collections.Generic
 
             if (default(TValue) is not null)
             {
-                ArgumentNullException.ThrowIfNull(value);
+                ThrowIfNull(value);
             }
 
             TValue tvalue = default!;
@@ -1264,7 +1265,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         bool IDictionary.Contains(object key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             return key is TKey tkey && ContainsKey(tkey);
         }
@@ -1272,7 +1273,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         void IDictionary.Remove(object key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowIfNull(key);
 
             if (key is TKey tkey)
             {
@@ -1283,7 +1284,7 @@ namespace System.Collections.Generic
         /// <inheritdoc/>
         void ICollection.CopyTo(Array array, int index)
         {
-            ArgumentNullException.ThrowIfNull(array);
+            ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -1504,7 +1505,7 @@ namespace System.Collections.Generic
             /// <inheritdoc/>
             public void CopyTo(TKey[] array, int arrayIndex)
             {
-                ArgumentNullException.ThrowIfNull(array);
+                ThrowIfNull(array);
                 ThrowIfNegative(arrayIndex);
 
                 OrderedDictionary<TKey, TValue> dictionary = _dictionary;
@@ -1526,7 +1527,7 @@ namespace System.Collections.Generic
             /// <inheritdoc/>
             void ICollection.CopyTo(Array array, int index)
             {
-                ArgumentNullException.ThrowIfNull(array);
+                ThrowIfNull(array);
 
                 if (array.Rank != 1)
                 {
@@ -1693,7 +1694,7 @@ namespace System.Collections.Generic
             /// <inheritdoc/>
             public void CopyTo(TValue[] array, int arrayIndex)
             {
-                ArgumentNullException.ThrowIfNull(array);
+                ThrowIfNull(array);
                 ThrowIfNegative(arrayIndex);
 
                 OrderedDictionary<TKey, TValue> dictionary = _dictionary;
@@ -1835,7 +1836,7 @@ namespace System.Collections.Generic
             /// <inheritdoc/>
             void ICollection.CopyTo(Array array, int index)
             {
-                ArgumentNullException.ThrowIfNull(array);
+                ThrowIfNull(array);
 
                 if (array.Rank != 1)
                 {

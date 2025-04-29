@@ -1,0 +1,4 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)..\DetectRuntimeConfiguration.props" />
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
+</Project>

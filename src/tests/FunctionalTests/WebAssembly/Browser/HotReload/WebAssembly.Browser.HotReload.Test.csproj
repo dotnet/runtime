@@ -7,12 +7,8 @@
     <!-- setting WasmXHarnessMonoArgs doesn't work here, but see main.js -->
     <!-- <WasmXHarnessMonoArgs>- -setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs> -->
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
-
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-    <IgnoreForCI Condition="'$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">true</IgnoreForCI>
   </PropertyGroup>
-  <ItemGroup Condition="'$(OS)' == 'Windows_NT' or '$(ContinuousIntegrationBuild)' != 'true'">
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
+  <ItemGroup>
     <ProjectReference Include="ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
   </ItemGroup>
 

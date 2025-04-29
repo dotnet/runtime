@@ -1357,8 +1357,7 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 {
     LIMITED_METHOD_CONTRACT;
 
-    bool hasAsyncRet;
-    ReturnKind returnKind = m_Thread->GetHijackReturnKind(&hasAsyncRet);
+    ReturnKind returnKind = m_Thread->GetHijackReturnKind();
     _ASSERTE(IsValidReturnKind(returnKind));
 
     int regNo = 0;
@@ -1396,15 +1395,6 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 
         regNo++;
     } while (moreRegisters);
-
-    if (hasAsyncRet)
-    {
-        PTR_PTR_Object objPtr = dac_cast<PTR_PTR_Object>(&m_Args->AsyncRet);
-        LOG((LF_GC, INFO3, "Hijack Frame Promoting Async Continuation Return" FMT_ADDR "to",
-            DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*objPtr))));
-        (*fn)(objPtr, sc, CHECK_APP_DOMAIN);
-        LOG((LF_GC, INFO3, FMT_ADDR "\n", DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*objPtr))));
-    }
 }
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
@@ -1515,9 +1505,6 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 
         if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
             msig.SetHasParamTypeArg();
-
-        if (pFunction->IsAsyncMethod())
-            msig.SetIsAsyncCall();
 
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
@@ -2277,7 +2264,7 @@ static void DumpGCRefMap(const char *name, BYTE *address)
     }
     buf.AppendUTF8("\n");
 
-    minipal_log_print_info("%s", buf.GetUTF8());
+    minipal_log_print_info(buf.GetUTF8());
 }
 #endif
 
@@ -2352,17 +2339,9 @@ void ComputeCallRefMap(MethodDesc* pMD,
     // See code:getMethodSigInternal
     //
     assert(!isDispatchCell || !pMD->RequiresInstArg() || pMD->GetMethodTable()->IsInterface());
-    if (!isDispatchCell)
+    if (pMD->RequiresInstArg() && !isDispatchCell)
     {
-        if (pMD->RequiresInstArg())
-        {
-            msig.SetHasParamTypeArg();
-        }
-
-        if (pMD->IsAsyncMethod())
-        {
-            msig.SetIsAsyncCall();
-        }
+        msig.SetHasParamTypeArg();
     }
 
     ArgIterator argit(&msig);

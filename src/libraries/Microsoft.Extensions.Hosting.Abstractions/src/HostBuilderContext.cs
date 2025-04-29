@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="properties">A non-null <see cref="IDictionary{TKey, TValue}"/> for sharing state between components during the host building process.</param>
         public HostBuilderContext(IDictionary<object, object> properties)
         {
-            ArgumentNullException.ThrowIfNull(properties);
+            ThrowHelper.ThrowIfNull(properties);
 
             Properties = properties;
         }

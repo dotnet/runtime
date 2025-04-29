@@ -33,7 +33,7 @@ namespace System.Linq
         public static IAsyncEnumerable<TSource> DefaultIfEmpty<TSource>(
             this IAsyncEnumerable<TSource> source, TSource defaultValue)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
 
             return Impl(source, defaultValue, default);
 

@@ -17,7 +17,8 @@ namespace System.Security.Cryptography
         {
             CheckPlatformSupport();
 
-            ArgumentNullException.ThrowIfNull(userData);
+            if (userData is null)
+                throw new ArgumentNullException(nameof(userData));
 
             byte[]? outputData;
             bool result = TryProtectOrUnprotect(
@@ -168,7 +169,8 @@ namespace System.Security.Cryptography
         {
             CheckPlatformSupport();
 
-            ArgumentNullException.ThrowIfNull(encryptedData);
+            if (encryptedData is null)
+                throw new ArgumentNullException(nameof(encryptedData));
 
             byte[]? outputData;
             bool result = TryProtectOrUnprotect(

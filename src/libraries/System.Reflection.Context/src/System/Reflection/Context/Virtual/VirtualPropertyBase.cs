@@ -17,7 +17,8 @@ namespace System.Reflection.Context.Virtual
 
         protected VirtualPropertyBase(Type propertyType, string name, CustomReflectionContext context)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name is null)
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
                 throw new ArgumentException("", nameof(name));

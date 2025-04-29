@@ -33,10 +33,10 @@ namespace System.Security.Cryptography.Tests
         public static void ImportSubjectPublicKeyInfo_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() =>
-                MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki));
+                MLKem.ImportSubjectPublicKeyInfo(Array.Empty<byte>()));
 
             Assert.Throws<PlatformNotSupportedException>(() =>
-                MLKem.ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(MLKemTestData.IetfMlKem512Spki)));
+                MLKem.ImportSubjectPublicKeyInfo(ReadOnlySpan<byte>.Empty));
         }
 
         [Theory]
@@ -80,9 +80,6 @@ namespace System.Security.Cryptography.Tests
         {
             Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
                 MLKemTestData.EncryptedPrivateKeyPassword, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
-
-            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
-                MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(), MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
 
             Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
                 MLKemTestData.EncryptedPrivateKeyPasswordBytes, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));

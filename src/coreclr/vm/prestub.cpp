@@ -729,16 +729,6 @@ namespace
 
         COR_ILMETHOD_DECODER* pHeader = NULL;
         COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
-
-        // For a Runtime Async method the methoddef maps to a Task-returning thunk with runtime-provided implementation,
-        // while the default IL belongs to the Async implementation variant.
-        // By default the config captures the default methoddesc, which would be a thunk, thus no IL header.
-        // So, if config provides no header and we see an implementation method desc, then just ask the method desc itself.
-        if (ilHeader == NULL && pMD->IsAsyncVariantMethod() && !pMD->IsAsyncThunkMethod())
-        {
-            ilHeader = pMD->GetILHeader();
-        }
-
         if (ilHeader == NULL)
             return NULL;
 
@@ -1040,23 +1030,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     pEntry->m_hrResultCode = S_OK;
 
     return pCode;
-}
-
-bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (TryGenerateAsyncThunk(resolver, methodILDecoder))
-    {
-        return true;
-    }
-
-    if (TryGenerateUnsafeAccessor(resolver, methodILDecoder))
-    {
-        return true;
-    }
-
-    return false;
 }
 
 PrepareCodeConfig::PrepareCodeConfig() {}
@@ -1395,46 +1368,36 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
 
 #endif //FEATURE_CODE_VERSIONING
 
-// CreateDerivedTargetSigWithExtraParams:
-// This method is used to create the signature of the target of the ILStub for
-// instantiating, unboxing, and async variant stubs, when/where we need to
-// introduce a generic context/async continuation.
-// And since the generic context/async continuations are hidden parameters,
-// we're creating a signature that looks like non-generic but with additional
-// parameters right after the thisptr
-void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder *stubSigBuilder)
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
+
+// CreateInstantiatingILStubTargetSig:
+// This method is used to create the signature of the target of the ILStub
+// for instantiating and unboxing stubs, when/where we need to introduce a generic context.
+// And since the generic context is a hidden parameter, we're creating a signature that
+// looks like non-generic but has one additional parameter right after the thisptr
+void CreateInstantiatingILStubTargetSig(MethodDesc *pBaseMD,
+                                        SigTypeContext &typeContext,
+                                        SigBuilder *stubSigBuilder)
 {
     STANDARD_VM_CONTRACT;
 
+    MetaSig msig(pBaseMD);
     BYTE callingConvention = IMAGE_CEE_CS_CALLCONV_DEFAULT;
     if (msig.HasThis())
         callingConvention |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
     // CallingConvention
     stubSigBuilder->AppendByte(callingConvention);
 
-    unsigned numArgs = msig.NumFixedArgs();
-    if (msig.HasGenericContextArg())
-        numArgs++;
-    if (msig.HasAsyncContinuation())
-        numArgs++;
     // ParamCount
-    stubSigBuilder->AppendData(numArgs); // +1 is for context param
+    stubSigBuilder->AppendData(msig.NumFixedArgs() + 1); // +1 is for context param
 
     // Return type
     SigPointer pReturn = msig.GetReturnProps();
-    pReturn.ConvertToInternalExactlyOne(msig.GetModule(), msig.GetSigTypeContext(), stubSigBuilder);
+    pReturn.ConvertToInternalExactlyOne(msig.GetModule(), &typeContext, stubSigBuilder);
 
 #ifndef TARGET_X86
-    if (msig.HasGenericContextArg())
-    {
-        // The hidden context parameter
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-    }
-
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
-    }
+    // The hidden context parameter
+    stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
 #endif // !TARGET_X86
 
     // Copy rest of the arguments
@@ -1442,24 +1405,14 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     SigPointer pArgs = msig.GetArgProps();
     for (unsigned i = 0; i < msig.NumFixedArgs(); i++)
     {
-        pArgs.ConvertToInternalExactlyOne(msig.GetModule(), msig.GetSigTypeContext(), stubSigBuilder);
+        pArgs.ConvertToInternalExactlyOne(msig.GetModule(), &typeContext, stubSigBuilder);
     }
 
 #ifdef TARGET_X86
-    if (msig.HasGenericContextArg())
-    {
-        // The hidden context parameter
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-    }
-
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
-    }
+    // The hidden context parameter
+    stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
 #endif // TARGET_X86
 }
-
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
 
 Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetMD)
 {
@@ -1486,28 +1439,28 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // Build the new signature
+    // 1. Build the new signature
     SigBuilder stubSigBuilder;
-    MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
+    CreateInstantiatingILStubTargetSig(pTargetMD, typeContext, &stubSigBuilder);
 
-    // Emit the method body
+    // 2. Emit the method body
     mdToken tokRawData = pCode->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
-    // Push the thisptr
+    // 2.1 Push the thisptr
     // We need to skip over the MethodTable*
     // The trick below will do that.
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokRawData);
 
 #if defined(TARGET_X86)
-    // Push the rest of the arguments for x86
+    // 2.2 Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
 #endif
 
-    // Push the hidden context param
+    // 2.3 Push the hidden context param
     // The context is going to be captured from the thisptr
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokRawData);
@@ -1516,17 +1469,17 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitLDIND_I();
 
 #if !defined(TARGET_X86)
-    // Push the rest of the arguments for not x86
+    // 2.4 Push the rest of the arguments for not x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
 #endif
 
-    // Push the target address
+    // 2.5 Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
-    // Do the calli
+    // 2.6 Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
@@ -1593,47 +1546,41 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // Build the new signature
+    // 1. Build the new signature
     SigBuilder stubSigBuilder;
-    MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
+    CreateInstantiatingILStubTargetSig(pTargetMD, typeContext, &stubSigBuilder);
 
-    // Emit the method body
+    // 2. Emit the method body
     if (msig.HasThis())
     {
-        // Push the thisptr
+        // 2.1 Push the thisptr
         pCode->EmitLoadThis();
     }
 
 #if defined(TARGET_X86)
-    // Push the rest of the arguments for x86
+    // 2.2 Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
 #endif // TARGET_X86
 
-    // Push the hidden context param
+    // 2.3 Push the hidden context param
     // InstantiatingStub
     pCode->EmitLDC((TADDR)pHiddenArg);
 
-    // Push the async continuation
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-    }
-
 #if !defined(TARGET_X86)
-    // Push the rest of the arguments for not x86
+    // 2.4 Push the rest of the arguments for not x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
 #endif // !TARGET_X86
 
-    // Push the target address
+    // 2.5 Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
-    // Do the calli
+    // 2.6 Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
@@ -1996,35 +1943,19 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
 {
     // Argument registers are in the TransitionBlock
     // The stack arguments are right after the pTransitionBlock
-    Thread *pThread = GetThread();
-    InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
-    if (threadContext == nullptr || threadContext->pStackStart == nullptr)
-    {
-        COMPlusThrow(kOutOfMemoryException);
-    }
+    InterpThreadContext *threadContext = InterpGetThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
-    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
-    // InterpMethodContextFrame. This is important for the stack walking code.
-    struct Frames
-    {
-        InterpMethodContextFrame interpMethodContextFrame = {0};
-        InterpreterFrame interpreterFrame;
+    InterpMethodContextFrame interpMethodContextFrame = {0};
+    interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
+    interpMethodContextFrame.pStack = sp;
+    interpMethodContextFrame.pRetVal = sp;
 
-        Frames(TransitionBlock* pTransitionBlock)
-        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
-        {
-        }
-    }
-    frames(pTransitionBlock);
+    InterpreterFrame interpreterFrame(pTransitionBlock, &interpMethodContextFrame);
 
-    frames.interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
-    frames.interpMethodContextFrame.pStack = sp;
-    frames.interpMethodContextFrame.pRetVal = sp;
+    InterpExecMethod(&interpreterFrame, &interpMethodContextFrame, threadContext);
 
-    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
-
-    frames.interpreterFrame.Pop();
+    interpreterFrame.Pop();
 }
 #endif // FEATURE_INTERPRETER
 

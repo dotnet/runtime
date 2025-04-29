@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration
 
         public IConfiguration GetConfiguration(string listenerName)
         {
-            ArgumentNullException.ThrowIfNull(listenerName);
+            ThrowHelper.ThrowIfNull(listenerName);
 
             var configurationBuilder = new ConfigurationBuilder();
             foreach (MetricsConfiguration configuration in _configurations)

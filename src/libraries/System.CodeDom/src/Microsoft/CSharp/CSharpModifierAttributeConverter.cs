@@ -36,7 +36,10 @@ namespace Microsoft.CSharp
 
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            ArgumentNullException.ThrowIfNull(destinationType);
+            if (destinationType is null)
+            {
+                throw new ArgumentNullException(nameof(destinationType));
+            }
 
             if (destinationType == typeof(string))
             {

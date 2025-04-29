@@ -171,7 +171,6 @@ void StubHelpers::Init()
 
 #ifdef FEATURE_COMINTEROP
 
-// Clears FP state on x86 for compatibility with VB6.
 FORCEINLINE static void GetCOMIPFromRCW_ClearFP()
 {
     LIMITED_METHOD_CONTRACT;
@@ -191,74 +190,42 @@ NoNeedToClear:
 #endif // TARGET_X86
 }
 
-FORCEINLINE static SOleTlsData* TryGetOleTlsData()
+FORCEINLINE static SOleTlsData *GetOrCreateOleTlsData()
 {
     LIMITED_METHOD_CONTRACT;
 
+    SOleTlsData *pOleTlsData;
 #ifdef TARGET_X86
     // This saves 1 memory instruction over NtCurretTeb()->ReservedForOle because
     // NtCurrentTeb() reads _TEB.NtTib.Self which is the same as what FS:0 already
     // points to.
-    return (SOleTlsData*)(ULONG_PTR)__readfsdword(offsetof(TEB, ReservedForOle));
+    pOleTlsData = (SOleTlsData *)(ULONG_PTR)__readfsdword(offsetof(TEB, ReservedForOle));
 #else // TARGET_X86
-    return (SOleTlsData*)ClrTeb::GetOleReservedPtr();
+    pOleTlsData = (SOleTlsData *)NtCurrentTeb()->ReservedForOle;
 #endif // TARGET_X86
-}
-
-static SOleTlsData* GetOrCreateOleTlsData()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACT_END;
-
-    SOleTlsData* pOleTlsData = TryGetOleTlsData();
     if (pOleTlsData == NULL)
-        pOleTlsData = (SOleTlsData*)SetupOleContext();
-
+    {
+        pOleTlsData = (SOleTlsData *)SetupOleContext();
+    }
     return pOleTlsData;
 }
 
-FORCEINLINE static void* GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallInfo *pComInfo)
+FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, MethodTable * pItfMT)
 {
     LIMITED_METHOD_CONTRACT;
 
-    LPVOID* lpVtbl = *(LPVOID **)pUnk;
-    LPVOID tgt = lpVtbl[pComInfo->m_cachedComSlot];
-    if (tgt != NULL)
-        GetCOMIPFromRCW_ClearFP();
-
-    return tgt;
-}
-
-FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* pOleTlsData, RCW* pRCW, CLRToCOMCallInfo* pComInfo, void** ppTarget)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(pOleTlsData != NULL);
-    _ASSERTE(pRCW != NULL);
-    _ASSERTE(pComInfo != NULL);
-    _ASSERTE(ppTarget != NULL);
+    // The code in this helper is the "fast path" that used to be generated directly
+    // to compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
+    SOleTlsData * pOleTlsData = GetOrCreateOleTlsData();
 
     // test for free-threaded after testing for context match to optimize for apartment-bound objects
     if (pOleTlsData->pCurrentCtx == pRCW->GetWrapperCtxCookie() || pRCW->IsFreeThreaded())
     {
         for (int i = 0; i < INTERFACE_ENTRY_CACHE_SIZE; i++)
         {
-            if (pRCW->m_aInterfaceEntries[i].m_pMT == pComInfo->m_pInterfaceMT)
+            if (pRCW->m_aInterfaceEntries[i].m_pMT == pItfMT)
             {
-                IUnknown* pUnk = pRCW->m_aInterfaceEntries[i].m_pUnknown;
-                if (pUnk != NULL)
-                {
-                    void* targetMaybe = GetCOMIPFromRCW_GetTarget(pUnk, pComInfo);
-                    if (targetMaybe != NULL)
-                    {
-                        *ppTarget = targetMaybe;
-                        return pUnk;
-                    }
-                }
+                return pRCW->m_aInterfaceEntries[i].m_pUnknown;
             }
         }
     }
@@ -266,37 +233,48 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
     return NULL;
 }
 
+FORCEINLINE static void *GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallInfo *pComInfo)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    LPVOID *lpVtbl = *(LPVOID **)pUnk;
+    return lpVtbl[pComInfo->m_cachedComSlot];
+}
+
 //==================================================================================================================
 // The GetCOMIPFromRCW helper exists in four specialized versions to optimize CLR->COM perf. Please be careful when
 // changing this code as one of these methods is executed as part of every CLR->COM call so every instruction counts.
 //==================================================================================================================
 
+
 #include <optsmallperfcritical.h>
 
-// This helper can handle any CLR->COM call.
-FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void** ppTarget)
+// This helper can handle any CLR->COM call, it supports hosting,
+// and clears FP state on x86 for compatibility with VB6.
+FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget)
 {
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(pSrcUNSAFE != NULL);
-        PRECONDITION(pMD != NULL && (pMD->IsCLRToCOMCall() || pMD->IsEEImpl()));
-        PRECONDITION(ppTarget != NULL);
+        PRECONDITION(pMD->IsCLRToCOMCall() || pMD->IsEEImpl());
     }
     CONTRACTL_END;
 
-    // See the slow path as well, StubHelpers_GetCOMIPFromRCWSlow. The first part of that
-    // function is identical to this one, but it handles the case where the OLE TLS
-    // data hasn't been created yet.
     OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-    CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
-    RCW* pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
+    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
+    RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
-        // This is the "fast path" for compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
-        SOleTlsData* pOleTlsData = TryGetOleTlsData();
-        if (pOleTlsData != NULL)
-            return GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
+        IUnknown * pUnk = GetCOMIPFromRCW_GetIUnknownFromRCWCache(pRCW, pComInfo->m_pInterfaceMT);
+        if (pUnk != NULL)
+        {
+            *ppTarget = GetCOMIPFromRCW_GetTarget(pUnk, pComInfo);
+            if (*ppTarget != NULL)
+            {
+                GetCOMIPFromRCW_ClearFP();
+                return pUnk;
+            }
+        }
     }
     return NULL;
 }
@@ -318,25 +296,12 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
     OBJECTREF objRef = pSrc.Get();
     GCPROTECT_BEGIN(objRef);
 
-    // This snippet exists to enable OLE TLS data creation that isn't possible on the fast path.
-    // It is practically identical to the StubHelpers::GetCOMIPFromRCW FCALL, but in the event the OLE TLS
-    // data on this thread hasn't occurred yet, we will create it. Since this is the slow path, trying the
-    // cache again isn't a problem.
-    SOleTlsData* pOleTlsData = GetOrCreateOleTlsData(); // Ensure OLE TLS data is created.
     CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
-    RCW* pRCW = objRef->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
-    if (pRCW != NULL)
-    {
-        IUnknown* pUnk = GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
-        if (pUnk != NULL)
-            return pUnk;
-    }
-
-    // Still not in the cache and we've ensured the OLE TLS data was created.
     SafeComHolder<IUnknown> pRetUnk = ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT);
     *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
     _ASSERTE(*ppTarget != NULL);
 
+    GetCOMIPFromRCW_ClearFP();
     pIntf = pRetUnk.Extract();
 
     GCPROTECT_END();

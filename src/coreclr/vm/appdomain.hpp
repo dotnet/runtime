@@ -1145,8 +1145,9 @@ public:
     // in a lazy fashion so executables do not take the perf hit unless the load other
     // assemblies
 #ifndef DACCESS_COMPILE
-    static void OnUnhandledException(OBJECTREF *pThrowable);
-#endif // !DACCESS_COMPILE
+    static BOOL OnUnhandledException(OBJECTREF *pThrowable);
+
+#endif
 
     // True iff a debugger is attached to the process (same as CORDebuggerAttached)
     BOOL IsDebuggerAttached (void);
@@ -1342,6 +1343,8 @@ private:
     friend class Assembly;
 
 private:
+    BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable);
+
     enum Stage {
         STAGE_CREATING,
         STAGE_READYFORMANAGEDCODE,
@@ -1613,15 +1616,7 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
 #endif
-
-    friend struct cdac_data<AppDomain>;
 };  // class AppDomain
-
-template<>
-struct cdac_data<AppDomain>
-{
-    static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
-};
 
 typedef DPTR(class SystemDomain) PTR_SystemDomain;
 

@@ -57,10 +57,6 @@ export function export_api (): any {
         localHeapViewI64Big: localHeapViewI64Big,
         localHeapViewF32: localHeapViewF32,
         localHeapViewF64: localHeapViewF64,
-        collectCpuSamples:null as any,
-        collectPerfCounters:null as any,
-        collectGcDump:null as any,
-        connectDSRouter:null as any,
     };
     return api;
 }

@@ -1168,7 +1168,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                                       initReservedMem,
                                                                       dwExecutableHeapReserveSize,
                                                                       NULL,
-                                                                      LoaderHeapImplementationKind::Executable
+                                                                      UnlockedLoaderHeap::HeapKind::Executable
                                                                       );
         initReservedMem += dwExecutableHeapReserveSize;
     }
@@ -1201,12 +1201,14 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                        initReservedMem,
                                                        dwStubHeapReserveSize,
                                                        STUBMANAGER_RANGELIST(StubLinkStubManager),
-                                                       LoaderHeapImplementationKind::Executable);
+                                                       UnlockedLoaderHeap::HeapKind::Executable);
 
     initReservedMem += dwStubHeapReserveSize;
 
-    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) InterleavedLoaderHeap(
+    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
+                                                                           2 * GetStubCodePageSize(),
                                                                            &m_stubPrecodeRangeList,
+                                                                           UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                            false /* fUnlocked */,
                                                                            StubPrecode::GenerateCodePage,
                                                                            StubPrecode::CodeSize);
@@ -1216,14 +1218,19 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     {
         m_pDynamicHelpersStubHeap = m_pNewStubPrecodeHeap;
     }
-    m_pDynamicHelpersStubHeap = new (&m_DynamicHelpersHeapInstance) InterleavedLoaderHeap(
+    m_pDynamicHelpersStubHeap = new (&m_DynamicHelpersHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
+                                                                               2 * GetStubCodePageSize(),
                                                                                &m_dynamicHelpersRangeList,
+                                                                               UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                                false /* fUnlocked */,
                                                                                StubPrecode::GenerateCodePage,
                                                                                StubPrecode::CodeSize);
 #endif // defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
 
-    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) InterleavedLoaderHeap(&m_fixupPrecodeRangeList,
+    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
+                                                                       2 * GetStubCodePageSize(),
+                                                                       &m_fixupPrecodeRangeList,
+                                                                       UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                        false /* fUnlocked */,
                                                                        FixupPrecode::GenerateCodePage,
                                                                        FixupPrecode::CodeSize);
@@ -1407,7 +1414,7 @@ void LoaderAllocator::Terminate()
 
     if (m_pFixupPrecodeHeap != NULL)
     {
-        m_pFixupPrecodeHeap->~InterleavedLoaderHeap();
+        m_pFixupPrecodeHeap->~LoaderHeap();
         m_pFixupPrecodeHeap = NULL;
     }
 
@@ -1417,7 +1424,7 @@ void LoaderAllocator::Terminate()
         {
             if (m_pDynamicHelpersStubHeap != m_pNewStubPrecodeHeap)
             {
-                m_pDynamicHelpersStubHeap->~InterleavedLoaderHeap();
+                m_pDynamicHelpersStubHeap->~LoaderHeap();
             }
             m_pDynamicHelpersStubHeap = NULL;
         }
@@ -1432,7 +1439,7 @@ void LoaderAllocator::Terminate()
 
     if (m_pNewStubPrecodeHeap != NULL)
     {
-        m_pNewStubPrecodeHeap->~InterleavedLoaderHeap();
+        m_pNewStubPrecodeHeap->~LoaderHeap();
         m_pNewStubPrecodeHeap = NULL;
     }
 

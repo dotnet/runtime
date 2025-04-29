@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -160,29 +158,21 @@ namespace System.IO.Compression.Tests
             Assert.Equal(Convert.ToInt32(permissions, 8), status.Mode & 0xFFF);
         }
 
-        public static IEnumerable<object[]> Get_UnixExtractFilePermissionsCompat_Data()
-        {
-            foreach (bool async in _bools)
-            {
-                yield return new object[] { "sharpziplib.zip", null, async }; // ExternalAttributes are not set in this .zip, use the system default
-                yield return new object[] { "Linux_RW_RW_R__.zip", "664", async };
-                yield return new object[] { "Linux_RWXRW_R__.zip", "764", async };
-                yield return new object[] { "OSX_RWXRW_R__.zip", "764", async };
-            }
-        }
-
         [Theory]
-        [MemberData(nameof(Get_UnixExtractFilePermissionsCompat_Data))]
-        public async Task UnixExtractFilePermissionsCompat(string zipName, string expectedPermissions, bool async)
+        [InlineData("sharpziplib.zip", null)] // ExternalAttributes are not set in this .zip, use the system default
+        [InlineData("Linux_RW_RW_R__.zip", "664")]
+        [InlineData("Linux_RWXRW_R__.zip", "764")]
+        [InlineData("OSX_RWXRW_R__.zip", "764")]
+        public void UnixExtractFilePermissionsCompat(string zipName, string expectedPermissions)
         {
             expectedPermissions = GetExpectedPermissions(expectedPermissions);
 
             string zipFileName = compat(zipName);
             using (var tempFolder = new TempDirectory(GetTestFilePath()))
             {
-                await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path);
+                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path);
 
-                ZipArchive archive = await CallZipFileOpen(async, zipFileName, ZipArchiveMode.Read);
+                using ZipArchive archive = ZipFile.Open(zipFileName, ZipArchiveMode.Read);
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
                     string filename = Path.Combine(tempFolder.Path, entry.FullName);
@@ -190,15 +180,13 @@ namespace System.IO.Compression.Tests
 
                     EnsureFilePermissions(filename, expectedPermissions);
                 }
-                await DisposeZipArchive(async, archive);
             }
         }
 
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.tvOS & ~TestPlatforms.iOS)] // browser doesn't have libc mkfifo. tvOS/iOS return an error for mkfifo.
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal file permissions")]
-        public async Task ZipNamedPipeIsNotSupported(bool async)
+        public void ZipNamedPipeIsNotSupported()
         {
             string destPath = Path.Combine(TestDirectory, "dest.zip");
 
@@ -207,7 +195,7 @@ namespace System.IO.Compression.Tests
             Directory.CreateDirectory(subFolderPath); // mandatory before calling mkfifo
             Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */));
 
-            await Assert.ThrowsAsync<IOException>(() => CallZipFileCreateFromDirectory(async, subFolderPath, destPath));
+            Assert.Throws<IOException>(() => ZipFile.CreateFromDirectory(subFolderPath, destPath));
         }
 
         private static string GetExpectedPermissions(string expectedPermissions)

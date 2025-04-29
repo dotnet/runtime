@@ -302,12 +302,12 @@ protected:
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
-    BYTE                m_FixupPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
-    BYTE                m_NewStubPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
+    BYTE                m_FixupPrecodeHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_NewStubPrecodeHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_StaticsHeapInstance[sizeof(LoaderHeap)];
 #ifdef FEATURE_READYTORUN
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
-    BYTE                m_DynamicHelpersHeapInstance[sizeof(InterleavedLoaderHeap)];
+    BYTE                m_DynamicHelpersHeapInstance[sizeof(LoaderHeap)];
 #endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
     PTR_LoaderHeap      m_pLowFrequencyHeap;
@@ -317,13 +317,13 @@ protected:
     PTR_LoaderHeap      m_pExecutableHeap;
 #ifdef FEATURE_READYTORUN
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
-    PTR_InterleavedLoaderHeap      m_pDynamicHelpersStubHeap; // R2R Stubs for dynamic helpers. Separate from m_pNewStubPrecodeHeap to avoid allowing these stubs to take up cache space once the process is fully hot.
+    PTR_LoaderHeap      m_pDynamicHelpersStubHeap; // R2R Stubs for dynamic helpers. Seperate from m_pStubHeap to avoid allowing these stubs to take up cache space once the process is fully hot.
 #else
     PTR_CodeFragmentHeap m_pDynamicHelpersHeap;
 #endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
-    PTR_InterleavedLoaderHeap      m_pFixupPrecodeHeap;
-    PTR_InterleavedLoaderHeap      m_pNewStubPrecodeHeap;
+    PTR_LoaderHeap      m_pFixupPrecodeHeap;
+    PTR_LoaderHeap      m_pNewStubPrecodeHeap;
     //****************************************************************************************
     OBJECTHANDLE        m_hLoaderAllocatorObjectHandle;
     FuncPtrStubs *      m_pFuncPtrStubs; // for GetMultiCallableAddrOfCode()
@@ -618,7 +618,7 @@ public:
         return m_pStubHeap;
     }
 
-    PTR_InterleavedLoaderHeap GetNewStubPrecodeHeap()
+    PTR_LoaderHeap GetNewStubPrecodeHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pNewStubPrecodeHeap;
@@ -640,7 +640,7 @@ public:
         return m_pExecutableHeap;
     }
 
-    PTR_InterleavedLoaderHeap GetFixupPrecodeHeap()
+    PTR_LoaderHeap GetFixupPrecodeHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pFixupPrecodeHeap;

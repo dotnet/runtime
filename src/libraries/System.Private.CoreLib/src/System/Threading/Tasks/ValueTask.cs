@@ -425,7 +425,6 @@ namespace System.Threading.Tasks
         /// <param name="continueOnCapturedContext">
         /// true to attempt to marshal the continuation back to the captured context; otherwise, false.
         /// </param>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConfiguredValueTaskAwaitable ConfigureAwait(bool continueOnCapturedContext) =>
             new ConfiguredValueTaskAwaitable(new ValueTask(_obj, _token, continueOnCapturedContext));
@@ -826,7 +825,6 @@ namespace System.Threading.Tasks
         /// <param name="continueOnCapturedContext">
         /// true to attempt to marshal the continuation back to the captured context; otherwise, false.
         /// </param>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConfiguredValueTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext) =>
             new ConfiguredValueTaskAwaitable<TResult>(new ValueTask<TResult>(_obj, _result, _token, continueOnCapturedContext));

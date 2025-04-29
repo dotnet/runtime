@@ -81,14 +81,20 @@ trigger:
   paths:
     include:
     - '*'
-    # do not exclude any paths, as we want to build every single commit
+    exclude:
+    - '**.md'
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
 
 resources:
   repositories:
     - repository: performance
       type: git
       name: internal/dotnet-performance
-      # if you need to specify explicit branch use 'ref:' - for example ref: ekharion/store-latest-build
 
 variables:
   - template: /eng/pipelines/common/variables.yml

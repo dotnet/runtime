@@ -6,13 +6,12 @@ Param(
   [string] $msbuildEngine = $null,
   [switch] $restore,
   [switch] $prepareMachine,
-  [switch][Alias('nobl')]$excludeCIBinaryLog,
   [switch] $help,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
 $ci = $true
-$binaryLog = if ($excludeCIBinaryLog) { $false } else { $true }
+$binaryLog = $true
 $warnAsError = $true
 
 . $PSScriptRoot\tools.ps1
@@ -28,7 +27,6 @@ function Print-Usage() {
   Write-Host "Advanced settings:"
   Write-Host "  -prepareMachine         Prepare machine for CI run"
   Write-Host "  -msbuildEngine <value>  Msbuild engine to use to run build ('dotnet', 'vs', or unspecified)."
-  Write-Host "  -excludeCIBinaryLog     When running on CI, allow no binary log (short: -nobl)"
   Write-Host ""
   Write-Host "Command line arguments not listed above are passed thru to msbuild."
 }
@@ -36,11 +34,10 @@ function Print-Usage() {
 function Build([string]$target) {
   $logSuffix = if ($target -eq 'Execute') { '' } else { ".$target" }
   $log = Join-Path $LogDir "$task$logSuffix.binlog"
-  $binaryLogArg = if ($binaryLog) { "/bl:$log" } else { "" }
   $outputPath = Join-Path $ToolsetDir "$task\"
 
   MSBuild $taskProject `
-    $binaryLogArg `
+    /bl:$log `
     /t:$target `
     /p:Configuration=$configuration `
     /p:RepoRoot=$RepoRoot `

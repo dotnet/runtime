@@ -48,8 +48,14 @@ namespace System.Runtime.Caching
 
         public CacheEntryUpdateArguments(ObjectCache source, CacheEntryRemovedReason reason, string key, string regionName)
         {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(key);
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
             _source = source;
             _reason = reason;

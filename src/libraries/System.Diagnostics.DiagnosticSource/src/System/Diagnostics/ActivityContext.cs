@@ -96,7 +96,10 @@ namespace System.Diagnostics
         /// </returns>
         public static ActivityContext Parse(string traceParent, string? traceState)
         {
-            ArgumentNullException.ThrowIfNull(traceParent);
+            if (traceParent is null)
+            {
+                throw new ArgumentNullException(nameof(traceParent));
+            }
 
             if (!Activity.TryConvertIdToContext(traceParent, traceState, isRemote: false, out ActivityContext context))
             {

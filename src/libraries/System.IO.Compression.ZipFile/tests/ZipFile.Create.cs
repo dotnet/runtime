@@ -11,147 +11,161 @@ namespace System.IO.Compression.Tests
 {
     public class ZipFile_Create : ZipFileTestBase
     {
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task CreateFromDirectoryNormal(bool async)
+        [Fact]
+        public async Task CreateFromDirectoryNormal()
         {
             string folderName = zfolder("normal");
             string noBaseDir = GetTestFilePath();
-            await CallZipFileCreateFromDirectory(async, folderName, noBaseDir);
+            ZipFile.CreateFromDirectory(folderName, noBaseDir);
 
-            await IsZipSameAsDir(noBaseDir, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false, async);
+            await IsZipSameAsDirAsync(noBaseDir, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
         }
 
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task CreateFromDirectory_IncludeBaseDirectory(bool async)
+        [Fact]
+        public void CreateFromDirectory_IncludeBaseDirectory()
         {
             string folderName = zfolder("normal");
             string withBaseDir = GetTestFilePath();
-            await CallZipFileCreateFromDirectory(async, folderName, withBaseDir, CompressionLevel.Optimal, true);
+            ZipFile.CreateFromDirectory(folderName, withBaseDir, CompressionLevel.Optimal, true);
 
             IEnumerable<string> expected = Directory.EnumerateFiles(zfolder("normal"), "*", SearchOption.AllDirectories);
-
-            ZipArchive actual_withbasedir = await CallZipFileOpen(async, withBaseDir, ZipArchiveMode.Read);
-
-            foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
+            using (ZipArchive actual_withbasedir = ZipFile.Open(withBaseDir, ZipArchiveMode.Read))
             {
-                string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
-                Assert.StartsWith("normal", actualEntry.FullName);
-                Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
-                using Stream expectedStream = File.OpenRead(expectedFile);
-                Stream actualStream = await OpenEntryStream(async, actualEntry);
-                StreamsEqual(expectedStream, actualStream);
-                await DisposeStream(async, actualStream);
+                foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
+                {
+                    string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
+                    Assert.StartsWith("normal", actualEntry.FullName);
+                    Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
+                    using (Stream expectedStream = File.OpenRead(expectedFile))
+                    using (Stream actualStream = actualEntry.Open())
+                    {
+                        StreamsEqual(expectedStream, actualStream);
+                    }
+                }
             }
-
-            await DisposeZipArchive(async, actual_withbasedir);
         }
 
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task CreateFromDirectoryUnicode(bool async)
+        [Fact]
+        public async Task CreateFromDirectory_IncludeBaseDirectoryAsync()
+        {
+            string folderName = zfolder("normal");
+            string withBaseDir = GetTestFilePath();
+            ZipFile.CreateFromDirectory(folderName, withBaseDir, CompressionLevel.Optimal, true);
+
+            IEnumerable<string> expected = Directory.EnumerateFiles(zfolder("normal"), "*", SearchOption.AllDirectories);
+            using (ZipArchive actual_withbasedir = ZipFile.Open(withBaseDir, ZipArchiveMode.Read))
+            {
+                foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
+                {
+                    string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
+                    Assert.StartsWith("normal", actualEntry.FullName);
+                    Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
+                    using (Stream expectedStream = File.OpenRead(expectedFile))
+                    using (Stream actualStream = actualEntry.Open())
+                    {
+                        await StreamsEqualAsync(expectedStream, actualStream);
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public void CreateFromDirectoryUnicode()
         {
             string folderName = zfolder("unicode");
             string noBaseDir = GetTestFilePath();
-            await CallZipFileCreateFromDirectory(async, folderName, noBaseDir);
+            ZipFile.CreateFromDirectory(folderName, noBaseDir);
 
-            ZipArchive archive = await CallZipFileOpenRead(async, noBaseDir);
-
-            IEnumerable<string> actual = archive.Entries.Select(entry => entry.Name);
-            IEnumerable<string> expected = Directory.EnumerateFileSystemEntries(zfolder("unicode"), "*", SearchOption.AllDirectories).ToList();
-            Assert.True(Enumerable.SequenceEqual(expected.Select(i => Path.GetFileName(i)), actual.Select(i => i)));
-
-            await DisposeZipArchive(async, archive);
-        }
-
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task CreatedEmptyDirectoriesRoundtrip(bool async)
-        {
-            string folderName = "empty1";
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            using (ZipArchive archive = ZipFile.OpenRead(noBaseDir))
             {
-                DirectoryInfo rootDir = new DirectoryInfo(tempFolder.Path);
-                rootDir.CreateSubdirectory(folderName);
-
-                string archivePath = GetTestFilePath();
-                await CallZipFileCreateFromDirectory(async, rootDir.FullName, archivePath,
-                    CompressionLevel.Optimal, includeBaseDirectory: false, Encoding.UTF8);
-
-                ZipArchive archive = await CallZipFileOpenRead(async, archivePath);
-
-                Assert.Equal(1, archive.Entries.Count);
-                Assert.StartsWith(folderName, archive.Entries[0].FullName);
-
-                await DisposeZipArchive(async, archive);
+                IEnumerable<string> actual = archive.Entries.Select(entry => entry.Name);
+                IEnumerable<string> expected = Directory.EnumerateFileSystemEntries(zfolder("unicode"), "*", SearchOption.AllDirectories).ToList();
+                Assert.True(Enumerable.SequenceEqual(expected.Select(i => Path.GetFileName(i)), actual.Select(i => i)));
             }
         }
 
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task CreatedEmptyUtf32DirectoriesRoundtrip(bool async)
+        [Fact]
+        public void CreatedEmptyDirectoriesRoundtrip()
+        {
+            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            {
+                DirectoryInfo rootDir = new DirectoryInfo(tempFolder.Path);
+                rootDir.CreateSubdirectory("empty1");
+
+                string archivePath = GetTestFilePath();
+                ZipFile.CreateFromDirectory(
+                    rootDir.FullName, archivePath,
+                    CompressionLevel.Optimal, false, Encoding.UTF8);
+
+                using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+                {
+                    Assert.Equal(1, archive.Entries.Count);
+                    Assert.StartsWith("empty1", archive.Entries[0].FullName);
+                }
+            }
+        }
+
+        [Fact]
+        public void CreatedEmptyUtf32DirectoriesRoundtrip()
         {
             using (var tempFolder = new TempDirectory(GetTestFilePath()))
             {
                 Encoding entryEncoding = Encoding.UTF32;
                 DirectoryInfo rootDir = new DirectoryInfo(tempFolder.Path);
-                string folderName = "empty1";
-                rootDir.CreateSubdirectory(folderName);
+                rootDir.CreateSubdirectory("empty1");
 
                 string archivePath = GetTestFilePath();
-                await CallZipFileCreateFromDirectory(async, rootDir.FullName, archivePath,
+                ZipFile.CreateFromDirectory(
+                    rootDir.FullName, archivePath,
                     CompressionLevel.Optimal, false, entryEncoding);
 
-                ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Read, entryEncoding);
-
-                Assert.Equal(1, archive.Entries.Count);
-                Assert.StartsWith(folderName, archive.Entries[0].FullName);
-
-                await DisposeZipArchive(async, archive);
+                using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Read, entryEncoding))
+                {
+                    Assert.Equal(1, archive.Entries.Count);
+                    Assert.StartsWith("empty1", archive.Entries[0].FullName);
+                }
             }
         }
 
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task CreatedEmptyRootDirectoryRoundtrips(bool async)
+        [Fact]
+        public void CreatedEmptyRootDirectoryRoundtrips()
         {
             using (var tempFolder = new TempDirectory(GetTestFilePath()))
             {
                 DirectoryInfo emptyRoot = new DirectoryInfo(tempFolder.Path);
                 string archivePath = GetTestFilePath();
-                await CallZipFileCreateFromDirectory(async, emptyRoot.FullName,
-                    archivePath, CompressionLevel.Optimal, includeBaseDirectory: true);
+                ZipFile.CreateFromDirectory(
+                    emptyRoot.FullName, archivePath,
+                    CompressionLevel.Optimal, true);
 
-                ZipArchive archive = await CallZipFileOpenRead(async, archivePath);
-                Assert.Equal(1, archive.Entries.Count);
-                await DisposeZipArchive(async, archive);
+                using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+                {
+                    Assert.Equal(1, archive.Entries.Count);
+                }
             }
         }
 
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task CreateSetsExternalAttributesCorrectly(bool async)
+        [Fact]
+        public void CreateSetsExternalAttributesCorrectly()
         {
             string folderName = zfolder("normal");
             string filepath = GetTestFilePath();
-            await CallZipFileCreateFromDirectory(async, folderName, filepath);
+            ZipFile.CreateFromDirectory(folderName, filepath);
 
-            ZipArchive archive = await CallZipFileOpen(async, filepath, ZipArchiveMode.Read);
-
-            foreach (ZipArchiveEntry entry in archive.Entries)
+            using (ZipArchive archive = ZipFile.Open(filepath, ZipArchiveMode.Read))
             {
-                if (OperatingSystem.IsWindows())
+                foreach (ZipArchiveEntry entry in archive.Entries)
                 {
-                    Assert.Equal(0, entry.ExternalAttributes);
-                }
-                else
-                {
-                    Assert.NotEqual(0, entry.ExternalAttributes);
+                    if (OperatingSystem.IsWindows())
+                    {
+                        Assert.Equal(0, entry.ExternalAttributes);
+                    }
+                    else
+                    {
+                        Assert.NotEqual(0, entry.ExternalAttributes);
+                    }
                 }
             }
-
-            await DisposeZipArchive(async, archive);
         }
     }
 }

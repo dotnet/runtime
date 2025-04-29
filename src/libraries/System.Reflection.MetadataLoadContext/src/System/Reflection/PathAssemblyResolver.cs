@@ -31,7 +31,8 @@ namespace System.Reflection
         /// <exception cref="System.ArgumentException">Thrown when a path is invalid.</exception>
         public PathAssemblyResolver(IEnumerable<string> assemblyPaths)
         {
-            ArgumentNullException.ThrowIfNull(assemblyPaths);
+            if (assemblyPaths is null)
+                throw new ArgumentNullException(nameof(assemblyPaths));
 
             foreach (string path in assemblyPaths)
             {

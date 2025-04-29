@@ -1,23 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Interpreter-FIXME: we get an existing implementation of ASSERTE via PCH that isn't usable
-//  from inside the interpreter, so we need to replace it with our own.
-#undef _ASSERTE
-
-#if defined(_DEBUG)
-
-extern "C" void assertAbort(const char* why, const char* file, unsigned line);
-
-#define _ASSERTE(expr) if (!(expr)) { \
-    assertAbort(#expr, __FILE__, __LINE__); \
-}
-#else // _DEBUG
-#define _ASSERTE(expr) (void)0
-#endif // _DEBUG
-
-#include "gcinfohelpers.h"
 #include <stdint.h>
+#include <windows.h>
+#include "debugmacros.h"
 #include "iallocator.h"
 #include "gcinfoarraylist.h"
 #include "safemath.h"
@@ -25,8 +11,8 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line);
 inline size_t roundUp(size_t size, size_t alignment)
 {
     // `alignment` must be a power of two
-    _ASSERTE(alignment != 0);
-    _ASSERTE((alignment & (alignment - 1)) == 0);
+    assert(alignment != 0);
+    assert((alignment & (alignment - 1)) == 0);
 
     return (size + (alignment - 1)) & ~(alignment - 1);
 }
@@ -39,7 +25,7 @@ GcInfoArrayListBase::GcInfoArrayListBase(IAllocator* allocator)
       m_lastChunkCapacity(0),
       m_itemCount(0)
 {
-    _ASSERTE(m_allocator != nullptr);
+    assert(m_allocator != nullptr);
 }
 
 GcInfoArrayListBase::~GcInfoArrayListBase()
@@ -56,19 +42,19 @@ void GcInfoArrayListBase::AppendNewChunk(size_t firstChunkCapacity, size_t eleme
     size_t chunkCapacity = (m_firstChunk == nullptr) ? firstChunkCapacity : (m_lastChunkCapacity * GrowthFactor);
 
     S_SIZE_T chunkSize = S_SIZE_T(roundUp(sizeof(ChunkBase), chunkAlignment)) + (S_SIZE_T(elementSize) * S_SIZE_T(chunkCapacity));
-    _ASSERTE(!chunkSize.IsOverflow());
+    assert(!chunkSize.IsOverflow());
 
     ChunkBase* chunk = reinterpret_cast<ChunkBase*>(m_allocator->Alloc(chunkSize.Value()));
     chunk->m_next = nullptr;
 
     if (m_lastChunk != nullptr)
     {
-        _ASSERTE(m_firstChunk != nullptr);
+        assert(m_firstChunk != nullptr);
         m_lastChunk->m_next = chunk;
     }
     else
     {
-        _ASSERTE(m_lastChunk == nullptr);
+        assert(m_lastChunk == nullptr);
         m_firstChunk = chunk;
     }
 
@@ -80,7 +66,7 @@ void GcInfoArrayListBase::AppendNewChunk(size_t firstChunkCapacity, size_t eleme
 GcInfoArrayListBase::IteratorBase::IteratorBase(GcInfoArrayListBase* list, size_t firstChunkCapacity)
     : m_list(list)
 {
-    _ASSERTE(m_list != nullptr);
+    assert(m_list != nullptr);
 
     // Note: if the list is empty, m_list->firstChunk == nullptr == m_list->lastChunk and m_lastChunkCount == 0.
     //       In that case, the next two lines will set m_currentChunk to nullptr and m_currentChunkCount to 0.

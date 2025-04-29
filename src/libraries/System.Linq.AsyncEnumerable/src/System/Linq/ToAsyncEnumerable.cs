@@ -18,7 +18,7 @@ namespace System.Linq
         public static IAsyncEnumerable<TSource> ToAsyncEnumerable<TSource>(
             this IEnumerable<TSource> source)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
 
             return source switch
             {

@@ -32,7 +32,10 @@ namespace System.Threading.RateLimiting
         /// <exception cref="ArgumentException"><paramref name="limiters"/> is an empty array.</exception>
         public static RateLimiter CreateChained(params RateLimiter[] limiters)
         {
-            ArgumentNullException.ThrowIfNull(limiters);
+            if (limiters is null)
+            {
+                throw new ArgumentNullException(nameof(limiters));
+            }
 
             if (limiters.Length == 0)
             {

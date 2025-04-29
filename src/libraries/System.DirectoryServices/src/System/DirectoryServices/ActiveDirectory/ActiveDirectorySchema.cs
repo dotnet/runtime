@@ -218,7 +218,10 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            ArgumentNullException.ThrowIfNull(commonName);
+            if (commonName == null)
+            {
+                throw new ArgumentNullException(nameof(commonName));
+            }
 
             if (commonName.Length == 0)
             {
@@ -291,7 +294,10 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            ArgumentNullException.ThrowIfNull(commonName);
+            if (commonName == null)
+            {
+                throw new ArgumentNullException(nameof(commonName));
+            }
 
             if (commonName.Length == 0)
             {

@@ -48,7 +48,10 @@ namespace System.Text.Json.Serialization.Converters
 
         internal sealed override void WriteAsPropertyNameCore(Utf8JsonWriter writer, object value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
 
             Type runtimeType = value.GetType();
             if (runtimeType == Type)

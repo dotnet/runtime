@@ -17,29 +17,15 @@ namespace System.ComponentModel.DataAnnotations
 
         public override bool IsValid(object? value)
         {
-            switch (value)
+            if (value == null)
             {
-                case Uri valueAsUri:
-                {
-                    return valueAsUri.Scheme == Uri.UriSchemeHttp
-                        || valueAsUri.Scheme == Uri.UriSchemeHttps
-                        || valueAsUri.Scheme == Uri.UriSchemeFtp;
-                }
-                case string valueAsString:
-                {
-                    return valueAsString.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                        || valueAsString.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-                        || valueAsString.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase);
-                }
-                case null:
-                {
-                    return true;
-                }
-                default:
-                {
-                    return false;
-                }
+                return true;
             }
+
+            return value is string valueAsString &&
+                (valueAsString.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                || valueAsString.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                || valueAsString.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

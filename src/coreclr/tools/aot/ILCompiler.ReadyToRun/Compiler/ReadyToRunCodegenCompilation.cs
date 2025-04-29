@@ -19,7 +19,6 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.Reflection.ReadyToRun;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
@@ -449,7 +448,7 @@ namespace ILCompiler
                 ReadyToRunFlags.READYTORUN_FLAG_Component |
                 ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
 
-            if (inputModule.IsPlatformNeutral || inputModule.PEReader.IsReadyToRunPlatformNeutralSource())
+            if (inputModule.IsPlatformNeutral)
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }

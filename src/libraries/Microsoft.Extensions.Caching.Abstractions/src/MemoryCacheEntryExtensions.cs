@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Caching.Memory
             this MemoryCacheEntryOptions options,
             IChangeToken expirationToken)
         {
-            ArgumentNullException.ThrowIfNull(expirationToken);
+            ThrowHelper.ThrowIfNull(expirationToken);
 
             options.ExpirationTokens.Add(expirationToken);
             return options;
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Caching.Memory
             this MemoryCacheEntryOptions options,
             PostEvictionDelegate callback)
         {
-            ArgumentNullException.ThrowIfNull(callback);
+            ThrowHelper.ThrowIfNull(callback);
 
             return options.RegisterPostEvictionCallback(callback, state: null);
         }
@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Caching.Memory
             PostEvictionDelegate callback,
             object? state)
         {
-            ArgumentNullException.ThrowIfNull(callback);
+            ThrowHelper.ThrowIfNull(callback);
 
             options.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
             {

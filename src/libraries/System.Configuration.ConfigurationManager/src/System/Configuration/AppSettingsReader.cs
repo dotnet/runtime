@@ -30,8 +30,14 @@ namespace System.Configuration
         /// </summary>
         public object GetValue(string key, Type type)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(type);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
 
             string val = _map[key];
 

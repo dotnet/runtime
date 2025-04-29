@@ -70,7 +70,10 @@ namespace System.Text.Json
         /// </exception>
         public static byte[] SerializeToUtf8Bytes<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return WriteBytes(value, jsonTypeInfo);
@@ -90,7 +93,10 @@ namespace System.Text.Json
         /// </exception>
         public static byte[] SerializeToUtf8Bytes(object? value, JsonTypeInfo jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return WriteBytesAsObject(value, jsonTypeInfo);
@@ -119,7 +125,10 @@ namespace System.Text.Json
         /// </exception>
         public static byte[] SerializeToUtf8Bytes(object? value, Type inputType, JsonSerializerContext context)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);

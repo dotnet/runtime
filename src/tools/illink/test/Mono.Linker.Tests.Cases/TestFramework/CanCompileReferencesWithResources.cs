@@ -6,16 +6,12 @@ namespace Mono.Linker.Tests.Cases.TestFramework
 {
 	[SetupCompileBefore ("library.dll",
 		new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.cs" },
-		resources: new object[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt" },
-		// Here to give coverage on the additional args parameter to ensure it is in sync with the more commonly used overload
-		additionalArguments: new [] { "/optimize+" })]
+		resources: new object[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt" })]
 
 	// Compile the same assembly again with another resource to get coverage on SetupCompileAfter
 	[SetupCompileAfter ("library.dll",
 		new[] { "Dependencies/CanCompileReferencesWithResources_Lib1.cs" },
-		resources: new object[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt", "Dependencies/CanCompileReferencesWithResources_Lib1.log" },
-		// Here to give coverage on the additional args parameter to ensure it is in sync with the more commonly used overload
-		additionalArguments: new [] { "/optimize+" })]
+		resources: new object[] { "Dependencies/CanCompileReferencesWithResources_Lib1.txt", "Dependencies/CanCompileReferencesWithResources_Lib1.log" })]
 
 	[KeptResourceInAssembly ("library.dll", "CanCompileReferencesWithResources_Lib1.txt")]
 	[KeptResourceInAssembly ("library.dll", "CanCompileReferencesWithResources_Lib1.log")]

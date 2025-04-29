@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression.Tests;
@@ -52,8 +51,9 @@ public class zip_LargeFiles : ZipFileTestBase
 
     [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
     [OuterLoop("It requires 5~6 GB of free disk space and a lot of CPU time for compressed tests")]
-    [MemberData(nameof(Get_Booleans_Data))]
-    public static async Task CheckZIP64VersionIsSet_ForSmallFilesAfterBigFiles_Async(bool isCompressed)
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void CheckZIP64VersionIsSet_ForSmallFilesAfterBigFiles(bool isCompressed)
     {
         // issue #94899
 
@@ -71,11 +71,11 @@ public class zip_LargeFiles : ZipFileTestBase
             using FileStream fs = File.Open(zipArchivePath, FileMode.Create, FileAccess.ReadWrite);
 
             // Create
-            await using (ZipArchive archive = await ZipArchive.CreateAsync(fs, ZipArchiveMode.Create, true, entryNameEncoding: null))
+            using (ZipArchive archive = new(fs, ZipArchiveMode.Create, true))
             {
                 ZipArchiveEntry file = archive.CreateEntry(LargeFileName, compressLevel);
 
-                await using (Stream stream = await file.OpenAsync())
+                using (Stream stream = file.Open())
                 {
                     // Write 5GB of data
                     for (var i = 0; i < 5; i++)
@@ -85,22 +85,22 @@ public class zip_LargeFiles : ZipFileTestBase
                             FillWithHardToCompressData(largeBuffer);
                         }
 
-                        await stream.WriteAsync(largeBuffer);
+                        stream.Write(largeBuffer);
                     }
                 }
 
                 file = archive.CreateEntry(SmallFileName, compressLevel);
 
-                await using (Stream stream = await file.OpenAsync())
+                using (Stream stream = file.Open())
                 {
-                    await stream.WriteAsync(smallBuffer);
+                    stream.Write(smallBuffer);
                 }
             }
 
             fs.Position = 0;
 
             // Validate
-            await using (ZipArchive archive = await ZipArchive.CreateAsync(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
+            using (ZipArchive archive = new(fs, ZipArchiveMode.Read))
             {
                 using var reader = new BinaryReader(fs);
 

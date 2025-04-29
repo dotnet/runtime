@@ -39,13 +39,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
         public SrgsDocument(XmlReader srgsGrammar)
         {
-            ArgumentNullException.ThrowIfNull(srgsGrammar);
+            Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
 
             Load(srgsGrammar);
         }
         public SrgsDocument(GrammarBuilder builder)
         {
-            ArgumentNullException.ThrowIfNull(builder);
+            Helpers.ThrowIfNull(builder, nameof(builder));
 
             // New grammar
             _grammar = new SrgsGrammar
@@ -64,7 +64,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         public SrgsDocument(SrgsRule grammarRootRule) : this()
         {
-            ArgumentNullException.ThrowIfNull(grammarRootRule);
+            Helpers.ThrowIfNull(grammarRootRule, nameof(grammarRootRule));
 
             Root = grammarRootRule;
             Rules.Add(grammarRootRule);
@@ -75,7 +75,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region public methods
         public void WriteSrgs(XmlWriter srgsGrammar)
         {
-            ArgumentNullException.ThrowIfNull(srgsGrammar);
+            Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
 
             // Make sure the grammar is ok
             _grammar.Validate();
@@ -117,7 +117,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
+                Helpers.ThrowIfNull(value, nameof(value));
                 if (value.Equals(CultureInfo.InvariantCulture))
                 {
                     throw new ArgumentException(SR.Get(SRID.InvariantCultureInfo), nameof(value));

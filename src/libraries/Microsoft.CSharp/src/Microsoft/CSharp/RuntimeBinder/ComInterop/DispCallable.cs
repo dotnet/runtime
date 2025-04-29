@@ -11,7 +11,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// <summary>
     /// This represents a bound dispmember on a IDispatch object.
     /// </summary>
-    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class DispCallable : IPseudoComObject
     {
         internal DispCallable(IDispatchComObject dispatch, string memberName, int dispId)

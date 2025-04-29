@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <param name="hasMatches">A value that determines if <see cref="PatternMatchingResult"/> has any matches.</param>
         public PatternMatchingResult(IEnumerable<FilePatternMatch> files, bool hasMatches)
         {
-            ArgumentNullException.ThrowIfNull(files);
+            ThrowHelper.ThrowIfNull(files);
 
             Files = files;
             HasMatches = hasMatches;

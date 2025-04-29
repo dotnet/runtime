@@ -25,7 +25,10 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public void Add(string propertyName, JsonNode? value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
 
             Dictionary.Add(propertyName, value);
             value?.AssignParent(this);
@@ -78,7 +81,10 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public bool ContainsKey(string propertyName)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
 
             return Dictionary.ContainsKey(propertyName);
         }
@@ -100,7 +106,10 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public bool Remove(string propertyName)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
 
             bool success = Dictionary.Remove(propertyName, out JsonNode? removedNode);
             if (success)
@@ -186,7 +195,10 @@ namespace System.Text.Json.Nodes
         /// </exception>
         bool IDictionary<string, JsonNode?>.TryGetValue(string propertyName, out JsonNode? jsonNode)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
 
             return Dictionary.TryGetValue(propertyName, out jsonNode);
         }

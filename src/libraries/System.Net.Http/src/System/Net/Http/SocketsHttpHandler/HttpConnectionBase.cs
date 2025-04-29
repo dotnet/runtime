@@ -56,29 +56,26 @@ namespace System.Net.Http
         protected void MarkConnectionAsEstablished(Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
         {
             ConnectionSetupActivity = connectionSetupActivity;
-            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
+            Debug.Assert(_pool.Settings._metrics is not null);
+
+            SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics;
+            if (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled)
             {
-                Debug.Assert(_pool.Settings._metrics is not null);
+                // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
+                string protocol =
+                    this is HttpConnection ? "1.1" :
+                    this is Http2Connection ? "2" :
+                    "3";
 
-                SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics!;
-                if (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled)
-                {
-                    // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
-                    string protocol =
-                        this is HttpConnection ? "1.1" :
-                        this is Http2Connection ? "2" :
-                        "3";
+                _connectionMetrics = new ConnectionMetrics(
+                    metrics,
+                    protocol,
+                    _pool.IsSecure ? "https" : "http",
+                    _pool.OriginAuthority.HostValue,
+                    _pool.OriginAuthority.Port,
+                    remoteEndPoint?.Address?.ToString());
 
-                    _connectionMetrics = new ConnectionMetrics(
-                        metrics,
-                        protocol,
-                        _pool.IsSecure ? "https" : "http",
-                        _pool.OriginAuthority.HostValue,
-                        _pool.OriginAuthority.Port,
-                        remoteEndPoint?.Address?.ToString());
-
-                    _connectionMetrics.ConnectionEstablished();
-                }
+                _connectionMetrics.ConnectionEstablished();
             }
 
             _idleSinceTickCount = _creationTickCount;
@@ -99,7 +96,7 @@ namespace System.Net.Http
 
         public void MarkConnectionAsClosed()
         {
-            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled) _connectionMetrics?.ConnectionClosed(durationMs: Environment.TickCount64 - _creationTickCount);
+            _connectionMetrics?.ConnectionClosed(durationMs: Environment.TickCount64 - _creationTickCount);
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -116,13 +113,13 @@ namespace System.Net.Http
         public void MarkConnectionAsIdle()
         {
             _idleSinceTickCount = Environment.TickCount64;
-            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled) _connectionMetrics?.IdleStateChanged(idle: true);
+            _connectionMetrics?.IdleStateChanged(idle: true);
         }
 
         public void MarkConnectionAsNotIdle()
         {
             _idleSinceTickCount = null;
-            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled) _connectionMetrics?.IdleStateChanged(idle: false);
+            _connectionMetrics?.IdleStateChanged(idle: false);
         }
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>

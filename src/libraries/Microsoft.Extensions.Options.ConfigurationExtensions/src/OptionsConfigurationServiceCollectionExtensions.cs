@@ -66,8 +66,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection Configure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this IServiceCollection services, string? name, IConfiguration config, Action<BinderOptions>? configureBinder)
             where TOptions : class
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(config);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(config);
 
             services.AddOptions();
             services.AddSingleton<IOptionsChangeTokenSource<TOptions>>(new ConfigurationChangeTokenSource<TOptions>(name, config));

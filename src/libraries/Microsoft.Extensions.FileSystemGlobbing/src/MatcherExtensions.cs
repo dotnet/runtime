@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>The match results.</returns>
         public static PatternMatchingResult Match(this Matcher matcher, string rootDir, IEnumerable<string>? files)
         {
-            ArgumentNullException.ThrowIfNull(matcher);
+            ThrowHelper.ThrowIfNull(matcher);
 
             return matcher.Execute(new InMemoryDirectoryInfo(rootDir, files));
         }

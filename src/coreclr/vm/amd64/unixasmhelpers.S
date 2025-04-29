@@ -152,16 +152,13 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
 
     PUSH_CALLEE_SAVED_REGISTERS
 
-    // Push rcx for the async continuation
-    push_register rcx
-    // Push rdx for the second half of the return value
     push_register rdx
     // Push rax again - this is where integer/pointer return values are returned
     push_register rax
 
     mov                 rdi, rsp
 
-    alloc_stack         0x20
+    alloc_stack         0x28
 
     // First float return register
     movdqa              [rsp], xmm0
@@ -174,11 +171,9 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
 
     movdqa              xmm0, [rsp]
     movdqa              xmm1, [rsp+0x10]
-    free_stack          0x20
-
+    free_stack          0x28
     pop_register        rax
     pop_register        rdx
-    pop_register        rcx
 
     POP_CALLEE_SAVED_REGISTERS
     ret
@@ -210,10 +205,10 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
 NESTED_END JIT_Patchpoint, _TEXT
 
 // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PatchpointForced, _TEXT
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
         mov rsi, rdi
         xor rdi, rdi
         jmp C_FUNC(JIT_Patchpoint)
-LEAF_END JIT_PatchpointForced, _TEXT
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION

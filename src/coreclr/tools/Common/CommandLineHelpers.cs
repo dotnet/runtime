@@ -24,11 +24,11 @@ namespace System.CommandLine
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
-        public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
+        public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<CliToken> tokens, bool strict)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
 
-            foreach (Token token in tokens)
+            foreach (CliToken token in tokens)
             {
                 AppendExpandedPaths(dictionary, token.Value, strict);
             }
@@ -36,11 +36,11 @@ namespace System.CommandLine
             return dictionary;
         }
 
-        public static List<string> BuildPathList(IReadOnlyList<Token> tokens)
+        public static List<string> BuildPathList(IReadOnlyList<CliToken> tokens)
         {
             List<string> paths = new();
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
-            foreach (Token token in tokens)
+            foreach (CliToken token in tokens)
             {
                 AppendExpandedPaths(dictionary, token.Value, false);
                 foreach (string file in dictionary.Values)
@@ -115,7 +115,7 @@ namespace System.CommandLine
             }
         }
 
-        public static RootCommand UseVersion(this RootCommand command)
+        public static CliRootCommand UseVersion(this CliRootCommand command)
         {
             for (int i = 0; i < command.Options.Count; i++)
             {
@@ -129,9 +129,9 @@ namespace System.CommandLine
             return command;
         }
 
-        public static RootCommand UseExtendedHelp(this RootCommand command, Func<HelpContext, IEnumerable<Func<HelpContext, bool>>> customizer)
+        public static CliRootCommand UseExtendedHelp(this CliRootCommand command, Func<HelpContext, IEnumerable<Func<HelpContext, bool>>> customizer)
         {
-            foreach (Option option in command.Options)
+            foreach (CliOption option in command.Options)
             {
                 if (option is HelpOption helpOption)
                 {
@@ -209,7 +209,7 @@ namespace System.CommandLine
                 Dictionary<string, string> outputToReproPackageFileName = new();
 
                 List<string> rspFile = new List<string>();
-                foreach (Option option in res.CommandResult.Command.Options)
+                foreach (CliOption option in res.CommandResult.Command.Options)
                 {
                     OptionResult optionResult = res.GetResult(option);
                     if (optionResult is null || option.Name == "--make-repro-path")
@@ -266,7 +266,7 @@ namespace System.CommandLine
                     }
                 }
 
-                foreach (Argument argument in res.CommandResult.Command.Arguments)
+                foreach (CliArgument argument in res.CommandResult.Command.Arguments)
                 {
                     ArgumentResult argumentResult = res.GetResult(argument);
                     if (argumentResult is null)

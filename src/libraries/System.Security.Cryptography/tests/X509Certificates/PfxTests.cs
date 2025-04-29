@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography.Tests;
-using System.Text;
-using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
 using Test.Cryptography;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Linq;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -24,7 +23,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // We don't know for sure this is a correct Windows version when this support was added but
         // we know for a fact lower versions don't support it.
         public static bool Pkcs12PBES2Supported => !PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1703OrGreater;
-        public static bool MLKemIsNotSupported => !MLKem.IsSupported;
 
         public static IEnumerable<object[]> BrainpoolCurvesPfx
         {
@@ -383,211 +381,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // And verify that the public key isn't accidentally a private key.
                 Assert.ThrowsAny<CryptographicException>(() => pubKey.SignData(data, HashAlgorithmName.SHA1));
-            }
-        }
-
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
-        [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKem512PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
-        {
-            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeySeedPfx;
-            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
-
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLKem kem = cert.GetMLKemPrivateKey())
-            {
-                Assert.NotNull(kem);
-                Assert.Equal(MLKemAlgorithm.MLKem512, kem.Algorithm);
-                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
-                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
-            }
-        }
-
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
-        [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKem512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
-        {
-            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeyExpandedKeyPfx;
-            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
-
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLKem kem = cert.GetMLKemPrivateKey())
-            {
-                Assert.NotNull(kem);
-                Assert.Equal(MLKemAlgorithm.MLKem512, kem.Algorithm);
-                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
-                Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
-                AssertExtensions.SequenceEqual(
-                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
-                    kem.ExportDecapsulationKey());
-            }
-        }
-
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
-        [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKem512PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
-        {
-            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeyBothPfx;
-            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
-
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLKem kem = cert.GetMLKemPrivateKey())
-            {
-                Assert.NotNull(kem);
-                Assert.Equal(MLKemAlgorithm.MLKem512, kem.Algorithm);
-                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
-                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
-                AssertExtensions.SequenceEqual(
-                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
-                    kem.ExportDecapsulationKey());
-            }
-        }
-
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
-        [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKem768PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
-        {
-            byte[] pfxBytes = MLKemTestData.IetfMlKem768PrivateKeySeedPfx;
-            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
-
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLKem kem = cert.GetMLKemPrivateKey())
-            {
-                Assert.NotNull(kem);
-                Assert.Equal(MLKemAlgorithm.MLKem768, kem.Algorithm);
-                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
-                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
-            }
-        }
-
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
-        [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKem768PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
-        {
-            byte[] pfxBytes = MLKemTestData.IetfMlKem768PrivateKeyExpandedKeyPfx;
-            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
-
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLKem kem = cert.GetMLKemPrivateKey())
-            {
-                Assert.NotNull(kem);
-                Assert.Equal(MLKemAlgorithm.MLKem768, kem.Algorithm);
-                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
-                Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
-                AssertExtensions.SequenceEqual(
-                    MLKemTestData.IetfMlKem768PrivateKeyDecapsulationKey,
-                    kem.ExportDecapsulationKey());
-            }
-        }
-
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
-        [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKem768PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
-        {
-            byte[] pfxBytes = MLKemTestData.IetfMlKem768PrivateKeyBothPfx;
-            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
-
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLKem kem = cert.GetMLKemPrivateKey())
-            {
-                Assert.NotNull(kem);
-                Assert.Equal(MLKemAlgorithm.MLKem768, kem.Algorithm);
-                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
-                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
-                AssertExtensions.SequenceEqual(
-                    MLKemTestData.IetfMlKem768PrivateKeyDecapsulationKey,
-                    kem.ExportDecapsulationKey());
-            }
-        }
-
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
-        [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKem1024PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
-        {
-            byte[] pfxBytes = MLKemTestData.IetfMlKem1024PrivateKeySeedPfx;
-            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
-
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLKem kem = cert.GetMLKemPrivateKey())
-            {
-                Assert.NotNull(kem);
-                Assert.Equal(MLKemAlgorithm.MLKem1024, kem.Algorithm);
-                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
-                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
-            }
-        }
-
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
-        [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKem1024PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
-        {
-            byte[] pfxBytes = MLKemTestData.IetfMlKem1024PrivateKeyExpandedKeyPfx;
-            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
-
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLKem kem = cert.GetMLKemPrivateKey())
-            {
-                Assert.NotNull(kem);
-                Assert.Equal(MLKemAlgorithm.MLKem1024, kem.Algorithm);
-                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
-                Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
-                AssertExtensions.SequenceEqual(
-                    MLKemTestData.IetfMlKem1024PrivateKeyDecapsulationKey,
-                    kem.ExportDecapsulationKey());
-            }
-        }
-
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
-        [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKem1024PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
-        {
-            byte[] pfxBytes = MLKemTestData.IetfMlKem1024PrivateKeyBothPfx;
-            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
-
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLKem kem = cert.GetMLKemPrivateKey())
-            {
-                Assert.NotNull(kem);
-                Assert.Equal(MLKemAlgorithm.MLKem1024, kem.Algorithm);
-                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
-                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
-                AssertExtensions.SequenceEqual(
-                    MLKemTestData.IetfMlKem1024PrivateKeyDecapsulationKey,
-                    kem.ExportDecapsulationKey());
-            }
-        }
-
-        [ConditionalTheory(nameof(MLKemIsNotSupported))]
-        [MemberData(nameof(StorageFlags))]
-        public static void ReadMLKem512PrivateKey_NotSupported(X509KeyStorageFlags keyStorageFlags)
-        {
-            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeySeedPfx;
-            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
-
-            // Windows when using non-ephemeral delays throwing no private key and instead acts as it the
-            // keyset does not exist. Exporting it again to PFX forces Windows to reconcile the fact the key
-            // didn't actually load.
-            if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
-            {
-                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-                {
-                    Assert.Throws<CryptographicException>(
-                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, "PLACEHOLDER"));
-                }
-
-                using (X509Certificate2 cert = new(pfxBytes, pfxPassword, keyStorageFlags))
-                {
-                    Assert.Throws<CryptographicException>(
-                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, "PLACEHOLDER"));
-                }
-            }
-            else
-            {
-                Assert.Throws<CryptographicException>(
-                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
-
-                Assert.Throws<CryptographicException>(
-                    () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
             }
         }
 

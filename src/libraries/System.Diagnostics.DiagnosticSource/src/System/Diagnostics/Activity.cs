@@ -551,7 +551,10 @@ namespace System.Diagnostics
         /// </remarks>
         public Activity AddException(Exception exception, in TagList tags = default, DateTimeOffset timestamp = default)
         {
-            ArgumentNullException.ThrowIfNull(exception);
+            if (exception == null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
 
             TagList exceptionTags = tags;
 

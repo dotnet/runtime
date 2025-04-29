@@ -177,29 +177,27 @@ namespace System.Net.Http
 
         public override string ToString()
         {
-            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[512]);
+            StringBuilder sb = new StringBuilder();
 
             sb.Append("StatusCode: ");
-            sb.AppendSpanFormattable((int)_statusCode);
+            sb.Append((int)_statusCode);
 
             sb.Append(", ReasonPhrase: '");
             sb.Append(ReasonPhrase ?? "<null>");
 
             sb.Append("', Version: ");
-            sb.AppendSpanFormattable(_version);
+            sb.Append(_version);
 
             sb.Append(", Content: ");
             sb.Append(_content == null ? "<null>" : _content.GetType().ToString());
 
-            sb.Append(", Headers:");
-            sb.Append(Environment.NewLine);
-            HeaderUtilities.DumpHeaders(ref sb, _headers, _content?.Headers);
+            sb.AppendLine(", Headers:");
+            HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
 
             if (_trailingHeaders != null)
             {
-                sb.Append(", Trailing Headers:");
-                sb.Append(Environment.NewLine);
-                HeaderUtilities.DumpHeaders(ref sb, _trailingHeaders);
+                sb.AppendLine(", Trailing Headers:");
+                HeaderUtilities.DumpHeaders(sb, _trailingHeaders);
             }
 
             return sb.ToString();

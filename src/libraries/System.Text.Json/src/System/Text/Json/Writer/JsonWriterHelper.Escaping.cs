@@ -57,7 +57,7 @@ namespace System.Text.Json
             return (encoder ?? JavaScriptEncoder.Default).FindFirstCharacterToEncodeUtf8(value);
         }
 
-        public static int NeedsEscaping(ReadOnlySpan<char> value, JavaScriptEncoder? encoder)
+        public static unsafe int NeedsEscaping(ReadOnlySpan<char> value, JavaScriptEncoder? encoder)
         {
             // Some implementations of JavaScriptEncoder.FindFirstCharacterToEncode may not accept
             // null pointers and guard against that. Hence, check up-front to return -1.
@@ -66,14 +66,9 @@ namespace System.Text.Json
                 return -1;
             }
 
-            // Unfortunately, there is no public API for FindFirstCharacterToEncode(Span<char>) yet,
-            // so we have to use the unsafe FindFirstCharacterToEncode(char*, int) instead.
-            unsafe
+            fixed (char* ptr = value)
             {
-                fixed (char* ptr = value)
-                {
-                    return (encoder ?? JavaScriptEncoder.Default).FindFirstCharacterToEncode(ptr, value.Length);
-                }
+                return (encoder ?? JavaScriptEncoder.Default).FindFirstCharacterToEncode(ptr, value.Length);
             }
         }
 

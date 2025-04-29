@@ -30,7 +30,10 @@ namespace System.Composition.Convention
         /// <returns>An import builder allowing further configuration.</returns>
         public ImportConventionBuilder AsContractName(string contractName)
         {
-            ArgumentNullException.ThrowIfNull(contractName);
+            if (contractName is null)
+            {
+                throw new ArgumentNullException(nameof(contractName));
+            }
 
             if (contractName.Length == 0)
             {
@@ -47,7 +50,10 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ImportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType)
         {
-            ArgumentNullException.ThrowIfNull(getContractNameFromPartType);
+            if (getContractNameFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getContractNameFromPartType));
+            }
 
             _getContractNameFromPartType = getContractNameFromPartType;
             return this;
@@ -92,7 +98,10 @@ namespace System.Composition.Convention
         /// <returns>An import builder allowing further configuration.</returns>
         public ImportConventionBuilder AddMetadataConstraint(string name, object value)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
             if (name.Length == 0)
             {
@@ -112,8 +121,14 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ImportConventionBuilder AddMetadataConstraint(string name, Func<Type, object> getConstraintValueFromPartType)
         {
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(getConstraintValueFromPartType);
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (getConstraintValueFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getConstraintValueFromPartType));
+            }
 
             if (name.Length == 0)
             {

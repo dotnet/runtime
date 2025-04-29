@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 
         public LiteralPathSegment(string value, StringComparison comparisonType)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            ThrowHelper.ThrowIfNull(value);
 
             Value = value;
             _comparisonType = comparisonType;

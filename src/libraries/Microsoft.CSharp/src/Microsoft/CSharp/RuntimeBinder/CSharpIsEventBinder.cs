@@ -13,7 +13,6 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// Used to test whether a dynamic member over which += or -= is used is an event member.
     /// </summary>
     [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class CSharpIsEventBinder : DynamicMetaObjectBinder, ICSharpBinder
     {
         public BindingFlag BindingFlags => 0;

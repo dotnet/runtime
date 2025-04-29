@@ -94,7 +94,10 @@ namespace System.ComponentModel
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(parameterName)), nameof(parameterName));
             }
 
-            ArgumentNullException.ThrowIfNull(partDefinitionType);
+            if (partDefinitionType == null)
+            {
+                throw new ArgumentNullException(nameof(partDefinitionType));
+            }
 
             return new ArgumentException(SR.Format(SR.ReflectionModel_InvalidPartDefinition, partDefinitionType), parameterName);
         }

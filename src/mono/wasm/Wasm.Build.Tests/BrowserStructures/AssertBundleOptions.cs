@@ -14,6 +14,5 @@ public record AssertBundleOptions(
     string BinFrameworkDir,
     bool ExpectSymbolsFile = true,
     bool AssertIcuAssets = true,
-    bool AssertSymbolsFile = true,
-    bool? ExpectDotnetJsFingerprinting = false
+    bool AssertSymbolsFile = true
 );

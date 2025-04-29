@@ -38,7 +38,10 @@ namespace System.Net.Http.Json
             TJsonOptions jsonOptions,
             CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(client);
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
 
             TimeSpan timeout = client.Timeout;
 

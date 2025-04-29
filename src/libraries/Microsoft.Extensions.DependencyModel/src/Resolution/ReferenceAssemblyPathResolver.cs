@@ -33,8 +33,8 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal ReferenceAssemblyPathResolver(IFileSystem fileSystem, string? defaultReferenceAssembliesPath, string[] fallbackSearchPaths)
         {
-            ArgumentNullException.ThrowIfNull(fileSystem);
-            ArgumentNullException.ThrowIfNull(fallbackSearchPaths);
+            ThrowHelper.ThrowIfNull(fileSystem);
+            ThrowHelper.ThrowIfNull(fallbackSearchPaths);
 
             _fileSystem = fileSystem;
             _defaultReferenceAssembliesPath = defaultReferenceAssembliesPath;
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)
         {
-            ArgumentNullException.ThrowIfNull(library);
+            ThrowHelper.ThrowIfNull(library);
 
             if (!string.Equals(library.Type, "referenceassembly", StringComparison.OrdinalIgnoreCase))
             {

@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.RemoteExecutor;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Reflection;
+using System.Linq;
+using System.Collections.Generic;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -22,28 +21,20 @@ namespace System.Diagnostics.Tests
         public void TestAllPropagators()
         {
             RemoteExecutor.Invoke(() => {
+                Assert.NotNull(DistributedContextPropagator.Current);
 
                 //
                 // Default Propagator
                 //
 
-                Assert.NotNull(DistributedContextPropagator.Current);
                 Assert.Same(DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.Current);
-                Assert.Same(DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.CreateW3CPropagator());
 
-                //
-                // Legacy Propagator
-                //
-
-                // Temporary till we expose a method to retun it.
-                DistributedContextPropagator.Current = DistributedContextPropagator.CreatePreW3CPropagator();
-
-                TestLegacyPropagatorUsingW3CActivity(
+                TestDefaultPropagatorUsingW3CActivity(
                                 DistributedContextPropagator.Current,
                                 "Legacy1=true",
                                 new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("     LegacyKey1     ", "    LegacyValue1    ") });
 
-                TestLegacyPropagatorUsingHierarchicalActivity(
+                TestDefaultPropagatorUsingHierarchicalActivity(
                                 DistributedContextPropagator.Current,
                                 "Legacy2=true",
                                 new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("LegacyKey2", "LegacyValue2") });
@@ -112,35 +103,35 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        private void TestLegacyPropagatorUsingW3CActivity(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestDefaultPropagatorUsingW3CActivity(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             using Activity a = CreateW3CActivity("LegacyW3C1", "LegacyW3CState=1", baggage);
             using Activity b = CreateW3CActivity("LegacyW3C2", "LegacyW3CState=2", baggage);
 
             Assert.NotSame(Activity.Current, a);
 
-            TestLegacyPropagatorUsing(a, propagator, state, baggage);
+            TestDefaultPropagatorUsing(a, propagator, state, baggage);
 
             Assert.Same(Activity.Current, b);
 
-            TestLegacyPropagatorUsing(Activity.Current, propagator, state, baggage);
+            TestDefaultPropagatorUsing(Activity.Current, propagator, state, baggage);
         }
 
-        private void TestLegacyPropagatorUsingHierarchicalActivity(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestDefaultPropagatorUsingHierarchicalActivity(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             using Activity a = CreateHierarchicalActivity("LegacyHierarchical1", null, "LegacyHierarchicalState=1", baggage);
             using Activity b = CreateHierarchicalActivity("LegacyHierarchical2", null, "LegacyHierarchicalState=2", baggage);
 
             Assert.NotSame(Activity.Current, a);
 
-            TestLegacyPropagatorUsing(a, propagator, state, baggage);
+            TestDefaultPropagatorUsing(a, propagator, state, baggage);
 
             Assert.Same(Activity.Current, b);
 
-            TestLegacyPropagatorUsing(Activity.Current, propagator, state, baggage);
+            TestDefaultPropagatorUsing(Activity.Current, propagator, state, baggage);
         }
 
-        private void TestLegacyPropagatorUsing(Activity a, DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestDefaultPropagatorUsing(Activity a, DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             // Test with non-current
             propagator.Inject(a, null, (object carrier, string fieldName, string value) =>
@@ -492,7 +483,7 @@ namespace System.Diagnostics.Tests
             return a;
         }
 
-        internal static Activity CreateW3CActivity(string name, string state, IEnumerable<KeyValuePair<string, string?>>? baggage)
+        private Activity CreateW3CActivity(string name, string state, IEnumerable<KeyValuePair<string, string?>>? baggage)
         {
             Activity a = new Activity(name);
             a.SetIdFormat(ActivityIdFormat.W3C);

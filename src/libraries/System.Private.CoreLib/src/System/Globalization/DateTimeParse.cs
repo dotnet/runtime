@@ -3289,51 +3289,6 @@ namespace System
             return true;
         }
 
-        /// Determines if a format string contains a day-of-month specifier ('d' or 'dd').
-        /// Properly handles quoted sections and escape characters.
-        private static bool FormatContainsDayOfMonthSpecifier(ReadOnlySpan<char> format)
-        {
-            if (format.IsEmpty)
-            {
-                return false;
-            }
-            bool inQuote = false;
-            for (int i = 0; i < format.Length; i++)
-            {
-                char ch = format[i];
-                // Skip the next character if it's escaped
-                if (ch == '\\' || ch == '%')
-                {
-                    i++;
-                    continue;
-                }
-                // Toggle quote state
-                if (ch == '\'' || ch == '"')
-                {
-                    inQuote = !inQuote;
-                    continue;
-                }
-                // Only check for 'd' when not in quotes
-                if (!inQuote && ch == 'd')
-                {
-                    // Make sure it's a day-of-month specifier (d or dd)
-                    // and not a day-of-week specifier (ddd or dddd)
-                    int repeatCount = 1;
-                    while (i + 1 < format.Length && format[i + 1] == 'd')
-                    {
-                        repeatCount++;
-                        i++;
-                    }
-                    // Only day-of-month specifiers (d or dd) trigger genitive case
-                    if (repeatCount <= 2)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
         /*=================================MatchAbbreviatedMonthName==================================
         **Action: Parse the abbreviated month name from string starting at str.Index.
         **Returns: A value from 1 to 12 for the first month to the twelfth month.
@@ -3342,7 +3297,7 @@ namespace System
         **Exceptions: FormatException if an abbreviated month name can not be found.
         ==============================================================================*/
 
-        private static bool MatchAbbreviatedMonthName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result, ReadOnlySpan<char> format)
+        private static bool MatchAbbreviatedMonthName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result)
         {
             int maxMatchStrLen = 0;
             result = -1;
@@ -3402,11 +3357,12 @@ namespace System
                     }
                 }
 
-                // Search genitive form only if the format contains a day-of-month specifier
-                if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0 && FormatContainsDayOfMonthSpecifier(format))
+                // Search genitive form.
+                if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
                 {
                     int tempResult = str.MatchLongestWords(dtfi.InternalGetGenitiveMonthNames(abbreviated: true), ref maxMatchStrLen);
-                    // We found a longer match in the genitive month name. Use this as the result.
+
+                    // We found a longer match in the genitive month name.  Use this as the result.
                     // tempResult + 1 should be the month value.
                     if (tempResult >= 0)
                     {
@@ -3443,7 +3399,7 @@ namespace System
         **Exceptions: FormatException if a month name can not be found.
         ==============================================================================*/
 
-        private static bool MatchMonthName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result, ReadOnlySpan<char> format)
+        private static bool MatchMonthName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result)
         {
             int maxMatchStrLen = 0;
             result = -1;
@@ -3502,7 +3458,7 @@ namespace System
                 }
 
                 // Search genitive form.
-                if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0 && FormatContainsDayOfMonthSpecifier(format))
+                if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
                 {
                     int tempResult = str.MatchLongestWords(dtfi.InternalGetGenitiveMonthNames(abbreviated: false), ref maxMatchStrLen);
                     // We found a longer match in the genitive month name.  Use this as the result.
@@ -4089,7 +4045,7 @@ namespace System
                     {
                         if (tokenLen == 3)
                         {
-                            if (!MatchAbbreviatedMonthName(ref str, dtfi, ref tempMonth, format.Value))
+                            if (!MatchAbbreviatedMonthName(ref str, dtfi, ref tempMonth))
                             {
                                 result.SetBadDateTimeFailure();
                                 return false;
@@ -4097,7 +4053,7 @@ namespace System
                         }
                         else
                         {
-                            if (!MatchMonthName(ref str, dtfi, ref tempMonth, format.Value))
+                            if (!MatchMonthName(ref str, dtfi, ref tempMonth))
                             {
                                 result.SetBadDateTimeFailure();
                                 return false;

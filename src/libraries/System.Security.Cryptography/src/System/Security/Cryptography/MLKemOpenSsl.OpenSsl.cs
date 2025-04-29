@@ -22,12 +22,6 @@ namespace System.Security.Cryptography
             out bool hasDecapsulationKey)
         {
             ArgumentNullException.ThrowIfNull(pkeyHandle);
-
-            if (pkeyHandle.IsInvalid)
-            {
-                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
-            }
-
             upRefHandle = pkeyHandle.DuplicateHandle();
 
             try

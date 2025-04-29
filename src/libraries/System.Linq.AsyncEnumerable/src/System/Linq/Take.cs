@@ -24,7 +24,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             int count)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() || count <= 0 ? Empty<TSource>() :
@@ -61,7 +61,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Range range)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
 
             if (source.IsKnownEmpty())
             {

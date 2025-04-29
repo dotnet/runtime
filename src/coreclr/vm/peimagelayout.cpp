@@ -34,8 +34,6 @@ static bool AllowR2RForImage(PEImage* pOwner)
 }
 
 #ifndef DACCESS_COMPILE
-extern BOOL g_useDefaultBaseAddr;
-
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;

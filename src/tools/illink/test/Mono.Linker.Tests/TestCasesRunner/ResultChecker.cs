@@ -135,7 +135,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected virtual void VerifyILOfOtherAssemblies (TrimmedTestCaseResult linkResult)
+		void VerifyILOfOtherAssemblies (TrimmedTestCaseResult linkResult)
 		{
 			foreach (var linkedAssemblyPath in linkResult.Sandbox.OutputDirectory.Files ("*.dll")) {
 				if (linkedAssemblyPath == linkResult.OutputAssemblyPath)

@@ -14,14 +14,14 @@ namespace Microsoft.Extensions.Http
 
         public MetricsFactoryHttpMessageHandlerFilter(IMeterFactory meterFactory)
         {
-            ArgumentNullException.ThrowIfNull(meterFactory);
+            ThrowHelper.ThrowIfNull(meterFactory);
 
             _meterFactory = meterFactory;
         }
 
         public Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next)
         {
-            ArgumentNullException.ThrowIfNull(next);
+            ThrowHelper.ThrowIfNull(next);
 
             return (builder) =>
             {

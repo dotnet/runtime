@@ -23,8 +23,8 @@ namespace System.Linq
             IAsyncEnumerable<TSource> second,
             IEqualityComparer<TSource>? comparer = null)
         {
-            ArgumentNullException.ThrowIfNull(first);
-            ArgumentNullException.ThrowIfNull(second);
+            ThrowHelper.ThrowIfNull(first);
+            ThrowHelper.ThrowIfNull(second);
 
             return
                 first.IsKnownEmpty() && second.IsKnownEmpty() ? Empty<TSource>() :

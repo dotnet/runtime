@@ -141,8 +141,11 @@ namespace System.DirectoryServices.Protocols
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
-                if (!(value is string) && !(value is byte[]) && !(value is Uri))
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+                else if (!(value is string) && !(value is byte[]) && !(value is Uri))
                 {
                     throw new ArgumentException(SR.ValidValueType, nameof(value));
                 }
@@ -252,7 +255,10 @@ namespace System.DirectoryServices.Protocols
         {
             get
             {
-                ArgumentNullException.ThrowIfNull(attributeName);
+                if (attributeName == null)
+                {
+                    throw new ArgumentNullException(nameof(attributeName));
+                }
 
                 object objectName = attributeName.ToLowerInvariant();
                 return (DirectoryAttribute)InnerHashtable[objectName];

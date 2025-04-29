@@ -21,7 +21,10 @@ namespace System.Composition.TypedParts.ActivationFeatures
 
         public OnImportsSatisfiedFeature(AttributedModelProvider attributeContext)
         {
-            ArgumentNullException.ThrowIfNull(attributeContext);
+            if (attributeContext is null)
+            {
+                throw new ArgumentNullException(nameof(attributeContext));
+            }
 
             _attributeContext = attributeContext;
         }
@@ -40,7 +43,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
 
             foreach (var m in importsSatisfiedMethods)
             {
-                if (!(m.IsPublic || m.IsAssembly) || m.IsStatic || m.ReturnType != typeof(void) ||
+                if (!(m.IsPublic || m.IsAssembly) | m.IsStatic || m.ReturnType != typeof(void) ||
                     m.IsGenericMethodDefinition || m.GetParameters().Length != 0)
                 {
                     string message = SR.Format(SR.OnImportsSatisfiedFeature_AttributeError, partType, m.Name);

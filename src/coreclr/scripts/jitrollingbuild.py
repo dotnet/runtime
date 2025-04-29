@@ -457,7 +457,7 @@ def upload_command(coreclr_args):
 
     try:
         from azure.storage.blob import BlobServiceClient
-        from azure.identity import AzureCliCredential
+        from azure.identity import DefaultAzureCredential
 
     except:
         logging.warning("Please install:")
@@ -466,7 +466,7 @@ def upload_command(coreclr_args):
         logging.warning("See also https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-python")
         raise RuntimeError("Missing azure storage or identity packages.")
 
-    default_credential = AzureCliCredential()
+    default_credential = DefaultAzureCredential()
 
     blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=default_credential)
     blob_folder_name = "{}/{}/{}/{}/{}".format(az_builds_root_folder, jit_git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type)

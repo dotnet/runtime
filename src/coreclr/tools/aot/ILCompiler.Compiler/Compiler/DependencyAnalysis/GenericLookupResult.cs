@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis
         public sealed override bool Equals(object obj)
         {
             GenericLookupResult other = obj as GenericLookupResult;
-            if (other == null)
+            if (obj == null)
                 return false;
 
             return ClassCode == other.ClassCode && EqualsImpl(other);

@@ -26,7 +26,10 @@ namespace System.Security.Cryptography.Xml
 
         public DataObject(string id, string mimeType, string encoding, XmlElement data)
         {
-            ArgumentNullException.ThrowIfNull(data);
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
 
             _id = id;
             _mimeType = mimeType;
@@ -134,7 +137,10 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _mimeType = Utils.GetAttribute(value, "MimeType", SignedXml.XmlDsigNamespaceUrl);

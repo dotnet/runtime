@@ -15,6 +15,7 @@
 #include "palclr.h"
 #include <minipal/utils.h>
 
+#undef _ASSERTE
 #undef VERIFY
 
 #ifdef __cplusplus
@@ -55,12 +56,8 @@ extern VOID ANALYZER_NORETURN DbgAssertDialog(const char *szFile, int iLine, con
 
 #else // !_DEBUG
 
-#if !defined(_ASSERTE)
-    #define _ASSERTE(expr) ((void)0)
-#endif
-#if !defined(_ASSERTE_MSG)
-    #define _ASSERTE_MSG(expr, msg) ((void)0)
-#endif
+#define _ASSERTE(expr) ((void)0)
+#define _ASSERTE_MSG(expr, msg) ((void)0)
 #define VERIFY(stmt) (void)(stmt)
 
 // At this point, EEPOLICY_HANDLE_FATAL_ERROR may or may not be defined. It will be defined

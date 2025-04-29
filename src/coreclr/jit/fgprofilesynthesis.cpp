@@ -1389,9 +1389,14 @@ void ProfileSynthesis::GaussSeidelSolver()
             // Note we are using a "point" bound here ("infinity norm") rather than say
             // computing the L2-norm of the entire residual vector.
             //
-            // Avoid dividing by zero if oldWeight is very small.
-            //
-            weight_t const blockRelResidual = change / max(oldWeight, 1e-12);
+            weight_t const smallFractionOfChange = 1e-9 * change;
+            weight_t       relDivisor            = oldWeight;
+            if (relDivisor < smallFractionOfChange)
+            {
+                relDivisor = smallFractionOfChange;
+            }
+
+            weight_t const blockRelResidual = change / relDivisor;
 
             if ((relResidualBlock == nullptr) || (blockRelResidual > relResidual))
             {

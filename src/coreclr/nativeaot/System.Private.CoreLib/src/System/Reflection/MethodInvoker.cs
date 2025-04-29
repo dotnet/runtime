@@ -29,7 +29,7 @@ namespace System.Reflection
 
         public static MethodInvoker Create(MethodBase method)
         {
-            ArgumentNullException.ThrowIfNull(method);
+            ArgumentNullException.ThrowIfNull(method, nameof(method));
 
             if (method is RuntimeMethodInfo rmi)
             {

@@ -56,7 +56,10 @@ namespace System.Threading.Tasks
                 return Task.Delay(delay, cancellationToken);
             }
 
-            ArgumentNullException.ThrowIfNull(timeProvider);
+            if (timeProvider is null)
+            {
+                throw new ArgumentNullException(nameof(timeProvider));
+            }
 
             if (delay != Timeout.InfiniteTimeSpan && delay < TimeSpan.Zero)
             {
@@ -132,14 +135,20 @@ namespace System.Threading.Tasks
 #if NET8_0_OR_GREATER
             return task.WaitAsync(timeout, timeProvider, cancellationToken);
 #else
-            ArgumentNullException.ThrowIfNull(task);
+            if (task is null)
+            {
+                throw new ArgumentNullException(nameof(task));
+            }
 
             if (timeout != Timeout.InfiniteTimeSpan && timeout < TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
-            ArgumentNullException.ThrowIfNull(timeProvider);
+            if (timeProvider is null)
+            {
+                throw new ArgumentNullException(nameof(timeProvider));
+            }
 
             if (task.IsCompleted)
             {
@@ -249,7 +258,10 @@ namespace System.Threading.Tasks
 #if NET8_0_OR_GREATER
             return new CancellationTokenSource(delay, timeProvider);
 #else
-            ArgumentNullException.ThrowIfNull(timeProvider);
+            if (timeProvider is null)
+            {
+                throw new ArgumentNullException(nameof(timeProvider));
+            }
 
             if (delay != Timeout.InfiniteTimeSpan && delay < TimeSpan.Zero)
             {

@@ -7,18 +7,18 @@
 
 __tls_array     equ 2Ch     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
-t_CurrentThreadInfo  TEXTEQU <?t_CurrentThreadInfo@@3UThreadLocalInfo@@A>
+gCurrentThreadInfo  TEXTEQU <?gCurrentThreadInfo@@3UThreadLocalInfo@@A>
 
 INLINE_GETTHREAD macro destReg, trashReg
     ASSUME fs : NOTHING
 
     EXTERN __tls_index:DWORD
-    EXTERN t_CurrentThreadInfo:DWORD
+    EXTERN gCurrentThreadInfo:DWORD
 
     mov         destReg, [__tls_index]
     mov         trashReg, fs:[__tls_array]
     mov         trashReg, [trashReg + destReg * 4]
-    add         trashReg, SECTIONREL t_CurrentThreadInfo
+    add         trashReg, SECTIONREL gCurrentThreadInfo
     mov         destReg, [trashReg]
 endm
 

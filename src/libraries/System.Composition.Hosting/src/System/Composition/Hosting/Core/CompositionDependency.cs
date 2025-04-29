@@ -39,9 +39,18 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Satisfied(CompositionContract contract, ExportDescriptorPromise target, bool isPrerequisite, object site)
         {
-            ArgumentNullException.ThrowIfNull(contract);
-            ArgumentNullException.ThrowIfNull(target);
-            ArgumentNullException.ThrowIfNull(site);
+            if (contract is null)
+            {
+                throw new ArgumentNullException(nameof(contract));
+            }
+            if (target is null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+            if (site is null)
+            {
+                throw new ArgumentNullException(nameof(site));
+            }
 
             return new CompositionDependency(contract, target, isPrerequisite, site);
         }
@@ -55,8 +64,14 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Missing(CompositionContract contract, object site)
         {
-            ArgumentNullException.ThrowIfNull(contract);
-            ArgumentNullException.ThrowIfNull(site);
+            if (contract is null)
+            {
+                throw new ArgumentNullException(nameof(contract));
+            }
+            if (site is null)
+            {
+                throw new ArgumentNullException(nameof(site));
+            }
 
             return new CompositionDependency(contract, site);
         }
@@ -71,9 +86,18 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Oversupplied(CompositionContract contract, IEnumerable<ExportDescriptorPromise> targets, object site)
         {
-            ArgumentNullException.ThrowIfNull(contract);
-            ArgumentNullException.ThrowIfNull(targets);
-            ArgumentNullException.ThrowIfNull(site);
+            if (contract is null)
+            {
+                throw new ArgumentNullException(nameof(contract));
+            }
+            if (targets is null)
+            {
+                throw new ArgumentNullException(nameof(targets));
+            }
+            if (site is null)
+            {
+                throw new ArgumentNullException(nameof(site));
+            }
 
             return new CompositionDependency(contract, targets, site);
         }

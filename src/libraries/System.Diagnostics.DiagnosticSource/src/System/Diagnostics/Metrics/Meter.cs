@@ -32,7 +32,10 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public Meter(MeterOptions options)
         {
-            ArgumentNullException.ThrowIfNull(options);
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
 
             Debug.Assert(options.Name is not null);
 

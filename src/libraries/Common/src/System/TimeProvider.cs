@@ -162,7 +162,10 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
             ArgumentNullException.ThrowIfNull(callback);
 #else
-            ArgumentNullException.ThrowIfNull(callback);
+            if (callback is null)
+            {
+                throw new ArgumentNullException(nameof(callback));
+            }
 #endif // SYSTEM_PRIVATE_CORELIB
 
             return new SystemTimeProviderTimer(dueTime, period, callback, state);

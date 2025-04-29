@@ -4272,6 +4272,8 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
     result = result || (varNum == lvaOutgoingArgSpaceVar);
 #endif
 
+    result = result || (varNum == lvaPSPSym);
+
     return result;
 }
 

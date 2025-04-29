@@ -41,7 +41,10 @@ namespace System.Text.Json.Nodes
 
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(writer);
+            if (writer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
+            }
 
             JsonConverter<TValue> converter = _converter;
             options ??= s_defaultOptions;

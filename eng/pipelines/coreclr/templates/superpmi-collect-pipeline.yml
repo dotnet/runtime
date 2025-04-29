@@ -326,8 +326,6 @@ extends:
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildConfigOverride: checked
-            # Default timeout is 150 minutes, which is too low for osx-arm64 queue.
-            timeoutInMinutes: 300
 
       #
       # Collection of libraries test run: no_tiered_compilation
@@ -359,5 +357,3 @@ extends:
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildConfigOverride: checked
-            # Default timeout is 150 minutes, which is too low for osx-arm64 queue.
-            timeoutInMinutes: 300

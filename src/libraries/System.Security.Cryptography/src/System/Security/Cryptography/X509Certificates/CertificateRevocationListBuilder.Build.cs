@@ -92,8 +92,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <para>- or -</para>
         ///   <para>
         ///     <paramref name="hashAlgorithm" /> has the empty string as the value of
-        ///     <see cref="HashAlgorithmName.Name"/> and <paramref name="issuerCertificate"/>
-        ///     uses a public key algorithm that requires a hash to be specified.
+        ///     <see cref="HashAlgorithmName.Name"/>.
         ///   </para>
         ///   <para>- or -</para>
         ///   <para>
@@ -141,8 +140,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (nextUpdate <= thisUpdate)
                 throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
 
-            if (Helpers.HashAlgorithmRequired(issuerCertificate.GetKeyAlgorithm()))
-                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             // Check the Basic Constraints and Key Usage extensions to help identify inappropriate certificates.
             // Note that this is not a security check. The system library backing X509Chain will use these same criteria
@@ -175,7 +173,7 @@ namespace System.Security.Cryptography.X509Certificates
                     nameof(issuerCertificate));
             }
 
-            IDisposable? key = null;
+            AsymmetricAlgorithm? key = null;
             string keyAlgorithm = issuerCertificate.GetKeyAlgorithm();
             X509SignatureGenerator generator;
 
@@ -197,13 +195,6 @@ namespace System.Security.Cryptography.X509Certificates
                         ECDsa? ecdsa = issuerCertificate.GetECDsaPrivateKey();
                         key = ecdsa;
                         generator = X509SignatureGenerator.CreateForECDsa(ecdsa!);
-                        break;
-                    case Oids.MLDsa44:
-                    case Oids.MLDsa65:
-                    case Oids.MLDsa87:
-                        MLDsa? mldsa = issuerCertificate.GetMLDsaPrivateKey();
-                        key = mldsa;
-                        generator = X509SignatureGenerator.CreateForMLDsa(mldsa!);
                         break;
                     default:
                         throw new ArgumentException(
@@ -289,8 +280,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <para>- or -</para>
         ///   <para>
         ///     <paramref name="hashAlgorithm" /> has the empty string as the value of
-        ///     <see cref="HashAlgorithmName.Name"/> and <paramref name="generator"/>
-        ///     uses a public key algorithm that requires a hash to be specified.
+        ///     <see cref="HashAlgorithmName.Name"/>.
         ///   </para>
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -334,9 +324,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (nextUpdate <= thisUpdate)
                 throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
 
-            if (Helpers.HashAlgorithmRequired(generator.PublicKey.Oid.Value))
-                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
-
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(authorityKeyIdentifier);
 
             byte[] signatureAlgId = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);

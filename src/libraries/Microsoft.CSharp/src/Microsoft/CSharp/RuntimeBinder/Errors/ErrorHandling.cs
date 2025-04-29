@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
@@ -11,7 +10,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 {
     internal static class ErrorHandling
     {
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static RuntimeBinderException Error(ErrorCode id, params ErrArg[] args)
         {
             // Create an argument array manually using the type information in the ErrArgs.

@@ -11,14 +11,20 @@ namespace System.Reflection.TypeLoading
         public sealed override MemberInfo[] GetMembers(BindingFlags bindingAttr) => GetMemberImpl(null, MemberTypes.All, bindingAttr);
         public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
             return GetMemberImpl(name, MemberTypes.All, bindingAttr);
         }
 
         public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
             return GetMemberImpl(name, type, bindingAttr);
         }

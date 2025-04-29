@@ -27,7 +27,7 @@ namespace System.Net.Http.Tests
         [MemberData(nameof(GetRedactedUriString_Data))]
         public void GetRedactedUriString_RedactsUriByDefault(string original, string expected)
         {
-            string redacted = UriRedactionHelper.GetRedactedUriString(new Uri(original));
+            string redacted = DiagnosticsHelper.GetRedactedUriString(new Uri(original));
             Assert.Equal(expected, redacted);
         }
 
@@ -42,7 +42,7 @@ namespace System.Net.Http.Tests
 
                 foreach (Uri uri in uris)
                 {
-                    string actual = UriRedactionHelper.GetRedactedUriString(uri);
+                    string actual = DiagnosticsHelper.GetRedactedUriString(uri);
                     Assert.Equal(uri.AbsoluteUri, actual);
                 }
             }).DisposeAsync();

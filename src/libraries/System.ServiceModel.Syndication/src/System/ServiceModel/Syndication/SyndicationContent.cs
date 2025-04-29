@@ -69,7 +69,10 @@ namespace System.ServiceModel.Syndication
 
         public void WriteTo(XmlWriter writer, string outerElementName, string outerElementNamespace)
         {
-            ArgumentNullException.ThrowIfNull(writer);
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
 
             if (string.IsNullOrEmpty(outerElementName))
             {
@@ -96,7 +99,10 @@ namespace System.ServiceModel.Syndication
 
         internal void CopyAttributeExtensions(SyndicationContent source)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
 
             if (source._attributeExtensions != null)
             {

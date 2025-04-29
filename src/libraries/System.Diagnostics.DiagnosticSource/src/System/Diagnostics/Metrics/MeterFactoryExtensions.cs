@@ -21,7 +21,10 @@ namespace System.Diagnostics.Metrics
         /// <returns>A <see cref="Meter" /> with the specified <paramref name="name" />, <paramref name="version" />, and <paramref name="tags" />.</returns>
         public static Meter Create(this IMeterFactory meterFactory, string name, string? version = null, IEnumerable<KeyValuePair<string, object?>>? tags = null)
         {
-            ArgumentNullException.ThrowIfNull(meterFactory);
+            if (meterFactory is null)
+            {
+                throw new ArgumentNullException(nameof(meterFactory));
+            }
 
             return meterFactory.Create(new MeterOptions(name)
             {

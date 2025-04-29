@@ -592,7 +592,7 @@ StackFrame EEDbgInterfaceImpl::FindParentStackFrame(CrawlFrame* pCF)
     return StackFrame();
 
 #else  // !DACCESS_COMPILE
-    return ExInfo::FindParentStackFrameForStackWalk(pCF);
+    return ExceptionTracker::FindParentStackFrameForStackWalk(pCF);
 
 #endif // !DACCESS_COMPILE
 }
@@ -1331,7 +1331,7 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
 
 #ifdef TARGET_WINDOWS
     *pTLSIndex = _tls_index;
-    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo.m_pThread);
+    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo.m_pThread);
     *pTLSIsSpecialOffset = Thread::GetOffsetOfThreadStatic(&t_ThreadType);
     *pTLSCantStopOffset = Thread::GetOffsetOfThreadStatic(&t_CantStopCount);
 #else

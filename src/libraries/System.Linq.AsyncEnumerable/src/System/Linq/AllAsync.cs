@@ -26,8 +26,8 @@ namespace System.Linq
             Func<TSource, bool> predicate,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(predicate);
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(predicate);
 
             return Impl(source.WithCancellation(cancellationToken), predicate);
 
@@ -64,8 +64,8 @@ namespace System.Linq
             ValueTask<bool>> predicate,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(predicate);
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(predicate);
 
             return Impl(source, predicate, cancellationToken);
 

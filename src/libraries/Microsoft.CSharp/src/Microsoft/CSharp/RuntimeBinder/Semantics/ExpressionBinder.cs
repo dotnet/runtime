@@ -270,7 +270,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static AggregateType GetPredefindType(PredefinedType pt)
         {
             Debug.Assert(pt != PredefinedType.PT_VOID); // use getVoidType()
@@ -279,7 +278,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateAssignmentConversion(Expr op1, Expr op2, bool allowExplicit) =>
             allowExplicit ? mustCastCore(op2, op1.Type, 0) : mustConvertCore(op2, op1.Type);
 
@@ -287,7 +285,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Bind the simple assignment operator =.
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public Expr BindAssignment(Expr op1, Expr op2, bool allowExplicit)
         {
             Debug.Assert(op1 is ExprCast
@@ -303,7 +300,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr BindArrayIndexCore(Expr pOp1, Expr pOp2)
         {
             CType pIntType = GetPredefindType(PredefinedType.PT_INT);
@@ -333,25 +329,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Workarounds https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr MustConvertWithSuppressedMessage(Expr x, CType pDestType)
             => mustConvert(x, pDestType);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Workarounds https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static ExprCast ExprFactoryCreateCastWithSuppressedMessage(EXPRFLAG flags, CType type, Expr argument)
             => ExprFactory.CreateCast(flags, type, argument);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Create a cast node with the given expression flags.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void bindSimpleCast(Expr exprSrc, CType typeDest, out Expr pexprDest) =>
             bindSimpleCast(exprSrc, typeDest, out pexprDest, 0);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void bindSimpleCast(Expr exprSrc, CType typeDest, out Expr pexprDest, EXPRFLAG exprFlags)
         {
             Debug.Assert(typeDest != null);
@@ -395,7 +387,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // exprFlags - Flags to put on the generated expr
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private ExprCall BindToMethod(MethWithInst mwi, Expr pArguments, ExprMemberGroup pMemGroup, MemLookFlags flags)
         {
             Debug.Assert(mwi.Sym is MethodSymbol && (!mwi.Meth().isOverride || mwi.Meth().isHideByName));
@@ -441,7 +432,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // for a given field and pObject pointer.
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr BindToField(Expr pOptionalObject, FieldWithType fwt, BindingFlag bindFlags)
         {
             Debug.Assert(fwt.GetType() != null && fwt.Field().getClass() == fwt.GetType().OwningAggregate);
@@ -468,7 +458,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal ExprProperty BindToProperty(Expr pObject, PropWithType pwt, BindingFlag bindFlags, Expr args, ExprMemberGroup pMemGroup)
         {
             Debug.Assert(pwt.Sym is PropertySymbol &&
@@ -545,7 +534,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal Expr bindUDUnop(ExpressionKind ek, Expr arg)
         {
             Name pName = ExpressionKindName(ek);
@@ -661,7 +649,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private ExprCall BindLiftedUDUnop(Expr arg, CType typeArg, MethPropWithInst mpwi)
         {
             CType typeRaw = typeArg.StripNubs();
@@ -691,7 +678,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private ExprCall BindUDUnopCall(Expr arg, CType typeArg, MethPropWithInst mpwi)
         {
             CType typeRet = TypeManager.SubstType(mpwi.Meth().RetType, mpwi.GetType());
@@ -707,7 +693,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Given a method group or indexer group, bind it to the arguments for an
         // invocation.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private GroupToArgsBinderResult BindMethodGroupToArgumentsCore(BindingFlag bindFlags, ExprMemberGroup grp, Expr args, int carg, NamedArgumentsKind namedArgumentsKind)
         {
             ArgInfos pargInfo = new ArgInfos { carg = carg };
@@ -726,7 +711,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Given a method group or indexer group, bind it to the arguments for an
         // invocation.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal ExprWithArgs BindMethodGroupToArguments(BindingFlag bindFlags, ExprMemberGroup grp, Expr args)
         {
             Debug.Assert(grp.SymKind == SYMKIND.SK_MethodSymbol || grp.SymKind == SYMKIND.SK_PropertySymbol && ((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0));
@@ -807,7 +791,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Report a bad operator types error to the user.
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static RuntimeBinderException BadOperatorTypesError(Expr pOperand1, Expr pOperand2)
         {
             Debug.Assert(pOperand1 != null);
@@ -835,7 +818,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void CheckLvalueProp(ExprProperty prop)
         {
             Debug.Assert(prop != null);
@@ -853,7 +835,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void CheckPropertyAccess(MethWithType mwt, PropWithType pwtSlot, CType type)
         {
             switch (CSemanticChecker.CheckAccess2(mwt.Meth(), mwt.GetType(), ContextForMemberLookup, type))
@@ -869,7 +850,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // A false return means not to process the expr any further - it's totally out
         // of place. For example - a method group or an anonymous method.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void CheckLvalue(Expr expr, CheckLvalueKind kind)
         {
             if (expr.isLvalue())
@@ -928,7 +908,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void PostBindMethod(MethWithInst pMWI)
         {
             MethodSymbol meth = pMWI.Meth();
@@ -944,7 +923,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void PostBindProperty(PropWithType pwt, out MethWithType pmwtGet, out MethWithType pmwtSet)
         {
             PropertySymbol prop = pwt.Prop();
@@ -964,7 +942,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr AdjustMemberObject(SymWithType swt, Expr pObject)
         {
             // Assert that the type is present and is an instantiation of the member's parent.
@@ -1082,7 +1059,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void verifyMethodArgs(ExprWithArgs call, CType callingObjectType)
         {
             Debug.Assert(call != null);
@@ -1096,7 +1072,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void AdjustCallArgumentsForParams(CType callingObjectType, CType type, MethodOrPropertySymbol mp, TypeArray pTypeArgs, Expr argsPtr, out Expr newArgs)
         {
             Debug.Assert(mp != null);
@@ -1309,7 +1284,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ];
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal CType ChooseArrayIndexType(Expr args)
         {
             // first, select the allowable types
@@ -1432,14 +1406,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Check to see if an integral constant is within range of a integral
         // destination type.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool isConstantInRange(ExprConstant exprSrc, CType typeDest)
         {
             return isConstantInRange(exprSrc, typeDest, false);
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool isConstantInRange(ExprConstant exprSrc, CType typeDest, bool realsOk)
         {
             FUNDTYPE ftSrc = exprSrc.Type.FundamentalType;
@@ -1636,7 +1608,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return NameManager.GetPredefinedName(EK2NAME[ek - ExpressionKind.FirstOp]);
         }
 
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void CheckUnsafe(CType type)
         {
             if (type == null || type.IsUnsafe())

@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceScope">The <see cref="IServiceScope"/> instance to wrap.</param>
         public AsyncServiceScope(IServiceScope serviceScope)
         {
-            ArgumentNullException.ThrowIfNull(serviceScope);
+            ThrowHelper.ThrowIfNull(serviceScope);
 
             _serviceScope = serviceScope;
         }

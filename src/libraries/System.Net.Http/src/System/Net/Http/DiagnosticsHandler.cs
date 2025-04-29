@@ -24,7 +24,7 @@ namespace System.Net.Http
 
         public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {
-            Debug.Assert(GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation);
+            Debug.Assert(IsGloballyEnabled());
             Debug.Assert(innerHandler is not null && propagator is not null);
 
             _innerHandler = innerHandler;
@@ -71,6 +71,8 @@ namespace System.Net.Http
             return activity;
         }
 
+        internal static bool IsGloballyEnabled() => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
+
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (IsEnabled())
@@ -87,7 +89,7 @@ namespace System.Net.Http
 
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            // HttpClientHandler is responsible to call static GlobalHttpSettings.DiagnosticsHandler.IsEnabled before forwarding request here.
+            // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
             // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)
             // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
             // So some requests happening right after subscription starts might not be instrumented. Similarly,
@@ -127,7 +129,7 @@ namespace System.Net.Http
                     {
                         activity.SetTag("server.address", requestUri.Host);
                         activity.SetTag("server.port", requestUri.Port);
-                        activity.SetTag("url.full", UriRedactionHelper.GetRedactedUriString(requestUri));
+                        activity.SetTag("url.full", DiagnosticsHelper.GetRedactedUriString(requestUri));
                     }
                 }
 
