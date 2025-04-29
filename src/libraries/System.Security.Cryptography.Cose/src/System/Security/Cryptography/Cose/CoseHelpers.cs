@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Cbor;
 using System.Text;
 
@@ -39,7 +40,7 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        internal static void WriteByteStringLength(IncrementalHash hasher, ulong value)
+        internal static void WriteByteStringLength(ToBeSignedBuilder toBeSignedBuilder, ulong value)
         {
             const CborMajorType MajorType = CborMajorType.ByteString;
             CborInitialByte initialByte;
@@ -47,12 +48,12 @@ namespace System.Security.Cryptography.Cose
             if (value < (byte)CborAdditionalInfo.Additional8BitData)
             {
                 initialByte = new CborInitialByte(MajorType, (CborAdditionalInfo)value);
-                hasher.AppendData([initialByte.InitialByte]);
+                toBeSignedBuilder.AppendToBeSigned([initialByte.InitialByte]);
             }
             else if (value <= byte.MaxValue)
             {
                 initialByte = new CborInitialByte(MajorType, CborAdditionalInfo.Additional8BitData);
-                hasher.AppendData([initialByte.InitialByte, (byte)value]);
+                toBeSignedBuilder.AppendToBeSigned([initialByte.InitialByte, (byte)value]);
             }
             else if (value <= ushort.MaxValue)
             {
@@ -60,7 +61,7 @@ namespace System.Security.Cryptography.Cose
                 Span<byte> buffer = stackalloc byte[1 + sizeof(ushort)];
                 buffer[0] = initialByte.InitialByte;
                 BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(1), (ushort)value);
-                hasher.AppendData(buffer);
+                toBeSignedBuilder.AppendToBeSigned(buffer);
             }
             else if (value <= uint.MaxValue)
             {
@@ -68,7 +69,7 @@ namespace System.Security.Cryptography.Cose
                 Span<byte> buffer = stackalloc byte[1 + sizeof(uint)];
                 buffer[0] = initialByte.InitialByte;
                 BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(1), (uint)value);
-                hasher.AppendData(buffer);
+                toBeSignedBuilder.AppendToBeSigned(buffer);
             }
             else
             {
@@ -76,7 +77,7 @@ namespace System.Security.Cryptography.Cose
                 Span<byte> buffer = stackalloc byte[1 + sizeof(ulong)];
                 buffer[0] = initialByte.InitialByte;
                 BinaryPrimitives.WriteUInt64BigEndian(buffer.Slice(1), value);
-                hasher.AppendData(buffer);
+                toBeSignedBuilder.AppendToBeSigned(buffer);
             }
         }
 
@@ -104,34 +105,31 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        internal static int SignHash(CoseSigner signer, IncrementalHash hasher, Span<byte> destination)
+        internal static int SignHash(CoseSigner signer, ReadOnlySpan<byte> toBeSigned, Span<byte> destination)
         {
             AsymmetricAlgorithm key = signer.Key;
             KeyType keyType = signer._keyType;
 
-            if (keyType == KeyType.ECDsa)
+            switch (keyType)
             {
-                return SignHashWithECDsa((ECDsa)key, hasher, destination);
-            }
-            else
-            {
-                Debug.Assert(keyType == KeyType.RSA);
-                Debug.Assert(signer.RSASignaturePadding != null);
-                return SignHashWithRSA((RSA)key, hasher, signer.HashAlgorithm, signer.RSASignaturePadding, destination);
+                case KeyType.ECDsa:
+                    return SignHashWithECDsa((ECDsa)key, toBeSigned, destination);
+                case KeyType.RSA:
+                    Debug.Assert(signer.RSASignaturePadding != null);
+                    return SignHashWithRSA((RSA)key, toBeSigned, signer.HashAlgorithm, signer.RSASignaturePadding, destination);
+#pragma warning disable SYSLIB5006
+                case KeyType.MLDsa:
+                    // we ignore signer.HashAlgorithm
+                    return SignDataWithMLDsa(((MLDsaAsymmetricAlgorithmWrapper)key).WrappedKey, toBeSigned, destination);
+#pragma warning restore SYSLIB5006
+                default:
+                    Debug.Fail("Unknown key type");
+                    throw new CryptographicException(SR.Format(SR.Sign1UnsupportedKey, keyType.ToString()));
             }
         }
 
-        private static int SignHashWithECDsa(ECDsa key, IncrementalHash hasher, Span<byte> destination)
+        private static int SignHashWithECDsa(ECDsa key, ReadOnlySpan<byte> hash, Span<byte> destination)
         {
-#if NETSTANDARD2_0 || NETFRAMEWORK
-            byte[] signature = key.SignHash(hasher.GetHashAndReset());
-            signature.CopyTo(destination);
-            return signature.Length;
-#else
-            Debug.Assert(hasher.HashLengthInBytes <= 512 / 8); // largest hash we can get (SHA512).
-            Span<byte> hash = stackalloc byte[hasher.HashLengthInBytes];
-            hasher.GetHashAndReset(hash);
-
             if (!key.TrySignHash(hash, destination, out int bytesWritten))
             {
                 Debug.Fail("TrySignData failed with a pre-calculated destination");
@@ -139,20 +137,10 @@ namespace System.Security.Cryptography.Cose
             }
 
             return bytesWritten;
-#endif
         }
 
-        private static int SignHashWithRSA(RSA key, IncrementalHash hasher, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, Span<byte> destination)
+        private static int SignHashWithRSA(RSA key, ReadOnlySpan<byte> hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, Span<byte> destination)
         {
-#if NETSTANDARD2_0 || NETFRAMEWORK
-            byte[] signature = key.SignHash(hasher.GetHashAndReset(), hashAlgorithm, padding);
-            signature.CopyTo(destination);
-            return signature.Length;
-#else
-            Debug.Assert(hasher.HashLengthInBytes <= 512 / 8); // largest hash we can get (SHA512).
-            Span<byte> hash = stackalloc byte[hasher.HashLengthInBytes];
-            hasher.GetHashAndReset(hash);
-
             if (!key.TrySignHash(hash, destination, hashAlgorithm, padding, out int bytesWritten))
             {
                 Debug.Fail("TrySignData failed with a pre-calculated destination");
@@ -160,15 +148,19 @@ namespace System.Security.Cryptography.Cose
             }
 
             return bytesWritten;
-#endif
         }
 
-#if NETSTANDARD2_0 || NETFRAMEWORK
-        internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        private static int SignDataWithMLDsa(MLDsa key, ReadOnlySpan<byte> data, Span<byte> destination)
         {
-            hasher.AppendData(data.ToArray());
+            if (destination.Length != key.SignData(data, destination))
+            {
+                Debug.Fail($"SignData failed with a pre-calculated destination (pre-calculated: {destination.Length} != signature-size: {key.Algorithm.SignatureSizeInBytes})");
+                throw new CryptographicException();
+            }
+
+            return destination.Length;
         }
-#endif
 
         internal static int GetCoseSignEncodedLengthMinusSignature(bool isTagged, int sizeOfCborTag, int encodedProtectedHeadersLength, CoseHeaderMap unprotectedHeaders, byte[]? content)
         {
@@ -201,14 +193,19 @@ namespace System.Security.Cryptography.Cose
             int keySize = signer.Key.KeySize;
             KeyType keyType = signer._keyType;
 
-            if (keyType == KeyType.ECDsa)
+            switch (keyType)
             {
-                return 2 * ((keySize + 7) / 8);
-            }
-            else // RSA
-            {
-                Debug.Assert(keyType == KeyType.RSA);
-                return (keySize + 7) / 8;
+                case KeyType.ECDsa:
+                    return 2 * ((keySize + 7) / 8);
+                case KeyType.RSA:
+                    return (keySize + 7) / 8;
+#pragma warning disable SYSLIB5006
+                case KeyType.MLDsa:
+                    return ((MLDsaAsymmetricAlgorithmWrapper)signer.Key).WrappedKey.Algorithm.SignatureSizeInBytes;
+#pragma warning restore SYSLIB5006
+                default:
+                    Debug.Fail($"Unknown key type: {keyType}");
+                    throw new CryptographicException(SR.Format(SR.Sign1UnsupportedKey, keyType.ToString()));
             }
         }
 
@@ -258,40 +255,59 @@ namespace System.Security.Cryptography.Cose
 
         internal static HashAlgorithmName GetHashAlgorithmFromCoseAlgorithmAndKeyType(int algorithm, KeyType keyType, out RSASignaturePadding? padding)
         {
-            if (keyType == KeyType.ECDsa)
+            switch (keyType)
             {
-                padding = null;
-                return algorithm switch
+                case KeyType.ECDsa:
                 {
-                    KnownCoseAlgorithms.ES256 => HashAlgorithmName.SHA256,
-                    KnownCoseAlgorithms.ES384 => HashAlgorithmName.SHA384,
-                    KnownCoseAlgorithms.ES512 => HashAlgorithmName.SHA512,
-                    _ => throw new CryptographicException(SR.Format(SR.Sign1AlgDoesNotMatchWithTheOnesSupportedByTypeOfKey, algorithm, typeof(ECDsa)))
-                };
-            }
-            else
-            {
-                Debug.Assert(keyType == KeyType.RSA);
-                HashAlgorithmName hashAlgorithm = algorithm switch
-                {
-                    KnownCoseAlgorithms.PS256 or KnownCoseAlgorithms.RS256 => HashAlgorithmName.SHA256,
-                    KnownCoseAlgorithms.PS384 or KnownCoseAlgorithms.RS384 => HashAlgorithmName.SHA384,
-                    KnownCoseAlgorithms.PS512 or KnownCoseAlgorithms.RS512 => HashAlgorithmName.SHA512,
-                    _ => throw new CryptographicException(SR.Format(SR.Sign1AlgDoesNotMatchWithTheOnesSupportedByTypeOfKey, algorithm, typeof(RSA)))
-                };
-
-                if (algorithm <= KnownCoseAlgorithms.RS256)
-                {
-                    Debug.Assert(algorithm >= KnownCoseAlgorithms.RS512);
-                    padding = RSASignaturePadding.Pkcs1;
+                    padding = null;
+                    return algorithm switch
+                    {
+                        KnownCoseAlgorithms.ES256 => HashAlgorithmName.SHA256,
+                        KnownCoseAlgorithms.ES384 => HashAlgorithmName.SHA384,
+                        KnownCoseAlgorithms.ES512 => HashAlgorithmName.SHA512,
+                        _ => throw new CryptographicException(SR.Format(SR.Sign1AlgDoesNotMatchWithTheOnesSupportedByTypeOfKey, algorithm, typeof(ECDsa)))
+                    };
                 }
-                else
+                case KeyType.RSA:
                 {
-                    Debug.Assert(algorithm >= KnownCoseAlgorithms.PS512 && algorithm <= KnownCoseAlgorithms.PS256);
-                    padding = RSASignaturePadding.Pss;
-                }
+                    HashAlgorithmName hashAlgorithm = algorithm switch
+                    {
+                        KnownCoseAlgorithms.PS256 or KnownCoseAlgorithms.RS256 => HashAlgorithmName.SHA256,
+                        KnownCoseAlgorithms.PS384 or KnownCoseAlgorithms.RS384 => HashAlgorithmName.SHA384,
+                        KnownCoseAlgorithms.PS512 or KnownCoseAlgorithms.RS512 => HashAlgorithmName.SHA512,
+                        _ => throw new CryptographicException(SR.Format(SR.Sign1AlgDoesNotMatchWithTheOnesSupportedByTypeOfKey, algorithm, typeof(RSA)))
+                    };
 
-                return hashAlgorithm;
+                    if (algorithm <= KnownCoseAlgorithms.RS256)
+                    {
+                        Debug.Assert(algorithm >= KnownCoseAlgorithms.RS512);
+                        padding = RSASignaturePadding.Pkcs1;
+                    }
+                    else
+                    {
+                        Debug.Assert(algorithm >= KnownCoseAlgorithms.PS512 && algorithm <= KnownCoseAlgorithms.PS256);
+                        padding = RSASignaturePadding.Pss;
+                    }
+
+                    return hashAlgorithm;
+                }
+#pragma warning disable SYSLIB5006
+                case KeyType.MLDsa:
+                {
+                    padding = null;
+                    if (algorithm != KnownCoseAlgorithms.MLDsa44 && algorithm != KnownCoseAlgorithms.MLDsa65 && algorithm != KnownCoseAlgorithms.MLDsa87)
+                    {
+                        throw new CryptographicException(SR.Format(SR.Sign1AlgDoesNotMatchWithTheOnesSupportedByTypeOfKey, algorithm, typeof(MLDsa)));
+                    }
+
+                    return default;
+                }
+#pragma warning restore SYSLIB5006
+                default:
+                {
+                    Debug.Fail($"Unknown key type: {keyType}");
+                    throw new CryptographicException();
+                }
             }
         }
 
@@ -301,6 +317,9 @@ namespace System.Security.Cryptography.Cose
             {
                 ECDsa => KeyType.ECDsa,
                 RSA => KeyType.RSA,
+#pragma warning disable SYSLIB5006
+                MLDsaAsymmetricAlgorithmWrapper => KeyType.MLDsa,
+#pragma warning restore SYSLIB5006
                 _ => throw new ArgumentException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()), nameof(key))
             };
         }
@@ -347,10 +366,57 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        internal static void WriteSignature(Span<byte> buffer, IncrementalHash hasher, CborWriter writer, CoseSigner signer)
+        internal static void WriteSignature(Span<byte> buffer, ReadOnlySpan<byte> toBeSigned, CborWriter writer, CoseSigner signer)
         {
-            int bytesWritten = SignHash(signer, hasher, buffer);
+            int bytesWritten = SignHash(signer, toBeSigned, buffer);
             writer.WriteByteString(buffer.Slice(0, bytesWritten));
         }
+
+#if NETSTANDARD2_0 || NETFRAMEWORK
+        internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
+        {
+            hasher.AppendData(data.ToArray());
+        }
+
+        internal static bool TrySignHash(this ECDsa key, ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
+        {
+            byte[] signature = key.SignHash(hash.ToArray());
+
+            if (destination.Length < signature.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            signature.CopyTo(destination);
+            bytesWritten = signature.Length;
+            return true;
+        }
+
+        internal static bool TrySignHash(this RSA key, ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
+        {
+            byte[] signature = key.SignHash(hash.ToArray(), hashAlgorithm, padding);
+
+            if (destination.Length < signature.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            signature.CopyTo(destination);
+            bytesWritten = signature.Length;
+            return true;
+        }
+
+        internal static bool VerifyHash(this RSA rsa, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        {
+            return rsa.VerifyHash(hash.ToArray(), signature.ToArray(), hashAlgorithm, padding);
+        }
+
+        internal static bool VerifyHash(this ECDsa ecdsa, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+        {
+            return ecdsa.VerifyHash(hash.ToArray(), signature.ToArray());
+        }
+#endif
     }
 }

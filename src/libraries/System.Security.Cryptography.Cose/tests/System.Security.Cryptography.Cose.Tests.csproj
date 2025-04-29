@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -30,6 +30,12 @@
     <Compile Include="CoseSign1MessageTests.Verify.cs" />
     <Compile Include="CoseSignerTests.cs" />
     <Compile Include="CoseTestHelpers.cs" />
+    <Compile Include="CoseTestKey.cs" />
+    <Compile Include="CoseTestKeyManager.cs" />
+    <Compile Include="CoseTestKeyType.cs" />
+    <Compile Include="CoseTestMultiSign.cs" />
+    <Compile Include="CoseTestSign1.cs" />
+    <Compile Include="SignVerify.AlgorithmSupport.cs" />
   </ItemGroup>
   
   <ItemGroup>

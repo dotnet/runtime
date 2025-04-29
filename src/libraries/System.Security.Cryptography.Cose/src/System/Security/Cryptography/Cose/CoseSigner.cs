@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Cose
 {
@@ -115,7 +116,22 @@ namespace System.Security.Cryptography.Cose
 
             _protectedHeaders = protectedHeaders;
             _unprotectedHeaders = unprotectedHeaders;
-            _keyType = CoseHelpers.GetKeyType(key);
+            _keyType = KeyType.RSA;
+            _algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader();
+        }
+
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public CoseSigner(MLDsa key, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null)
+        {
+            if (key is null)
+                throw new ArgumentNullException(nameof(key));
+
+            Key = new MLDsaAsymmetricAlgorithmWrapper(key);
+            HashAlgorithm = default;
+
+            _protectedHeaders = protectedHeaders;
+            _unprotectedHeaders = unprotectedHeaders;
+            _keyType = KeyType.MLDsa;
             _algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader();
         }
 
@@ -159,13 +175,19 @@ namespace System.Security.Cryptography.Cose
             if (expectedAlg != alg.Value)
             {
                 string exMsg;
-                if (_keyType == KeyType.RSA)
+                switch (_keyType)
                 {
-                    exMsg = SR.Format(SR.Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding, alg.Value, _keyType, HashAlgorithm.Name, RSASignaturePadding);
-                }
-                else
-                {
-                    exMsg = SR.Format(SR.Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, _keyType, HashAlgorithm.Name);
+                    case KeyType.RSA:
+                        exMsg = SR.Format(SR.Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding, alg.Value, _keyType, HashAlgorithm.Name, RSASignaturePadding);
+                        break;
+#pragma warning disable SYSLIB5006
+                    case KeyType.MLDsa:
+                        exMsg = SR.Format(SR.Sign1UnknownCoseAlgorithm, alg.Value);
+                        break;
+#pragma warning restore SYSLIB5006
+                    default:
+                        exMsg = SR.Format(SR.Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, _keyType, HashAlgorithm.Name);
+                        break;
                 }
 
                 throw new ArgumentException(exMsg, "protectedHeaders");
@@ -175,40 +197,75 @@ namespace System.Security.Cryptography.Cose
         private int GetCoseAlgorithmHeader()
         {
             string? hashAlgorithmName = HashAlgorithm.Name;
-            if (_keyType == KeyType.ECDsa)
+
+            switch (_keyType)
             {
-                return hashAlgorithmName switch
+                case KeyType.ECDsa:
                 {
-                    nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.ES256,
-                    nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.ES384,
-                    nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.ES512,
-                    _ => throw new ArgumentException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithmName), "hashAlgorithm")
-                };
-            }
-
-            Debug.Assert(_keyType == KeyType.RSA);
-            Debug.Assert(RSASignaturePadding != null);
-
-            if (RSASignaturePadding == RSASignaturePadding.Pss)
-            {
-                return hashAlgorithmName switch
+                    return hashAlgorithmName switch
+                    {
+                        nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.ES256,
+                        nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.ES384,
+                        nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.ES512,
+                        _ => throw new ArgumentException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithmName), "hashAlgorithm")
+                    };
+                }
+                case KeyType.RSA:
                 {
-                    nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.PS256,
-                    nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.PS384,
-                    nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.PS512,
-                    _ => throw new ArgumentException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithmName), "hashAlgorithm")
-                };
+                    Debug.Assert(RSASignaturePadding != null);
+
+                    if (RSASignaturePadding == RSASignaturePadding.Pss)
+                    {
+                        return hashAlgorithmName switch
+                        {
+                            nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.PS256,
+                            nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.PS384,
+                            nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.PS512,
+                            _ => throw new ArgumentException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithmName), "hashAlgorithm")
+                        };
+                    }
+
+                    Debug.Assert(RSASignaturePadding == RSASignaturePadding.Pkcs1);
+
+                    return hashAlgorithmName switch
+                    {
+                        nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.RS256,
+                        nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.RS384,
+                        nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.RS512,
+                        _ => throw new ArgumentException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithmName), "hashAlgorithm")
+                    };
+                }
+#pragma warning disable SYSLIB5006
+                case KeyType.MLDsa:
+                {
+                    MLDsaAsymmetricAlgorithmWrapper? keyWrapper = Key as MLDsaAsymmetricAlgorithmWrapper;
+                    Debug.Assert(keyWrapper != null, "Key should be a MLDsaAsymmetricAlgorithmWrapper");
+                    MLDsa mldsa = keyWrapper.WrappedKey;
+
+                    if (mldsa.Algorithm.Name == MLDsaAlgorithm.MLDsa44.Name)
+                    {
+                        return KnownCoseAlgorithms.MLDsa44;
+                    }
+                    else if (mldsa.Algorithm.Name == MLDsaAlgorithm.MLDsa65.Name)
+                    {
+                        return KnownCoseAlgorithms.MLDsa65;
+                    }
+                    else if (mldsa.Algorithm.Name == MLDsaAlgorithm.MLDsa87.Name)
+                    {
+                        return KnownCoseAlgorithms.MLDsa87;
+                    }
+                    else
+                    {
+                        throw new ArgumentException(SR.Format(SR.Sign1UnknownCoseAlgorithm, mldsa.Algorithm.Name), "key");
+                    }
+                }
+#pragma warning restore SYSLIB5006
+                default:
+                {
+                    Debug.Fail($"Unhandled case {_keyType}");
+                    throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, _keyType));
+                }
             }
-
-            Debug.Assert(RSASignaturePadding == RSASignaturePadding.Pkcs1);
-
-            return hashAlgorithmName switch
-            {
-                nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.RS256,
-                nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.RS384,
-                nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.RS512,
-                _ => throw new ArgumentException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithmName), "hashAlgorithm")
-            };
         }
     }
 }

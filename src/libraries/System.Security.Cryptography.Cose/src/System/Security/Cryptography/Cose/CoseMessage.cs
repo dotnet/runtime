@@ -407,7 +407,7 @@ namespace System.Security.Cryptography.Cose
 
         internal static void AppendToBeSigned(
             Span<byte> buffer,
-            IncrementalHash hasher,
+            ToBeSignedBuilder toBeSignedBuilder,
             SigStructureContext context,
             ReadOnlySpan<byte> bodyProtected,
             ReadOnlySpan<byte> signProtected,
@@ -418,20 +418,20 @@ namespace System.Security.Cryptography.Cose
             int bytesWritten = CreateToBeSigned(buffer, context, bodyProtected, signProtected, associatedData, ReadOnlySpan<byte>.Empty);
             bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
 
-            hasher.AppendData(buffer.Slice(0, bytesWritten));
+            toBeSignedBuilder.AppendToBeSigned(buffer.Slice(0, bytesWritten));
 
             if (contentStream == null)
             {
                 // content length
-                CoseHelpers.WriteByteStringLength(hasher, (ulong)contentBytes.Length);
+                CoseHelpers.WriteByteStringLength(toBeSignedBuilder, (ulong)contentBytes.Length);
 
                 //content
-                hasher.AppendData(contentBytes);
+                toBeSignedBuilder.AppendToBeSigned(contentBytes);
             }
             else
             {
                 // content length
-                CoseHelpers.WriteByteStringLength(hasher, (ulong)(contentStream.Length - contentStream.Position));
+                CoseHelpers.WriteByteStringLength(toBeSignedBuilder, (ulong)(contentStream.Length - contentStream.Position));
 
                 //content
                 byte[] contentBuffer = ArrayPool<byte>.Shared.Rent(4096);
@@ -441,7 +441,7 @@ namespace System.Security.Cryptography.Cose
                 {
                     while ((bytesRead = contentStream.Read(contentBuffer, 0, contentBuffer.Length)) > 0)
                     {
-                        hasher.AppendData(contentBuffer, 0, bytesRead);
+                        toBeSignedBuilder.AppendToBeSigned(contentBuffer.AsSpan(0, bytesRead));
                     }
                 }
                 finally
@@ -453,7 +453,7 @@ namespace System.Security.Cryptography.Cose
 
         internal static async Task AppendToBeSignedAsync(
             byte[] buffer,
-            IncrementalHash hasher,
+            ToBeSignedBuilder toBeSignedBuilder,
             SigStructureContext context,
             ReadOnlyMemory<byte> bodyProtected,
             ReadOnlyMemory<byte> signProtected,
@@ -464,10 +464,10 @@ namespace System.Security.Cryptography.Cose
             int bytesWritten = CreateToBeSigned(buffer, context, bodyProtected.Span, signProtected.Span, associatedData.Span, ReadOnlySpan<byte>.Empty);
             bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
 
-            hasher.AppendData(buffer, 0, bytesWritten);
+            toBeSignedBuilder.AppendToBeSigned(buffer.AsSpan(0, bytesWritten));
 
             //content length
-            CoseHelpers.WriteByteStringLength(hasher, (ulong)(content.Length - content.Position));
+            CoseHelpers.WriteByteStringLength(toBeSignedBuilder, (ulong)(content.Length - content.Position));
 
             // content
             byte[] contentBuffer = ArrayPool<byte>.Shared.Rent(4096);
@@ -478,7 +478,7 @@ namespace System.Security.Cryptography.Cose
             while ((bytesRead = await content.ReadAsync(contentBuffer, cancellationToken).ConfigureAwait(false)) > 0)
 #endif
             {
-                hasher.AppendData(contentBuffer, 0, bytesRead);
+                toBeSignedBuilder.AppendToBeSigned(contentBuffer.AsSpan(0, bytesRead));
             }
 
             ArrayPool<byte>.Shared.Return(contentBuffer, clearArray: true);

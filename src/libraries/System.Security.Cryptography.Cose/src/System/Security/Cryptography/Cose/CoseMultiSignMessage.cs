@@ -458,10 +458,13 @@ namespace System.Security.Cryptography.Cose
 
             CoseHelpers.WriteHeaderMap(buffer.Slice(signProtectedBytesWritten), writer, signer.UnprotectedHeaders, isProtected: false, null);
 
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(signer.HashAlgorithm))
+            using (ToBeSignedBuilder toBeSignedBuilder = ToBeSignedBuilder.Create(signer._keyType, signer.HashAlgorithm))
             {
-                AppendToBeSigned(buffer, hasher, SigStructureContext.Signature, bodyProtected, buffer.Slice(0, signProtectedBytesWritten), associatedData, content, contentStream);
-                CoseHelpers.WriteSignature(buffer, hasher, writer, signer);
+                AppendToBeSigned(buffer, toBeSignedBuilder, SigStructureContext.Signature, bodyProtected, buffer.Slice(0, signProtectedBytesWritten), associatedData, content, contentStream);
+                toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
+                {
+                    CoseHelpers.WriteSignature(buff, toBeSigned, writer, signer);
+                });
             }
 
             writer.WriteEndArray();
@@ -486,12 +489,14 @@ namespace System.Security.Cryptography.Cose
 
             CoseHelpers.WriteHeaderMap(buffer.AsSpan(start + signProtectedBytesWritten), writer, signer.UnprotectedHeaders, isProtected: false, null);
 
-            HashAlgorithmName hashAlgorithm = signer.HashAlgorithm;
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            using (ToBeSignedBuilder toBeSignedBuilder = ToBeSignedBuilder.Create(signer._keyType, signer.HashAlgorithm))
             {
                 // We can use the whole buffer at this point as the space for bodyProtected and signProtected is consumed.
-                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, bodyProtected, buffer.AsMemory(start, signProtectedBytesWritten), associatedData, contentStream, cancellationToken).ConfigureAwait(false);
-                CoseHelpers.WriteSignature(buffer, hasher, writer, signer);
+                await AppendToBeSignedAsync(buffer, toBeSignedBuilder, SigStructureContext.Signature, bodyProtected, buffer.AsMemory(start, signProtectedBytesWritten), associatedData, contentStream, cancellationToken).ConfigureAwait(false);
+                toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
+                {
+                    CoseHelpers.WriteSignature(buff, toBeSigned, writer, signer);
+                });
             }
 
             writer.WriteEndArray();
@@ -798,10 +803,13 @@ namespace System.Security.Cryptography.Cose
                 int bytesWritten = CoseHeaderMap.Encode(signProtectedHeaders, bufferSpan, isProtected: true, algHeaderValueToSlip);
                 byte[] encodedSignProtected = bufferSpan.Slice(0, bytesWritten).ToArray();
 
-                using (IncrementalHash hasher = IncrementalHash.CreateHash(signer.HashAlgorithm))
+                using (ToBeSignedBuilder toBeSignedBuilder = ToBeSignedBuilder.Create(signer._keyType, signer.HashAlgorithm))
                 {
-                    AppendToBeSigned(bufferSpan, hasher, SigStructureContext.Signature, _protectedHeaderAsBstr, encodedSignProtected, associatedData, contentBytes, contentStream);
-                    bytesWritten = CoseHelpers.SignHash(signer, hasher, buffer);
+                    AppendToBeSigned(bufferSpan, toBeSignedBuilder, SigStructureContext.Signature, _protectedHeaderAsBstr, encodedSignProtected, associatedData, contentBytes, contentStream);
+                    toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
+                    {
+                        bytesWritten = CoseHelpers.SignHash(signer, toBeSigned, buff);
+                    });
 
                     byte[] signature = bufferSpan.Slice(0, bytesWritten).ToArray();
                     _signatures.Add(new CoseSignature(this, signProtectedHeaders, signer.UnprotectedHeaders, encodedSignProtected, signature));
@@ -871,10 +879,14 @@ namespace System.Security.Cryptography.Cose
             int bytesWritten = CoseHeaderMap.Encode(signProtectedHeaders, buffer, isProtected: true, algHeaderValueToSlip);
             byte[] encodedSignProtected = buffer.AsSpan(0, bytesWritten).ToArray();
 
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(signer.HashAlgorithm))
+            using (ToBeSignedBuilder toBeSignedBuilder = ToBeSignedBuilder.Create(signer._keyType, signer.HashAlgorithm))
             {
-                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, _protectedHeaderAsBstr, encodedSignProtected, associatedData, content, cancellationToken).ConfigureAwait(false);
-                bytesWritten = CoseHelpers.SignHash(signer, hasher, buffer);
+                await AppendToBeSignedAsync(buffer, toBeSignedBuilder, SigStructureContext.Signature, _protectedHeaderAsBstr, encodedSignProtected, associatedData, content, cancellationToken).ConfigureAwait(false);
+
+                toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
+                {
+                    bytesWritten = CoseHelpers.SignHash(signer, toBeSigned, buff);
+                });
 
                 byte[] signature = buffer.AsSpan(0, bytesWritten).ToArray();
                 _signatures.Add(new CoseSignature(this, signProtectedHeaders, signer.UnprotectedHeaders, encodedSignProtected, signature));
