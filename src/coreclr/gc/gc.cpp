@@ -13324,8 +13324,6 @@ void gc_heap::age_free_regions (const char* msg)
 //    amount and move the rest back to the (one) heap's free_list.
 void gc_heap::distribute_free_regions()
 {
-#ifdef USE_REGIONS
-    const int kind_count = large_free_region + 1;
 
 #ifdef MULTIPLE_HEAPS
     BOOL joined_last_gc_before_oom = FALSE;
@@ -13420,43 +13418,6 @@ void gc_heap::distribute_free_regions()
         global_free_huge_regions.transfer_regions (&hp->free_regions[huge_free_region]);
     }
 
-    for (int gen = soh_gen0; gen < total_generation_count; gen++)
-    {
-        if ((gen <= soh_gen2) &&
-            total_budget_in_region_units[basic_free_region] >= (total_num_free_regions[basic_free_region] +
-                                                                surplus_regions[basic_free_region].get_num_free_regions()))
-        {
-            // don't accumulate budget from higher soh generations if we cannot cover lower ones
-            dprintf (REGIONS_LOG, ("out of free regions - skipping gen %d budget = %zd >= avail %zd",
-                gen,
-                total_budget_in_region_units[basic_free_region],
-                total_num_free_regions[basic_free_region] + surplus_regions[basic_free_region].get_num_free_regions()));
-            continue;
-        }
-#ifdef MULTIPLE_HEAPS
-        for (int i = 0; i < n_heaps; i++)
-        {
-            gc_heap* hp = g_heaps[i];
-#else //MULTIPLE_HEAPS
-        {
-            gc_heap* hp = pGenGCHeap;
-            // just to reduce the number of #ifdefs in the code below
-            const int i = 0;
-            const int n_heaps = 1;
-#endif //MULTIPLE_HEAPS
-            ptrdiff_t budget_gen = max (hp->estimate_gen_growth (gen), 0);
-            int kind = gen >= loh_generation;
-            size_t budget_gen_in_region_units = (budget_gen + (region_size[kind] - 1)) / region_size[kind];
-            dprintf (REGIONS_LOG, ("h%2d gen %d has an estimated growth of %zd bytes (%zd regions)", i, gen, budget_gen, budget_gen_in_region_units));
-            if (gen <= soh_gen2)
-            {
-                // preserve the budget for the previous generation - we should not go below that
-                min_heap_budget_in_region_units[i] = heap_budget_in_region_units[i][kind];
-            }
-            heap_budget_in_region_units[i][kind] += budget_gen_in_region_units;
-            total_budget_in_region_units[kind] += budget_gen_in_region_units;
-        }
-    }
     move_all_aged_regions(total_num_free_regions, aged_regions, joined_last_gc_before_oom);
     // For now, we just decommit right away, but eventually these will be used in move_highest_free_regions
     move_regions_to_decommit(aged_regions);
@@ -13581,7 +13542,7 @@ void gc_heap::distribute_free_regions()
                 else
                 {
                     dprintf (REGIONS_LOG, ("Moved %zd %s regions to decommit list",
-                        global_regions_to_decommit[huge_free_region].get_num_free_regions(), free_region_kind_name[huge_free_region]));
+                    global_regions_to_decommit[huge_free_region].get_num_free_regions(), free_region_kind_name[huge_free_region]));
 
                     // cannot assert we moved any regions because there may be a single huge region with more than we want to decommit
                 }
@@ -13890,9 +13851,7 @@ void gc_heap::decide_on_decommit_strategy(bool joined_last_gc_before_oom)
     }
 #endif //MULTIPLE_HEAPS
 }
-
 #endif //USE_REGIONS
-}
 
 #ifdef WRITE_WATCH
 uint8_t* g_addresses [array_size+2]; // to get around the bug in GetWriteWatch
