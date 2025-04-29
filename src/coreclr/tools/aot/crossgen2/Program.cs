@@ -664,7 +664,7 @@ namespace ILCompiler
             ModuleDesc systemModule = context.SystemModule;
 
             TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false,
-                (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
+                canonResolver: (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
 
             if (foundType == null)
                 throw new CommandLineException(string.Format(SR.TypeNotFound, typeName));
