@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
@@ -41,17 +43,17 @@ namespace System.Net.Http
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersion30 = new Version(3, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
+        internal static bool CertificateCachingAppContextSwitchEnabled { get; } = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool enabled) && enabled;
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
-        private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue("gzip");
-        private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue("deflate");
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(CheckTls13Support);
+        private static readonly TimeSpan s_cleanCachedCertificateTimeout = TimeSpan.FromMilliseconds((int?)AppDomain.CurrentDomain.GetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval") ?? 60_000);
+        private static readonly long s_staleTimeout = (long)(s_cleanCachedCertificateTimeout.TotalSeconds * Stopwatch.Frequency / 1000);
 
         [ThreadStatic]
         private static StringBuilder? t_requestHeadersBuilder;
 
         private readonly object _lockObject = new object();
-        private bool _doManualDecompressionCheck;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
@@ -92,9 +94,44 @@ namespace System.Net.Http
         private volatile int _disposed;
         private SafeWinHttpHandle? _sessionHandle;
         private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
+        private readonly Timer? _certificateCleanupTimer;
+        private bool _isTimerRunning;
+        private readonly ConcurrentDictionary<CachedCertificateKey, CachedCertificateValue> _cachedCertificates = new();
 
         public WinHttpHandler()
         {
+            if (CertificateCachingAppContextSwitchEnabled)
+            {
+                WeakReference<WinHttpHandler> thisRef = new(this);
+                bool restoreFlow = false;
+                try
+                {
+                    if (!ExecutionContext.IsFlowSuppressed())
+                    {
+                        ExecutionContext.SuppressFlow();
+                        restoreFlow = true;
+                    }
+
+                    _certificateCleanupTimer = new Timer(
+                    static s =>
+                    {
+                        if (((WeakReference<WinHttpHandler>)s!).TryGetTarget(out WinHttpHandler? thisRef))
+                        {
+                            thisRef.ClearStaleCertificates();
+                        }
+                    },
+                    thisRef,
+                    Timeout.Infinite,
+                    Timeout.Infinite);
+                }
+                finally
+                {
+                    if (restoreFlow)
+                    {
+                        ExecutionContext.RestoreFlow();
+                    }
+                }
+            }
         }
 
         #region Properties
@@ -540,9 +577,10 @@ namespace System.Net.Http
         {
             if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
             {
-                if (disposing && _sessionHandle != null)
+                if (disposing)
                 {
-                    _sessionHandle.Dispose();
+                    _sessionHandle?.Dispose();
+                    _certificateCleanupTimer?.Dispose();
                 }
             }
 
@@ -553,10 +591,7 @@ namespace System.Net.Http
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request is null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             Uri? requestUri = request.RequestUri;
             if (requestUri is null || !requestUri.IsAbsoluteUri)
@@ -677,8 +712,7 @@ namespace System.Net.Http
         private static void AddRequestHeaders(
             SafeWinHttpHandle requestHandle,
             HttpRequestMessage requestMessage,
-            CookieContainer? cookies,
-            DecompressionMethods manuallyProcessedDecompressionMethods)
+            CookieContainer? cookies)
         {
             Debug.Assert(requestMessage.RequestUri != null);
 
@@ -692,26 +726,6 @@ namespace System.Net.Http
             else
             {
                 t_requestHeadersBuilder = requestHeadersBuffer = new StringBuilder();
-            }
-
-            // Normally WinHttpHandler will let native WinHTTP add 'Accept-Encoding' request headers
-            // for gzip and/or default as needed based on whether the handler should do automatic
-            // decompression of response content. But on Windows 7, WinHTTP doesn't support this feature.
-            // So, we need to manually add these headers since WinHttpHandler still supports automatic
-            // decompression (by doing it within the handler).
-            if (manuallyProcessedDecompressionMethods != DecompressionMethods.None)
-            {
-                if ((manuallyProcessedDecompressionMethods & DecompressionMethods.GZip) == DecompressionMethods.GZip &&
-                    !requestMessage.Headers.AcceptEncoding.Contains(s_gzipHeaderValue))
-                {
-                    requestMessage.Headers.AcceptEncoding.Add(s_gzipHeaderValue);
-                }
-
-                if ((manuallyProcessedDecompressionMethods & DecompressionMethods.Deflate) == DecompressionMethods.Deflate &&
-                    !requestMessage.Headers.AcceptEncoding.Contains(s_deflateHeaderValue))
-                {
-                    requestMessage.Headers.AcceptEncoding.Add(s_deflateHeaderValue);
-                }
             }
 
             // Manually add cookies.
@@ -903,8 +917,7 @@ namespace System.Net.Http
                 AddRequestHeaders(
                     state.RequestHandle,
                     state.RequestMessage,
-                    _cookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer ? _cookieContainer : null,
-                    _doManualDecompressionCheck ? _automaticDecompression : DecompressionMethods.None);
+                    _cookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer ? _cookieContainer : null);
 
                 uint proxyAuthScheme = 0;
                 uint serverAuthScheme = 0;
@@ -989,8 +1002,7 @@ namespace System.Net.Http
                 uint optionData = (uint)(int)_receiveDataTimeout.TotalMilliseconds;
                 SetWinHttpOption(state.RequestHandle, Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT, ref optionData);
 
-                HttpResponseMessage responseMessage =
-                    WinHttpResponseParser.CreateResponseMessage(state, _doManualDecompressionCheck ? _automaticDecompression : DecompressionMethods.None);
+                HttpResponseMessage responseMessage = WinHttpResponseParser.CreateResponseMessage(state);
                 state.Tcs.TrySetResult(responseMessage);
 
                 // HttpStatusCode cast is needed for 308 Moved Permenantly, which we support but is not included in NetStandard status codes.
@@ -1334,22 +1346,7 @@ namespace System.Net.Http
                     optionData |= Interop.WinHttp.WINHTTP_DECOMPRESSION_FLAG_DEFLATE;
                 }
 
-                try
-                {
-                    SetWinHttpOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_DECOMPRESSION, ref optionData);
-                }
-                catch (WinHttpException ex)
-                {
-                    if (ex.NativeErrorCode != (int)Interop.WinHttp.ERROR_WINHTTP_INVALID_OPTION)
-                    {
-                        throw;
-                    }
-
-                    // We are running on a platform earlier than Win8.1 for which WINHTTP.DLL
-                    // doesn't support this option.  So, we'll have to do the decompression
-                    // manually.
-                    _doManualDecompressionCheck = true;
-                }
+                SetWinHttpOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_DECOMPRESSION, ref optionData);
             }
         }
 
@@ -1619,7 +1616,8 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_ALL_COMPLETIONS |
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_HANDLES |
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_REDIRECT |
-                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SEND_REQUEST;
+                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SEND_REQUEST |
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTED_TO_SERVER;
 
             IntPtr oldCallback = Interop.WinHttp.WinHttpSetStatusCallback(
                 requestHandle,
@@ -1704,6 +1702,91 @@ namespace System.Net.Http
             }
 
             return state.LifecycleAwaitable;
+        }
+
+        internal bool GetCertificateFromCache(CachedCertificateKey key, [NotNullWhen(true)] out byte[]? rawCertificateBytes)
+        {
+            if (_cachedCertificates.TryGetValue(key, out CachedCertificateValue? cachedValue))
+            {
+                cachedValue.LastUsedTime = Stopwatch.GetTimestamp();
+                rawCertificateBytes = cachedValue.RawCertificateData;
+                return true;
+            }
+
+            rawCertificateBytes = null;
+            return false;
+        }
+
+        internal void AddCertificateToCache(CachedCertificateKey key, byte[] rawCertificateData)
+        {
+            if (_cachedCertificates.TryAdd(key, new CachedCertificateValue(rawCertificateData, Stopwatch.GetTimestamp())))
+            {
+                EnsureCleanupTimerRunning();
+            }
+        }
+
+        internal bool TryRemoveCertificateFromCache(CachedCertificateKey key)
+        {
+            bool result = _cachedCertificates.TryRemove(key, out _);
+            if (result)
+            {
+                StopCleanupTimerIfEmpty();
+            }
+            return result;
+        }
+
+        private void ChangeCleanerTimer(TimeSpan timeout)
+        {
+            Debug.Assert(Monitor.IsEntered(_lockObject));
+            Debug.Assert(_certificateCleanupTimer != null);
+            if (_certificateCleanupTimer!.Change(timeout, Timeout.InfiniteTimeSpan))
+            {
+                _isTimerRunning = timeout != Timeout.InfiniteTimeSpan;
+            }
+        }
+
+        private void ClearStaleCertificates()
+        {
+            foreach (KeyValuePair<CachedCertificateKey, CachedCertificateValue> kvPair in _cachedCertificates)
+            {
+                if (IsStale(kvPair.Value.LastUsedTime))
+                {
+                    _cachedCertificates.TryRemove(kvPair.Key, out _);
+                }
+            }
+
+            lock (_lockObject)
+            {
+                ChangeCleanerTimer(_cachedCertificates.IsEmpty ? Timeout.InfiniteTimeSpan : s_cleanCachedCertificateTimeout);
+            }
+
+            static bool IsStale(long lastUsedTime)
+            {
+                long now = Stopwatch.GetTimestamp();
+                return (now - lastUsedTime) > s_staleTimeout;
+            }
+        }
+
+        private void EnsureCleanupTimerRunning()
+        {
+            lock (_lockObject)
+            {
+                if (!_cachedCertificates.IsEmpty && !_isTimerRunning)
+                {
+                    ChangeCleanerTimer(s_cleanCachedCertificateTimeout);
+                }
+            }
+        }
+
+        private void StopCleanupTimerIfEmpty()
+        {
+            lock (_lockObject)
+            {
+                if (_cachedCertificates.IsEmpty && _isTimerRunning)
+                {
+                    ChangeCleanerTimer(Timeout.InfiniteTimeSpan);
+                }
+            }
         }
     }
 }

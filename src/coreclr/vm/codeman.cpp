@@ -1103,7 +1103,7 @@ TADDR IJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
     return funcletStartAddress;
 }
 
-BOOL IJitManager::IsFunclet(EECodeInfo * pCodeInfo)
+BOOL IJitManager::LazyIsFunclet(EECodeInfo * pCodeInfo)
 {
     CONTRACTL {
         NOTHROW;
@@ -1148,13 +1148,6 @@ BOOL IJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     for (ULONG i = 0; i < EHCount; i++)
     {
          GetNextEHClause(&pEnumState, &EHClause);
-
-        // Duplicate clauses are always listed at the end, so when we hit a duplicate clause,
-        // we have already visited all of the normal clauses.
-        if (IsDuplicateClause(&EHClause))
-        {
-            break;
-        }
 
         if (IsFilterHandler(&EHClause))
         {
@@ -2232,8 +2225,7 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 //**************************************************************************
 
 LoaderCodeHeap::LoaderCodeHeap(bool fMakeExecutable)
-    : m_LoaderHeap(NULL,                    // RangeList *pRangeList
-                   fMakeExecutable),
+    : m_LoaderHeap(fMakeExecutable),
     m_cbMinNextPad(0)
 {
     WRAPPER_NO_CONTRACT;
@@ -2501,7 +2493,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     }
     else
     {
-        pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMem(JUMP_ALLOCATE_SIZE);
+        pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMemForCode_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     }
 #else
     // Ensure that the heap has a reserved block of memory and so the GetReservedBytesFree()
@@ -3497,7 +3489,7 @@ GCInfoToken InterpreterJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // The JIT-ed code always has the current version of GCInfo
+    // The Interpreter IR always has the current version of GCInfo
     return{ GetCodeHeader(MethodToken)->GetGCInfo(), GCINFO_VERSION };
 }
 #endif // FEATURE_INTERPRETER
@@ -4293,7 +4285,17 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
 
 #ifdef FEATURE_EH_FUNCLETS
         // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
-        pCodeInfo->m_pFunctionEntry = NULL;
+        if (pCHdr->MayHaveFunclets())
+        {
+            // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
+            pCodeInfo->m_pFunctionEntry = NULL;
+            pCodeInfo->m_isFuncletCache = EECodeInfo::IsFuncletCache::NotSet;
+        }
+        else
+        {
+            pCodeInfo->m_pFunctionEntry = pCHdr->GetUnwindInfo(0);
+            pCodeInfo->m_isFuncletCache = EECodeInfo::IsFuncletCache::IsNotFunclet;
+        }
 #endif
     }
 
@@ -6508,7 +6510,7 @@ DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToke
     return nFunclets;
 }
 
-BOOL ReadyToRunJitManager::IsFunclet(EECodeInfo* pCodeInfo)
+BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
 {
     CONTRACTL {
         NOTHROW;

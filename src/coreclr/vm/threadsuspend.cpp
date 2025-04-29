@@ -16,6 +16,10 @@
 #include "dbginterface.h"
 #include <minipal/time.h>
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif
+
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -2267,8 +2271,6 @@ void Thread::HandleThreadAbort ()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
-    // @TODO: we should consider treating this function as an FCALL or HCALL and use FCThrow instead of COMPlusThrow
-
     // Sometimes we call this without any CLR SEH in place.  An example is UMThunkStubRareDisableWorker.
     // That's okay since COMPlusThrow will eventually erect SEH around the RaiseException. It prevents
     // us from stating CONTRACT here.
@@ -3788,7 +3790,7 @@ ThrowControlForThread(
     exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
     exceptionRecord.ExceptionFlags = 0;
 
-    OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
+    OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     DispatchManagedException(throwable, pfef->GetExceptionContext());
 #else // FEATURE_EH_FUNCLETS
@@ -4549,7 +4551,7 @@ struct ExecutionState
 };
 
 // Client is responsible for suspending the thread before calling
-void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
+void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet))
 {
     CONTRACTL {
         NOTHROW;
@@ -4574,7 +4576,7 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
         pvHijackAddr = reinterpret_cast<VOID *>(OnHijackFPTripThread);
     }
 
-    SetHijackReturnKind(returnKind);
+    SetHijackReturnKind(returnKind, hasAsyncRet);
 #endif // TARGET_X86
 
     // Don't hijack if are in the first level of running a filter/finally/catch.
@@ -4807,7 +4809,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
         else
         {
 #ifdef TARGET_X86
-            STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", GetControlPC(pCF->GetRegisterSet()), pCF->GetRegisterSet()->PCTAddr);
+            STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", GetControlPC(pCF->GetRegisterSet()), GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
 #else
             STRESS_LOG1(LF_SYNC, LL_INFO1000, "Not in Jitted code at pc = %p\n", GetControlPC(pCF->GetRegisterSet()));
 #endif
@@ -4837,7 +4839,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
         {
             // pPC points to the return address sitting on the stack, as our
             // current EIP for the penultimate stack frame.
-            pES->m_ppvRetAddrPtr = (void **) pRDT->PCTAddr;
+            pES->m_ppvRetAddrPtr = (void **) GetRegdisplayPCTAddr(pRDT);
 
             STRESS_LOG2(LF_SYNC, LL_INFO1000, "Partially Int case hijack address = 0x%x val = 0x%x\n", pES->m_ppvRetAddrPtr, *pES->m_ppvRetAddrPtr);
         }
@@ -4914,10 +4916,17 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind))
+static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
+    X86_ONLY(*hasAsyncRet = false);
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    return pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind));
+    if (!pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind)))
+        return false;
+
+    MethodDesc* pMD = pCodeInfo->GetMethodDesc();
+    X86_ONLY(*hasAsyncRet = pMD->IsAsyncMethod());
+
+    return true;
 }
 
 #ifndef TARGET_UNIX
@@ -5318,9 +5327,10 @@ BOOL Thread::HandledJITCase()
             EECodeInfo codeInfo(ip);
 
             X86_ONLY(ReturnKind returnKind;)
-            if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind)))
+            X86_ONLY(bool hasAsyncRet;)
+            if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
             {
-                HijackThread(&esb X86_ARG(returnKind));
+                HijackThread(&esb X86_ARG(returnKind) X86_ARG(hasAsyncRet));
             }
         }
     }
@@ -5883,7 +5893,8 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
             return;
 
         X86_ONLY(ReturnKind returnKind;)
-        if (!GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind)))
+        X86_ONLY(bool hasAsyncRet;)
+        if (!GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
         {
             return;
         }
@@ -5897,7 +5908,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        pThread->HijackThread(&executionState X86_ARG(returnKind));
+        pThread->HijackThread(&executionState X86_ARG(returnKind) X86_ARG(hasAsyncRet));
     }
 }
 

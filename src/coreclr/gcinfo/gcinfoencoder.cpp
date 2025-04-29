@@ -7,8 +7,25 @@
  *
  */
 
+// Interpreter-FIXME: we get an existing implementation of ASSERTE via PCH that isn't usable
+//  from inside the interpreter, so we need to replace it with our own.
+#undef _ASSERTE
+
+#if defined(_DEBUG)
+
+extern "C" void assertAbort(const char* why, const char* file, unsigned line);
+
+#define _ASSERTE(expr) if (!(expr)) { \
+    assertAbort(#expr, __FILE__, __LINE__); \
+}
+#else // _DEBUG
+#define _ASSERTE(expr) (void)0
+#endif // _DEBUG
+
+
 #include <stdint.h>
 
+#include "gcinfohelpers.h"
 #include "gcinfoencoder.h"
 
 using namespace GcInfoEncoderExt;
@@ -22,7 +39,6 @@ using namespace GcInfoEncoderExt;
 #endif
 
 #ifndef STANDALONE_BUILD
-#include "log.h"
 #include "simplerhash.h"
 #include "bitposition.h"
 #endif
@@ -357,7 +373,6 @@ GcInfoSize& GcInfoSize::operator+=(const GcInfoSize& other)
     SecObjSize += other.SecObjSize;
     GsCookieSize += other.GsCookieSize;
     GenericsCtxSize += other.GenericsCtxSize;
-    PspSymSize += other.PspSymSize;
     StackBaseSize += other.StackBaseSize;
     ReversePInvokeFrameSize += other.ReversePInvokeFrameSize;
     FixedAreaSize += other.FixedAreaSize;
@@ -382,50 +397,48 @@ GcInfoSize& GcInfoSize::operator+=(const GcInfoSize& other)
 
 void GcInfoSize::Log(DWORD level, const char * header)
 {
-    if(LoggingOn(LF_GCINFO, level))
+    if (GCINFO_LOGSPEW(level, header))
     {
-        LogSpew(LF_GCINFO, level, header);
+        GCINFO_LOGSPEW( level, "---COUNTS---\n");
+        GCINFO_LOGSPEW( level, "NumMethods: %zu\n", NumMethods);
+        GCINFO_LOGSPEW( level, "NumCallSites: %zu\n", NumCallSites);
+        GCINFO_LOGSPEW( level, "NumRanges: %zu\n", NumRanges);
+        GCINFO_LOGSPEW( level, "NumRegs: %zu\n", NumRegs);
+        GCINFO_LOGSPEW( level, "NumStack: %zu\n", NumStack);
+        GCINFO_LOGSPEW( level, "NumUntracked: %zu\n", NumUntracked);
+        GCINFO_LOGSPEW( level, "NumTransitions: %zu\n", NumTransitions);
+        GCINFO_LOGSPEW( level, "SizeOfCode: %zu\n", SizeOfCode);
+        GCINFO_LOGSPEW( level, "EncInfoSize: %zu\n", EncInfoSize);
 
-        LogSpew(LF_GCINFO, level, "---COUNTS---\n");
-        LogSpew(LF_GCINFO, level, "NumMethods: %zu\n", NumMethods);
-        LogSpew(LF_GCINFO, level, "NumCallSites: %zu\n", NumCallSites);
-        LogSpew(LF_GCINFO, level, "NumRanges: %zu\n", NumRanges);
-        LogSpew(LF_GCINFO, level, "NumRegs: %zu\n", NumRegs);
-        LogSpew(LF_GCINFO, level, "NumStack: %zu\n", NumStack);
-        LogSpew(LF_GCINFO, level, "NumUntracked: %zu\n", NumUntracked);
-        LogSpew(LF_GCINFO, level, "NumTransitions: %zu\n", NumTransitions);
-        LogSpew(LF_GCINFO, level, "SizeOfCode: %zu\n", SizeOfCode);
-        LogSpew(LF_GCINFO, level, "EncInfoSize: %zu\n", EncInfoSize);
-
-        LogSpew(LF_GCINFO, level, "---SIZES(bits)---\n");
-        LogSpew(LF_GCINFO, level, "Total: %zu\n", TotalSize);
-        LogSpew(LF_GCINFO, level, "UntrackedSlot: %zu\n", UntrackedSlotSize);
-        LogSpew(LF_GCINFO, level, "NumUntracked: %zu\n", NumUntrackedSize);
-        LogSpew(LF_GCINFO, level, "Flags: %zu\n", FlagsSize);
-        LogSpew(LF_GCINFO, level, "CodeLength: %zu\n", CodeLengthSize);
-        LogSpew(LF_GCINFO, level, "Prolog/Epilog: %zu\n", ProEpilogSize);
-        LogSpew(LF_GCINFO, level, "SecObj: %zu\n", SecObjSize);
-        LogSpew(LF_GCINFO, level, "GsCookie: %zu\n", GsCookieSize);
-        LogSpew(LF_GCINFO, level, "PspSym: %zu\n", PspSymSize);
-        LogSpew(LF_GCINFO, level, "GenericsCtx: %zu\n", GenericsCtxSize);
-        LogSpew(LF_GCINFO, level, "StackBase: %zu\n", StackBaseSize);
-        LogSpew(LF_GCINFO, level, "FixedArea: %zu\n", FixedAreaSize);
-        LogSpew(LF_GCINFO, level, "ReversePInvokeFrame: %zu\n", ReversePInvokeFrameSize);
-        LogSpew(LF_GCINFO, level, "NumCallSites: %zu\n", NumCallSitesSize);
-        LogSpew(LF_GCINFO, level, "NumRanges: %zu\n", NumRangesSize);
-        LogSpew(LF_GCINFO, level, "CallSiteOffsets: %zu\n", CallSitePosSize);
-        LogSpew(LF_GCINFO, level, "Ranges: %zu\n", RangeSize);
-        LogSpew(LF_GCINFO, level, "NumRegs: %zu\n", NumRegsSize);
-        LogSpew(LF_GCINFO, level, "NumStack: %zu\n", NumStackSize);
-        LogSpew(LF_GCINFO, level, "RegSlots: %zu\n", RegSlotSize);
-        LogSpew(LF_GCINFO, level, "StackSlots: %zu\n", StackSlotSize);
-        LogSpew(LF_GCINFO, level, "CallSiteStates: %zu\n", CallSiteStateSize);
-        LogSpew(LF_GCINFO, level, "EhOffsets: %zu\n", EhPosSize);
-        LogSpew(LF_GCINFO, level, "EhStates: %zu\n", EhStateSize);
-        LogSpew(LF_GCINFO, level, "ChunkPointers: %zu\n", ChunkPtrSize);
-        LogSpew(LF_GCINFO, level, "ChunkMasks: %zu\n", ChunkMaskSize);
-        LogSpew(LF_GCINFO, level, "ChunkFinalStates: %zu\n", ChunkFinalStateSize);
-        LogSpew(LF_GCINFO, level, "Transitions: %zu\n", ChunkTransitionSize);
+        GCINFO_LOGSPEW( level, "---SIZES(bits)---\n");
+        GCINFO_LOGSPEW( level, "Total: %zu\n", TotalSize);
+        GCINFO_LOGSPEW( level, "UntrackedSlot: %zu\n", UntrackedSlotSize);
+        GCINFO_LOGSPEW( level, "NumUntracked: %zu\n", NumUntrackedSize);
+        GCINFO_LOGSPEW( level, "Flags: %zu\n", FlagsSize);
+        GCINFO_LOGSPEW( level, "CodeLength: %zu\n", CodeLengthSize);
+        GCINFO_LOGSPEW( level, "Prolog/Epilog: %zu\n", ProEpilogSize);
+        GCINFO_LOGSPEW( level, "SecObj: %zu\n", SecObjSize);
+        GCINFO_LOGSPEW( level, "GsCookie: %zu\n", GsCookieSize);
+        GCINFO_LOGSPEW( level, "PspSym: %zu\n", PspSymSize);
+        GCINFO_LOGSPEW( level, "GenericsCtx: %zu\n", GenericsCtxSize);
+        GCINFO_LOGSPEW( level, "StackBase: %zu\n", StackBaseSize);
+        GCINFO_LOGSPEW( level, "FixedArea: %zu\n", FixedAreaSize);
+        GCINFO_LOGSPEW( level, "ReversePInvokeFrame: %zu\n", ReversePInvokeFrameSize);
+        GCINFO_LOGSPEW( level, "NumCallSites: %zu\n", NumCallSitesSize);
+        GCINFO_LOGSPEW( level, "NumRanges: %zu\n", NumRangesSize);
+        GCINFO_LOGSPEW( level, "CallSiteOffsets: %zu\n", CallSitePosSize);
+        GCINFO_LOGSPEW( level, "Ranges: %zu\n", RangeSize);
+        GCINFO_LOGSPEW( level, "NumRegs: %zu\n", NumRegsSize);
+        GCINFO_LOGSPEW( level, "NumStack: %zu\n", NumStackSize);
+        GCINFO_LOGSPEW( level, "RegSlots: %zu\n", RegSlotSize);
+        GCINFO_LOGSPEW( level, "StackSlots: %zu\n", StackSlotSize);
+        GCINFO_LOGSPEW( level, "CallSiteStates: %zu\n", CallSiteStateSize);
+        GCINFO_LOGSPEW( level, "EhOffsets: %zu\n", EhPosSize);
+        GCINFO_LOGSPEW( level, "EhStates: %zu\n", EhStateSize);
+        GCINFO_LOGSPEW( level, "ChunkPointers: %zu\n", ChunkPtrSize);
+        GCINFO_LOGSPEW( level, "ChunkMasks: %zu\n", ChunkMaskSize);
+        GCINFO_LOGSPEW( level, "ChunkFinalStates: %zu\n", ChunkFinalStateSize);
+        GCINFO_LOGSPEW( level, "Transitions: %zu\n", ChunkTransitionSize);
     }
 }
 
@@ -442,11 +455,6 @@ template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncode
         m_InterruptibleRanges( pJitAllocator ),
         m_LifetimeTransitions( pJitAllocator )
 {
-#ifdef MEASURE_GCINFO
-    // This causes multiple complus.log files in JIT64.  TODO: consider using ICorJitInfo::logMsg instead.
-    InitializeLogging();
-#endif
-
     _ASSERTE( pCorJitInfo != NULL );
     _ASSERTE( pMethodInfo != NULL );
     _ASSERTE( pJitAllocator != NULL );
@@ -471,7 +479,6 @@ template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncode
     m_GSCookieValidRangeStart = 0;
     _ASSERTE(sizeof(m_GSCookieValidRangeEnd) == sizeof(UINT32));
     m_GSCookieValidRangeEnd = (UINT32) (-1); // == UINT32.MaxValue
-    m_PSPSymStackSlot = NO_PSP_SYM;
     m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
     m_contextParamType = GENERIC_CONTEXTPARAM_NONE;
 
@@ -639,7 +646,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::DefineIn
         }
     }
 
-    LOG((LF_GCINFO, LL_INFO1000000, "interruptible at %x length %x\n", startInstructionOffset, length));
+    GCINFO_LOG( LL_INFO1000000, "interruptible at %x length %x\n", startInstructionOffset, length);
 }
 
 
@@ -664,7 +671,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSlotS
 
     *( m_LifetimeTransitions.Append() ) = transition;
 
-    LOG((LF_GCINFO, LL_INFO1000000, LOG_GCSLOTDESC_FMT " %s at %x\n", LOG_GCSLOTDESC_ARGS(&m_SlotTable[slotId]), slotState == GC_SLOT_LIVE ? "live" : "dead", instructionOffset));
+    GCINFO_LOG( LL_INFO1000000, LOG_GCSLOTDESC_FMT " %s at %x\n", LOG_GCSLOTDESC_ARGS(&m_SlotTable[slotId]), slotState == GC_SLOT_LIVE ? "live" : "dead", instructionOffset);
 }
 
 
@@ -700,14 +707,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetGSCoo
     m_GSCookieStackSlot       = spOffsetGSCookie;
     m_GSCookieValidRangeStart = validRangeStart;
     m_GSCookieValidRangeEnd   = validRangeEnd;
-}
-
-template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetPSPSymStackSlot( INT32 spOffsetPSPSym )
-{
-    _ASSERTE( spOffsetPSPSym != NO_PSP_SYM );
-    _ASSERTE( m_PSPSymStackSlot == NO_PSP_SYM || m_PSPSymStackSlot == spOffsetPSPSym );
-
-    m_PSPSymStackSlot              = spOffsetPSPSym;
 }
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetGenericsInstContextStackSlot( INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type)
@@ -771,6 +770,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetRever
 {
     m_ReversePInvokeFrameSlot = spOffset;
 }
+
 
 struct GcSlotDescAndId
 {
@@ -845,7 +845,7 @@ struct CompareLifetimeTransitionsBySlot
         UINT32 firstOffset  = first.CodeOffset;
         UINT32 secondOffset = second.CodeOffset;
 
-        // FIXME: GcInfoEncoding::
+        // Interpreter-FIXME: GcInfoEncoding::
         // _ASSERTE(GetNormCodeOffsetChunk(firstOffset) == GetNormCodeOffsetChunk(secondOffset));
 
         // Sort them by slot
@@ -906,6 +906,7 @@ void BitStreamWriter::MemoryBlockList::Dispose(IAllocator* allocator)
 #endif
 }
 
+
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::FinalizeSlotIds()
 {
 #ifdef _DEBUG
@@ -926,9 +927,9 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     char className[256];
     m_pCorJitInfo->printClassName(m_pCorJitInfo->getMethodClass(m_pMethodInfo->ftn), className, sizeof(className));
 
-    LOG((LF_GCINFO, LL_INFO100,
+    GCINFO_LOG( LL_INFO100,
          "Entering GcInfoEncoder::Build() for method %s:%s\n",
-         className, methodName));
+         className, methodName);
 #endif
 
 
@@ -941,7 +942,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     UINT32 hasContextParamType = (m_GenericsInstContextStackSlot != NO_GENERICS_INST_CONTEXT);
     UINT32 hasReversePInvokeFrame = (m_ReversePInvokeFrameSlot != NO_REVERSE_PINVOKE_FRAME);
 
-    BOOL slimHeader = (!m_IsVarArg && !hasGSCookie && (m_PSPSymStackSlot == NO_PSP_SYM) &&
+    BOOL slimHeader = (!m_IsVarArg && !hasGSCookie &&
         !hasContextParamType && (m_InterruptibleRanges.Count() == 0) && !hasReversePInvokeFrame &&
         ((m_StackBaseRegister == NO_STACK_BASE_REGISTER) || (GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister) == 0))) &&
 #ifdef TARGET_AMD64
@@ -970,7 +971,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE(m_Info1, (m_IsVarArg ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, 0 /* unused - was hasSecurityObject */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, (hasGSCookie ? 1 : 0), 1, FlagsSize);
-        GCINFO_WRITE(m_Info1, ((m_PSPSymStackSlot != NO_PSP_SYM) ? 1 : 0), 1, FlagsSize);
+        GCINFO_WRITE(m_Info1, 0 /* unused - was hasPSPSymStackSlot */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, m_contextParamType, 2, FlagsSize);
 #if defined(TARGET_LOONGARCH64)
         assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
@@ -1028,24 +1029,13 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     {
         _ASSERTE(!slimHeader);
 #ifdef _DEBUG
-        LOG((LF_GCINFO, LL_INFO1000, "GS cookie at " FMT_STK "\n",
+        GCINFO_LOG( LL_INFO1000, "GS cookie at " FMT_STK "\n",
              DBG_STK(m_GSCookieStackSlot)
-             ));
+             );
 #endif
 
         GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_GSCookieStackSlot), GcInfoEncoding::GS_COOKIE_STACK_SLOT_ENCBASE, GsCookieSize);
 
-    }
-
-    // Encode the offset to the PSPSym.
-    // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before stack allocations on X64.
-    if(m_PSPSymStackSlot != NO_PSP_SYM)
-    {
-        _ASSERTE(!slimHeader);
-#ifdef _DEBUG
-        LOG((LF_GCINFO, LL_INFO1000, "Parent PSP at " FMT_STK "\n", DBG_STK(m_PSPSymStackSlot)));
-#endif
-        GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_PSPSymStackSlot), GcInfoEncoding::PSP_SYM_STACK_SLOT_ENCBASE, PspSymSize);
     }
 
     // Encode the offset to the generics type context.
@@ -1053,9 +1043,9 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     {
         _ASSERTE(!slimHeader);
 #ifdef _DEBUG
-        LOG((LF_GCINFO, LL_INFO1000, "Generics instantiation context at " FMT_STK "\n",
+        GCINFO_LOG( LL_INFO1000, "Generics instantiation context at " FMT_STK "\n",
              DBG_STK(m_GenericsInstContextStackSlot)
-             ));
+             );
 #endif
         GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_GenericsInstContextStackSlot), GcInfoEncoding::GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE, GenericsCtxSize);
     }
@@ -1965,7 +1955,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         // Encode transitions
         //------------------------------------------------------------------
 
-        LOG((LF_GCINFO, LL_INFO1000, "Encoding %i lifetime transitions.\n", pEndTransitions - pTransitions));
+        GCINFO_LOG( LL_INFO1000, "Encoding %i lifetime transitions.\n", pEndTransitions - pTransitions);
 
 
         liveState.ClearAll();
@@ -2014,11 +2004,11 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
             // Write couldBeLive slot map
             GCINFO_WRITE_VAR_VECTOR(m_Info2, couldBeLive, GcInfoEncoding::LIVESTATE_RLE_SKIP_ENCBASE, GcInfoEncoding::LIVESTATE_RLE_RUN_ENCBASE, ChunkMaskSize);
 
-            LOG((LF_GCINFO, LL_INFO100000,
+            GCINFO_LOG( LL_INFO100000,
                          "Chunk %d couldBeLive (%04x-%04x):\n", currentChunk,
                          currentChunk * GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK,
                          ((currentChunk + 1) * GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK) - 1
-                         ));
+                         );
 
             // Write final state
             // For all the bits set in couldBeLive.
@@ -2035,10 +2025,10 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
                                     ChunkFinalStateSize
                                     );
 
-                    LOG((LF_GCINFO, LL_INFO100000,
+                    GCINFO_LOG( LL_INFO100000,
                          "\t" LOG_GCSLOTDESC_FMT " %s at end of chunk.\n",
                          LOG_GCSLOTDESC_ARGS(&m_SlotTable[i]),
-                         liveState.ReadBit(i) ? "live" : "dead"));
+                         liveState.ReadBit(i) ? "live" : "dead");
                 }
             }
 
@@ -2059,11 +2049,11 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
                     _ASSERTE(couldBeLive.ReadBit(slotId));
 
-                    LOG((LF_GCINFO, LL_INFO100000,
+                    GCINFO_LOG( LL_INFO100000,
                          "\tTransition " LOG_GCSLOTDESC_FMT " going %s at offset %04x.\n",
                          LOG_GCSLOTDESC_ARGS(&m_SlotTable[pT->SlotId]),
                          pT->BecomesLive ? "live" : "dead",
-                         (int) pT->CodeOffset ));
+                         (int) pT->CodeOffset );
 
                     // Write code offset delta
                     UINT32 normCodeOffset = pT->CodeOffset;
@@ -2172,8 +2162,8 @@ lExitSuccess:;
         m_CurrentMethodSize.Log(LL_INFO100, "=== PartiallyInterruptible method breakdown ===\r\n");
         g_PiGcInfoSize.Log(LL_INFO10, "=== PartiallyInterruptible global breakdown ===\r\n");
     }
-    LogSpew(LF_GCINFO, LL_INFO10, "Total SlimHeaders: %zu\n", g_NumSlimHeaders);
-    LogSpew(LF_GCINFO, LL_INFO10, "NumMethods: %zu\n", g_NumFatHeaders);
+    GCINFO_LOGSPEW( LL_INFO10, "Total SlimHeaders: %zu\n", g_NumSlimHeaders);
+    GCINFO_LOGSPEW( LL_INFO10, "NumMethods: %zu\n", g_NumFatHeaders);
 #endif
 }
 
@@ -2419,7 +2409,7 @@ template <typename GcInfoEncoding> BYTE* TGcInfoEncoder<GcInfoEncoding>::Emit()
     size_t cbGcInfoSize = m_Info1.GetByteCount() +
                           m_Info2.GetByteCount();
 
-    LOG((LF_GCINFO, LL_INFO100, "GcInfoEncoder::Emit(): Size of GC info is %u bytes, code size %u bytes.\n", (unsigned)cbGcInfoSize, m_CodeLength ));
+    GCINFO_LOG( LL_INFO100, "GcInfoEncoder::Emit(): Size of GC info is %u bytes, code size %u bytes.\n", (unsigned)cbGcInfoSize, m_CodeLength );
 
     BYTE* destBuffer = (BYTE *)eeAllocGCInfo(cbGcInfoSize);
     // Allocator will throw an exception on failure.
@@ -2454,6 +2444,7 @@ template <typename GcInfoEncoding> size_t TGcInfoEncoder<GcInfoEncoding>::GetEnc
     return m_BlockSize;
 }
 
+
 BitStreamWriter::BitStreamWriter( IAllocator* pAllocator )
 {
     m_pAllocator = pAllocator;
@@ -2473,7 +2464,7 @@ BitStreamWriter::BitStreamWriter( IAllocator* pAllocator )
 //
 void BitStreamWriter::Write( size_t data, UINT32 count )
 {
-    _ASSERT(count <= BITS_PER_SIZE_T);
+    _ASSERTE(count <= BITS_PER_SIZE_T);
 
     if(count)
     {
@@ -2547,6 +2538,21 @@ void BitStreamWriter::CopyTo( BYTE* buffer )
     }
 
 }
+
+inline void BitStreamWriter::AllocMemoryBlock()
+{
+    // Interpreter-FIXME: Causes linker error in interpreter because IS_ALIGNED calls _ASSERTE
+    // _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
+    MemoryBlock* pMemBlock = m_MemoryBlocks.AppendNew(m_pAllocator, m_MemoryBlockSize);
+
+    m_pCurrentSlot = pMemBlock->Contents;
+    m_OutOfBlockSlot = m_pCurrentSlot + m_MemoryBlockSize / sizeof( size_t );
+
+#ifdef _DEBUG
+       m_MemoryBlocksCount++;
+#endif
+}
+
 
 void BitStreamWriter::Dispose()
 {
@@ -2622,3 +2628,7 @@ int BitStreamWriter::EncodeVarLengthSigned( SSIZE_T n, UINT32 base )
 
 // Instantiate the encoder so other files can use it
 template class TGcInfoEncoder<TargetGcInfoEncoding>;
+
+#ifdef FEATURE_INTERPRETER
+template class TGcInfoEncoder<InterpreterGcInfoEncoding>;
+#endif // FEATURE_INTERPRETER

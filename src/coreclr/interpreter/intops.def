@@ -160,6 +160,28 @@ OPDEF(INTOP_MUL_I8, "mul.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_MUL_R4, "mul.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_MUL_R8, "mul.r8", 4, 1, 2, InterpOpNoArgs)
 
+OPDEF(INTOP_MUL_OVF_I4, "mul.ovf.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_MUL_OVF_I8, "mul.ovf.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_MUL_OVF_UN_I4, "mul.ovf.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_MUL_OVF_UN_I8, "mul.ovf.un.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_DIV_I4, "div.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_DIV_I8, "div.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_DIV_R4, "div.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_DIV_R8, "div.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_DIV_UN_I4, "div.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_DIV_UN_I8, "div.un.i8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_REM_I4, "rem.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_REM_I8, "rem.i8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_REM_R4, "rem.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_REM_R8, "rem.r8", 4, 1, 2, InterpOpNoArgs)
+
+OPDEF(INTOP_REM_UN_I4, "rem.un.i4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_REM_UN_I8, "rem.un.i8", 4, 1, 2, InterpOpNoArgs)
+
 OPDEF(INTOP_AND_I4, "and.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_AND_I8, "and.i8", 4, 1, 2, InterpOpNoArgs)
 
@@ -230,12 +252,17 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 
 // Calls
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodToken)
+OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodToken)
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodToken)
 OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodToken)
 
 OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 5, 1, 0, InterpOpThreeInts)
 
+OPDEF(INTOP_ZEROBLK_IMM, "zeroblk.imm", 3, 0, 1, InterpOpInt)
+OPDEF(INTOP_LOCALLOC, "localloc", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_GC_COLLECT, "gc.collect", 1, 0, 0, InterpOpNoArgs)
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)

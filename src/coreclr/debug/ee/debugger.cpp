@@ -2774,6 +2774,13 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
     }
     CONTRACTL_END;
 
+#ifdef DACCESS_COMPILE
+    if (!HasLazyData())
+    {
+        return NULL;
+    }
+#endif // #ifdef DACCESS_COMPILE
+
     DebuggerMethodInfo *info = NULL;
 
     // When dump debugging, we don't expect to have a lock,
@@ -8255,7 +8262,7 @@ void Debugger::ManagedExceptionUnwindBegin(Thread *pThread)
  *
  * This function is called by the VM to release any debugger specific information for an
  * exception object.  It is called when the VM releases its internal exception stuff, i.e.
- * ExInfo on X86 and ExceptionTracker on WIN64.
+ * ExInfo.
  *
  *
  * Parameters:
@@ -16858,21 +16865,19 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     pRD->SetEcxLocation(&(pDE->m_context.Ecx));
     pRD->SetEaxLocation(&(pDE->m_context.Eax));
     pRD->SetEbpLocation(&(pDE->m_context.Ebp));
-    pRD->PCTAddr = GetReturnAddressPtr();
+    SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);
     pRD->pCurrentContext->Esp = (DWORD)GetSP(&pDE->m_context);
 
     SyncRegDisplayToCurrentContext(pRD);
 
 #else // FEATURE_EH_FUNCLETS
 
-    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
     pRD->SP = (DWORD)GetSP(&pDE->m_context);
 
 #endif // FEATURE_EH_FUNCLETS

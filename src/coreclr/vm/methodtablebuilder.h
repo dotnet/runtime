@@ -673,6 +673,31 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // This constructor can be used with hard-coded signatures that are used for
+        // representing async variant methods
+        MethodSignature(
+            Module *             pModule,
+            mdToken              tok,
+            Signature            sig,
+            const Substitution * pSubst)
+            : m_pModule(pModule),
+              m_tok(tok),
+              m_szName(NULL),
+              m_pSig(sig.GetRawSig()),
+              m_cSig(sig.GetRawSigLen()),
+              m_pSubst(pSubst),
+              m_nameHash(INVALID_NAME_HASH)
+            {
+                CONTRACTL {
+                    PRECONDITION(CheckPointer(pModule));
+                    PRECONDITION(TypeFromToken(tok) == mdtMethodDef ||
+                                 TypeFromToken(tok) == mdtMemberRef);
+                    PRECONDITION(CheckPointer(m_pSig));
+                    PRECONDITION(m_cSig != 0);
+                } CONTRACTL_END;
+            }
+
+        //-----------------------------------------------------------------------------------------
+        // This constructor can be used with hard-coded signatures that are used for
         // locating .ctor and .cctor methods.
         MethodSignature(
             Module *             pModule,
@@ -741,6 +766,11 @@ private:
         inline PCCOR_SIGNATURE
         GetSignature() const
             { WRAPPER_NO_CONTRACT; CheckGetMethodAttributes(); return m_pSig; }
+
+        //-----------------------------------------------------------------------------------------
+        // Returns the metadata signature for the method.
+        inline Signature GetSignatureClass() const
+            { WRAPPER_NO_CONTRACT; CheckGetMethodAttributes(); return Signature(m_pSig, (ULONG)m_cSig); }
 
         //-----------------------------------------------------------------------------------------
         // Returns the signature length.
@@ -915,6 +945,22 @@ private:
             METHOD_IMPL_TYPE implType);
 
         //-----------------------------------------------------------------------------------------
+        // Constructor. This takes all the information already extracted from metadata interface
+        // because the place that creates these types already has this data. Alternatively,
+        // a constructor could be written to take a token and metadata scope instead. Also,
+        // it might be interesting to move MethodClassification and METHOD_IMPL_TYPE to setter functions.
+        bmtMDMethod(
+            bmtMDType * pOwningType,
+            mdMethodDef tok,
+            DWORD dwDeclAttrs,
+            DWORD dwImplAttrs,
+            DWORD dwRVA,
+            Signature sig,
+            AsyncMethodKind thunkKind,
+            MethodClassification type,
+            METHOD_IMPL_TYPE implType);
+
+        //-----------------------------------------------------------------------------------------
         // Returns the type that owns the *declaration* of this method. This makes sure that a
         // method can be properly interpreted in the context of substitutions at any time.
         bmtMDType *
@@ -1014,6 +1060,26 @@ private:
         GetRVA() const
             { LIMITED_METHOD_CONTRACT; return m_dwRVA; }
 
+        bool IsAsyncVariant() const
+        {
+            return GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantThunk ||
+                GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantImpl;
+        }
+
+        void SetAsyncMethodKind(AsyncMethodKind kind)
+        {
+            m_asyncMethodKind = kind;
+        }
+
+        AsyncMethodKind GetAsyncMethodKind() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_asyncMethodKind;
+        }
+
+        bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
+        void              SetAsyncOtherVariant(bmtMDMethod* pAsyncOtherVariant) { m_asyncOtherVariant = pAsyncOtherVariant; }
+
     private:
         //-----------------------------------------------------------------------------------------
         bmtMDType *       m_pOwningType;
@@ -1022,8 +1088,10 @@ private:
         DWORD             m_dwImplAttrs;
         DWORD             m_dwRVA;
         MethodClassification  m_type;               // Specific MethodDesc flavour
+        AsyncMethodKind   m_asyncMethodKind;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
+        bmtMDMethod*      m_asyncOtherVariant = NULL;
 
         MethodDesc *      m_pMD;                // MethodDesc created and assigned to this method
         MethodDesc *      m_pUnboxedMD;         // Unboxing MethodDesc if this is a virtual method on a valuetype
@@ -1916,14 +1984,22 @@ private:
         // Searches the declared methods for a method with a token value equal to tok.
         bmtMDMethod *
         FindDeclaredMethodByToken(
-            mdMethodDef tok)
+            mdMethodDef tok, AsyncVariantLookup variantLookup)
         {
             LIMITED_METHOD_CONTRACT;
             for (SLOT_INDEX i = 0; i < m_cDeclaredMethods; ++i)
             {
                 if ((*this)[i]->GetMethodSignature().GetToken() == tok)
                 {
-                    return (*this)[i];
+                    auto result = (*this)[i];
+                    if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
+                    {
+                        return result->GetAsyncOtherVariant();
+                    }
+                    else
+                    {
+                        return result;
+                    }
                 }
             }
             return NULL;
@@ -2609,7 +2685,9 @@ private:
         BOOL                fEnC,
         DWORD               RVA,          // Only needed for NDirect case
         IMDInternalImport * pIMDII,  // Needed for NDirect, EEImpl(Delegate) cases
-        LPCSTR              pMethodName // Only needed for mcEEImpl (Delegate) case
+        LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
+        Signature           sig, // Only needed for the Async thunk case
+        AsyncMethodKind     asyncKind
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodName)
         COMMA_INDEBUG(LPCUTF8             pszDebugClassName)
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodSignature));
@@ -2686,13 +2764,13 @@ private:
     // Find the decl method on a given interface entry that matches the method name+signature specified
     // If none is found, return a null method handle
     bmtMethodHandle
-    FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, bool searchForStaticMethods = false);
+    FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, AsyncVariantLookup variantLookup,  bool searchForStaticMethods = false);
 
     // --------------------------------------------------------------------------------------------
     // Find the decl method within the class hierarchy method name+signature specified
     // If none is found, return a null method handle
     bmtMethodHandle
-    FindDeclMethodOnClassInHierarchy(const DeclaredMethodIterator& it, MethodTable * pDeclMT, MethodSignature &declSig);
+    FindDeclMethodOnClassInHierarchy(const DeclaredMethodIterator& it, MethodTable * pDeclMT, MethodSignature &declSig, AsyncVariantLookup variantLookup);
 
     // --------------------------------------------------------------------------------------------
     // Throws if an entry already exists that has been MethodImpl'd. Adds the interface slot and
