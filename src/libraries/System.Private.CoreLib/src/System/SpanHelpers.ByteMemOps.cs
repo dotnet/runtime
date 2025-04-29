@@ -239,7 +239,7 @@ namespace System
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
-            Buffer.Memmove(ref dest, ref src, len);
+            Buffer.MemmoveInternal(ref dest, ref src, len);
         }
 
         [Intrinsic] // Unrolled for small sizes
