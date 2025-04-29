@@ -11385,8 +11385,6 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
 void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 {
 #if defined(TARGET_AMD64)
-    unwindSize += sizeof(ULONG);
-
     // Note that the count of unwind codes (2 bytes each) is stored as a UBYTE
     // So the largest size could be 510 bytes, plus the header and language
     // specific stuff.  This can't overflow.
