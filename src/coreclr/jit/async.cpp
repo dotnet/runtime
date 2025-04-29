@@ -638,11 +638,11 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
         return lhs.Alignment > rhs.Alignment;
     });
 
-    // For OSR, we store the transition IL offset at the beginning of the data
-    // (-1 in the tier0 version):
+    // For OSR, we store the IL offset that inspired the OSR method at the
+    // beginning of the data (-1 in the tier0 version):
     if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
     {
-        JITDUMP("  Method %s; keeping an IL offset at the beginning of non-GC data\n",
+        JITDUMP("  Method %s; keeping IL offset that inspired OSR method at the beginning of non-GC data\n",
                 m_comp->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
         layout.DataSize += sizeof(int);
     }
