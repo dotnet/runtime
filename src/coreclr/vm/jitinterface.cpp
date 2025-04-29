@@ -11388,7 +11388,6 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
     // Note that the count of unwind codes (2 bytes each) is stored as a UBYTE
     // So the largest size could be 510 bytes, plus the header and language
     // specific stuff.  This can't overflow.
-
     _ASSERTE(FitsInU4(unwindSize + sizeof(ULONG)));
     unwindSize = (ULONG)(ALIGN_UP(unwindSize, sizeof(ULONG)));
 #else // TARGET_AMD64
