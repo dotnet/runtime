@@ -341,7 +341,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_vpdpbuuds:
         {
             // Evex versions of AvxVnniInt8 and AvxVnniInt16 will be supported
-            // with Avx10.2 ISA. 
+            // with Avx10.2 ISA.
             return emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
         }
 
