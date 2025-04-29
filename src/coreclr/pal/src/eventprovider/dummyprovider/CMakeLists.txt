@@ -36,7 +36,7 @@ if (CLR_CMAKE_HOST_ANDROID)
         OBJECT
         ${DUMMY_PROVIDER_SOURCES}
     )
-endif()
+endif(CLR_CMAKE_HOST_ANDROID)
 
 add_library(eventprovider
     STATIC

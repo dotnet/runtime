@@ -5,7 +5,7 @@ if (CLR_CMAKE_HOST_ANDROID)
     OBJECT
     resourcestring.cpp
   )
-endif()
+endif(CLR_CMAKE_HOST_ANDROID)
 
 add_library_clr(nativeresourcestring
   STATIC

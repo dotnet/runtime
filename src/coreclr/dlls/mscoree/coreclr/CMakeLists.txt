@@ -84,7 +84,7 @@ if (CLR_CMAKE_HOST_ANDROID)
     set(LIB_GCPAL gc_pal_objects)
 else()
     set(LIB_GCPAL gc_pal)
-endif()
+endif(CLR_CMAKE_HOST_ANDROID)
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
@@ -256,7 +256,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
 if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_ANDROID)
     install_clr(TARGETS coreclr_static DESTINATIONS . sharedFramework COMPONENT runtime)
-endif()
+endif(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_ANDROID)
 
 # Enable profile guided optimization
 add_pgo(coreclr)

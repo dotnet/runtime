@@ -8,7 +8,7 @@ if (CLR_CMAKE_HOST_ANDROID)
         OBJECT
         ${SOURCES}
     )
-endif()
+endif(CLR_CMAKE_HOST_ANDROID)
 
 add_library(coreclrminipal
     STATIC
