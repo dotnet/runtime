@@ -122,19 +122,22 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [Fact]
         public static void ImportSubjectKeyPublicInfo_AlgorithmErrorsInAsn()
         {
-            // RSA key
-            using RSA rsa = RSA.Create();
-            byte[] rsaSpkiBytes = rsa.ExportSubjectPublicKeyInfo();
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
-                import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(rsaSpkiBytes))));
+            if (!OperatingSystem.IsBrowser())
+            {
+                // RSA key
+                using RSA rsa = RSA.Create();
+                byte[] rsaSpkiBytes = rsa.ExportSubjectPublicKeyInfo();
+                SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
+                    import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(rsaSpkiBytes))));
+            }
 
-            // Create an invalid SLH-DSA PKCS8 with parameters
+            // Create an invalid SLH-DSA SPKI with parameters
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
             {
                 Algorithm = new AlgorithmIdentifierAsn
                 {
                     Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
-                    Parameters = rsaSpkiBytes, // <-- Invalid
+                    Parameters = SlhDsaTestHelpers.s_DerBitStringFoo, // <-- Invalid
                 },
                 SubjectPublicKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes]
             };
@@ -165,21 +168,20 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
 
             // Create an invalid SLH-DSA PKCS8 with parameters
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.WriteBitString("random bitstring"u8);
-            byte[] someEncodedBytes = writer.Encode();
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
                     Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
-                    Parameters = someEncodedBytes, // <-- Invalid
+                    Parameters = SlhDsaTestHelpers.s_DerBitStringFoo, // <-- Invalid
                 },
                 PrivateKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes]
             };
 
             SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(pkcs8.Encode()))));
+
+            pkcs8.PrivateKeyAlgorithm.Parameters = AsnUtils.DerNull;
 
             // Sanity check
             pkcs8.PrivateKeyAlgorithm.Parameters = null;
