@@ -236,7 +236,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(GetValidNames))]
-        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
         public void Ctor_ValidName(string name)
         {
             bool createdNew;
@@ -316,8 +316,9 @@ namespace System.Threading.Tests
                 Assert.Throws<UnauthorizedAccessException>(() => new Mutex(Guid.NewGuid().ToString("N"), options)));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(GetValidNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
         public void OpenExisting(string name)
         {
             Mutex resultHandle;
@@ -350,7 +351,8 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentException>("name", null, () => Mutex.OpenExisting(string.Empty, options: default));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
         public void OpenExisting_UnavailableName()
         {
             string name = Guid.NewGuid().ToString("N");
@@ -387,7 +389,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(NamePrefixes_MemberData))]
-        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
         public void NameOptionsApiCompatibilityTest(string namePrefix)
         {
             string name = Guid.NewGuid().ToString("N");
@@ -449,7 +451,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(NamePrefixAndOptionsCompatibilityTest_MemberData))]
-        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
         public void NamePrefixAndOptionsCompatibilityTest(bool currentUserOnly, bool currentSessionOnly, string namePrefix)
         {
             string name = namePrefix + Guid.NewGuid().ToString("N");
@@ -481,7 +483,7 @@ namespace System.Threading.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Windows Nano Server and Server Core apparently use the same namespace for the Local\ and Global\ prefixes
         [MemberData(nameof(NameNamespaceTests_MemberData))]
-        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
         public void NameNamespaceTest(
             bool create_currentUserOnly,
             bool create_currentSessionOnly,
@@ -596,7 +598,7 @@ namespace System.Threading.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(AbandonExisting_MemberData))]
-        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
         public void AbandonExisting(
             string name,
             WaitHandleWaitType waitType,
@@ -850,7 +852,7 @@ namespace System.Threading.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/96191", TestPlatforms.Browser)]
-        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
         public void NamedMutex_ThreadExitDisposeRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
@@ -912,7 +914,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [SkipOnPlatform(TestPlatforms.Android, "The system cannot open the device or file specified")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
