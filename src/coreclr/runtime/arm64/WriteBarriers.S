@@ -179,10 +179,6 @@
         // Exit label
     .endm
 
-LEAF_ENTRY RhpWriteBarriers, _TEXT
-    ret
-LEAF_END RhpWriteBarriers, _TEXT
-
 // void JIT_ByRefWriteBarrier
 // On entry:
 //   x13  : the source address (points to object reference to write)
@@ -401,8 +397,3 @@ LOCAL_LABEL(NoBarrierXchg):
 .arch_extension nolse
 #endif
 #endif // FEATURE_NATIVEAOT
-
-LEAF_ENTRY RhpWriteBarriers_End, _TEXT
-    ret
-LEAF_END RhpWriteBarriers_End, _TEXT
-
