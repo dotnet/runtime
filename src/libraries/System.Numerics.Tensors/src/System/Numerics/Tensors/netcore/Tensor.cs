@@ -214,7 +214,7 @@ namespace System.Numerics.Tensors
                 {
                     if (rank != tensors[i].Rank)
                         ThrowHelper.ThrowArgument_InvalidConcatenateShape();
-                    for (int j = 0; j < tensors[0].Rank; j++)
+                    for (int j = 0; j < rank; j++)
                     {
                         if (j != dimension)
                         {
@@ -226,7 +226,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Make sure the destination tensor has the correct shape.
-                nint[] lengths = new nint[tensors[0].Rank];
+                nint[] lengths = new nint[rank];
                 tensors[0].Lengths.CopyTo(lengths);
                 lengths[dimension] = sumOfAxis;
 
@@ -1440,7 +1440,7 @@ namespace System.Numerics.Tensors
             nint[] newLengths = lengths.ToArray();
             // Calculate wildcard info.
             int wildcardIndex = lengths.IndexOf(-1);
-            if (wildcardIndex != -1)
+            if (wildcardIndex >= 0 -1)
             {
                 if (lengths.Count(-1) > 1)
                     ThrowHelper.ThrowArgument_OnlyOneWildcard();
@@ -2186,9 +2186,6 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowArgument_StackShapesNotSame();
             }
 
-            if (dimension < 0)
-                dimension = tensors[0].Rank - dimension;
-
             if (dimension < 0 || dimension >= tensors[0].Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
 
@@ -2226,9 +2223,6 @@ namespace System.Numerics.Tensors
                 if (!tensors[0].Lengths.SequenceEqual(tensors[i].Lengths))
                     ThrowHelper.ThrowArgument_StackShapesNotSame();
             }
-
-            if (dimension < 0)
-                dimension = tensors[0].Rank - dimension;
 
             if (dimension < 0 || dimension >= tensors[0].Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
