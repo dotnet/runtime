@@ -56,7 +56,10 @@ namespace System.Configuration
         /// </summary>
         protected ApplicationSettingsBase(IComponent owner, string settingsKey) : this(settingsKey)
         {
-            ArgumentNullException.ThrowIfNull(owner);
+            if (owner is null)
+            {
+                throw new ArgumentNullException(nameof(owner));
+            }
 
             _owner = owner;
 

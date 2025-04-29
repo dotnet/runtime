@@ -45,8 +45,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder AddLogger(this IHttpClientBuilder builder, Func<IServiceProvider, IHttpClientLogger> httpClientLoggerFactory, bool wrapHandlersPipeline = false)
         {
-            ArgumentNullException.ThrowIfNull(builder);
-            ArgumentNullException.ThrowIfNull(httpClientLoggerFactory);
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(httpClientLoggerFactory);
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IHttpClientBuilder AddLogger<TLogger>(this IHttpClientBuilder builder, bool wrapHandlersPipeline = false)
             where TLogger : IHttpClientLogger
         {
-            ArgumentNullException.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(builder);
 
             return AddLogger(builder, services => services.GetRequiredService<TLogger>(), wrapHandlersPipeline);
         }
@@ -120,7 +120,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         public static IHttpClientBuilder RemoveAllLoggers(this IHttpClientBuilder builder)
         {
-            ArgumentNullException.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(builder);
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
@@ -138,7 +138,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         public static IHttpClientBuilder AddDefaultLogger(this IHttpClientBuilder builder)
         {
-            ArgumentNullException.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(builder);
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options => options.SuppressDefaultLogging = false);
             return builder;

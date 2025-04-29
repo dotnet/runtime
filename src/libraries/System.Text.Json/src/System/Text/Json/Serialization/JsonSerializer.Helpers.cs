@@ -67,7 +67,10 @@ namespace System.Text.Json
 
         private static void ValidateInputType(object? value, Type inputType)
         {
-            ArgumentNullException.ThrowIfNull(inputType);
+            if (inputType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(inputType));
+            }
 
             if (value is not null)
             {

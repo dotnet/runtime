@@ -30,7 +30,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeMember")]
 			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
-			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			static void DynamicArgument ()
 			{
 				dynamic dynamicObject = "Some string";
@@ -49,7 +48,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.InvokeMember")]
-			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			static void MethodWithDynamicParameter (dynamic arg)
 			{
@@ -84,14 +82,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.GetMember")]
 			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
-			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			static void Read (dynamic d)
 			{
 				var x = d.Member;
 			}
 
 			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.SetMember")]
-			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			static void Write (dynamic d)
 			{
@@ -109,14 +105,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.GetIndex")]
 			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
-			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			static void Read (dynamic d)
 			{
 				var x = d[0];
 			}
 
 			[ExpectedWarning ("IL2026", "Microsoft.CSharp.RuntimeBinder.Binder.SetIndex")]
-			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 			static void Write (dynamic d)
 			{
@@ -135,7 +129,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RequiresUnreferencedCode("message")]
 			class ClassWithRequires
 			{
-				[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 				[ExpectedWarning ("IL3050", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/94427")]
 				public static void MethodWithDynamicArg (dynamic arg)
 				{

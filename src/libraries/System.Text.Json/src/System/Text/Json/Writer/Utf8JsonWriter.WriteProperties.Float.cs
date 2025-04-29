@@ -53,7 +53,10 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteNumber(string propertyName, float value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
             WriteNumber(propertyName.AsSpan(), value);
         }
 

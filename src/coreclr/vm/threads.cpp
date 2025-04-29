@@ -52,14 +52,6 @@
 #include "perfmap.h"
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
-#include "exinfo.h"
-#endif
-
-#ifdef FEATURE_INTERPRETER
-#include "interpexec.h"
-#endif // FEATURE_INTERPRETER
-
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -356,8 +348,8 @@ bool Thread::DetectHandleILStubsForDebugger()
 }
 
 #ifndef _MSC_VER
-thread_local ThreadLocalInfo t_CurrentThreadInfo;
-#endif // _MSC_VER
+__thread ThreadLocalInfo gCurrentThreadInfo;
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -365,8 +357,8 @@ void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
-    Thread* origThread = t_CurrentThreadInfo.m_pThread;
-    t_CurrentThreadInfo.m_pThread = t;
+    Thread* origThread = gCurrentThreadInfo.m_pThread;
+    gCurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
         _ASSERTE(origThread == NULL);
@@ -384,7 +376,7 @@ void SetThread(Thread* t)
 #endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
-    t_CurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
+    gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
 }
 
 BOOL Thread::Alert ()
@@ -1163,12 +1155,12 @@ void InitThreadManager()
 #ifndef TARGET_UNIX
     _ASSERTE(GetThreadNULLOk() == NULL);
 
-    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo);
+    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo);
 
     _ASSERTE(offsetOfCurrentThreadInfo < 0x8000);
     _ASSERTE(_tls_index < 0x10000);
 
-    // Save t_CurrentThreadInfo location for debugger
+    // Save gCurrentThreadInfo location for debugger
     SetIlsIndex((DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000));
 
     _ASSERTE(g_TrapReturningThreads == 0);
@@ -1542,7 +1534,6 @@ Thread::Thread()
 
 #ifdef TARGET_X86
     m_HijackReturnKind = RT_Illegal;
-    m_HijackHasAsyncRet = false;
 #endif
 
     m_currentPrepareCodeConfig = nullptr;
@@ -1554,10 +1545,6 @@ Thread::Thread()
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
 #endif // _DEBUG
-
-#ifdef FEATURE_INTERPRETER
-    m_pInterpThreadContext = nullptr;
-#endif // FEATURE_INTERPRETER
 }
 
 //--------------------------------------------------------------------
@@ -2752,7 +2739,7 @@ void Thread::CooperativeCleanup()
 
     // Clear any outstanding stale EH state that maybe still active on the thread.
 #ifdef FEATURE_EH_FUNCLETS
-    ExInfo::PopTrackers((void*)-1);
+    ExceptionTracker::PopTrackers((void*)-1);
 #else // !FEATURE_EH_FUNCLETS
     PTR_ThreadExceptionState pExState = GetExceptionState();
     if (pExState->IsExceptionInProgress())
@@ -2810,13 +2797,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     Thread *pCurrentThread = GetThreadNULLOk();
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
-
-#ifdef FEATURE_INTERPRETER
-    if (m_pInterpThreadContext != nullptr)
-    {
-        delete m_pInterpThreadContext;
-    }
-#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // If the currently running thread is the thread that died and it is an STA thread, then we
@@ -2910,12 +2890,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             LOG((LF_SYNC, INFO3, "OnThreadTerminate obtain lock\n"));
             ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 
-        }
-
-        if (m_State & TS_DebugWillSync)
-        {
-            ResetThreadState(TS_DebugWillSync);
-            InterlockedDecrement(&m_DebugWillSyncCount);    
         }
 
         SetThreadState(TS_Dead);
@@ -6715,7 +6689,8 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
             {
                 SetIP(pctx, 0);
 #ifdef TARGET_X86
-                SetRegdisplayPCTAddr(pRD, (TADDR)&(pctx->Eip));
+                pRD->ControlPC = pctx->Eip;
+                pRD->PCTAddr = (TADDR)&(pctx->Eip);
 #elif defined(TARGET_AMD64)
                 // nothing more to do here, on Win64 setting the IP to 0 is enough.
 #elif defined(TARGET_ARM)
@@ -6922,10 +6897,13 @@ struct ManagedThreadCallState
 {
     ADCallBackFcnType   pTarget;
     LPVOID                       args;
+    UnhandledExceptionLocation   filterType;
 
-    ManagedThreadCallState(ADCallBackFcnType Target,LPVOID Args):
+    ManagedThreadCallState(ADCallBackFcnType Target,LPVOID Args,
+                        UnhandledExceptionLocation   FilterType):
           pTarget(Target),
-          args(Args)
+          args(Args),
+          filterType(FilterType)
     {
         LIMITED_METHOD_CONTRACT;
     };
@@ -7164,7 +7142,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
             // this must be done after the second pass has run, it does not
             // reference anything on the stack, so it is safe to run in an
             // SEH __except clause as well as a C++ catch clause.
-            ExInfo::PopTrackers(pArgs->pFrame);
+            ExceptionTracker::PopTrackers(pArgs->pFrame);
     #endif // FEATURE_EH_FUNCLETS
 
             _ASSERTE(!pArgs->pThread->IsAbortRequested());
@@ -7180,7 +7158,10 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     PAL_ENDTRY;
 }
 
-void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
+// Establish the base of a managed thread
+static void ManagedThreadBase_Dispatch(ADCallBackFcnType pTarget,
+                                       LPVOID args,
+                                       UnhandledExceptionLocation filterType)
 {
     CONTRACTL
     {
@@ -7190,8 +7171,24 @@ void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
     }
     CONTRACTL_END;
 
-    ManagedThreadCallState CallState(pTarget, args);
+    ManagedThreadCallState CallState(pTarget, args, filterType);
     ManagedThreadBase_DispatchOuter(&CallState);
+}
+
+// And here are the various exposed entrypoints for base thread behavior
+
+// The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
+void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
+{
+    WRAPPER_NO_CONTRACT;
+    ManagedThreadBase_Dispatch(pTarget, args, ManagedThread);
+}
+
+// The Finalizer thread establishes exception handling at its base
+void ManagedThreadBase::FinalizerBase(ADCallBackFcnType pTarget)
+{
+    WRAPPER_NO_CONTRACT;
+    ManagedThreadBase_Dispatch(pTarget, NULL, FinalizerThread);
 }
 
 //+----------------------------------------------------------------------------
@@ -7728,11 +7725,7 @@ void Thread::StaticInitialize()
     InitializeSpecialUserModeApc();
 
     // When shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
-    if (AreShadowStacksEnabled() && !UseSpecialUserModeApc())
-    {
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
-            W("Your Windows doesn't fully support CET. Please install all available Windows updates."));
-    }
+    _ASSERTE_ALL_BUILDS(!AreShadowStacksEnabled() || UseSpecialUserModeApc());
 #endif
 }
 
@@ -7809,20 +7802,6 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
     RtlRestoreContext(ContextRecord, NULL);
 #endif
 }
-
-#ifdef FEATURE_INTERPRETER
-InterpThreadContext* Thread::GetInterpThreadContext()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (m_pInterpThreadContext == nullptr)
-    {
-        m_pInterpThreadContext = new (nothrow) InterpThreadContext();
-    }
-
-    return m_pInterpThreadContext;
-}
-#endif // FEATURE_INTERPRETER
 
 #endif // #ifndef DACCESS_COMPILE
 

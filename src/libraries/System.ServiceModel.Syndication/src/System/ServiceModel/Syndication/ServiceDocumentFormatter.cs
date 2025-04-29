@@ -18,7 +18,10 @@ namespace System.ServiceModel.Syndication
 
         protected ServiceDocumentFormatter(ServiceDocument documentToWrite)
         {
-            ArgumentNullException.ThrowIfNull(documentToWrite);
+            if (documentToWrite is null)
+            {
+                throw new ArgumentNullException(nameof(documentToWrite));
+            }
 
             _document = documentToWrite;
         }
@@ -57,7 +60,10 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, ServiceDocument document)
         {
-            ArgumentNullException.ThrowIfNull(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
 
             SyndicationFeedFormatter.CloseBuffer(buffer, writer);
             document.LoadElementExtensions(buffer);
@@ -65,14 +71,20 @@ namespace System.ServiceModel.Syndication
 
         protected static SyndicationCategory CreateCategory(InlineCategoriesDocument inlineCategories)
         {
-            ArgumentNullException.ThrowIfNull(inlineCategories);
+            if (inlineCategories is null)
+            {
+                throw new ArgumentNullException(nameof(inlineCategories));
+            }
 
             return inlineCategories.CreateCategory();
         }
 
         protected static ResourceCollectionInfo CreateCollection(Workspace workspace)
         {
-            ArgumentNullException.ThrowIfNull(workspace);
+            if (workspace is null)
+            {
+                throw new ArgumentNullException(nameof(workspace));
+            }
 
             return workspace.CreateResourceCollection();
         }
@@ -89,147 +101,210 @@ namespace System.ServiceModel.Syndication
 
         protected static Workspace CreateWorkspace(ServiceDocument document)
         {
-            ArgumentNullException.ThrowIfNull(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
 
             return document.CreateWorkspace();
         }
 
         protected static void LoadElementExtensions(XmlReader reader, CategoriesDocument categories, int maxExtensionSize)
         {
-            ArgumentNullException.ThrowIfNull(categories);
+            if (categories is null)
+            {
+                throw new ArgumentNullException(nameof(categories));
+            }
 
             categories.LoadElementExtensions(reader, maxExtensionSize);
         }
 
         protected static void LoadElementExtensions(XmlReader reader, ResourceCollectionInfo collection, int maxExtensionSize)
         {
-            ArgumentNullException.ThrowIfNull(collection);
+            if (collection is null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
 
             collection.LoadElementExtensions(reader, maxExtensionSize);
         }
 
         protected static void LoadElementExtensions(XmlReader reader, Workspace workspace, int maxExtensionSize)
         {
-            ArgumentNullException.ThrowIfNull(workspace);
+            if (workspace is null)
+            {
+                throw new ArgumentNullException(nameof(workspace));
+            }
 
             workspace.LoadElementExtensions(reader, maxExtensionSize);
         }
 
         protected static void LoadElementExtensions(XmlReader reader, ServiceDocument document, int maxExtensionSize)
         {
-            ArgumentNullException.ThrowIfNull(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
 
             document.LoadElementExtensions(reader, maxExtensionSize);
         }
 
         protected static bool TryParseAttribute(string name, string ns, string value, ServiceDocument document, string version)
         {
-            ArgumentNullException.ThrowIfNull(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
 
             return document.TryParseAttribute(name, ns, value, version);
         }
 
         protected static bool TryParseAttribute(string name, string ns, string value, ResourceCollectionInfo collection, string version)
         {
-            ArgumentNullException.ThrowIfNull(collection);
+            if (collection is null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
 
             return collection.TryParseAttribute(name, ns, value, version);
         }
 
         protected static bool TryParseAttribute(string name, string ns, string value, CategoriesDocument categories, string version)
         {
-            ArgumentNullException.ThrowIfNull(categories);
+            if (categories is null)
+            {
+                throw new ArgumentNullException(nameof(categories));
+            }
 
             return categories.TryParseAttribute(name, ns, value, version);
         }
 
         protected static bool TryParseAttribute(string name, string ns, string value, Workspace workspace, string version)
         {
-            ArgumentNullException.ThrowIfNull(workspace);
+            if (workspace is null)
+            {
+                throw new ArgumentNullException(nameof(workspace));
+            }
 
             return workspace.TryParseAttribute(name, ns, value, version);
         }
 
         protected static bool TryParseElement(XmlReader reader, ResourceCollectionInfo collection, string version)
         {
-            ArgumentNullException.ThrowIfNull(collection);
+            if (collection is null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
 
             return collection.TryParseElement(reader, version);
         }
 
         protected static bool TryParseElement(XmlReader reader, ServiceDocument document, string version)
         {
-            ArgumentNullException.ThrowIfNull(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
 
             return document.TryParseElement(reader, version);
         }
 
         protected static bool TryParseElement(XmlReader reader, Workspace workspace, string version)
         {
-            ArgumentNullException.ThrowIfNull(workspace);
+            if (workspace is null)
+            {
+                throw new ArgumentNullException(nameof(workspace));
+            }
 
             return workspace.TryParseElement(reader, version);
         }
 
         protected static bool TryParseElement(XmlReader reader, CategoriesDocument categories, string version)
         {
-            ArgumentNullException.ThrowIfNull(categories);
+            if (categories is null)
+            {
+                throw new ArgumentNullException(nameof(categories));
+            }
 
             return categories.TryParseElement(reader, version);
         }
 
         protected static void WriteAttributeExtensions(XmlWriter writer, ServiceDocument document, string version)
         {
-            ArgumentNullException.ThrowIfNull(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
 
             document.WriteAttributeExtensions(writer, version);
         }
 
         protected static void WriteAttributeExtensions(XmlWriter writer, Workspace workspace, string version)
         {
-            ArgumentNullException.ThrowIfNull(workspace);
+            if (workspace is null)
+            {
+                throw new ArgumentNullException(nameof(workspace));
+            }
 
             workspace.WriteAttributeExtensions(writer, version);
         }
 
         protected static void WriteAttributeExtensions(XmlWriter writer, ResourceCollectionInfo collection, string version)
         {
-            ArgumentNullException.ThrowIfNull(collection);
+            if (collection is null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
 
             collection.WriteAttributeExtensions(writer, version);
         }
 
         protected static void WriteAttributeExtensions(XmlWriter writer, CategoriesDocument categories, string version)
         {
-            ArgumentNullException.ThrowIfNull(categories);
+            if (categories is null)
+            {
+                throw new ArgumentNullException(nameof(categories));
+            }
 
             categories.WriteAttributeExtensions(writer, version);
         }
 
         protected static void WriteElementExtensions(XmlWriter writer, ServiceDocument document, string version)
         {
-            ArgumentNullException.ThrowIfNull(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
 
             document.WriteElementExtensions(writer, version);
         }
 
         protected static void WriteElementExtensions(XmlWriter writer, Workspace workspace, string version)
         {
-            ArgumentNullException.ThrowIfNull(workspace);
+            if (workspace is null)
+            {
+                throw new ArgumentNullException(nameof(workspace));
+            }
 
             workspace.WriteElementExtensions(writer, version);
         }
 
         protected static void WriteElementExtensions(XmlWriter writer, ResourceCollectionInfo collection, string version)
         {
-            ArgumentNullException.ThrowIfNull(collection);
+            if (collection is null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
 
             collection.WriteElementExtensions(writer, version);
         }
 
         protected static void WriteElementExtensions(XmlWriter writer, CategoriesDocument categories, string version)
         {
-            ArgumentNullException.ThrowIfNull(categories);
+            if (categories is null)
+            {
+                throw new ArgumentNullException(nameof(categories));
+            }
 
             categories.WriteElementExtensions(writer, version);
         }

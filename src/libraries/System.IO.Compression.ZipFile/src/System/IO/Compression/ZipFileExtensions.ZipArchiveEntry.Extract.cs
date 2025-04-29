@@ -62,28 +62,15 @@ namespace System.IO.Compression
         /// <param name="overwrite">True to indicate overwrite.</param>
         public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite)
         {
-            ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
-
-            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
-            {
-                using (Stream es = source.Open())
-                    es.CopyTo(fs);
-            }
-
-            ExtractToFileFinalize(source, destinationFileName);
-        }
-
-        private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, out FileStreamOptions fileStreamOptions)
-        {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationFileName);
 
-            fileStreamOptions = new()
+            FileStreamOptions fileStreamOptions = new()
             {
                 Access = FileAccess.Write,
                 Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
                 Share = FileShare.None,
-                BufferSize = ZipFile.FileStreamBufferSize
+                BufferSize = 0x1000
             };
 
             const UnixFileMode OwnershipPermissions =
@@ -100,12 +87,20 @@ namespace System.IO.Compression
             {
                 fileStreamOptions.UnixCreateMode = mode;
             }
+
+            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
+            {
+                using (Stream es = source.Open())
+                    es.CopyTo(fs);
+            }
+
+            ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, source.LastWriteTime);
         }
 
-        private static void ExtractToFileFinalize(ZipArchiveEntry source, string destinationFileName) =>
-            ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, source.LastWriteTime);
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) =>
+            ExtractRelativeToDirectory(source, destinationDirectoryName, overwrite: false);
 
-        private static bool ExtractRelativeToDirectoryCheckIfFile(ZipArchiveEntry source, string destinationDirectoryName, out string fileDestinationPath)
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationDirectoryName);
@@ -119,27 +114,21 @@ namespace System.IO.Compression
                 destinationDirectoryFullPath = string.Concat(destinationDirectoryFullPath, new ReadOnlySpan<char>(in sep));
             }
 
-            fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
+            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
 
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
                 throw new IOException(SR.IO_ExtractingResultsInOutside);
 
             if (Path.GetFileName(fileDestinationPath).Length == 0)
             {
+                // If it is a directory:
+
                 if (source.Length != 0)
                     throw new IOException(SR.IO_DirectoryNameWithData);
 
                 Directory.CreateDirectory(fileDestinationPath);
-
-                return false; // It is a directory
             }
-
-            return true; // It is a file
-        }
-
-        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite)
-        {
-            if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryName, out string fileDestinationPath))
+            else
             {
                 // If it is a file:
                 // Create containing directory:

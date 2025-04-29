@@ -301,7 +301,7 @@ NESTED_END TheUMEntryPrestub, _TEXT
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -192
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -176
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, 16
     PROLOG_SAVE_REG_PAIR   x21, x22, 32
@@ -312,12 +312,9 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // save any integral return value(s)
     stp x0, x1, [sp, #96]
 
-    // save async continuation return value
-    str x2, [sp, #112]
-
     // save any FP/HFA return value(s)
-    stp q0, q1, [sp, #128]
-    stp q2, q3, [sp, #160]
+    stp q0, q1, [sp, #112]
+    stp q2, q3, [sp, #144]
 
     mov x0, sp
     bl C_FUNC(OnHijackWorker)
@@ -325,19 +322,16 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore any integral return value(s)
     ldp x0, x1, [sp, #96]
 
-    // restore async continuation return value
-    ldr x2, [sp, #112]
-
     // restore any FP/HFA return value(s)
-    ldp q0, q1, [sp, #128]
-    ldp q2, q3, [sp, #160]
+    ldp q0, q1, [sp, #112]
+    ldp q2, q3, [sp, #144]
 
     EPILOG_RESTORE_REG_PAIR   x19, x20, 16
     EPILOG_RESTORE_REG_PAIR   x21, x22, 32
     EPILOG_RESTORE_REG_PAIR   x23, x24, 48
     EPILOG_RESTORE_REG_PAIR   x25, x26, 64
     EPILOG_RESTORE_REG_PAIR   x27, x28, 80
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   192
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   176
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
@@ -375,7 +369,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
     // of method. However, this method needs to be able to change fp before calling funclet.
     // This is required to access locals in funclet.
-    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   x29, lr, -96
+    PROLOG_SAVE_REG_PAIR_INDEXED   x29, lr, -96
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, 16
@@ -409,23 +403,21 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFunclet, _TEXT
 
-// This helper enables us to call into a filter funclet after restoring Fp register
+// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
+// frame pointer for accessing the locals in the parent method.
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
 
     // On entry:
     //
     // X0 = throwable
-    // X1 = FP of main function
+    // X1 = SP of the caller of the method/funclet containing the filter
     // X2 = PC to invoke
     // X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
     // Save the SP of this function
-    mov fp, sp
     str fp, [x3]
-    // Restore frame pointer
-    mov fp, x1
     // Invoke the filter funclet
     blr x2
 
@@ -766,11 +758,11 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
 NESTED_END JIT_Patchpoint, _TEXT
 
 // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PatchpointForced, _TEXT
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
     mov x1, x0
     mov x0, #0
     b C_FUNC(JIT_Patchpoint)
-LEAF_END JIT_PatchpointForced, _TEXT
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
 

@@ -31,8 +31,8 @@ namespace System.Linq
             IEqualityComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(keySelector);
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(keySelector);
 
             return Impl(source.WithCancellation(cancellationToken), keySelector, comparer);
 
@@ -79,8 +79,8 @@ namespace System.Linq
             IEqualityComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(keySelector);
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(keySelector);
 
             return Impl(source, keySelector, comparer, cancellationToken);
 
@@ -131,9 +131,9 @@ namespace System.Linq
             IEqualityComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(keySelector);
-            ArgumentNullException.ThrowIfNull(elementSelector);
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(keySelector);
+            ThrowHelper.ThrowIfNull(elementSelector);
 
             return Impl(source.WithCancellation(cancellationToken), keySelector, elementSelector, comparer);
 
@@ -184,9 +184,9 @@ namespace System.Linq
             IEqualityComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(keySelector);
-            ArgumentNullException.ThrowIfNull(elementSelector);
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(keySelector);
+            ThrowHelper.ThrowIfNull(elementSelector);
 
             return Impl(source, keySelector, elementSelector, comparer, cancellationToken);
 
@@ -237,7 +237,7 @@ namespace System.Linq
 
             public void CopyTo(IGrouping<TKey, TElement>[] array, int arrayIndex)
             {
-                ArgumentNullException.ThrowIfNull(array);
+                ThrowHelper.ThrowIfNull(array);
                 if ((uint)arrayIndex > (uint)array.Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(nameof(arrayIndex));

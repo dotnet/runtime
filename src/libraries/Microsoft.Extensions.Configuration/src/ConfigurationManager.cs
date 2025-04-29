@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Configuration
 
         IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
 
             _sources.Add(source);
             return this;

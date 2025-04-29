@@ -89,39 +89,23 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (certAndKey.Key is not null)
             {
-                if (certAndKey.Key is { Key: AsymmetricAlgorithm alg })
-                {
-                    AppleCertificatePal newPal = AppleCertificatePal.ImportPkcs12(pal, alg);
-                    pal.Dispose();
-                    pal = newPal;
-                }
-                else
-                {
-                    Debug.Fail($"Unhandled key type '{certAndKey.Key.Key?.GetType()?.FullName}'.");
-                    throw new CryptographicException();
-                }
+                AppleCertificatePal newPal = AppleCertificatePal.ImportPkcs12(pal, certAndKey.Key);
+                pal.Dispose();
+                pal = newPal;
             }
 
             return new Pkcs12Return(pal);
         }
 
-        private static partial Pkcs12Key? CreateKey(string algorithm, ReadOnlySpan<byte> pkcs8)
+        private static partial AsymmetricAlgorithm? CreateKey(string algorithm)
         {
-            switch (algorithm)
+            return algorithm switch
             {
-                case Oids.Rsa or Oids.RsaPss:
-                    return new AsymmetricAlgorithmPkcs12PrivateKey(
-                        pkcs8,
-                        static () => new RSAImplementation.RSASecurityTransforms());
-                case Oids.EcPublicKey or Oids.EcDiffieHellman:
-                    return new AsymmetricAlgorithmPkcs12PrivateKey(
-                        pkcs8,
-                        static () => new ECDsaImplementation.ECDsaSecurityTransforms());
-
-                default:
-                    // No DSA or PQC support on iOS / tvOS.
-                    return null;
-            }
+                Oids.Rsa or Oids.RsaPss => new RSAImplementation.RSASecurityTransforms(),
+                Oids.EcPublicKey or Oids.EcDiffieHellman => new ECDsaImplementation.ECDsaSecurityTransforms(),
+                // There's no DSA support on iOS/tvOS.
+                _ => null,
+            };
         }
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data)

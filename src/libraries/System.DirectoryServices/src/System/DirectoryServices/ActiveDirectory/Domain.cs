@@ -418,7 +418,10 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             return DomainController.FindOneInternal(context, Name, siteName, 0);
         }
@@ -434,7 +437,10 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             return DomainController.FindOneInternal(context, Name, siteName, flag);
         }
@@ -450,7 +456,10 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             return DomainController.FindAllInternal(context, Name, true /*isDnsDomainName */, siteName);
         }
@@ -469,7 +478,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
             CheckIfDisposed();
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             if (siteName.Length == 0)
             {

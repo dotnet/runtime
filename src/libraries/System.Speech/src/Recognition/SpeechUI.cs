@@ -12,7 +12,7 @@ namespace System.Speech.Recognition
         }
         public static bool SendTextFeedback(RecognitionResult result, string feedback, bool isSuccessfulAction)
         {
-            ArgumentNullException.ThrowIfNull(result);
+            Helpers.ThrowIfNull(result, nameof(result));
             Helpers.ThrowIfEmptyOrNull(feedback, nameof(feedback));
 
             return result.SetTextFeedback(feedback, isSuccessfulAction);

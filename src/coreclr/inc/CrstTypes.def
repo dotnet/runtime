@@ -208,6 +208,10 @@ Crst MethodTableExposedObject
     Unordered
 End
 
+Crst RetThunkCache
+    AcquiredBefore LoaderHeap
+End
+
 Crst FuncPtrStubs
     AcquiredBefore IbcProfile LoaderHeap UniqueStack CodeFragmentHeap JumpStubCache
 End

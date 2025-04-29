@@ -38,7 +38,10 @@ namespace System.Diagnostics.Metrics
             get => _HistogramBucketBoundaries;
             init
             {
-                ArgumentNullException.ThrowIfNull(value);
+                if (value is null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
 
                 List<T> bucketBoundariesCopy = new List<T>(value);
 

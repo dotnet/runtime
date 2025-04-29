@@ -59,7 +59,10 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="ArgumentNullException"><paramref name="label"/> is <see langword="null"/>.</exception>
         public CoseHeaderLabel(string label)
         {
-            ArgumentNullException.ThrowIfNull(label);
+            if (label is null)
+            {
+                throw new ArgumentNullException(nameof(label));
+            }
 
             this = default;
             LabelAsString = label;

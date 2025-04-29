@@ -8431,6 +8431,8 @@ Loop:
                 // about the most likely cases, and it's ok if the unlikely cases result
                 // in truncated stacks, as unlikely cases will be statistically
                 // irrelevant to CPU performance sampling profilers
+                CodeManState codeManState;
+                codeManState.dwIsSet = 0;
                 REGDISPLAY rd;
                 FillRegDisplay(&rd, &ctxCur);
 
@@ -8441,7 +8443,8 @@ Loop:
                 codeInfo.GetCodeManager()->UnwindStackFrame(
                     &rd,
                     &codeInfo,
-                    SpeculativeStackwalk);
+                    SpeculativeStackwalk,
+                    &codeManState);
 
                 ctxCur.Ebp = *rd.GetEbpLocation();
                 ctxCur.Esp = rd.SP;

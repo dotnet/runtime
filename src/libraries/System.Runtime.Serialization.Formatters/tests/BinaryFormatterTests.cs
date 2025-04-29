@@ -79,7 +79,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         private static void ValidateAndRoundtrip(object obj, TypeSerializableValue[] blobs, bool isEqualityComparer)
         {
-            Assert.NotNull(obj);
+            if (obj == null)
+            {
+                throw new ArgumentNullException("The serializable object must not be null", nameof(obj));
+            }
 
             if (blobs == null || blobs.Length == 0)
             {

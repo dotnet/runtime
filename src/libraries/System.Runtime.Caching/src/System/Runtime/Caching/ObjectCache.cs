@@ -29,7 +29,10 @@ namespace System.Runtime.Caching
 
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
                 if (Interlocked.CompareExchange(ref s_host, value, null) != null)
                 {
                     throw new InvalidOperationException(SR.Property_already_set);

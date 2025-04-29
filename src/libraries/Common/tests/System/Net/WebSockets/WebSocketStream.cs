@@ -41,7 +41,10 @@ namespace System.Net.WebSockets
 
         public WebSocketStream(WebSocket socket, FileAccess access, bool ownsSocket)
         {
-            ArgumentNullException.ThrowIfNull(socket);
+            if (socket == null)
+            {
+                throw new ArgumentNullException(nameof(socket));
+            }
             if (socket.State != WebSocketState.Open)
             {
                 throw new IOException("The operation is not allowed on non-connected sockets.");

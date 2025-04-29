@@ -227,7 +227,10 @@ namespace System.DirectoryServices
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
 
                 _objectSecurity = value;
                 _objectSecurityInitialized = true;

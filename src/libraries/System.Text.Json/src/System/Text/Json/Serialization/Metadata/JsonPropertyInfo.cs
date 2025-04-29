@@ -797,7 +797,10 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                ArgumentNullException.ThrowIfNull(value);
+                if (value == null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
+                }
 
                 _name = value;
             }

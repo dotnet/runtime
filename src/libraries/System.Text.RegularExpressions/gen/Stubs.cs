@@ -16,7 +16,6 @@ namespace System.Text
     {
         public static unsafe StringBuilder Append(this StringBuilder stringBuilder, ReadOnlySpan<char> span)
         {
-            // There is no StringBuilder.Append(ReadOnlySpan<char>) overload in the NS2.0
             fixed (char* ptr = &MemoryMarshal.GetReference(span))
             {
                 return stringBuilder.Append(ptr, span.Length);

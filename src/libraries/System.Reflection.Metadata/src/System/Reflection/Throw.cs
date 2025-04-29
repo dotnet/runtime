@@ -114,6 +114,18 @@ namespace System.Reflection
         }
 
         [DoesNotReturn]
+        internal static void ValueArgumentNull()
+        {
+            throw new ArgumentNullException("value");
+        }
+
+        [DoesNotReturn]
+        internal static void BuilderArgumentNull()
+        {
+            throw new ArgumentNullException("builder");
+        }
+
+        [DoesNotReturn]
         internal static void ArgumentOutOfRange(string parameterName)
         {
             throw new ArgumentOutOfRangeException(parameterName);

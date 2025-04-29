@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(XmlDocumentDecryptor.RequiresUnreferencedCodeMessage)]
         public static IConfigurationBuilder AddXmlFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
         {
-            ArgumentNullException.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(builder);
 
             if (string.IsNullOrEmpty(path))
             {
@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(XmlDocumentDecryptor.RequiresUnreferencedCodeMessage)]
         public static IConfigurationBuilder AddXmlStream(this IConfigurationBuilder builder, Stream stream)
         {
-            ArgumentNullException.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(builder);
 
             return builder.Add<XmlStreamConfigurationSource>(s => s.Stream = stream);
         }

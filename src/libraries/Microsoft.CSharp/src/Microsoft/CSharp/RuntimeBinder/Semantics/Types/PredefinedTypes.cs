@@ -15,7 +15,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // We want to delay load the predefined symbols as needed.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static AggregateSymbol DelayLoadPredefSym(PredefinedType pt)
         {
             AggregateType type = (AggregateType)SymbolTable.GetCTypeFromType(PredefinedTypeFacts.GetAssociatedSystemType(pt));
@@ -33,7 +32,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static AggregateSymbol GetPredefinedAggregate(PredefinedType pt) =>
             s_predefSymbols[(int)pt] ??= DelayLoadPredefSym(pt);
 

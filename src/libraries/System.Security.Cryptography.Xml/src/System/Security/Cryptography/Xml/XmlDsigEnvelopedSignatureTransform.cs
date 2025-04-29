@@ -91,7 +91,10 @@ namespace System.Security.Cryptography.Xml
 
         private void LoadXmlNodeListInput(XmlNodeList nodeList)
         {
-            ArgumentNullException.ThrowIfNull(nodeList);
+            if (nodeList is null)
+            {
+                throw new ArgumentNullException(nameof(nodeList));
+            }
 
             _containingDocument = Utils.GetOwnerDocument(nodeList);
             if (_containingDocument == null)
@@ -104,7 +107,10 @@ namespace System.Security.Cryptography.Xml
 
         private void LoadXmlDocumentInput(XmlDocument doc)
         {
-            ArgumentNullException.ThrowIfNull(doc);
+            if (doc is null)
+            {
+                throw new ArgumentNullException(nameof(doc));
+            }
 
             _containingDocument = doc;
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);

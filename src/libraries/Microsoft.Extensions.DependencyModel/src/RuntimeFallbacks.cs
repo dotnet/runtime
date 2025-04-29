@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 throw new ArgumentException(null, nameof(runtime));
             }
-            ArgumentNullException.ThrowIfNull(fallbacks);
+            ThrowHelper.ThrowIfNull(fallbacks);
 
             Runtime = runtime;
             Fallbacks = fallbacks.ToArray();

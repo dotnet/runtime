@@ -11,7 +11,7 @@ namespace System.Speech.Recognition.SrgsGrammar
     {
         public void Add(params SrgsRule[] rules)
         {
-            ArgumentNullException.ThrowIfNull(rules);
+            Helpers.ThrowIfNull(rules, nameof(rules));
 
             for (int iRule = 0; iRule < rules.Length; iRule++)
             {

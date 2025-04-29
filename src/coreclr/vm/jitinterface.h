@@ -85,7 +85,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
 EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
-EXTERN_C FCDECL1(void, JIT_PatchpointForced, int ilOffset);
+EXTERN_C FCDECL1(void, JIT_PartialCompilationPatchpoint, int ilOffset);
 
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
@@ -472,9 +472,6 @@ public:
     TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
-    // Get method info for a transient method
-    void getTransientMethodInfo(MethodDesc* pMD, CORINFO_METHOD_INFO* methInfo);
-
 protected:
     SArray<OBJECTHANDLE>*   m_pJitHandles;          // GC handles used by JIT
     MethodDesc*             m_pMethodBeingCompiled; // Top-level method being compiled
@@ -611,7 +608,7 @@ public:
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars) override final;
-    void CompressDebugInfo(PCODE nativeEntry);
+    void CompressDebugInfo();
     virtual void SetDebugInfo(PTR_BYTE pDebugInfo) = 0;
 
     virtual PatchpointInfo* GetPatchpointInfo()
@@ -877,8 +874,6 @@ public:
     }
 #endif
 
-    void PublishFinalCodeAddress(PCODE addr);
-
     CEEJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
                EECodeGenManager* jm, bool allowInlining = true)
         : CEECodeGenInfo(fd, header, jm, allowInlining)
@@ -902,7 +897,6 @@ public:
           m_pPatchpointInfoFromRuntime(NULL),
           m_ilOffset(0)
 #endif
-        , m_finalCodeAddressSlot(NULL)
     {
         CONTRACTL
         {
@@ -953,8 +947,6 @@ public:
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() override final;
-
 protected :
 
 #ifdef FEATURE_PGO
@@ -999,7 +991,6 @@ protected :
     PatchpointInfo        * m_pPatchpointInfoFromRuntime;
     unsigned                m_ilOffset;
 #endif
-    PCODE* m_finalCodeAddressSlot;
 
 };
 

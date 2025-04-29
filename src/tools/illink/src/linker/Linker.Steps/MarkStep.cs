@@ -415,8 +415,8 @@ namespace Mono.Linker.Steps
 
 			while (!QueueIsEmpty ()) {
 				ProcessQueue ();
-				ProcessMarkedTypesWithInterfaces ();
 				ProcessInterfaceMethods ();
+				ProcessMarkedTypesWithInterfaces ();
 				ProcessDynamicCastableImplementationInterfaces ();
 				ProcessPendingBodies ();
 				DoAdditionalProcessing ();

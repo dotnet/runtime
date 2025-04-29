@@ -1,17 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-#include "gcinfoencoder.h"
-
-// HACK: debugreturn.h (included by gcinfoencoder.h) breaks constexpr
-#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
-#undef return
-#endif // debug_instrumented_return
-
 #include "interpreter.h"
 
 #include <inttypes.h>
-
-#include <new> // for std::bad_alloc
 
 static const StackType g_stackTypeFromInterpType[] =
 {
@@ -40,55 +31,9 @@ static const InterpType g_interpTypeFromStackType[] =
     InterpTypeI,        // F
 };
 
-// Used by assertAbort
-thread_local ICorJitInfo* t_InterpJitInfoTls = nullptr;
-
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
 
-/*****************************************************************************/
-void DECLSPEC_NORETURN Interp_NOMEM()
-{
-    throw std::bad_alloc();
-}
-
-// GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
-class InterpIAllocator : public IAllocator
-{
-    InterpCompiler *m_pCompiler;
-
-public:
-    InterpIAllocator(InterpCompiler *compiler)
-        : m_pCompiler(compiler)
-    {
-    }
-
-    // Allocates a block of memory at least `sz` in size.
-    virtual void* Alloc(size_t sz) override
-    {
-        return m_pCompiler->AllocMethodData(sz);
-    }
-
-    // Allocates a block of memory at least `elems * elemSize` in size.
-    virtual void* ArrayAlloc(size_t elems, size_t elemSize) override
-    {
-        // Ensure that elems * elemSize does not overflow.
-        if (elems > (SIZE_MAX / elemSize))
-        {
-            Interp_NOMEM();
-        }
-
-        return m_pCompiler->AllocMethodData(elems * elemSize);
-    }
-
-    // Frees the block of memory pointed to by p.
-    virtual void Free(void* p) override
-    {
-        // Interpreter-FIXME: m_pCompiler->FreeMethodData
-        free(p);
-    }
-};
-
-// Interpreter-FIXME Use specific allocators for their intended purpose
+// FIXME Use specific allocators for their intended purpose
 // Allocator for data that is kept alive throughout application execution,
 // being freed only if the associated method gets freed.
 void* InterpCompiler::AllocMethodData(size_t numBytes)
@@ -862,29 +807,6 @@ void InterpCompiler::EmitCode()
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
 }
 
-void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
-{
-#ifdef FEATURE_INTERPRETER
-    InterpIAllocator* pAllocator = new (this) InterpIAllocator(this);
-    InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
-    assert(gcInfoEncoder);
-
-    gcInfoEncoder->SetCodeLength(m_methodCodeSize);
-
-    // TODO: Request slot IDs for all our locals before finalizing
-
-    gcInfoEncoder->FinalizeSlotIds();
-
-    // TODO: Use finalized slot IDs to declare live ranges
-
-    gcInfoEncoder->Build();
-
-    // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
-    // let's save the values anyway for debugging purposes
-    gcInfoEncoder->Emit();
-#endif
-}
-
 InterpMethod* InterpCompiler::CreateInterpMethod()
 {
     int numDataItems = m_dataItems.GetSize();
@@ -893,9 +815,7 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
     for (int i = 0; i < numDataItems; i++)
         pDataItems[i] = m_dataItems.Get(i);
 
-    bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
-
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems, initLocals);
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems);
 
     return pMethod;
 }
@@ -907,21 +827,14 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
 }
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
-                                CORINFO_METHOD_INFO* methodInfo)
+                                CORINFO_METHOD_INFO* methodInfo,
+                                bool verbose)
 {
-    // Fill in the thread-local used for assertions
-    t_InterpJitInfoTls = compHnd;
-
     m_methodHnd = methodInfo->ftn;
     m_compScopeHnd = methodInfo->scope;
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
-
-#ifdef DEBUG
-    m_methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
-    if (m_methodName && InterpConfig.InterpDump() && !strcmp(m_methodName, InterpConfig.InterpDump()))
-        m_verbose = true;
-#endif
+    m_verbose = verbose;
 }
 
 InterpMethod* InterpCompiler::CompileMethod()
@@ -1445,7 +1358,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
     }
     else
     {
-#if TARGET_64BIT
+#if SIZEOF_VOID_P == 8
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
             EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
@@ -1587,15 +1500,6 @@ bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SI
                 return true;
             }
         }
-        else if (className && !strcmp(className, "GC"))
-        {
-            if (methodName && !strcmp(methodName, "Collect"))
-            {
-                AddIns(INTOP_GC_COLLECT);
-                // Not reducing the stack pointer because we expect the version with no arguments
-                return true;
-            }
-        }
     }
 
     return false;
@@ -1614,34 +1518,23 @@ CORINFO_METHOD_HANDLE InterpCompiler::ResolveMethodToken(uint32_t token)
 {
     CORINFO_RESOLVED_TOKEN resolvedToken;
 
-    ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
+    resolvedToken.tokenScope = m_compScopeHnd;
+    resolvedToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+    resolvedToken.token = token;
+    resolvedToken.tokenType = CORINFO_TOKENKIND_Method;
+    m_compHnd->resolveToken(&resolvedToken);
 
     return resolvedToken.hMethod;
-}
-
-CORINFO_CLASS_HANDLE InterpCompiler::ResolveClassToken(uint32_t token)
-{
-    CORINFO_RESOLVED_TOKEN resolvedToken;
-
-    ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
-
-    return resolvedToken.hClass;
 }
 
 void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
-    bool isVirtual = (*m_ip == CEE_CALLVIRT);
 
     CORINFO_METHOD_HANDLE targetMethod = ResolveMethodToken(token);
 
     CORINFO_SIG_INFO targetSignature;
     m_compHnd->getMethodSig(targetMethod, &targetSignature);
-
-    uint32_t mflags = m_compHnd->getMethodAttribs(targetMethod);
-
-    if (isVirtual && (!(mflags & CORINFO_FLG_VIRTUAL) || (mflags & CORINFO_FLG_FINAL)))
-        isVirtual = false;
 
     if (EmitCallIntrinsics(targetMethod, targetSignature))
     {
@@ -1686,18 +1579,10 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
     }
 
     // Emit call instruction
-    if (isVirtual)
-    {
-        AddIns(INTOP_CALLVIRT);
-        m_pLastNewIns->data[0] = GetDataItemIndex(targetMethod);
-    }
-    else
-    {
-        AddIns(INTOP_CALL);
-        m_pLastNewIns->data[0] = GetMethodDataItemIndex(targetMethod);
-    }
+    AddIns(INTOP_CALL);
     m_pLastNewIns->SetDVar(dVar);
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
+    m_pLastNewIns->data[0] = GetMethodDataItemIndex(targetMethod);
 
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
     m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
@@ -1737,7 +1622,7 @@ static int32_t GetStindForType(InterpType interpType)
         case InterpTypeI8: return INTOP_STIND_I8;
         case InterpTypeR4: return INTOP_STIND_R4;
         case InterpTypeR8: return INTOP_STIND_R8;
-        case InterpTypeO: return INTOP_STIND_O;
+        case InterpTypeO: return INTOP_STIND_I;
         case InterpTypeVT: return INTOP_STIND_VT;
         case InterpTypeByRef: return INTOP_STIND_I;
         default:
@@ -1909,15 +1794,9 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         goto exit_bad_code;
     }
 
-    m_currentILOffset = -1;
-
-#if DEBUG
-    if (m_methodName && InterpConfig.InterpHalt() && !strcmp(m_methodName, InterpConfig.InterpHalt()))
-        AddIns(INTOP_BREAKPOINT);
-#endif
-
     if ((methodInfo->options & CORINFO_OPT_INIT_LOCALS) && m_ILLocalsSize > 0)
     {
+        m_currentILOffset = 0;
         AddIns(INTOP_INITLOCALS);
         m_pLastNewIns->data[0] = m_ILLocalsOffset;
         m_pLastNewIns->data[1] = m_ILLocalsSize;
@@ -2688,30 +2567,6 @@ retry_emit:
                 EmitBinaryArithmeticOp(INTOP_MUL_I4);
                 m_ip++;
                 break;
-            case CEE_MUL_OVF:
-                EmitBinaryArithmeticOp(INTOP_MUL_OVF_I4);
-                m_ip++;
-                break;
-            case CEE_MUL_OVF_UN:
-                EmitBinaryArithmeticOp(INTOP_MUL_OVF_UN_I4);
-                m_ip++;
-                break;
-            case CEE_DIV:
-                EmitBinaryArithmeticOp(INTOP_DIV_I4);
-                m_ip++;
-                break;
-            case CEE_DIV_UN:
-                EmitBinaryArithmeticOp(INTOP_DIV_UN_I4);
-                m_ip++;
-                break;
-            case CEE_REM:
-                EmitBinaryArithmeticOp(INTOP_REM_I4);
-                m_ip++;
-                break;
-            case CEE_REM_UN:
-                EmitBinaryArithmeticOp(INTOP_REM_UN_I4);
-                m_ip++;
-                break;
             case CEE_AND:
                 EmitBinaryArithmeticOp(INTOP_AND_I4);
                 m_ip++;
@@ -2744,7 +2599,6 @@ retry_emit:
                 EmitUnaryArithmeticOp(INTOP_NOT_I4);
                 m_ip++;
                 break;
-            case CEE_CALLVIRT:
             case CEE_CALL:
                 EmitCall(constrainedClass, readonly, tailcall);
                 constrainedClass = NULL;
@@ -2814,29 +2668,6 @@ retry_emit:
 
                 // Pop this, the result of the newobj still remains on the stack
                 m_pStackPointer--;
-                break;
-            }
-            case CEE_DUP:
-            {
-                int32_t svar = m_pStackPointer[-1].var;
-                InterpType interpType = m_pVars[svar].interpType;
-                if (interpType == InterpTypeVT)
-                {
-                    int32_t size = m_pVars[svar].size;
-                    AddIns(INTOP_MOV_VT);
-                    m_pLastNewIns->SetSVar(svar);
-                    PushTypeVT(m_pVars[svar].clsHnd, size);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                    m_pLastNewIns->data[0] = size;
-                }
-                else
-                {
-                    AddIns(InterpGetMovForType(interpType, false));
-                    m_pLastNewIns->SetSVar(svar);
-                    PushInterpType(interpType, m_pVars[svar].clsHnd);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                }
-                m_ip++;
                 break;
             }
             case CEE_POP:
@@ -3210,53 +3041,6 @@ retry_emit:
                         volatile_ = true;
                         m_ip++;
                         break;
-                    case CEE_INITOBJ:
-                    {
-                        CHECK_STACK(1);
-                        CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
-                        if (m_compHnd->isValueClass(clsHnd))
-                        {
-                            m_pStackPointer--;
-                            AddIns(INTOP_ZEROBLK_IMM);
-                            m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                            m_pLastNewIns->data[0] = m_compHnd->getClassSize(clsHnd);
-                        }
-                        else
-                        {
-                            AddIns(INTOP_LDNULL);
-                            PushInterpType(InterpTypeO, NULL);
-                            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-
-                            AddIns(INTOP_STIND_O);
-                            m_pStackPointer -= 2;
-                            m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
-                        }
-                        m_ip += 5;
-                        break;
-                    }
-                    case CEE_LOCALLOC:
-                        CHECK_STACK(1);
-#if TARGET_64BIT
-                        // Length is natural unsigned int
-                        if (m_pStackPointer[-1].type == StackTypeI4)
-                        {
-                            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
-                            m_pStackPointer[-1].type = StackTypeI8;
-                        }
-#endif
-                        AddIns(INTOP_LOCALLOC);
-                        m_pStackPointer--;
-                        if (m_pStackPointer != m_pStackBase)
-                        {
-                            m_hasInvalidCode = true;
-                            goto exit_bad_code;
-                        }
-
-                        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                        PushStackType(StackTypeByRef, NULL);
-                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                        m_ip++;
-                        break;
                     default:
                         assert(0);
                         break;
@@ -3501,18 +3285,4 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
 
     PrintInsData(NULL, insOffset, ip, opcode);
     printf("\n");
-}
-
-extern "C" void assertAbort(const char* why, const char* file, unsigned line)
-{
-    if (t_InterpJitInfoTls) {
-        if (!t_InterpJitInfoTls->doAssert(file, line, why))
-            return;
-    }
-
-#ifdef _MSC_VER
-    __debugbreak();
-#else // _MSC_VER
-    __builtin_trap();
-#endif // _MSC_VER
 }

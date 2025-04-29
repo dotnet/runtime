@@ -82,7 +82,10 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return WriteString(value, jsonTypeInfo);
@@ -106,7 +109,10 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize(object? value, JsonTypeInfo jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return WriteStringAsObject(value, jsonTypeInfo);
@@ -136,7 +142,10 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize(object? value, Type inputType, JsonSerializerContext context)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);

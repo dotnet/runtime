@@ -51,7 +51,10 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(this JsonNode? node, Type returnType, JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(returnType);
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadFromNodeAsObject(node, jsonTypeInfo);
@@ -72,7 +75,10 @@ namespace System.Text.Json
         /// </exception>
         public static TValue? Deserialize<TValue>(this JsonNode? node, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromNode(node, jsonTypeInfo);
@@ -89,7 +95,10 @@ namespace System.Text.Json
         /// </exception>
         public static object? Deserialize(this JsonNode? node, JsonTypeInfo jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromNodeAsObject(node, jsonTypeInfo);
@@ -129,8 +138,14 @@ namespace System.Text.Json
         /// </exception>
         public static object? Deserialize(this JsonNode? node, Type returnType, JsonSerializerContext context)
         {
-            ArgumentNullException.ThrowIfNull(returnType);
-            ArgumentNullException.ThrowIfNull(context);
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return ReadFromNodeAsObject(node, jsonTypeInfo);

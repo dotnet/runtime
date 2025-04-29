@@ -204,7 +204,9 @@ bundled_resources_get (const char *id)
 	char key_buffer[1024];
 	key_from_id(id, key_buffer, sizeof(key_buffer));
 
-	return (MonoBundledResource *)dn_simdhash_ght_get_value_or_default (bundled_resources, key_buffer);
+	MonoBundledResource *result = NULL;
+	dn_simdhash_ght_try_get_value (bundled_resources, key_buffer, (void **)&result);
+	return result;
 }
 
 //---------------------------------------------------------------------------------------

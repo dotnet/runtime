@@ -6,8 +6,7 @@ schedules:
   branches:
     include:
     - main
-    - release/*.0
-  always: false # run only if there were changes since the last successful scheduled run.
+    - release/*.*
 
 variables:
   - template: variables.yml

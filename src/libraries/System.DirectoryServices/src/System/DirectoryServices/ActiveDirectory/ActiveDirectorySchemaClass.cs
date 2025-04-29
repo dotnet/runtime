@@ -64,7 +64,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            ArgumentNullException.ThrowIfNull(ldapDisplayName);
+            if (ldapDisplayName == null)
+            {
+                throw new ArgumentNullException(nameof(ldapDisplayName));
+            }
 
             if (ldapDisplayName.Length == 0)
             {
@@ -233,7 +236,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            ArgumentNullException.ThrowIfNull(ldapDisplayName);
+            if (ldapDisplayName == null)
+            {
+                throw new ArgumentNullException(nameof(ldapDisplayName));
+            }
 
             if (ldapDisplayName.Length == 0)
             {

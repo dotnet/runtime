@@ -197,19 +197,18 @@ namespace System.IO
             string path,
             string searchPattern,
             SearchTarget searchTarget,
-            EnumerationOptions enumerationOptions)
+            EnumerationOptions options)
         {
             ArgumentNullException.ThrowIfNull(path);
             ArgumentNullException.ThrowIfNull(searchPattern);
-            ArgumentNullException.ThrowIfNull(enumerationOptions);
 
-            FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, enumerationOptions.MatchType);
+            FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
             return searchTarget switch
             {
-                SearchTarget.Files => FileSystemEnumerableFactory.UserFiles(path, searchPattern, enumerationOptions),
-                SearchTarget.Directories => FileSystemEnumerableFactory.UserDirectories(path, searchPattern, enumerationOptions),
-                SearchTarget.Both => FileSystemEnumerableFactory.UserEntries(path, searchPattern, enumerationOptions),
+                SearchTarget.Files => FileSystemEnumerableFactory.UserFiles(path, searchPattern, options),
+                SearchTarget.Directories => FileSystemEnumerableFactory.UserDirectories(path, searchPattern, options),
+                SearchTarget.Both => FileSystemEnumerableFactory.UserEntries(path, searchPattern, options),
                 _ => throw new ArgumentOutOfRangeException(nameof(searchTarget)),
             };
         }

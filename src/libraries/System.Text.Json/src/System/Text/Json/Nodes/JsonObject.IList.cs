@@ -23,7 +23,10 @@ namespace System.Text.Json.Nodes
         /// <exception cref="InvalidOperationException"><paramref name="value"/> already has a parent.</exception>
         public void SetAt(int index, string propertyName, JsonNode? value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
 
             OrderedDictionary<string, JsonNode?> dictionary = Dictionary;
             KeyValuePair<string, JsonNode?> existing = dictionary.GetAt(index);
@@ -52,7 +55,10 @@ namespace System.Text.Json.Nodes
         /// <exception cref="ArgumentNullException"><paramref name="propertyName"/> is null.</exception>
         public int IndexOf(string propertyName)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
 
             return Dictionary.IndexOf(propertyName);
         }
@@ -66,7 +72,10 @@ namespace System.Text.Json.Nodes
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 or greater than <see cref="Count"/>.</exception>
         public void Insert(int index, string propertyName, JsonNode? value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
 
             Dictionary.Insert(index, propertyName, value);
             value?.AssignParent(this);

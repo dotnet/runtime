@@ -52,8 +52,6 @@ typedef DPTR(IMAGE_COR20_HEADER)    PTR_IMAGE_COR20_HEADER;
 
 class Module;
 
-template<typename T> struct cdac_data;
-
 // --------------------------------------------------------------------------------
 // RVA definition
 // --------------------------------------------------------------------------------
@@ -407,9 +405,6 @@ class PEDecoder
     PTR_IMAGE_NT_HEADERS   m_pNTHeaders;
     PTR_IMAGE_COR20_HEADER m_pCorHeader;
     PTR_READYTORUN_HEADER  m_pReadyToRunHeader;
-
-    // to allow inherited classes to access, friend to all specializations of cdac_data
-    template<typename U> friend struct ::cdac_data;
 };
 
 //

@@ -11,7 +11,6 @@ using Microsoft.CSharp.RuntimeBinder.Semantics;
 namespace Microsoft.CSharp.RuntimeBinder
 {
     [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class CSharpInvokeConstructorBinder : DynamicMetaObjectBinder, ICSharpInvokeOrInvokeMemberBinder
     {
         public BindingFlag BindingFlags => 0;

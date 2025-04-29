@@ -13,136 +13,136 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    internal class Crossgen2RootCommand : RootCommand
+    internal class Crossgen2RootCommand : CliRootCommand
     {
-        public Argument<Dictionary<string, string>> InputFilePaths { get; } =
+        public CliArgument<Dictionary<string, string>> InputFilePaths { get; } =
             new("input-file-path") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, true), Description = "Input file(s)", Arity = ArgumentArity.OneOrMore };
-        public Option<Dictionary<string, string>> UnrootedInputFilePaths { get; } =
+        public CliOption<Dictionary<string, string>> UnrootedInputFilePaths { get; } =
             new("--unrooted-input-file-paths", "-u") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, true), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, true), Description = SR.UnrootedInputFilesToCompile };
-        public Option<Dictionary<string, string>> ReferenceFilePaths { get; } =
+        public CliOption<Dictionary<string, string>> ReferenceFilePaths { get; } =
             new("--reference", "-r") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, false), Description = SR.ReferenceFiles };
-        public Option<string> InstructionSet { get; } =
+        public CliOption<string> InstructionSet { get; } =
             new("--instruction-set") { Description = SR.InstructionSets };
-        public Option<int> MaxVectorTBitWidth { get; } =
+        public CliOption<int> MaxVectorTBitWidth { get; } =
             new("--max-vectort-bitwidth") { Description = SR.MaxVectorTBitWidths };
-        public Option<string[]> MibcFilePaths { get; } =
+        public CliOption<string[]> MibcFilePaths { get; } =
             new("--mibc", "-m") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.MibcFiles };
-        public Option<string> OutputFilePath { get; } =
+        public CliOption<string> OutputFilePath { get; } =
             new("--out", "-o") { Description = SR.OutputFilePath };
-        public Option<string> CompositeRootPath { get; } =
+        public CliOption<string> CompositeRootPath { get; } =
             new("--compositerootpath", "--crp") { Description = SR.CompositeRootPath };
-        public Option<bool> Optimize { get; } =
+        public CliOption<bool> Optimize { get; } =
             new("--optimize", "-O") { Description = SR.EnableOptimizationsOption };
-        public Option<bool> OptimizeDisabled { get; } =
+        public CliOption<bool> OptimizeDisabled { get; } =
             new("--optimize-disabled", "--Od") { Description = SR.DisableOptimizationsOption };
-        public Option<bool> OptimizeSpace { get; } =
+        public CliOption<bool> OptimizeSpace { get; } =
             new("--optimize-space", "--Os") { Description = SR.OptimizeSpaceOption };
-        public Option<bool> OptimizeTime { get; } =
+        public CliOption<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
-        public Option<bool> EnableCachedInterfaceDispatchSupport { get; } =
+        public CliOption<bool> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
-        public Option<TypeValidationRule> TypeValidation { get; } =
+        public CliOption<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
-        public Option<bool> InputBubble { get; } =
+        public CliOption<bool> InputBubble { get; } =
             new("--inputbubble") { Description = SR.InputBubbleOption };
-        public Option<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
+        public CliOption<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
             new("--inputbubbleref") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, false), Description = SR.InputBubbleReferenceFiles };
-        public Option<bool> Composite { get; } =
+        public CliOption<bool> Composite { get; } =
             new("--composite") { Description = SR.CompositeBuildMode };
-        public Option<string> CompositeKeyFile { get; } =
+        public CliOption<string> CompositeKeyFile { get; } =
             new("--compositekeyfile") { Description = SR.CompositeKeyFile };
-        public Option<bool> CompileNoMethods { get; } =
+        public CliOption<bool> CompileNoMethods { get; } =
             new("--compile-no-methods") { Description = SR.CompileNoMethodsOption };
-        public Option<bool> OutNearInput { get; } =
+        public CliOption<bool> OutNearInput { get; } =
             new("--out-near-input") { Description = SR.OutNearInputOption };
-        public Option<bool> SingleFileCompilation { get; } =
+        public CliOption<bool> SingleFileCompilation { get; } =
             new("--single-file-compilation") { Description = SR.SingleFileCompilationOption };
-        public Option<bool> Partial { get; } =
+        public CliOption<bool> Partial { get; } =
             new("--partial") { Description = SR.PartialImageOption };
-        public Option<bool> CompileBubbleGenerics { get; } =
+        public CliOption<bool> CompileBubbleGenerics { get; } =
             new("--compilebubblegenerics") { Description = SR.BubbleGenericsOption };
-        public Option<bool> EmbedPgoData { get; } =
+        public CliOption<bool> EmbedPgoData { get; } =
             new("--embed-pgo-data") { Description = SR.EmbedPgoDataOption };
-        public Option<string> DgmlLogFileName { get; } =
+        public CliOption<string> DgmlLogFileName { get; } =
             new("--dgmllog") { Description = SR.SaveDependencyLogOption };
-        public Option<bool> GenerateFullDgmlLog { get; } =
+        public CliOption<bool> GenerateFullDgmlLog { get; } =
             new("--fulllog") { Description = SR.SaveDetailedLogOption };
-        public Option<bool> IsVerbose { get; } =
+        public CliOption<bool> IsVerbose { get; } =
             new("--verbose") { Description = SR.VerboseLoggingOption };
-        public Option<string> SystemModuleName { get; } =
+        public CliOption<string> SystemModuleName { get; } =
             new("--systemmodule") { DefaultValueFactory = _ => Helpers.DefaultSystemModule, Description = SR.SystemModuleOverrideOption };
-        public Option<bool> WaitForDebugger { get; } =
+        public CliOption<bool> WaitForDebugger { get; } =
             new("--waitfordebugger") { Description = SR.WaitForDebuggerOption };
-        public Option<string[]> CodegenOptions { get; } =
+        public CliOption<string[]> CodegenOptions { get; } =
             new("--codegenopt") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.CodeGenOptions };
-        public Option<bool> SupportIbc { get; } =
+        public CliOption<bool> SupportIbc { get; } =
             new("--support-ibc") { Description = SR.SupportIbc };
-        public Option<bool> Resilient { get; } =
+        public CliOption<bool> Resilient { get; } =
             new("--resilient") { Description = SR.ResilientOption };
-        public Option<string> ImageBase { get; } =
+        public CliOption<string> ImageBase { get; } =
             new("--imagebase") { Description = SR.ImageBase };
-        public Option<TargetArchitecture> TargetArchitecture { get; } =
+        public CliOption<TargetArchitecture> TargetArchitecture { get; } =
             new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = SR.TargetArchOption, Arity = ArgumentArity.OneOrMore, HelpName = "arg" };
-        public Option<bool> EnableGenericCycleDetection { get; } =
+        public CliOption<bool> EnableGenericCycleDetection { get; } =
             new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
-        public Option<int> GenericCycleDepthCutoff { get; } =
+        public CliOption<int> GenericCycleDepthCutoff { get; } =
             new("--maxgenericcycle") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, Description = SR.GenericCycleDepthCutoff };
-        public Option<int> GenericCycleBreadthCutoff { get; } =
+        public CliOption<int> GenericCycleBreadthCutoff { get; } =
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
-        public Option<TargetOS> TargetOS { get; } =
+        public CliOption<TargetOS> TargetOS { get; } =
             new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption, HelpName = "arg" };
-        public Option<string> JitPath { get; } =
+        public CliOption<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
-        public Option<bool> PrintReproInstructions { get; } =
+        public CliOption<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
-        public Option<string> SingleMethodTypeName { get; } =
+        public CliOption<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
-        public Option<string> SingleMethodName { get; } =
+        public CliOption<string> SingleMethodName { get; } =
             new("--singlemethodname") { Description = SR.SingleMethodMethodName };
-        public Option<int> SingleMethodIndex { get; } =
+        public CliOption<int> SingleMethodIndex { get; } =
             new("--singlemethodindex") { Description = SR.SingleMethodIndex };
-        public Option<string[]> SingleMethodGenericArgs { get; } =
+        public CliOption<string[]> SingleMethodGenericArgs { get; } =
             new("--singlemethodgenericarg") { Description = SR.SingleMethodGenericArgs };
-        public Option<int> Parallelism { get; } =
+        public CliOption<int> Parallelism { get; } =
             new("--parallelism") { CustomParser = MakeParallelism, DefaultValueFactory = MakeParallelism, Description = SR.ParalellismOption };
-        public Option<int> CustomPESectionAlignment { get; } =
+        public CliOption<int> CustomPESectionAlignment { get; } =
             new("--custom-pe-section-alignment") { Description = SR.CustomPESectionAlignmentOption };
-        public Option<bool> Map { get; } =
+        public CliOption<bool> Map { get; } =
             new("--map") { Description = SR.MapFileOption };
-        public Option<bool> MapCsv { get; } =
+        public CliOption<bool> MapCsv { get; } =
             new("--mapcsv") { Description = SR.MapCsvFileOption };
-        public Option<bool> Pdb { get; } =
+        public CliOption<bool> Pdb { get; } =
             new("--pdb") { Description = SR.PdbFileOption };
-        public Option<string> PdbPath { get; } =
+        public CliOption<string> PdbPath { get; } =
             new("--pdb-path") { Description = SR.PdbFilePathOption };
-        public Option<bool> PerfMap { get; } =
+        public CliOption<bool> PerfMap { get; } =
             new("--perfmap") { Description = SR.PerfMapFileOption };
-        public Option<string> PerfMapPath { get; } =
+        public CliOption<string> PerfMapPath { get; } =
             new("--perfmap-path") { Description = SR.PerfMapFilePathOption };
-        public Option<int> PerfMapFormatVersion { get; } =
+        public CliOption<int> PerfMapFormatVersion { get; } =
             new("--perfmap-format-version") { DefaultValueFactory = _ => 0, Description = SR.PerfMapFormatVersionOption };
-        public Option<string[]> CrossModuleInlining { get; } =
+        public CliOption<string[]> CrossModuleInlining { get; } =
             new("--opt-cross-module") { Description = SR.CrossModuleInlining };
-        public Option<bool> AsyncMethodOptimization { get; } =
+        public CliOption<bool> AsyncMethodOptimization { get; } =
             new("--opt-async-methods") { Description = SR.AsyncModuleOptimization };
-        public Option<string> NonLocalGenericsModule { get; } =
+        public CliOption<string> NonLocalGenericsModule { get; } =
             new("--non-local-generics-module") { DefaultValueFactory = _ => string.Empty, Description = SR.NonLocalGenericsModule };
-        public Option<ReadyToRunMethodLayoutAlgorithm> MethodLayout { get; } =
+        public CliOption<ReadyToRunMethodLayoutAlgorithm> MethodLayout { get; } =
             new("--method-layout") { CustomParser = MakeReadyToRunMethodLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunMethodLayoutAlgorithm, Description = SR.MethodLayoutOption, HelpName = "arg" };
-        public Option<ReadyToRunFileLayoutAlgorithm> FileLayout { get; } =
+        public CliOption<ReadyToRunFileLayoutAlgorithm> FileLayout { get; } =
             new("--file-layout") { CustomParser = MakeReadyToRunFileLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunFileLayoutAlgorithm, Description = SR.FileLayoutOption, HelpName = "arg" };
-        public Option<bool> VerifyTypeAndFieldLayout { get; } =
+        public CliOption<bool> VerifyTypeAndFieldLayout { get; } =
             new("--verify-type-and-field-layout") { Description = SR.VerifyTypeAndFieldLayoutOption };
-        public Option<string> CallChainProfileFile { get; } =
+        public CliOption<string> CallChainProfileFile { get; } =
             new("--callchain-profile") { Description = SR.CallChainProfileFile };
-        public Option<string> MakeReproPath { get; } =
+        public CliOption<string> MakeReproPath { get; } =
             new("--make-repro-path") { Description = "Path where to place a repro package" };
-        public Option<bool> HotColdSplitting { get; } =
+        public CliOption<bool> HotColdSplitting { get; } =
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
-        public Option<bool> SynthesizeRandomMibc { get; } =
+        public CliOption<bool> SynthesizeRandomMibc { get; } =
             new("--synthesize-random-mibc");
 
-        public Option<int> DeterminismStress { get; } =
+        public CliOption<int> DeterminismStress { get; } =
             new("--determinism-stress");
 
         public bool CompositeOrInputBubble { get; private set; }

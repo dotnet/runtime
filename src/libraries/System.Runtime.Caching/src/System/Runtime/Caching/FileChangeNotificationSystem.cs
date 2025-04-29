@@ -95,8 +95,14 @@ namespace System.Runtime.Caching
 
         void IFileChangeNotificationSystem.StartMonitoring(string filePath, OnChangedCallback onChangedCallback, out object state, out DateTimeOffset lastWriteTime, out long fileSize)
         {
-            ArgumentNullException.ThrowIfNull(filePath);
-            ArgumentNullException.ThrowIfNull(onChangedCallback);
+            if (filePath is null)
+            {
+                throw new ArgumentNullException(nameof(filePath));
+            }
+            if (onChangedCallback is null)
+            {
+                throw new ArgumentNullException(nameof(onChangedCallback));
+            }
 
             FileInfo fileInfo = new FileInfo(filePath);
             string dir = Path.GetDirectoryName(filePath);
@@ -140,8 +146,14 @@ namespace System.Runtime.Caching
 
         void IFileChangeNotificationSystem.StopMonitoring(string filePath, object state)
         {
-            ArgumentNullException.ThrowIfNull(filePath);
-            ArgumentNullException.ThrowIfNull(state);
+            if (filePath is null)
+            {
+                throw new ArgumentNullException(nameof(filePath));
+            }
+            if (state is null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
 
             FileChangeEventTarget target = state as FileChangeEventTarget;
             if (target == null)

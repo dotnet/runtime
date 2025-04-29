@@ -11095,36 +11095,50 @@ void emitter::emitAdjustStackDepth(instruction ins, ssize_t val)
  */
 
 // clang-format off
-void emitter::emitIns_Call(const EmitCallParams& params)
+void emitter::emitIns_Call(EmitCallType          callType,
+                           CORINFO_METHOD_HANDLE methHnd,
+                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
+                           void*                 addr,
+                           ssize_t               argSize,
+                           emitAttr              retSize
+                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                           VARSET_VALARG_TP      ptrVars,
+                           regMaskTP             gcrefRegs,
+                           regMaskTP             byrefRegs,
+                           const DebugInfo&      di,
+                           regNumber             ireg,
+                           regNumber             xreg,
+                           unsigned              xmul,
+                           ssize_t               disp,
+                           bool                  isJump,
+                           bool                  noSafePoint)
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
 
-    assert(params.callType < EC_COUNT);
+    assert(callType < EC_COUNT);
     if (!emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
-        assert((params.callType != EC_FUNC_TOKEN && params.callType != EC_FUNC_TOKEN_INDIR) ||
-               (params.addr != nullptr && params.ireg == REG_NA && params.xreg == REG_NA && params.xmul == 0 &&
-                params.disp == 0));
+        assert((callType != EC_FUNC_TOKEN && callType != EC_FUNC_TOKEN_INDIR) ||
+               (addr != nullptr && ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
     }
-    assert(params.callType != EC_INDIR_R || (params.addr == nullptr && params.ireg < REG_COUNT &&
-                                             params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
-    assert(params.callType != EC_INDIR_ARD || (params.addr == nullptr));
+    assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
+    assert(callType != EC_INDIR_ARD || (addr == nullptr));
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
-    assert((unsigned)abs((signed)params.argSize) <= codeGen->genStackLevel);
+    assert((unsigned)abs((signed)argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskTP savedSet  = emitGetGCRegsSavedOrModified(params.methHnd);
-    regMaskTP gcrefRegs = params.gcrefRegs & savedSet;
-    regMaskTP byrefRegs = params.byrefRegs & savedSet;
+    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    gcrefRegs &= savedSet;
+    byrefRegs &= savedSet;
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
     {
-        printf("\t\t\t\t\t\t\tCall: GCvars=%s ", VarSetOps::ToString(emitComp, params.ptrVars));
-        dumpConvertedVarSet(emitComp, params.ptrVars);
+        printf("\t\t\t\t\t\t\tCall: GCvars=%s ", VarSetOps::ToString(emitComp, ptrVars));
+        dumpConvertedVarSet(emitComp, ptrVars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
         emitDispRegSet(gcrefRegs);
@@ -11136,9 +11150,9 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && params.debugInfo.IsValid())
+    if (emitComp->opts.compDbgInfo && di.IsValid())
     {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
     }
 
     /*
@@ -11157,61 +11171,61 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     instrDesc* id;
 
-    assert(params.argSize % REGSIZE_BYTES == 0);
-    int argCnt = (int)(params.argSize / (int)REGSIZE_BYTES); // we need a signed-divide
+    assert(argSize % REGSIZE_BYTES == 0);
+    int argCnt = (int)(argSize / (int)REGSIZE_BYTES); // we need a signed-divide
 
-    if ((params.callType == EC_INDIR_R) || (params.callType == EC_INDIR_ARD))
+    if ((callType == EC_INDIR_R) || (callType == EC_INDIR_ARD))
     {
         /* Indirect call, virtual calls */
 
-        id = emitNewInstrCallInd(argCnt, params.disp, params.ptrVars, gcrefRegs, byrefRegs,
-                                 params.retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(params.secondRetSize));
+        id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs,
+                                 retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize));
     }
     else
     {
         // Helper/static/nonvirtual/function calls (direct or through handle),
         // and calls to an absolute addr.
 
-        assert(params.callType == EC_FUNC_TOKEN || params.callType == EC_FUNC_TOKEN_INDIR);
+        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR);
 
-        id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs,
-                                 params.retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(params.secondRetSize));
+        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs,
+                                 retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize));
     }
 
     /* Update the emitter's live GC ref sets */
 
     // If the method returns a GC ref, mark EAX appropriately
-    if (params.retSize == EA_GCREF)
+    if (retSize == EA_GCREF)
     {
         gcrefRegs |= RBM_EAX;
     }
-    else if (params.retSize == EA_BYREF)
+    else if (retSize == EA_BYREF)
     {
         byrefRegs |= RBM_EAX;
     }
 
 #ifdef UNIX_AMD64_ABI
     // If is a multi-register return method is called, mark RDX appropriately (for System V AMD64).
-    if (params.secondRetSize == EA_GCREF)
+    if (secondRetSize == EA_GCREF)
     {
         gcrefRegs |= RBM_RDX;
     }
-    else if (params.secondRetSize == EA_BYREF)
+    else if (secondRetSize == EA_BYREF)
     {
         byrefRegs |= RBM_RDX;
     }
 #endif // UNIX_AMD64_ABI
 
-    VarSetOps::Assign(emitComp, emitThisGCrefVars, params.ptrVars);
+    VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
     /* Set the instruction - special case jumping a function (tail call) */
     instruction ins = INS_call;
 
-    if (params.isJump)
+    if (isJump)
     {
-        if (params.callType == EC_FUNC_TOKEN)
+        if (callType == EC_FUNC_TOKEN)
         {
             ins = INS_l_jmp;
         }
@@ -11223,16 +11237,16 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     id->idIns(ins);
 
     // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(params.isJump || params.noSafePoint || emitNoGChelper(params.methHnd));
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     UNATIVE_OFFSET sz;
 
     // Record the address: method, indirection, or funcptr
-    if ((params.callType == EC_INDIR_R) || (params.callType == EC_INDIR_ARD))
+    if ((callType == EC_INDIR_R) || (callType == EC_INDIR_ARD))
     {
         // This is an indirect call/jmp (either a virtual call or func ptr call)
 
-        if (params.callType == EC_INDIR_R) // call reg
+        if (callType == EC_INDIR_R) // call reg
         {
             id->idSetIsCallRegPtr();
         }
@@ -11242,9 +11256,9 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
         id->idInsFmt(emitInsModeFormat(ins, IF_ARD));
 
-        id->idAddr()->iiaAddrMode.amBaseReg = params.ireg;
-        id->idAddr()->iiaAddrMode.amIndxReg = params.xreg;
-        id->idAddr()->iiaAddrMode.amScale   = params.xmul ? emitEncodeScale(params.xmul) : emitter::OPSZ1;
+        id->idAddr()->iiaAddrMode.amBaseReg = ireg;
+        id->idAddr()->iiaAddrMode.amIndxReg = xreg;
+        id->idAddr()->iiaAddrMode.amScale   = xmul ? emitEncodeScale(xmul) : emitter::OPSZ1;
 
         code_t code = insCodeMR(ins);
         if (ins == INS_tail_i_jmp)
@@ -11256,9 +11270,9 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
         sz = emitInsSizeAM(id, code);
 
-        if (params.ireg == REG_NA && params.xreg == REG_NA)
+        if (ireg == REG_NA && xreg == REG_NA)
         {
-            if (codeGen->genCodeIndirAddrNeedsReloc(params.disp))
+            if (codeGen->genCodeIndirAddrNeedsReloc(disp))
             {
                 id->idSetIsDspReloc();
             }
@@ -11268,20 +11282,20 @@ void emitter::emitIns_Call(const EmitCallParams& params)
                 // An absolute indir address that doesn't need reloc should fit within 32-bits
                 // to be encoded as offset relative to zero.  This addr mode requires an extra
                 // SIB byte
-                noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(params.addr)) == (size_t)params.addr);
+                noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
                 sz++;
             }
 #endif // TARGET_AMD64
         }
     }
-    else if (params.callType == EC_FUNC_TOKEN_INDIR)
+    else if (callType == EC_FUNC_TOKEN_INDIR)
     {
         // call/jmp [method_addr]
 
-        assert(params.addr != nullptr);
+        assert(addr != nullptr);
 
         id->idInsFmt(IF_METHPTR);
-        id->idAddr()->iiaAddr = (BYTE*)params.addr;
+        id->idAddr()->iiaAddr = (BYTE*)addr;
         sz                    = 6;
 
         if (TakesRex2Prefix(id))
@@ -11292,7 +11306,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         // Since this is an indirect call through a pointer and we don't
         // currently pass in emitAttr into this function, we query codegen
         // whether addr needs a reloc.
-        if (codeGen->genCodeIndirAddrNeedsReloc((size_t)params.addr))
+        if (codeGen->genCodeIndirAddrNeedsReloc((size_t)addr))
         {
             id->idSetIsDspReloc();
         }
@@ -11302,7 +11316,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             // An absolute indir address that doesn't need reloc should fit within 32-bits
             // to be encoded as offset relative to zero.  This addr mode requires an extra
             // SIB byte
-            noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(params.addr)) == (size_t)params.addr);
+            noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
             sz++;
         }
 #endif // TARGET_AMD64
@@ -11311,21 +11325,21 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         // This is a simple direct call/jmp: call/jmp helper/method/addr
 
-        assert(params.callType == EC_FUNC_TOKEN);
+        assert(callType == EC_FUNC_TOKEN);
 
-        assert(params.addr != nullptr || emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+        assert(addr != nullptr || emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
         id->idInsFmt(IF_METHOD);
         sz = 5;
 
-        id->idAddr()->iiaAddr = (BYTE*)params.addr;
+        id->idAddr()->iiaAddr = (BYTE*)addr;
 
         // Direct call to a method and no addr indirection is needed.
-        if (codeGen->genCodeAddrNeedsReloc((size_t)params.addr))
+        if (codeGen->genCodeAddrNeedsReloc((size_t)addr))
         {
             id->idSetIsDspReloc();
 
-            if ((size_t)params.methHnd == 1)
+            if ((size_t)methHnd == 1)
             {
                 id->idSetTlsGD();
                 sz += 1; // For REX.W prefix
@@ -11335,14 +11349,14 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     if (m_debugInfoSize > 0)
     {
-        INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
-        id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
     }
 
 #ifdef LATE_DISASM
-    if (params.addr != nullptr)
+    if (addr != nullptr)
     {
-        codeGen->getDisAssembler().disSetMethod((size_t)params.addr, params.methHnd);
+        codeGen->getDisAssembler().disSetMethod((size_t)addr, methHnd);
     }
 #endif // LATE_DISASM
 
@@ -11355,10 +11369,10 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     /* The call will pop the arguments */
 
-    if (emitCntStackDepth && params.argSize > 0)
+    if (emitCntStackDepth && argSize > 0)
     {
-        noway_assert((ssize_t)emitCurStackLvl >= params.argSize);
-        emitCurStackLvl -= (int)params.argSize;
+        noway_assert((ssize_t)emitCurStackLvl >= argSize);
+        emitCurStackLvl -= (int)argSize;
         assert((int)emitCurStackLvl >= 0);
     }
 
@@ -15317,14 +15331,8 @@ DONE:
             {
                 case IF_RWR_ARD:
                 case IF_RRW_ARD:
-                case IF_RWR_ARD_CNS:
-                case IF_RRW_ARD_CNS:
-                case IF_RWR_ARD_RRD:
-                case IF_RRW_ARD_RRD:
                 case IF_RWR_RRD_ARD:
                 case IF_RRW_RRD_ARD:
-                case IF_RWR_RRD_ARD_CNS:
-                case IF_RWR_RRD_ARD_RRD:
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;

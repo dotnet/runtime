@@ -36,7 +36,10 @@ namespace System.Threading.Tasks
 
             ArgumentNullException.ThrowIfNull(task);
 #else
-            ArgumentNullException.ThrowIfNull(task);
+            if (task is null)
+            {
+                throw new ArgumentNullException(nameof(task));
+            }
 #endif
 
             return new TaskAsyncResult(task, state, callback);
@@ -67,7 +70,14 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException"><paramref name="asyncResult"/> was not produced by a call to <see cref="Begin"/>.</exception>
         public static Task Unwrap(IAsyncResult asyncResult)
         {
+#if NET
             ArgumentNullException.ThrowIfNull(asyncResult);
+#else
+            if (asyncResult is null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
+#endif
 
             if ((asyncResult as TaskAsyncResult)?._task is not Task task)
             {
@@ -89,7 +99,14 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult> Unwrap<TResult>(IAsyncResult asyncResult)
         {
+#if NET
             ArgumentNullException.ThrowIfNull(asyncResult);
+#else
+            if (asyncResult is null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
+#endif
 
             if ((asyncResult as TaskAsyncResult)?._task is not Task<TResult> task)
             {

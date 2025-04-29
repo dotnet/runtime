@@ -90,8 +90,6 @@ public class GenerateWasmBootJson : Task
 
     public string ApplicationEnvironment { get; set; }
 
-    public string MergeWith { get; set; }
-
     public override bool Execute()
     {
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
@@ -444,7 +442,7 @@ public class GenerateWasmBootJson : Task
         }
 
         helper.ComputeResourcesHash(result);
-        helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith);
+        helper.WriteConfigToFile(result, OutputPath);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {

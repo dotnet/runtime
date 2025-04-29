@@ -73,7 +73,10 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteNull(string propertyName)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
             WriteNull(propertyName.AsSpan());
         }
 
@@ -168,7 +171,10 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteBoolean(string propertyName, bool value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
             WriteBoolean(propertyName.AsSpan(), value);
         }
 

@@ -29,7 +29,10 @@ namespace System.Net.Http.Json
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(content);
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
 
             return ReadFromJsonAsyncCore(content, type, options, cancellationToken);
         }
@@ -60,7 +63,10 @@ namespace System.Net.Http.Json
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(content);
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
 
             return ReadFromJsonAsyncCore<T>(content, options, cancellationToken);
         }
@@ -101,14 +107,20 @@ namespace System.Net.Http.Json
 
         public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(content);
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
 
             return ReadFromJsonAsyncCore(content, type, context, cancellationToken);
         }
 
         public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(content);
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
 
             return ReadFromJsonAsyncCore(content, jsonTypeInfo, cancellationToken);
         }

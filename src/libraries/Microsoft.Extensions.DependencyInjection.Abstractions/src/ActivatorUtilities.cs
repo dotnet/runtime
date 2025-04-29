@@ -49,7 +49,10 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             params object[] parameters)
         {
-            ArgumentNullException.ThrowIfNull(provider);
+            if (provider == null)
+            {
+                throw new ArgumentNullException(nameof(provider));
+            }
 
             if (instanceType.IsAbstract)
             {
@@ -435,6 +438,12 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
 #if NETSTANDARD2_1_OR_GREATER || NET
+        [DoesNotReturn]
+        private static void ThrowHelperArgumentNullExceptionServiceProvider()
+        {
+            throw new ArgumentNullException("serviceProvider");
+        }
+
         private static ObjectFactory CreateFactoryReflection(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes)
@@ -923,7 +932,8 @@ namespace Microsoft.Extensions.DependencyInjection
             Debug.Assert(parameters.Length >= 1 && parameters.Length <= FixedArgumentThreshold);
             Debug.Assert(FixedArgumentThreshold == 4);
 
-            ArgumentNullException.ThrowIfNull(serviceProvider);
+            if (serviceProvider is null)
+                ThrowHelperArgumentNullExceptionServiceProvider();
 
             switch (parameters.Length)
             {
@@ -959,7 +969,8 @@ namespace Microsoft.Extensions.DependencyInjection
             Type declaringType,
             IServiceProvider serviceProvider)
         {
-            ArgumentNullException.ThrowIfNull(serviceProvider);
+            if (serviceProvider is null)
+                ThrowHelperArgumentNullExceptionServiceProvider();
 
             object?[] arguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -980,7 +991,8 @@ namespace Microsoft.Extensions.DependencyInjection
             Debug.Assert(parameters.Length >= 1 && parameters.Length <= FixedArgumentThreshold);
             Debug.Assert(FixedArgumentThreshold == 4);
 
-            ArgumentNullException.ThrowIfNull(serviceProvider);
+            if (serviceProvider is null)
+                ThrowHelperArgumentNullExceptionServiceProvider();
 
             ref FactoryParameterContext parameter1 = ref parameters[0];
 
@@ -1112,7 +1124,8 @@ namespace Microsoft.Extensions.DependencyInjection
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
-            ArgumentNullException.ThrowIfNull(serviceProvider);
+            if (serviceProvider is null)
+                ThrowHelperArgumentNullExceptionServiceProvider();
 
             object?[] constructorArguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -1137,7 +1150,8 @@ namespace Microsoft.Extensions.DependencyInjection
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
-            ArgumentNullException.ThrowIfNull(serviceProvider);
+            if (serviceProvider is null)
+                ThrowHelperArgumentNullExceptionServiceProvider();
 
             if (arguments is null)
                 ThrowHelperNullReferenceException(); //AsSpan() will not throw NullReferenceException.
@@ -1161,7 +1175,8 @@ namespace Microsoft.Extensions.DependencyInjection
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
-            ArgumentNullException.ThrowIfNull(serviceProvider);
+            if (serviceProvider is null)
+                ThrowHelperArgumentNullExceptionServiceProvider();
 
             object?[] constructorArguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -1206,7 +1221,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static object? GetKeyedService(IServiceProvider provider, Type type, object? serviceKey)
         {
-            ArgumentNullException.ThrowIfNull(provider);
+            ThrowHelper.ThrowIfNull(provider);
 
             if (provider is IKeyedServiceProvider keyedServiceProvider)
             {

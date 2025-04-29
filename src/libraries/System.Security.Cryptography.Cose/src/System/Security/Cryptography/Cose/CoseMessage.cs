@@ -92,7 +92,8 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="CryptographicException"><paramref name="cborPayload"/> could not be decoded as a COSE_Sign1 message.</exception>
         public static CoseSign1Message DecodeSign1(byte[] cborPayload)
         {
-            ArgumentNullException.ThrowIfNull(cborPayload);
+            if (cborPayload is null)
+                throw new ArgumentNullException(nameof(cborPayload));
 
             return DecodeCoseSign1Core(new CborReader(cborPayload));
         }
@@ -177,7 +178,8 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="CryptographicException"><paramref name="cborPayload"/> could not be decoded as a COSE_Sign message.</exception>
         public static CoseMultiSignMessage DecodeMultiSign(byte[] cborPayload)
         {
-            ArgumentNullException.ThrowIfNull(cborPayload);
+            if (cborPayload is null)
+                throw new ArgumentNullException(nameof(cborPayload));
 
             return DecodeCoseMultiSignCore(new CborReader(cborPayload));
         }

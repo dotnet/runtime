@@ -4,8 +4,6 @@
 #ifndef SOS_INCLUDE
 #include "common.h"
 #endif
-
-#include "gcinfohelpers.h"
 #include "gcinfodumper.h"
 #include "gcinfodecoder.h"
 

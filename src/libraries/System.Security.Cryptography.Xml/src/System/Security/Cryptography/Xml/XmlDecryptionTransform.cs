@@ -78,7 +78,10 @@ namespace System.Security.Cryptography.Xml
 
         public void AddExceptUri(string uri)
         {
-            ArgumentNullException.ThrowIfNull(uri);
+            if (uri is null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
 
             ExceptUris.Add(uri);
         }
@@ -159,7 +162,10 @@ namespace System.Security.Cryptography.Xml
 
         private void LoadXmlDocumentInput(XmlDocument document)
         {
-            ArgumentNullException.ThrowIfNull(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
 
             _containingDocument = document;
             _nsm = new XmlNamespaceManager(document.NameTable);

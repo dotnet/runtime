@@ -32,7 +32,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// </summary>
         /// <returns></returns>
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ComObject ObjectToComObject(object rcw)
         {
             Debug.Assert(ComBinder.IsComObject(rcw));
@@ -83,8 +82,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
-
         private static ComObject CreateComObject(object rcw)
         {
             if (rcw is IDispatch dispatchObject)

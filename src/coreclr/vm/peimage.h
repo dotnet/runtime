@@ -19,7 +19,6 @@
 #include "sstring.h"
 #include "holder.h"
 #include <assemblyprobeextension.h>
-#include "cdacdata.h"
 
 class SimpleRWLock;
 // --------------------------------------------------------------------------------
@@ -317,16 +316,6 @@ private:
     SimpleRWLock *m_pLayoutLock;
     PTR_PEImageLayout m_pLayouts[IMAGE_COUNT];
     IMDInternalImport* m_pMDImport;
-
-    friend struct cdac_data<PEImage>;
-};
-
-template<>
-struct cdac_data<PEImage>
-{
-    // The loaded PEImageLayout is m_pLayouts[IMAGE_LOADED]
-    static constexpr size_t LoadedImageLayout = offsetof(PEImage, m_pLayouts) + sizeof(PTR_PEImageLayout);
-    static constexpr size_t ProbeExtensionResult = offsetof(PEImage, m_probeExtensionResult);
 };
 
 FORCEINLINE void PEImageRelease(PEImage *i)

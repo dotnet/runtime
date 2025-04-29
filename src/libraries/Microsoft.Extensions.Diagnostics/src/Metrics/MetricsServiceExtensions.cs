@@ -22,7 +22,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
         public static IServiceCollection AddMetrics(this IServiceCollection services)
         {
-            ArgumentNullException.ThrowIfNull(services);
+            if (services is null)
+            {
+                throw new ArgumentNullException(nameof(services));
+            }
 
             services.AddOptions();
 
@@ -47,7 +50,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
         public static IServiceCollection AddMetrics(this IServiceCollection services, Action<IMetricsBuilder> configure)
         {
-            ArgumentNullException.ThrowIfNull(configure);
+            if (configure is null)
+            {
+                throw new ArgumentNullException(nameof(configure));
+            }
 
             services.AddMetrics();
 

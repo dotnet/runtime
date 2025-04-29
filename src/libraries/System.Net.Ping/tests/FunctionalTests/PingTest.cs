@@ -694,11 +694,6 @@ namespace System.Net.NetworkInformation.Tests
         [OuterLoop] // Depends on external host and assumption that successful ping takes long enough for cancellation to go through first
         public async Task CancelSendPingAsync(bool useIPAddress, bool useCancellationToken)
         {
-            if (PlatformDetection.IsOSX && useIPAddress && !useCancellationToken)
-            {
-                throw new SkipTestException("[ActiveIssue(https://github.com/dotnet/runtime/issues/114782)]");
-            }
-
             using CancellationTokenSource source = new();
 
             using Ping ping = new();
@@ -875,8 +870,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
 
-            var remoteInvokeStartInfo = new ProcessStartInfo
-            {
+            var remoteInvokeStartInfo = new ProcessStartInfo {
                 EnvironmentVariables =
                 {
                     ["LANG"] = envVar_LANG,

@@ -7,19 +7,16 @@ namespace Microsoft.Extensions.Configuration.Ini
 {
     /// <summary>
     /// Provides configuration key-value pairs that are obtained from an INI file.
+    /// Files are simple line structures (<a href="https://en.wikipedia.org/wiki/INI_file">INI Files on Wikipedia</a>)
     /// </summary>
-    /// <remarks>
-    /// <para>INI files are simple line structures (<a href="https://en.wikipedia.org/wiki/INI_file">INI files on Wikipedia</a>).</para>
-    /// <para>The following is an example of an INI file:</para>
-    /// <code lang="ini">
+    /// <examples>
     /// [Section:Header]
     /// key1=value1
     /// key2 = " value2 "
     /// ; comment
     /// # comment
     /// / comment
-    /// </code>
-    /// </remarks>
+    /// </examples>
     public class IniConfigurationProvider : FileConfigurationProvider
     {
         /// <summary>

@@ -481,7 +481,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="args">An object array that contains zero or more objects to format.</param>
         public static void Log(this ILogger logger, LogLevel logLevel, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
-            ArgumentNullException.ThrowIfNull(logger);
+            ThrowHelper.ThrowIfNull(logger);
 
             logger.Log(logLevel, eventId, new FormattedLogValues(message, args), exception, _messageFormatter);
         }
@@ -505,7 +505,7 @@ namespace Microsoft.Extensions.Logging
             string messageFormat,
             params object?[] args)
         {
-            ArgumentNullException.ThrowIfNull(logger);
+            ThrowHelper.ThrowIfNull(logger);
 
             return logger.BeginScope(new FormattedLogValues(messageFormat, args));
         }

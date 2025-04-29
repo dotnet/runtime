@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
         {
-            ArgumentNullException.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(configuration);
 
             object? result = configuration.Get(typeof(T), configureOptions);
             if (result == null)
@@ -90,8 +90,8 @@ namespace Microsoft.Extensions.Configuration
             Type type,
             Action<BinderOptions>? configureOptions)
         {
-            ArgumentNullException.ThrowIfNull(configuration);
-            ArgumentNullException.ThrowIfNull(type);
+            ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(type);
 
             var options = new BinderOptions();
             configureOptions?.Invoke(options);
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, string key, object? instance)
         {
-            ArgumentNullException.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(configuration);
             configuration.GetSection(key).Bind(instance);
         }
 
@@ -134,7 +134,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
         {
-            ArgumentNullException.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(configuration);
 
             if (instance != null)
             {
@@ -206,8 +206,8 @@ namespace Microsoft.Extensions.Configuration
             Type type, string key,
             object? defaultValue)
         {
-            ArgumentNullException.ThrowIfNull(configuration);
-            ArgumentNullException.ThrowIfNull(type);
+            ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(type);
 
             IConfigurationSection section = configuration.GetSection(key);
             string? value = section.Value;
@@ -1112,7 +1112,7 @@ namespace Microsoft.Extensions.Configuration
 
         private static string GetPropertyName(PropertyInfo property)
         {
-            ArgumentNullException.ThrowIfNull(property);
+            ThrowHelper.ThrowIfNull(property);
 
             // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())

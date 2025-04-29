@@ -285,9 +285,9 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             // TODO: When defining this, provide a virtual method whose base implementation is to
-            // call ExportSecretKey, and then assemble the result, but allow the derived class to
-            // override it in case they need to implement those others in terms of the PKCS8 export
-            // from the underlying provider.
+            // call ExportPrivateSeed and/or ExportSecretKey, and then assemble the result,
+            // but allow the derived class to override it in case they need to implement those
+            // others in terms of the PKCS8 export from the underlying provider.
 
             throw new NotImplementedException("The PKCS#8 format is still under debate");
         }
@@ -342,6 +342,7 @@ namespace System.Security.Cryptography
             throw new NotImplementedException("The PKCS#8 format is still under debate");
         }
 
+#if !NETSTANDARD2_0_OR_GREATER && !NETFRAMEWORK // Remove once PbeParameters is outboxed
         /// <summary>
         ///  Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password.
         /// </summary>
@@ -366,7 +367,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -409,7 +410,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -462,7 +463,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
@@ -515,7 +516,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
@@ -557,7 +558,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -603,7 +604,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            ArgumentNullException.ThrowIfNull(pbeParameters);
+            ThrowIfNull(pbeParameters);
             ThrowIfDisposed();
 
             // TODO: Validation on pbeParameters.
@@ -619,6 +620,7 @@ namespace System.Security.Cryptography
                 writer.Reset();
             }
         }
+#endif
 
         /// <summary>
         ///  Exports the public-key portion of the current key in the FIPS 205 public key format.
@@ -678,6 +680,36 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///  Exports the private seed of the current key.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the private seed.
+        /// </param>
+        /// <returns>
+        ///   The number of bytes written to <paramref name="destination"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination"/> is too small to hold the private seed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the private seed.
+        /// </exception>
+        public int ExportSlhDsaPrivateSeed(Span<byte> destination)
+        {
+            int privateSeedSizeInBytes = Algorithm.PrivateSeedSizeInBytes;
+
+            if (destination.Length < privateSeedSizeInBytes)
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            ThrowIfDisposed();
+
+            ExportSlhDsaPrivateSeedCore(destination.Slice(0, privateSeedSizeInBytes));
+            return privateSeedSizeInBytes;
+        }
+
+        /// <summary>
         ///   Generates a new SLH-DSA key for the specified algorithm.
         /// </summary>
         /// <returns>
@@ -685,7 +717,7 @@ namespace System.Security.Cryptography
         /// </returns>
         public static SlhDsa GenerateKey(SlhDsaAlgorithm algorithm)
         {
-            ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNull(algorithm);
             ThrowIfNotSupported();
 
             return SlhDsaImplementation.GenerateKeyCore(algorithm);
@@ -995,11 +1027,11 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PublicKeySizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_PublicKeyWrongSizeForAlgorithm, nameof(source));
+                throw new ArgumentException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
             }
 
             ThrowIfNotSupported();
@@ -1034,16 +1066,55 @@ namespace System.Security.Cryptography
         /// </exception>
         public static SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ArgumentNullException.ThrowIfNull(algorithm);
+            ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.SecretKeySizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_SecretKeyWrongSizeForAlgorithm, nameof(source));
+                throw new ArgumentException(SR.Argument_SecretKeyWrongSizeForAlgorithm);
             }
 
             ThrowIfNotSupported();
 
             return SlhDsaImplementation.ImportSecretKey(algorithm, source);
+        }
+
+        /// <summary>
+        ///   Imports an SLH-DSA private key from its private seed value.
+        /// </summary>
+        /// <param name="algorithm">
+        ///   The specific SLH-DSA algorithm for this key.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes the key seed.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="algorithm"/> is not a valid SLH-DSA algorithm identifier.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source"/> is not the correct size for the specified algorithm.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     An error occurred while importing the key.
+        ///   </para>
+        /// </exception>
+        public static SlhDsa ImportSlhDsaPrivateSeed(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        {
+            ThrowIfNull(algorithm);
+
+            if (source.Length != algorithm.PrivateSeedSizeInBytes)
+            {
+                throw new ArgumentException(SR.Argument_PrivateSeedWrongSizeForAlgorithm);
+            }
+
+            ThrowIfNotSupported();
+
+            return SlhDsaImplementation.ImportSeed(algorithm, source);
         }
 
         /// <summary>
@@ -1111,6 +1182,14 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the secret key.
         /// </param>
         protected abstract void ExportSlhDsaSecretKeyCore(Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, exports the private seed to the specified buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the private seed.
+        /// </param>
+        protected abstract void ExportSlhDsaPrivateSeedCore(Span<byte> destination);
 
         private AsnWriter ExportSubjectPublicKeyInfoCore()
         {
@@ -1209,6 +1288,19 @@ namespace System.Security.Cryptography
             }
         }
 
+        private static void ThrowIfNull(
+            [NotNull] object? argument,
+            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        {
+#if NET
+            ArgumentNullException.ThrowIfNull(argument, paramName);
+#else
+            if (argument is null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+#endif
+        }
 
         internal static string GetEncodedPemString(AsnWriter writer, string label)
         {

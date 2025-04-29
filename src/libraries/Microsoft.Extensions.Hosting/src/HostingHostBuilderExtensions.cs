@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
-                ArgumentNullException.ThrowIfNull(environment);
+                ThrowHelper.ThrowIfNull(environment);
 
                 configBuilder.AddInMemoryCollection(new[]
                 {
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
-                ArgumentNullException.ThrowIfNull(contentRoot);
+                ThrowHelper.ThrowIfNull(contentRoot);
 
                 configBuilder.AddInMemoryCollection(new[]
                 {

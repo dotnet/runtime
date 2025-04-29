@@ -17,8 +17,6 @@ namespace ILCompiler
     {
         private readonly bool _supportsLazyCctors;
 
-        public ReadOnlyFieldPolicy ReadOnlyFieldPolicy => _preinitHashTable._readOnlyPolicy;
-
         public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
         {
             _supportsLazyCctors = context.SystemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", throwIfNotFound: false) != null;
@@ -141,7 +139,7 @@ namespace ILCompiler
             private readonly CompilationModuleGroup _compilationGroup;
             private readonly ILProvider _ilProvider;
             internal readonly TypePreinit.TypePreinitializationPolicy _policy;
-            internal readonly ReadOnlyFieldPolicy _readOnlyPolicy;
+            private readonly ReadOnlyFieldPolicy _readOnlyPolicy;
             private readonly FlowAnnotations _flowAnnotations;
 
             public PreinitializationInfoHashtable(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)

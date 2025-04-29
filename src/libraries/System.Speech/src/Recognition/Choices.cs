@@ -18,14 +18,14 @@ namespace System.Speech.Recognition
 
         public Choices(params string[] phrases)
         {
-            ArgumentNullException.ThrowIfNull(phrases);
+            Helpers.ThrowIfNull(phrases, nameof(phrases));
 
             Add(phrases);
         }
 
         public Choices(params GrammarBuilder[] alternateChoices)
         {
-            ArgumentNullException.ThrowIfNull(alternateChoices);
+            Helpers.ThrowIfNull(alternateChoices, nameof(alternateChoices));
 
             Add(alternateChoices);
         }
@@ -36,7 +36,7 @@ namespace System.Speech.Recognition
 
         public void Add(params string[] phrases)
         {
-            ArgumentNullException.ThrowIfNull(phrases);
+            Helpers.ThrowIfNull(phrases, nameof(phrases));
 
             foreach (string phrase in phrases)
             {
@@ -48,11 +48,11 @@ namespace System.Speech.Recognition
 
         public void Add(params GrammarBuilder[] alternateChoices)
         {
-            ArgumentNullException.ThrowIfNull(alternateChoices);
+            Helpers.ThrowIfNull(alternateChoices, nameof(alternateChoices));
 
             foreach (GrammarBuilder alternateChoice in alternateChoices)
             {
-                ArgumentNullException.ThrowIfNull(alternateChoice, "alternateChoice");
+                Helpers.ThrowIfNull(alternateChoice, "alternateChoice");
 
                 _oneOf.Items.Add(new ItemElement(alternateChoice));
             }

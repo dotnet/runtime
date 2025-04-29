@@ -161,7 +161,10 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            ArgumentNullException.ThrowIfNull(partitionName);
+            if (partitionName == null)
+            {
+                throw new ArgumentNullException(nameof(partitionName));
+            }
 
             return FindOneAdamInstance(Name, _context, partitionName, null);
         }
@@ -174,7 +177,10 @@ namespace System.DirectoryServices.ActiveDirectory
             // null partitionName would signify that we don't care about the partition
             //
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             return FindOneAdamInstance(Name, _context, partitionName, siteName);
         }
@@ -190,7 +196,10 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            ArgumentNullException.ThrowIfNull(partitionName);
+            if (partitionName == null)
+            {
+                throw new ArgumentNullException(nameof(partitionName));
+            }
 
             return FindAdamInstances(_context, partitionName, null);
         }
@@ -203,7 +212,10 @@ namespace System.DirectoryServices.ActiveDirectory
             // null partitionName would signify that we don't care about the partition
             //
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             return FindAdamInstances(_context, partitionName, siteName);
         }

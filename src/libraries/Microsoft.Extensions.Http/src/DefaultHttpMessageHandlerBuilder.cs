@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Http
             get => _name;
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
+                ThrowHelper.ThrowIfNull(value);
                 _name = value;
             }
         }

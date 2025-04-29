@@ -29,7 +29,7 @@ namespace System.Net.Security.Tests
                 testName: nameof(Create_OcspDoesNotReturnOrCacheInvalidStapleData),
                 intermediateAuthorityCount: 1,
                 subjectName: serverName,
-                keyFactory: CertificateAuthority.KeyFactory.RSASize(2048),
+                keySize: 2048,
                 extensions: Configuration.Certificates.BuildTlsServerCertExtensions(serverName));
 
             using (responder)

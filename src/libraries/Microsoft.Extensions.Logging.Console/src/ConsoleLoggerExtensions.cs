@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
+using ThrowHelper = System.ThrowHelper;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -49,7 +50,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/>.</param>
         public static ILoggingBuilder AddConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure)
         {
-            ArgumentNullException.ThrowIfNull(configure);
+            ThrowHelper.ThrowIfNull(configure);
 
             builder.AddConsole();
             builder.Services.Configure(configure);
@@ -111,7 +112,7 @@ namespace Microsoft.Extensions.Logging
         internal static ILoggingBuilder AddConsoleWithFormatter<TOptions>(this ILoggingBuilder builder, string name, Action<TOptions> configure)
             where TOptions : ConsoleFormatterOptions
         {
-            ArgumentNullException.ThrowIfNull(configure);
+            ThrowHelper.ThrowIfNull(configure);
 
             builder.AddFormatterWithName(name);
             builder.Services.Configure(configure);
@@ -146,7 +147,7 @@ namespace Microsoft.Extensions.Logging
             where TOptions : ConsoleFormatterOptions
             where TFormatter : ConsoleFormatter
         {
-            ArgumentNullException.ThrowIfNull(configure);
+            ThrowHelper.ThrowIfNull(configure);
 
             builder.AddConsoleFormatter<TFormatter, TOptions>();
             builder.Services.Configure(configure);

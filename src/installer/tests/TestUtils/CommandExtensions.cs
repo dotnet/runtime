@@ -23,14 +23,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 File.Delete(filePath);
             }
 
-            return command.EnableHostTracingToPath(filePath);
-        }
-
-        public static Command EnableHostTracingToPath(this Command command, string path)
-        {
             return command
                 .EnableHostTracing()
-                .EnvironmentVariable(Constants.HostTracing.TraceFileEnvironmentVariable, path);
+                .EnvironmentVariable(Constants.HostTracing.TraceFileEnvironmentVariable, filePath);
         }
 
         public static Command EnableTracingAndCaptureOutputs(this Command command)

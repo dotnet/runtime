@@ -120,12 +120,5 @@ namespace System.Runtime.CompilerServices.Tests
             InlineArray15<int> inlineArray15 = new();
             WriteRead(inlineArray15, 15);
         }
-
-        [Fact]
-        public void InlineArray16Test()
-        {
-            InlineArray16<int> inlineArray16 = new();
-            WriteRead(inlineArray16, 16);
-        }
     }
 }

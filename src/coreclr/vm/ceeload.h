@@ -1524,18 +1524,8 @@ public:
     void   StartUnload();
 
 public:
-#ifndef DACCESS_COMPILE
     void SetDynamicIL(mdToken token, TADDR blobAddress);
-#endif // !DACCESS_COMPILE
     TADDR GetDynamicIL(mdToken token);
-
-protected:
-#ifndef DACCESS_COMPILE
-    void SetDynamicRvaField(mdToken token, TADDR blobAddress);
-#endif // !DACCESS_COMPILE
-
-public:
-    TADDR GetDynamicRvaField(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
 #if !defined(DACCESS_COMPILE)
@@ -1564,8 +1554,6 @@ public:
     // words, they become compliant
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeWrapExceptions();
-    void                    UpdateCachedIsRuntimeWrapExceptions();
-    BOOL                    IsRuntimeWrapExceptionsDuringEH();
 
     //-----------------------------------------------------------------------------------------
     // If true, the built-in runtime-generated marshalling subsystem will be used for
@@ -1578,16 +1566,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED);
     }
-
-protected:
-    // For reflection emit modules we set this flag when we emit the attribute, and always consider
-    // the current setting of the flag to be set.
-    void SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_dwPersistedFlags |= COMPUTED_WRAP_EXCEPTIONS;
-    }
-public:
 
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
 
@@ -1691,7 +1669,6 @@ template<>
 struct cdac_data<Module>
 {
     static constexpr size_t Assembly = offsetof(Module, m_pAssembly);
-    static constexpr size_t PEAssembly = offsetof(Module, m_pPEAssembly);
     static constexpr size_t Base = offsetof(Module, m_baseAddress);
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
@@ -1699,7 +1676,6 @@ struct cdac_data<Module>
     static constexpr size_t Path = offsetof(Module, m_path);
     static constexpr size_t FileName = offsetof(Module, m_fileName);
     static constexpr size_t ReadyToRunInfo = offsetof(Module, m_pReadyToRunInfo);
-    static constexpr size_t GrowableSymbolStream = offsetof(Module, m_pIStreamSym);
 
     // Lookup map pointers
     static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);

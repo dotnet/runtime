@@ -38,7 +38,6 @@ struct PatchpointInfo
     void Initialize(unsigned localCount, int totalFrameSize)
     {
         m_calleeSaveRegisters     = 0;
-        m_tier0Version            = 0;
         m_totalFrameSize          = totalFrameSize;
         m_numberOfLocals          = localCount;
         m_genericContextArgOffset = -1;
@@ -51,7 +50,6 @@ struct PatchpointInfo
     void Copy(const PatchpointInfo* original)
     {
         m_calleeSaveRegisters = original->m_calleeSaveRegisters;
-        m_tier0Version = original->m_tier0Version;
         m_genericContextArgOffset = original->m_genericContextArgOffset;
         m_keptAliveThisOffset = original->m_keptAliveThisOffset;
         m_securityCookieOffset = original->m_securityCookieOffset;
@@ -175,16 +173,6 @@ struct PatchpointInfo
         m_calleeSaveRegisters = registerMask;
     }
 
-    PCODE GetTier0EntryPoint() const
-    {
-        return m_tier0Version;
-    }
-
-    void SetTier0EntryPoint(PCODE ip)
-    {
-        m_tier0Version = ip;
-    }
-
 private:
     enum
     {
@@ -193,7 +181,6 @@ private:
     };
 
     uint64_t m_calleeSaveRegisters;
-    PCODE    m_tier0Version;
     unsigned m_numberOfLocals;
     int      m_totalFrameSize;
     int      m_genericContextArgOffset;

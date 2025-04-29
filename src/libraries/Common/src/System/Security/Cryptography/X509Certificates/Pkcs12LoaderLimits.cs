@@ -99,7 +99,12 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public Pkcs12LoaderLimits(Pkcs12LoaderLimits copyFrom)
         {
+#if NET
             ArgumentNullException.ThrowIfNull(copyFrom);
+#else
+            if (copyFrom is null)
+                throw new ArgumentNullException(nameof(copyFrom));
+#endif
 
             // Do not copy _isReadOnly.
 

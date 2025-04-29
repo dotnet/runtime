@@ -164,6 +164,9 @@ namespace System.Reflection
                 }
             }
 
+            // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
+                Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
             private GeneratedTypeInfo GenerateProxyType(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType,
@@ -199,9 +202,11 @@ namespace System.Reflection
                 // Create a type that derives from 'baseType' provided by caller
                 ProxyBuilder pb = CreateProxy("generatedProxy", baseType);
 
-                Type[] interfacesOnInterfaceType = interfaceType.GetInterfaces();
-                for (int i = 0; i < interfacesOnInterfaceType.Length; i++)
-                    pb.AddInterfaceImpl(interfacesOnInterfaceType[i]);
+                foreach (Type t in interfaceType.GetInterfaces())
+                    // interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.
+#pragma warning disable IL2072
+                    pb.AddInterfaceImpl(t);
+#pragma warning restore IL2072
 
                 pb.AddInterfaceImpl(interfaceType);
 

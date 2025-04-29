@@ -13,7 +13,10 @@ namespace System.ServiceModel.Syndication
 
         public UrlSyndicationContent(Uri url, string mediaType) : base()
         {
-            ArgumentNullException.ThrowIfNull(url);
+            if (url is null)
+            {
+                throw new ArgumentNullException(nameof(url));
+            }
 
             Url = url;
             _mediaType = mediaType;

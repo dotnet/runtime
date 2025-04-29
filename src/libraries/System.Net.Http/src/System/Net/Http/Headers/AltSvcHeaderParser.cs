@@ -43,7 +43,7 @@ namespace System.Net.Http.Headers
 
             idx += alpnProtocolNameLength;
 
-            if (alpnProtocolName == AltSvcHeaderValue.ClearString)
+            if (alpnProtocolName == "clear")
             {
                 if (idx != value.Length)
                 {
@@ -190,9 +190,9 @@ namespace System.Net.Http.Headers
 
             if (tokenLength == 0)
             {
-                result = "";
+                result = null;
                 readLength = 0;
-                return true;
+                return false;
             }
 
             ReadOnlySpan<char> span = value.AsSpan(startIndex, tokenLength);

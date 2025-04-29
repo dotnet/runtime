@@ -1008,13 +1008,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         emitPrevGCrefRegs = emitThisGCrefRegs;
         emitPrevByrefRegs = emitThisByrefRegs;
 
-        if (emitAddedLabel)
-        {
-            // Reset emitForceStoreGCState only after seeing label. It will keep
-            // marking IGs with IGF_GC_VARS flag until that.
-            emitForceStoreGCState = false;
-            emitAddedLabel        = false;
-        }
+        emitForceStoreGCState = false;
     }
 
 #ifdef DEBUG
@@ -1283,7 +1277,6 @@ void emitter::emitBegFN(bool hasFramePtr
     emitPrevByrefRegs = RBM_NONE;
 
     emitForceStoreGCState = false;
-    emitAddedLabel        = false;
 
 #ifdef DEBUG
 
@@ -2818,8 +2811,6 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BasicBlock* prevBlock)
 {
-    bool currIGWasNonEmpty = emitCurIGnonEmpty();
-
     // if starting a new block that can be a target of a branch and the last instruction was GC-capable call.
     if ((prevBlock != nullptr) && emitComp->compCurBB->HasFlag(BBF_HAS_LABEL) && emitLastInsIsCallWithGC())
     {
@@ -2848,27 +2839,10 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
         }
     }
 
-    emitAddedLabel = true;
-
     /* Create a new IG if the current one is non-empty */
 
     if (emitCurIGnonEmpty())
     {
-#if FEATURE_LOOP_ALIGN
-
-        if (!currIGWasNonEmpty && (emitAlignLast != nullptr) && (emitAlignLast->idaLoopHeadPredIG != nullptr) &&
-            (emitAlignLast->idaLoopHeadPredIG->igNext == emitCurIG))
-        {
-            // If the emitCurIG was thought to be a loop-head, but if it didn't turn out that way and we end up
-            // creating a new IG from which the loop starts, make sure to update the LoopHeadPred of last align
-            // instruction emitted. This will guarantee that the information stays up-to-date. Later if we
-            // notice a loop that encloses another loop, this information helps in removing the align field from
-            // such loops.
-            // We need to only update emitAlignLast because we do not align intermingled or overlapping loops.
-            emitAlignLast->idaLoopHeadPredIG = emitCurIG;
-        }
-#endif // FEATURE_LOOP_ALIGN
-
         emitNxtIG();
     }
     else

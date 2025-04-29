@@ -409,7 +409,9 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
             while (!fQuitFinalizer)
             {
-                ManagedThreadBase::KickOff(FinalizerThreadWorker, NULL);
+                // This will apply any policy for swallowing exceptions during normal
+                // processing, without allowing the finalizer thread to disappear on us.
+                ManagedThreadBase::FinalizerBase(FinalizerThreadWorker);
 
                 // If we came out on an exception, then we probably lost the signal that
                 // there are objects in the queue ready to finalize.  The safest thing is

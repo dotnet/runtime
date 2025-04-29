@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
 
         public IPattern Build(string pattern)
         {
-            ArgumentNullException.ThrowIfNull(pattern);
+            ThrowHelper.ThrowIfNull(pattern);
 
             pattern = pattern.TrimStart(_slashes);
 

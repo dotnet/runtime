@@ -109,8 +109,7 @@ public:
                                mdMethodDef token,
                                BOOL unboxingStub,
                                Instantiation inst,
-                               BOOL getSharedNotStub,
-                               bool isAsyncVariant);
+                               BOOL getSharedNotStub);
 
     BOOL ContainsMethodDesc(MethodDesc* pMD);
 

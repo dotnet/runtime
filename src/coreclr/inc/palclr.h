@@ -8,10 +8,11 @@
 
 // ===========================================================================
 
-#ifndef __PALCLR_H__
-#define __PALCLR_H__
 
 #if defined(HOST_WINDOWS)
+
+#ifndef __PALCLR_H__
+#define __PALCLR_H__
 
 // This macro is used to standardize the wide character string literals between UNIX and Windows.
 // Unix L"" is UTF32, and on windows it's UTF16.  Because of built-in assumptions on the size
@@ -601,9 +602,9 @@
 
 #define __clr_reserved __reserved
 
-// Native system libray handle.
-// In Windows, NATIVE_LIBRARY_HANDLE is the same as HMODULE.
-typedef HMODULE NATIVE_LIBRARY_HANDLE;
+#endif // __PALCLR_H__
+
+#include "palclr_win.h"
 
 #ifndef IMAGE_FILE_MACHINE_LOONGARCH64
 #define IMAGE_FILE_MACHINE_LOONGARCH64       0x6264  // LOONGARCH64.
@@ -614,5 +615,3 @@ typedef HMODULE NATIVE_LIBRARY_HANDLE;
 #endif
 
 #endif // defined(HOST_WINDOWS)
-
-#endif // __PALCLR_H__

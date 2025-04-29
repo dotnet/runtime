@@ -146,7 +146,10 @@ namespace System.Net.Http.Json
             JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(client);
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
 
             return Core(client, requestUri, jsonTypeInfo, cancellationToken);
 

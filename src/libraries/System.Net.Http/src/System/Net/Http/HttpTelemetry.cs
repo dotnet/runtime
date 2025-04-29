@@ -38,9 +38,14 @@ namespace System.Net.Http
         private void RequestStart(string scheme, string host, int port, string pathAndQuery, byte versionMajor, byte versionMinor, HttpVersionPolicy versionPolicy)
         {
             Interlocked.Increment(ref _startedRequests);
-
-            pathAndQuery = UriRedactionHelper.GetRedactedPathAndQuery(pathAndQuery);
-
+            if (!GlobalHttpSettings.DiagnosticsHandler.DisableUriRedaction)
+            {
+                int queryIndex = pathAndQuery.IndexOf('?');
+                if (queryIndex >= 0 && queryIndex < (pathAndQuery.Length - 1))
+                {
+                    pathAndQuery = $"{pathAndQuery.AsSpan(0, queryIndex + 1)}*";
+                }
+            }
             WriteEvent(eventId: 1, scheme, host, port, pathAndQuery, versionMajor, versionMinor, versionPolicy);
         }
 
@@ -174,7 +179,7 @@ namespace System.Net.Http
         }
 
         [Event(16, Level = EventLevel.Informational)]
-        private void Redirect(string redirectUri)
+        public void Redirect(string redirectUri)
         {
             WriteEvent(eventId: 16, redirectUri);
         }
@@ -182,11 +187,20 @@ namespace System.Net.Http
         [NonEvent]
         public void Redirect(Uri redirectUri)
         {
-            Debug.Assert(redirectUri.IsAbsoluteUri);
-
-            string uriString = UriRedactionHelper.GetRedactedUriString(redirectUri);
-
-            Redirect(uriString);
+            if (!GlobalHttpSettings.DiagnosticsHandler.DisableUriRedaction)
+            {
+                string pathAndQuery = redirectUri.PathAndQuery;
+                int queryIndex = pathAndQuery.IndexOf('?');
+                if (queryIndex >= 0 && queryIndex < (pathAndQuery.Length - 1))
+                {
+                    UriBuilder uriBuilder = new UriBuilder(redirectUri)
+                    {
+                        Query = "*"
+                    };
+                    redirectUri = uriBuilder.Uri;
+                }
+            }
+            Redirect(redirectUri.AbsoluteUri);
         }
 
         [NonEvent]

@@ -139,7 +139,10 @@ namespace System
         /// <param name="data">The string data.</param>
         public BinaryData(string data)
         {
-            ArgumentNullException.ThrowIfNull(data);
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
 
             _bytes = Encoding.UTF8.GetBytes(data);
         }
@@ -235,7 +238,10 @@ namespace System
         /// <seealso cref="MediaTypeNames"/>
         public static BinaryData FromStream(Stream stream, string? mediaType)
         {
-            ArgumentNullException.ThrowIfNull(stream);
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
 
             return FromStreamAsync(stream, useAsync: false, mediaType).GetAwaiter().GetResult();
         }
@@ -263,7 +269,10 @@ namespace System
         public static Task<BinaryData> FromStreamAsync(Stream stream, string? mediaType,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(stream);
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
 
             return FromStreamAsync(stream, useAsync: true, mediaType, cancellationToken);
         }
@@ -323,7 +332,10 @@ namespace System
         /// <seealso cref="MediaTypeNames"/>
         public static BinaryData FromFile(string path, string? mediaType)
         {
-            ArgumentNullException.ThrowIfNull(path);
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
 
             return new BinaryData(File.ReadAllBytes(path), mediaType);
         }
@@ -349,7 +361,10 @@ namespace System
         public static Task<BinaryData> FromFileAsync(string path, string? mediaType,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(path);
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
 
             return Core();
 

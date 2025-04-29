@@ -51,9 +51,16 @@ namespace System.Net.Sockets.Tests
             {
                 client = _socket.EndAccept(result);
             }
-            catch (SocketException)
+            catch (SocketException e)
             {
-                return;
+                if (_disposed ||
+                    e.SocketErrorCode == SocketError.OperationAborted ||
+                    e.SocketErrorCode == SocketError.Interrupted)
+                {
+                    return;
+                }
+
+                throw;
             }
             catch (ObjectDisposedException)
             {
@@ -74,8 +81,16 @@ namespace System.Net.Sockets.Tests
             {
                 _socket.BeginAccept(OnAccept, null);
             }
-            catch (SocketException)
+            catch (SocketException e)
             {
+                if (_disposed ||
+                    e.SocketErrorCode == SocketError.OperationAborted ||
+                    e.SocketErrorCode == SocketError.Interrupted)
+                {
+                    return;
+                }
+
+                throw;
             }
             catch (ObjectDisposedException)
             {

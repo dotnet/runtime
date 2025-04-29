@@ -88,7 +88,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static new GlobalCatalog FindOne(DirectoryContext context)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Forest)
             {
@@ -100,21 +103,30 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static new GlobalCatalog FindOne(DirectoryContext context, string siteName)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Forest)
             {
                 throw new ArgumentException(SR.TargetShouldBeForest, nameof(context));
             }
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             return FindOneWithCredentialValidation(context, siteName, 0);
         }
 
         public static new GlobalCatalog FindOne(DirectoryContext context, LocatorOptions flag)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Forest)
             {
@@ -126,21 +138,30 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static new GlobalCatalog FindOne(DirectoryContext context, string siteName, LocatorOptions flag)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Forest)
             {
                 throw new ArgumentException(SR.TargetShouldBeForest, nameof(context));
             }
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             return FindOneWithCredentialValidation(context, siteName, flag);
         }
 
         public static new GlobalCatalogCollection FindAll(DirectoryContext context)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Forest)
             {
@@ -155,14 +176,20 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static new GlobalCatalogCollection FindAll(DirectoryContext context, string siteName)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Forest)
             {
                 throw new ArgumentException(SR.TargetShouldBeForest, nameof(context));
             }
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             //  work with copy of the context
             context = new DirectoryContext(context);

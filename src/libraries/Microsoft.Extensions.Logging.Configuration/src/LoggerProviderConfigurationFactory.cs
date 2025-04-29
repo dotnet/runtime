@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging.Configuration
 
         public IConfiguration GetConfiguration(Type providerType)
         {
-            ArgumentNullException.ThrowIfNull(providerType);
+            ThrowHelper.ThrowIfNull(providerType);
 
             string fullName = providerType.FullName!;
             string? alias = ProviderAliasUtilities.GetAlias(providerType);

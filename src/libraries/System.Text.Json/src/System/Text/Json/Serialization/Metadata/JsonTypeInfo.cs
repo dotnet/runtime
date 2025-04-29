@@ -906,7 +906,10 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
         public static JsonTypeInfo<T> CreateJsonTypeInfo<T>(JsonSerializerOptions options)
         {
-            ArgumentNullException.ThrowIfNull(options);
+            if (options == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
 
             JsonConverter converter = DefaultJsonTypeInfoResolver.GetConverterForType(typeof(T), options, resolveJsonConverterAttribute: false);
             return new JsonTypeInfo<T>(converter, options);
@@ -934,8 +937,15 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
         public static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
         {
-            ArgumentNullException.ThrowIfNull(type);
-            ArgumentNullException.ThrowIfNull(options);
+            if (type == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(type));
+            }
+
+            if (options == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
 
             if (IsInvalidForSerialization(type))
             {
@@ -983,8 +993,15 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
         public JsonPropertyInfo CreateJsonPropertyInfo(Type propertyType, string name)
         {
-            ArgumentNullException.ThrowIfNull(propertyType);
-            ArgumentNullException.ThrowIfNull(name);
+            if (propertyType == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyType));
+            }
+
+            if (name == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(name));
+            }
 
             if (IsInvalidForSerialization(propertyType))
             {

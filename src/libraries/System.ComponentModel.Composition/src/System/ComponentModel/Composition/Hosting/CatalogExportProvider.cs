@@ -509,8 +509,15 @@ namespace System.ComponentModel.Composition.Hosting
         {
             ThrowIfDisposed();
             EnsureRunning();
-            ArgumentNullException.ThrowIfNull(part);
-            ArgumentNullException.ThrowIfNull(export);
+            if (part == null)
+            {
+                throw new ArgumentNullException(nameof(part));
+            }
+
+            if (export == null)
+            {
+                throw new ArgumentNullException(nameof(export));
+            }
 
             // We don't protect against thread racing here, as "importsSatisfied" is merely an optimization
             // if two threads satisfy imports twice, the results is the same, just the perf hit is heavier.

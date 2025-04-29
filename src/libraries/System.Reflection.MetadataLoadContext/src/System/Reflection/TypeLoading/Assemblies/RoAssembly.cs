@@ -99,7 +99,10 @@ namespace System.Reflection.TypeLoading
         // Api to retrieve types by name. Retrieves both types physically defined in this module and types this assembly forwards from another assembly.
         public sealed override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
             // Known compat disagreement: This api is supposed to throw an ArgumentException if the name has an assembly qualification
             // (though the intended meaning seems clear.) This is difficult for us to implement as we don't have our own type name parser.

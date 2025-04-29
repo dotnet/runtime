@@ -24,7 +24,7 @@ namespace Mono.Linker.Tests.TestCases
 
 			// A little hacky, but good enough for name.  No reason why namespace & type names
 			// should not follow the directory structure
-			ReconstructedFullTypeName = $"{sourceFile.Parent.RelativeTo (rootCasesDirectory.Parent).ToString (SlashMode.Forward).Replace ('/', '.')}.{sourceFile.FileNameWithoutExtension}";
+			reconstructedFullTypeName = $"{sourceFile.Parent.RelativeTo (rootCasesDirectory.Parent).ToString (SlashMode.Forward).Replace ('/', '.')}.{sourceFile.FileNameWithoutExtension}";
 
 			var firstParentRelativeToRoot = SourceFile.RelativeTo (rootCasesDirectory).Elements.First ();
 			TestSuiteDirectory = rootCasesDirectory.Combine (firstParentRelativeToRoot);
@@ -40,7 +40,7 @@ namespace Mono.Linker.Tests.TestCases
 
 		public NPath OriginalTestCaseAssemblyPath { get; }
 
-		public string ReconstructedFullTypeName { get; }
+		private string reconstructedFullTypeName;
 
 		public bool HasLinkXmlFile {
 			get { return SourceFile.ChangeExtension ("xml").FileExists (); }
@@ -59,7 +59,7 @@ namespace Mono.Linker.Tests.TestCases
 
 		public TypeDefinition FindTypeDefinition (AssemblyDefinition caseAssemblyDefinition)
 		{
-			var typeDefinition = caseAssemblyDefinition.MainModule.GetType (ReconstructedFullTypeName);
+			var typeDefinition = caseAssemblyDefinition.MainModule.GetType (reconstructedFullTypeName);
 
 			// For all of the Test Cases, the full type name we constructed from the directory structure will be correct and we can successfully find
 			// the type from GetType.

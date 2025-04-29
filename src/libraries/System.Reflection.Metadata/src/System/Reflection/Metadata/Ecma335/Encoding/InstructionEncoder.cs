@@ -34,7 +34,10 @@ namespace System.Reflection.Metadata.Ecma335
         /// </param>
         public InstructionEncoder(BlobBuilder codeBuilder, ControlFlowBuilder? controlFlowBuilder = null)
         {
-            ArgumentNullException.ThrowIfNull(codeBuilder);
+            if (codeBuilder == null)
+            {
+                Throw.BuilderArgumentNull();
+            }
 
             CodeBuilder = codeBuilder;
             ControlFlowBuilder = controlFlowBuilder;

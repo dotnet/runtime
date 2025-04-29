@@ -53,7 +53,10 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(this JsonElement element, Type returnType, JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(returnType);
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
@@ -79,7 +82,10 @@ namespace System.Text.Json
         /// </exception>
         public static TValue? Deserialize<TValue>(this JsonElement element, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
@@ -97,7 +103,10 @@ namespace System.Text.Json
         /// </exception>
         public static object? Deserialize(this JsonElement element, JsonTypeInfo jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
@@ -138,8 +147,14 @@ namespace System.Text.Json
         /// </exception>
         public static object? Deserialize(this JsonElement element, Type returnType, JsonSerializerContext context)
         {
-            ArgumentNullException.ThrowIfNull(returnType);
-            ArgumentNullException.ThrowIfNull(context);
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;

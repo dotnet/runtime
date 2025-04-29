@@ -116,7 +116,7 @@ namespace System.Collections.Frozen
             out Dictionary<TKey, TValue>? newDictionary)
             where TKey : notnull
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
             comparer ??= EqualityComparer<TKey>.Default;
 
             // If the source is already frozen with the same comparer, it can simply be returned.
@@ -373,7 +373,7 @@ namespace System.Collections.Frozen
         /// <param name="destinationIndex">The zero-based index in <paramref name="destination"/> at which copying begins.</param>
         public void CopyTo(KeyValuePair<TKey, TValue>[] destination, int destinationIndex)
         {
-            ArgumentNullException.ThrowIfNull(destination);
+            ThrowHelper.ThrowIfNull(destination);
             CopyTo(destination.AsSpan(destinationIndex));
         }
 
@@ -399,7 +399,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc />
         void ICollection.CopyTo(Array array, int index)
         {
-            ArgumentNullException.ThrowIfNull(array);
+            ThrowHelper.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -476,7 +476,7 @@ namespace System.Collections.Frozen
         {
             get
             {
-                ArgumentNullException.ThrowIfNull(key);
+                ThrowHelper.ThrowIfNull(key);
                 return key is TKey tkey && TryGetValue(tkey, out TValue? value) ?
                     value :
                     (object?)null;
@@ -593,7 +593,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc />
         bool IDictionary.Contains(object key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            ThrowHelper.ThrowIfNull(key);
             return key is TKey tkey && ContainsKey(tkey);
         }
 

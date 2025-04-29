@@ -98,7 +98,10 @@ namespace System.Security.Cryptography.Xml
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public SignedXml(XmlDocument document)
         {
-            ArgumentNullException.ThrowIfNull(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
 
             Initialize(document.DocumentElement);
         }
@@ -107,7 +110,10 @@ namespace System.Security.Cryptography.Xml
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public SignedXml(XmlElement elem)
         {
-            ArgumentNullException.ThrowIfNull(elem);
+            if (elem is null)
+            {
+                throw new ArgumentNullException(nameof(elem));
+            }
 
             Initialize(elem);
         }
@@ -225,7 +231,10 @@ namespace System.Security.Cryptography.Xml
         [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public void LoadXml(XmlElement value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             m_signature.LoadXml(value);
 
@@ -428,7 +437,10 @@ namespace System.Security.Cryptography.Xml
 
         public void ComputeSignature(KeyedHashAlgorithm macAlg)
         {
-            ArgumentNullException.ThrowIfNull(macAlg);
+            if (macAlg is null)
+            {
+                throw new ArgumentNullException(nameof(macAlg));
+            }
 
             HMAC? hash = macAlg as HMAC;
             if (hash == null)
@@ -1007,7 +1019,10 @@ namespace System.Security.Cryptography.Xml
         [UnconditionalSuppressMessage("ILLink", "IL2057:UnrecognizedReflectionPattern", Justification = "ctors are marked as RDC")]
         private bool CheckSignedInfo(AsymmetricAlgorithm key)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo!);
 
@@ -1038,7 +1053,10 @@ namespace System.Security.Cryptography.Xml
 
         private bool CheckSignedInfo(KeyedHashAlgorithm macAlg)
         {
-            ArgumentNullException.ThrowIfNull(macAlg);
+            if (macAlg is null)
+            {
+                throw new ArgumentNullException(nameof(macAlg));
+            }
 
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo!);
 

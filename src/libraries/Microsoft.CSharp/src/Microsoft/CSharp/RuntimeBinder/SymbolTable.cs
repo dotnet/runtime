@@ -46,7 +46,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static void PopulateSymbolTableWithName(
             string name,
             IEnumerable<Type> typeArguments,
@@ -89,7 +88,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static SymWithType LookupMember(
             string name,
             Expr callingObject,
@@ -127,7 +125,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void AddParameterConversions(MethodBase method)
         {
             foreach (ParameterInfo param in method.GetParameters())
@@ -138,7 +135,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         #region InheritanceHierarchy
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void AddNamesOnType(NameHashKey key)
         {
             Debug.Assert(!s_namesLoadedForEachType.Contains(key));
@@ -153,7 +149,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void AddNamesInInheritanceHierarchy(string name, List<Type> inheritance)
         {
             for (int i = inheritance.Count - 1; i >= 0; --i)
@@ -236,7 +231,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static List<Type> CreateInheritanceHierarchyList(Type type)
         {
             List<Type> list;
@@ -302,7 +296,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static TypeArray GetMethodTypeParameters(MethodInfo method, MethodSymbol parent)
         {
             if (method.IsGenericMethod)
@@ -331,7 +324,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static TypeArray GetAggregateTypeParameters(Type type, AggregateSymbol agg)
         {
             if (type.IsGenericType)
@@ -390,7 +382,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static TypeParameterType LoadClassTypeParameter(AggregateSymbol parent, Type t)
         {
             for (AggregateSymbol p = parent; p != null; p = p.parent as AggregateSymbol)
@@ -505,7 +496,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static TypeParameterType LoadMethodTypeParameter(MethodSymbol parent, Type t)
         {
             for (Symbol sym = parent.firstChild; sym != null; sym = sym.nextChild)
@@ -525,7 +515,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static TypeParameterType AddTypeParameterToSymbolTable(
                 AggregateSymbol agg,
                 MethodSymbol meth,
@@ -589,7 +578,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static CType LoadSymbolsFromType(Type type)
         {
             List<object> declarationChain = BuildDeclarationChain(type);
@@ -655,7 +643,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static TypeParameterType ProcessMethodTypeParameter(MethodInfo methinfo, Type t, AggregateSymbol parent)
         {
             MethodSymbol meth = FindMatchingMethod(methinfo, parent);
@@ -676,7 +663,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static CType GetConstructedType(Type type, AggregateSymbol agg)
         {
             // We've found the one we want, so return it.
@@ -700,7 +686,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static CType ProcessSpecialTypeInChain(NamespaceOrAggregateSymbol parent, Type t)
         {
             if (t.IsGenericParameter)
@@ -732,7 +717,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static List<object> BuildDeclarationChain(Type callingType)
         {
             // We need to build the parent chain of the calling type. Since we only
@@ -810,7 +794,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             return null;
         }
 
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static NamespaceSymbol AddNamespaceToSymbolTable(NamespaceOrAggregateSymbol parent, string sz)
         {
             Name name = GetName(sz);
@@ -823,7 +806,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static CType[] GetCTypeArrayFromTypes(Type[] types)
         {
             Debug.Assert(types != null);
@@ -847,7 +829,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static CType GetCTypeFromType(Type type) => type.IsByRef
             ? TypeManager.GetParameterModifier(LoadSymbolsFromType(type.GetElementType()), false)
             : LoadSymbolsFromType(type);
@@ -858,7 +839,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static AggregateSymbol AddAggregateToSymbolTable(
             NamespaceOrAggregateSymbol parent,
             Type type)
@@ -1012,7 +992,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void SetInterfacesOnAggregate(AggregateSymbol aggregate, Type type)
         {
             if (type.IsGenericType)
@@ -1038,7 +1017,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static FieldSymbol AddFieldToSymbolTable(FieldInfo fieldInfo, AggregateSymbol aggregate)
         {
             FieldSymbol field = SymbolStore.LookupSym(
@@ -1094,7 +1072,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void AddEventToSymbolTable(EventInfo eventInfo, AggregateSymbol aggregate, FieldSymbol addedField)
         {
             EventSymbol ev = SymbolStore.LookupSym(
@@ -1153,7 +1130,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static void AddPredefinedPropertyToSymbolTable(AggregateSymbol type, Name property)
         {
             AggregateType aggtype = type.getThisType();
@@ -1171,7 +1147,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void AddPropertyToSymbolTable(PropertyInfo property, AggregateSymbol aggregate)
         {
             Name name;
@@ -1322,7 +1297,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static void AddPredefinedMethodToSymbolTable(AggregateSymbol type, Name methodName)
         {
             Type t = type.getThisType().AssociatedSystemType;
@@ -1358,7 +1332,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static MethodSymbol AddMethodToSymbolTable(MethodBase member, AggregateSymbol callingAggregate, MethodKindEnum kind)
         {
             MethodInfo method = member as MethodInfo;
@@ -1461,7 +1434,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void SetParameterDataForMethProp(MethodOrPropertySymbol methProp, ParameterInfo[] parameters)
         {
             if (parameters.Length > 0)
@@ -1486,7 +1458,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void SetParameterAttributes(MethodOrPropertySymbol methProp, ParameterInfo[] parameters, int i)
         {
             ParameterInfo parameter = parameters[i];
@@ -1635,7 +1606,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static TypeArray CreateParameterArray(MemberInfo associatedInfo, ParameterInfo[] parameters)
         {
             bool isVarArg = associatedInfo is MethodBase mb && (mb.CallingConvention & CallingConventions.VarArgs) != 0;
@@ -1657,7 +1627,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static CType GetTypeOfParameter(ParameterInfo p, MemberInfo m)
         {
             Type t = p.ParameterType;
@@ -1707,7 +1676,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static SymWithType GetSlotForOverride(MethodInfo method)
         {
             if (method.IsVirtual && method.IsHideBySig)
@@ -1736,7 +1704,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static MethodSymbol FindMethodFromMemberInfo(MemberInfo baseMemberInfo)
         {
             CType t = GetCTypeFromType(baseMemberInfo.DeclaringType);
@@ -1767,7 +1734,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static void AddConversionsForType(Type type)
         {
             if (type.IsInterface)
@@ -1783,7 +1749,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void AddConversionsForOneType(Type type)
         {
             if (type.IsGenericType)

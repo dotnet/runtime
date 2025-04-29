@@ -5,10 +5,8 @@
 #define _INTERPEXEC_H_
 
 #include "../interpreter/interpretershared.h"
-#include "interpframeallocator.h"
 
 #define INTERP_STACK_SIZE 1024*1024
-#define INTERP_STACK_FRAGMENT_SIZE 4096
 
 struct StackVal
 {
@@ -54,13 +52,9 @@ struct InterpThreadContext
     // stack pointer. It is needed when re-entering interp, to know from which address we can start using
     // stack, and also needed for the GC to be able to scan the stack.
     int8_t *pStackPointer;
-
-    FrameDataAllocator frameDataAllocator;
-
-    InterpThreadContext();
-    ~InterpThreadContext();
 };
 
+InterpThreadContext* InterpGetThreadContext();
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext);
 
 #endif

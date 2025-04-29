@@ -172,10 +172,6 @@ namespace ILLink.Shared.TrimAnalysis
 		/// </summary>
 		Type_GetInterface,
 		/// <summary>
-		/// <see cref="System.Type.GetInterfaces"/>
-		/// </summary>
-		Type_GetInterfaces,
-		/// <summary>
 		/// <see cref="System.Type.AssemblyQualifiedName"/>
 		/// </summary>
 		Type_get_AssemblyQualifiedName,

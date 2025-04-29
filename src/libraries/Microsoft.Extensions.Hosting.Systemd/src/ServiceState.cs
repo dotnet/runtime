@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
         /// <param name="state">A <see cref="string"/> representation of service state.</param>
         public ServiceState(string state)
         {
-            ArgumentNullException.ThrowIfNull(state);
+            ThrowHelper.ThrowIfNull(state);
 
             _data = Encoding.UTF8.GetBytes(state);
         }

@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
         [RequiresUnreferencedCode(TrimmingRequiredUnreferencedCodeMessage)]
         public static OptionsBuilder<TOptions> Bind<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration config, Action<BinderOptions>? configureBinder) where TOptions : class
         {
-            ArgumentNullException.ThrowIfNull(optionsBuilder);
+            ThrowHelper.ThrowIfNull(optionsBuilder);
 
             optionsBuilder.Services.Configure<TOptions>(optionsBuilder.Name, config, configureBinder);
             return optionsBuilder;
@@ -67,8 +67,8 @@ namespace Microsoft.Extensions.DependencyInjection
             Action<BinderOptions>? configureBinder = null)
             where TOptions : class
         {
-            ArgumentNullException.ThrowIfNull(optionsBuilder);
-            ArgumentNullException.ThrowIfNull(configSectionPath);
+            ThrowHelper.ThrowIfNull(optionsBuilder);
+            ThrowHelper.ThrowIfNull(configSectionPath);
 
             optionsBuilder.Configure<IConfiguration>((opts, config) =>
             {

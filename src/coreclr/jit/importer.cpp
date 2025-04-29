@@ -2619,6 +2619,9 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
 {
     DWORD            mflags;
     CORINFO_SIG_INFO sig;
+    unsigned int     popCount = 0; // we can't pop the stack since impImportCall needs it, so
+                                   // this counter is used to keep track of how many items have been
+                                   // virtually popped
 
     CORINFO_METHOD_HANDLE methodHnd       = nullptr;
     CORINFO_CLASS_HANDLE  methodClassHnd  = nullptr;
@@ -2689,11 +2692,15 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
         args = info.compCompHnd->getArgNext(args);
     }
 
-    unsigned popCount = sig.totalILArgs();
+    // Update popCount.
+    popCount += sig.numArgs;
 
     // Check for 'this' which is on non-static methods, not called via NEWOBJ
-    if ((mflags & CORINFO_FLG_STATIC) == 0)
+    if (!(mflags & CORINFO_FLG_STATIC))
     {
+        // Always update the popCount. This is crucial for the stack calculation to be correct.
+        popCount++;
+
         if (opcode == CEE_CALLI)
         {
             // For CALLI, we don't know the methodClassHnd. Therefore, let's check the "this" object on the stack.
@@ -2722,7 +2729,7 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
     // Get the exact view of the signature for an array method
     if (sig.retType != CORINFO_TYPE_VOID)
     {
-        if ((methodClassFlgs & CORINFO_FLG_ARRAY) != 0)
+        if (methodClassFlgs & CORINFO_FLG_ARRAY)
         {
             assert(opcode != CEE_CALLI);
             eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, &sig);
@@ -12637,6 +12644,7 @@ void Compiler::impFixPredLists()
 
                         BasicBlock* const continuation = predBlock->Next();
                         FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
+                        newEdge->setLikelihood(1.0 / predCount);
 
                         if (usingProfileWeights && (finallyWeight != BB_ZERO_WEIGHT))
                         {
@@ -12678,8 +12686,7 @@ void Compiler::impFixPredLists()
                 {
                     BasicBlock* const callFinallyRet = callFinally->Next();
                     callFinallyRet->setBBProfileWeight(callFinallyRet->computeIncomingWeight());
-                    profileConsistent &=
-                        fgProfileWeightsConsistentOrSmall(callFinally->bbWeight, callFinallyRet->bbWeight);
+                    profileConsistent &= fgProfileWeightsEqual(callFinally->bbWeight, callFinallyRet->bbWeight);
                 }
 
                 if (!profileConsistent)

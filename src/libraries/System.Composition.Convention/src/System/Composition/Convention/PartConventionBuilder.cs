@@ -65,7 +65,10 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder Export(Action<ExportConventionBuilder> exportConfiguration)
         {
-            ArgumentNullException.ThrowIfNull(exportConfiguration);
+            if (exportConfiguration is null)
+            {
+                throw new ArgumentNullException(nameof(exportConfiguration));
+            }
 
             var exportBuilder = new ExportConventionBuilder();
             exportConfiguration(exportBuilder);
@@ -91,7 +94,10 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder Export<T>(Action<ExportConventionBuilder> exportConfiguration)
         {
-            ArgumentNullException.ThrowIfNull(exportConfiguration);
+            if (exportConfiguration is null)
+            {
+                throw new ArgumentNullException(nameof(exportConfiguration));
+            }
 
             ExportConventionBuilder exportBuilder = new ExportConventionBuilder().AsContractType<T>();
             exportConfiguration(exportBuilder);
@@ -106,7 +112,10 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder SelectConstructor(Func<IEnumerable<ConstructorInfo>, ConstructorInfo> constructorSelector)
         {
-            ArgumentNullException.ThrowIfNull(constructorSelector);
+            if (constructorSelector is null)
+            {
+                throw new ArgumentNullException(nameof(constructorSelector));
+            }
 
             _constructorFilter = constructorSelector;
             return this;
@@ -121,7 +130,10 @@ namespace System.Composition.Convention
         public PartConventionBuilder SelectConstructor(Func<IEnumerable<ConstructorInfo>, ConstructorInfo> constructorSelector,
             Action<ParameterInfo, ImportConventionBuilder> importConfiguration)
         {
-            ArgumentNullException.ThrowIfNull(importConfiguration);
+            if (importConfiguration is null)
+            {
+                throw new ArgumentNullException(nameof(importConfiguration));
+            }
 
             _configureConstructorImports = importConfiguration;
             SelectConstructor(constructorSelector);
@@ -135,7 +147,10 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder ExportInterfaces(Predicate<Type> interfaceFilter)
         {
-            ArgumentNullException.ThrowIfNull(interfaceFilter);
+            if (interfaceFilter is null)
+            {
+                throw new ArgumentNullException(nameof(interfaceFilter));
+            }
 
             return ExportInterfacesImpl(interfaceFilter, null);
         }
@@ -158,8 +173,14 @@ namespace System.Composition.Convention
         public PartConventionBuilder ExportInterfaces(Predicate<Type> interfaceFilter,
             Action<Type, ExportConventionBuilder> exportConfiguration)
         {
-            ArgumentNullException.ThrowIfNull(interfaceFilter);
-            ArgumentNullException.ThrowIfNull(exportConfiguration);
+            if (interfaceFilter is null)
+            {
+                throw new ArgumentNullException(nameof(interfaceFilter));
+            }
+            if (exportConfiguration is null)
+            {
+                throw new ArgumentNullException(nameof(exportConfiguration));
+            }
 
             return ExportInterfacesImpl(interfaceFilter, exportConfiguration);
         }
@@ -178,7 +199,10 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder ExportProperties(Predicate<PropertyInfo> propertyFilter)
         {
-            ArgumentNullException.ThrowIfNull(propertyFilter);
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
 
             return ExportPropertiesImpl(propertyFilter, null);
         }
@@ -192,8 +216,14 @@ namespace System.Composition.Convention
         public PartConventionBuilder ExportProperties(Predicate<PropertyInfo> propertyFilter,
             Action<PropertyInfo, ExportConventionBuilder> exportConfiguration)
         {
-            ArgumentNullException.ThrowIfNull(propertyFilter);
-            ArgumentNullException.ThrowIfNull(exportConfiguration);
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+            if (exportConfiguration is null)
+            {
+                throw new ArgumentNullException(nameof(exportConfiguration));
+            }
 
             return ExportPropertiesImpl(propertyFilter, exportConfiguration);
         }
@@ -213,7 +243,10 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder ExportProperties<T>(Predicate<PropertyInfo> propertyFilter)
         {
-            ArgumentNullException.ThrowIfNull(propertyFilter);
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
 
             return ExportPropertiesImpl<T>(propertyFilter, null);
         }
@@ -228,8 +261,14 @@ namespace System.Composition.Convention
         public PartConventionBuilder ExportProperties<T>(Predicate<PropertyInfo> propertyFilter,
             Action<PropertyInfo, ExportConventionBuilder> exportConfiguration)
         {
-            ArgumentNullException.ThrowIfNull(propertyFilter);
-            ArgumentNullException.ThrowIfNull(exportConfiguration);
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+            if (exportConfiguration is null)
+            {
+                throw new ArgumentNullException(nameof(exportConfiguration));
+            }
 
             return ExportPropertiesImpl<T>(propertyFilter, exportConfiguration);
         }
@@ -248,7 +287,10 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder ImportProperties(Predicate<PropertyInfo> propertyFilter)
         {
-            ArgumentNullException.ThrowIfNull(propertyFilter);
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
 
             return ImportPropertiesImpl(propertyFilter, null);
         }
@@ -262,8 +304,14 @@ namespace System.Composition.Convention
         public PartConventionBuilder ImportProperties(Predicate<PropertyInfo> propertyFilter,
             Action<PropertyInfo, ImportConventionBuilder> importConfiguration)
         {
-            ArgumentNullException.ThrowIfNull(propertyFilter);
-            ArgumentNullException.ThrowIfNull(importConfiguration);
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+            if (importConfiguration is null)
+            {
+                throw new ArgumentNullException(nameof(importConfiguration));
+            }
 
             return ImportPropertiesImpl(propertyFilter, importConfiguration);
         }
@@ -283,7 +331,10 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder ImportProperties<T>(Predicate<PropertyInfo> propertyFilter)
         {
-            ArgumentNullException.ThrowIfNull(propertyFilter);
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
 
             return ImportPropertiesImpl<T>(propertyFilter, null);
         }
@@ -298,8 +349,14 @@ namespace System.Composition.Convention
         public PartConventionBuilder ImportProperties<T>(Predicate<PropertyInfo> propertyFilter,
             Action<PropertyInfo, ImportConventionBuilder> importConfiguration)
         {
-            ArgumentNullException.ThrowIfNull(propertyFilter);
-            ArgumentNullException.ThrowIfNull(importConfiguration);
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+            if (importConfiguration is null)
+            {
+                throw new ArgumentNullException(nameof(importConfiguration));
+            }
 
             return ImportPropertiesImpl<T>(propertyFilter, importConfiguration);
         }
@@ -338,7 +395,10 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder Shared(string sharingBoundary)
         {
-            ArgumentNullException.ThrowIfNull(sharingBoundary);
+            if (sharingBoundary is null)
+            {
+                throw new ArgumentNullException(nameof(sharingBoundary));
+            }
 
             if (sharingBoundary.Length == 0)
             {
@@ -363,7 +423,10 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder AddPartMetadata(string name, object value)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
             if (name.Length == 0)
             {
@@ -383,8 +446,14 @@ namespace System.Composition.Convention
         /// <returns>A part builder allowing further configuration of the part.</returns>
         public PartConventionBuilder AddPartMetadata(string name, Func<Type, object> getValueFromPartType)
         {
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(getValueFromPartType);
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (getValueFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getValueFromPartType));
+            }
 
             if (name.Length == 0)
             {

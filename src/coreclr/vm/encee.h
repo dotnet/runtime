@@ -229,7 +229,6 @@ public:
                             DWORD cbIL,
                             BYTE *pIL);
 
-private:
     // Called when a method has been modified (new IL)
     HRESULT UpdateMethod(MethodDesc *pMethod);
 
@@ -242,7 +241,6 @@ private:
     // JIT the new version of a function for EnC
     PCODE JitUpdatedFunction(MethodDesc *pMD, T_CONTEXT *pContext);
 
-public:
     // Remap execution to the latest version of an edited method
     HRESULT ResumeInUpdatedFunction(MethodDesc *pMD,
                                     void *oldDebuggerFuncHandle,

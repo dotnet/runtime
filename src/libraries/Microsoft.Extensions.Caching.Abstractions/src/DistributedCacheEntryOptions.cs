@@ -10,21 +10,23 @@ namespace Microsoft.Extensions.Caching.Distributed
     /// </summary>
     public class DistributedCacheEntryOptions
     {
-        private DateTimeOffset _absoluteExpiration;
-        private bool _absoluteExpirationSet;
-        private TimeSpan _absoluteExpirationRelativeToNow;
-        private bool _absoluteExpirationRelativeToNowSet;
-        private TimeSpan _slidingExpiration;
-        private bool _slidingExpirationSet;
-        private bool _frozen;
+        private DateTimeOffset? _absoluteExpiration;
+        private TimeSpan? _absoluteExpirationRelativeToNow;
+        private TimeSpan? _slidingExpiration;
 
         /// <summary>
         /// Gets or sets an absolute expiration date for the cache entry.
         /// </summary>
         public DateTimeOffset? AbsoluteExpiration
         {
-            get => _absoluteExpirationSet ? _absoluteExpiration : null;
-            set => Set(ref _absoluteExpiration, ref _absoluteExpirationSet, value);
+            get
+            {
+                return _absoluteExpiration;
+            }
+            set
+            {
+                _absoluteExpiration = value;
+            }
         }
 
         /// <summary>
@@ -32,7 +34,10 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// </summary>
         public TimeSpan? AbsoluteExpirationRelativeToNow
         {
-            get => _absoluteExpirationRelativeToNowSet ? _absoluteExpirationRelativeToNow : null;
+            get
+            {
+                return _absoluteExpirationRelativeToNow;
+            }
             set
             {
                 if (value <= TimeSpan.Zero)
@@ -43,7 +48,7 @@ namespace Microsoft.Extensions.Caching.Distributed
                         "The relative expiration value must be positive.");
                 }
 
-                Set(ref _absoluteExpirationRelativeToNow, ref _absoluteExpirationRelativeToNowSet, value);
+                _absoluteExpirationRelativeToNow = value;
             }
         }
 
@@ -53,7 +58,10 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// </summary>
         public TimeSpan? SlidingExpiration
         {
-            get => _slidingExpirationSet ? _slidingExpiration : null;
+            get
+            {
+                return _slidingExpiration;
+            }
             set
             {
                 if (value <= TimeSpan.Zero)
@@ -63,27 +71,8 @@ namespace Microsoft.Extensions.Caching.Distributed
                         value,
                         "The sliding expiration value must be positive.");
                 }
-                Set(ref _slidingExpiration, ref _slidingExpirationSet, value);
+                _slidingExpiration = value;
             }
-        }
-
-        internal DistributedCacheEntryOptions Freeze()
-        {
-            _frozen = true;
-            return this;
-        }
-
-        private void Set<T>(ref T field, ref bool isSet, in T? value) where T : struct
-        {
-            if (_frozen)
-            {
-                ThrowFrozen();
-            }
-
-            field = value.GetValueOrDefault();
-            isSet = value.HasValue;
-
-            static void ThrowFrozen() => throw new InvalidOperationException("This instance has been frozen and cannot be mutated");
         }
     }
 }

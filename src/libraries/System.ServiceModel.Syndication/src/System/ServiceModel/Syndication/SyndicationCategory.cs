@@ -28,7 +28,10 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationCategory(SyndicationCategory source)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
 
             Label = source.Label;
             Name = source.Name;

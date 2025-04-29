@@ -64,7 +64,6 @@ class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ArgDestination;
 enum class WellKnownAttribute : DWORD;
-enum class AsyncVariantLookup;
 struct MethodTableAuxiliaryData;
 
 typedef DPTR(MethodTableAuxiliaryData) PTR_MethodTableAuxiliaryData;
@@ -1754,7 +1753,7 @@ public:
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
     // Used to map methods on the same slot between instantiations.
-    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD, AsyncVariantLookup asyncVariantLookup = (AsyncVariantLookup)0);
+    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD);
 
     //-------------------------------------------------------------------
     // BoxedEntryPoint MethodDescs.

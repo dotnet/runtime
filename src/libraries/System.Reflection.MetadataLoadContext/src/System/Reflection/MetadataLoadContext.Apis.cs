@@ -105,7 +105,8 @@ namespace System.Reflection
         /// </param>
         public MetadataLoadContext(MetadataAssemblyResolver resolver, string? coreAssemblyName = null)
         {
-            ArgumentNullException.ThrowIfNull(resolver);
+            if (resolver is null)
+                throw new ArgumentNullException(nameof(resolver));
 
             this.resolver = resolver;
 
@@ -126,7 +127,8 @@ namespace System.Reflection
         /// </summary>
         public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
-            ArgumentNullException.ThrowIfNull(assemblyPath);
+            if (assemblyPath is null)
+                throw new ArgumentNullException(nameof(assemblyPath));
 
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
@@ -140,7 +142,8 @@ namespace System.Reflection
         /// </summary>
         public Assembly LoadFromByteArray(byte[] assembly)
         {
-            ArgumentNullException.ThrowIfNull(assembly);
+            if (assembly is null)
+                throw new ArgumentNullException(nameof(assembly));
 
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
@@ -157,7 +160,8 @@ namespace System.Reflection
         /// </summary>
         public Assembly LoadFromStream(Stream assembly)
         {
-            ArgumentNullException.ThrowIfNull(assembly);
+            if (assembly is null)
+                throw new ArgumentNullException(nameof(assembly));
 
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
@@ -174,7 +178,8 @@ namespace System.Reflection
         /// </summary>
         public Assembly LoadFromAssemblyName(string assemblyName)
         {
-            ArgumentNullException.ThrowIfNull(assemblyName);
+            if (assemblyName is null)
+                throw new ArgumentNullException(nameof(assemblyName));
 
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
@@ -192,7 +197,8 @@ namespace System.Reflection
         /// </summary>
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
-            ArgumentNullException.ThrowIfNull(assemblyName);
+            if (assemblyName is null)
+                throw new ArgumentNullException(nameof(assemblyName));
 
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));

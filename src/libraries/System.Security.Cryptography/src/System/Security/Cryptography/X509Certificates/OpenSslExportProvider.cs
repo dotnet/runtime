@@ -30,33 +30,17 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
 
-            Interop.Crypto.EvpAlgorithmFamilyId evpAlgId = Interop.Crypto.EvpPKeyFamily(privateKey);
+            Interop.Crypto.EvpAlgorithmId evpAlgId = Interop.Crypto.EvpPKeyType(privateKey);
 
-            AsymmetricAlgorithm? alg = evpAlgId switch
+            AsymmetricAlgorithm alg = evpAlgId switch
             {
-                Interop.Crypto.EvpAlgorithmFamilyId.RSA => new RSAOpenSsl(privateKey),
-                Interop.Crypto.EvpAlgorithmFamilyId.ECC => new ECDsaOpenSsl(privateKey),
-                Interop.Crypto.EvpAlgorithmFamilyId.DSA => new DSAOpenSsl(privateKey),
-                _ => null,
+                Interop.Crypto.EvpAlgorithmId.RSA => new RSAOpenSsl(privateKey),
+                Interop.Crypto.EvpAlgorithmId.ECC => new ECDsaOpenSsl(privateKey),
+                Interop.Crypto.EvpAlgorithmId.DSA => new DSAOpenSsl(privateKey),
+                _ => throw new CryptographicException(SR.Cryptography_InvalidHandle),
             };
 
-            if (alg is not null)
-            {
-                using (alg)
-                {
-                    return alg.ExportEncryptedPkcs8PrivateKey(password, pbeParameters);
-                }
-            }
-
-            if (evpAlgId == Interop.Crypto.EvpAlgorithmFamilyId.MLKem)
-            {
-                using (MLKem kem = new MLKemOpenSsl(privateKey))
-                {
-                    return kem.ExportEncryptedPkcs8PrivateKey(password, pbeParameters);
-                }
-            }
-
-            throw new CryptographicException(SR.Cryptography_InvalidHandle);
+            return alg.ExportEncryptedPkcs8PrivateKey(password, pbeParameters);
         }
 
         private static void PushHandle(IntPtr certPtr, SafeX509StackHandle publicCerts)

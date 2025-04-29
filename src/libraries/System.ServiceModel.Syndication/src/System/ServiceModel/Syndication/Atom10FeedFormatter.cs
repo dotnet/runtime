@@ -37,7 +37,10 @@ namespace System.ServiceModel.Syndication
 
         public Atom10FeedFormatter(Type feedTypeToCreate) : base()
         {
-            ArgumentNullException.ThrowIfNull(feedTypeToCreate);
+            if (feedTypeToCreate is null)
+            {
+                throw new ArgumentNullException(nameof(feedTypeToCreate));
+            }
 
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
@@ -70,7 +73,10 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            ArgumentNullException.ThrowIfNull(reader);
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
 
             return reader.IsStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
         }
@@ -79,14 +85,20 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            ArgumentNullException.ThrowIfNull(reader);
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
 
             ReadFeed(reader);
         }
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            ArgumentNullException.ThrowIfNull(writer);
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
 
             WriteFeed(writer);
         }
@@ -103,7 +115,10 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            ArgumentNullException.ThrowIfNull(writer);
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
 
             writer.WriteStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
             WriteFeed(writer);
@@ -478,8 +493,14 @@ namespace System.ServiceModel.Syndication
 
         protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
         {
-            ArgumentNullException.ThrowIfNull(reader);
-            ArgumentNullException.ThrowIfNull(feed);
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+            if (feed is null)
+            {
+                throw new ArgumentNullException(nameof(feed));
+            }
 
             SyndicationItem item = CreateItem(feed);
             ReadItemFrom(reader, item, feed.BaseUri);
@@ -488,8 +509,14 @@ namespace System.ServiceModel.Syndication
 
         protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
-            ArgumentNullException.ThrowIfNull(reader);
-            ArgumentNullException.ThrowIfNull(feed);
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+            if (feed is null)
+            {
+                throw new ArgumentNullException(nameof(feed));
+            }
 
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
             while (reader.IsStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace))

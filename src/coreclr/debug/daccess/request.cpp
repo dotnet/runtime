@@ -3287,7 +3287,11 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 
     SOSDacEnter();
 
+#ifdef FEATURE_EH_FUNCLETS
+    ExceptionTrackerBase *pExData = PTR_ExceptionTrackerBase(TO_TADDR(exception));
+#else
     ExInfo *pExData = PTR_ExInfo(TO_TADDR(exception));
+#endif // FEATURE_EH_FUNCLETS
 
     if (!pExData)
     {
@@ -3458,6 +3462,7 @@ ClrDataAccess::TraverseEHInfo(CLRDATA_ADDRESS ip, DUMPEHINFO pFunc, LPVOID token
             deh.tryEndOffset = EHClause.TryEndPC;
             deh.handlerStartOffset = EHClause.HandlerStartPC;
             deh.handlerEndOffset = EHClause.HandlerEndPC;
+            deh.isDuplicateClause = IsDuplicateClause(&EHClause);
 
             if (!(pFunc)(i, EHCount, &deh, token))
             {
@@ -3549,7 +3554,6 @@ static HRESULT TraverseLoaderHeapBlock(PTR_LoaderHeapBlock firstBlock, VISITHEAP
     return i < iterationMax ? S_OK : S_FALSE;
 }
 
-
 HRESULT
 ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFunc)
 {
@@ -3558,7 +3562,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
 
     SOSDacEnter();
 
-    hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBase(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
+    hr = TraverseLoaderHeapBlock(PTR_LoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
 
     SOSDacLeave();
     return hr;
@@ -3577,7 +3581,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind
     switch (kind)
     {
         case LoaderHeapKindNormal:
-            hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBase(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
+            hr = TraverseLoaderHeapBlock(PTR_LoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
             break;
 
         case LoaderHeapKindExplicitControl:

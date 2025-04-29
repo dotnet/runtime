@@ -225,7 +225,10 @@ namespace System.Diagnostics.PerformanceData
         {
             get
             {
-                ArgumentNullException.ThrowIfNull(counterName);
+                if (counterName is null)
+                {
+                    throw new ArgumentNullException(nameof(counterName));
+                }
 
                 if (counterName.Length == 0)
                 {
