@@ -45,55 +45,19 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>efbfb137a317fb339a6b7be36af7188cc508dc95</Sha>
     </Dependency>
-    <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.command-line-api" Version="0.1.622201">
-      <Uri>https://github.com/dotnet/command-line-api</Uri>
-      <Sha>8b30ff9e4900d220c2979f1bbb5647154e438edd</Sha>
-      <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
-    </Dependency>
     <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.25228.104">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>efbfb137a317fb339a6b7be36af7188cc508dc95</Sha>
     </Dependency>
-    <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.25166.4">
-      <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>40bfdb55eac2e9a65f07029f8c426e08eb53168e</Sha>
-      <SourceBuild RepoName="cecil" ManagedOnly="true" />
-    </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport" Version="10.0.100-preview.5.25228.104">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>efbfb137a317fb339a6b7be36af7188cc508dc95</Sha>
-    </Dependency>
-    <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="10.0.0-preview.4.25176.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>e7ebd8aa0424ba4dc6ac03419954c3287d891faa</Sha>
-      <SourceBuild RepoName="emsdk" ManagedOnly="true" />
-    </Dependency>
-    <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="10.0.621801">
-      <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>2228b4511efb4aca61317883c615208cd13b66a7</Sha>
-      <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
-    </Dependency>
-    <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="10.0.617501">
-      <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>195acd39568d33ef6e1021c391ed3c3130f0c791</Sha>
-      <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="10.0.0-beta.25228.104">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>efbfb137a317fb339a6b7be36af7188cc508dc95</Sha>
-    </Dependency>
-    <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.arcade" Version="10.0.0-beta.25217.1">
-      <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>76dd1b4eb3b15881da350de93805ea6ab936364c</Sha>
-      <SourceBuild RepoName="arcade" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XliffTasks" Version="10.0.0-beta.25228.104">
       <Uri>https://github.com/dotnet/dotnet</Uri>
@@ -319,12 +283,6 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>efbfb137a317fb339a6b7be36af7188cc508dc95</Sha>
     </Dependency>
-    <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.runtime.linux-x64" Version="10.0.0-preview.4.25211.19">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>464e5fe6fbe499012445cbd6371010748b89dba3</Sha>
-      <SourceBuild RepoName="runtime" ManagedOnly="false" />
-    </Dependency>
     <Dependency Name="System.Reflection.Metadata" Version="10.0.0-preview.5.25228.104">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>efbfb137a317fb339a6b7be36af7188cc508dc95</Sha>
@@ -392,12 +350,6 @@
     <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.0-preview.25217.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>cbcc6ddf3db6dedff5049f0397e1351951c13271</Sha>
-    </Dependency>
-    <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="5.0.0-1.25220.1">
-      <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>024254813274b5e545585a73b766203c5d979dd7</Sha>
-      <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="10.0.100-preview.5.25228.104">
       <Uri>https://github.com/dotnet/dotnet</Uri>
