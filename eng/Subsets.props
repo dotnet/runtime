@@ -55,7 +55,8 @@
     <_SdkToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel'">true</_SdkToolsSupportedArch>
     <SdkToolsSupported Condition="'$(_SdkToolsSupportedOS)' == 'true' and '$(_SdkToolsSupportedArch)' == 'true'">true</SdkToolsSupported>
 
-    <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and '$(TargetOS)' == '$(HostOS)' and '$(TargetsLinuxBionic)' != 'true'">true</UseNativeAotForComponents>
+    <_UseNativeAotForComponentsCrossOS Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">true
+    <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and ('$(TargetOS)' == '$(HostOS)' or '$(_UseNativeAotForComponentsCrossOS)' == 'true') and '$(TargetsLinuxBionic)' != 'true'">true</UseNativeAotForComponents>
   </PropertyGroup>
 
   <PropertyGroup>
