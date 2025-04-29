@@ -85,6 +85,9 @@ namespace System.DirectoryServices.Protocols
         {
             SetIntValueHelper(LdapOption.LDAP_OPT_X_TLS_NEWCTX, 0);
         }
+        
+        // In practice, this apparently rarely if ever contains useful text
+        internal string ServerErrorMessage => GetStringValueHelper(LdapOption.LDAP_OPT_ERROR_STRING, true);
 
         private bool GetBoolValueHelper(LdapOption option)
         {
