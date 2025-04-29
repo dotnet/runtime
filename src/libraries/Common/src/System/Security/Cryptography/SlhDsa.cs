@@ -313,6 +313,7 @@ namespace System.Security.Cryptography
             // PKCS#8 encoded key. If we happen to get a buffer smaller than that, it won't export.
             int MinimumPossiblePkcs8SlhDsaKey =
                 2 + // PrivateKeyInfo Sequence
+                3 + // Version Integer
                 2 + // AlgorithmIdentifier Sequence
                 3 + // AlgorithmIdentifier OID value, undervalued to be safe
                 2 + // Secret key Octet String prefix, undervalued to be safe
@@ -1001,10 +1002,10 @@ namespace System.Security.Cryptography
                     ret = ImportSlhDsaSecretKey(info, key.Span);
                 },
                 out int read,
-                out SlhDsa kem);
+                out SlhDsa slhDsa);
 
             Debug.Assert(read == source.Length);
-            return kem;
+            return slhDsa;
         }
 
         /// <inheritdoc cref="ImportPkcs8PrivateKey(ReadOnlySpan{byte})" />>

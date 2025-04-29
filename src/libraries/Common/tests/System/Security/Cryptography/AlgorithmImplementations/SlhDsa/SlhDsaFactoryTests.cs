@@ -142,9 +142,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));
 
-            AsnWriter nullWriter = new AsnWriter(AsnEncodingRules.DER);
-            nullWriter.WriteNull();
-            spki.Algorithm.Parameters = nullWriter.Encode();
+            spki.Algorithm.Parameters = AsnUtils.DerNull;
 
             SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
                 import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(spki.Encode()))));

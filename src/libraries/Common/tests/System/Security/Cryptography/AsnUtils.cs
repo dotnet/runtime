@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -11,6 +12,8 @@ namespace Test.Cryptography
 {
     internal static class AsnUtils
     {
+        internal static readonly ReadOnlyMemory<byte> DerNull = new byte[] { 0x05, 0x00 };
+
         internal static byte[] Encode(this ref PrivateKeyInfoAsn privateKeyInfo)
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);

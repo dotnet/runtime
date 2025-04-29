@@ -393,37 +393,47 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public static void TryExportPkcs8PrivateKey_DestinationTooSmall(SlhDsaAlgorithm algorithm)
         {
+            const int MinimumOverhead = 12;
+            int lengthCutoff = algorithm.SecretKeySizeInBytes + MinimumOverhead;
+
+            // First check that the length cutoff is enforced
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
-            // A minimal encoding of the PKCS#8 private key accounting for OID changes in the future
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            using (writer.PushSequence())
-            {
-                using (writer.PushSequence())
-                {
-                    writer.WriteObjectIdentifier("0.0");
-                }
-
-                // Prefix length is dependent on octet string length, but use the empty string for a lower bound
-                writer.WriteOctetString([]);
-            }
-
-            byte[] encodedMetadata = writer.Encode(); // Size without the secret key data
-            byte[] verySmallPki = new byte[encodedMetadata.Length + algorithm.SecretKeySizeInBytes];
+            byte[] secretKey = new byte[lengthCutoff];
 
             // Early heuristic based bailout so no core methods are called
-            Assert.Equal(9, encodedMetadata.Length);
-            AssertExtensions.FalseExpression(slhDsa.TryExportPkcs8PrivateKey(verySmallPki.AsSpan(..^1), out int bytesWritten));
+            AssertExtensions.FalseExpression(slhDsa.TryExportPkcs8PrivateKey(secretKey.AsSpan(..^1), out int bytesWritten));
             Assert.Equal(0, bytesWritten);
 
+            // No bailout case: set up the core method
             slhDsa.TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
             {
                 bytesWritten = destination.Length;
                 return true;
             };
 
-            AssertExtensions.TrueExpression(slhDsa.TryExportPkcs8PrivateKey(verySmallPki, out bytesWritten));
-            Assert.Equal(verySmallPki.Length, bytesWritten);
+            AssertExtensions.TrueExpression(slhDsa.TryExportPkcs8PrivateKey(secretKey, out bytesWritten));
+            Assert.Equal(secretKey.Length, bytesWritten);
+
+            // Now check that the length cutoff permits a minimal encoding
+            // Build the minimal encoding:
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            using (writer.PushSequence())
+            {
+                writer.WriteInteger(0); // Version
+
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier(SlhDsaTestHelpers.AlgorithmToOid(algorithm));
+                }
+
+                writer.WriteOctetString(new byte[algorithm.SecretKeySizeInBytes]);
+            }
+
+            byte[] encodedMetadata = writer.Encode();
+
+            // Verify that a buffer of this size meets the length cutoff
+            AssertExtensions.LessThanOrEqualTo(lengthCutoff, encodedMetadata.Length);
         }
 
         [Theory]
@@ -559,24 +569,27 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             int[] valuesToWrite = [-1, 0, int.MaxValue];
             int index = 0;
 
-            int finalDestrinationSize = -1;
+            int finalDestinationSize = -1;
             slhDsa.TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
             {
                 // Go through all the values we want to test, and once we reach the last one,
                 // return true with a valid value
                 if (index >= valuesToWrite.Length)
                 {
-                    finalDestrinationSize = bytesWritten = 1;
+                    finalDestinationSize = bytesWritten = 1;
                     return true;
                 }
 
-                bytesWritten = valuesToWrite[index]; // This value needs to be ignored since we return false
+                // This returned value should should be ignored. There's no way to check
+                // what happens with it, but at the very least we should expect no exceptions
+                // and the correct number of calls.
+                bytesWritten = valuesToWrite[index];
                 index++;
                 return false;
             };
 
             int actualSize = slhDsa.ExportPkcs8PrivateKey().Length;
-            Assert.Equal(finalDestrinationSize, actualSize);
+            Assert.Equal(finalDestinationSize, actualSize);
             Assert.Equal(valuesToWrite.Length + 1, slhDsa.TryExportPkcs8PrivateKeyCoreCallCount);
         }
 
