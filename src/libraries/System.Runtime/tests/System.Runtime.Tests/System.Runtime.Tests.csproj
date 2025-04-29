@@ -328,7 +328,6 @@
 
   <ItemGroup>
     <Compile Include="System\Reflection\SignatureTypes.cs" />
-    <Compile Include="System\Runtime\CompilerServices\CallerArgumentExpressionAttributeTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\MethodImplAttributeTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeatureTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedExceptionTests.cs" />

@@ -52,6 +52,7 @@
 #include "onstackreplacement.h"
 #include "pgo.h"
 #include "pgo_formatprocessing.h"
+#include "patchpointinfo.h"
 
 #ifndef FEATURE_EH_FUNCLETS
 #include "excep.h"
@@ -117,206 +118,14 @@ HCIMPLEND
 #endif // !TARGET_X86 || TARGET_UNIX
 
 /*********************************************************************/
-HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
-    {
-        if (divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-        else if (divisor == -1)
-        {
-            if (dividend == INT32_MIN)
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return -dividend;
-        }
-    }
-
-    return(dividend / divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
-    {
-        if (divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-        else if (divisor == -1)
-        {
-            if (dividend == INT32_MIN)
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return 0;
-        }
-    }
-
-    return(dividend % divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (divisor == 0)
-        FCThrow(kDivideByZeroException);
-
-    return(dividend / divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (divisor == 0)
-        FCThrow(kDivideByZeroException);
-
-    return(dividend % divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (Is32BitSigned(divisor))
-    {
-        if ((INT32)divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-
-        if ((INT32)divisor == -1)
-        {
-            if ((UINT64) dividend == UI64(0x8000000000000000))
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return -dividend;
-        }
-
-        // Check for -ive or +ive numbers in the range -2**31 to 2**31
-        if (Is32BitSigned(dividend))
-            return((INT32)dividend / (INT32)divisor);
-    }
-
-    // For all other combinations fallback to int64 div.
-    return(dividend / divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (Is32BitSigned(divisor))
-    {
-        if ((INT32)divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-
-        if ((INT32)divisor == -1)
-        {
-            // <TODO>TODO, we really should remove this as it lengthens the code path
-            // and the spec really says that it should not throw an exception. </TODO>
-            if ((UINT64) dividend == UI64(0x8000000000000000))
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return 0;
-        }
-
-        // Check for -ive or +ive numbers in the range -2**31 to 2**31
-        if (Is32BitSigned(dividend))
-            return((INT32)dividend % (INT32)divisor);
-    }
-
-    // For all other combinations fallback to int64 div.
-    return(dividend % divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (Hi32Bits(divisor) == 0)
-    {
-        if ((UINT32)(divisor) == 0)
-        FCThrow(kDivideByZeroException);
-
-        if (Hi32Bits(dividend) == 0)
-            return((UINT32)dividend / (UINT32)divisor);
-    }
-
-    return(dividend / divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (Hi32Bits(divisor) == 0)
-    {
-        if ((UINT32)(divisor) == 0)
-        FCThrow(kDivideByZeroException);
-
-        if (Hi32Bits(dividend) == 0)
-            return((UINT32)dividend % (UINT32)divisor);
-    }
-
-    return(dividend % divisor);
-}
-HCIMPLEND
+extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor);
+extern "C" FCDECL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor);
+extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
+extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
+extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
+extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
 
 #if !defined(HOST_64BIT) && !defined(TARGET_X86)
 /*********************************************************************/
@@ -521,9 +330,10 @@ HCIMPLEND
 
 // Define the t_ThreadStatics variable here, so that these helpers can use
 // the most optimal TLS access pattern for the platform when inlining the
-// GetThreadLocalStaticBaseIfExistsAndInitialized function
+// GetThreadLocalStaticBaseIfExistsAndInitialized function.
+// Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
+__declspec(selectany) __declspec(thread) ThreadLocalData t_ThreadStatics;
 #else
 __thread ThreadLocalData t_ThreadStatics;
 #endif // _MSC_VER
@@ -1529,7 +1339,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 #ifdef FEATURE_EH_FUNCLETS
 
     Thread *pThread = GetThread();
-    
+
     SoftwareExceptionFrame exceptionFrame;
 #ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
@@ -1672,6 +1482,51 @@ HCIMPL0(void, IL_Rethrow)
     }
 
     HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
+HCIMPL1(void, IL_ThrowExact, Object* obj)
+#endif
+{
+    FCALL_CONTRACT;
+
+    /* Make no assumptions about the current machine state */
+    ResetCurrentContext();
+
+    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
+
+    OBJECTREF oref = ObjectToOBJECTREF(obj);
+    GetThread()->GetExceptionState()->SetRaisingForeignException();
+
+#ifdef FEATURE_EH_FUNCLETS
+    Thread *pThread = GetThread();
+    
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
+#endif
+    exceptionFrame.InitAndLink(pThread);
+
+    FC_CAN_TRIGGER_GC();
+    DispatchManagedException(oref, exceptionFrame.GetContext());
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
+#else
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+#if defined(_DEBUG) && defined(TARGET_X86)
+    __helperframe.EnsureInit(NULL);
+    g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
+#endif // defined(_DEBUG) && defined(TARGET_X86)
+
+    RaiseTheExceptionInternalOnly(oref, FALSE);
+    HELPER_METHOD_FRAME_END();
+#endif
 }
 HCIMPLEND
 
@@ -2384,7 +2239,7 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     MethodDesc* pMD = codeInfo.GetMethodDesc();
     LoaderAllocator* allocator = pMD->GetLoaderAllocator();
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
-    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
+    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(codeInfo.GetStartAddress(), ilOffset);
 
 #ifdef _DEBUG
     const int ppId = ppInfo->m_patchpointId;
@@ -2538,7 +2393,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     ::SetLastError(dwLastError);
 }
 
-
 #else
 
 HCIMPL2(void, JIT_Patchpoint, int* counter, int ilOffset)
@@ -2551,7 +2405,7 @@ HCIMPL2(void, JIT_Patchpoint, int* counter, int ilOffset)
 }
 HCIMPLEND
 
-HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
+HCIMPL1(VOID, JIT_PatchpointForced, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -3126,7 +2980,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else    
+#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif
@@ -3164,7 +3018,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else    
+#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif

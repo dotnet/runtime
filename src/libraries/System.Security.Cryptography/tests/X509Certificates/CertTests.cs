@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Dsa.Tests;
 using System.Security.Cryptography.X509Certificates.Tests.CertificateCreation;
 using System.Threading;
@@ -126,6 +127,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     ECParameters originalParameters = ecdh.ExportParameters(true);
                     AssertExtensions.SequenceEqual(originalParameters.D, certParameters.D);
                 }
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void PrivateKey_FromCertificate_CanExportPrivate_MLKem()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
+            using (MLKem key = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem512PrivateKeySeed))
+            using (X509Certificate2 certWithKey = cert.CopyWithPrivateKey(key))
+            using (MLKem certKey = certWithKey.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(certKey);
+                byte[] expectedKey = MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey;
+                AssertExtensions.SequenceEqual(expectedKey, certKey.ExportDecapsulationKey());
             }
         }
 

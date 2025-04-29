@@ -5,6 +5,7 @@ using System.Diagnostics.SymbolStore;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.Loader;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -368,5 +369,86 @@ namespace System.Reflection.Emit.Tests
             public void SetCheckSum(Guid algorithmId, byte[] checkSum) => throw new NotImplementedException();
             public void SetSource(byte[] source) => throw new NotImplementedException();
         }
+
+        [Fact]
+        public void InnerScopeLocalCreatedBeforeOuterScopeLocal()
+        {
+
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            Emit(type);
+
+            using var stream = new MemoryStream();
+            ab.Save(stream);
+
+            stream.Seek(0, SeekOrigin.Begin);
+            var assembly = AssemblyLoadContext.Default.LoadFromStream(stream);
+            var method = assembly.GetType("MyType")!.GetMethod("Test");
+            method!.Invoke(null, null); // should not throw
+
+            static void Emit(TypeBuilder typeBuilder)
+            {
+                MethodBuilder methb = typeBuilder.DefineMethod("Test", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), []);
+                ILGenerator ilGenerator = methb.GetILGenerator();
+                Label label0 = ilGenerator.DefineLabel();
+                ilGenerator.Emit(OpCodes.Ldc_I4_0);
+                ilGenerator.Emit(OpCodes.Ldc_I4_0);
+                ilGenerator.Emit(OpCodes.Beq, label0);
+                ilGenerator.BeginScope();
+                Label label1 = ilGenerator.DefineLabel();
+                Label label2 = ilGenerator.DefineLabel();
+                ilGenerator.MarkLabel(label1);
+                MethodInfo methodInfo = typeof(Util).GetMethod(nameof(Util.CCC), new Type[] { });
+                ilGenerator.Emit(OpCodes.Call, methodInfo);
+                ilGenerator.Emit(OpCodes.Ldc_I4, 0);
+                ilGenerator.Emit(OpCodes.Beq, label2);
+                methodInfo = typeof(Util).GetMethod(nameof(Util.NNN), new Type[] { });
+                ilGenerator.Emit(OpCodes.Call, methodInfo);
+                LocalBuilder lb1 = ilGenerator.DeclareLocal(typeof(System.Int32));
+                Label label3 = ilGenerator.DefineLabel();
+                ilGenerator.Emit(OpCodes.Stloc_0);
+                ilGenerator.Emit(OpCodes.Ldc_I4_3);
+                ilGenerator.Emit(OpCodes.Ldloc_0);
+                ilGenerator.Emit(OpCodes.Ceq);
+                ilGenerator.Emit(OpCodes.Ldc_I4_0);
+                ilGenerator.Emit(OpCodes.Beq, label3);
+                methodInfo = typeof(Util).GetMethod(nameof(Util.OOO), new Type[] { });
+                ilGenerator.Emit(OpCodes.Call, methodInfo);
+                ilGenerator.MarkLabel(label3);
+                ilGenerator.Emit(OpCodes.Br, label1);
+                ilGenerator.MarkLabel(label2);
+                ilGenerator.EndScope();
+                ilGenerator.MarkLabel(label0);
+                methodInfo = typeof(TestClass).GetMethod(nameof(TestClass.New), new Type[] { });
+                ilGenerator.Emit(OpCodes.Call, methodInfo);
+                LocalBuilder lb2 = ilGenerator.DeclareLocal(typeof(TestClass));
+                ilGenerator.Emit(OpCodes.Stloc_1);
+                ilGenerator.Emit(OpCodes.Ldloc_1);
+                methodInfo = typeof(Util).GetMethod(nameof(Util.EEE), new Type[] { typeof(TestClass) });
+                ilGenerator.Emit(OpCodes.Call, methodInfo);
+                ilGenerator.Emit(OpCodes.Ret);
+
+                typeBuilder.CreateType();
+            }
+        }
+    }
+
+    public class TestClass : object
+    {
+        public static TestClass New()
+        {
+            return new TestClass();
+        }
+    }
+
+
+    public static class Util
+    {
+        public static bool CCC() => false;
+
+        public static void EEE(TestClass b) { }
+
+        public static int NNN() => 3;
+
+        public static void OOO() { }
     }
 }
