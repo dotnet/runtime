@@ -839,8 +839,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
     isApxSupported    = compiler->canUseApxEncoding();
     if (isApxSupported)
     {
-        regIndices = theCompiler->getAllocator(CMK_LSRA).allocate<regNumber>(ACTUAL_REG_COUNT + 1);
-        for (int i = 0; i <= ACTUAL_REG_COUNT; i++)
+        int size = (int)ACTUAL_REG_COUNT + 1;
+        regIndices = theCompiler->getAllocator(CMK_LSRA).allocate<regNumber>(size);
+        for (int i = 0; i < size; i++)
         {
             regIndices[i] = static_cast<regNumber>(i);
         }
@@ -848,16 +849,13 @@ LinearScan::LinearScan(Compiler* theCompiler)
     else
     {
         regIndices =
-            new regNumber[]{(regNumber)0,  (regNumber)1,  (regNumber)2,  (regNumber)3,  (regNumber)4,  (regNumber)5,
-                            (regNumber)6,  (regNumber)7,  (regNumber)8,  (regNumber)9,  (regNumber)10, (regNumber)11,
-                            (regNumber)12, (regNumber)13, (regNumber)14, (regNumber)15, (regNumber)32, (regNumber)33,
-                            (regNumber)34, (regNumber)35, (regNumber)36, (regNumber)37, (regNumber)38, (regNumber)39,
-                            (regNumber)40, (regNumber)41, (regNumber)42, (regNumber)43, (regNumber)44, (regNumber)45,
-                            (regNumber)46, (regNumber)47, (regNumber)48, (regNumber)49, (regNumber)50, (regNumber)51,
-                            (regNumber)52, (regNumber)53, (regNumber)54, (regNumber)55, (regNumber)56, (regNumber)57,
-                            (regNumber)58, (regNumber)59, (regNumber)60, (regNumber)61, (regNumber)62, (regNumber)63,
-                            (regNumber)64, (regNumber)65, (regNumber)66, (regNumber)67, (regNumber)68, (regNumber)69,
-                            (regNumber)70, (regNumber)71, (regNumber)72};
+            new regNumber[]{REG_RAX, REG_RCX, REG_RDX, REG_RBX, REG_RSP, REG_RBP, REG_RSI, REG_RDI,
+                            REG_R8, REG_R9, REG_R10, REG_R11, REG_R12, REG_R13, REG_R14, REG_R15,
+                            REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7,
+                            REG_XMM8, REG_XMM9, REG_XMM10, REG_XMM11, REG_XMM12, REG_XMM13, REG_XMM14, REG_XMM15,
+                            REG_XMM16, REG_XMM17, REG_XMM18, REG_XMM19, REG_XMM20, REG_XMM21, REG_XMM22, REG_XMM23,
+                            REG_XMM24, REG_XMM25, REG_XMM26, REG_XMM27, REG_XMM28, REG_XMM29, REG_XMM30, REG_XMM30,
+                            REG_K0, REG_K1, REG_K2, REG_K3, REG_K4, REG_K5, REG_K6, REG_K7, REG_COUNT};
     }
 #endif // TARGET_AMD64
 
