@@ -2187,7 +2187,7 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowArgument_StackShapesNotSame();
             }
 
-            if (dimension < 0 || dimension >= tensors[0].Rank)
+            if (dimension < 0 || dimension > tensors[0].Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
 
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
@@ -2225,7 +2225,7 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowArgument_StackShapesNotSame();
             }
 
-            if (dimension < 0 || dimension >= tensors[0].Rank)
+            if (dimension < 0 || dimension > tensors[0].Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
 
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
