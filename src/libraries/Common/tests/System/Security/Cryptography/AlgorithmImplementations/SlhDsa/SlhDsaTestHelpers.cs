@@ -30,8 +30,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char>.Empty, pbeParameters));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKey());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKeyPem());
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPublicKey(tempBuffer.AsSpan(..slhDsa.Algorithm.PublicKeySizeInBytes)));
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaSecretKey(tempBuffer.AsSpan(..slhDsa.Algorithm.SecretKeySizeInBytes)));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPublicKey(tempBuffer.AsSpan(0, slhDsa.Algorithm.PublicKeySizeInBytes)));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaSecretKey(tempBuffer.AsSpan(0, slhDsa.Algorithm.SecretKeySizeInBytes)));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfo());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfoPem());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters, [], out _));

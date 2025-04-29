@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             PbeParameters EncryptionParameters)
         {
             public byte[] SecretKey => SecretKeyHex.HexToByteArray();
-            public byte[] PublicKey => SecretKey[(Algorithm.SecretKeySizeInBytes/2)..];
+            public byte[] PublicKey => SecretKey.AsSpan(Algorithm.SecretKeySizeInBytes/2).ToArray();
             public byte[] Pkcs8PrivateKey => Convert.FromBase64String(Pkcs8PrivateKeyBase64);
             public byte[] Pkcs8PublicKey => Convert.FromBase64String(Pkcs8PublicKeyBase64);
             public byte[] Pkcs8EncryptedPrivateKey => Convert.FromBase64String(Pkcs8EncryptedPrivateKeyBase64);

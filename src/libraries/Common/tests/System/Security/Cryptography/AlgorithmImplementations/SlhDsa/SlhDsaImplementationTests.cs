@@ -457,7 +457,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.Equal(0, bytesWritten);
             AssertExtensions.TrueExpression(slhDsa.TryExportPkcs8PrivateKey(largeBuffer, out bytesWritten));                     // Too large
             AssertExtensions.Equal(pkcs8PrivateKey.Length, bytesWritten);
-            AssertExtensions.FalseExpression(slhDsa.TryExportPkcs8PrivateKey(pkcs8PrivateKey.AsSpan(0..^1), out bytesWritten));  // Too small
+            AssertExtensions.FalseExpression(
+                slhDsa.TryExportPkcs8PrivateKey(pkcs8PrivateKey.AsSpan(0, pkcs8PrivateKey.Length - 1), out bytesWritten));       // Too small
             AssertExtensions.Equal(0, bytesWritten);
             AssertExtensions.TrueExpression(slhDsa.TryExportPkcs8PrivateKey(pkcs8PrivateKey, out bytesWritten));                 // Exact size
             AssertExtensions.Equal(pkcs8PrivateKey.Length, bytesWritten);
@@ -467,7 +468,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.Equal(0, bytesWritten);
             AssertExtensions.TrueExpression(slhDsa.TryExportSubjectPublicKeyInfo(largeBuffer, out bytesWritten));
             AssertExtensions.Equal(spki.Length, bytesWritten);
-            AssertExtensions.FalseExpression(slhDsa.TryExportSubjectPublicKeyInfo(spki.AsSpan(0..^1), out bytesWritten));
+            AssertExtensions.FalseExpression(
+                slhDsa.TryExportSubjectPublicKeyInfo(spki.AsSpan(0, spki.Length - 1), out bytesWritten));
             AssertExtensions.Equal(0, bytesWritten);
             AssertExtensions.TrueExpression(slhDsa.TryExportSubjectPublicKeyInfo(spki, out bytesWritten));
             AssertExtensions.Equal(spki.Length, bytesWritten);
@@ -477,7 +479,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.Equal(0, bytesWritten);
             AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER", info.EncryptionParameters, largeBuffer, out bytesWritten));
             AssertExtensions.Equal(encryptedPkcs8.Length, bytesWritten);
-            AssertExtensions.FalseExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER", info.EncryptionParameters, encryptedPkcs8.AsSpan(0..^1), out bytesWritten));
+            AssertExtensions.FalseExpression(
+                slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER", info.EncryptionParameters, encryptedPkcs8.AsSpan(0, encryptedPkcs8.Length - 1), out bytesWritten));
             AssertExtensions.Equal(0, bytesWritten);
             AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER", info.EncryptionParameters, encryptedPkcs8, out bytesWritten));
             AssertExtensions.Equal(encryptedPkcs8.Length, bytesWritten);
@@ -489,7 +492,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertExtensions.Equal(0, bytesWritten);
                 AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, info.EncryptionParameters, largeBuffer, out bytesWritten));
                 AssertExtensions.Equal(encryptedPkcs8.Length, bytesWritten);
-                AssertExtensions.FalseExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, info.EncryptionParameters, encryptedPkcs8.AsSpan(0..^1), out bytesWritten));
+                AssertExtensions.FalseExpression(
+                    slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, info.EncryptionParameters, encryptedPkcs8.AsSpan(0, encryptedPkcs8.Length - 1), out bytesWritten));
                 AssertExtensions.Equal(0, bytesWritten);
                 AssertExtensions.TrueExpression(slhDsa.TryExportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, info.EncryptionParameters, encryptedPkcs8, out bytesWritten));
                 AssertExtensions.Equal(encryptedPkcs8.Length, bytesWritten);

@@ -358,7 +358,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
             select new object[] { algorithm, pbeParameters };
 
-        public static bool HasSymmetricEncryption => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
+        public static bool HasSymmetricEncryption
+#if NETFRAMEWORK
+            => true;
+#else
+            => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
+#endif
 
         [ConditionalTheory(nameof(HasSymmetricEncryption))]
         [MemberData(nameof(AlgorithmWithPbeParametersData))]
@@ -402,7 +407,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] secretKey = new byte[lengthCutoff];
 
             // Early heuristic based bailout so no core methods are called
-            AssertExtensions.FalseExpression(slhDsa.TryExportPkcs8PrivateKey(secretKey.AsSpan(..^1), out int bytesWritten));
+            AssertExtensions.FalseExpression(
+                slhDsa.TryExportPkcs8PrivateKey(secretKey.AsSpan(0, lengthCutoff - 1), out int bytesWritten));
             Assert.Equal(0, bytesWritten);
 
             // No bailout case: set up the core method

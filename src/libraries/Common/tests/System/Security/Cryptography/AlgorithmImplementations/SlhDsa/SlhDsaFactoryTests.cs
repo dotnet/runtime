@@ -122,6 +122,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [Fact]
         public static void ImportSubjectKeyPublicInfo_AlgorithmErrorsInAsn()
         {
+#if !NETFRAMEWORK // Does not support exporting RSA SPKI
             if (!OperatingSystem.IsBrowser())
             {
                 // RSA key
@@ -130,6 +131,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(rsaSpkiBytes))));
             }
+#endif
 
             // Create an invalid SLH-DSA SPKI with parameters
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
@@ -158,6 +160,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [Fact]
         public static void ImportPkcs8PrivateKey_AlgorithmErrorsInAsn()
         {
+#if !NETFRAMEWORK // Does not support exporting RSA PKCS#8 private key
             if (!OperatingSystem.IsBrowser())
             {
                 // RSA key isn't valid for SLH-DSA
@@ -166,6 +169,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(
                     import => AssertThrowIfNotSupported(() => Assert.Throws<CryptographicException>(() => import(rsaPkcs8Bytes))));
             }
+#endif
 
             // Create an invalid SLH-DSA PKCS8 with parameters
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
@@ -280,7 +284,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         private static string WritePemRaw(string label, ReadOnlySpan<char> data) =>
-            $"-----BEGIN {label}-----\n{data}\n-----END {label}-----";
+            $"-----BEGIN {label}-----\n{data.ToString()}\n-----END {label}-----";
 
         private static byte[] CreateAsn1EncodedBytes()
         {
