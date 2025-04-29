@@ -203,7 +203,8 @@ namespace System.Collections
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
             }
 
-            m_array = (int[])values.Clone();
+            m_array = new int[values.Length];
+            Array.Copy(values, m_array, values.Length);
             m_length = values.Length * BitsPerInt32;
 
             _version = 0;
