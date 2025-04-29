@@ -11608,45 +11608,19 @@ void CEEJitInfo::allocUnwindInfo (
 
     memcpy(pUnwindInfoRW, pUnwindBlock, unwindSize);
 
-#if defined(TARGET_X86)
-
-    // Do NOTHING
-
-#elif defined(TARGET_AMD64)
-
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#ifdef TARGET_AMD64
     pUnwindInfoRW->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
 
     ULONG * pPersonalityRoutineRW = (ULONG*)ALIGN_UP(&(pUnwindInfoRW->UnwindCode[pUnwindInfoRW->CountOfUnwindCodes]), sizeof(ULONG));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-
-#elif defined(TARGET_ARM64)
-
+#else // TARGET_AMD64
     *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
 
     ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-
-#elif defined(TARGET_ARM)
-
-    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
-
-    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
-    *pPersonalityRoutineRW = (TADDR)ProcessCLRException - baseAddress;
-
-#elif defined(TARGET_LOONGARCH64)
-
-    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
-
-    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
-    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-
-#elif defined(TARGET_RISCV64)
-    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
-
-    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
-    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-
-#endif
+#endif // TARGET_AMD64
+#endif // TARGET_64BIT && TARGET_WINDOWS
 
     EE_TO_JIT_TRANSITION();
 #else // FEATURE_EH_FUNCLETS

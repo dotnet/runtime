@@ -2281,7 +2281,7 @@ public:
         BOOL Acquired();
     };
 
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     static ULONG          GetCLRPersonalityRoutineValue()
     {
         LIMITED_METHOD_CONTRACT;
