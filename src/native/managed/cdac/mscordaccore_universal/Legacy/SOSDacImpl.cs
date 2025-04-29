@@ -127,13 +127,13 @@ internal sealed unsafe partial class SOSDacImpl
             else
             {
                 ILoader loader = _target.Contracts.Loader;
-                List<Contracts.ModuleHandle> modules = loader.GetAssemblies(
+                List<Contracts.ModuleHandle> modules = loader.GetModules(
                     appDomain,
                     AssemblyIterationFlags.IncludeLoading |
                     AssemblyIterationFlags.IncludeLoaded |
-                    AssemblyIterationFlags.IncludeExecution);
+                    AssemblyIterationFlags.IncludeExecution).ToList();
 
-                int n = 0;
+                int n = 0; // number of Assemblies that will be returned
                 if (values is not null)
                 {
                     for (int i = 0; i < modules.Count && n < count; i++)
@@ -180,7 +180,9 @@ internal sealed unsafe partial class SOSDacImpl
                 Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
                 if (values is not null)
                 {
-                    for (int i = 0; i < count; i++)
+                    // in theory, these don't need to be in the same order, but for consistency it is
+                    // easiest for consumers and verification if the DAC and cDAC return the same order
+                    for (int i = 0; i < neededLocal; i++)
                     {
                         Debug.Assert(values[i] == valuesLocal[i], $"cDAC: {values[i]:x}, DAC: {valuesLocal[i]:x}");
                     }

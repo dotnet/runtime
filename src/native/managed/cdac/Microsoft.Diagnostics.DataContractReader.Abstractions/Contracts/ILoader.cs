@@ -60,7 +60,7 @@ public interface ILoader : IContract
 
     ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
 
-    List<ModuleHandle> GetAssemblies(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
+    IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();

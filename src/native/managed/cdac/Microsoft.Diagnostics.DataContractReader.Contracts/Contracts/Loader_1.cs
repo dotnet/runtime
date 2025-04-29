@@ -24,7 +24,7 @@ internal readonly struct Loader_1 : ILoader
         return new ModuleHandle(modulePointer);
     }
 
-    List<ModuleHandle> ILoader.GetAssemblies(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
+    IEnumerable<ModuleHandle> ILoader.GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
     {
         if (appDomain == TargetPointer.Null)
             throw new ArgumentNullException(nameof(appDomain));
@@ -32,16 +32,23 @@ internal readonly struct Loader_1 : ILoader
         Data.AppDomain domain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(appDomain);
         ArrayListBase arrayList = _target.ProcessedData.GetOrAdd<ArrayListBase>(domain.DomainAssemblyList);
 
-        List<ModuleHandle> handles = [];
-        foreach (TargetPointer pAssembly in arrayList.Elements)
+        foreach (TargetPointer domainAssembly in arrayList.Elements)
         {
-            TargetPointer assemblyAddr = _target.ReadPointer(pAssembly);
-            Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(assemblyAddr);
+            TargetPointer pAssembly = _target.ReadPointer(domainAssembly);
+            Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(pAssembly);
 
             // following logic is based on AppDomain::AssemblyIterator::Next_Unlocked in appdomain.cpp
 
-            if (assembly.IsError && !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeFailedToLoad))
-                continue; // skip assemblies with errors
+            if (assembly.IsError)
+            {
+                // assembly is in an error state, return if we are supposed to include it
+                // otherwise we skip it and continue to the next assembly
+                if (iterationFlags.HasFlag(AssemblyIterationFlags.IncludeFailedToLoad))
+                {
+                    yield return new ModuleHandle(assembly.Module);
+                }
+                continue;
+            }
 
             if ((assembly.NotifyFlags & 0x1 /*PROFILER_NOTIFIED*/) != 0 && !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
             {
@@ -75,18 +82,17 @@ internal readonly struct Loader_1 : ILoader
                     continue; // skip collectible assemblies
 
                 Module module = _target.ProcessedData.GetOrAdd<Data.Module>(assembly.Module);
-                if (((ModuleFlags)module.Flags).HasFlag(ModuleFlags.Tenured))
-                    continue; // skip tenured modules
+                if (!((ModuleFlags)module.Flags).HasFlag(ModuleFlags.Tenured))
+                    continue; // skip un-tenured modules
 
                 LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(module.LoaderAllocator);
                 if (!loaderAllocator.IsAlive && !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeCollected))
                     continue; // skip collected assemblies
             }
 
-            handles.Add(new(assembly.Module));
+            yield return new ModuleHandle(assembly.Module);
         }
 
-        return handles;
     }
 
     TargetPointer ILoader.GetRootAssembly()
