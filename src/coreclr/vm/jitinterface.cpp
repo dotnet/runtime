@@ -11382,13 +11382,9 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
     EE_TO_JIT_TRANSITION();
 }
 
-#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
 void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 {
 #if defined(TARGET_AMD64)
-    // Add space for personality routine, it must be 4-byte aligned.
-    // Everything in the UNWIND_INFO up to the variable-sized UnwindCodes
-    // array has already had its size included in unwindSize by the caller.
     unwindSize += sizeof(ULONG);
 
     // Note that the count of unwind codes (2 bytes each) is stored as a UBYTE
@@ -11399,13 +11395,14 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
     unwindSize = (ULONG)(ALIGN_UP(unwindSize, sizeof(ULONG)));
 #else // TARGET_AMD64
     // The JIT passes in a 4-byte aligned block of unwind data.
+    // Non-zero low bits would mean a compact encoding.
     _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
-
-    // Add space for personality routine, it must be 4-byte aligned.
-    unwindSize += sizeof(ULONG);
 #endif // TARGET_AMD64
+#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    // Add space for personality routine
+    unwindSize += sizeof(ULONG);
+#endif //  !TARGET_X86 && TARGET_WINDOWS
 }
-#endif // !TARGET_X86 && TARGET_WINDOWS
 
 // Reserve memory for the method/funclet's unwind information.
 // Note that this must be called before allocMem. It should be
@@ -11438,9 +11435,7 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unw
 
     uint32_t currentSize  = unwindSize;
 
-#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
     reservePersonalityRoutineSpace(currentSize);
-#endif
 
     m_totalUnwindSize += currentSize;
 
@@ -11531,9 +11526,7 @@ void CEEJitInfo::allocUnwindInfo (
 
     m_usedUnwindSize += unwindSize;
 
-#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
     reservePersonalityRoutineSpace(m_usedUnwindSize);
-#endif
 
     _ASSERTE(m_usedUnwindSize <= m_totalUnwindSize);
 
