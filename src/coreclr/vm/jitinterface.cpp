@@ -11395,7 +11395,7 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
     unwindSize = (ULONG)(ALIGN_UP(unwindSize, sizeof(ULONG)));
 #else // TARGET_AMD64
     // The JIT passes in a 4-byte aligned block of unwind data.
-    // Non-zero low bits would mean a compact encoding.
+    // On Arm64, non-zero low bits would mean a compact encoding.
     _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
 #endif // TARGET_AMD64
 
