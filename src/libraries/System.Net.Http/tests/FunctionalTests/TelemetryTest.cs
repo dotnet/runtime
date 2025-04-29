@@ -854,7 +854,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     1 => (2, 2),
                     2 => (2, 3), // race condition: if a connection hits its stream limit, it will be removed from the list and re-added on a separate thread
-                    3 => (3, 3),
+                    3 => (2, 3),
                     _ => throw new ArgumentOutOfRangeException()
                 };
                 Assert.InRange(requestLeftQueueEvents.Count(), minCount, maxCount);

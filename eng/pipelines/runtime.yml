@@ -125,7 +125,7 @@ extends:
           - browser_wasm
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr.runtime -rc Release -c Release -lc $(_BuildConfig)
+            buildArgs: -s clr.runtime+libs -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -695,7 +695,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: CLR_Tools_Tests
-            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests+tools.cdacreader+tools.cdacreadertests -c $(_BuildConfig) -test
+            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests+tools.cdac+tools.cdactests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
@@ -703,7 +703,7 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdacreader.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
       #
       # Build CrossDacs
@@ -1786,11 +1786,12 @@ extends:
           parameters:
             platforms:
               - name: CentOS9
+                baseOS: linux-x64
                 targetRID: centos.9-x64
                 portableBuild: false
                 container: SourceBuild_centos_x64
               - name: NonexistentRID
-                baseOS: linux
+                baseOS: linux-x64
                 targetRID: banana.24-x64
                 portableBuild: false
                 container: SourceBuild_centos_x64

@@ -92,6 +92,7 @@ endif
 
 ifdef FEATURE_EH_FUNCLETS
 EXTERN @IL_Throw_x86@8:PROC
+EXTERN @IL_ThrowExact_x86@8:PROC
 EXTERN @IL_Rethrow_x86@4:PROC
 endif ; FEATURE_EH_FUNCLETS
 
@@ -1290,14 +1291,19 @@ _GenericCLRToCOMCallStub@0 proc public
 
     ; Get pCLRToCOMCallInfo for return thunk
     mov         ecx, [ebx + CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo]
+    ; Get size of arguments to pop
+    movzx       ecx, word ptr [ecx + CLRToCOMCallInfo__m_cbStackPop]
+    ; Get the return address, pushed registers on stack are 24 bytes big
+    mov         ebx, [esp + 24]
+    ; Set the return address on stack at the last stack slot
+    mov         [esp + ecx + 24], ebx
 
     STUB_EPILOG_RETURN
 
-    ; Tailcall return thunk
-    jmp [ecx + CLRToCOMCallInfo__m_pRetThunk]
+    ; Move esp to point to the last stack slot where we put the return
+    ; address earlier
+    lea         esp, [esp + ecx]
 
-    ; This will never be executed. It is just to help out stack-walking logic
-    ; which disassembles the epilog to unwind the stack.
     ret
 
 _GenericCLRToCOMCallStub@0 endp
@@ -1905,6 +1911,23 @@ FASTCALL_FUNC IL_Throw, 4
     STUB_EPILOG
     ret     4
 FASTCALL_ENDFUNC IL_Throw
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_ThrowExact
+; implementation written in C.
+;
+; Input state:
+;   ECX = Pointer to exception object
+;==========================================================================
+FASTCALL_FUNC IL_ThrowExact, 4
+    STUB_PROLOG
+
+    mov     edx, esp
+    call    @IL_ThrowExact_x86@8
+
+    STUB_EPILOG
+    ret     4
+FASTCALL_ENDFUNC IL_ThrowExact
 
 ;==========================================================================
 ; Capture a transition block with register values and call the IL_Rethrow
