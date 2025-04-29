@@ -22,6 +22,26 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 
 #endif // WRITE_BARRIER_CHECK
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+.macro UPDATE_WRITE_WATCH_TABLE ptrReg, tmpReg
+
+        PREPARE_EXTERNAL_VAR_INDIRECT g_write_watch_table, __wbScratch
+        cbz __wbScratch, 2f
+        add __wbScratch, __wbScratch, \ptrReg, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
+
+        ldrb \tmpReg, [__wbScratch]
+        cmp \tmpReg, #0xff
+        itt ne
+        movne \tmpReg, 0xff
+        strbne \tmpReg, [__wbScratch]
+
+2:
+.endm
+#else
+.macro UPDATE_WRITE_WATCH_TABLE ptrReg, tmpReg
+.endm
+#endif
+
 // There are several different helpers used depending on which register holds the object reference. Since all
 // the helpers have identical structure we use a macro to define this structure. Two arguments are taken, the
 // name of the register that points to the location to be updated and the name of the register that holds the
@@ -41,6 +61,8 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
           PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, r12
           cmp          \REFREG, r12
           bhs          LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG)
+
+          UPDATE_WRITE_WATCH_TABLE r0, r12
 
           // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
           // track this write. The location address is translated into an offset in the card table bitmap. We set
@@ -278,6 +300,8 @@ GLOBAL_LABEL RhpByRefAssignRefAVLocation2
           mov          r2, r0
           add          r1, #4
           add          r0, #4
+
+          UPDATE_WRITE_WATCH_TABLE r2, r3
 
           // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
           // track this write. The location address is translated into an offset in the card table bitmap. We set
