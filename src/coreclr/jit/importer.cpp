@@ -9079,8 +9079,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (isAwait)
                     {
-                        // TODO-Async: Unify with VM
-                        const CorInfoTokenKind CORINFO_TOKENKIND_Await = (CorInfoTokenKind)0;
                         _impResolveToken(CORINFO_TOKENKIND_Await);
                         if (resolvedToken.hMethod != NULL)
                         {

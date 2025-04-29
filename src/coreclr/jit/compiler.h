@@ -10874,8 +10874,7 @@ public:
 
     bool compIsAsync() const
     {
-        // TODO-Async: Unify with VM and introduce JIT_FLAG_ASYNC/CORJIT_FLAG_ASYNC
-        return false;
+        return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ASYNC);
     }
 
     //------------------------------------------------------------------------
