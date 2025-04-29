@@ -5783,9 +5783,11 @@ void CreateCLRToDispatchCOMStub(
                             iLCIDArg);
 
     _ASSERTE(pMD->IsCLRToCOMCall()); // no generic disp-calls
-    ((CLRToCOMCallMethodDesc *)pMD)->InitRetThunk();
-}
 
+#ifdef TARGET_X86
+    ((CLRToCOMCallMethodDesc *)pMD)->InitStackPop();
+#endif
+}
 
 #endif // FEATURE_COMINTEROP
 
