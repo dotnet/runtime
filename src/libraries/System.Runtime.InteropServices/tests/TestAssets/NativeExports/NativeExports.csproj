@@ -7,12 +7,18 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
     <DnneGenRollForward>Major</DnneGenRollForward>
-    <!-- NativeExports should use the live built apphost. We need to define a dependency
-         to the apphost to make sure that it is built before this project invokes DNNE. -->
-    <UseLocalAppHostPack>false</UseLocalAppHostPack>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
-    <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
+    <!-- Set the apphost RID so we download the apphost pack if needed. -->
+    <AppHostRuntimeIdentifier>$(OutputRID)</AppHostRuntimeIdentifier>
+    <!--
+      If the output RID isn't the current SDK RID and we have a "base" RID, then the output RID isn't known to the SDK.
+      In that case, we need to set the AppHostRuntimeIdentifier to the base RID so the SDK can find a runtime pack for publishing.
+    -->
+    <AppHostRuntimeIdentifier Condition="'$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)' and '$(BaseOS)' != '' ">$(BaseOS)</AppHostRuntimeIdentifier>
+    <UseLocalAppHostPack>true</UseLocalAppHostPack>
+    <!-- Don't use the local apphost pack on Windows as matching linker configurations is difficult. -->
+    <UseLocalAppHostPack Condition="'$(TargetOS)' == 'windows'">false</UseLocalAppHostPack>
     <_TargetsAppleOS Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or
       '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or
       '$(TargetOS)' == 'tvossimulator'">true</_TargetsAppleOS>
@@ -23,8 +29,6 @@
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 
-  <!-- Until we use the live app host, use a prebuilt from the SDK.
-       Issue: https://github.com/dotnet/runtime/issues/58109. -->
   <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true' and '$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
     <KnownAppHostPack Include="@(KnownAppHostPack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))"
                       TargetFramework="$(NetCoreAppCurrent)" />

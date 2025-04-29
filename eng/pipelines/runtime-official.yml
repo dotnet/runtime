@@ -85,10 +85,9 @@ extends:
               parameters:
                 isOfficialBuild: true
                 certNames:
-                - 'dotnetesrp-diagnostics-aad-ssl-cert'
-                - 'dotnet-diagnostics-esrp-pki-onecert'
-                vaultName: 'clrdiag-esrp-id'
-                azureSubscription: 'diagnostics-esrp-kvcertuser'
+                - 'dac-dnceng-ssl-cert'
+                vaultName: 'clrdiag-esrp-pme'
+                azureSubscription: 'diagnostics-esrp-kvcertuser-pme'
 
             buildArgs: -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true $(_SignDiagnosticFilesArgs) $(_EnableDefaultArtifactsArg)
             nameSuffix: AllRuntimes
@@ -242,10 +241,9 @@ extends:
               parameters:
                 isOfficialBuild: true
                 certNames:
-                - 'dotnetesrp-diagnostics-aad-ssl-cert'
-                - 'dotnet-diagnostics-esrp-pki-onecert'
-                vaultName: 'clrdiag-esrp-id'
-                azureSubscription: 'diagnostics-esrp-kvcertuser'
+                - 'dac-dnceng-ssl-cert'
+                vaultName: 'clrdiag-esrp-pme'
+                azureSubscription: 'diagnostics-esrp-kvcertuser-pme'
             postBuildSteps:
             - template: /eng/pipelines/coreclr/templates/remove-diagnostic-certs.yml
               parameters:
@@ -475,7 +473,7 @@ extends:
                 targetFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
                 flattenFolders: true
 
-            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true /p:EnableDefaultRidSpecificArtifacts=false
+            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:EnableDefaultRidSpecificArtifacts=false
 
             isOfficialBuild: true
             timeoutInMinutes: 120

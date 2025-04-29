@@ -1,34 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <math.h>
-
 #ifdef FEATURE_INTERPRETER
 
+#include "threads.h"
+#include "gcenv.h"
 #include "interpexec.h"
 
 typedef void* (*HELPER_FTN_PP)(void*);
 
-thread_local InterpThreadContext *t_pThreadContext = NULL;
-
-InterpThreadContext* InterpGetThreadContext()
+InterpThreadContext::InterpThreadContext()
 {
-    InterpThreadContext *threadContext = t_pThreadContext;
+    // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
+    pStackStart = pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
+    pStackEnd = pStackStart + INTERP_STACK_SIZE;
+}
 
-    if (!threadContext)
-    {
-        threadContext = new InterpThreadContext;
-        // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
-        threadContext->pStackStart = threadContext->pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
-        threadContext->pStackEnd = threadContext->pStackStart + INTERP_STACK_SIZE;
-
-        t_pThreadContext = threadContext;
-        return threadContext;
-    }
-    else
-    {
-        return threadContext;
-    }
+InterpThreadContext::~InterpThreadContext()
+{
+    free(pStackStart);
 }
 
 #ifdef DEBUG
@@ -54,6 +44,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     stack = pFrame->pStack;
 
     int32_t returnOffset, callArgsOffset, methodSlot;
+    const int32_t *targetIp;
 
 MAIN_LOOP:
     while (true)
@@ -583,7 +574,53 @@ MAIN_LOOP:
                 LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) * LOCAL_VAR(ip[3], double);
                 ip += 4;
                 break;
+            case INTOP_MUL_OVF_I4:
+            {
+                int32_t i1 = LOCAL_VAR(ip[2], int32_t);
+                int32_t i2 = LOCAL_VAR(ip[3], int32_t);
+                int32_t i3;
+                if (!ClrSafeInt<int32_t>::multiply(i1, i2, i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], int32_t) = i3;
+                ip += 4;
+                break;
+            }
 
+            case INTOP_MUL_OVF_I8:
+            {
+                int64_t i1 = LOCAL_VAR(ip[2], int64_t);
+                int64_t i2 = LOCAL_VAR(ip[3], int64_t);
+                int64_t i3;
+                if (!ClrSafeInt<int64_t>::multiply(i1, i2, i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], int64_t) = i3;
+                ip += 4;
+                break;
+            }
+
+            case INTOP_MUL_OVF_UN_I4:
+            {
+                uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
+                uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
+                uint32_t i3;
+                if (!ClrSafeInt<uint32_t>::multiply(i1, i2, i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], uint32_t) = i3;
+                ip += 4;
+                break;
+            }
+
+            case INTOP_MUL_OVF_UN_I8:
+            {
+                uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
+                uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
+                uint64_t i3;
+                if (!ClrSafeInt<uint64_t>::multiply(i1, i2, i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], uint64_t) = i3;
+                ip += 4;
+                break;
+            }
             case INTOP_DIV_I4:
             {
                 int32_t i1 = LOCAL_VAR(ip[2], int32_t);
@@ -972,6 +1009,35 @@ MAIN_LOOP:
                 ip += 5;
                 break;
             }
+            case INTOP_CALLVIRT:
+            {
+                returnOffset = ip[1];
+                callArgsOffset = ip[2];
+                methodSlot = ip[3];
+
+                MethodDesc *pMD = (MethodDesc*)pMethod->pDataItems[methodSlot];
+
+                OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset, OBJECTREF);
+                NULL_CHECK(*pThisArg);
+
+                // Interpreter-TODO
+                // This needs to be optimized, not operating at MethodDesc level, rather with ftnptr
+                // slots containing the interpreter IR pointer
+                pMD = pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
+
+                PCODE code = pMD->GetNativeCode();
+                if (!code)
+                {
+                    pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+                    GCX_PREEMP();
+                    pMD->PrepareInitialCode(CallerGCMode::Coop);
+                    code = pMD->GetNativeCode();
+                }
+                targetIp = (const int32_t*)code;
+                ip += 4;
+                // Interpreter-TODO unbox if target method class is valuetype
+                goto CALL_TARGET_IP;
+            }
 
             case INTOP_CALL:
             {
@@ -981,7 +1047,7 @@ MAIN_LOOP:
 
                 ip += 4;
 CALL_INTERP_SLOT:
-                const int32_t *targetIp;
+                {
                 size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
                 if (targetMethod & INTERP_METHOD_DESC_TAG)
                 {
@@ -1012,7 +1078,8 @@ CALL_INTERP_SLOT:
                     // for interpreter call or normal pointer for JIT/R2R call.
                     targetIp = (const int32_t*)targetMethod;
                 }
-
+                }
+CALL_TARGET_IP:
                 // Save current execution state for when we return from called method
                 pFrame->ip = ip;
 
@@ -1074,6 +1141,40 @@ CALL_INTERP_SLOT:
                 memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
                 ip += 3;
                 break;
+            case INTOP_LOCALLOC:
+            {
+                size_t len = LOCAL_VAR(ip[2], size_t);
+                void* pMemory = NULL;
+
+                if (len > 0)
+                {
+                    pMemory = pThreadContext->frameDataAllocator.Alloc(pFrame, len);
+                    if (pMemory == NULL)
+                    {
+                        // Interpreter-TODO: OutOfMemoryException
+                        assert(0);
+                    }
+                    if (pMethod->initLocals)
+                    {
+                        memset(pMemory, 0, len);
+                    }
+                }
+
+                LOCAL_VAR(ip[1], void*) = pMemory;
+                ip += 3;
+                break;
+            }
+            case INTOP_GC_COLLECT: {
+                // HACK: blocking gc of all generations to enable early stackwalk testing
+                // Interpreter-TODO: Remove this
+                {
+                    pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+                    GCX_COOP();
+                    GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, 0x00000002);
+                }
+                ip++;
+                break;
+            }
             case INTOP_FAILFAST:
                 assert(0);
                 break;
@@ -1084,6 +1185,9 @@ CALL_INTERP_SLOT:
     }
 
 EXIT_FRAME:
+
+    // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
+    pThreadContext->frameDataAllocator.PopInfo(pFrame);
     if (pFrame->pParent && pFrame->pParent->ip)
     {
         // Return to the main loop after a non-recursive interpreter call

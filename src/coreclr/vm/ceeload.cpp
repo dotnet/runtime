@@ -866,7 +866,7 @@ void Module::InitializeDynamicILCrst()
 // Add a (token, address) pair to the table of IL blobs for reflection/dynamics
 // Arguments:
 //     Input:
-//         token        method token
+//         token        method token or field token (See SetDynamicRvaField)
 //         blobAddress  address of the start of the IL blob address, including the header
 //     Output: not explicit, but if the pair was not already in the table it will be added.
 //             Does not add duplicate tokens to the table.
@@ -928,6 +928,35 @@ TADDR Module::GetDynamicIL(mdToken token)
     // If the lookup fails, it returns the 'NULL' entry
     // The 'NULL' entry has m_il set to NULL, so either way we're safe
     return entry.m_il;
+}
+
+#ifndef DACCESS_COMPILE
+void Module::SetDynamicRvaField(mdToken token, TADDR blobAddress)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    SetDynamicIL(token, blobAddress);
+}
+#endif // !DACCESS_COMPILE
+
+TADDR Module::GetDynamicRvaField(mdToken token)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    return GetDynamicIL(token);
 }
 
 #if !defined(DACCESS_COMPILE)
@@ -1066,56 +1095,77 @@ BOOL Module::IsRuntimeWrapExceptionsStatusComputed()
     return (m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS);
 }
 
+BOOL Module::IsRuntimeWrapExceptionsDuringEH()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    // This method assumes that the runtime wrap exceptions status has already been computed.
+    // IsRuntimeWrapExceptionsStatusComputed() returns TRUE before calling this method, but
+    // that should be done as part of Module activation, so we shouldn't need to worry about that.
+    _ASSERTE(IsRuntimeWrapExceptionsStatusComputed());
+    return (m_dwPersistedFlags & WRAP_EXCEPTIONS) != 0;
+}
+
 BOOL Module::IsRuntimeWrapExceptions()
 {
     CONTRACTL
     {
         NOTHROW;
-        if (IsRuntimeWrapExceptionsStatusComputed()) GC_NOTRIGGER; else GC_TRIGGERS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END
 
     if (!(IsRuntimeWrapExceptionsStatusComputed()))
     {
-        HRESULT hr;
-        BOOL fRuntimeWrapExceptions = FALSE;
-
-        IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
-
-        mdToken token;
-        IfFailGo(mdImport->GetAssemblyFromScope(&token));
-
-        const BYTE *pVal;
-        ULONG       cbVal;
-
-        hr = mdImport->GetCustomAttributeByName(token,
-                        RUNTIMECOMPATIBILITY_TYPE,
-                        (const void**)&pVal, &cbVal);
-
-        // Parse the attribute
-        if (hr == S_OK)
-        {
-            CustomAttributeParser ca(pVal, cbVal);
-            CaNamedArg namedArgs[1] = {{0}};
-
-            // First, the void constructor:
-            IfFailGo(ParseKnownCaArgs(ca, NULL, 0));
-
-            // Then, find the named argument
-            namedArgs[0].InitBoolField("WrapNonExceptionThrows");
-
-            IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
-
-            if (namedArgs[0].val.boolean)
-                fRuntimeWrapExceptions = TRUE;
-        }
-ErrExit:
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
-            (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
+        UpdateCachedIsRuntimeWrapExceptions();
     }
-
     return !!(m_dwPersistedFlags & WRAP_EXCEPTIONS);
+}
+
+void Module::UpdateCachedIsRuntimeWrapExceptions()
+{
+    HRESULT hr;
+    BOOL fRuntimeWrapExceptions = FALSE;
+
+    IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
+
+    mdToken token;
+    IfFailGo(mdImport->GetAssemblyFromScope(&token));
+
+    const BYTE *pVal;
+    ULONG       cbVal;
+
+    hr = mdImport->GetCustomAttributeByName(token,
+                    RUNTIMECOMPATIBILITY_TYPE,
+                    (const void**)&pVal, &cbVal);
+
+    // Parse the attribute
+    if (hr == S_OK)
+    {
+        CustomAttributeParser ca(pVal, cbVal);
+        CaNamedArg namedArgs[1] = {{0}};
+
+        // First, the void constructor:
+        IfFailGo(ParseKnownCaArgs(ca, NULL, 0));
+
+        // Then, find the named argument
+        namedArgs[0].InitBoolField("WrapNonExceptionThrows");
+
+        IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
+
+        if (namedArgs[0].val.boolean)
+            fRuntimeWrapExceptions = TRUE;
+    }
+ErrExit:
+    InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
+        (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
 }
 
 BOOL Module::IsRuntimeMarshallingEnabled()
@@ -3742,6 +3792,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, pPEAssembly));
 
     pModule->DoInit(pamTracker, szName);
+    pModule->SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules();
 
     RETURN pModule.Extract();
 }

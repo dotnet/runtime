@@ -345,6 +345,7 @@ FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetPrimitiveCorElementType", MethodTableNative::GetPrimitiveCorElementType)
     FCFuncElement("GetMethodTableMatchingParentClass", MethodTableNative::GetMethodTableMatchingParentClass)
     FCFuncElement("InstantiationArg0", MethodTableNative::InstantiationArg0)
+    FCFuncElement("GetLoaderAllocatorHandle", MethodTableNative::GetLoaderAllocatorHandle)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)

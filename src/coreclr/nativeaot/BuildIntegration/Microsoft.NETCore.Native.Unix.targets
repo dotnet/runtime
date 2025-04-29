@@ -54,7 +54,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <!-- alpine's gcc toolchain needs alpine-linux, see https://github.com/llvm/llvm-project/issues/89146 -->
-    <Exec Command="grep -q ID=alpine &quot;$(SysRoot)/etc/os-release&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(CrossCompileArch)' != '' and '$(SysRoot)' != ''">
+    <Exec Command="test -f &quot;$(SysRoot)/etc/os-release&quot; &amp;&amp; grep -q ID=alpine &quot;$(SysRoot)/etc/os-release&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(CrossCompileArch)' != '' and '$(SysRoot)' != ''">
       <Output TaskParameter="ExitCode" PropertyName="_IsAlpineExitCode" />
     </Exec>
 
@@ -262,9 +262,9 @@ The .NET Foundation licenses this file to you under the MIT license.
            see https://github.com/bminor/glibc/commit/99468ed45f5a58f584bab60364af937eb6f8afda -->
       <LinkerArg Include="-Wl,--defsym,__xmknod=mknod" Condition="'$(StaticExecutable)' == 'true'" />
       <!-- FreeBSD has two versions of the GSSAPI it can use, but we only use the ports version (MIT version) here -->
-      <LinkerArg Include="-L/usr/local/lib -lgssapi_krb5" Condition="'$(_targetOS)' == 'freebsd'" />
+      <LinkerArg Include="-L&quot;$(SysRoot)/usr/local/lib&quot; -lgssapi_krb5" Condition="'$(_targetOS)' == 'freebsd'" />
       <!-- FreeBSD's inotify is an installed package and not found in default libraries  -->
-      <LinkerArg Include="-L/usr/local/lib -linotify" Condition="'$(_targetOS)' == 'freebsd'" />
+      <LinkerArg Include="-L&quot;$(SysRoot)/usr/local/lib&quot; -linotify" Condition="'$(_targetOS)' == 'freebsd'" />
       <LinkerArg Include="@(ExtraLinkerArg->'-Wl,%(Identity)')" />
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(_IsApplePlatform)' == 'true'" />
       <LinkerArg Include="-Wl,--eh-frame-hdr" Condition="'$(_IsApplePlatform)' != 'true'" />

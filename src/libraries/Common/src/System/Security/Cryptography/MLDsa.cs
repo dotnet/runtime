@@ -49,10 +49,7 @@ namespace System.Security.Cryptography
         /// </param>
         protected MLDsa(MLDsaAlgorithm algorithm)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             Algorithm = algorithm;
         }
@@ -709,10 +706,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa GenerateKey(MLDsaAlgorithm algorithm)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             ThrowIfNotSupported();
             return MLDsaImplementation.GenerateKeyImpl(algorithm);
@@ -753,7 +747,12 @@ namespace System.Security.Cryptography
                         AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
 
-                        MLDsaAlgorithm algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(spki.Algorithm.Algorithm);
+                        MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(spki.Algorithm.Algorithm);
+
+                        if (algorithm is null)
+                        {
+                            throw Helpers.CreateAlgorithmUnknownException(spki.Algorithm.Algorithm);
+                        }
 
                         if (spki.Algorithm.Parameters.HasValue)
                         {
@@ -803,7 +802,12 @@ namespace System.Security.Cryptography
                         AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
                         PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn pki);
 
-                        MLDsaAlgorithm algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(pki.PrivateKeyAlgorithm.Algorithm);
+                        MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(pki.PrivateKeyAlgorithm.Algorithm);
+
+                        if (algorithm is null)
+                        {
+                            throw Helpers.CreateAlgorithmUnknownException(pki.PrivateKeyAlgorithm.Algorithm);
+                        }
 
                         if (pki.PrivateKeyAlgorithm.Parameters.HasValue)
                         {
@@ -1022,10 +1026,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PublicKeySizeInBytes)
             {
@@ -1063,10 +1064,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.SecretKeySizeInBytes)
             {
@@ -1104,10 +1102,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportMLDsaPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            if (algorithm is null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
             {

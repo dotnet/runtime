@@ -448,7 +448,13 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             ARG_SLOT GetMethodHandleArg = ObjToArgSlot(MemberInfoObj);
             MethodDesc* pMeth = (MethodDesc*) getMethodHandle.Call_RetLPVOID(&GetMethodHandleArg);
             if (pMeth)
+            {
+                // TODO: (async) revisit and examine if this needs to be supported somehow
+                if (pMeth->IsAsyncMethod())
+                    ThrowHR(COR_E_NOTSUPPORTED);
+
                 pMemberProps = pMemberMap->GetMethodProps(pMeth->GetMemberDef(), pMeth->GetModule());
+            }
         }
         else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__RT_FIELD_INFO))
         {
@@ -827,6 +833,10 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
     CONTRACTL_END;
 
     GCX_PREEMP();
+
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    if (pMD->IsAsyncMethod())
+        ThrowHR(COR_E_NOTSUPPORTED);
 
     MetaSig         msig(pMD);
     LPCSTR          szName;
@@ -2578,6 +2588,12 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMDForProperty->IsAsyncVariantMethod())
+        {
+            return false;
+        }
+
         if (pMDForProperty->GetMDImport()->GetPropertyInfoForMethodDef(pMDForProperty->GetMemberDef(), &tkMember, NULL, NULL) == S_OK)
         {
             if (IsMemberVisibleFromCom(pMDForProperty->GetMethodTable(), tkMember, pMDForProperty->GetMemberDef()))

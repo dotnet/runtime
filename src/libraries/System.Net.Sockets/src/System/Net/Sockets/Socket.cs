@@ -2015,7 +2015,7 @@ namespace System.Net.Sockets
             if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 
             ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(receivedAddress, nameof(receivedAddress));
+            ArgumentNullException.ThrowIfNull(receivedAddress);
 
             if (receivedAddress.Size < SocketAddress.GetMaximumAddressSize(AddressFamily))
             {
