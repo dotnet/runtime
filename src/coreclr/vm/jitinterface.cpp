@@ -11398,6 +11398,7 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
     // Non-zero low bits would mean a compact encoding.
     _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
 #endif // TARGET_AMD64
+
 #if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
     // Add space for personality routine
     unwindSize += sizeof(ULONG);
