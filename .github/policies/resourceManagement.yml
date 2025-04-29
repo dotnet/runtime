@@ -725,6 +725,7 @@ configuration:
             mentionees:
             - akoeplinger
             - matouskozak
+            - simonrozsival
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

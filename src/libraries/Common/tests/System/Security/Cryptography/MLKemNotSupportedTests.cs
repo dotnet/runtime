@@ -33,10 +33,10 @@ namespace System.Security.Cryptography.Tests
         public static void ImportSubjectPublicKeyInfo_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() =>
-                MLKem.ImportSubjectPublicKeyInfo(Array.Empty<byte>()));
+                MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki));
 
             Assert.Throws<PlatformNotSupportedException>(() =>
-                MLKem.ImportSubjectPublicKeyInfo(ReadOnlySpan<byte>.Empty));
+                MLKem.ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(MLKemTestData.IetfMlKem512Spki)));
         }
 
         [Theory]
