@@ -3002,13 +3002,6 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
     END_QCALL;
 }
 
-#ifdef HOST_WINDOWS
-VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int retVal)
-{
-    WRAPPER_NO_CONTRACT;
-    longjmp(*pJmpBuf, retVal);
-}
-
 void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1, size_t arg2)
 {
     UINT_PTR targetSp = GetSP(pContext);
@@ -3065,11 +3058,22 @@ void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t ta
 #define FIRST_ARG_REG A0
 #endif
     pContext->FIRST_ARG_REG = arg1;
+#ifdef HOST_WINDOWS
     pContext->SECOND_ARG_REG = arg2;
+#endif
     SetIP(pContext, functionPtr);
 
     ClrRestoreNonvolatileContext(pContext, targetSSP);
+    UNREACHABLE();
 }
+
+#ifdef HOST_WINDOWS
+VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int retVal)
+{
+    WRAPPER_NO_CONTRACT;
+    longjmp(*pJmpBuf, retVal);
+}
+
 // This is a personality routine that the RtlRestoreContext calls when it is called with
 // pExceptionRecord->ExceptionCode == STATUS_UNWIND_CONSOLIDATE.
 // Before calling this function, it creates a machine frame that hides all the frames

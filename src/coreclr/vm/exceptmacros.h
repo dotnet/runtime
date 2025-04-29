@@ -425,32 +425,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(false);
 
-#ifdef FEATURE_INTERPRETER
-
-#define INSTALL_RESUME_AFTER_CATCH_HANDLER \
-{                                                                                       \
-    bool       __fResumeAfterCatchExceptionCaught = false;                              \
-    TADDR      __interpreterResumeSP = 0;                                               \
-    TADDR      __interpreterResumeIP = 0;                                               \
-    PAL_CPP_TRY                                                                         \
-    {
-
-#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER                                            \
-    }                                                                                   \
-    PAL_CPP_CATCH_NON_DERIVED_NOARG (const ResumeAfterCatchException& ex)               \
-    {                                                                                   \
-        __fResumeAfterCatchExceptionCaught = true;                                      \
-        ex.GetResumeContext(&__interpreterResumeSP, &__interpreterResumeIP);            \
-    }                                                                                   \
-    PAL_CPP_ENDTRY                                                                      \
-    if (__fResumeAfterCatchExceptionCaught)                                             \
-    {                                                                                   \
-        UnwindAndContinueResumeAfterCatch(__interpreterResumeSP, __interpreterResumeIP);\
-    }                                                                                   \
-}
-
-#endif // FEATURE_INTERPRETER
-
 #endif // DACCESS_COMPILE
 
 

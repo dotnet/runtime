@@ -7331,7 +7331,9 @@ VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR r
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     size_t targetSSP = GetSSPForFrameOnCurrentStack(GetIP(&context));
-#endif // HOST_AMD64 && HOST_WINDOWS
+#else
+    size_t targetSSP = 0;
+#endif
 
     // Skip all managed frames upto a native frame
     while (ExecutionManager::IsManagedCode(GetIP(&context)))

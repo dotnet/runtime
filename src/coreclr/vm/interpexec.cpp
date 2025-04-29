@@ -51,12 +51,12 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     const int32_t *targetIp;
 
 MAIN_LOOP:
-    while (true)
+    try
     {
-        try
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        while (true)
         {
-            INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
             // Interpreter-TODO: This is only needed to enable SOS see the exact location in the interpreted method.
             // Neither the GC nor the managed debugger needs that as they walk the stack when the runtime is suspended
             // and we can save the IP to the frame at the suspension time.
@@ -1186,9 +1186,6 @@ CALL_TARGET_IP:
                 }
                 case INTOP_THROW:
                 {
-                    CONTEXT exceptionContext;
-                    ClrCaptureContext(&exceptionContext);
-
                     OBJECTREF throwable;
                     if (LOCAL_VAR(ip[1], OBJECTREF) == nullptr)
                     {
@@ -1199,7 +1196,7 @@ CALL_TARGET_IP:
                     {
                         throwable = LOCAL_VAR(ip[1], OBJECTREF);
                     }
-                    DispatchManagedException(throwable, &exceptionContext);
+                    DispatchManagedException(throwable);
                     UNREACHABLE();
                     break;
                 }
@@ -1210,38 +1207,34 @@ CALL_TARGET_IP:
                     assert(0);
                     break;
             }
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
         }
-        catch (const ResumeAfterCatchException& ex)
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    }
+    catch (const ResumeAfterCatchException& ex)
+    {
+        TADDR resumeSP;
+        TADDR resumeIP;
+        ex.GetResumeContext(&resumeSP, &resumeIP);
+        _ASSERTE(resumeSP != NULL && resumeIP != NULL);
+
+        InterpMethodContextFrame* pResumeFrame = (InterpMethodContextFrame*)resumeSP;
+        // Unwind the interpreter stack upto the resume frame
+        while (pFrame != pResumeFrame)
         {
-            TADDR resumeSP;
-            TADDR resumeIP;
-            ex.GetResumeContext(&resumeSP, &resumeIP);
-            _ASSERTE(resumeSP != NULL && resumeIP != NULL);
-
-            InterpMethodContextFrame* pResumeFrame = (InterpMethodContextFrame*)resumeSP;
-            // Unwind the interpreter stack upto the resume frame
-            while ((pFrame != NULL) && (pFrame != pResumeFrame))
-            {
-                pThreadContext->frameDataAllocator.PopInfo(pFrame);
-                pFrame->ip = 0;
-                pFrame = pFrame->pParent;
-            }
-
-            if (pFrame == NULL)
-            {
-                // Continue propagating the resume exception, the resume frame is not in this block of interpreted frames.
-                throw;
-            }
-
-            // Set the current interpreter context to the resume one and continue execution from there
-            ip = (int32_t*)resumeIP;
-
-            stack = pFrame->pStack;
-            pMethod = *(InterpMethod**)pFrame->startIp;
-            pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
+            assert(pFrame != NULL);
+            pThreadContext->frameDataAllocator.PopInfo(pFrame);
+            pFrame->ip = 0;
+            pFrame = pFrame->pParent;
         }
+
+        // Set the current interpreter context to the resume one and continue execution from there
+        ip = (int32_t*)resumeIP;
+
+        stack = pFrame->pStack;
+        pMethod = *(InterpMethod**)pFrame->startIp;
+        pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
+        goto MAIN_LOOP;
     }
 
 EXIT_FRAME:

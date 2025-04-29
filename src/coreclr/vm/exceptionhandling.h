@@ -83,7 +83,7 @@ public:
 };
 #endif // FEATURE_INTERPRETER
 
-void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1 = 0, size_t arg2 = 0);
+void DECLSPEC_NORETURN ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1 = 0, size_t arg2 = 0);
 
 #endif // FEATURE_EH_FUNCLETS
 
