@@ -83,4 +83,4 @@ Other restrictions are likely to be permanent, including
 | Flag  | Value | Description |
 | ------------- | ------------- | ------------- |
 | . . . | . . . | . . . |
-|Async |0x0400 |Method is an Async Method.|
+|Async |0x2000 |Method is an Async Method.|

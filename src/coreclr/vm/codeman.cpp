@@ -3489,7 +3489,7 @@ GCInfoToken InterpreterJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // The JIT-ed code always has the current version of GCInfo
+    // The Interpreter IR always has the current version of GCInfo
     return{ GetCodeHeader(MethodToken)->GetGCInfo(), GCINFO_VERSION };
 }
 #endif // FEATURE_INTERPRETER

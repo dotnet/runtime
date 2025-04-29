@@ -1,8 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+#include "gcinfoencoder.h"
+
+// HACK: debugreturn.h (included by gcinfoencoder.h) breaks constexpr
+#if defined(debug_instrumented_return) || defined(_DEBUGRETURN_H_)
+#undef return
+#endif // debug_instrumented_return
+
 #include "interpreter.h"
 
 #include <inttypes.h>
+
+#include <new> // for std::bad_alloc
 
 static const StackType g_stackTypeFromInterpType[] =
 {
@@ -31,9 +40,55 @@ static const InterpType g_interpTypeFromStackType[] =
     InterpTypeI,        // F
 };
 
+// Used by assertAbort
+thread_local ICorJitInfo* t_InterpJitInfoTls = nullptr;
+
 static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
 
-// FIXME Use specific allocators for their intended purpose
+/*****************************************************************************/
+void DECLSPEC_NORETURN Interp_NOMEM()
+{
+    throw std::bad_alloc();
+}
+
+// GCInfoEncoder needs an IAllocator implementation. This is a simple one that forwards to the Compiler.
+class InterpIAllocator : public IAllocator
+{
+    InterpCompiler *m_pCompiler;
+
+public:
+    InterpIAllocator(InterpCompiler *compiler)
+        : m_pCompiler(compiler)
+    {
+    }
+
+    // Allocates a block of memory at least `sz` in size.
+    virtual void* Alloc(size_t sz) override
+    {
+        return m_pCompiler->AllocMethodData(sz);
+    }
+
+    // Allocates a block of memory at least `elems * elemSize` in size.
+    virtual void* ArrayAlloc(size_t elems, size_t elemSize) override
+    {
+        // Ensure that elems * elemSize does not overflow.
+        if (elems > (SIZE_MAX / elemSize))
+        {
+            Interp_NOMEM();
+        }
+
+        return m_pCompiler->AllocMethodData(elems * elemSize);
+    }
+
+    // Frees the block of memory pointed to by p.
+    virtual void Free(void* p) override
+    {
+        // Interpreter-FIXME: m_pCompiler->FreeMethodData
+        free(p);
+    }
+};
+
+// Interpreter-FIXME Use specific allocators for their intended purpose
 // Allocator for data that is kept alive throughout application execution,
 // being freed only if the associated method gets freed.
 void* InterpCompiler::AllocMethodData(size_t numBytes)
@@ -807,6 +862,29 @@ void InterpCompiler::EmitCode()
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
 }
 
+void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
+{
+#ifdef FEATURE_INTERPRETER
+    InterpIAllocator* pAllocator = new (this) InterpIAllocator(this);
+    InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
+    assert(gcInfoEncoder);
+
+    gcInfoEncoder->SetCodeLength(m_methodCodeSize);
+
+    // TODO: Request slot IDs for all our locals before finalizing
+
+    gcInfoEncoder->FinalizeSlotIds();
+
+    // TODO: Use finalized slot IDs to declare live ranges
+
+    gcInfoEncoder->Build();
+
+    // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
+    // let's save the values anyway for debugging purposes
+    gcInfoEncoder->Emit();
+#endif
+}
+
 InterpMethod* InterpCompiler::CreateInterpMethod()
 {
     int numDataItems = m_dataItems.GetSize();
@@ -815,7 +893,9 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
     for (int i = 0; i < numDataItems; i++)
         pDataItems[i] = m_dataItems.Get(i);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems);
+    bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
+
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems, initLocals);
 
     return pMethod;
 }
@@ -829,6 +909,9 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
 {
+    // Fill in the thread-local used for assertions
+    t_InterpJitInfoTls = compHnd;
+
     m_methodHnd = methodInfo->ftn;
     m_compScopeHnd = methodInfo->scope;
     m_compHnd = compHnd;
@@ -1362,7 +1445,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
     }
     else
     {
-#if SIZEOF_VOID_P == 8
+#if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
             EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
@@ -1501,6 +1584,15 @@ bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SI
             {
                 AddIns(INTOP_NOP);
                 m_pStackPointer--;
+                return true;
+            }
+        }
+        else if (className && !strcmp(className, "GC"))
+        {
+            if (methodName && !strcmp(methodName, "Collect"))
+            {
+                AddIns(INTOP_GC_COLLECT);
+                // Not reducing the stack pointer because we expect the version with no arguments
                 return true;
             }
         }
@@ -2596,6 +2688,14 @@ retry_emit:
                 EmitBinaryArithmeticOp(INTOP_MUL_I4);
                 m_ip++;
                 break;
+            case CEE_MUL_OVF:
+                EmitBinaryArithmeticOp(INTOP_MUL_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_MUL_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_MUL_OVF_UN_I4);
+                m_ip++;
+                break;
             case CEE_DIV:
                 EmitBinaryArithmeticOp(INTOP_DIV_I4);
                 m_ip++;
@@ -3134,6 +3234,29 @@ retry_emit:
                         m_ip += 5;
                         break;
                     }
+                    case CEE_LOCALLOC:
+                        CHECK_STACK(1);
+#if TARGET_64BIT
+                        // Length is natural unsigned int
+                        if (m_pStackPointer[-1].type == StackTypeI4)
+                        {
+                            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
+                            m_pStackPointer[-1].type = StackTypeI8;
+                        }
+#endif
+                        AddIns(INTOP_LOCALLOC);
+                        m_pStackPointer--;
+                        if (m_pStackPointer != m_pStackBase)
+                        {
+                            m_hasInvalidCode = true;
+                            goto exit_bad_code;
+                        }
+
+                        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                        PushStackType(StackTypeByRef, NULL);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_ip++;
+                        break;
                     default:
                         assert(0);
                         break;
@@ -3378,4 +3501,18 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
 
     PrintInsData(NULL, insOffset, ip, opcode);
     printf("\n");
+}
+
+extern "C" void assertAbort(const char* why, const char* file, unsigned line)
+{
+    if (t_InterpJitInfoTls) {
+        if (!t_InterpJitInfoTls->doAssert(file, line, why))
+            return;
+    }
+
+#ifdef _MSC_VER
+    __debugbreak();
+#else // _MSC_VER
+    __builtin_trap();
+#endif // _MSC_VER
 }
