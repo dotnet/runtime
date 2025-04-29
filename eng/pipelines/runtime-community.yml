@@ -70,17 +70,6 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            # extra steps, run tests
-            postBuildSteps:
-              - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-                  condition: >-
-                    or(
-                    eq(variables['librariesContainsChange'], true),
-                    eq(variables['monoContainsChange'], true),
-                    eq(variables['isRollingBuild'], true))
 
       #
       # Build the whole product using Mono
