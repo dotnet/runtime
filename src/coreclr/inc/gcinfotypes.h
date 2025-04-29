@@ -113,6 +113,8 @@ struct GcStackSlot
     }
 };
 
+// ReturnKind is not encoded in GCInfo v4 and later, except on x86.
+
 //--------------------------------------------------------------------------------
 // ReturnKind -- encoding return type information in GcInfo
 //
@@ -136,61 +138,6 @@ struct GcStackSlot
 // A value of this enumeration is stored in the GcInfo header.
 //
 //--------------------------------------------------------------------------------
-
-// RT_Unset: An intermediate step for staged bringup.
-// When ReturnKind is RT_Unset, it means that the JIT did not set
-// the ReturnKind in the GCInfo, and therefore the VM cannot rely on it,
-// and must use other mechanisms (similar to GcInfo ver 1) to determine
-// the Return type's GC information.
-//
-// RT_Unset is only used in the following situations:
-// X64: Used by JIT64 until updated to use GcInfo v2 API
-// ARM: Used by JIT32 until updated to use GcInfo v2 API
-//
-// RT_Unset should have a valid encoding, whose bits are actually stored in the image.
-// For X86, there are no free bits, and there's no RT_Unused enumeration.
-
-#if defined(TARGET_X86)
-
-// 00    RT_Scalar
-// 01    RT_Object
-// 10    RT_ByRef
-// 11    RT_Float
-
-#elif defined(TARGET_ARM)
-
-// 00    RT_Scalar
-// 01    RT_Object
-// 10    RT_ByRef
-// 11    RT_Unset
-
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-// Slim Header:
-
-// 00    RT_Scalar
-// 01    RT_Object
-// 10    RT_ByRef
-// 11    RT_Unset
-
-// Fat Header:
-
-// 0000  RT_Scalar
-// 0001  RT_Object
-// 0010  RT_ByRef
-// 0011  RT_Unset
-// 0100  RT_Scalar_Obj
-// 1000  RT_Scalar_ByRef
-// 0101  RT_Obj_Obj
-// 1001  RT_Obj_ByRef
-// 0110  RT_ByRef_Obj
-// 1010  RT_ByRef_ByRef
-
-#else
-#ifdef PORTABILITY_WARNING
-PORTABILITY_WARNING("Need ReturnKind for new Platform")
-#endif // PORTABILITY_WARNING
-#endif // Target checks
 
 enum ReturnKind {
 
@@ -1026,4 +973,3 @@ struct InterpreterGcInfoEncoding {
 #endif // debug_instrumented_return
 
 #endif // !__GCINFOTYPES_H__
-
