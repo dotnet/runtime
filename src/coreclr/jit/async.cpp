@@ -280,8 +280,7 @@ PhaseStatus AsyncTransformation::Run()
     // Ask the VM to create a resumption stub for this specific version of the
     // code. It is stored in the continuation as a function pointer, so we need
     // the fixed entry point here.
-    // TODO: Get once VM changes are merged
-    // m_resumeStub = m_comp->info.compCompHnd->getAsyncResumptionStub();
+    m_resumeStub = m_comp->info.compCompHnd->getAsyncResumptionStub();
     m_comp->info.compCompHnd->getFunctionFixedEntryPoint(m_resumeStub, false, &m_resumeStubLookup);
 
     m_returnedContinuationVar = m_comp->lvaGrabTemp(false DEBUGARG("returned continuation"));
