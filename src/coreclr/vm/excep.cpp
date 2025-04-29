@@ -5961,7 +5961,11 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
         ASSERT(*(uint8_t*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
 #endif
 
+#ifdef TARGET_ARM
+        if ((writeBarrierAVLocations[i] | THUMB_CODE) == (uControlPc | THUMB_CODE))
+#else
         if (writeBarrierAVLocations[i] == uControlPc)
+#endif
             return true;
     }
 
