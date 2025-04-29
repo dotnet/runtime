@@ -21,6 +21,7 @@ namespace Internal.TypeSystem
         /// This is the inverse of what <see cref="CustomAttributeTypeNameFormatter"/> does.
         /// </summary>
         public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true,
+            bool resolveUnboundGenerics = false,
             Func<ModuleDesc, string, MetadataType> canonResolver = null)
         {
             if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions))
@@ -31,7 +32,8 @@ namespace Internal.TypeSystem
                 _context = module.Context,
                 _module = module,
                 _throwIfNotFound = throwIfNotFound,
-                _canonResolver = canonResolver
+                _canonResolver = canonResolver,
+                _resolveUnboundGenerics = resolveUnboundGenerics
             }.Resolve(parsed);
         }
 
@@ -91,6 +93,7 @@ namespace Internal.TypeSystem
             internal TypeSystemContext _context;
             internal ModuleDesc _module;
             internal bool _throwIfNotFound;
+            internal bool _resolveUnboundGenerics;
             internal Func<ModuleDesc, string, MetadataType> _canonResolver;
 
             internal List<ModuleDesc> _referencedModules;
@@ -136,32 +139,42 @@ namespace Internal.TypeSystem
                 }
 
                 ModuleDesc module = _module;
-                if (topLevelTypeName.AssemblyName != null)
+                if (topLevelTypeName.AssemblyName is not null)
                 {
                     module = _context.ResolveAssembly(typeName.AssemblyName, throwIfNotFound: _throwIfNotFound);
                     if (module == null)
                         return null;
                 }
 
-                if (module != null)
+                if (module is not null)
                 {
                     TypeDesc type = GetSimpleTypeFromModule(typeName, module);
-                    if (type != null)
+                    if (type is not null)
                     {
                         _referencedModules?.Add(module);
                         return type;
                     }
                 }
 
-                // If it didn't resolve and wasn't assembly-qualified, we also try core library
                 if (topLevelTypeName.AssemblyName == null)
                 {
+                    // If it didn't resolve and wasn't assembly-qualified, we also try core library
                     if (module != _context.SystemModule)
                     {
                         TypeDesc type = GetSimpleTypeFromModule(typeName, _context.SystemModule);
-                        if (type != null)
+                        if (type is not null)
                         {
                             _referencedModules?.Add(_context.SystemModule);
+                            return type;
+                        }
+                    }
+
+                    // If we still haven't resolved the name, check if we have an unbound generic type.
+                    if (_resolveUnboundGenerics && topLevelTypeName.FullName.StartsWith('!'))
+                    {
+                        TypeDesc type = ResolveUnboundGenericType(typeName);
+                        if (type is not null)
+                        {
                             return type;
                         }
                     }
@@ -212,6 +225,20 @@ namespace Internal.TypeSystem
                     instantiation[i] = type;
                 }
                 return ((MetadataType)typeDefinition).MakeInstantiatedType(instantiation);
+            }
+
+            private TypeDesc ResolveUnboundGenericType(TypeName typeName)
+            {
+                string name = typeName.FullName;
+                Debug.Assert(name.StartsWith('!'));
+                bool isMethodParameter = name.StartsWith("!!", StringComparison.Ordinal);
+
+                if (!int.TryParse(name.AsSpan(isMethodParameter ? 2 : 1), out int index))
+                {
+                    return null;
+                }
+
+                return _module.Context.GetSignatureVariable(index, isMethodParameter);
             }
         }
     }

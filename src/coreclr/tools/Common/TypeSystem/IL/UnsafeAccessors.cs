@@ -565,7 +565,7 @@ namespace Internal.IL
                     return SetTargetResult.Invalid;
                 }
 
-                TypeDesc replacementType = method.Module.GetTypeByCustomAttributeTypeName(replacementTypeName, throwIfNotFound: false);
+                TypeDesc replacementType = method.Module.GetTypeByCustomAttributeTypeName(replacementTypeName, throwIfNotFound: false, resolveUnboundGenerics: true);
 
                 if (replacementType is null)
                 {
