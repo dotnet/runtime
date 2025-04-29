@@ -137,7 +137,7 @@ namespace System
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe void ZeroMemory(ref byte b, nuint byteLength)
+        internal static unsafe void ZeroMemoryInternal(ref byte b, nuint byteLength)
         {
             fixed (byte* bytePointer = &b)
             {
