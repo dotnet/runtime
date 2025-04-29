@@ -275,6 +275,7 @@ This model ensures that calling `[SME_Streaming_Compatible]` intrinsics from non
 
 - **Seamless Library Integration**:
    - Invoking methods from existing libraries (streaming or non-streaming) remains straightforward. Developers do not need to worry about the streaming mode of the target method being invoked.
+   - Even if we decide to add these method attributes after few years, when we implement SME, existing methods that call `SME_Streaming_Compatible` NEON/SVE APIs will continue to just work with performance penalty because no `PSTATE.SM` checks will be added in the caller.
 
 **Cons:**
 - **Developer Errors**:
@@ -283,6 +284,9 @@ This model ensures that calling `[SME_Streaming_Compatible]` intrinsics from non
 - **Static Analyzer Limitations**:
    - Although static analyzers can identify errors, many projects may disable static analysis, leaving such issues undetected.
    - To mitigate this, method attributes could also be used to analyze VL-dependent arguments and add runtime checks (e.g., `throw InvalidProgramException`) for safety.
+
+- **API break**:
+   - If we decide to implement SME after few years, we might introduce these method attributes on the methods at that time. This might have a potential of API break, where static analyzers can start complaining about it (assuming we write such static analyzers today).
 
 **Special Considerations**
 
