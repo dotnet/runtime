@@ -1441,7 +1441,7 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
 
     exception = m_comp->gtNewLclVarNode(exceptionLclNum, TYP_REF);
 
-    GenTreeCall*          rethrowException = m_comp->gtNewHelperCallNode(CORINFO_HELP_THROWEXACT, TYP_VOID, exception);
+    GenTreeCall* rethrowException = m_comp->gtNewHelperCallNode(CORINFO_HELP_THROWEXACT, TYP_VOID, exception);
 
     m_comp->compCurBB = rethrowExceptionBB;
     m_comp->fgMorphTree(rethrowException);
