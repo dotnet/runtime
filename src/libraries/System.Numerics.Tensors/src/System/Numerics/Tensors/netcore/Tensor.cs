@@ -2187,6 +2187,8 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowArgument_StackShapesNotSame();
             }
 
+            // We are safe to do dimension > tensors[0].Rank instead of >= because we are adding a new dimension
+            // with our call to Unsqueeze.
             if (dimension < 0 || dimension > tensors[0].Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
 
@@ -2225,6 +2227,8 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowArgument_StackShapesNotSame();
             }
 
+            // We are safe to do dimension > tensors[0].Rank instead of >= because we are adding a new dimension
+            // with our call to Unsqueeze.
             if (dimension < 0 || dimension > tensors[0].Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
 
