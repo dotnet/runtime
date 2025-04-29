@@ -13966,7 +13966,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             // if it is a struct, because it requires some additional handling.
 
             if ((!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
-                 !argInfo.argHasCallerLocalRef && !argInfo.argIsByRefToStructLocal))
+                 !argInfo.argHasCallerLocalRef))
             {
                 /* Get a *LARGE* LCL_VAR node */
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp));
