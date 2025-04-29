@@ -1440,7 +1440,7 @@ namespace System.Numerics.Tensors
             nint[] newLengths = lengths.ToArray();
             // Calculate wildcard info.
             int wildcardIndex = lengths.IndexOf(-1);
-            if (wildcardIndex >= 0 -1)
+            if (wildcardIndex >= 0)
             {
                 if (lengths.Count(-1) > 1)
                     ThrowHelper.ThrowArgument_OnlyOneWildcard();
@@ -1511,8 +1511,8 @@ namespace System.Numerics.Tensors
             }
 
             nint[] newLengths = lengths.ToArray();
-            // Calculate wildcard info.
-            if (lengths.Contains(-1))
+            int wildcardIndex = lengths.IndexOf(-1);
+            if (wildcardIndex >= 0)
             {
                 if (lengths.Count(-1) > 1)
                     ThrowHelper.ThrowArgument_OnlyOneWildcard();
@@ -1524,7 +1524,7 @@ namespace System.Numerics.Tensors
                         tempTotal /= lengths[i];
                     }
                 }
-                newLengths[lengths.IndexOf(-1)] = tempTotal;
+                newLengths[wildcardIndex] = tempTotal;
 
             }
 
@@ -1588,7 +1588,8 @@ namespace System.Numerics.Tensors
 
             nint[] newLengths = lengths.ToArray();
             // Calculate wildcard info.
-            if (lengths.Contains(-1))
+            int wildcardIndex = lengths.IndexOf(-1);
+            if (wildcardIndex >= 0)
             {
                 if (lengths.Count(-1) > 1)
                     ThrowHelper.ThrowArgument_OnlyOneWildcard();
@@ -1600,7 +1601,7 @@ namespace System.Numerics.Tensors
                         tempTotal /= lengths[i];
                     }
                 }
-                newLengths[lengths.IndexOf(-1)] = tempTotal;
+                newLengths[wildcardIndex] = tempTotal;
 
             }
 
