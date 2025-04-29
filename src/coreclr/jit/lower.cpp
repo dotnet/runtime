@@ -5454,12 +5454,23 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
 
     GenTree* next = asyncCont->gtNext;
 
-    // When the ASYNC_CONTINUATION was created as a result of the
-    // AsyncCallContinuation() intrinsic the previous call hasn't been marked
-    // as an async call. We need to do that to get the right GC reporting
-    // behavior for the returned async continuation. Furthermore, we ensure the
-    // async continuation follows the call to simplify marking the registers
-    // busy in LSRA.
+    //
+    // ASYNC_CONTINUATION is created from two sources:
+    //
+    // 1. The async resumption stubs are IL stubs created by the VM. These call
+    // runtime async functions via "calli", passing the continuation manually.
+    // They use the AsyncHelpers.AsyncCallContinuation intrinsic after the
+    // calli, which turns into the ASYNC_CONTINUATION node during import.
+    //
+    // 2. In the async transformation, ASYNC_CONTINUATION nodes are inserted
+    // after calls to async calls.
+    //
+    // In the former case nothing has marked the previous call as an "async"
+    // method. We need to do that here to ensure that the backend knows that
+    // the call has a non-standard calling convention that returns an
+    // additional GC ref. This requires additional GC tracking that we would
+    // otherwise not get.
+    //
     GenTree* node = asyncCont;
     while (true)
     {

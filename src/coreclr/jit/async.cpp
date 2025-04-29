@@ -1201,6 +1201,8 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
 
     JITDUMP("  Creating resumption " FMT_BB " for state %u\n", resumeBB->bbNum, stateNum);
 
+    // We need to restore data before we restore GC pointers: restoring the
+    // data can also write the GC pointer fields (with nulls).
     unsigned resumeByteArrLclNum = BAD_VAR_NUM;
     if (layout.DataSize > 0)
     {
