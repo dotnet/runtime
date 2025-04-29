@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using Internal.IL.Stubs;
@@ -565,7 +566,25 @@ namespace Internal.IL
                     return SetTargetResult.Invalid;
                 }
 
-                TypeDesc replacementType = method.Module.GetTypeByCustomAttributeTypeName(replacementTypeName, throwIfNotFound: false, resolveUnboundGenerics: true);
+                TypeDesc replacementType = method.Module.GetTypeByCustomAttributeTypeName(
+                    replacementTypeName,
+                    throwIfNotFound: false,
+                    canonGenericResolver: (module, name) =>
+                    {
+                        if (!name.StartsWith('!'))
+                        {
+                            return null;
+                        }
+
+                        bool isMethodParameter = name.StartsWith("!!", StringComparison.Ordinal);
+
+                        if (!int.TryParse(name.AsSpan(isMethodParameter ? 2 : 1), out int index))
+                        {
+                            return null;
+                        }
+
+                        return module.Context.GetSignatureVariable(index, isMethodParameter);
+                    });
 
                 if (replacementType is null)
                 {

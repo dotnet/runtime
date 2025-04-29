@@ -21,8 +21,7 @@ namespace Internal.TypeSystem
         /// This is the inverse of what <see cref="CustomAttributeTypeNameFormatter"/> does.
         /// </summary>
         public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true,
-            bool resolveUnboundGenerics = false,
-            Func<ModuleDesc, string, MetadataType> canonResolver = null)
+            Func<ModuleDesc, string, TypeDesc> canonGenericResolver = null)
         {
             if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions))
                 ThrowHelper.ThrowTypeLoadException(name, module);
@@ -32,8 +31,7 @@ namespace Internal.TypeSystem
                 _context = module.Context,
                 _module = module,
                 _throwIfNotFound = throwIfNotFound,
-                _canonResolver = canonResolver,
-                _resolveUnboundGenerics = resolveUnboundGenerics
+                _canonGenericResolver = canonGenericResolver
             }.Resolve(parsed);
         }
 
@@ -93,8 +91,7 @@ namespace Internal.TypeSystem
             internal TypeSystemContext _context;
             internal ModuleDesc _module;
             internal bool _throwIfNotFound;
-            internal bool _resolveUnboundGenerics;
-            internal Func<ModuleDesc, string, MetadataType> _canonResolver;
+            internal Func<ModuleDesc, string, TypeDesc> _canonGenericResolver;
 
             internal List<ModuleDesc> _referencedModules;
 
@@ -168,16 +165,6 @@ namespace Internal.TypeSystem
                             return type;
                         }
                     }
-
-                    // If we still haven't resolved the name, check if we have an unbound generic type.
-                    if (_resolveUnboundGenerics && topLevelTypeName.FullName.StartsWith('!'))
-                    {
-                        TypeDesc type = ResolveUnboundGenericType(typeName);
-                        if (type is not null)
-                        {
-                            return type;
-                        }
-                    }
                 }
 
                 if (_throwIfNotFound)
@@ -197,9 +184,9 @@ namespace Internal.TypeSystem
 
                 string fullName = TypeNameHelpers.Unescape(typeName.FullName);
 
-                if (_canonResolver != null)
+                if (_canonGenericResolver != null)
                 {
-                    MetadataType canonType = _canonResolver(module, fullName);
+                    TypeDesc canonType = _canonGenericResolver(module, fullName);
                     if (canonType != null)
                         return canonType;
                 }
@@ -225,20 +212,6 @@ namespace Internal.TypeSystem
                     instantiation[i] = type;
                 }
                 return ((MetadataType)typeDefinition).MakeInstantiatedType(instantiation);
-            }
-
-            private TypeDesc ResolveUnboundGenericType(TypeName typeName)
-            {
-                string name = typeName.FullName;
-                Debug.Assert(name.StartsWith('!'));
-                bool isMethodParameter = name.StartsWith("!!", StringComparison.Ordinal);
-
-                if (!int.TryParse(name.AsSpan(isMethodParameter ? 2 : 1), out int index))
-                {
-                    return null;
-                }
-
-                return _module.Context.GetSignatureVariable(index, isMethodParameter);
             }
         }
     }

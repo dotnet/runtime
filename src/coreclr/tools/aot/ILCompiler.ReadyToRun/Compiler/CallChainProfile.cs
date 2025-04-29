@@ -227,7 +227,7 @@ namespace ILCompiler
         private MethodDesc ResolveMethodName(CompilerTypeSystemContext context, ModuleDesc module, string namespaceAndTypeName, string methodName)
         {
             TypeDesc resolvedType = module.GetTypeByCustomAttributeTypeName(namespaceAndTypeName, false,
-                canonResolver: (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
+                (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
 
             if (resolvedType != null)
             {
