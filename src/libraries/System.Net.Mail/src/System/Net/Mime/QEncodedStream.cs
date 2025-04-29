@@ -5,7 +5,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Buffers; // Required for Span/Memory operations
+using System.Buffers;
 
 namespace System.Net.Mime
 {
@@ -194,12 +194,7 @@ namespace System.Net.Mime
 
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            if (_writeState != null && _writeState.Length > 0)
-            {
-                await BaseStream.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
-                WriteState.Reset();
-            }
-
+            await FlushInternalAsync(cancellationToken).ConfigureAwait(false);
             await base.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -208,6 +203,15 @@ namespace System.Net.Mime
             if (_writeState != null && _writeState.Length > 0)
             {
                 BaseStream.Write(WriteState.Buffer.AsSpan(0, WriteState.Length));
+                WriteState.Reset();
+            }
+        }
+
+        private async ValueTask FlushInternalAsync(CancellationToken cancellationToken)
+        {
+            if (_writeState != null && _writeState.Length > 0)
+            {
+                await BaseStream.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
                 WriteState.Reset();
             }
         }
@@ -239,7 +243,7 @@ namespace System.Net.Mime
             }
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             int written = 0;
             while (true)
@@ -247,18 +251,12 @@ namespace System.Net.Mime
                 written += EncodeBytes(buffer.Span.Slice(written));
                 if (written < buffer.Length)
                 {
-                    return FlushAndContinueAsync(buffer.Slice(written), cancellationToken);
+                    await FlushInternalAsync(cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    return ValueTask.CompletedTask;
+                    break;
                 }
-            }
-
-            async ValueTask FlushAndContinueAsync(ReadOnlyMemory<byte> remainingBuffer, CancellationToken cancellationToken)
-            {
-                await FlushAsync(cancellationToken).ConfigureAwait(false);
-                await WriteAsync(remainingBuffer, cancellationToken).ConfigureAwait(false);
             }
         }
 

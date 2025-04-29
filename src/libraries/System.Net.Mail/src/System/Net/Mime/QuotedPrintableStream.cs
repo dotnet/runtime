@@ -358,7 +358,7 @@ namespace System.Net.Mime
             }
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             int written = 0;
             while (true)
@@ -366,20 +366,13 @@ namespace System.Net.Mime
                 written += EncodeBytes(buffer.Span.Slice(written));
                 if (written < buffer.Length)
                 {
-                    return FlushAndContinueAsync(buffer.Slice(written), cancellationToken);
+                    await FlushInternalAsync(cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    return ValueTask.CompletedTask;
+                    break;
                 }
             }
-
-            async ValueTask FlushAndContinueAsync(ReadOnlyMemory<byte> remainingBuffer, CancellationToken cancellationToken)
-            {
-                await FlushInternalAsync(cancellationToken).ConfigureAwait(false);
-                await WriteAsync(remainingBuffer, cancellationToken).ConfigureAwait(false);
-            }
-
         }
 
         private sealed class ReadStateInfo

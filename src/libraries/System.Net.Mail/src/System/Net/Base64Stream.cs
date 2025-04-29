@@ -155,18 +155,19 @@ namespace System.Net
 
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            if (_writeState != null && WriteState.Length > 0)
-            {
-                await BaseStream.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
-                WriteState.Reset();
-            }
-
+            await FlushInternalAsync(cancellationToken).ConfigureAwait(false);
             await base.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private void FlushInternal()
         {
             BaseStream.Write(WriteState.Buffer.AsSpan(0, WriteState.Length));
+            WriteState.Reset();
+        }
+
+        private async ValueTask FlushInternalAsync(CancellationToken cancellationToken)
+        {
+            await BaseStream.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
             WriteState.Reset();
         }
 
@@ -247,7 +248,7 @@ namespace System.Net
                 written += EncodeBytes(buffer.Span.Slice(written), false, false);
                 if (written < buffer.Length)
                 {
-                    await FlushAsync(cancellationToken).ConfigureAwait(false);
+                    await FlushInternalAsync(cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
