@@ -370,8 +370,6 @@ int minipal_getcpufeatures(void)
                                             if (avx10Version >= 2)                                              // Avx10.2
                                             {
                                                 result |= XArchIntrinsicConstants_Avx10v2;
-                                                result |= XArchIntrinsicConstants_AvxVnniInt8;                  // AvxVnniInt8
-                                                result |= XArchIntrinsicConstants_AvxVnniInt16;                 // AvxVnniInt16
                                             }
 
                                             // We assume that the Avx10/V512 support can be inferred from

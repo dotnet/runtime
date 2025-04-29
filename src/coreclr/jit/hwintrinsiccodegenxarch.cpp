@@ -844,18 +844,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         case NI_AVXVNNI_MultiplyWideningAndAdd:
                         case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
-                        case NI_EVEX_MultiplyWideningAndAddSByteSByte:
-                        case NI_EVEX_MultiplyWideningAndAddSByteByte:
-                        case NI_EVEX_MultiplyWideningAndAddByteByte:
-                        case NI_EVEX_MultiplyWideningAndAddSByteSByteSaturate:
-                        case NI_EVEX_MultiplyWideningAndAddSByteByteSaturate:
-                        case NI_EVEX_MultiplyWideningAndAddByteByteSaturate:
-                        case NI_EVEX_MultiplyWideningAndAddInt16UInt16:
-                        case NI_EVEX_MultiplyWideningAndAddUInt16UInt16:
-                        case NI_EVEX_MultiplyWideningAndAddUInt16Int16:
-                        case NI_EVEX_MultiplyWideningAndAddInt16UInt16Saturate:
-                        case NI_EVEX_MultiplyWideningAndAddUInt16UInt16Saturate:
-                        case NI_EVEX_MultiplyWideningAndAddUInt16Int16Saturate:
+                        case NI_AVXVNNIINT8_MultiplyWideningAndAddSByteSByte:
+                        case NI_AVXVNNIINT8_MultiplyWideningAndAddSByteByte:
+                        case NI_AVXVNNIINT8_MultiplyWideningAndAddByteByte:
+                        case NI_AVXVNNIINT8_MultiplyWideningAndAddSByteSByteSaturate:
+                        case NI_AVXVNNIINT8_MultiplyWideningAndAddSByteByteSaturate:
+                        case NI_AVXVNNIINT8_MultiplyWideningAndAddByteByteSaturate:
+                        case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddSByteSByte:
+                        case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddSByteByte:
+                        case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddByteByte:
+                        case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddSByteSByteSaturate:
+                        case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddSByteByteSaturate:
+                        case NI_AVXVNNIINT8_V512_MultiplyWideningAndAddByteByteSaturate:
+                        case NI_AVXVNNIINT16_MultiplyWideningAndAddInt16UInt16:
+                        case NI_AVXVNNIINT16_MultiplyWideningAndAddUInt16UInt16:
+                        case NI_AVXVNNIINT16_MultiplyWideningAndAddUInt16Int16:
+                        case NI_AVXVNNIINT16_MultiplyWideningAndAddInt16UInt16Saturate:
+                        case NI_AVXVNNIINT16_MultiplyWideningAndAddUInt16UInt16Saturate:
+                        case NI_AVXVNNIINT16_MultiplyWideningAndAddUInt16Int16Saturate:
+                        case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddInt16UInt16:
+                        case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddUInt16UInt16:
+                        case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddUInt16Int16:
+                        case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddInt16UInt16Saturate:
+                        case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddUInt16UInt16Saturate:
+                        case NI_AVXVNNIINT16_V512_MultiplyWideningAndAddUInt16Int16Saturate:
                         {
                             assert(targetReg != REG_NA);
                             assert(op1Reg != REG_NA);

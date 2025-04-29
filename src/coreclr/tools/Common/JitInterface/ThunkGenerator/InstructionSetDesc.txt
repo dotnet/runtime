@@ -189,8 +189,8 @@ implication        ,X86   ,AVX10v2              ,AVX10v1
 implication        ,X86   ,AVX10v2_V512         ,AVX10v1_V512
 implication        ,X86   ,AVX10v2              ,AVXVNNIINT8
 implication        ,X86   ,AVX10v2              ,AVXVNNIINT16
-implication        ,X86   ,AVX10v2_V512         ,AVXVNNIINT8_V512
-implication        ,X86   ,AVX10v2_V512         ,AVXVNNIINT16_V512
+implication        ,X86   ,AVXVNNIINT8_V512     ,AVX10v2_V512
+implication        ,X86   ,AVXVNNIINT16_V512    ,AVX10v2_V512
 
 ; These synthetic ISAs need to appear after the core ISAs
 ; as they depend on the other implications being correct first

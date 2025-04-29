@@ -247,10 +247,10 @@ namespace ILCompiler
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
                     InstructionSet.X64_AVXVNNIINT8 => AvxVnniInt8,
                     InstructionSet.X64_AVXVNNIINT8_X64 => AvxVnniInt8,
-                    InstructionSet.X64_AVXVNNIINT8_V512 => (AvxVnniInt8 | Avx512),
+                    InstructionSet.X64_AVXVNNIINT8_V512 => (AvxVnniInt8 | Avx10v2),
                     InstructionSet.X64_AVXVNNIINT16 => AvxVnniInt16,
                     InstructionSet.X64_AVXVNNIINT16_X64 => AvxVnniInt16,
-                    InstructionSet.X64_AVXVNNIINT16_V512 => (AvxVnniInt16 | Avx512),
+                    InstructionSet.X64_AVXVNNIINT16_V512 => (AvxVnniInt16 | Avx10v2),
 
                     // Baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,
