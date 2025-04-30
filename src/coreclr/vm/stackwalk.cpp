@@ -2892,6 +2892,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
                     SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
                     SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
+                    SyncRegDisplayToCurrentContext(pRD);
                 }
             }
         }
