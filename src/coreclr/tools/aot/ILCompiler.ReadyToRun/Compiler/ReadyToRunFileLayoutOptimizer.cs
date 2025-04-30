@@ -8,13 +8,19 @@ using System.Diagnostics;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
+#if READYTORUN
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+#endif
 using ILCompiler.DependencyAnalysisFramework;
 using System.Linq;
 using System.Collections.Immutable;
 using System.Text;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.PettisHansenSort;
+
+#if !READYTORUN
+using MethodWithGCInfo = ILCompiler.DependencyAnalysis.MethodCodeNode;
+#endif
 
 namespace ILCompiler
 {
@@ -24,7 +30,9 @@ namespace ILCompiler
         ExclusiveWeight,
         HotCold,
         HotWarmCold,
+#if READYTORUN
         CallFrequency,
+#endif
         PettisHansen,
         Random,
     }
@@ -79,11 +87,13 @@ namespace ILCompiler
             foreach (var methodNode in sortedMethodsList)
             {
                 methodNode.CustomSort = sortOrder;
+#if READYTORUN
                 MethodColdCodeNode methodColdCodeNode = methodNode.ColdCodeNode;
                 if (methodColdCodeNode != null)
                 {
                     methodColdCodeNode.CustomSort = sortOrder + sortedMethodsList.Count;
                 }
+#endif
                 sortOrder++;
             }
 
@@ -164,9 +174,11 @@ namespace ILCompiler
                     };
                     break;
 
+#if READYTORUN
                 case ReadyToRunMethodLayoutAlgorithm.CallFrequency:
                     methods = MethodCallFrequencySort(methods);
                     break;
+#endif
 
                 case ReadyToRunMethodLayoutAlgorithm.PettisHansen:
                     methods = PettisHansenSort(methods);
@@ -216,6 +228,7 @@ namespace ILCompiler
             }
         }
 
+#if READYTORUN
         /// <summary>
         /// Use callchain profile information to generate method ordering. We place
         /// callers and callees by traversing the caller-callee pairs in the callchain
@@ -268,6 +281,7 @@ namespace ILCompiler
             Debug.Assert(outputMethods.Count == methodsToPlace.Count);
             return outputMethods;
         }
+#endif
 
         /// <summary>
         /// Sort methods with Pettis-Hansen using call graph data from profile.
@@ -303,7 +317,9 @@ namespace ILCompiler
 
             if (!any)
             {
+#if READYTORUN
                 _logger.Writer.WriteLine("Warning: no call graph data was found or a .mibc file was not specified. Skipping Pettis Hansen method ordering.");
+#endif
                 return methodsToPlace;
             }
 
