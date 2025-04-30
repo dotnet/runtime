@@ -49758,7 +49758,7 @@ HRESULT GCHeap::Initialize()
 
 ////
 // GC callback functions
-bool GCHeap::IsPromoted(Object* object)
+bool GCHeap::IsPromoted(Object* object, bool bVerifyNextHeader)
 {
     uint8_t* o = (uint8_t*)object;
 
@@ -49797,15 +49797,15 @@ bool GCHeap::IsPromoted(Object* object)
     }
 
 // Walking refs when objects are marked seems unexpected
-//#ifdef _DEBUG
-//    if (o)
-//    {
-//        ((CObjectHeader*)o)->Validate(TRUE, TRUE, is_marked);
-//
-//        // Frozen objects aren't expected to be "not promoted" here
-//        assert(is_marked || !IsInFrozenSegment(object));
-//    }
-//#endif //_DEBUG
+#ifdef _DEBUG
+    if (o)
+    {
+        ((CObjectHeader*)o)->Validate(TRUE, bVerifyNextHeader, is_marked);
+
+        // Frozen objects aren't expected to be "not promoted" here
+        assert(is_marked || !IsInFrozenSegment(object));
+    }
+#endif //_DEBUG
 
     return is_marked;
 }

@@ -125,7 +125,7 @@ public:
     // GC callback functions
     // Check if an argument is promoted (ONLY CALL DURING
     // THE PROMOTIONSGRANTED CALLBACK.)
-    bool IsPromoted (Object *object);
+    bool IsPromoted (Object *object, bool bVerifyNextHeader = true);
 
     size_t GetPromotedBytes (int heap_index);
 
