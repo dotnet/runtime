@@ -5864,6 +5864,11 @@ void Compiler::RecomputeFlowGraphAnnotations()
     //    DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
     // ? It could be called multiple times.
     optSetBlockWeights();
+
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
 }
 
 /*****************************************************************************/
