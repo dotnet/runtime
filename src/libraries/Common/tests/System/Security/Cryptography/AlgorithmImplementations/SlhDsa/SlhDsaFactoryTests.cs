@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 Algorithm = new AlgorithmIdentifierAsn
                 {
                     Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
-                    Parameters = SlhDsaTestHelpers.s_DerBitStringFoo, // <-- Invalid
+                    Parameters = SlhDsaTestHelpers.s_derBitStringFoo, // <-- Invalid
                 },
                 SubjectPublicKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes]
             };
@@ -177,7 +177,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
                     Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
-                    Parameters = SlhDsaTestHelpers.s_DerBitStringFoo, // <-- Invalid
+                    Parameters = SlhDsaTestHelpers.s_derBitStringFoo, // <-- Invalid
                 },
                 PrivateKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes]
             };
