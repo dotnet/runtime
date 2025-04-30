@@ -2863,12 +2863,21 @@ void StackFrameIterator::ProcessCurrentFrame(void)
         {
             if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
             {
+                PREGDISPLAY pRD = m_crawl.GetRegisterSet();
+
                 if (!m_walkingInterpreterFrames)
                 {
                     // We have hit the InterpreterFrame while we were not processing the interpreter frames.
                     // Switch to walking the underlying interpreted frames.
-                    PREGDISPLAY pRD = m_crawl.GetRegisterSet();
+                    // Save the registers the interpreter frames walking reuses so that we can restore them
+                    // after we are done with the interpreter frames.
+                    m_interpExecMethodIP = (TADDR)GetIP(pRD->pCurrentContext);
+                    m_interpExecMethodSP = (TADDR)GetSP(pRD->pCurrentContext);
+                    m_interpExecMethodFP = (TADDR)GetFP(pRD->pCurrentContext);
+                    m_interpExecMethodFirstArgReg = (TADDR)GetFirstArgReg(pRD->pCurrentContext);
+
                     ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
+
                     pRD->pCurrentContext->ContextFlags = CONTEXT_FULL;
                     SyncRegDisplayToCurrentContext(pRD);
                     ProcessIp(GetControlPC(pRD));
@@ -2878,6 +2887,11 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 {
                     // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
                     m_walkingInterpreterFrames = false;
+                    // Restore the registers to the values they had before we started walking the interpreter frames.
+                    SetIP(pRD->pCurrentContext, m_interpExecMethodIP);
+                    SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
+                    SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
+                    SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
                 }
             }
         }

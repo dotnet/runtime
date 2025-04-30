@@ -165,6 +165,30 @@ struct EHContext {
         return (LPVOID)(UINT_PTR)Ebp;
     }
 
+    inline void SetFirstArgReg(CONTEXT *context, TADDR value)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        context->Ecx = (DWORD)value;
+    }
+
+    inline TADDR GetFirstArgReg(CONTEXT *context)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (TADDR)(context->Ecx);
+    }
+
+    inline void SetSecondArgReg(CONTEXT *context, TADDR value)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        context->Edx = (DWORD)value;
+    }
+
+    inline TADDR GetSecondArgReg(CONTEXT *context)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (TADDR)(context->Edx);
+    }
+
     inline void SetArg(LPVOID arg) {
         LIMITED_METHOD_CONTRACT;
         Eax = (INT32)(size_t)arg;

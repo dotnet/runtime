@@ -291,6 +291,18 @@ inline TADDR GetFirstArgReg(T_CONTEXT *context)
     return GetReg(context, 0);
 }
 
+inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    SetReg(context, 1, value);
+}
+
+inline TADDR GetSecondArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetReg(context, 1);
+}
+
 inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
 {
     TADDR mem;

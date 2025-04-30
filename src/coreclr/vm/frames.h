@@ -2908,13 +2908,13 @@ public:
     BOOL NeedsUpdateRegDisplay_Impl()
     {
         LIMITED_METHOD_CONTRACT;
-        return GetTransitionBlock() != NULL;
+        return GetTransitionBlock() != 0;
     }
 
     PCODE GetReturnAddressPtr_Impl()
     {
         WRAPPER_NO_CONTRACT;
-        if (GetTransitionBlock() == NULL)
+        if (GetTransitionBlock() == 0)
             return 0;
 
         return FramedMethodFrame::GetReturnAddressPtr_Impl();
@@ -2928,22 +2928,6 @@ public:
     PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
 
     void SetContextToInterpMethodContextFrame(T_CONTEXT * pContext);
-
-    // Restore the context to the native context of the InterpExecMethod
-    void RestoreInterpExecMethodContext(T_CONTEXT * pContext)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetSP(pContext, m_interpExecMethodSP);
-        SetIP(pContext, m_interpExecMethodIP);
-        SetFP(pContext, m_interpExecMethodFP);
-        SetFirstArgReg(pContext, m_interpExecMethodFirstArgReg);
-    }
-
-    TADDR GetInterpExecMethodIP()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_interpExecMethodIP;
-    }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     void SetInterpExecMethodSSP(TADDR ssp)
@@ -2963,12 +2947,6 @@ private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to
     // this InterpreterFrame.
     PTR_InterpMethodContextFrame m_pTopInterpMethodContextFrame;
-    // Saved IP, SP and FP of the context of the InterpExecMethod. These registers are reused for interpreter frames,
-    // but we need the original values for resuming after catch into interpreter frames.
-    TADDR m_interpExecMethodIP;
-    TADDR m_interpExecMethodSP;
-    TADDR m_interpExecMethodFP;
-    TADDR m_interpExecMethodFirstArgReg;
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;

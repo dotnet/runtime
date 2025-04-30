@@ -3038,29 +3038,8 @@ void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t ta
     pContext->Ra = GetIP(pContext);
 #endif
 
-// The SECOND_ARG_REG is defined only for Windows, it is used to handle longjmp propagation over managed frames
-#ifdef HOST_AMD64
-#ifdef UNIX_AMD64_ABI
-#define FIRST_ARG_REG Rdi
-#else
-#define FIRST_ARG_REG Rcx
-#define SECOND_ARG_REG Rdx
-#endif
-#elif defined(HOST_X86)
-#define FIRST_ARG_REG Ecx
-#define SECOND_ARG_REG Edx
-#elif defined(HOST_ARM64)
-#define FIRST_ARG_REG X0
-#define SECOND_ARG_REG X1
-#elif defined(HOST_ARM)
-#define FIRST_ARG_REG R0
-#elif defined(HOST_RISCV64) || defined(HOST_LOONGARCH64)
-#define FIRST_ARG_REG A0
-#endif
-    pContext->FIRST_ARG_REG = arg1;
-#ifdef HOST_WINDOWS
-    pContext->SECOND_ARG_REG = arg2;
-#endif
+    SetFirstArgReg(pContext, arg1);
+    SetSecondArgReg(pContext, arg2);
     SetIP(pContext, functionPtr);
 
     ClrRestoreNonvolatileContext(pContext, targetSSP);
