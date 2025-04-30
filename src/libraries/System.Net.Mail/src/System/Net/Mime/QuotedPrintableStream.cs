@@ -346,7 +346,6 @@ namespace System.Net.Mime
             while (true)
             {
                 written += EncodeBytes(buffer.Slice(written));
-                // TODO: what is this condition?
                 if (written < buffer.Length)
                 {
                     FlushInternal();
