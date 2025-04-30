@@ -792,13 +792,15 @@ protected:
         // Note that we use the _idReg1 and _idReg2 fields to hold
         // the live gcrefReg mask for the call instructions on x86/x64
         //
+#if !defined(TARGET_AMD64)
         regNumber _idReg1 : REGNUM_BITS; // register num
         regNumber _idReg2 : REGNUM_BITS;
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:         38 bits
-        // amd64:       38 bits
+        // amd64:       26 bits
         // arm:         32 bits
         // arm64:       46 bits
         // loongarch64: 28 bits
@@ -816,6 +818,10 @@ protected:
         unsigned _idCustom1 : 1;
         unsigned _idCustom2 : 1;
         unsigned _idCustom3 : 1;
+#if defined(TARGET_AMD64)
+        regNumber _idReg1 : REGNUM_BITS; // register num
+        regNumber _idReg2 : REGNUM_BITS;
+#endif
 
 #define _idBound          _idCustom1 /* jump target / frame offset bound */
 #define _idTlsGD          _idCustom2 /* Used to store information related to TLS GD access on linux */
@@ -883,7 +889,7 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:         49 bits
-        // amd64:       49 bits
+        // amd64:       51 bits
         // arm:         48 bits
         // arm64:       55 bits
         // loongarch64: 46 bits
@@ -901,7 +907,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (17)
+#define ID_EXTRA_BITFIELD_BITS (19)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -936,7 +942,7 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
         // x86:         55/51 bits
-        // amd64:       56/51 bits
+        // amd64:       58/53 bits
         // arm:         54/50 bits
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
