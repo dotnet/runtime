@@ -56,6 +56,10 @@
 #include "exinfo.h"
 #endif
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -1538,6 +1542,7 @@ Thread::Thread()
 
 #ifdef TARGET_X86
     m_HijackReturnKind = RT_Illegal;
+    m_HijackHasAsyncRet = false;
 #endif
 
     m_currentPrepareCodeConfig = nullptr;
@@ -1549,6 +1554,10 @@ Thread::Thread()
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
 #endif // _DEBUG
+
+#ifdef FEATURE_INTERPRETER
+    m_pInterpThreadContext = nullptr;
+#endif // FEATURE_INTERPRETER
 }
 
 //--------------------------------------------------------------------
@@ -2801,6 +2810,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     Thread *pCurrentThread = GetThreadNULLOk();
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
+
+#ifdef FEATURE_INTERPRETER
+    if (m_pInterpThreadContext != nullptr)
+    {
+        delete m_pInterpThreadContext;
+    }
+#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // If the currently running thread is the thread that died and it is an STA thread, then we
@@ -7793,6 +7809,20 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
     RtlRestoreContext(ContextRecord, NULL);
 #endif
 }
+
+#ifdef FEATURE_INTERPRETER
+InterpThreadContext* Thread::GetInterpThreadContext()
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (m_pInterpThreadContext == nullptr)
+    {
+        m_pInterpThreadContext = new (nothrow) InterpThreadContext();
+    }
+
+    return m_pInterpThreadContext;
+}
+#endif // FEATURE_INTERPRETER
 
 #endif // #ifndef DACCESS_COMPILE
 

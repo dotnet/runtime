@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Linq;
+using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Dsa.Tests;
 using System.Security.Cryptography.EcDsa.Tests;
 using System.Security.Cryptography.Asn1;
@@ -334,6 +335,57 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             copyPub.VerifyData(pfxBytes, origSign, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                             "copyPub v oSig");
                     }
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void ExportPkcs12_MLKem_Roundtrip(MLKemAlgorithm algorithm)
+        {
+            const string password = "PLACEHOLDER";
+
+            byte[] pfxBytes;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            if (algorithm == MLKemAlgorithm.MLKem512)
+            {
+                pfxBytes = MLKemTestData.IetfMlKem512PrivateKeySeedPfx;
+            }
+            else if (algorithm == MLKemAlgorithm.MLKem768)
+            {
+                pfxBytes = MLKemTestData.IetfMlKem768PrivateKeySeedPfx;
+            }
+            else if (algorithm == MLKemAlgorithm.MLKem1024)
+            {
+                pfxBytes = MLKemTestData.IetfMlKem1024PrivateKeySeedPfx;
+            }
+            else
+            {
+                Assert.Fail("Unhandled ML-KEM algorithm type.");
+                pfxBytes = null;
+            }
+
+            PbeParameters pbeParameters = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword))
+            {
+                byte[] pkcs12 = cert.ExportPkcs12(pbeParameters, password);
+                (int certs, int keys) = VerifyPkcs12(
+                    pkcs12,
+                    password,
+                    pbeParameters.IterationCount,
+                    pbeParameters.HashAlgorithm,
+                    pbeParameters.EncryptionAlgorithm);
+                Assert.Equal(1, certs);
+                Assert.Equal(1, keys);
+
+                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password))
+                using (MLKem kem = reLoaded.GetMLKemPrivateKey())
+                {
+                    Assert.NotNull(kem);
+                    Assert.Equal(algorithm, kem.Algorithm);
+                    AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
                 }
             }
         }
