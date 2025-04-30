@@ -40,6 +40,7 @@ StubAVLocation textequ @CatStr( _RhpInterfaceDispatchAVLocation, entries )
         ;; mess up the stack trace. We also don't have a spare scratch register (eax holds the cache pointer
         ;; and the push of ebx below is precisely so we can access a second register to hold the MethodTable
         ;; pointer).
+    ALTERNATE_ENTRY StubAVLocation
         cmp     dword ptr [ecx], ecx
 
         ;; eax currently contains the indirection cell address. We need to update it to point to the cache

@@ -6,6 +6,10 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+LEAF_ENTRY RhpVirtualDispatchHelpers, _TEXT
+    ret
+LEAF_END RhpVirtualDispatchHelpers, _TEXT
+
 //
 // Stub dispatch routine for dispatch to a vtable slot
 //
@@ -21,6 +25,7 @@
 
         // Load the MethodTable from the object instance in x0, and add it to the vtable offset
         // to get the address in the vtable chunk list of what we want to dereference
+        AVLOCATON_ALTERNATE_ENTRY(RhpVTableOffsetDispatchAVLocation)
         ldr     x9, [x0]
         add     x9, x10, x9
 
@@ -35,6 +40,11 @@
 
         EPILOG_BRANCH_REG  x9
     LEAF_END RhpVTableOffsetDispatch, _TEXT
+
+LEAF_ENTRY RhpVirtualDispatchHelpers_End, _TEXT
+    ret
+LEAF_END RhpVirtualDispatchHelpers_End, _TEXT
+
 
 //
 // Cache miss case, call the runtime to resolve the target and update the cache.

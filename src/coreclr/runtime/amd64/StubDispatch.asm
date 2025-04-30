@@ -34,6 +34,7 @@ LEAF_ENTRY StubName, _TEXT
         mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         ;; Load the MethodTable from the object instance in rcx.
+        ALTERNATE_ENTRY StubAVLocation
         mov     rax, [rcx]
 
 CurrentEntry = 0

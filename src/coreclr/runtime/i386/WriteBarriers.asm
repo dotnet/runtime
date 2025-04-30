@@ -105,7 +105,10 @@ FASTCALL_FUNC RhpAssignRef&REFREG&, 8
     ifidni <REFREG>, <EDX>
     ALTERNATE_ENTRY RhpAssignRef
     ALTERNATE_ENTRY @RhpAssignRef@8
+    ALTERNATE_ENTRY _RhpAssignRefAVLocation
     endif
+
+    ALTERNATE_ENTRY _RhpAssignRef&REFREG&AVLocation
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
@@ -201,8 +204,10 @@ FASTCALL_FUNC RhpCheckedAssignRef&REFREG&, 8
     ifidni <REFREG>, <EDX>
     ALTERNATE_ENTRY RhpCheckedAssignRef
     ALTERNATE_ENTRY @RhpCheckedAssignRef@8
+    ALTERNATE_ENTRY _RhpCheckedAssignRefAVLocation
     endif
 
+    ALTERNATE_ENTRY _RhpCheckedAssignRef&REFREG&AVLocation
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
@@ -266,7 +271,9 @@ FASTCALL_ENDFUNC
 ;;      ecx: trashed
 ;;
 FASTCALL_FUNC RhpByRefAssignRef, 8
+ALTERNATE_ENTRY _RhpByRefAssignRefAVLocation1
     mov     ecx, [esi]
+ALTERNATE_ENTRY _RhpByRefAssignRefAVLocation2
     mov     [edi], ecx
 
     ;; Check whether the writes were even into the heap. If not there's no card update required.

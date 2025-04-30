@@ -7,6 +7,10 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+LEAF_ENTRY RhpVirtualDispatchHelpers, _TEXT
+    ret
+LEAF_END RhpVirtualDispatchHelpers, _TEXT
+
 // Stub dispatch routine for dispatch to a vtable slot
 LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
         // r11 currently contains the indirection cell address.
@@ -20,6 +24,7 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
 
         // Load the MethodTable from the object instance in rdi, and add it to the vtable offset
         // to get the address in the vtable chunk list of what we want to dereference
+        AVLOCATON_ALTERNATE_ENTRY(RhpVTableOffsetDispatchAVLocation)
         add     rax, [rdi]
 
         // Load the target address of the vtable chunk into rax
@@ -33,6 +38,10 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
 
         TAILJMP_RAX
 LEAF_END RhpVTableOffsetDispatch, _TEXT
+
+LEAF_ENTRY RhpVirtualDispatchHelpers_End, _TEXT
+    ret
+LEAF_END RhpVirtualDispatchHelpers_End, _TEXT
 
 // On Input:
 //    r11                    contains the address of the indirection cell

@@ -4123,6 +4123,12 @@ extern "C" void RhpInterfaceDispatch64();
 
 extern "C" void RhpVTableOffsetDispatch();
 
+#ifdef TARGET_APPLE
+extern "C" void RhpVirtualDispatchHelpers();
+extern "C" void RhpVirtualDispatchHelpers_End();
+extern "C" void RhpInterfaceDispatchHelpers();
+extern "C" void RhpInterfaceDispatchHelpers_End();
+#else
 extern "C" void RhpInterfaceDispatchAVLocation1();
 extern "C" void RhpInterfaceDispatchAVLocation2();
 extern "C" void RhpInterfaceDispatchAVLocation4();
@@ -4131,7 +4137,7 @@ extern "C" void RhpInterfaceDispatchAVLocation16();
 extern "C" void RhpInterfaceDispatchAVLocation32();
 extern "C" void RhpInterfaceDispatchAVLocation64();
 extern "C" void RhpVTableOffsetDispatchAVLocation();
-
+#endif // TARGET_APPLE
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -4162,6 +4168,10 @@ VirtualCallStubManagerManager::VirtualCallStubManagerManager()
     _ASSERTE(helperCount == CACHED_INTERFACE_DISPATCH_HELPER_COUNT);
 
     helperCount = 0;
+#ifdef TARGET_APPLE
+    pCachedInterfaceDispatchHelpersAVLocation = 0; // On Apple platforms, we don't use AV locations for cached interface dispatch helpers
+    countCachedInterfaceDispatchHelpers = helperCount;
+#else
     pCachedInterfaceDispatchHelpersAVLocation = new PCODE[CACHED_INTERFACE_DISPATCH_HELPER_COUNT];
     RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation1);
     RECORD_CACHED_INTERFACE_DISPATCH_HELPER_AVLOCATION(RhpInterfaceDispatchAVLocation2);
@@ -4175,8 +4185,32 @@ VirtualCallStubManagerManager::VirtualCallStubManagerManager()
     _ASSERTE(helperCount == CACHED_INTERFACE_DISPATCH_HELPER_COUNT);
 
     countCachedInterfaceDispatchHelpers = helperCount;
+#endif // TARGET_APPLE
+
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 }
+
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && !defined(DACCESS_COMPILE)
+bool VirtualCallStubManagerManager::isCachedInterfaceDispatchStubAVLocation(PCODE addr)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    #define CHECK_RANGE(name) \
+    if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
+
+#ifdef TARGET_APPLE
+    CHECK_RANGE(RhpVirtualDispatchHelpers);
+    CHECK_RANGE(RhpInterfaceDispatch);
+#else
+    for (size_t i = 0; i < countCachedInterfaceDispatchHelpers; i++)
+    {
+        if (pCachedInterfaceDispatchHelpersAVLocation[i] == addr)
+            return true;
+    }
+#endif
+    return false;
+}
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 /* static */
@@ -4340,6 +4374,7 @@ bool VirtualCallStubManager::isCachedInterfaceDispatchStub(PCODE addr)
     return pGlobalManager->isCachedInterfaceDispatchStub(addr);
 }
 
+#ifndef DACCESS_COMPILE
 bool VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(PCODE addr)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -4350,4 +4385,6 @@ bool VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(PCODE addr)
         return false;
     return pGlobalManager->isCachedInterfaceDispatchStubAVLocation(addr);
 }
+#endif DACCESS_COMPILE
+
 #endif

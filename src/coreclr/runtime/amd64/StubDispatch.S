@@ -20,6 +20,7 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in rdi.
+        AVLOCATION_ALTERNATE_ENTRY(RhpInterfaceDispatchAVLocation\entries)
         mov     rax, [rdi]
 
         CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries
@@ -42,6 +43,9 @@ LEAF_END RhpInterfaceDispatch\entries, _TEXT
 .endm // DEFINE_INTERFACE_DISPATCH_STUB
 
 
+LEAF_ENTRY RhpInterfaceDispatchHelpers, _TEXT
+    ret
+LEAF_END RhpInterfaceDispatchHelpers, _TEXT
 
 // Define all the stub routines we currently need.
 //
@@ -62,7 +66,7 @@ DEFINE_INTERFACE_DISPATCH_STUB 64
 
 // Initial dispatch on an interface when we don't have a cache yet.
 LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
-ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
+AVLOCATION_ALTERNATE_ENTRY(RhpInitialDynamicInterfaceDispatch)
         // Trigger an AV if we're dispatching on a null this.
         // The exception handling infrastructure is aware of the fact that this is the first
         // instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
@@ -74,5 +78,8 @@ ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
 
 LEAF_END RhpInitialInterfaceDispatch, _TEXT
 
+LEAF_ENTRY RhpInterfaceDispatchHelpers_End, _TEXT
+    ret
+LEAF_END RhpInterfaceDispatchHelpers_End, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

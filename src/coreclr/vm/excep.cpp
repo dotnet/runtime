@@ -5895,14 +5895,13 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
 
-#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+#if defined(TARGET_APPLE)
 EXTERN_C void RhpWriteBarriers();
 EXTERN_C void RhpWriteBarriers_End();
-#endif
-
+#else
 typedef uint8_t CODE_LOCATION;
 EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
-#if defined(TARGET_X86)
+#if defined(HOST_X86)
 EXTERN_C CODE_LOCATION RhpAssignRefEAXAVLocation;
 EXTERN_C CODE_LOCATION RhpAssignRefECXAVLocation;
 EXTERN_C CODE_LOCATION RhpAssignRefEBXAVLocation;
@@ -5911,7 +5910,7 @@ EXTERN_C CODE_LOCATION RhpAssignRefEDIAVLocation;
 EXTERN_C CODE_LOCATION RhpAssignRefEBPAVLocation;
 #endif
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefAVLocation;
-#if defined(TARGET_X86)
+#if defined(HOST_X86)
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEAXAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefECXAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBXAVLocation;
@@ -5921,14 +5920,14 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
 EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
 EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
 #endif
 
 static uintptr_t writeBarrierAVLocations[] =
 {
     (uintptr_t)&RhpAssignRefAVLocation,
-#if defined(TARGET_X86)
+#if defined(HOST_X86)
     (uintptr_t)&RhpAssignRefEAXAVLocation,
     (uintptr_t)&RhpAssignRefECXAVLocation,
     (uintptr_t)&RhpAssignRefEBXAVLocation,
@@ -5946,10 +5945,11 @@ static uintptr_t writeBarrierAVLocations[] =
     (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
 #endif
     (uintptr_t)&RhpByRefAssignRefAVLocation1,
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
     (uintptr_t)&RhpByRefAssignRefAVLocation2,
 #endif
 };
+#endif
 
 // Check if the passed in instruction pointer is in one of the
 // JIT helper functions.
@@ -5957,6 +5957,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifndef TARGET_APPLE
     // compare the IP against the list of known possible AV locations in the write barrier helpers
     for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
     {
@@ -5966,14 +5967,19 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
         ASSERT(*(uint8_t*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
 #endif
 
+#ifdef TARGET_ARM
+        if ((writeBarrierAVLocations[i] | THUMB_CODE) == (uControlPc | THUMB_CODE))
+#else
         if (writeBarrierAVLocations[i] == uControlPc)
+#endif
             return true;
     }
-
+#endif // !TARGET_APPLE
+    
 #define CHECK_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
 
-#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+#ifdef TARGET_APPLE
     CHECK_RANGE(RhpWriteBarriers)
 #endif
 
