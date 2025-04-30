@@ -473,11 +473,18 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        if (pAssembly->GetPEAssembly()->GetPath().IsEmpty())
+        SString path{ pAssembly->GetPEAssembly()->GetPath() };
+
+        // Bundled assembly - path will be empty, path to load should point to the single-file bundle
+        bool isBundledAssembly = pAssembly->GetPEAssembly()->HasPEImage() && pAssembly->GetPEAssembly()->GetPEImage()->IsInBundle();
+        _ASSERTE(!isBundledAssembly || Bundle::AppBundle != NULL);
+        if (isBundledAssembly)
+            path.Set(pAssembly->GetPEAssembly()->GetPEImage()->GetPathToLoad());
+
+        if (path.IsEmpty())
             return NULL;
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
-        SString path{ pAssembly->GetPEAssembly()->GetPath() };
         _ASSERTE(!Path::IsRelative(path));
 
         SString::Iterator lastPathSeparatorIter = path.End();
