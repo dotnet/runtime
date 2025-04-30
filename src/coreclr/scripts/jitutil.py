@@ -162,6 +162,7 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
         if _timeout is not None:
             def try_kill():
                 try:
+                    print("  Timeout reached; killing process")
                     proc.kill()
                 except:
                     pass

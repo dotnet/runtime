@@ -147,8 +147,7 @@ class ReduceExamples(threading.Thread):
                             "--seed", str(ex['Seed']),
                             "--collect-spmi-to", spmi_collections_path,
                             "--output", output_path]
-                        # Try to reduce for up to 15 minutes
-                        run_command(cmd, _timeout=60*15)
+                        run_command(cmd, _timeout=60*25)
                         if path.exists(output_path):
                             num_reduced += 1
                             if num_reduced >= 5:
