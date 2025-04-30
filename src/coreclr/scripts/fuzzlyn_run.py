@@ -119,7 +119,7 @@ class ReduceExamples(threading.Thread):
 
             if new_line:
                 evt = json.loads(new_line)
-                # Only reduce BadResult examples since crashes take very long to reduce.
+                # Do not reduce crash examples since those take a very long to reduce.
                 # We will still report crashes, just not with a reduced example.
                 if evt["Kind"] == "ExampleFound":
                     ex = evt["Example"]
