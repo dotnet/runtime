@@ -2202,7 +2202,6 @@ DBG_FlushInstructionCache(
 CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
 {
     size_t copySize;
-    ctx.R16
     if (ctx.ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
     {
         if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
