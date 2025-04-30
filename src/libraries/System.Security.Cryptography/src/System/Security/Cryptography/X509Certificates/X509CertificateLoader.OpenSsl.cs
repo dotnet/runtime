@@ -59,30 +59,44 @@ namespace System.Security.Cryptography.X509Certificates
             return new Pkcs12Return(pal);
         }
 
-        private static partial AsymmetricAlgorithm? CreateKey(string algorithm)
+        private static partial Pkcs12Key? CreateKey(string algorithm, ReadOnlySpan<byte> pkcs8)
         {
-            return algorithm switch
+            switch (algorithm)
             {
-                Oids.Rsa or Oids.RsaPss => new RSAOpenSsl(),
-                Oids.EcPublicKey or Oids.EcDiffieHellman => new ECDiffieHellmanOpenSsl(),
-                Oids.Dsa => new DSAOpenSsl(),
-                _ => null,
-            };
+                case Oids.Rsa or Oids.RsaPss:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, static () => new RSAOpenSsl());
+                case Oids.EcPublicKey or Oids.EcDiffieHellman:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, static () => new ECDiffieHellmanOpenSsl());
+                case Oids.Dsa:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, static () => new DSAOpenSsl());
+                case Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024:
+                    return new MLKemPkcs12PrivateKey(pkcs8);
+                default:
+                    return null;
+            }
         }
 
-        internal static SafeEvpPKeyHandle GetPrivateKey(AsymmetricAlgorithm key)
+        internal static SafeEvpPKeyHandle GetPrivateKey(Pkcs12Key key)
         {
-            if (key is RSAOpenSsl rsa)
+            if (key.Key is RSAOpenSsl rsa)
             {
                 return rsa.DuplicateKeyHandle();
             }
 
-            if (key is DSAOpenSsl dsa)
+            if (key.Key is DSAOpenSsl dsa)
             {
                 return dsa.DuplicateKeyHandle();
             }
 
-            return ((ECDiffieHellmanOpenSsl)key).DuplicateKeyHandle();
+            if (key.Key is MLKem kem)
+            {
+                // We should always get back an MLKemImplementation from PKCS8 loading.
+                MLKemImplementation? impl = kem as MLKemImplementation;
+                Debug.Assert(impl is not null, "MLKem implementation is not handled for duplicating a handle.");
+                return impl.DuplicateHandle();
+            }
+
+            return ((ECDiffieHellmanOpenSsl)key.Key).DuplicateKeyHandle();
         }
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data)
