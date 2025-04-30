@@ -57,7 +57,11 @@ namespace System.Security.Cryptography
             Algorithm = algorithm;
         }
 
-        private protected void ThrowIfDisposed()
+        /// <summary>
+        ///  Throws an <see cref="ObjectDisposedException"/> if this instance has been disposed.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException"></exception>
+        protected void ThrowIfDisposed()
         {
             if (_disposed)
             {
