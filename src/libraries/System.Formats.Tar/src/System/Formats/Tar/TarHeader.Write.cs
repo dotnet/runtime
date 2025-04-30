@@ -29,6 +29,9 @@ namespace System.Formats.Tar
         private const string GnuLongMetadataName = "././@LongLink";
         private const string ArgNameEntry = "entry";
 
+        private const int RootUidGid = 0;
+        private const string RootUNameGName = "root";
+
         // Writes the entry in the order required to be able to obtain the seekable data stream size.
         private void WriteWithSeekableDataStream(TarEntryFormat format, Stream archiveStream, Span<byte> buffer)
         {
@@ -446,17 +449,17 @@ namespace System.Formats.Tar
         {
             Debug.Assert(_linkName != null);
             MemoryStream dataStream = GetLongMetadataStream(_linkName);
-            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink, _uid, _gid, _uName, _gName);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink);
         }
 
         private TarHeader GetGnuLongPathMetadataHeader()
         {
             MemoryStream dataStream = GetLongMetadataStream(_name);
-            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath, _uid, _gid, _uName, _gName);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath);
         }
 
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream (seekable).
-        private static TarHeader GetGnuLongMetadataHeader(MemoryStream dataStream, TarEntryType entryType, int mainEntryUid, int mainEntryGid, string? mainEntryUname, string? mainEntryGname)
+        private static TarHeader GetGnuLongMetadataHeader(MemoryStream dataStream, TarEntryType entryType)
         {
             Debug.Assert(entryType is TarEntryType.LongPath or TarEntryType.LongLink);
 
@@ -464,15 +467,15 @@ namespace System.Formats.Tar
             {
                 _name = GnuLongMetadataName, // Same name for both longpath or longlink
                 _mode = TarHelpers.GetDefaultMode(entryType),
-                _uid = mainEntryUid,
-                _gid = mainEntryGid,
-                _mTime = DateTimeOffset.UnixEpoch, // 0
+                _uid = RootUidGid,
+                _gid = RootUidGid,
+                _mTime = DateTimeOffset.UnixEpoch, // Stores as series of 0 characters
                 _typeFlag = entryType,
                 _dataStream = dataStream,
-                _uName = mainEntryUname,
-                _gName = mainEntryGname,
-                _aTime = DateTimeOffset.UnixEpoch, // 0
-                _cTime = DateTimeOffset.UnixEpoch, // 0
+                _uName = RootUNameGName,
+                _gName = RootUNameGName,
+                _aTime = default, // LongLink/LongPath entries store these as nulls
+                _cTime = default, // LongLink/LongPath entries store these as nulls
             };
         }
 
@@ -780,11 +783,22 @@ namespace System.Formats.Tar
             return checksum;
         }
 
+        private int WriteAsGnuTimestamp(DateTimeOffset timestamp, Span<byte> buffer)
+        {
+            if (_typeFlag is TarEntryType.LongLink or TarEntryType.LongPath || timestamp == DateTimeOffset.UnixEpoch)
+            {
+                buffer.Clear();
+                return 0;
+            }
+
+            return WriteAsTimestamp(timestamp, buffer);
+        }
+
         // Saves the gnu-specific fields into the specified spans.
         private int WriteGnuFields(Span<byte> buffer)
         {
-            int checksum = WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+            int checksum = WriteAsGnuTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+            checksum += WriteAsGnuTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
             if (_gnuUnusedBytes != null)
             {
