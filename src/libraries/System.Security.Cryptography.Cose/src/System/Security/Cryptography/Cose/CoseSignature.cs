@@ -411,7 +411,7 @@ namespace System.Security.Cryptography.Cose
                     bool retVal = false;
                     toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
                     {
-                        retVal = VerifyHash(key, toBeSigned, hashAlgorithm, keyType, padding);
+                        retVal = Verify(key, toBeSigned, hashAlgorithm, keyType, padding);
                     });
 
                     return retVal;
@@ -450,7 +450,7 @@ namespace System.Security.Cryptography.Cose
                     bool retVal = false;
                     toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
                     {
-                        retVal = VerifyHash(key, toBeSigned, hashAlgorithm, keyType, padding);
+                        retVal = Verify(key, toBeSigned, hashAlgorithm, keyType, padding);
                     });
 
                     return retVal;
@@ -462,7 +462,7 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        private bool VerifyHash(AsymmetricAlgorithm key, ReadOnlySpan<byte> toBeSigned, HashAlgorithmName hashAlgorithm, KeyType keyType, RSASignaturePadding? padding)
+        private bool Verify(AsymmetricAlgorithm key, ReadOnlySpan<byte> toBeSigned, HashAlgorithmName hashAlgorithm, KeyType keyType, RSASignaturePadding? padding)
         {
             switch (keyType)
             {
