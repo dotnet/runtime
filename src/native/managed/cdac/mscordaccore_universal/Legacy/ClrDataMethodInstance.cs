@@ -90,7 +90,7 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
 
             if (hr == HResults.S_OK)
             {
-                Marshal.Release((nint)legacyModPtr); // release the legacy module pointer to
+                Marshal.Release((nint)legacyModPtr); // release the legacy module
             }
         }
 #endif
