@@ -562,6 +562,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void ReadMLKem512PrivateKey_NotSupported(X509KeyStorageFlags keyStorageFlags)
         {
             const string PfxPassword = "PLACEHOLDER";
+            // [SuppressMessage("Microsoft.Security", "CSCAN-GENERAL0060", Justification="False positive, this is a certificate for unit testing.")]
             byte[] pfxBytes = Convert.FromBase64String(@"
                 MIIPbgIBAzCCDzQGCSqGSIb3DQEHAaCCDyUEgg8hMIIPHTCCDk8GCSqGSIb3DQEHBqCCDkAwgg48
                 AgEAMIIONQYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQMwDgQIuOL/cp44/ycCAgfQgIIOCBb45pj6
