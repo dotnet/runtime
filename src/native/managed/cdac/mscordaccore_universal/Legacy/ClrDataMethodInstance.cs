@@ -35,12 +35,10 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
     int IXCLRDataMethodInstance.GetDefinition(void** methodDefinition)
         => _legacyImpl is not null ? _legacyImpl.GetDefinition(methodDefinition) : HResults.E_NOTIMPL;
 
-    int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, out IXCLRDataModule? mod)
+    int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, void** /*IXCLRDataModule*/ mod)
     {
-        // TODO(cdac): change to explicitly marshall mod as a void**. This approach does not support mod being null
-        mod = default;
-        //_legacyImpl is not null ? _legacyImpl.GetTokenAndScope(token, mod) : HResults.E_NOTIMPL;
         int hr = HResults.S_OK;
+        StrategyBasedComWrappers cw = new();
 
         try
         {
@@ -49,19 +47,30 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
             {
                 *token = rts.GetMethodToken(_methodDesc);
             }
-            //if (mod is not null)
+            if (mod is not null)
             {
-                IXCLRDataModule? legacyMod = null;
+                void* legacyModPtr = null;
                 if (_legacyImpl is not null)
                 {
-                    int hrLegacy = _legacyImpl.GetTokenAndScope(token, out legacyMod);
+                    int hrLegacy = _legacyImpl.GetTokenAndScope(token, &legacyModPtr);
                     if (hrLegacy < 0)
                         return hrLegacy;
                 }
+
+                object obj = cw.GetOrCreateObjectForComInstance((nint)legacyModPtr, CreateObjectFlags.None);
+                if (obj is not IXCLRDataModule legacyMod)
+                {
+                    throw new ArgumentException("Invalid module object", nameof(mod));
+                }
+
                 TargetPointer mtAddr = rts.GetMethodTable(_methodDesc);
                 TypeHandle mainMT = rts.GetTypeHandle(mtAddr);
                 TargetPointer module = rts.GetModule(mainMT);
-                mod = new ClrDataModule(module, _target, legacyMod);
+                IXCLRDataModule modImpl = new ClrDataModule(module, _target, legacyMod);
+                nint modImplPtr = cw.GetOrCreateComInterfaceForObject(modImpl, CreateComInterfaceFlags.None);
+                Marshal.QueryInterface(modImplPtr, typeof(IXCLRDataModule).GUID, out nint ptrToMod);
+                Marshal.Release(modImplPtr);
+                *mod = (void*)ptrToMod;
             }
         }
         catch (System.Exception ex)
@@ -73,10 +82,17 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
         if (_legacyImpl is not null)
         {
             uint tokenLocal;
-            int hrLocal = _legacyImpl.GetTokenAndScope(&tokenLocal, out IXCLRDataModule? legacyMod);
+            void* legacyModPtr = null;
+            int hrLocal = _legacyImpl.GetTokenAndScope(&tokenLocal, &legacyModPtr);
 
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             Debug.Assert(tokenLocal == *token, $"cDAC: {*token:x}, DAC: {tokenLocal:x}");
+
+            if (hr == HResults.S_OK)
+            {
+                // ensure the COM object is freed
+                cw.GetOrCreateObjectForComInstance((nint)legacyModPtr, CreateObjectFlags.None);
+            }
         }
 #endif
 

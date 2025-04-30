@@ -424,7 +424,7 @@ internal unsafe partial interface IXCLRDataMethodInstance
     int GetDefinition(/*IXCLRDataMethodDefinition*/ void** methodDefinition);
 
     [PreserveSig]
-    int GetTokenAndScope(uint* token, out IXCLRDataModule? mod);
+    int GetTokenAndScope(uint* token, void** /*IXCLRDataModule*/ mod);
 
     [PreserveSig]
     int GetName(
