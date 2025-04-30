@@ -102,6 +102,6 @@
     <Compile Include="..\ILCompiler.ReadyToRun\Compiler\PettisHansenSort\CallGraphNode.cs" Link="Compiler\PettisHansenSort\CallGraphNode.cs" />
     <Compile Include="..\ILCompiler.ReadyToRun\Compiler\PettisHansenSort\DisjointSetForest.cs" Link="Compiler\PettisHansenSort\DisjointSetForest.cs" />
     <Compile Include="..\ILCompiler.ReadyToRun\Compiler\PettisHansenSort\PettisHansen.cs" Link="Compiler\PettisHansenSort\PettisHansen.cs" />
-    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\ReadyToRunFileLayoutOptimizer.cs" Link="Compiler\ReadyToRunFileLayoutOptimizer.cs" />
+    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\FileLayoutOptimizer.cs" Link="Compiler\FileLayoutOptimizer.cs" />
   </ItemGroup>
 </Project>

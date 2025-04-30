@@ -17,8 +17,8 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        private ReadyToRunMethodLayoutAlgorithm _methodLayoutAlgorithm;
-        private ReadyToRunFileLayoutAlgorithm _fileLayoutAlgorithm;
+        private MethodLayoutAlgorithm _methodLayoutAlgorithm;
+        private FileLayoutAlgorithm _fileLayoutAlgorithm;
         private ILProvider _ilProvider = new NativeAotILProvider();
         private ProfileDataManager _profileDataManager;
         private string _jitPath;
@@ -41,7 +41,7 @@ namespace ILCompiler
             return this;
         }
 
-        public RyuJitCompilationBuilder FileLayoutAlgorithms(ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm, ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm)
+        public RyuJitCompilationBuilder FileLayoutAlgorithms(MethodLayoutAlgorithm methodLayoutAlgorithm, FileLayoutAlgorithm fileLayoutAlgorithm)
         {
             _methodLayoutAlgorithm = methodLayoutAlgorithm;
             _fileLayoutAlgorithm = fileLayoutAlgorithm;

@@ -24,7 +24,7 @@ using MethodWithGCInfo = ILCompiler.DependencyAnalysis.MethodCodeNode;
 
 namespace ILCompiler
 {
-    public enum ReadyToRunMethodLayoutAlgorithm
+    public enum MethodLayoutAlgorithm
     {
         DefaultSort,
         ExclusiveWeight,
@@ -37,17 +37,17 @@ namespace ILCompiler
         Random,
     }
 
-    public enum ReadyToRunFileLayoutAlgorithm
+    public enum FileLayoutAlgorithm
     {
         DefaultSort,
         MethodOrder,
     }
 
-    class ReadyToRunFileLayoutOptimizer
+    class FileLayoutOptimizer
     {
-        public ReadyToRunFileLayoutOptimizer (Logger logger,
-                                              ReadyToRunMethodLayoutAlgorithm methodAlgorithm,
-                                              ReadyToRunFileLayoutAlgorithm fileAlgorithm,
+        public FileLayoutOptimizer (Logger logger,
+                                              MethodLayoutAlgorithm methodAlgorithm,
+                                              FileLayoutAlgorithm fileAlgorithm,
                                               ProfileDataManager profileData,
                                               NodeFactory nodeFactory)
         {
@@ -59,14 +59,14 @@ namespace ILCompiler
         }
 
         private Logger _logger;
-        private ReadyToRunMethodLayoutAlgorithm _methodLayoutAlgorithm = ReadyToRunMethodLayoutAlgorithm.DefaultSort;
-        private ReadyToRunFileLayoutAlgorithm _fileLayoutAlgorithm = ReadyToRunFileLayoutAlgorithm.DefaultSort;
+        private MethodLayoutAlgorithm _methodLayoutAlgorithm = MethodLayoutAlgorithm.DefaultSort;
+        private FileLayoutAlgorithm _fileLayoutAlgorithm = FileLayoutAlgorithm.DefaultSort;
         private ProfileDataManager _profileData;
         private NodeFactory _nodeFactory;
 
         public ImmutableArray<DependencyNodeCore<NodeFactory>> ApplyProfilerGuidedMethodSort(ImmutableArray<DependencyNodeCore<NodeFactory>> nodes)
         {
-            if (_methodLayoutAlgorithm == ReadyToRunMethodLayoutAlgorithm.DefaultSort)
+            if (_methodLayoutAlgorithm == MethodLayoutAlgorithm.DefaultSort)
                 return nodes;
 
             List<MethodWithGCInfo> methods = new List<MethodWithGCInfo>();
@@ -97,7 +97,7 @@ namespace ILCompiler
                 sortOrder++;
             }
 
-            if (_fileLayoutAlgorithm == ReadyToRunFileLayoutAlgorithm.MethodOrder)
+            if (_fileLayoutAlgorithm == FileLayoutAlgorithm.MethodOrder)
             {
                 // Sort the dependencies of methods by the method order
                 foreach (var method in sortedMethodsList)
@@ -132,10 +132,10 @@ namespace ILCompiler
         {
             switch (_methodLayoutAlgorithm)
             {
-                case ReadyToRunMethodLayoutAlgorithm.DefaultSort:
+                case MethodLayoutAlgorithm.DefaultSort:
                     break;
 
-                case ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight:
+                case MethodLayoutAlgorithm.ExclusiveWeight:
                     methods.MergeSortAllowDuplicates(sortMethodWithGCInfoByWeight);
 
                     int sortMethodWithGCInfoByWeight(MethodWithGCInfo left, MethodWithGCInfo right)
@@ -144,7 +144,7 @@ namespace ILCompiler
                     }
                     break;
 
-                case ReadyToRunMethodLayoutAlgorithm.HotCold:
+                case MethodLayoutAlgorithm.HotCold:
                     methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => ComputeHotColdRegion(left).CompareTo(ComputeHotColdRegion(right)));
 
                     int ComputeHotColdRegion(MethodWithGCInfo method)
@@ -153,7 +153,7 @@ namespace ILCompiler
                     }
                     break;
 
-                case ReadyToRunMethodLayoutAlgorithm.HotWarmCold:
+                case MethodLayoutAlgorithm.HotWarmCold:
                     methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => ComputeHotWarmColdRegion(left).CompareTo(ComputeHotWarmColdRegion(right)));
 
                     int ComputeHotWarmColdRegion(MethodWithGCInfo method)
@@ -175,16 +175,16 @@ namespace ILCompiler
                     break;
 
 #if READYTORUN
-                case ReadyToRunMethodLayoutAlgorithm.CallFrequency:
+                case MethodLayoutAlgorithm.CallFrequency:
                     methods = MethodCallFrequencySort(methods);
                     break;
 #endif
 
-                case ReadyToRunMethodLayoutAlgorithm.PettisHansen:
+                case MethodLayoutAlgorithm.PettisHansen:
                     methods = PettisHansenSort(methods);
                     break;
 
-                case ReadyToRunMethodLayoutAlgorithm.Random:
+                case MethodLayoutAlgorithm.Random:
                     Random rand = new Random(0);
                     for (int i = 0; i < methods.Count - 1; i++)
                     {
