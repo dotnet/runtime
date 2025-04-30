@@ -570,7 +570,7 @@
   </ItemGroup>
 
   <!-- browser smoke tests -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />)"
   </ItemGroup>
 
