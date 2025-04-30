@@ -4339,8 +4339,25 @@ BOOL InterpreterJitManager::JitCodeToMethodInfo(
 
 TADDR InterpreterJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
 {
-    // Interpreter-TODO: Verify that this is correct
-    return pCodeInfo->GetCodeAddress() - pCodeInfo->GetRelOffset();
+    EH_CLAUSE_ENUMERATOR    EnumState;
+    unsigned                EHCount;
+
+    IJitManager *pJitMan = pCodeInfo->GetJitManager();
+    EHCount = pJitMan->InitializeEHEnumeration(pCodeInfo->GetMethodToken(), &EnumState);
+    DWORD relOffset = pCodeInfo->GetRelOffset();
+
+    for (unsigned i = 0; i < EHCount; i++)
+    {
+        EE_ILEXCEPTION_CLAUSE EHClause;
+        pJitMan->GetNextEHClause(&EnumState, &EHClause);
+
+        if (EHClause.HandlerStartPC <= relOffset && relOffset < EHClause.HandlerEndPC)
+        {
+            return pCodeInfo->GetCodeAddress() - relOffset + EHClause.HandlerStartPC;
+        }
+    }
+
+    return pCodeInfo->GetCodeAddress() - relOffset;
 }
 
 void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo)
