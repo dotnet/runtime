@@ -34,12 +34,12 @@ Async methods support suspension using one of the following methods:
   ```C#
   namespace System.Runtime.CompilerServices
   {
-      public static class RuntimeHelpers
+      public static class AsyncHelpers
       {
           [MethodImpl(MethodImplOptions.Async)]
-          public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { ... }
+          public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion;
           [MethodImpl(MethodImplOptions.Async)]
-          public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
+          public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion;
           
           [MethodImpl(MethodImplOptions.Async)]
           public static void Await(Task task);
@@ -62,7 +62,7 @@ Async methods support suspension using one of the following methods:
   }
   ```
 
-These methods are only legal to call inside async methods. The `...AwaitAwaiter...` methods will have semantics analogous to the current `AsyncTaskMethodBuilder.AwaitOnCompleted/AwaitUnsafeOnCompleted` methods. After calling either method, it can be presumed that the task or awaiter has completed. The `Await` methods perform suspension like the `AwaitAwaiter...` methods, but are optimized for calling on the return value of a call to an async method. To achieve maximum performance, the IL sequence of two `call` instructions -- one to the async method and immediately one to the `Await` method -- should be preferred.
+These methods are only legal to call inside async methods. The `...AwaitAwaiter` methods will have semantics analogous to the current `AsyncTaskMethodBuilder.AwaitOnCompleted/AwaitUnsafeOnCompleted` methods. After calling either method, it can be presumed that the task or awaiter has completed. The `Await` methods perform suspension like the `...AwaitAwaiter` methods, but are optimized for calling on the return value of a call to an async method. To achieve maximum performance, the IL sequence of two `call` instructions -- one to the async method and immediately one to the `Await` method -- should be preferred.
 
 Local variables used across suspension points are considered "hoisted." That is, only "hoisted" local variables will have their state preserved after returning from a suspension. By-ref variables may not be hoisted across suspension points, and any read of a by-ref variable after a suspension point will produce null. Structs containing by-ref variables will also not be hoisted across suspension points and will have their default value after a suspension point.
 In the same way, pinning locals may not be "hoisted" across suspension points and will have `null` value after a suspension point.
