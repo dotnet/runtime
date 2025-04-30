@@ -497,6 +497,15 @@ namespace
             hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
         }
 
+        // Bundle with additional files extracted - also treat the extraction path as the assembly directory for native library load
+        if (hmod == NULL && isBundledAssembly && !Bundle::AppBundle->ExtractionPath().IsEmpty())
+        {
+            path.Set(Bundle::AppBundle->ExtractionPath());
+            path.Append(DIRECTORY_SEPARATOR_CHAR_W);
+            path.Append(libName);
+            hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
+        }
+
         return hmod;
     }
 

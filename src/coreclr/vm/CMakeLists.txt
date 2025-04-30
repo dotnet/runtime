@@ -53,7 +53,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     assembly.cpp
     assemblybinder.cpp
     binder.cpp
-    bundle.cpp
     castcache.cpp
     callcounting.cpp
     cdacplatformmetadata.cpp
@@ -296,6 +295,7 @@ set(VM_SOURCES_WKS
     assemblyprobeextension.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
+    bundle.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatchCoreclr.cpp
     cachelinealloc.cpp
