@@ -1216,7 +1216,7 @@ CALL_TARGET_IP:
         TADDR resumeSP;
         TADDR resumeIP;
         ex.GetResumeContext(&resumeSP, &resumeIP);
-        _ASSERTE(resumeSP != NULL && resumeIP != NULL);
+        _ASSERTE(resumeSP != 0 && resumeIP != 0);
 
         InterpMethodContextFrame* pResumeFrame = (InterpMethodContextFrame*)resumeSP;
         // Unwind the interpreter stack upto the resume frame
