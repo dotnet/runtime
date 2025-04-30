@@ -85,24 +85,13 @@ if(CLR_CMAKE_HOST_WIN32)
     advapi32.lib)
 endif(CLR_CMAKE_HOST_WIN32)
 
-if (CLR_CMAKE_HOST_ANDROID)
-    set (GC_LINK_LIBRARIES ${GC_LINK_LIBRARIES} gc_pal_objects)
-else()
-    set (GC_LINK_LIBRARIES ${GC_LINK_LIBRARIES} gc_pal)
-endif()
+set (GC_LINK_LIBRARIES ${GC_LINK_LIBRARIES} gc_pal)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
-    if (CLR_CMAKE_HOST_ANDROID)
-        list(APPEND GC_LINK_LIBRARIES
-            gc_vxsort_objects
-            minipal
-        )
-    else()
-        list(APPEND GC_LINK_LIBRARIES
-            gc_vxsort
-            minipal
-        )
-    endif(CLR_CMAKE_HOST_ANDROID)
+    list(APPEND GC_LINK_LIBRARIES
+        gc_vxsort
+        minipal
+    )
 endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
 

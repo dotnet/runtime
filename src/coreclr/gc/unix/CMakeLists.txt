@@ -10,8 +10,4 @@ set(GC_PAL_SOURCES
     events.cpp
     cgroup.cpp)
 
-if (CLR_CMAKE_HOST_ANDROID)
-    add_library(gc_pal_objects OBJECT ${GC_PAL_SOURCES} ${VERSION_FILE_PATH})
-else()
-    add_library(gc_pal STATIC ${GC_PAL_SOURCES} ${VERSION_FILE_PATH})
-endif(CLR_CMAKE_HOST_ANDROID)
+add_library(gc_pal OBJECT ${GC_PAL_SOURCES} ${VERSION_FILE_PATH})
