@@ -49,6 +49,8 @@ namespace System.Security.Cryptography.Cose.Tests
 
         public static IEnumerable<CoseTestSign1> GetImplementations()
         {
+            const int SufficientSignatureSize = 16 * 1024;
+
             yield return new(true, "Sign/VerifyEmbedded(byte[])",
                 (key, payload) => CoseSign1Message.SignEmbedded(payload, key.Signer, Array.Empty<byte>()),
                 (key, _, message) => message.VerifyEmbedded(key.KeyAsymmetricAlgorithm, Array.Empty<byte>()));
@@ -60,7 +62,7 @@ namespace System.Security.Cryptography.Cose.Tests
             yield return new(true, "TrySignEmbedded/VerifyEmbedded(ROS<byte>)",
                 (key, payload) =>
                 {
-                    byte[] destination = new byte[2048];
+                    byte[] destination = new byte[SufficientSignatureSize];
                     Assert.True(CoseSign1Message.TrySignEmbedded(payload.AsSpan(), destination, key.Signer, out int bytesWritten, ReadOnlySpan<byte>.Empty));
 
                     byte[] ret = new byte[bytesWritten];
@@ -80,7 +82,7 @@ namespace System.Security.Cryptography.Cose.Tests
             yield return new(false, "TrySignDetached/VerifyDetached(ROS<byte>)",
                 (key, payload) =>
                 {
-                    byte[] destination = new byte[2048];
+                    byte[] destination = new byte[SufficientSignatureSize];
                     Assert.True(CoseSign1Message.TrySignDetached(payload.AsSpan(), destination, key.Signer, out int bytesWritten, ReadOnlySpan<byte>.Empty));
 
                     byte[] ret = new byte[bytesWritten];

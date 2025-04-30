@@ -126,7 +126,7 @@ namespace System.Security.Cryptography.Cose
             if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
-            Key = new MLDsaAsymmetricAlgorithmWrapper(key);
+            Key = new AsymmetricAlgorithmWrapper(key);
             HashAlgorithm = default;
 
             _protectedHeaders = protectedHeaders;
@@ -238,9 +238,9 @@ namespace System.Security.Cryptography.Cose
 #pragma warning disable SYSLIB5006
                 case KeyType.MLDsa:
                 {
-                    MLDsaAsymmetricAlgorithmWrapper? keyWrapper = Key as MLDsaAsymmetricAlgorithmWrapper;
-                    Debug.Assert(keyWrapper != null, "Key should be a MLDsaAsymmetricAlgorithmWrapper");
-                    MLDsa mldsa = keyWrapper.WrappedKey;
+                    AsymmetricAlgorithmWrapper? keyWrapper = Key as AsymmetricAlgorithmWrapper;
+                    Debug.Assert(keyWrapper != null, $"Key should be a {nameof(AsymmetricAlgorithmWrapper)}");
+                    MLDsa mldsa = keyWrapper.MLDsa;
 
                     if (mldsa.Algorithm.Name == MLDsaAlgorithm.MLDsa44.Name)
                     {

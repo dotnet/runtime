@@ -105,7 +105,7 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        internal static int SignHash(CoseSigner signer, ReadOnlySpan<byte> toBeSigned, Span<byte> destination)
+        internal static int Sign(CoseSigner signer, ReadOnlySpan<byte> toBeSigned, Span<byte> destination)
         {
             AsymmetricAlgorithm key = signer.Key;
             KeyType keyType = signer._keyType;
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.Cose
 #pragma warning disable SYSLIB5006
                 case KeyType.MLDsa:
                     // we ignore signer.HashAlgorithm
-                    return SignDataWithMLDsa(((MLDsaAsymmetricAlgorithmWrapper)key).WrappedKey, toBeSigned, destination);
+                    return ((AsymmetricAlgorithmWrapper)key).MLDsa.SignData(toBeSigned, destination);
 #pragma warning restore SYSLIB5006
                 default:
                     Debug.Fail("Unknown key type");
@@ -148,18 +148,6 @@ namespace System.Security.Cryptography.Cose
             }
 
             return bytesWritten;
-        }
-
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-        private static int SignDataWithMLDsa(MLDsa key, ReadOnlySpan<byte> data, Span<byte> destination)
-        {
-            if (destination.Length != key.SignData(data, destination))
-            {
-                Debug.Fail($"SignData failed with a pre-calculated destination (pre-calculated: {destination.Length} != signature-size: {key.Algorithm.SignatureSizeInBytes})");
-                throw new CryptographicException();
-            }
-
-            return destination.Length;
         }
 
         internal static int GetCoseSignEncodedLengthMinusSignature(bool isTagged, int sizeOfCborTag, int encodedProtectedHeadersLength, CoseHeaderMap unprotectedHeaders, byte[]? content)
@@ -201,7 +189,7 @@ namespace System.Security.Cryptography.Cose
                     return (keySize + 7) / 8;
 #pragma warning disable SYSLIB5006
                 case KeyType.MLDsa:
-                    return ((MLDsaAsymmetricAlgorithmWrapper)signer.Key).WrappedKey.Algorithm.SignatureSizeInBytes;
+                    return ((AsymmetricAlgorithmWrapper)signer.Key).MLDsa.Algorithm.SignatureSizeInBytes;
 #pragma warning restore SYSLIB5006
                 default:
                     Debug.Fail($"Unknown key type: {keyType}");
@@ -318,10 +306,22 @@ namespace System.Security.Cryptography.Cose
                 ECDsa => KeyType.ECDsa,
                 RSA => KeyType.RSA,
 #pragma warning disable SYSLIB5006
-                MLDsaAsymmetricAlgorithmWrapper => KeyType.MLDsa,
+                AsymmetricAlgorithmWrapper wrappedKey => GetKeyTypeFromAsymmetricAlgorithmWrapper(wrappedKey),
 #pragma warning restore SYSLIB5006
                 _ => throw new ArgumentException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()), nameof(key))
             };
+        }
+
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        private static KeyType GetKeyTypeFromAsymmetricAlgorithmWrapper(AsymmetricAlgorithmWrapper key)
+        {
+            if (key.MLDsa is not null)
+            {
+                return KeyType.MLDsa;
+            }
+
+            Debug.Fail($"Unhandled case for AsymmetricAlgorithmWrapper");
+            throw new ArgumentException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()), nameof(key));
         }
 
         internal static ReadOnlyMemory<byte> GetCoseAlgorithmFromProtectedHeaders(CoseHeaderMap protectedHeaders)
@@ -368,7 +368,7 @@ namespace System.Security.Cryptography.Cose
 
         internal static void WriteSignature(Span<byte> buffer, ReadOnlySpan<byte> toBeSigned, CborWriter writer, CoseSigner signer)
         {
-            int bytesWritten = SignHash(signer, toBeSigned, buffer);
+            int bytesWritten = Sign(signer, toBeSigned, buffer);
             writer.WriteByteString(buffer.Slice(0, bytesWritten));
         }
 

@@ -36,7 +36,7 @@
     <Compile Include="System\Security\Cryptography\Cose\KeyType.cs" />
     <Compile Include="System\Security\Cryptography\Cose\KnownCoseAlgorithms.cs" />
     <Compile Include="System\Security\Cryptography\Cose\KnownHeaders.cs" />
-    <Compile Include="System\Security\Cryptography\Cose\MLDsaAsymmetricAlgorithmWrapper.cs" />
+    <Compile Include="System\Security\Cryptography\Cose\AsymmetricAlgorithmWrapper.cs" />
     <Compile Include="System\Security\Cryptography\Cose\SigStructureContext.cs" />
     <Compile Include="System\Security\Cryptography\Cose\ToBeSignedBuilder.cs" />
   </ItemGroup>

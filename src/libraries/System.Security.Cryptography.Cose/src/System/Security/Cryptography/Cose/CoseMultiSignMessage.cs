@@ -808,7 +808,7 @@ namespace System.Security.Cryptography.Cose
                     AppendToBeSigned(bufferSpan, toBeSignedBuilder, SigStructureContext.Signature, _protectedHeaderAsBstr, encodedSignProtected, associatedData, contentBytes, contentStream);
                     toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
                     {
-                        bytesWritten = CoseHelpers.SignHash(signer, toBeSigned, buff);
+                        bytesWritten = CoseHelpers.Sign(signer, toBeSigned, buff);
                     });
 
                     byte[] signature = bufferSpan.Slice(0, bytesWritten).ToArray();
@@ -885,7 +885,7 @@ namespace System.Security.Cryptography.Cose
 
                 toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
                 {
-                    bytesWritten = CoseHelpers.SignHash(signer, toBeSigned, buff);
+                    bytesWritten = CoseHelpers.Sign(signer, toBeSigned, buff);
                 });
 
                 byte[] signature = buffer.AsSpan(0, bytesWritten).ToArray();

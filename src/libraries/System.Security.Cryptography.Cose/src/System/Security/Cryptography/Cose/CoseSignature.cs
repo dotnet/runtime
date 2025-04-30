@@ -480,7 +480,7 @@ namespace System.Security.Cryptography.Cose
 #pragma warning disable SYSLIB5006
                 case KeyType.MLDsa:
                 {
-                    MLDsa mldsa = ((MLDsaAsymmetricAlgorithmWrapper)key).WrappedKey;
+                    MLDsa mldsa = ((AsymmetricAlgorithmWrapper)key).MLDsa;
                     return mldsa.VerifyData(toBeSigned, _signature);
                 }
 #pragma warning restore SYSLIB5006

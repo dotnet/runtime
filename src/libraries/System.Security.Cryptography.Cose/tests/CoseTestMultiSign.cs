@@ -11,16 +11,18 @@ namespace System.Security.Cryptography.Cose.Tests
 {
     public sealed class CoseTestMultiSign
     {
+        public bool IsEmbedded { get; }
         private string _label;
         private Func<CoseTestKey, byte[], byte[]> _signFirstImpl;
         private Action<CoseMultiSignMessage, CoseTestKey, byte[]> _addSignatureImpl;
         private Func<CoseTestKey, byte[], CoseSignature, bool> _verifyImpl;
 
-        private CoseTestMultiSign(string label,
+        private CoseTestMultiSign(bool isEmbedded, string label,
             Func<CoseTestKey, byte[], byte[]> signFirstImpl,
             Action<CoseMultiSignMessage, CoseTestKey, byte[]> addSignatureImpl,
             Func<CoseTestKey, byte[], CoseSignature, bool> verifyImpl)
         {
+            IsEmbedded = isEmbedded;
             _label = label;
             _signFirstImpl = signFirstImpl;
             _addSignatureImpl = addSignatureImpl;
@@ -76,20 +78,22 @@ namespace System.Security.Cryptography.Cose.Tests
 
         public static IEnumerable<CoseTestMultiSign> GetImplementations()
         {
-            yield return new("Sign/VerifyEmbedded(byte[])/AddSignatureForEmbedded(byte[])",
+            const int SufficientSignatureSize = 16 * 1024;
+
+            yield return new(true, "Sign/VerifyEmbedded(byte[])/AddSignatureForEmbedded(byte[])",
                 (key, payload) => CoseMultiSignMessage.SignEmbedded(payload, key.Signer, associatedData: Array.Empty<byte>()),
                 (message, key, _) => message.AddSignatureForEmbedded(key.Signer, Array.Empty<byte>()),
                 (key, _, signature) => signature.VerifyEmbedded(key.KeyAsymmetricAlgorithm, Array.Empty<byte>()));
 
-            yield return new("Sign/VerifyEmbedded(ROS<byte>)/AddSignatureForEmbedded(ROS<byte>)",
+            yield return new(true, "Sign/VerifyEmbedded(ROS<byte>)/AddSignatureForEmbedded(ROS<byte>)",
                 (key, payload) => CoseMultiSignMessage.SignEmbedded(payload.AsSpan(), key.Signer, associatedData: Span<byte>.Empty),
                 (message, key, _) => message.AddSignatureForEmbedded(key.Signer, Span<byte>.Empty),
                 (key, _, signature) => signature.VerifyEmbedded(key.KeyAsymmetricAlgorithm, Span<byte>.Empty));
 
-            yield return new("TrySign(ROS<byte>)/VerifyEmbedded(ROS<byte>)/AddSignatureForEmbedded(ROS<byte>)",
+            yield return new(true, "TrySign(ROS<byte>)/VerifyEmbedded(ROS<byte>)/AddSignatureForEmbedded(ROS<byte>)",
                 (key, payload) =>
                 {
-                    byte[] destination = new byte[2048];
+                    byte[] destination = new byte[SufficientSignatureSize];
                     Assert.True(CoseMultiSignMessage.TrySignEmbedded(payload.AsSpan(), destination, key.Signer, out int bytesWritten, associatedData: ReadOnlySpan<byte>.Empty));
 
                     byte[] ret = new byte[bytesWritten];
@@ -99,20 +103,20 @@ namespace System.Security.Cryptography.Cose.Tests
                 (message, key, _) => message.AddSignatureForEmbedded(key.Signer, Span<byte>.Empty),
                 (key, _, signature) => signature.VerifyEmbedded(key.KeyAsymmetricAlgorithm, Span<byte>.Empty));
 
-            yield return new("Sign/VerifyDetached(byte[])/AddSignatureForDetached(byte[])",
+            yield return new(false, "Sign/VerifyDetached(byte[])/AddSignatureForDetached(byte[])",
                 (key, payload) => CoseMultiSignMessage.SignDetached(payload, key.Signer, associatedData: Array.Empty<byte>()),
                 (message, key, payload) => message.AddSignatureForDetached(payload, key.Signer, Array.Empty<byte>()),
                 (key, payload, signature) => signature.VerifyDetached(key.KeyAsymmetricAlgorithm, payload, Array.Empty<byte>()));
 
-            yield return new("Sign/VerifyDetached(ROS<byte>)/AddSignatureForDetached(ROS<byte>)",
+            yield return new(false, "Sign/VerifyDetached(ROS<byte>)/AddSignatureForDetached(ROS<byte>)",
                 (key, payload) => CoseMultiSignMessage.SignDetached(payload.AsSpan(), key.Signer, associatedData: Span<byte>.Empty),
                 (message, key, payload) => message.AddSignatureForDetached(payload.AsSpan(), key.Signer, Span<byte>.Empty),
                 (key, payload, signature) => signature.VerifyDetached(key.KeyAsymmetricAlgorithm, payload.AsSpan(), Span<byte>.Empty));
 
-            yield return new("TrySignDetached/VerifyDetached(ROS<byte>)/AddSignatureForDetached(ROS<byte>)",
+            yield return new(false, "TrySignDetached/VerifyDetached(ROS<byte>)/AddSignatureForDetached(ROS<byte>)",
                 (key, payload) =>
                 {
-                    byte[] destination = new byte[2048];
+                    byte[] destination = new byte[SufficientSignatureSize];
                     Assert.True(CoseMultiSignMessage.TrySignDetached(payload.AsSpan(), destination, key.Signer, out int bytesWritten, associatedData: ReadOnlySpan<byte>.Empty));
 
                     byte[] ret = new byte[bytesWritten];
@@ -122,7 +126,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 (message, key, payload) => message.AddSignatureForDetached(payload.AsSpan(), key.Signer, Span<byte>.Empty),
                 (key, payload, signature) => signature.VerifyDetached(key.KeyAsymmetricAlgorithm, payload.AsSpan(), Span<byte>.Empty));
 
-            yield return new("Sign/VerifyDetached(Stream)/AddSignatureForDetached(Stream)",
+            yield return new(false, "Sign/VerifyDetached(Stream)/AddSignatureForDetached(Stream)",
                 (key, payload) =>
                 {
                     using MemoryStream stream = new MemoryStream(payload);
@@ -139,7 +143,7 @@ namespace System.Security.Cryptography.Cose.Tests
                     return signature.VerifyDetached(key.KeyAsymmetricAlgorithm, stream, Span<byte>.Empty);
                 });
 
-            yield return new("Sign/VerifyDetachedAsync(Stream)/AddSignatureForDetachedAsync(Stream)",
+            yield return new(false, "Sign/VerifyDetachedAsync(Stream)/AddSignatureForDetachedAsync(Stream)",
                 (key, payload) =>
                 {
                     using MemoryStream stream = new MemoryStream(payload);

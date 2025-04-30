@@ -14,38 +14,53 @@ namespace System.Security.Cryptography.Cose.Tests
     {
         private Dictionary<string, CoseTestKey> _coseKeys = new();
 
-        public static CoseTestKeyManager TestKeys { get; } = CreateTestKeys();
-
-        private CoseTestKeyManager()
-        {
-        }
-
         // Ideally public keys should be used with verify, i.e.:
-        // - CoseTestKeyManager CreateTestPrivateKeys()
+        // - CoseTestKeyManager.ctor() => private keys
         // - CoseTestKeyManager CreateTestPublicKeys(CoseTestKeyManager privateKeys)
         // this is ok for testing purposes.
-        private static CoseTestKeyManager CreateTestKeys()
-        {
-            var ret = new CoseTestKeyManager();
+        private CoseTestKeyManager() { }
 
-            ret.AddKey("ECDsa", CoseTestKeyType.ECDsa, HashAlgorithmName.SHA256);
-            ret.AddKey("RSA-PSS", CoseTestKeyType.RSAPSS, HashAlgorithmName.SHA256);
-            ret.AddKey("RSA-PKCS1", CoseTestKeyType.RSAPkcs1, HashAlgorithmName.SHA256);
+        public static CoseTestKeyManager CreateTestKeys()
+        {
+            CoseTestKeyManager keyManager = new();
+
+            WithTestKeysInfo((keyId, keyType, hashAlgorithm) =>
+            {
+                keyManager.AddKey(keyId, keyType, hashAlgorithm);
+            });
+
+            return keyManager;
+        }
+
+        public static string[] GetAllKeyIds()
+        {
+            List<string> keyIds = new();
+            WithTestKeysInfo((keyId, _, _) =>
+            {
+                keyIds.Add(keyId);
+            });
+
+            return keyIds.ToArray();
+        }
+
+        private static void WithTestKeysInfo(Action<string, CoseTestKeyType, HashAlgorithmName?> action)
+        {
+            action("ECDsa", CoseTestKeyType.ECDsa, HashAlgorithmName.SHA256);
+            action("RSA-PSS", CoseTestKeyType.RSAPSS, HashAlgorithmName.SHA256);
+            action("RSA-PKCS1", CoseTestKeyType.RSAPkcs1, HashAlgorithmName.SHA256);
 
             if (MLDsa.IsSupported)
             {
-                ret.AddKey("ML-DSA-44", CoseTestKeyType.MLDsa44);
-                ret.AddKey("ML-DSA-65", CoseTestKeyType.MLDsa65);
-                ret.AddKey("ML-DSA-87", CoseTestKeyType.MLDsa87);
+                action("ML-DSA-44", CoseTestKeyType.MLDsa44, null);
+                action("ML-DSA-65", CoseTestKeyType.MLDsa65, null);
+                action("ML-DSA-87", CoseTestKeyType.MLDsa87, null);
             }
             else
             {
                 // we currently need 5 keys for the tests
-                ret.AddKey("ECDsa-2", CoseTestKeyType.ECDsa, HashAlgorithmName.SHA256);
-                ret.AddKey("RSA-PKCS1-2", CoseTestKeyType.RSAPkcs1, HashAlgorithmName.SHA256);
+                action("ECDsa-2", CoseTestKeyType.ECDsa, HashAlgorithmName.SHA256);
+                action("RSA-PKCS1-2", CoseTestKeyType.RSAPkcs1, HashAlgorithmName.SHA256);
             }
-
-            return ret;
         }
 
         public IEnumerable<CoseTestKey> AllKeys()
@@ -100,5 +115,26 @@ namespace System.Security.Cryptography.Cose.Tests
         }
 
         public override string ToString() => nameof(CoseTestKeyManager);
+
+        public class TestFixture : IDisposable
+        {
+            // Those are the keys we use for the tests
+            public CoseTestKeyManager KeyManager { get; }
+
+            // Those are the keys we use for testing bad keys - they mimick the structure but are different
+            public CoseTestKeyManager BadKeyManager { get; }
+
+            public TestFixture()
+            {
+                KeyManager = CreateTestKeys();
+                BadKeyManager = CreateTestKeys();
+            }
+
+            public void Dispose()
+            {
+                KeyManager.Dispose();
+                BadKeyManager.Dispose();
+            }
+        }
     }
 }

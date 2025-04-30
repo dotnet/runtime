@@ -10,13 +10,13 @@ using System.Text;
 namespace System.Security.Cryptography.Cose
 {
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-    internal sealed class MLDsaAsymmetricAlgorithmWrapper : AsymmetricAlgorithm
+    internal sealed class AsymmetricAlgorithmWrapper : AsymmetricAlgorithm
     {
-        internal MLDsa WrappedKey { get; }
+        internal MLDsa MLDsa { get; }
 
-        public MLDsaAsymmetricAlgorithmWrapper(MLDsa wrappedKey)
+        public AsymmetricAlgorithmWrapper(MLDsa key)
         {
-            WrappedKey = wrappedKey;
+            MLDsa = key;
         }
     }
 }
