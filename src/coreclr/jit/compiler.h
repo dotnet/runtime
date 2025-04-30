@@ -6737,6 +6737,7 @@ private:
 
     PhaseStatus fgEarlyLiveness();
 
+    template<bool ssaLiveness>
     void fgMarkUseDef(GenTreeLclVarCommon* tree);
 
     //-------------------------------------------------------------------------
