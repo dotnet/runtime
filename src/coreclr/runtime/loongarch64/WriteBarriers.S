@@ -196,7 +196,6 @@
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and RA contains the return address
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
-    ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
         ld.d  $t7, $t8, 0
         addi.d  $t8, $t8, 8
         b  C_FUNC(RhpCheckedAssignRef)
@@ -226,7 +225,6 @@ LEAF_END RhpByRefAssignRef, _TEXT
         b  C_FUNC(RhpAssignRefLoongArch64)
 
 LOCAL_LABEL(NotInHeap):
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         st.d  $t7, $t6, 0
         addi.d  $t6, $t6, 8
         jirl  $r0, $ra, 0
@@ -248,7 +246,6 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 LEAF_ENTRY RhpAssignRefLoongArch64, _TEXT
         dbar 0
 
-    ALTERNATE_ENTRY RhpAssignRefAVLocation
         st.d  $t7, $t6, 0
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE  $t6, $t7

@@ -167,7 +167,6 @@ LEAF_ENTRY RhpAssignRef&EXPORT_REG_NAME&, _TEXT
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <RDX>
     ALTERNATE_ENTRY RhpAssignRef
-    ALTERNATE_ENTRY RhpAssignRefAVLocation
     endif
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
@@ -221,7 +220,6 @@ LEAF_ENTRY RhpCheckedAssignRef&EXPORT_REG_NAME&, _TEXT
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <RDX>
     ALTERNATE_ENTRY RhpCheckedAssignRef
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
     endif
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
@@ -275,9 +273,7 @@ LEAF_END RhpCheckedXchg, _TEXT
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1/2
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
-ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
     mov     rcx, [rsi]
-ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
     mov     [rdi], rcx
 
     ;; Check whether the writes were even into the heap. If not there's no card update required.

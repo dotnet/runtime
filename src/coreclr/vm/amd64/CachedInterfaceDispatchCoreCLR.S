@@ -20,7 +20,6 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
 
         // Load the MethodTable from the object instance in rdi, and add it to the vtable offset
         // to get the address in the vtable chunk list of what we want to dereference
-ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
         add     rax, [rdi]
 
         // Load the target address of the vtable chunk into rax

@@ -33,7 +33,6 @@
         ld.d  $t0, $t8, OFFSETOF__InterfaceDispatchCell__m_pCache
 
         // Load the MethodTable from the object instance in a0.
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
         ld.d  $t1, $a0, 0
 
     .global CurrentEntry

@@ -20,7 +20,6 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in rdi.
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
         mov     rax, [rdi]
 
         CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries

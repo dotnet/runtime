@@ -31,7 +31,6 @@
         ldr     x9, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in x0.
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
         ldr     x10, [x0]
 
     .global CurrentEntry

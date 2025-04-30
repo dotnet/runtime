@@ -208,7 +208,6 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 ;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
     LEAF_ENTRY RhpByRefAssignRefArm64
 
-    ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
         ldr     x15, [x13], 8
         b       RhpCheckedAssignRefArm64
 
@@ -238,7 +237,6 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         blo     RhpAssignRefArm64
 
 NotInHeap
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         str     x15, [x14], 8
         ret
 
@@ -258,7 +256,6 @@ NotInHeap
 ;;   x14 : incremented by 8
     LEAF_ENTRY RhpAssignRefArm64
 
-    ALTERNATE_ENTRY RhpAssignRefAVLocation
         stlr    x15, [x14]
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15

@@ -36,7 +36,6 @@
             ld  t0, OFFSETOF__InterfaceDispatchCell__m_pCache(t5)  // Using a1 as an alternative base register
 
             // Load the MethodTable from the object instance in a0.
-            ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
             ld  t1, 0(a0)
 
         .global CurrentEntry
