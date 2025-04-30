@@ -138,9 +138,9 @@
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
 
   <PropertyGroup>
-    <ImportCustomILLLinkTargets Condition="'$(ImportCustomILLinkTargets)' == '' And ('$(IsSourceProject)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)')">true</ImportCustomILLLinkTargets>
+    <ImportCustomILLinkTargets Condition="'$(ImportCustomILLinkTargets)' == '' And '$(IsSourceProject)' == 'true'">true</ImportCustomILLinkTargets>
   </PropertyGroup>
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(ImportCustomILLinkTargets)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(ImportCustomILLinkTargets)' == 'true' And $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
   <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 
