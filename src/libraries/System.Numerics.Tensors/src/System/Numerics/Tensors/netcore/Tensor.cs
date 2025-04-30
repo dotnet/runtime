@@ -153,7 +153,10 @@ namespace System.Numerics.Tensors
                                 ThrowHelper.ThrowArgument_InvalidConcatenateShape();
                         }
                     }
-                    sumOfAxis += tensors[i].Lengths[dimension];
+                    checked
+                    {
+                        sumOfAxis += tensors[i].Lengths[dimension];
+                    }
                 }
 
                 nint[] lengths = new nint[tensors[0].Rank];
@@ -164,9 +167,14 @@ namespace System.Numerics.Tensors
             else
             {
                 // Calculate total space needed.
-                nint totalLength = 0;
+                int totalLength = 0;
                 for (int i = 0; i < tensors.Length; i++)
-                    totalLength += tensors[i].FlattenedLength;
+                {
+                    checked
+                    {
+                        totalLength += (int)tensors[i].FlattenedLength;
+                    }
+                }
 
                 tensor = Tensor.Create<T>([totalLength]);
             }
