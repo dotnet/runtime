@@ -518,6 +518,12 @@ PhaseStatus Compiler::optVnCopyProp()
         }
     };
 
+    assert(m_dfsTree != nullptr);
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
+
     CopyPropDomTreeVisitor visitor(this);
     visitor.PropagateCopies();
 

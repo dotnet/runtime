@@ -10864,11 +10864,14 @@ PhaseStatus Compiler::fgValueNumber()
         }
     }
 
-    assert(m_dfsTree != nullptr);
-
-    if (m_loops == nullptr)
+    if (m_dfsTree == nullptr)
     {
-        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+        m_dfsTree = fgComputeDfs();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+    }
+    else
+    {
+        assert(m_loops != nullptr);
     }
 
     m_blockToLoop = BlockToNaturalLoopMap::Build(m_loops);
