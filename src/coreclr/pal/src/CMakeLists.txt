@@ -361,10 +361,3 @@ endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
 install_clr (TARGETS coreclrpal DESTINATIONS lib)
-
-# Install the static PAL library to the runtime pack
-# The coreclrpal.a is linked using -Wl,--whole-archive as a separate static library
-# to avoid forcing a whole‐archive on coreclr_static.a
-if(CLR_CMAKE_HOST_ANDROID)
-    install_clr(TARGETS coreclrpal DESTINATIONS . sharedFramework)
-endif(CLR_CMAKE_HOST_ANDROID)

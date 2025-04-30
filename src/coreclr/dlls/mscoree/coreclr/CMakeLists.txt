@@ -190,21 +190,20 @@ if (CLR_CMAKE_TARGET_OSX)
     find_library(FOUNDATION Foundation REQUIRED)
 endif()
 
-target_sources(coreclr PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
-target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks ${FOUNDATION})
-target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable ${FOUNDATION})
+target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks_core cee_wks ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core clrjit_static cee_wks_mergeable ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr PUBLIC log)
-    target_link_libraries(coreclr_static PUBLIC log)
-    target_sources(coreclr_static PUBLIC
-        $<TARGET_OBJECTS:coreclrminipal_objects>
-        $<TARGET_OBJECTS:eventprovider_objects>
-        $<TARGET_OBJECTS:libunwind>
-        $<TARGET_OBJECTS:minipal_objects>
-        $<TARGET_OBJECTS:nativeresourcestring_objects>
+    target_link_libraries(coreclr_static
+        PUBLIC
+        log
+        coreclrminipal_objects
+        eventprovider_objects
+        libunwind
+        minipal_objects
+        nativeresourcestring_objects
     )
 endif()
 
