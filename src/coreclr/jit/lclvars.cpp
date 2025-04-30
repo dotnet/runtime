@@ -6739,7 +6739,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         offset += codeGen->genCallerSPtoInitialSPdelta();
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifdef FEATURE_ON_STACK_REPLACEMENT
     if (forRootFrame && opts.IsOSR())
     {
         const PatchpointInfo* const ppInfo = info.compPatchpointInfo;
@@ -6757,9 +6757,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         // is simply TotalFrameSize plus one register.
         //
         const int adjustment = ppInfo->TotalFrameSize() + REGSIZE_BYTES;
-
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
+#else
         const int adjustment = ppInfo->TotalFrameSize();
 #endif
 
