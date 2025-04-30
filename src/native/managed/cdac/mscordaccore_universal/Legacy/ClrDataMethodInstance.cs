@@ -90,8 +90,7 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
 
             if (hr == HResults.S_OK)
             {
-                // ensure the COM object is freed
-                cw.GetOrCreateObjectForComInstance((nint)legacyModPtr, CreateObjectFlags.None);
+                Marshal.Release((nint)legacyModPtr); // release the legacy module pointer to
             }
         }
 #endif
