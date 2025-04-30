@@ -201,6 +201,10 @@ GLOBAL_LABEL RhpCheckedAssignRefAVLocation
 LEAF_END RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
 .endm
 
+LEAF_ENTRY RhpWriteBarriers, _TEXT
+          bx            lr
+LEAF_END RhpWriteBarriers, _TEXT
+
 // One day we might have write barriers for all the possible argument registers but for now we have
 // just one write barrier that assumes the input register is RSI.
 DEFINE_CHECKED_WRITE_BARRIER r1, r1
@@ -326,3 +330,7 @@ LOCAL_LABEL(RhpByRefAssignRef_NotInHeap):
           add           r1, #4
           bx            lr
 LEAF_END RhpByRefAssignRef, _TEXT
+
+LEAF_ENTRY RhpWriteBarriers_End, _TEXT
+          bx            lr
+LEAF_END RhpWriteBarriers_End, _TEXT

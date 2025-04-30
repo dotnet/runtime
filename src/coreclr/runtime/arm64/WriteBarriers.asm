@@ -189,6 +189,10 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         ;; Exit label
     MEND
 
+    LEAF_ENTRY RhpWriteBarriers
+        ret
+    LEAF_END RhpWriteBarriers
+
 ;; void JIT_ByRefWriteBarrier
 ;; On entry:
 ;;   x13 : the source address (points to object reference to write)
@@ -387,5 +391,9 @@ NoBarrierXchg
 
     LEAF_END RhpCheckedXchg
 #endif // FEATURE_NATIVEAOT
+
+    LEAF_ENTRY RhpWriteBarriers_End
+        ret
+    LEAF_END RhpWriteBarriers_End
 
     end
