@@ -2202,6 +2202,7 @@ DBG_FlushInstructionCache(
 CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
 {
     size_t copySize;
+    ctx.R16
     if (ctx.ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
     {
         if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
@@ -2216,7 +2217,7 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
         if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
         {
             // Copy APX EGPRs separately.
-            memcpy(this &ctx + offsetof(CONTEXT, R16), sizeof(CONTEXT) - offsetof(CONTEXT, R16));
+            memcpy(this, &(ctx.R16), sizeof(DWORD64) * 16);
         }
     }
     else
