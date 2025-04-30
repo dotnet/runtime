@@ -35,8 +35,8 @@ namespace ILCompiler
         Func<MethodDesc, string> _printReproInstructions;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
-        private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
-        private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
+        private MethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
+        private FileLayoutAlgorithm _r2rFileLayoutAlgorithm;
         private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
         private bool _hotColdSplitting;
@@ -119,7 +119,7 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder FileLayoutAlgorithms(ReadyToRunMethodLayoutAlgorithm r2rMethodLayoutAlgorithm, ReadyToRunFileLayoutAlgorithm r2rFileLayoutAlgorithm)
+        public ReadyToRunCodegenCompilationBuilder FileLayoutAlgorithms(MethodLayoutAlgorithm r2rMethodLayoutAlgorithm, FileLayoutAlgorithm r2rFileLayoutAlgorithm)
         {
             _r2rMethodLayoutAlgorithm = r2rMethodLayoutAlgorithm;
             _r2rFileLayoutAlgorithm = r2rFileLayoutAlgorithm;
