@@ -6,6 +6,16 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+public readonly struct AssemblyHandle
+{
+    public AssemblyHandle(TargetPointer address)
+    {
+        Address = address;
+    }
+
+    public TargetPointer Address { get; }
+}
+
 public readonly struct ModuleHandle
 {
     public ModuleHandle(TargetPointer address)
@@ -58,10 +68,14 @@ public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
 
+    AssemblyHandle GetAssemblyHandle(TargetPointer assemblyPointer) => throw new NotImplementedException();
     ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
 
-    IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
+    IEnumerable<TargetPointer> GetAssemblies(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
+    TargetPointer GetModule(AssemblyHandle handle) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
+    bool IsAssemblyLoaded(AssemblyHandle handle) => throw new NotImplementedException();
+
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
     bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => throw new NotImplementedException();
@@ -77,7 +91,6 @@ public interface ILoader : IContract
 
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
-    bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

@@ -5,6 +5,14 @@ This contract is for getting information about loaded modules and assemblies
 ## APIs of contract
 
 ``` csharp
+readonly struct AssemblyHandle
+{
+    // Opaque handle - no public members
+
+    internal TargetPointer Address;
+}
+
+
 readonly struct ModuleHandle
 {
     // Opaque handle - no public members
@@ -52,8 +60,13 @@ record struct ModuleLookupTables(
 ```
 
 ``` csharp
+AssemblyHandle GetAssemblyHandle(TargetPointer assembly);
 ModuleHandle GetModuleHandle(TargetPointer module);
-IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
+
+IEnumerable<TargetPointer> GetAssemblies(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
+TargetPointer GetModule(AssemblyHandle handle);
+bool IsAssemblyLoaded(AssemblyHandle handle);
+
 TargetPointer GetRootAssembly();
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
@@ -69,7 +82,6 @@ TargetPointer GetILBase(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
 bool IsCollectible(ModuleHandle handle);
-bool IsAssemblyLoaded(ModuleHandle handle);
 ```
 
 ## Version 1
@@ -127,12 +139,23 @@ Global variables used:
 
 
 ``` csharp
+// Handle related methods
+
+AssemblyHandle GetAssemblyHandle(TargetPointer assemblyPointer)
+{
+    return new AssemblyHandle(assemblyPointer);
+}
+
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
 {
     return new ModuleHandle(modulePointer);
 }
+```
 
-IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
+``` csharp
+// Assembly related methods
+
+IEnumerable<TargetPointer> GetAssemblies(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
 {
     if (appDomain == TargetPointer.Null) throw new ArgumentException("appDomain must not be null");
 
@@ -156,7 +179,7 @@ IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationF
             // in either case, we continue to the next assembly
             if (iterationFlags.HasFlag(AssemblyIterationFlags.IncludeFailedToLoad))
             {
-                yield return new ModuleHandle(assembly.Module);
+                yield return pAssembly;
             }
             continue;
         }
@@ -225,8 +248,14 @@ IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationF
             }
         }
 
-        yield return new ModuleHandle(assembly.Module);
+        yield return pAssembly;
     }
+}
+
+TargetPointer ILoader.GetModule(AssemblyHandle handle)
+{
+    TargetPointer module = target.ReadPointer(handle.Address + /*Assembly::Module offset*/);
+    return assembly.Module;
 }
 
 TargetPointer GetRootAssembly()
@@ -235,6 +264,16 @@ TargetPointer GetRootAssembly()
     AppDomain appDomain = // read AppDomain object starting at appDomainPointer
     return appDomain.RootAssembly;
 }
+
+bool IsAssemblyLoaded(AssemblyHandle handle)
+{
+    uint loadLevel = target.Read<uint>(handle.Address + /*Assembly::Level offset*/);
+    return loadLevel >= 4; // FILE_LOAD_DELIVER_EVENTS
+}
+```
+
+```csharp
+// Module related methods
 
 TargetPointer GetAssembly(ModuleHandle handle)
 {
@@ -366,20 +405,11 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
     } while (table != TargetPointer.Null);
     return TargetPointer.Null;
 }
-```
 
-```csharp
 bool ILoader.IsCollectible(ModuleHandle handle)
 {
     TargetPointer assembly = _target.ReadPointer(handle.Address + /*Module::Assembly*/);
     byte isCollectible = _target.Read<byte>(assembly + /* Assembly::IsCollectible*/);
     return isCollectible != 0;
-}
-
-bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
-{
-    TargetPointer assembly = _target.ReadPointer(handle.Address + /*Module::Assembly*/);
-    uint loadLevel = _target.Read<uint>(assembly + /* Assembly::Level*/);
-    return loadLevel >= 4; // FILE_LOAD_DELIVER_EVENTS
 }
 ```

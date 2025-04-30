@@ -127,7 +127,7 @@ internal sealed unsafe partial class SOSDacImpl
             else
             {
                 ILoader loader = _target.Contracts.Loader;
-                List<Contracts.ModuleHandle> modules = loader.GetModules(
+                List<TargetPointer> assemblyPointers = loader.GetAssemblies(
                     appDomain,
                     AssemblyIterationFlags.IncludeLoading |
                     AssemblyIterationFlags.IncludeLoaded |
@@ -136,21 +136,21 @@ internal sealed unsafe partial class SOSDacImpl
                 int n = 0; // number of Assemblies that will be returned
                 if (values is not null)
                 {
-                    for (int i = 0; i < modules.Count && n < count; i++)
+                    for (int i = 0; i < assemblyPointers.Count && n < count; i++)
                     {
-                        Contracts.ModuleHandle module = modules[i];
-                        if (loader.IsAssemblyLoaded(module))
+                        Contracts.AssemblyHandle assembly = loader.GetAssemblyHandle(assemblyPointers[i]);
+                        if (loader.IsAssemblyLoaded(assembly))
                         {
-                            values[n++] = loader.GetAssembly(module);
+                            values[n++] = assemblyPointers[i];
                         }
                     }
                 }
                 else
                 {
-                    for (int i = 0; i < modules.Count && n < count; i++)
+                    for (int i = 0; i < assemblyPointers.Count && n < count; i++)
                     {
-                        Contracts.ModuleHandle module = modules[i];
-                        if (loader.IsAssemblyLoaded(module))
+                        Contracts.AssemblyHandle assembly = loader.GetAssemblyHandle(assemblyPointers[i]);
+                        if (loader.IsAssemblyLoaded(assembly))
                         {
                             n++;
                         }
