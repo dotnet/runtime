@@ -2297,7 +2297,7 @@ void ObjectAllocator::RewriteUses()
                             unsigned const instanceOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateInstance;
                             GenTree* const newThisAddr =
                                 m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, cloneThis,
-                                                          m_compiler->gtNewIconNode(instanceOffset));
+                                                          m_compiler->gtNewIconNode(instanceOffset, TYP_I_IMPL));
 
                             // For now assume the instance is heap...
                             //
@@ -2310,7 +2310,7 @@ void ObjectAllocator::RewriteUses()
                             unsigned const targetOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget;
                             GenTree* const targetAddr =
                                 m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, lcl,
-                                                          m_compiler->gtNewIconNode(targetOffset));
+                                                          m_compiler->gtNewIconNode(targetOffset, TYP_I_IMPL));
                             GenTree* const target = m_compiler->gtNewIndir(TYP_I_IMPL, targetAddr);
 
                             // Likely there is other residual call state we need to munge here
