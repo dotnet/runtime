@@ -157,6 +157,8 @@ class ReduceExamples(threading.Thread):
 
                             if ex_assert_err is not None:
                                 self.reduced_jit_asserts.add(ex_assert_err)
+                        else:
+                            print("  Reduction failed, output file not present")
 
 
 def main(main_args):
