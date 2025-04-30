@@ -182,7 +182,7 @@ namespace System
         {
             if (Bmi2.X64.IsSupported)
             {
-                // Ideally, we should do a single multiply for low and high. Doing this efficiently would mean making BigMul an instrinct (would work on all x64 targets) or fixing https://github.com/dotnet/runtime/issues/11782
+                // Ideally, we should do a single multiply for low and high. Doing this efficiently would mean making BigMul an intrinsic (would work on all x64 targets) or fixing https://github.com/dotnet/runtime/issues/11782
                 low = a * b;
                 return Bmi2.X64.MultiplyNoFlags(a, b);
             }
@@ -211,7 +211,7 @@ namespace System
         {
             if (Bmi2.X64.IsSupported)
             {
-                // Ideally, we should do a single multiply for low and high. Doing this efficiently would mean making BigMul an instrinct (would work on all x64 targets) or fixing https://github.com/dotnet/runtime/issues/11782
+                // Ideally, we should do a single multiply for low and high. Doing this efficiently would mean making BigMul an intrinsic (would work on all x64 targets) or fixing https://github.com/dotnet/runtime/issues/11782
                 low = a * b;
                 return Bmi2.X64.MultiplyNoFlags(a, b);
             }
