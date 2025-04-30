@@ -814,5 +814,34 @@ namespace Microsoft.Extensions.Options.Tests
 
             Assert.NotNull(value);
         }
+
+        [Fact]
+        public void ValidateWithValidatorType_ValidatesFailureCorrectly()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<ComplexOptions>()
+                .Configure(o => o.Boolean = false)
+                .Validate<ComplexOptionsValidator>();
+
+            var sp = services.BuildServiceProvider();
+
+            var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<ComplexOptions>>().Value);
+            ValidateFailure<ComplexOptions>(error, Options.DefaultName, 1, "Boolean != true");
+        }
+
+        [Fact]
+        public void ValidateWithValidatorType_ValidationSuccessful()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<ComplexOptions>()
+                .Configure(o => o.Boolean = true)
+                .Validate<ComplexOptionsValidator>();
+
+            var sp = services.BuildServiceProvider();
+
+            var value = sp.GetRequiredService<IOptions<ComplexOptions>>().Value;
+
+            Assert.NotNull(value);
+        }
     }
 }
