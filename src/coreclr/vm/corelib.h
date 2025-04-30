@@ -343,6 +343,32 @@ DEFINE_METHOD(TYPE_INIT_EXCEPTION,  STR_EX_CTOR,            .ctor,              
 DEFINE_CLASS(THREAD_START_EXCEPTION,Threading,              ThreadStartException)
 DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,                      IM_Exception_RetVoid)
 
+DEFINE_CLASS(VALUETASK_1, Tasks, ValueTask`1)
+
+DEFINE_CLASS(VALUETASK, Tasks, ValueTask)
+DEFINE_METHOD(VALUETASK, FROM_EXCEPTION, FromException, SM_Exception_RetValueTask)
+DEFINE_METHOD(VALUETASK, FROM_EXCEPTION_1, FromException, GM_Exception_RetValueTaskOfT)
+DEFINE_METHOD(VALUETASK, FROM_RESULT_T, FromResult, GM_T_RetValueTaskOfT)
+DEFINE_METHOD(VALUETASK, GET_COMPLETED_TASK, get_CompletedTask, SM_RetValueTask)
+
+DEFINE_CLASS(TASK_1, Tasks, Task`1)
+DEFINE_METHOD(TASK_1, GET_AWAITER, GetAwaiter, NoSig)
+
+DEFINE_CLASS(TASK, Tasks, Task)
+DEFINE_METHOD(TASK, FROM_EXCEPTION, FromException, SM_Exception_RetTask)
+DEFINE_METHOD(TASK, FROM_EXCEPTION_1, FromException, GM_Exception_RetTaskOfT)
+DEFINE_METHOD(TASK, FROM_RESULT_T, FromResult, GM_T_RetTaskOfT)
+DEFINE_METHOD(TASK, GET_COMPLETED_TASK, get_CompletedTask, SM_RetTask)
+DEFINE_METHOD(TASK, GET_AWAITER, GetAwaiter, NoSig)
+
+DEFINE_CLASS(TASK_AWAITER_1, CompilerServices, TaskAwaiter`1)
+DEFINE_METHOD(TASK_AWAITER_1, GET_ISCOMPLETED, get_IsCompleted, NoSig)
+DEFINE_METHOD(TASK_AWAITER_1, GET_RESULT, GetResult, NoSig)
+
+DEFINE_CLASS(TASK_AWAITER, CompilerServices, TaskAwaiter)
+DEFINE_METHOD(TASK_AWAITER, GET_ISCOMPLETED, get_IsCompleted, NoSig)
+DEFINE_METHOD(TASK_AWAITER, GET_RESULT, GetResult, NoSig)
+
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       PVOID_CTOR,             .ctor,                      IM_RuntimeType_RetVoid)
@@ -651,6 +677,10 @@ DEFINE_CLASS(RESOURCE_MANAGER,      Resources,              ResourceManager)
 DEFINE_CLASS(RTFIELD,               Reflection,             RtFieldInfo)
 DEFINE_METHOD(RTFIELD,              GET_FIELDESC,           GetFieldDesc,            IM_RetIntPtr)
 
+DEFINE_CLASS(EXECUTIONANDSYNCBLOCKSTORE, CompilerServices, ExecutionAndSyncBlockStore)
+DEFINE_METHOD(EXECUTIONANDSYNCBLOCKSTORE, PUSH, Push, NoSig)
+DEFINE_METHOD(EXECUTIONANDSYNCBLOCKSTORE, POP, Pop, NoSig)
+
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)
@@ -663,6 +693,17 @@ DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,  
 #ifdef FEATURE_IJW
 DEFINE_METHOD(RUNTIME_HELPERS,      COPY_CONSTRUCT,         CopyConstruct, NoSig)
 #endif // FEATURE_IJW
+
+DEFINE_CLASS(ASYNC_HELPERS,       CompilerServices,          AsyncHelpers)
+DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION,        AllocContinuation, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION_METHOD, AllocContinuationMethod, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION_CLASS,  AllocContinuationClass, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION_RESULT_BOX, AllocContinuationResultBox, SM_VoidPtr_RetObj)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK, FinalizeTaskReturningThunk, SM_Continuation_RetTask)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK_1, FinalizeTaskReturningThunk, GM_Continuation_RetTaskOfT)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK, FinalizeValueTaskReturningThunk, SM_Continuation_RetValueTask)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK_1, FinalizeValueTaskReturningThunk, GM_Continuation_RetValueTaskOfT)
+DEFINE_METHOD(ASYNC_HELPERS,      UNSAFE_AWAIT_AWAITER_1,    UnsafeAwaitAwaiter, GM_T_RetVoid)
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
@@ -764,6 +805,14 @@ DEFINE_FIELD_U(NextCall,                   PortableTailCallFrame, NextCall)
 DEFINE_CLASS_U(CompilerServices,           TailCallTls,           TailCallTls)
 DEFINE_FIELD_U(Frame,                      TailCallTls,           m_frame)
 DEFINE_FIELD_U(ArgBuffer,                  TailCallTls,           m_argBuffer)
+
+DEFINE_CLASS(CONTINUATION,              CompilerServices,   Continuation)
+DEFINE_FIELD(CONTINUATION,              NEXT,               Next)
+DEFINE_FIELD(CONTINUATION,              RESUME,             Resume)
+DEFINE_FIELD(CONTINUATION,              STATE,              State)
+DEFINE_FIELD(CONTINUATION,              FLAGS,              Flags)
+DEFINE_FIELD(CONTINUATION,              DATA,               Data)
+DEFINE_FIELD(CONTINUATION,              GCDATA,             GCData)
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)
@@ -981,6 +1030,7 @@ DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     Validate
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT,                   GetStubContext,                 SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          NEXT_CALL_RETURN_ADDRESS,           NextCallReturnAddress,          SM_RetIntPtr)
+DEFINE_METHOD(STUBHELPERS,          ASYNC_CALL_CONTINUATION,            AsyncCallContinuation,          SM_RetContinuation)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,           SM_SafeHandle_RefBool_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
 

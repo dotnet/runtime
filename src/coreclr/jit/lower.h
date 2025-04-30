@@ -185,6 +185,8 @@ private:
     GenTree*   LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
+    GenTree*   LowerAsyncContinuation(GenTree* asyncCont);
+    void       LowerReturnSuspend(GenTree* retSuspend);
     void       LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList);
     bool       IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList);
     void       LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList);

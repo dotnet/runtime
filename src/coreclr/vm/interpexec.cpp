@@ -9,26 +9,16 @@
 
 typedef void* (*HELPER_FTN_PP)(void*);
 
-thread_local InterpThreadContext *t_pThreadContext = NULL;
-
-InterpThreadContext* InterpGetThreadContext()
+InterpThreadContext::InterpThreadContext()
 {
-    InterpThreadContext *threadContext = t_pThreadContext;
+    // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
+    pStackStart = pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
+    pStackEnd = pStackStart + INTERP_STACK_SIZE;
+}
 
-    if (!threadContext)
-    {
-        threadContext = new InterpThreadContext;
-        // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
-        threadContext->pStackStart = threadContext->pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
-        threadContext->pStackEnd = threadContext->pStackStart + INTERP_STACK_SIZE;
-
-        t_pThreadContext = threadContext;
-        return threadContext;
-    }
-    else
-    {
-        return threadContext;
-    }
+InterpThreadContext::~InterpThreadContext()
+{
+    free(pStackStart);
 }
 
 #ifdef DEBUG
@@ -584,7 +574,53 @@ MAIN_LOOP:
                 LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) * LOCAL_VAR(ip[3], double);
                 ip += 4;
                 break;
+            case INTOP_MUL_OVF_I4:
+            {
+                int32_t i1 = LOCAL_VAR(ip[2], int32_t);
+                int32_t i2 = LOCAL_VAR(ip[3], int32_t);
+                int32_t i3;
+                if (!ClrSafeInt<int32_t>::multiply(i1, i2, i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], int32_t) = i3;
+                ip += 4;
+                break;
+            }
 
+            case INTOP_MUL_OVF_I8:
+            {
+                int64_t i1 = LOCAL_VAR(ip[2], int64_t);
+                int64_t i2 = LOCAL_VAR(ip[3], int64_t);
+                int64_t i3;
+                if (!ClrSafeInt<int64_t>::multiply(i1, i2, i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], int64_t) = i3;
+                ip += 4;
+                break;
+            }
+
+            case INTOP_MUL_OVF_UN_I4:
+            {
+                uint32_t i1 = LOCAL_VAR(ip[2], uint32_t);
+                uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
+                uint32_t i3;
+                if (!ClrSafeInt<uint32_t>::multiply(i1, i2, i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], uint32_t) = i3;
+                ip += 4;
+                break;
+            }
+
+            case INTOP_MUL_OVF_UN_I8:
+            {
+                uint64_t i1 = LOCAL_VAR(ip[2], uint64_t);
+                uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
+                uint64_t i3;
+                if (!ClrSafeInt<uint64_t>::multiply(i1, i2, i3))
+                    assert(0); // Interpreter-TODO: OverflowException
+                LOCAL_VAR(ip[1], uint64_t) = i3;
+                ip += 4;
+                break;
+            }
             case INTOP_DIV_I4:
             {
                 int32_t i1 = LOCAL_VAR(ip[2], int32_t);
@@ -1105,6 +1141,29 @@ CALL_TARGET_IP:
                 memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
                 ip += 3;
                 break;
+            case INTOP_LOCALLOC:
+            {
+                size_t len = LOCAL_VAR(ip[2], size_t);
+                void* pMemory = NULL;
+
+                if (len > 0)
+                {
+                    pMemory = pThreadContext->frameDataAllocator.Alloc(pFrame, len);
+                    if (pMemory == NULL)
+                    {
+                        // Interpreter-TODO: OutOfMemoryException
+                        assert(0);
+                    }
+                    if (pMethod->initLocals)
+                    {
+                        memset(pMemory, 0, len);
+                    }
+                }
+
+                LOCAL_VAR(ip[1], void*) = pMemory;
+                ip += 3;
+                break;
+            }
             case INTOP_GC_COLLECT: {
                 // HACK: blocking gc of all generations to enable early stackwalk testing
                 // Interpreter-TODO: Remove this
@@ -1126,6 +1185,9 @@ CALL_TARGET_IP:
     }
 
 EXIT_FRAME:
+
+    // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
+    pThreadContext->frameDataAllocator.PopInfo(pFrame);
     if (pFrame->pParent && pFrame->pParent->ip)
     {
         // Return to the main loop after a non-recursive interpreter call

@@ -685,7 +685,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ExportPkcs8PrivateKey_MisbehavingBytesWritten()
+        public static void ExportPkcs8PrivateKey_MisbehavingBytesWritten_Oversized()
         {
             MLKemContract kem = new(MLKemAlgorithm.MLKem512)
             {
@@ -693,6 +693,21 @@ namespace System.Security.Cryptography.Tests
                 {
                     // This is not possible and indiciates a derived type is misimplemented.
                     bytesWritten = destination.Length + 1;
+                    return true;
+                }
+            };
+
+            Assert.Throws<CryptographicException>(() => kem.ExportPkcs8PrivateKey());
+        }
+
+        [Fact]
+        public static void ExportPkcs8PrivateKey_MisbehavingBytesWritten_Negative()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512)
+            {
+                OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    bytesWritten = -1;
                     return true;
                 }
             };

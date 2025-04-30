@@ -731,6 +731,13 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_MDARR_LOWER_BOUND:
             return LowerArrLength(node->AsArrCommon());
 
+        case GT_ASYNC_CONTINUATION:
+            return LowerAsyncContinuation(node);
+
+        case GT_RETURN_SUSPEND:
+            LowerReturnSuspend(node);
+            break;
+
         default:
             break;
     }
@@ -5429,6 +5436,83 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
         }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerAsyncContinuation: Lower a GT_ASYNC_CONTINUATION node
+//
+// Arguments:
+//   asyncCont - Async continuation node
+//
+// Returns:
+//   Next node to lower.
+//
+GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
+{
+    assert(asyncCont->OperIs(GT_ASYNC_CONTINUATION));
+
+    GenTree* next = asyncCont->gtNext;
+
+    //
+    // ASYNC_CONTINUATION is created from two sources:
+    //
+    // 1. The async resumption stubs are IL stubs created by the VM. These call
+    // runtime async functions via "calli", passing the continuation manually.
+    // They use the AsyncHelpers.AsyncCallContinuation intrinsic after the
+    // calli, which turns into the ASYNC_CONTINUATION node during import.
+    //
+    // 2. In the async transformation, ASYNC_CONTINUATION nodes are inserted
+    // after calls to async calls.
+    //
+    // In the former case nothing has marked the previous call as an "async"
+    // method. We need to do that here to ensure that the backend knows that
+    // the call has a non-standard calling convention that returns an
+    // additional GC ref. This requires additional GC tracking that we would
+    // otherwise not get.
+    //
+    GenTree* node = asyncCont;
+    while (true)
+    {
+        node = node->gtPrev;
+        noway_assert((node != nullptr) && "Ran out of nodes while looking for call before async continuation");
+
+        if (node->IsCall())
+        {
+            if (!node->AsCall()->IsAsync())
+            {
+                JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
+                        Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
+                node->AsCall()->SetIsAsync();
+            }
+
+            BlockRange().Remove(asyncCont);
+            BlockRange().InsertAfter(node, asyncCont);
+            break;
+        }
+    }
+
+    return next;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerReturnSuspend:
+//   Lower a GT_RETURN_SUSPEND by making it a terminator node.
+//
+// Arguments:
+//   node - The node
+//
+void Lowering::LowerReturnSuspend(GenTree* node)
+{
+    assert(node->OperIs(GT_RETURN_SUSPEND));
+    while (BlockRange().LastNode() != node)
+    {
+        BlockRange().Remove(BlockRange().LastNode(), true);
+    }
+
+    if (comp->compMethodRequiresPInvokeFrame())
+    {
+        InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(node));
     }
 }
 

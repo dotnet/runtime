@@ -709,6 +709,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "VarArgsCookie";
         case WellKnownArg::InstParam:
             return "InstParam";
+        case WellKnownArg::AsyncContinuation:
+            return "AsyncContinuation";
         case WellKnownArg::RetBuffer:
             return "RetBuffer";
         case WellKnownArg::PInvokeFrame:
@@ -4509,6 +4511,12 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 #endif
+
+    if (compIsAsync() != call->IsAsync())
+    {
+        failTailCall("Caller and callee do not agree on async-ness");
+        return nullptr;
+    }
 
     // We have to ensure to pass the incoming retValBuf as the
     // outgoing one. Using a temp will not do as this function will
