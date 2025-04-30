@@ -112,6 +112,10 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
+#if !NET9_0_OR_GREATER
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2046",
+            Justification = "The type is annotated with RequiresUnreferencedCode, so the trimmer will warn at construction time.")]
+#endif
         public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>()
         {
             Type collectionType = typeof(TCollection);
