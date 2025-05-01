@@ -591,6 +591,13 @@ namespace Internal.IL
                     return SetTargetResult.Missing;
                 }
 
+                if (replacementType.IsByRef
+                    || replacementType.IsFunctionPointer
+                    || replacementType.IsPointer)
+                {
+                    return SetTargetResult.NotSupported;
+                }
+
                 // Future versions of the runtime may support
                 // UnsafeAccessorTypeAttribute on value types.
                 if (replacementType.IsValueType)

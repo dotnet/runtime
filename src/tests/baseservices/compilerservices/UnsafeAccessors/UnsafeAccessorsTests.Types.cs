@@ -78,6 +78,12 @@ public static unsafe class UnsafeAccessorsTestsTypes
         AssertExtensions.ThrowsAny<COMException, InvalidProgramException>(() => CallStaticMethod1(null));
         Assert.Throws<TypeLoadException>(() => CallStaticMethod2(null));
         Assert.Throws<NotSupportedException>(() => CallStaticMethod3(null));
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            object o = null;
+            CallStaticMethod4(ref o);
+        });
+        Assert.Throws<NotSupportedException>(() => CallStaticMethod5(null));
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "MethodName")]
         extern static ref int CallStaticMethod1([UnsafeAccessorType(null!)] object a);
@@ -87,6 +93,12 @@ public static unsafe class UnsafeAccessorsTestsTypes
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "MethodName")]
         extern static ref int CallStaticMethod3([UnsafeAccessorType("S1")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "MethodName")]
+        extern static ref int CallStaticMethod4([UnsafeAccessorType("C1&")] ref object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "MethodName")]
+        extern static ref int CallStaticMethod5([UnsafeAccessorType("S1*")] object a);
     }
 
     [Fact]

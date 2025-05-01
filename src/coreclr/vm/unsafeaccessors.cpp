@@ -263,6 +263,9 @@ namespace
                 cxt.Declaration /* unsafeAccessorMethod */);
             _ASSERTE(!typeHandle.IsNull());
 
+            if (typeHandle.IsTypeDesc())
+                ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE);
+
             MethodTable* targetType = typeHandle.AsMethodTable();
 
             // Future versions of the runtime may support
