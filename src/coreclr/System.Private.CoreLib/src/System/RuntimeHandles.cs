@@ -299,6 +299,13 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAlloc")]
         private static unsafe partial void InternalAlloc(MethodTable* pMT, ObjectHandleOnStack result);
 
+        internal static object InternalAllocNoChecks(MethodTable* pMT)
+        {
+            object? result = null;
+            InternalAllocNoChecks(pMT, ObjectHandleOnStack.Create(ref result));
+            return result!;
+        }
+
         internal static object InternalAllocNoChecks(RuntimeType type)
         {
             Debug.Assert(!type.GetNativeTypeHandle().IsTypeDesc);
