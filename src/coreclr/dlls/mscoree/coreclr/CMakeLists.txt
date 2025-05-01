@@ -113,12 +113,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     )
 endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
-if (CLR_CMAKE_HOST_ANDROID)
-    list(APPEND CORECLR_LIBRARIES
-        gcinfo
-    )
-endif(CLR_CMAKE_HOST_ANDROID)
-
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
         ${STATIC_MT_CRT_LIB}
@@ -198,10 +192,11 @@ if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr PUBLIC log)
     target_link_libraries(coreclr_static
         PUBLIC
-        log
         coreclrminipal_objects
         eventprovider_objects
+        gcinfo
         libunwind
+        log
         minipal_objects
         nativeresourcestring_objects
     )
