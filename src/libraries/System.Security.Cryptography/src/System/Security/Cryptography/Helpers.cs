@@ -467,8 +467,7 @@ namespace Internal.Cryptography
         }
 
         internal static bool IsSlhDsaOid(string? oid) =>
-            oid switch
-            {
+            oid is
                 Oids.SlhDsaSha2_128s or
                 Oids.SlhDsaShake128s or
                 Oids.SlhDsaSha2_128f or
@@ -480,10 +479,6 @@ namespace Internal.Cryptography
                 Oids.SlhDsaSha2_256s or
                 Oids.SlhDsaShake256s or
                 Oids.SlhDsaSha2_256f or
-                Oids.SlhDsaShake256f =>
-                    true,
-                _ =>
-                    false
-            };
+                Oids.SlhDsaShake256f;
     }
 }
