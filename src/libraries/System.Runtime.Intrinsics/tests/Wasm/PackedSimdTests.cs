@@ -149,28 +149,35 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [Fact]
         public unsafe void SaturatingArithmeticTest()
         {
-            var v1 = Vector128.Create((byte)250, (byte)251, (byte)252, (byte)253, (byte)254, (byte)255, (byte)255, (byte)255,
-                                    (byte)250, (byte)251, (byte)252, (byte)253, (byte)254, (byte)255, (byte)255, (byte)255);
-            var v2 = Vector128.Create((byte)10, (byte)10, (byte)10, (byte)10, (byte)10, (byte)10, (byte)10, (byte)10,
-                                    (byte)10, (byte)10, (byte)10, (byte)10, (byte)10, (byte)10, (byte)10, (byte)10);
+            var v1 = Vector128.Create((byte)250, 251, 252, 253, 254, 255, 255, 255, 250, 251, 252, 253, 254, 255, 255, 255);
+            var v2 = Vector128.Create((byte)10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10);
 
             var addSat = PackedSimd.AddSaturate(v1, v2);
-            var subSat = PackedSimd.SubtractSaturate(v1, v2);
+            var subSat = PackedSimd.SubtractSaturate(v2, v1);
 
             // Verify saturation at 255 for addition
-            Assert.Equal(Vector128.Create((byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255,
-                                        (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255), addSat);
+            Assert.Equal(Vector128.Create((byte)255), addSat);
 
             // Verify expected subtraction results
-            Assert.Equal(Vector128.Create((byte)240, (byte)241, (byte)242, (byte)243, (byte)244, (byte)245, (byte)245, (byte)245,
-                                        (byte)240, (byte)241, (byte)242, (byte)243, (byte)244, (byte)245, (byte)245, (byte)245), subSat);
+            Assert.Equal(Vector128.Create((byte)0), subSat);
+
+            var v3 = Vector128.Create((ushort)65530, 65531, 65532, 65533, 65534, 65535, 65535, 65535);
+            var v4 = Vector128.Create((ushort)10, 10, 10, 10, 10, 10, 10, 10);
+
+            var addSatUShort = PackedSimd.AddSaturate(v3, v4);
+            var subSatUShort = PackedSimd.SubtractSaturate(v4, v3);
+
+            // Verify saturation at 65535 for addition
+            Assert.Equal(Vector128.Create((ushort)65535), addSatUShort);
+
+            // Verify expected subtraction results
+            Assert.Equal(Vector128.Create((ushort)0), subSatUShort);
         }
 
         [Fact]
         public unsafe void WideningOperationsTest()
         {
-            var v = Vector128.Create((short)1000, (short)2000, (short)3000, (short)4000,
-                                   (short)5000, (short)6000, (short)7000, (short)8000);
+            var v = Vector128.Create((short)1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000);
 
             var lowerWidened = PackedSimd.SignExtendWideningLower(v);
             var upperWidened = PackedSimd.SignExtendWideningUpper(v);
@@ -182,15 +189,11 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [Fact]
         public unsafe void SwizzleTest()
         {
-            var v = Vector128.Create((byte)1, (byte)2, (byte)3, (byte)4, (byte)5, (byte)6, (byte)7, (byte)8,
-                                   (byte)9, (byte)10, (byte)11, (byte)12, (byte)13, (byte)14, (byte)15, (byte)16);
-            var indices = Vector128.Create((byte)3, (byte)2, (byte)1, (byte)0, (byte)7, (byte)6, (byte)5, (byte)4,
-                                        (byte)11, (byte)10, (byte)9, (byte)8, (byte)15, (byte)14, (byte)13, (byte)12);
+            var v = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            var indices = Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
 
             var swizzled = PackedSimd.Swizzle(v, indices);
-
-            Assert.Equal(Vector128.Create((byte)4, (byte)3, (byte)2, (byte)1, (byte)8, (byte)7, (byte)6, (byte)5,
-                                        (byte)12, (byte)11, (byte)10, (byte)9, (byte)16, (byte)15, (byte)14, (byte)13), swizzled);
+            Assert.Equal(Vector128.Create((byte)4, 3, 2, 1, 8, 7, 6, 5, 12, 11, 10, 9, 16, 15, 14, 13), swizzled);
         }
 
         [Fact]
@@ -216,8 +219,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             fixed (byte* ptr = bytes)
             {
                 var widened = PackedSimd.LoadWideningVector128(ptr);
-                Assert.Equal(Vector128.Create((ushort)1, (ushort)2, (ushort)3, (ushort)4,
-                                           (ushort)5, (ushort)6, (ushort)7, (ushort)8), widened);
+                Assert.Equal(Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8), widened);
             }
         }
 
@@ -260,24 +262,17 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [Fact]
         public unsafe void AddPairwiseWideningTest()
         {
-            var bytes = Vector128.Create((byte)1, (byte)2, (byte)3, (byte)4,
-                                       (byte)5, (byte)6, (byte)7, (byte)8,
-                                       (byte)9, (byte)10, (byte)11, (byte)12,
-                                       (byte)13, (byte)14, (byte)15, (byte)16);
+            var bytes = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
             var widened = PackedSimd.AddPairwiseWidening(bytes);
-
-            Assert.Equal(Vector128.Create((ushort)3, (ushort)7, (ushort)11, (ushort)15,
-                                        (ushort)19, (ushort)23, (ushort)27, (ushort)31), widened);
+            Assert.Equal(Vector128.Create((ushort)3, 7, 11, 15, 19, 23, 27, 31), widened);
         }
 
         [Fact]
         public unsafe void MultiplyWideningTest()
         {
-            var shorts = Vector128.Create((short)10, (short)20, (short)30, (short)40,
-                                        (short)50, (short)60, (short)70, (short)80);
-            var multiplier = Vector128.Create((short)2, (short)2, (short)2, (short)2,
-                                            (short)2, (short)2, (short)2, (short)2);
+            var shorts = Vector128.Create((short)10, 20, 30, 40, 50, 60, 70, 80);
+            var multiplier = Vector128.Create((short)2, 2, 2, 2, 2, 2, 2, 2);
 
             var lowerResult = PackedSimd.MultiplyWideningLower(shorts, multiplier);
             var upperResult = PackedSimd.MultiplyWideningUpper(shorts, multiplier);
@@ -289,10 +284,8 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [Fact]
         public unsafe void DotProductTest()
         {
-            var v1 = Vector128.Create((short)1, (short)2, (short)3, (short)4,
-                                    (short)5, (short)6, (short)7, (short)8);
-            var v2 = Vector128.Create((short)2, (short)2, (short)2, (short)2,
-                                    (short)2, (short)2, (short)2, (short)2);
+            var v1 = Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8);
+            var v2 = Vector128.Create((short)2, 2, 2, 2, 2, 2, 2, 2);
 
             var dot = PackedSimd.Dot(v1, v2);
 
@@ -348,44 +341,26 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [Fact]
         public unsafe void IntegerAbsTest()
         {
-            var bytes = Vector128.Create((sbyte)-1, (sbyte)2, (sbyte)-3, (sbyte)4,
-                                       (sbyte)-5, (sbyte)6, (sbyte)-7, (sbyte)8,
-                                       (sbyte)-9, (sbyte)10, (sbyte)-11, (sbyte)12,
-                                       (sbyte)-13, (sbyte)14, (sbyte)-15, (sbyte)16);
-            var shorts = Vector128.Create((short)-1, (short)2, (short)-3, (short)4,
-                                        (short)-5, (short)6, (short)-7, (short)8);
+            var bytes = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
+            var shorts = Vector128.Create((short)-1, 2, -3, 4, 5, 6, -7, 8);
             var ints = Vector128.Create(-1, 2, -3, 4);
 
             var absBytes = PackedSimd.Abs(bytes);
             var absShorts = PackedSimd.Abs(shorts);
-
-            Assert.Equal(Vector128.Create((sbyte)1, (sbyte)2, (sbyte)3, (sbyte)4,
-                                        (sbyte)5, (sbyte)6, (sbyte)7, (sbyte)8,
-                                        (sbyte)9, (sbyte)10, (sbyte)11, (sbyte)12,
-                                        (sbyte)13, (sbyte)14, (sbyte)15, (sbyte)16), absBytes);
-            Assert.Equal(Vector128.Create((short)1, (short)2, (short)3, (short)4,
-                                        (short)5, (short)6, (short)7, (short)8), absShorts);
+            Assert.Equal(Vector128.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), absBytes);
+            Assert.Equal(Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8), absShorts);
         }
 
         [Fact]
         public unsafe void AverageRoundedTest()
         {
-            var bytes1 = Vector128.Create((byte)1, (byte)3, (byte)5, (byte)7,
-                                        (byte)9, (byte)11, (byte)13, (byte)15,
-                                        (byte)17, (byte)19, (byte)21, (byte)23,
-                                        (byte)25, (byte)27, (byte)29, (byte)31);
-            var bytes2 = Vector128.Create((byte)3, (byte)5, (byte)7, (byte)9,
-                                        (byte)11, (byte)13, (byte)15, (byte)17,
-                                        (byte)19, (byte)21, (byte)23, (byte)25,
-                                        (byte)27, (byte)29, (byte)31, (byte)33);
+            var bytes1 = Vector128.Create((byte)1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31);
+            var bytes2 = Vector128.Create((byte)3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33);
 
             var avgBytes = PackedSimd.AverageRounded(bytes1, bytes2);
 
             // Average is rounded up: (a + b + 1) >> 1
-            Assert.Equal(Vector128.Create((byte)2, (byte)4, (byte)6, (byte)8,
-                                        (byte)10, (byte)12, (byte)14, (byte)16,
-                                        (byte)18, (byte)20, (byte)22, (byte)24,
-                                        (byte)26, (byte)28, (byte)30, (byte)32), avgBytes);
+            Assert.Equal(Vector128.Create((byte)2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32), avgBytes);
         }
 
         [Fact]
@@ -402,9 +377,6 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             Assert.Equal((sbyte)-1, signedMinV128.GetElement(0));
             Assert.Equal((byte)0, unsignedMinV128.GetElement(0));
 
-            //Assert.Equal((sbyte)-1, signedMin.GetElement(0));
-            //Assert.Equal((byte)0, unsignedMin.GetElement(0));
-
             Assert.Equal(signedMinV128, signedMin);
             Assert.Equal(unsignedMinV128, unsignedMin);
         }
@@ -418,22 +390,10 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             Assert.Equal(Vector128.Create(2.5, 2.5), PackedSimd.Splat(2.5));
             Assert.Equal(Vector128.Create(-2L, -2L), PackedSimd.Splat(-2L));
             Assert.Equal(Vector128.Create(2UL, 2UL), PackedSimd.Splat(2UL));
-            Assert.Equal(Vector128.Create(
-                (byte)2, 2, 2, 2,
-                2, 2, 2, 2,
-                2, 2, 2, 2,
-                2, 2, 2, 2), PackedSimd.Splat((byte)2));
-            Assert.Equal(Vector128.Create(
-                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
-                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
-                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
-                (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2), PackedSimd.Splat((sbyte)-2));
-            Assert.Equal(Vector128.Create(
-                (short)-2, (short)-2, (short)-2, (short)-2,
-                (short)-2, (short)-2, (short)-2, (short)-2), PackedSimd.Splat((short)-2));
-            Assert.Equal(Vector128.Create(
-                (ushort)2, (ushort)2, (ushort)2, (ushort)2,
-                (ushort)2, (ushort)2, (ushort)2, (ushort)2), PackedSimd.Splat((ushort)2));
+            Assert.Equal(Vector128.Create((byte)2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2), PackedSimd.Splat((byte)2));
+            Assert.Equal(Vector128.Create((sbyte)-2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2), PackedSimd.Splat((sbyte)-2));
+            Assert.Equal(Vector128.Create((short)-2, -2, -2, -2, -2, -2, -2, -2), PackedSimd.Splat((short)-2));
+            Assert.Equal(Vector128.Create((ushort)2, 2, 2, 2, 2, 2, 2, 2), PackedSimd.Splat((ushort)2));
             Assert.Equal(Vector128.Create([(nint)2, (nint)2, (nint)2, (nint)2]), PackedSimd.Splat((nint)2));
             Assert.Equal(Vector128.Create([(nuint)2, (nuint)2, (nuint)2, (nuint)2]), PackedSimd.Splat((nuint)2));
         }
@@ -509,8 +469,8 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var mulResult = PackedSimd.Multiply(v1, v2);
 
             Assert.Equal(Vector128.Create([(nint)6, (nint)8, (nint)10, (nint)12]), addResult);
-            Assert.Equal(Vector128.Create([(nint)(-4), (nint)(-4), (nint)(-4), (nint)(-4)]), subResult);
-            Assert.Equal(Vector128.Create([(nint)5, (nint)12, (nint)21, (nint)32]), mulResult);
+            Assert.Equal(Vector128.Create([(nint)(-4), (-4), (-4), (-4)]), subResult);
+            Assert.Equal(Vector128.Create([(nint)5, 12, 21, 32]), mulResult);
         }
 
         [Fact]
@@ -522,7 +482,6 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var addResult = PackedSimd.Add(v1, v2);
             var subResult = PackedSimd.Subtract(v1, v2);
             var mulResult = PackedSimd.Multiply(v1, v2);
-
             Assert.Equal(Vector128.Create([(nuint)6, (nuint)8, (nuint)10, (nuint)12]), addResult);
             Assert.Equal(Vector128.Create([unchecked((nuint)(-4)), unchecked((nuint)(-4)), unchecked((nuint)(-4)), unchecked((nuint)(-4))]), subResult);
             Assert.Equal(Vector128.Create([(nuint)5, (nuint)12, (nuint)21, (nuint)32]), mulResult);
@@ -572,10 +531,9 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var leftShift = PackedSimd.ShiftLeft(v, 2);
             var rightShiftArith = PackedSimd.ShiftRightArithmetic(v, 2);
             var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
-
-            Assert.Equal(Vector128.Create([(nint)64, (nint)(-64), (nint)128, (nint)(-128)]), leftShift);
-            Assert.Equal(Vector128.Create([(nint)4, (nint)(-4), (nint)8, (nint)(-8)]), rightShiftArith);
-            Assert.Equal(Vector128.Create([(nint)4, (nint)1073741820, (nint)8, (nint)1073741816]), rightShiftLogical);
+            Assert.Equal(Vector128.Create([(nint)64, (-64), 128, (-128)]), leftShift);
+            Assert.Equal(Vector128.Create([(nint)4, (-4), 8, (-8)]), rightShiftArith);
+            Assert.Equal(Vector128.Create([(nint)4, 1073741820, 8, 1073741816]), rightShiftLogical);
         }
 
         [Fact]
@@ -585,7 +543,6 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
 
             var leftShift = PackedSimd.ShiftLeft(v, 2);
             var rightShiftLogical = PackedSimd.ShiftRightLogical(v, 2);
-
             Assert.Equal(Vector128.Create([(nuint)64, unchecked((nuint)(-64)), (nuint)128, unchecked((nuint)(-128))]), leftShift);
             Assert.Equal(Vector128.Create([(nuint)4, (nuint)1073741820, (nuint)8, (nuint)1073741816]), rightShiftLogical);
         }
@@ -598,7 +555,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
 
             var result = PackedSimd.ConvertNarrowingSaturateSigned(v1, v2);
 
-            Assert.Equal(Vector128.Create((short)32767, (short)32767, (short)-32768, (short)-32768, (short)100, (short)200, (short)-100, (short)-200), result);
+            Assert.Equal(Vector128.Create((short)32767, 32767, -32768, -32768, 100, 200, -100, -200), result);
         }
 
         [Fact]
@@ -609,22 +566,21 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
 
             var result = PackedSimd.ConvertNarrowingSaturateUnsigned(v1, v2);
 
-            Assert.Equal(Vector128.Create((ushort)65535, (ushort)65535, (ushort)0, (ushort)0, (ushort)100, (ushort)200, (ushort)300, (ushort)400), result);
+            Assert.Equal(Vector128.Create((ushort)65535, 65535, 0, 0, 100, 200, 300, 400), result);
         }
 
         [Fact]
         public unsafe void BitmaskTest()
         {
-            var v1 = Vector128.Create((byte)0b00000001, (byte)0b00000010, (byte)0b00000100, (byte)0b00001000,
-                                       (byte)0b00010000, (byte)0b00100000, (byte)0b01000000, (byte)0b10000000,
-                                       (byte)0b00000001, (byte)0b00000010, (byte)0b00000100, (byte)0b00001000,
-                                    (byte)0b00010000, (byte)0b10100000, (byte)0b01000000, (byte)0b10000000);
-
-            var v2 = Vector128.Create((ushort)0b1100001001100001, (ushort)0b0000000000000010, (ushort)0b0000000000000100, (ushort)0b0000000000001000,
-                                       (ushort)0b0000000000010000, (ushort)0b0000000000100000, (ushort)0b0000000001000000, (ushort)0b0000000010000000);
+            var v1 = Vector128.Create((byte)0b00000001, 0b00000010, 0b00000100, 0b00001000,
+                                       0b00010000, 0b00100000, 0b01000000, 0b10000000,
+                                       0b00000001, 0b00000010, 0b00000100, 0b00001000,
+                                       0b00010000, 0b10100000, 0b01000000, 0b10000000);
+            var v2 = Vector128.Create((ushort)0b1100001001100001, 0b0000000000000010, 0b0000000000000100, 0b0000000000001000,
+                                       0b0000000000010000, 0b0000000000100000, 0b0000000001000000, 0b0000000010000000);
 
             var v3 = Vector128.Create(0b10000000000000000000000000000001, 0b00000000000111111000000000000010,
-                                   0b00000000000000000000000000000100, 0b10000000000000000000000000001000);
+                                      0b00000000000000000000000000000100, 0b10000000000000000000000000001000);
 
             var bitmask1 = PackedSimd.Bitmask(v1);
             var bitmask2 = PackedSimd.Bitmask(v2);
