@@ -45,35 +45,6 @@ namespace System.Runtime.InteropServices
             return (IntPtr)vftbl;
         }
 
-        private static readonly ConditionalWeakTable<object, List<ManagedObjectWrapperHolder>> s_allManagedObjectWrapperTable = [];
-
-        private static unsafe void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
-        {
-            // Record the relationship between the managed object and this wrapper.
-            // This will ensure that we keep all ManagedObjectWrapperHolders alive as long as the managed object is alive,
-            // even if the ComWrappers instance dies.
-            // We must do this as the runtime's recording of the relationship between the managed object and the wrapper
-            // lives as long as the object is alive, and we record the raw pointer to the wrapper.
-            List<ManagedObjectWrapperHolder> allWrappersForThisInstance = s_allManagedObjectWrapperTable.GetOrCreateValue(instance);
-            lock (allWrappersForThisInstance)
-            {
-                allWrappersForThisInstance.Add(wrapper);
-            }
-            RegisterManagedObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack.Create(ref instance), wrapper.Wrapper);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_RegisterManagedObjectWrapperForDiagnostics")]
-        private static unsafe partial void RegisterManagedObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack instance, ManagedObjectWrapper* wrapper);
-
-        private static void RegisterNativeObjectWrapperForDiagnostics(NativeObjectWrapper registeredWrapper)
-        {
-            object target = registeredWrapper.ProxyHandle.Target!;
-            RegisterNativeObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack.Create(ref target), ObjectHandleOnStack.Create(ref registeredWrapper));
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_RegisterNativeObjectWrapperForDiagnostics")]
-        private static unsafe partial void RegisterNativeObjectWrapperForDiagnosticsInternal(ObjectHandleOnStack target, ObjectHandleOnStack wrapper);
-
         internal static int CallICustomQueryInterface(ManagedObjectWrapperHolder holder, ref Guid iid, out IntPtr ppObject)
         {
             if (holder.WrappedObject is ICustomQueryInterface customQueryInterface)

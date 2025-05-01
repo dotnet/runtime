@@ -427,8 +427,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ComWrappers_AllocateRefCountedHandle)
     DllImportEntry(ComWrappers_GetIReferenceTrackerTargetVftbl)
     DllImportEntry(ComWrappers_GetTaggedImpl)
-    DllImportEntry(ComWrappers_RegisterManagedObjectWrapperForDiagnostics)
-    DllImportEntry(ComWrappers_RegisterNativeObjectWrapperForDiagnostics)
     DllImportEntry(ComWrappers_RegisterIsRootedCallback)
     DllImportEntry(TrackerObjectManager_HasReferenceTrackerManager)
     DllImportEntry(TrackerObjectManager_TryRegisterReferenceTrackerManager)

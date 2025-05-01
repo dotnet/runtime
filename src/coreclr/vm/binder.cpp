@@ -21,6 +21,7 @@
 #include "sigbuilder.h"
 #include "olevariant.h"
 #include "configuration.h"
+#include "conditionalweaktable.h"
 #include "interoplibinterface_comwrappers.h"
 
 //
@@ -560,7 +561,7 @@ namespace
     bool FeatureSwitchDisabled(LPCWSTR featureSwitch, bool enabledValue, bool defaultValue)
     {
         // If we don't have a feature switch, treat the switch as enabled.
-        return featureSwitch != nullptr && 
+        return featureSwitch != nullptr &&
             Configuration::GetKnobBooleanValue(featureSwitch, defaultValue) != enabledValue;
     }
 

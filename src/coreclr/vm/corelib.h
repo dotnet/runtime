@@ -436,6 +436,8 @@ DEFINE_CLASS(NATIVE_OBJECT_WRAPPER,       Interop,         ComWrappers+NativeObj
 DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_ManagedObjectWrapperHolder_RefGuid_RefIntPtr_RetInt)
 DEFINE_METHOD(COMWRAPPERS, GET_OR_CREATE_COM_INTERFACE_FOR_OBJECT_WITH_GLOBAL_MARSHALLING_INSTANCE, GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance, SM_Obj_RetIntPtr)
 DEFINE_METHOD(COMWRAPPERS, GET_OR_CREATE_OBJECT_FOR_COM_INSTANCE_WITH_GLOBAL_MARSHALLING_INSTANCE, GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance, SM_IntPtr_CreateObjectFlags_RetObj)
+DEFINE_FIELD(COMWRAPPERS, NAITVE_OBJECT_WRAPPER_TABLE, s_nativeObjectWrapperTable)
+DEFINE_FIELD(COMWRAPPERS, ALL_MANAGED_OBJECT_WRAPPER_TABLE, s_allManagedObjectWrapperTable)
 
 DEFINE_CLASS_U(Interop, ComWrappers+ManagedObjectWrapperHolder, ManagedObjectWrapperHolderObject)
 DEFINE_FIELD_U(_wrapper, ManagedObjectWrapperHolderObject, ManagedObjectWrapper)
@@ -759,6 +761,20 @@ DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_BYTE,  CompareExchange, SM_
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_USHRT, CompareExchange, SM_RefUShrt_UShrt_UShrt_RetUShrt)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_INT,   CompareExchange, SM_RefInt_Int_Int_RetInt)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_LONG,  CompareExchange, SM_RefLong_Long_Long_RetLong)
+
+DEFINE_CLASS_U(CompilerServices,    ConditionalWeakTable`2,   NoClass)
+DEFINE_FIELD_U(_lock,               ConditionalWeakTableObject, _lock)
+DEFINE_FIELD_U(_container,          ConditionalWeakTableObject, _container)
+
+DEFINE_CLASS_U(CompilerServices,    ConditionalWeakTable`2+Container, NoClass)
+DEFINE_FIELD_U(_parent,             ConditionalWeakTableContainerObject, _parent)
+DEFINE_FIELD_U(_buckets,            ConditionalWeakTableContainerObject, _buckets)
+DEFINE_FIELD_U(_entries,            ConditionalWeakTableContainerObject, _entries)
+
+DEFINE_CLASS_U(CompilerServices,    ConditionalWeakTable`2+Entry, ConditionalWeakTableContainerObject::Entry)
+DEFINE_FIELD_U(depHnd,              ConditionalWeakTableContainerObject::Entry, depHnd)
+DEFINE_FIELD_U(HashCode,            ConditionalWeakTableContainerObject::Entry, HashCode)
+DEFINE_FIELD_U(Next,                ConditionalWeakTableContainerObject::Entry, Next)
 
 DEFINE_CLASS(RAW_DATA,              CompilerServices,       RawData)
 DEFINE_FIELD(RAW_DATA,              DATA,                   Data)
@@ -1142,6 +1158,10 @@ DEFINE_CLASS(IREADONLYLISTGENERIC,  CollectionsGeneric,     IReadOnlyList`1)
 DEFINE_CLASS(IREADONLYDICTIONARYGENERIC,CollectionsGeneric, IReadOnlyDictionary`2)
 DEFINE_CLASS(IDICTIONARYGENERIC,    CollectionsGeneric,     IDictionary`2)
 DEFINE_CLASS(KEYVALUEPAIRGENERIC,   CollectionsGeneric,     KeyValuePair`2)
+
+DEFINE_CLASS(LISTGENERIC,          CollectionsGeneric,      List`1)
+DEFINE_FIELD(LISTGENERIC,          ITEMS,                   _items)
+DEFINE_FIELD(LISTGENERIC,          SIZE,                    _size)
 
 DEFINE_CLASS(ICOMPARABLEGENERIC,    System,                 IComparable`1)
 DEFINE_METHOD(ICOMPARABLEGENERIC,   COMPARE_TO,             CompareTo,                  NoSig)

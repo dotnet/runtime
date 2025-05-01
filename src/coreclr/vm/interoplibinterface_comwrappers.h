@@ -13,9 +13,6 @@
 // Native calls for the managed ComWrappers API
 class ComWrappersNative
 {
-public: // Lifetime management for COM Wrappers
-    static void DestroyExternalComObjectContext(_In_ void* context);
-
 public: // COM activation
     static void MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe);
 
@@ -39,14 +36,6 @@ extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::Obje
 extern "C" void const* QCALLTYPE ComWrappers_GetIReferenceTrackerTargetVftbl();
 
 extern "C" void const* QCALLTYPE ComWrappers_GetTaggedImpl();
-
-extern "C" void QCALLTYPE ComWrappers_RegisterManagedObjectWrapperForDiagnostics(
-    _In_ QCall::ObjectHandleOnStack obj,
-    _In_ void* wrapper);
-
-extern "C" void QCALLTYPE ComWrappers_RegisterNativeObjectWrapperForDiagnostics(
-    _In_ QCall::ObjectHandleOnStack target,
-    _In_ QCall::ObjectHandleOnStack wrapper);
 
 extern "C" void QCALLTYPE ComWrappers_RegisterIsRootedCallback();
 
@@ -79,6 +68,7 @@ class GCHandleSetEntryObject;
 class ManagedObjectWrapperHolderObject : public Object
 {
     friend class CoreLibBinder;
+    friend class ClrDataAccess;
 private:
     OBJECTREF _releaser;
     OBJECTREF _wrappedObject;

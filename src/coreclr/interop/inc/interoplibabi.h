@@ -13,21 +13,47 @@ namespace InteropLib
     {
         // Updating this also requires updating ComInterfaceDispatch::GetInstance<T>.
 #ifdef HOST_64BIT
-        const size_t DispatchAlignmentThisPtr = 64; // Should be a power of 2.
+        constexpr size_t DispatchAlignmentThisPtr = 64; // Should be a power of 2.
 #else
-        const size_t DispatchAlignmentThisPtr = 16; // Should be a power of 2.
+        constexpr size_t DispatchAlignmentThisPtr = 16; // Should be a power of 2.
 #endif
 
-        const intptr_t DispatchThisPtrMask = ~(DispatchAlignmentThisPtr - 1);
+        constexpr intptr_t DispatchThisPtrMask = ~(DispatchAlignmentThisPtr - 1);
 
-        struct ComInterfaceDispatch;
+        static_assert(sizeof(void*) < DispatchAlignmentThisPtr);
 
-        struct ComInterfaceEntry;
+        constexpr size_t EntriesPerThisPtr = (DispatchAlignmentThisPtr / sizeof(void*)) - 1;
+
+        struct ComInterfaceDispatch
+        {
+            const void* vtable;
+        };
+
+        static_assert(sizeof(ComInterfaceDispatch) == sizeof(void*), "ComInterfaceDispatch must be pointer-sized.");
+
+        struct ManagedObjectWrapperLayout;
+
+        struct InternalComInterfaceDispatch
+        {
+        private:
+            ManagedObjectWrapperLayout* _thisPtr;
+        public:
+            ComInterfaceDispatch _entries[EntriesPerThisPtr];
+        };
+
+        struct ComInterfaceEntry
+        {
+            GUID IID;
+            const void* Vtable;
+        };
 
         // Managed object wrapper layout.
         // This is designed to codify the binary layout.
         struct ManagedObjectWrapperLayout
         {
+#ifdef DACCESS_COMPILE
+            friend class ClrDataAccess;
+#endif // DACCESS_COMPILE
         public:
             LONGLONG GetRawRefCount() const
             {
@@ -41,8 +67,16 @@ namespace InteropLib
             Volatile<InteropLib::Com::CreateComInterfaceFlagsEx> _flags;
             int32_t _userDefinedCount;
             ComInterfaceEntry* _userDefined;
-            ComInterfaceDispatch* _dispatches;
+            InternalComInterfaceDispatch* _dispatches;
         };
+
+        // Given the entry index, compute the dispatch index.
+        inline ComInterfaceDispatch* IndexIntoDispatchSection(int32_t i, InternalComInterfaceDispatch* dispatches)
+        {
+            InternalComInterfaceDispatch* dispatch = dispatches + i / EntriesPerThisPtr;
+            ComInterfaceDispatch* entries = dispatch->_entries;
+            return entries + (i % EntriesPerThisPtr);
+        }
     }
 }
 

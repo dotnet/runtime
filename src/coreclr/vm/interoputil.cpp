@@ -1174,7 +1174,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
 }
 #include <optdefault.h>
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
 
 //--------------------------------------------------------------------------------
 // Cleanup helpers
@@ -1239,18 +1239,9 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         pCCW->Cleanup();
     }
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMWRAPPERS
-    void* eoc;
-    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
-    {
-        (void)pInteropInfo->TrySetExternalComObjectContext(NULL, eoc);
-        ComWrappersNative::DestroyExternalComObjectContext(eoc);
-    }
-#endif // FEATURE_COMWRAPPERS
 }
 
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
 

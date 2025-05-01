@@ -14,6 +14,7 @@
 #include "typestring.h"
 #include <gccover.h>
 #include <virtualcallstub.h>
+#include <conditionalweaktable.h>
 
 #ifdef FEATURE_COMINTEROP
 #include <comcallablewrapper.h>
@@ -24,6 +25,7 @@
 #include <interoplibabi.h>
 
 typedef DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) PTR_ManagedObjectWrapper;
+typedef DPTR(InteropLib::ABI::ComInterfaceEntry) PTR_ComInterfaceEntry;
 #endif // FEATURE_COMWRAPPERS
 
 #ifndef TARGET_UNIX
@@ -4436,6 +4438,7 @@ ErrExit: return hr;
 HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef)
 {
     HRESULT hr = E_FAIL;
+    MOWHOLDERREF holder = NULL;
 
     if (ccwPtr == 0 || objRef == NULL)
     {
@@ -4450,7 +4453,9 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
         goto ErrExit;
     }
 
-    *objRef = ObjectFromHandle(handle);
+    holder = (MOWHOLDERREF)ObjectFromHandle(handle);
+
+    *objRef = holder->_wrappedObject;
 
     return S_OK;
 
@@ -5051,6 +5056,33 @@ HRESULT ClrDataAccess::GetBreakingChangeVersion(int* pVersion)
     return S_OK;
 }
 
+TADDR ClrDataAccess::GetIdentityForManagedObjectWrapper(TADDR mow)
+{
+    PTR_ManagedObjectWrapper pMOW = dac_cast<PTR_ManagedObjectWrapper>(mow);
+    // Replicate the logic for ManagedObjectWrapper.As(IID_IUnknown)
+    if ((pMOW->_flags & InteropLib::Com::CreateComInterfaceFlagsEx::CallerDefinedIUnknown) == InteropLib::Com::CreateComInterfaceFlagsEx::None)
+    {
+        // We have the standard IUnknown implementation, so grab it from its known location.
+        // The index returned from IndexIntoDispatchSection is in the target address space.
+        return (TADDR)InteropLib::ABI::IndexIntoDispatchSection(pMOW->_userDefinedCount, pMOW->_dispatches);
+    }
+
+    // We need to find the IUnknown interface pointer in the MOW.
+    for (int32_t i = 0; i < pMOW->_userDefinedCount; i++)
+    {
+        // _userDefined is a pointer into the target address space.
+        PTR_ComInterfaceEntry pEntry = dac_cast<PTR_ComInterfaceEntry>((TADDR)(pMOW->_userDefined + i));
+        if (pEntry->IID == IID_IUnknown)
+        {
+            // We found the IUnknown interface pointer.
+            // The index returned from IndexIntoDispatchSection is in the target address space.
+            return (TADDR)InteropLib::ABI::IndexIntoDispatchSection(i, pMOW->_dispatches);
+        }
+    }
+
+    return (TADDR)NULL;
+}
+
 HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS *rcw, unsigned int count, CLRDATA_ADDRESS *mowList, unsigned int *pNeeded)
 {
 #ifdef FEATURE_COMWRAPPERS
@@ -5065,6 +5097,10 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
     }
 
     SOSDacEnter();
+
+    // Default to having found no information.
+    HRESULT hr = S_FALSE;
+
     if (pNeeded != NULL)
     {
         *pNeeded = 0;
@@ -5075,58 +5111,62 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
         *rcw = 0;
     }
 
-    PTR_SyncBlock pSyncBlk = PTR_Object(TO_TADDR(objAddr))->PassiveGetSyncBlock();
-    if (pSyncBlk != NULL)
+    FieldDesc* pRcwTableField = (&g_CoreLib)->GetField(FIELD__COMWRAPPERS__NAITVE_OBJECT_WRAPPER_TABLE);
+    CONDITIONAL_WEAK_TABLE_REF rcwTable = *(DPTR(CONDITIONAL_WEAK_TABLE_REF))PTR_TO_TADDR(pRcwTableField->GetStaticAddressHandle(pRcwTableField->GetBase()));
+    if (rcwTable != nullptr)
     {
-        PTR_InteropSyncBlockInfo pInfo = pSyncBlk->GetInteropInfoNoCreate();
-        if (pInfo != NULL)
+        NATIVEOBJECTWRAPPERREF pNativeObjectWrapperRef = nullptr;
+        if (rcwTable->TryGetValue(OBJECTREF(TO_TADDR(objAddr)), &pNativeObjectWrapperRef))
         {
-            if (rcw != NULL)
-            {
-                *rcw = TO_TADDR(pInfo->m_externalComObjectContext);
-            }
+            // Tag this RCW as a ComWrappers RCW.
+            *rcw = TO_CDADDR(dac_cast<TADDR>(pNativeObjectWrapperRef)) | 0x1;
+            hr = S_OK;
+        }
+    }
 
-            DPTR(NewHolder<ManagedObjectComWrapperSet>) mapHolder(PTR_TO_MEMBER_TADDR(InteropSyncBlockInfo, pInfo, m_managedObjectComWrapperSet));
-            DPTR(ManagedObjectComWrapperSet *)ppMap(PTR_TO_MEMBER_TADDR(NewHolder<ManagedObjectComWrapperSet>, mapHolder, m_value));
-            DPTR(ManagedObjectComWrapperSet) pMap(TO_TADDR(*ppMap));
+    FieldDesc* pMowTableField = (&g_CoreLib)->GetField(FIELD__COMWRAPPERS__ALL_MANAGED_OBJECT_WRAPPER_TABLE);
+    CONDITIONAL_WEAK_TABLE_REF mowTable = *(DPTR(CONDITIONAL_WEAK_TABLE_REF))PTR_TO_TADDR(pMowTableField->GetStaticAddressHandle(pRcwTableField->GetBase()));
+    if (mowTable != nullptr)
+    {
+        OBJECTREF pAllManagedObjectWrapperRef = nullptr;
+        if (mowTable->TryGetValue(OBJECTREF(TO_TADDR(objAddr)), &pAllManagedObjectWrapperRef))
+        {
+            hr = S_OK;
 
-            CQuickArrayList<CLRDATA_ADDRESS> comWrappers;
-            if (pMap != NULL)
+            // Read the list of MOWs into the provided buffer.
+            FieldDesc* pListItemsField = (&g_CoreLib)->GetField(FIELD__LISTGENERIC__ITEMS);
+            PTRARRAYREF pListItems = (PTRARRAYREF)pListItemsField->GetRefValue(pAllManagedObjectWrapperRef);
+            FieldDesc* pListSizeField = (&g_CoreLib)->GetField(FIELD__LISTGENERIC__SIZE);
+            int32_t listCount = pListSizeField->GetValue32(pAllManagedObjectWrapperRef);
+            if (listCount > 0 && pListItems != nullptr)
             {
-                ManagedObjectComWrapperSet::Iterator iter = pMap->Begin();
-                while (iter != pMap->End())
+                // The list is not empty, so we can return the MOWs.
+                if (pNeeded != NULL)
                 {
-                    comWrappers.Push(TO_CDADDR(*iter));
-                    ++iter;
-
+                    *pNeeded = (unsigned int)listCount;
                 }
-            }
 
-            if (pNeeded != NULL)
-            {
-                *pNeeded = (unsigned int)comWrappers.Size();
-            }
-
-            for (SIZE_T pos = 0; pos < comWrappers.Size(); ++pos)
-            {
-                if (pos >= count)
+                if (count < (unsigned int)listCount)
                 {
+                    // Return S_FALSE if the buffer is too small.
                     hr = S_FALSE;
-                    break;
                 }
 
-                mowList[pos] = comWrappers[pos];
+                for (unsigned int i = 0; i < count; i++)
+                {
+                    MOWHOLDERREF pMOWRef = (MOWHOLDERREF)pListItems->GetAt(i);
+                    PTR_ManagedObjectWrapper pMOW = PTR_ManagedObjectWrapper(dac_cast<TADDR>(pMOWRef->ManagedObjectWrapper));
+
+                    // Now that we have the managed object wrapper, we need to figure out the COM identity of it.
+                    TADDR pComIdentity = GetIdentityForManagedObjectWrapper(dac_cast<TADDR>(pMOW));
+
+                    mowList[i] = TO_CDADDR(pComIdentity);
+                }
             }
         }
-        else
-        {
-            hr = S_FALSE;
-        }
     }
-    else
-    {
-        hr = S_FALSE;
-    }
+
+    hr = S_FALSE;
 
     SOSDacLeave();
     return hr;
@@ -5210,40 +5250,13 @@ namespace
 {
     BOOL IsComWrappersRCW(CLRDATA_ADDRESS rcw)
     {
-        NewArrayHolder<SOSMemoryRegion> region;
-        unsigned int count = 0;
-
+        if ((rcw & 1) == 0)
         {
-            DacHandleTableMemoryEnumerator handleEnumerator;
-            handleEnumerator.Init();
-            if (!handleEnumerator.GetCount(&count) || count == 0)
-            {
-                return FALSE;
-            }
-            region = new(nothrow) SOSMemoryRegion[count];
-            if (handleEnumerator.Next(count, region, &count) != S_OK)
-            {
-                return FALSE;
-            }
-        }
-
-        BOOL isGCHandle = FALSE;
-        for (unsigned int i = 0; i < count; i++)
-        {
-            if (region[i].Start <= rcw && rcw < region[i].Start + region[i].Size)
-            {
-                isGCHandle = TRUE;
-                break;
-            }
-        }
-
-        if (!isGCHandle)
-        {
+            // We use the low bit of the RCW address to indicate that it is a ComWrappers RCW.
             return FALSE;
         }
 
-        OBJECTHANDLE nativeObjectWrapperHandle = (OBJECTHANDLE)TO_TADDR(rcw);
-        OBJECTREF nativeObjectWrapper = ObjectFromHandle(nativeObjectWrapperHandle);
+        OBJECTREF nativeObjectWrapper = OBJECTREF(TO_TADDR(rcw & ~1));
         if (nativeObjectWrapper == NULL)
         {
             return FALSE;
@@ -5259,14 +5272,13 @@ namespace
 
     TADDR GetComWrappersRCWIdentity(CLRDATA_ADDRESS rcw)
     {
-        OBJECTHANDLE nativeObjectWrapperHandle = (OBJECTHANDLE)TO_TADDR(rcw);
-        OBJECTREF nativeObjectWrapper = ObjectFromHandle(nativeObjectWrapperHandle);
-        if (nativeObjectWrapper == NULL)
+        if ((rcw & 1) == 0)
         {
-            return (TADDR)NULL;
+            // We use the low bit of the RCW address to indicate that it is a ComWrappers RCW.
+            return NULL;
         }
 
-        NATIVEOBJECTWRAPPERREF pNativeObjectWrapper = NATIVEOBJECTWRAPPERREF(nativeObjectWrapper);
+        NATIVEOBJECTWRAPPERREF pNativeObjectWrapper = NATIVEOBJECTWRAPPERREF(TO_TADDR(rcw & ~1));
         return pNativeObjectWrapper->GetExternalComObject();
     }
 }

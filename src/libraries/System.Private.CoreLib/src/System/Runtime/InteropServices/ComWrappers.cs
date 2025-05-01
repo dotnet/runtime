@@ -58,9 +58,17 @@ namespace System.Runtime.InteropServices
         private static readonly Guid IID_IInspectable = new Guid(0xAF86E2E0, 0xB12D, 0x4c6a, 0x9C, 0x5A, 0xD7, 0xAA, 0x65, 0x10, 0x1E, 0x90);
         private static readonly Guid IID_IWeakReferenceSource = new Guid(0x00000038, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 
-        private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_nativeObjectWrapperTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
+        private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_nativeObjectWrapperTable = [];
 
-        private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _managedObjectWrapperTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
+        /// <summary>
+        /// Associates an object with all the <see cref="ManagedObjectWrapperHolder"/>s that were created for it.
+        /// </summary>
+        private static readonly ConditionalWeakTable<object, List<ManagedObjectWrapperHolder>> s_allManagedObjectWrapperTable = [];
+
+        /// <summary>
+        /// Associates a managed object with the <see cref="ManagedObjectWrapperHolder"/> that was created for it by this <see cref="ComWrappers" /> instance.
+        /// </summary>
+        private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _managedObjectWrapperTable = [];
         private readonly RcwCache _rcwCache = new();
 
         internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out ComWrappers? comWrappers)
@@ -771,10 +779,23 @@ namespace System.Runtime.InteropServices
             }, new { This = this, flags });
 
             managedObjectWrapper.AddRef();
-#if CORECLR
             RegisterManagedObjectWrapperForDiagnostics(instance, managedObjectWrapper);
-#endif
+
             return managedObjectWrapper.ComIp;
+        }
+
+        private static void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
+        {
+            // Record the relationship between the managed object and this wrapper.
+            // This will ensure that we keep all ManagedObjectWrapperHolders alive as long as the managed object is alive,
+            // even if the ComWrappers instance dies.
+            // We must do this as the runtime's recording of the relationship between the managed object and the wrapper
+            // lives as long as the object is alive, and we record the raw pointer to the wrapper.
+            List<ManagedObjectWrapperHolder> allWrappersForThisInstance = s_allManagedObjectWrapperTable.GetOrCreateValue(instance);
+            lock (allWrappersForThisInstance)
+            {
+                allWrappersForThisInstance.Add(wrapper);
+            }
         }
 
         private static nuint AlignUp(nuint value, nuint alignment)
@@ -1182,10 +1203,6 @@ namespace System.Runtime.InteropServices
                 wrapper.Release();
                 throw new NotSupportedException();
             }
-
-#if CORECLR
-            RegisterNativeObjectWrapperForDiagnostics(registeredWrapper);
-#endif
 
             // Always register our wrapper to the reference tracker handle cache here.
             // We may not be the thread that registered the handle, but we need to ensure that the wrapper

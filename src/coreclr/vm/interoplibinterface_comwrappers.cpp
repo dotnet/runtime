@@ -65,20 +65,6 @@ extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
     InteropLib::Com::GetIUnknownImpl(fpQueryInterface, fpAddRef, fpRelease);
 }
 
-void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(contextRaw != NULL);
-    }
-    CONTRACTL_END;
-
-    DestroyLongWeakHandle((OBJECTHANDLE)contextRaw);
-}
-
 void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
 {
     CONTRACTL
@@ -190,47 +176,6 @@ extern "C" void const* QCALLTYPE ComWrappers_GetTaggedImpl()
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
     return InteropLib::Com::GetTaggedCurrentVersionImpl();
-}
-
-extern "C" void QCALLTYPE ComWrappers_RegisterManagedObjectWrapperForDiagnostics(
-    _In_ QCall::ObjectHandleOnStack obj,
-    _In_ void* wrapper)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    // Check the object's SyncBlock for a managed object wrapper.
-    SyncBlock* syncBlock = obj.Get()->GetSyncBlock();
-    InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
-    _ASSERTE(syncBlock->IsPrecious());
-
-    interopInfo->AddManagedObjectComWrapper(wrapper);
-
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE ComWrappers_RegisterNativeObjectWrapperForDiagnostics(
-    _In_ QCall::ObjectHandleOnStack target,
-    _In_ QCall::ObjectHandleOnStack wrapper)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    SyncBlock* syncBlock = target.Get()->GetSyncBlock();
-    InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
-    _ASSERTE(syncBlock->IsPrecious());
-
-    OBJECTHANDLE wrapperHandle = GetAppDomain()->CreateLongWeakHandle(wrapper.Get());
-
-    interopInfo->TrySetExternalComObjectContext((PTR_VOID)wrapperHandle);
-
-    END_QCALL;
 }
 
 extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_HasReferenceTrackerManager()

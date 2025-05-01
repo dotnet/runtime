@@ -13,24 +13,6 @@
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
 using TryInvokeICustomQueryInterfaceResult = InteropLibImports::TryInvokeICustomQueryInterfaceResult;
 
-namespace InteropLib
-{
-    namespace ABI
-    {
-        struct ComInterfaceDispatch
-        {
-            const void* vtable;
-        };
-        ABI_ASSERT(sizeof(ComInterfaceDispatch) == sizeof(void*));
-
-        struct ComInterfaceEntry
-        {
-            GUID IID;
-            const void* Vtable;
-        };
-    }
-}
-
 namespace ABI
 {
     //---------------------------------------------------------------------------------
@@ -65,65 +47,7 @@ namespace ABI
     using InteropLib::ABI::ComInterfaceEntry;
     using InteropLib::ABI::DispatchAlignmentThisPtr;
     using InteropLib::ABI::DispatchThisPtrMask;
-    ABI_ASSERT(sizeof(void*) < DispatchAlignmentThisPtr);
-
-    const intptr_t AlignmentThisPtrMaxPadding = DispatchAlignmentThisPtr - sizeof(void*);
-    const size_t EntriesPerThisPtr = (DispatchAlignmentThisPtr / sizeof(void*)) - 1;
-
-    // Check if the instance can dispatch according to the ABI.
-    bool IsAbleToDispatch(_In_ ComInterfaceDispatch* disp)
-    {
-        return (reinterpret_cast<intptr_t>(disp) & DispatchThisPtrMask) != 0;
-    }
-
-    // Given the number of dispatch entries, compute the needed number of 'this' pointer entries.
-    constexpr size_t ComputeThisPtrForDispatchSection(_In_ size_t dispatchCount)
-    {
-        return (dispatchCount / ABI::EntriesPerThisPtr) + ((dispatchCount % ABI::EntriesPerThisPtr) == 0 ? 0 : 1);
-    }
-
-    // Given a pointer and a padding allowance, attempt to find an offset into
-    // the memory that is properly aligned for the dispatch section.
-    char* AlignDispatchSection(_In_ char* section, _In_ intptr_t extraPadding)
-    {
-        _ASSERTE(section != nullptr);
-
-        // If the dispatch section is not properly aligned by default, we
-        // utilize the padding to make sure the dispatch section is aligned.
-        while ((reinterpret_cast<intptr_t>(section) % ABI::DispatchAlignmentThisPtr) != 0)
-        {
-            // Check if there is padding to attempt an alignment.
-            if (extraPadding <= 0)
-                return nullptr;
-
-            extraPadding -= sizeof(void*);
-
-#ifdef _DEBUG
-            // Poison unused portions of the section.
-            ::memset(section, 0xff, sizeof(void*));
-#endif
-
-            section += sizeof(void*);
-        }
-
-        return section;
-    }
-
-    // Given the entry index, compute the dispatch index.
-    ComInterfaceDispatch* IndexIntoDispatchSection(_In_ int32_t i, _In_ ComInterfaceDispatch* dispatches)
-    {
-        // Convert the supplied zero based index into what it represents as a count.
-        const size_t count = static_cast<size_t>(i) + 1;
-
-        // Based on the supplied count, compute how many previous 'this' pointers would be
-        // required in the dispatch section and add that to the supplied index to get the
-        // index into the dispatch section.
-        const size_t idx = ComputeThisPtrForDispatchSection(count) + i;
-
-        ComInterfaceDispatch* disp = dispatches + idx;
-        _ASSERTE(IsAbleToDispatch(disp));
-        return disp;
-    }
+    using InteropLib::ABI::IndexIntoDispatchSection;
 
     // Given a dispatcher instance, return the associated ManagedObjectWrapper.
     ManagedObjectWrapper* ToManagedObjectWrapper(_In_ ComInterfaceDispatch* disp)

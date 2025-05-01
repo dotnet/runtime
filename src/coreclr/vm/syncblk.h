@@ -608,21 +608,7 @@ class ComClassFactory;
 struct RCW;
 class RCWHolder;
 typedef DPTR(class ComCallWrapper)        PTR_ComCallWrapper;
-
-#include "shash.h"
 #endif // FEATURE_COMINTEROP
-class ManagedObjectComWrapperTraits : public NoRemoveSHashTraits<DefaultSHashTraits<void *>>
-{
-public:
-    typedef LPVOID key_t;
-    static void *Null()                         { LIMITED_METHOD_CONTRACT; return NULL; }
-    static bool IsNull(void *e)                 { LIMITED_METHOD_CONTRACT; return (e == NULL); }
-    static const LPVOID GetKey(void *e)         { LIMITED_METHOD_CONTRACT; return e; }
-    static count_t Hash(LPVOID key_t)          { LIMITED_METHOD_CONTRACT; return (count_t)(size_t) key_t; }
-    static BOOL Equals(LPVOID lhs, LPVOID rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
-};
-
-using ManagedObjectComWrapperSet = SHash<ManagedObjectComWrapperTraits>;
 class InteropSyncBlockInfo
 {
     friend class RCWHolder;
@@ -643,22 +629,12 @@ public:
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         , m_pRCW{}
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_COMWRAPPERS
-        , m_externalComObjectContext{}
-        , m_managedObjectComWrapperLock{}
-        , m_managedObjectComWrapperSet{}
-#endif // FEATURE_COMWRAPPERS
 #ifdef FEATURE_OBJCMARSHAL
         , m_taggedMemory{}
         , m_taggedAlloc{}
 #endif // FEATURE_OBJCMARSHAL
     {
         LIMITED_METHOD_CONTRACT;
-
-#if defined(FEATURE_COMWRAPPERS)
-        // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.
-        m_managedObjectComWrapperLock.Init(CrstManagedObjectWrapperMap, CRST_UNSAFE_COOPGC);
-#endif // FEATURE_COMWRAPPERS
     }
 #ifndef DACCESS_COMPILE
     ~InteropSyncBlockInfo();
@@ -811,58 +787,6 @@ public:
 #endif
 
 #endif // FEATURE_COMINTEROP
-
-#if defined(FEATURE_COMWRAPPERS)
-public:
-#ifndef DACCESS_COMPILE
-    bool AddManagedObjectComWrapper(_In_ void* mocw)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_managedObjectComWrapperSet == NULL)
-        {
-            NewHolder<ManagedObjectComWrapperSet> map = new ManagedObjectComWrapperSet();
-            if (InterlockedCompareExchangeT(&m_managedObjectComWrapperSet, (ManagedObjectComWrapperSet *)map, NULL) == NULL)
-            {
-                map.SuppressRelease();
-            }
-
-            _ASSERTE(m_managedObjectComWrapperSet != NULL);
-        }
-
-        CrstHolder lock(&m_managedObjectComWrapperLock);
-
-        m_managedObjectComWrapperSet->Add(mocw);
-        return true;
-    }
-#endif // !DACCESS_COMPILE
-
-    bool TryGetExternalComObjectContext(_Out_ void** eoc)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        *eoc = m_externalComObjectContext;
-        return (*eoc != NULL);
-    }
-
-#ifndef DACCESS_COMPILE
-    bool TrySetExternalComObjectContext(_In_ void* eoc, _In_ void* curr = NULL)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (InterlockedCompareExchangeT(
-                        &m_externalComObjectContext,
-                        eoc,
-                        curr) == curr);
-    }
-#endif // !DACCESS_COMPILE
-
-private:
-    // See InteropLib API for usage.
-    void* m_externalComObjectContext;
-
-    CrstExplicitInit m_managedObjectComWrapperLock;
-    ManagedObjectComWrapperSet* m_managedObjectComWrapperSet;
-#endif // FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_OBJCMARSHAL
 public:
