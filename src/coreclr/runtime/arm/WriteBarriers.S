@@ -23,7 +23,7 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 #endif // WRITE_BARRIER_CHECK
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-.macro UPDATE_WRITE_WATCH_TABLE ptrReg, tmpReg
+.macro UPDATE_WRITE_WATCH_TABLE ptrReg, tmpReg, __wbScratch
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_write_watch_table, __wbScratch
         cbz __wbScratch, 2f
@@ -38,7 +38,7 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 2:
 .endm
 #else
-.macro UPDATE_WRITE_WATCH_TABLE ptrReg, tmpReg
+.macro UPDATE_WRITE_WATCH_TABLE ptrReg, tmpReg, __wbScratch
 .endm
 #endif
 
@@ -46,7 +46,7 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 // the helpers have identical structure we use a macro to define this structure. Two arguments are taken, the
 // name of the register that points to the location to be updated and the name of the register that holds the
 // object reference (this should be in upper case as it's used in the definition of the name of the helper).
-.macro DEFINE_UNCHECKED_WRITE_BARRIER_CORE BASENAME, REFREG
+.macro DEFINE_UNCHECKED_WRITE_BARRIER_CORE BASENAME, REFREG, TMPREG
 
           // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
           // we're in a debug build and write barrier checking has been enabled).
@@ -62,7 +62,7 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
           cmp          \REFREG, r12
           bhs          LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG)
 
-          UPDATE_WRITE_WATCH_TABLE r0, r12
+          UPDATE_WRITE_WATCH_TABLE r0, r12, TMPREG
 
           // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
           // track this write. The location address is translated into an offset in the card table bitmap. We set
@@ -125,7 +125,7 @@ GLOBAL_LABEL RhpAssignRefAVLocation
 .endif
           str          \REFREG, [r0]
 
-          DEFINE_UNCHECKED_WRITE_BARRIER_CORE RhpAssignRef, \REFREG
+          DEFINE_UNCHECKED_WRITE_BARRIER_CORE RhpAssignRef, \REFREG, r3
 
           bx           lr
 LEAF_END RhpAssignRef\EXPORT_REG_NAME, _TEXT
@@ -142,7 +142,7 @@ DEFINE_UNCHECKED_WRITE_BARRIER r1, r1
 // collection.
 //
 
-.macro DEFINE_CHECKED_WRITE_BARRIER_CORE BASENAME, REFREG
+.macro DEFINE_CHECKED_WRITE_BARRIER_CORE BASENAME, REFREG, TMPREG
 
           // The location being updated might not even lie in the GC heap (a handle or stack location for instance),
           // in which case no write barrier is required.
@@ -153,7 +153,7 @@ DEFINE_UNCHECKED_WRITE_BARRIER r1, r1
           cmp          r0, r12
           bhs          LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
 
-          DEFINE_UNCHECKED_WRITE_BARRIER_CORE \BASENAME, \REFREG
+          DEFINE_UNCHECKED_WRITE_BARRIER_CORE \BASENAME, \REFREG, TMPREG
 
 .endm
 
@@ -195,7 +195,7 @@ GLOBAL_LABEL RhpCheckedAssignRefAVLocation
 .endif
           str          \REFREG, [r0]
 
-          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, \REFREG
+          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, \REFREG, r3
 
           bx           lr
 LEAF_END RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
@@ -224,7 +224,7 @@ LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
           bne          LOCAL_LABEL(RhpCheckedLockCmpXchgRetry)
           mov          r3, r2
 
-          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, r1
+          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, r1, r2
 
           mov          r0, r3
           bx           lr
@@ -242,7 +242,7 @@ LOCAL_LABEL(RhpCheckedXchgRetry):
           cmp          r3, #0
           bne          LOCAL_LABEL(RhpCheckedXchgRetry)
 
-          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, r1
+          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, r1, r3
 
           // The original value is currently in r2. We need to return it in r0.
           mov          r0, r2
@@ -301,7 +301,7 @@ GLOBAL_LABEL RhpByRefAssignRefAVLocation2
           add          r1, #4
           add          r0, #4
 
-          UPDATE_WRITE_WATCH_TABLE r2, r3
+          UPDATE_WRITE_WATCH_TABLE r2, r3, r12
 
           // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
           // track this write. The location address is translated into an offset in the card table bitmap. We set
