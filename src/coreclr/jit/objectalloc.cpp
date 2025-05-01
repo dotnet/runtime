@@ -1869,6 +1869,14 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                             break;
                     }
                 }
+                else if (call->IsDelegateInvoke())
+                {
+                    if (tree == call->gtArgs.GetThisArg()->GetNode())
+                    {
+                        JITDUMP("Delegate invoke this...\n");
+                        canLclVarEscapeViaParentStack = false;
+                    }
+                }
 
                 // Note there is nothing special here about the parent being a call. We could move all this processing
                 // up to the caller and handle any sort of tree that could lead to escapes this way.
@@ -2219,6 +2227,7 @@ void ObjectAllocator::RewriteUses()
                 }
             }
             // Make box accesses explicit for UNBOX_HELPER
+            // Expand delegate invoke for calls where "this" is possibly stack pointing
             //
             else if (tree->IsCall())
             {
@@ -2264,6 +2273,51 @@ void ObjectAllocator::RewriteUses()
                                                           m_compiler->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
                             GenTree* const comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_BYREF, call, payloadAddr);
                             *use                 = comma;
+                        }
+                    }
+                }
+                else if (call->IsDelegateInvoke())
+                {
+                    CallArg* const thisArg      = call->gtArgs.GetThisArg();
+                    GenTree* const delegateThis = thisArg->GetNode();
+
+                    if (delegateThis->OperIs(GT_LCL_VAR))
+                    {
+                        GenTreeLclVarCommon* const lcl = delegateThis->AsLclVarCommon();
+
+                        if (m_allocator->DoesLclVarPointToStack(lcl->GetLclNum()))
+                        {
+                            JITDUMP("Expanding delegate invoke [%06u]\n", m_compiler->dspTreeID(call));
+                            // Expand the delgate invoke early, so that physical promotion has
+                            // a chance to promote the delegate fields.
+                            //
+                            // Note the instance field may also be stack allocatable (someday)
+                            //
+                            GenTree* const cloneThis      = m_compiler->gtClone(lcl);
+                            unsigned const instanceOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateInstance;
+                            GenTree* const newThisAddr =
+                                m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, cloneThis,
+                                                          m_compiler->gtNewIconNode(instanceOffset, TYP_I_IMPL));
+
+                            // For now assume the instance is heap...
+                            //
+                            GenTree* const newThis = m_compiler->gtNewIndir(TYP_REF, newThisAddr);
+                            thisArg->SetEarlyNode(newThis);
+
+                            // the control target is
+                            // [originalThis + firstTgtOffs]
+                            //
+                            unsigned const targetOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget;
+                            GenTree* const targetAddr =
+                                m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, lcl,
+                                                          m_compiler->gtNewIconNode(targetOffset, TYP_I_IMPL));
+                            GenTree* const target = m_compiler->gtNewIndir(TYP_I_IMPL, targetAddr);
+
+                            // Update call state -- now an indirect call to the delegate target
+                            //
+                            call->gtCallAddr = target;
+                            call->gtCallType = CT_INDIRECT;
+                            call->gtCallMoreFlags &= ~(GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
                         }
                     }
                 }
