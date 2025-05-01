@@ -391,22 +391,22 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [Fact]
         public unsafe void MinMaxSignedUnsignedTest()
         {
-            var signedBytes = Vector128.Create((sbyte)-1, (sbyte)2, (sbyte)-3, (sbyte)4,
-                                             (sbyte)-5, (sbyte)6, (sbyte)-7, (sbyte)8,
-                                             (sbyte)-9, (sbyte)10, (sbyte)-11, (sbyte)12,
-                                             (sbyte)-13, (sbyte)14, (sbyte)-15, (sbyte)16);
+            var signedBytes = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
+            var unsignedBytes = Vector128.Create((byte)255, 2, 253, 4, 251, 6, 249, 8, 247, 10, 245, 12, 243, 14, 241, 16);
 
-            var unsignedBytes = Vector128.Create((byte)255, (byte)2, (byte)253, (byte)4,
-                                               (byte)251, (byte)6, (byte)249, (byte)8,
-                                               (byte)247, (byte)10, (byte)245, (byte)12,
-                                               (byte)243, (byte)14, (byte)241, (byte)16);
-
+            var signedMinV128 = Vector128.Min(signedBytes, signedBytes.WithElement(0, (sbyte)0));
+            var unsignedMinV128 = Vector128.Min(unsignedBytes, unsignedBytes.WithElement(0, (byte)0));
             var signedMin = PackedSimd.Min(signedBytes, signedBytes.WithElement(0, (sbyte)0));
             var unsignedMin = PackedSimd.Min(unsignedBytes, unsignedBytes.WithElement(0, (byte)0));
 
-            // Verify different comparison behavior for signed vs unsigned
-            Assert.Equal((sbyte)-1, signedMin.GetElement(0));
-            Assert.Equal((byte)0, unsignedMin.GetElement(0));
+            Assert.Equal((sbyte)-1, signedMinV128.GetElement(0));
+            Assert.Equal((byte)0, unsignedMinV128.GetElement(0));
+
+            //Assert.Equal((sbyte)-1, signedMin.GetElement(0));
+            //Assert.Equal((byte)0, unsignedMin.GetElement(0));
+
+            Assert.Equal(signedMinV128, signedMin);
+            Assert.Equal(unsignedMinV128, unsignedMin);
         }
 
         [Fact]
@@ -419,10 +419,10 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             Assert.Equal(Vector128.Create(-2L, -2L), PackedSimd.Splat(-2L));
             Assert.Equal(Vector128.Create(2UL, 2UL), PackedSimd.Splat(2UL));
             Assert.Equal(Vector128.Create(
-                (byte)2, (byte)2, (byte)2, (byte)2,
-                (byte)2, (byte)2, (byte)2, (byte)2,
-                (byte)2, (byte)2, (byte)2, (byte)2,
-                (byte)2, (byte)2, (byte)2, (byte)2), PackedSimd.Splat((byte)2));
+                (byte)2, 2, 2, 2,
+                2, 2, 2, 2,
+                2, 2, 2, 2,
+                2, 2, 2, 2), PackedSimd.Splat((byte)2));
             Assert.Equal(Vector128.Create(
                 (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
                 (sbyte)-2, (sbyte)-2, (sbyte)-2, (sbyte)-2,
@@ -479,6 +479,14 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         {
             var v1 = Vector128.Create(1.0f, float.NaN, 3.0f, float.PositiveInfinity);
             var v2 = Vector128.Create(float.NegativeInfinity, 2.0f, float.NaN, 4.0f);
+
+            var minResultV128 = Vector128.Min(v1, v2);
+            var maxResultV128 = Vector128.Max(v1, v2);
+
+            Assert.True(float.IsNaN(minResultV128.GetElement(1)));
+            Assert.True(float.IsNaN(maxResultV128.GetElement(2)));
+            Assert.Equal(float.NegativeInfinity, minResultV128.GetElement(0));
+            Assert.Equal(float.PositiveInfinity, maxResultV128.GetElement(3));
 
             var minResult = PackedSimd.Min(v1, v2);
             var maxResult = PackedSimd.Max(v1, v2);
