@@ -6022,7 +6022,7 @@ AdjustContextForJITHelpers(
     if (pExceptionRecord == nullptr)
     {
 #if defined(TARGET_X86)
-        if (IsIPInMarkedJitHelper((UINT_PTR)f_IP))
+        if (IsIPInMarkedJitHelper((UINT_PTR)ip))
         {
             DWORD* esp = (DWORD*)pContext->Esp;
 #if defined(WRITE_BARRIER_CHECK)
