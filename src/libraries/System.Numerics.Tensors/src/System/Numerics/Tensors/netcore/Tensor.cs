@@ -167,12 +167,12 @@ namespace System.Numerics.Tensors
             else
             {
                 // Calculate total space needed.
-                int totalLength = 0;
+                nint totalLength = 0;
                 for (int i = 0; i < tensors.Length; i++)
                 {
                     checked
                     {
-                        totalLength += (int)tensors[i].FlattenedLength;
+                        totalLength += tensors[i].FlattenedLength;
                     }
                 }
 
