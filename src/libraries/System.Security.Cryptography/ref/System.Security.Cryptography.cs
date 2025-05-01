@@ -3216,6 +3216,8 @@ namespace System.Security.Cryptography.X509Certificates
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
         public PublicKey(System.Security.Cryptography.MLKem key) { }
         public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData? parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+        public PublicKey(System.Security.Cryptography.SlhDsa key) { }
         public System.Security.Cryptography.AsnEncodedData EncodedKeyValue { get { throw null; } }
         public System.Security.Cryptography.AsnEncodedData? EncodedParameters { get { throw null; } }
         [System.ObsoleteAttribute("PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey.", DiagnosticId="SYSLIB0027", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]

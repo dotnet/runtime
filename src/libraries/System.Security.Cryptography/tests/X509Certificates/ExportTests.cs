@@ -7,12 +7,12 @@ using System.Linq;
 using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Dsa.Tests;
 using System.Security.Cryptography.EcDsa.Tests;
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.Pkcs;
 using Xunit;
-using System.Security.Cryptography.SLHDsa.Tests;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {

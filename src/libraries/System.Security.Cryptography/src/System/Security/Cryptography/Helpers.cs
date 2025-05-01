@@ -465,5 +465,25 @@ namespace Internal.Cryptography
 
             return array;
         }
+
+        internal static bool IsSlhDsaOid(string? oid) =>
+            oid switch
+            {
+                Oids.SlhDsaSha2_128s or
+                Oids.SlhDsaShake128s or
+                Oids.SlhDsaSha2_128f or
+                Oids.SlhDsaShake128f or
+                Oids.SlhDsaSha2_192s or
+                Oids.SlhDsaShake192s or
+                Oids.SlhDsaSha2_192f or
+                Oids.SlhDsaShake192f or
+                Oids.SlhDsaSha2_256s or
+                Oids.SlhDsaShake256s or
+                Oids.SlhDsaSha2_256f or
+                Oids.SlhDsaShake256f =>
+                    true,
+                _ =>
+                    false
+            };
     }
 }

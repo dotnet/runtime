@@ -647,36 +647,21 @@ namespace System.Security.Cryptography.X509Certificates
                 notAfter,
                 serialNumber))
             {
-                RSA? rsa = _key as RSA;
-
-                if (rsa != null)
+                switch (_key)
                 {
-                    return certificate.CopyWithPrivateKey(rsa);
-                }
-
-                ECDsa? ecdsa = _key as ECDsa;
-
-                if (ecdsa != null)
-                {
-                    return certificate.CopyWithPrivateKey(ecdsa);
-                }
-
-                MLDsa? mldsa = _key as MLDsa;
-
-                if (mldsa is not null)
-                {
-                    return certificate.CopyWithPrivateKey(mldsa);
-                }
-
-                SlhDsa? slhDsa = _key as SlhDsa;
-                if (slhDsa is not null)
-                {
-                    return certificate.CopyWithPrivateKey(slhDsa);
+                    case RSA rsa:
+                        return certificate.CopyWithPrivateKey(rsa);
+                    case ECDsa ecdsa:
+                        return certificate.CopyWithPrivateKey(ecdsa);
+                    case MLDsa mldsa:
+                        return certificate.CopyWithPrivateKey(mldsa);
+                    case SlhDsa slhDsa:
+                        return certificate.CopyWithPrivateKey(slhDsa);
+                    default:
+                        Debug.Fail($"Key was of no known type: {_key?.GetType().FullName ?? "null"}");
+                        throw new CryptographicException();
                 }
             }
-
-            Debug.Fail($"Key was of no known type: {_key?.GetType().FullName ?? "null"}");
-            throw new CryptographicException();
         }
 
         /// <summary>

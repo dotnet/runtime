@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The private key.
         /// </param>
         /// <returns>
-        ///   An <see cref="X509SignatureGenerator" /> object for Slh-DSA signatures.
+        ///   An <see cref="X509SignatureGenerator" /> object for SLH-DSA signatures.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="key" /> is <see langword="null" />.

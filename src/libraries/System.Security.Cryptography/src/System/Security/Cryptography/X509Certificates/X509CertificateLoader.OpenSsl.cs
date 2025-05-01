@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -71,9 +72,7 @@ namespace System.Security.Cryptography.X509Certificates
                     return new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, static () => new DSAOpenSsl());
                 case Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024:
                     return new MLKemPkcs12PrivateKey(pkcs8);
-                case Oids.SlhDsaSha2_128s or Oids.SlhDsaShake128s or Oids.SlhDsaSha2_128f or Oids.SlhDsaShake128f or
-                     Oids.SlhDsaSha2_192s or Oids.SlhDsaShake192s or Oids.SlhDsaSha2_192f or Oids.SlhDsaShake192f or
-                     Oids.SlhDsaSha2_256s or Oids.SlhDsaShake256s or Oids.SlhDsaSha2_256f or Oids.SlhDsaShake256f:
+                case string when Helpers.IsSlhDsaOid(algorithm):
                     return new SlhDsaPkcs12PrivateKey(pkcs8);
                 default:
                     return null;

@@ -997,8 +997,7 @@ namespace System.Security.Cryptography.X509Certificates
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public SlhDsa? GetSlhDsaPublicKey()
         {
-            SlhDsaAlgorithm? algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(GetKeyAlgorithm());
-            if (algorithm is null)
+            if (!Helpers.IsSlhDsaOid(GetKeyAlgorithm()))
             {
                 return null;
             }
@@ -1017,16 +1016,10 @@ namespace System.Security.Cryptography.X509Certificates
         ///   An error occurred accessing the private key.
         /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-        public SlhDsa? GetSlhDsaPrivateKey()
-        {
-            SlhDsaAlgorithm? algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(GetKeyAlgorithm());
-            if (algorithm is null)
-            {
-                return null;
-            }
-
-            return Pal.GetSlhDsaPrivateKey();
-        }
+        public SlhDsa? GetSlhDsaPrivateKey() =>
+            Helpers.IsSlhDsaOid(GetKeyAlgorithm())
+                ? Pal.GetSlhDsaPrivateKey()
+                : null;
 
         /// <summary>
         ///   Combines a private key with a certificate containing the associated public key into a
@@ -1289,9 +1282,7 @@ namespace System.Security.Cryptography.X509Certificates
                             [PemLabels.Pkcs8PrivateKey],
                             MLKem.ImportFromPem,
                             certificate.CopyWithPrivateKey),
-                    Oids.SlhDsaSha2_128s or Oids.SlhDsaShake128s or Oids.SlhDsaSha2_128f or Oids.SlhDsaShake128f or
-                    Oids.SlhDsaSha2_192s or Oids.SlhDsaShake192s or Oids.SlhDsaSha2_192f or Oids.SlhDsaShake192f or
-                    Oids.SlhDsaSha2_256s or Oids.SlhDsaShake256s or Oids.SlhDsaSha2_256f or Oids.SlhDsaShake256f =>
+                    _ when Helpers.IsSlhDsaOid(keyAlgorithm) =>
                         ExtractKeyFromPem<SlhDsa>(
                             keyPem,
                             [PemLabels.Pkcs8PrivateKey],
@@ -1384,9 +1375,7 @@ namespace System.Security.Cryptography.X509Certificates
                             password,
                             MLKem.ImportFromEncryptedPem,
                             certificate.CopyWithPrivateKey),
-                    Oids.SlhDsaSha2_128s or Oids.SlhDsaShake128s or Oids.SlhDsaSha2_128f or Oids.SlhDsaShake128f or
-                    Oids.SlhDsaSha2_192s or Oids.SlhDsaShake192s or Oids.SlhDsaSha2_192f or Oids.SlhDsaShake192f or
-                    Oids.SlhDsaSha2_256s or Oids.SlhDsaShake256s or Oids.SlhDsaSha2_256f or Oids.SlhDsaShake256f =>
+                    _ when Helpers.IsSlhDsaOid(keyAlgorithm) =>
                         ExtractKeyFromEncryptedPem<SlhDsa>(
                             keyPem,
                             password,

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -349,18 +350,7 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.MLDsa87:
                         hashAlg = default;
                         break;
-                    case Oids.SlhDsaSha2_128s:
-                    case Oids.SlhDsaShake128s:
-                    case Oids.SlhDsaSha2_128f:
-                    case Oids.SlhDsaShake128f:
-                    case Oids.SlhDsaSha2_192s:
-                    case Oids.SlhDsaShake192s:
-                    case Oids.SlhDsaSha2_192f:
-                    case Oids.SlhDsaShake192f:
-                    case Oids.SlhDsaSha2_256s:
-                    case Oids.SlhDsaShake256s:
-                    case Oids.SlhDsaSha2_256f:
-                    case Oids.SlhDsaShake256f:
+                    case string oid when Helpers.IsSlhDsaOid(oid):
                         hashAlg = default;
                         break;
                     default:
@@ -406,18 +396,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         return mldsa.VerifyData(toBeSigned, signature);
 
-                    case Oids.SlhDsaSha2_128s:
-                    case Oids.SlhDsaShake128s:
-                    case Oids.SlhDsaSha2_128f:
-                    case Oids.SlhDsaShake128f:
-                    case Oids.SlhDsaSha2_192s:
-                    case Oids.SlhDsaShake192s:
-                    case Oids.SlhDsaSha2_192f:
-                    case Oids.SlhDsaShake192f:
-                    case Oids.SlhDsaSha2_256s:
-                    case Oids.SlhDsaShake256s:
-                    case Oids.SlhDsaSha2_256f:
-                    case Oids.SlhDsaShake256f:
+                    case string oid when Helpers.IsSlhDsaOid(oid):
                         if (slhDsa is null)
                         {
                             return false;

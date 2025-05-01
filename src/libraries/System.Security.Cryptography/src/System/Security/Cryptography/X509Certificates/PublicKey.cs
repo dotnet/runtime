@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// using SubjectPublicKeyInfo from an <see cref="MLKem" />.
         /// </summary>
         /// <param name="key">
-        /// An <c>MLKem</c> key to obtain the SubjectPublicKeyInfo from.
+        /// An <see cref="MLKem" /> key to obtain the SubjectPublicKeyInfo from.
         /// </param>
         /// <exception cref="CryptographicException">
         /// The SubjectPublicKeyInfo could not be decoded. The
@@ -71,6 +71,23 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public PublicKey(MLKem key) : this(key.ExportSubjectPublicKeyInfo())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PublicKey" /> class
+        /// using SubjectPublicKeyInfo from an <see cref="SlhDsa" />.
+        /// </summary>
+        /// <param name="key">
+        /// An <see cref="SlhDsa" /> key to obtain the SubjectPublicKeyInfo from.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        /// The SubjectPublicKeyInfo could not be decoded. The
+        /// <see cref="SlhDsa.ExportSubjectPublicKeyInfo" /> must return a
+        /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public PublicKey(SlhDsa key) : this(key.ExportSubjectPublicKeyInfo())
         {
         }
 
@@ -355,13 +372,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         [UnsupportedOSPlatform("browser")]
-        public SlhDsa? GetSlhDsaPublicKey()
-        {
-            if (SlhDsaAlgorithm.GetAlgorithmFromOid(_oid.Value) is null)
-                return null;
-
-            return EncodeSubjectPublicKeyInfo().Encode(SlhDsa.ImportSubjectPublicKeyInfo);
-        }
+        public SlhDsa? GetSlhDsaPublicKey() =>
+            Helpers.IsSlhDsaOid(_oid.Value)
+                ? EncodeSubjectPublicKeyInfo().Encode(SlhDsa.ImportSubjectPublicKeyInfo)
+                : null;
 
         internal AsnWriter EncodeSubjectPublicKeyInfo()
         {
