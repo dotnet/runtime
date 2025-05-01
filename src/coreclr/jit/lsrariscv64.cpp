@@ -445,17 +445,8 @@ int LinearScan::BuildNode(GenTree* tree)
             if (!varTypeIsFloating(op1Type))
             {
                 emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
-                if (tree->gtGetOp2()->isContainedIntOrIImmed())
-                {
-                    bool isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
-                    if (cmpSize == EA_4BYTE && isUnsigned)
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-                else
-                {
-                    if (cmpSize == EA_4BYTE)
-                        buildInternalIntRegisterDefForNode(tree);
-                }
+                if (cmpSize == EA_4BYTE)
+                    buildInternalIntRegisterDefForNode(tree);
             }
             buildInternalRegisterUses();
         }
@@ -776,6 +767,11 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
+            break;
+
         case GT_INDEX_ADDR:
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -1017,6 +1013,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
+    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    {
+        MarkAsyncContinuationBusyForCall(call);
+    }
+
     regMaskTP killMask = getKillSetForCall(call);
     if (dstCount > 0)
     {

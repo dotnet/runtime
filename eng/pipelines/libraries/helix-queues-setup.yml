@@ -28,10 +28,6 @@ jobs:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Debian.13.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
-    # Linux armv6
-    - ${{ if eq(parameters.platform, 'linux_armv6') }}:
-      - (Raspbian.10.Armv6.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:raspbian-10-helix-arm32v6
-
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
       - (Ubuntu.2504.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.04-helix-arm64v8
@@ -73,14 +69,6 @@ jobs:
       - ${{ if or(eq(parameters.jobParameters.interpreter, 'true'), eq(parameters.jobParameters.isSingleFile, true)) }}:
         # Limiting interp runs as we don't need as much coverage.
         - (Debian.13.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
-
-    # Linux s390x
-    - ${{ if eq(parameters.platform, 'linux_s390x') }}:
-        - Ubuntu.2004.S390X.Experimental.Open
-
-    # Linux PPC64le
-    - ${{ if eq(parameters.platform, 'linux_ppc64le') }}:
-        - Ubuntu.2204.PPC64le.Experimental.Open
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:

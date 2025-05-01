@@ -289,19 +289,7 @@ private:
         *m_pCurrentSlot |= data;
     }
 
-    inline void AllocMemoryBlock()
-    {
-        _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
-        MemoryBlock* pMemBlock = m_MemoryBlocks.AppendNew(m_pAllocator, m_MemoryBlockSize);
-
-        m_pCurrentSlot = pMemBlock->Contents;
-        m_OutOfBlockSlot = m_pCurrentSlot + m_MemoryBlockSize / sizeof( size_t );
-
-#ifdef _DEBUG
-           m_MemoryBlocksCount++;
-#endif
-
-    }
+    inline void AllocMemoryBlock();
 
     inline void InitCurrentSlot()
     {
@@ -557,5 +545,9 @@ private:
 };
 
 typedef TGcInfoEncoder<TargetGcInfoEncoding> GcInfoEncoder;
+
+#ifdef FEATURE_INTERPRETER
+typedef TGcInfoEncoder<InterpreterGcInfoEncoding> InterpreterGcInfoEncoder;
+#endif // FEATURE_INTERPRETER
 
 #endif // !__GCINFOENCODER_H__
