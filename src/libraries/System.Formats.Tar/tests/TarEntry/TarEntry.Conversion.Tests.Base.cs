@@ -82,8 +82,8 @@ namespace System.Formats.Tar.Tests
             else if (format is TarEntryFormat.Gnu)
             {
                 GnuTarEntry gnuEntry = firstEntry as GnuTarEntry;
-                Assert.Equal(firstEntry.ModificationTime, gnuEntry.AccessTime);
-                Assert.Equal(firstEntry.ModificationTime, gnuEntry.ChangeTime);
+                Assert.Equal(DateTimeOffset.UnixEpoch, gnuEntry.AccessTime);
+                Assert.Equal(DateTimeOffset.UnixEpoch, gnuEntry.ChangeTime);
             }
 
             return firstEntry;
@@ -149,8 +149,9 @@ namespace System.Formats.Tar.Tests
                 }
                 else if (originalEntry.Format is TarEntryFormat.Ustar or TarEntryFormat.V7)
                 {
-                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.AccessTime, initialNow);
-                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.ChangeTime, initialNow);
+                    // We set atime and ctime to UnixEpoch
+                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.AccessTime, DateTimeOffset.UnixEpoch);
+                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.ChangeTime, DateTimeOffset.UnixEpoch);
                 }
             }
 

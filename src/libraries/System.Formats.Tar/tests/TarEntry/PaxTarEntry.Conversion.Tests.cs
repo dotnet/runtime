@@ -77,6 +77,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void Constructor_ConversionFromV7_Write(TarEntryFormat originalEntryFormat)
         {
+            DateTimeOffset initialNow = DateTimeOffset.UtcNow;
+
             string name = "file.txt";
             string contents = "Hello world";
 
@@ -95,17 +97,35 @@ namespace System.Formats.Tar.Tests
 
             if (originalEntryFormat is TarEntryFormat.Pax or TarEntryFormat.Gnu)
             {
-                // The constructor should've set the atime and ctime automatically to the same value of mtime
-                expectedATime = originalEntry.ModificationTime;
-                expectedCTime = originalEntry.ModificationTime;
+                // The constructor should've set the atime and ctime automatically to the same value of UnixEpoch
+                if (originalEntry is GnuTarEntry gnuEntry)
+                {
+                    Assert.Equal(DateTimeOffset.UnixEpoch, gnuEntry.AccessTime);
+                    Assert.Equal(DateTimeOffset.UnixEpoch, gnuEntry.ChangeTime);
+                    // Change them to mtime
+                    gnuEntry.AccessTime = gnuEntry.ModificationTime;
+                    gnuEntry.ChangeTime = gnuEntry.ModificationTime;
+
+                    expectedATime = gnuEntry.ModificationTime;
+                    expectedCTime = gnuEntry.ModificationTime;
+                }
+                else
+                {
+                    PaxTarEntry paxEntry = originalEntry as PaxTarEntry;
+
+                    expectedATime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                    expectedCTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
+
+                    Assert.Equal(paxEntry.ModificationTime, expectedATime);
+                    Assert.Equal(paxEntry.ModificationTime, expectedCTime);
+                    // Can't change them, it's a read-only dictionary
+                }
             }
             else
             {
-                // ustar and v7 do not have atime and ctime, so the expected values of atime and ctime should be
-                // larger than mtime, because the conversion constructor sets those values automatically
-                DateTimeOffset now = DateTimeOffset.UtcNow;
-                expectedATime = now;
-                expectedCTime = now;
+                // ustar and v7 do not have atime and ctime, so the expected values of atime and ctime should be set to UnixEpoch.
+                expectedATime = DateTimeOffset.UnixEpoch;
+                expectedCTime = DateTimeOffset.UnixEpoch;
             }
 
             TarEntry convertedEntry = InvokeTarEntryConversionConstructor(TarEntryFormat.Pax, originalEntry);
@@ -147,8 +167,8 @@ namespace System.Formats.Tar.Tests
                 }
                 else
                 {
-                    AssertExtensions.GreaterThanOrEqualTo(atime, expectedATime);
-                    AssertExtensions.GreaterThanOrEqualTo(ctime, expectedCTime);
+                    AssertExtensions.GreaterThanOrEqualTo(atime, initialNow);
+                    AssertExtensions.GreaterThanOrEqualTo(ctime, initialNow);
                 }
             }
         }
