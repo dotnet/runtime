@@ -20,7 +20,9 @@ namespace System.Formats.Tar
         /// </summary>
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
-        /// <remarks>When creating an instance using the <see cref="GnuTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:
+        /// <remarks>
+        /// <para>When creating an instance of <see cref="GnuTarEntry"/> using this constructor, the <see cref="AccessTime"/> and <see cref="ChangeTime"/> properties are set to <see cref="DateTimeOffset.UnixEpoch" />. This ensures compatibility with other tools that are unable to read the <c>atime</c> and <c>ctime</c> in <see cref="TarEntryFormat.Gnu"/> entries, because other TAR formats expect the <c>prefix</c> field in the same header location where <see cref="TarEntryFormat.Gnu"/> writes <c>atime</c> and <c>ctime</c>.</para>
+        /// <para>When creating an instance using the <see cref="GnuTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:</para>
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
         /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
@@ -33,13 +35,16 @@ namespace System.Formats.Tar
         public GnuTarEntry(TarEntryType entryType, string entryName)
             : base(entryType, entryName, TarEntryFormat.Gnu, isGea: false)
         {
-            _header._aTime = _header._mTime; // mtime was set in base constructor
-            _header._cTime = _header._mTime;
+            _header._aTime = DateTimeOffset.UnixEpoch;
+            _header._cTime = DateTimeOffset.UnixEpoch;
         }
 
         /// <summary>
         /// Initializes a new <see cref="GnuTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the GNU format.
         /// </summary>
+        /// <remarks>
+        /// <para>When creating an instance of <see cref="GnuTarEntry"/> using this constructor, if <paramref name="other"/> is <see cref="TarEntryFormat.Gnu"/> or <see cref="TarEntryFormat.Pax"/>, then the <see cref="AccessTime"/> and <see cref="ChangeTime"/> properties are set to the same values set in <paramref name="other"/>. But if <paramref name="other"/> is of any other format, then <see cref="AccessTime"/> and <see cref="ChangeTime"/> are set to <see cref="DateTimeOffset.UnixEpoch" />. This helps ensure compatibility with other tools that are unable to read the <c>atime</c> and <c>ctime</c> in <see cref="TarEntryFormat.Gnu"/> entries, because other TAR formats expect the <c>prefix</c> field in the same header location where <see cref="TarEntryFormat.Gnu"/> writes <c>atime</c> and <c>ctime</c>.</para>
+        /// </remarks>
         /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
         /// <para>-or-</para>
         /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the GNU format.</para></exception>
@@ -52,47 +57,33 @@ namespace System.Formats.Tar
                 _header._cTime = gnuOther.ChangeTime;
                 _header._gnuUnusedBytes = other._header._gnuUnusedBytes;
             }
+            else if (other is PaxTarEntry paxOther)
+            {
+                if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther._header.ExtendedAttributes, TarHeader.PaxEaATime, out DateTimeOffset aTime))
+                {
+                    _header._aTime = aTime;
+                }
+
+                if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther._header.ExtendedAttributes, TarHeader.PaxEaCTime, out DateTimeOffset cTime))
+                {
+                    _header._cTime = cTime;
+                }
+            }
             else
             {
-                bool changedATime = false;
-                bool changedCTime = false;
-
-                if (other is PaxTarEntry paxOther)
-                {
-                    changedATime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther._header.ExtendedAttributes, TarHeader.PaxEaATime, out DateTimeOffset aTime);
-                    if (changedATime)
-                    {
-                        _header._aTime = aTime;
-                    }
-
-                    changedCTime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther._header.ExtendedAttributes, TarHeader.PaxEaCTime, out DateTimeOffset cTime);
-                    if (changedCTime)
-                    {
-                        _header._cTime = cTime;
-                    }
-                }
-
-                // Either 'other' was V7 or Ustar (those formats do not have atime or ctime),
-                // or 'other' was PAX and at least one of the timestamps was not found in the extended attributes
-                if (!changedATime || !changedCTime)
-                {
-                    DateTimeOffset now = DateTimeOffset.UtcNow;
-                    if (!changedATime)
-                    {
-                        _header._aTime = now;
-                    }
-                    if (!changedCTime)
-                    {
-                        _header._cTime = now;
-                    }
-                }
+                // 'other' was V7 or Ustar (those formats do not have atime or ctime).
+                _header._aTime = DateTimeOffset.UnixEpoch;
+                _header._cTime = DateTimeOffset.UnixEpoch;
             }
         }
 
         /// <summary>
         /// A timestamp that represents the last time the file represented by this entry was accessed.
         /// </summary>
-        /// <remarks>In Unix platforms, this timestamp is commonly known as <c>atime</c>.</remarks>
+        /// <remarks>
+        /// <para>In Unix platforms, this timestamp is commonly known as <c>atime</c>.</para>
+        /// <para>Setting the value of this property to a value other than <see cref="DateTimeOffset.UnixEpoch"/> may cause problems with other tools that read TAR files, because the <see cref="TarEntryFormat.Gnu"/> format writes the <c>atime</c> field where other formats would normally read and write the <c>prefix</c> field in the header. You should only set this property to something other than <see cref="DateTimeOffset.UnixEpoch"/> if this entry will be read by tools that know how to correctly interpret the <c>atime</c> field of the <see cref="TarEntryFormat.Gnu"/> format.</para>
+        /// </remarks>
         public DateTimeOffset AccessTime
         {
             get => _header._aTime;
@@ -105,7 +96,10 @@ namespace System.Formats.Tar
         /// <summary>
         /// A timestamp that represents the last time the metadata of the file represented by this entry was changed.
         /// </summary>
-        /// <remarks>In Unix platforms, this timestamp is commonly known as <c>ctime</c>.</remarks>
+        /// <remarks>
+        /// <para>In Unix platforms, this timestamp is commonly known as <c>ctime</c>.</para>
+        /// <para>Setting the value of this property to a value other than <see cref="DateTimeOffset.UnixEpoch"/> may cause problems with other tools that read TAR files, because the <see cref="TarEntryFormat.Gnu"/> format writes the <c>ctime</c> field where other formats would normally read and write the <c>prefix</c> field in the header. You should only set this property to something other than <see cref="DateTimeOffset.UnixEpoch"/> if this entry will be read by tools that know how to correctly interpret the <c>ctime</c> field of the <see cref="TarEntryFormat.Gnu"/> format.</para>
+        /// </remarks>
         public DateTimeOffset ChangeTime
         {
             get => _header._cTime;
