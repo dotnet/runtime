@@ -41,7 +41,7 @@ public class Runtime_114978
         s_rt.AssertEqual(Vector512<byte>.AllBitsSet, vr21);
         var vr22 = new C2();
         var vr23 = new C0();
-        var vr24 = Program.M10(vr16, vr21, vr22, vr23);
+        var vr24 = M10(vr16, vr21, vr22, vr23);
         s_rt.AssertEqual(Vector512<byte>.AllBitsSet, vr24);
     }
 

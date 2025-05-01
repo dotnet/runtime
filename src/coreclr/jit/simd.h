@@ -332,6 +332,7 @@ struct simdmask_t
 
     static simdmask_t AllBitsSet(unsigned elementCount)
     {
+		assert((elementCount >= 1) && (elementCount <= 64));
         simdmask_t result;
 
         if (elementCount == 64)
@@ -342,7 +343,6 @@ struct simdmask_t
         {
             result.u64[0] = (1ULL << elementCount) - 1;
         }
-        assert((elementCount >= 1) && (elementCount <= 64));
 
         return result;
     }
