@@ -234,6 +234,38 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .And.ExecuteFunctionPointerWithException(entryPoint, 1);
         }
 
+        [Fact]
+        public void CallDelegateOnComponentContext_IgnoreWorkingDirectory()
+        {
+            using (TestArtifact cwd = TestArtifact.Create("cwd"))
+            {
+                // Validate that hosting components in the working directory will not be used
+                File.Copy(Binaries.CoreClr.MockPath, Path.Combine(cwd.Location, Binaries.CoreClr.FileName));
+                File.Copy(Binaries.HostPolicy.MockPath, Path.Combine(cwd.Location, Binaries.HostPolicy.FileName));
+
+                var component = sharedState.ComponentWithNoDependenciesFixture.TestProject;
+                string[] args =
+                {
+                    ComponentLoadAssemblyAndGetFunctionPointerArg,
+                    sharedState.HostFxrPath,
+                    component.RuntimeConfigJson,
+                    component.AppDll,
+                    sharedState.ComponentTypeName,
+                    sharedState.ComponentEntryPoint1,
+                };
+
+                var dotnet = new Microsoft.DotNet.Cli.Build.DotNetCli(sharedState.DotNetRoot);
+                sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
+                    .WorkingDirectory(cwd.Location)
+                    .Execute()
+                    .Should().Pass()
+                    .And.InitializeContextForConfig(component.RuntimeConfigJson)
+                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                    .And.ResolveHostPolicy(dotnet)
+                    .And.ResolveCoreClr(dotnet);
+            }
+        }
+
         public class SharedTestState : SharedTestStateBase
         {
             public string HostFxrPath { get; }
