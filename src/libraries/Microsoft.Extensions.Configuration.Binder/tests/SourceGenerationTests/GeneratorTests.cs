@@ -281,7 +281,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 public class Settings
                 {
                     public List<(string Item1, string? Item2)>? Items { get; set; }
-                    // public List<string>? Items { get; set; }
                 }
                 """;
 
