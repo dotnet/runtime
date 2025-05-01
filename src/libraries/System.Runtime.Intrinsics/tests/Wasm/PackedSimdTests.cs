@@ -112,11 +112,13 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
 
                 var vl = Vector128.LoadUnsafe(ref values[0], (nuint)0);
                 var vl2 = Vector128.LoadUnsafe(ref values[0], (nuint)4);
+
                 Assert.Equal(loaded, vl);
                 Assert.Equal(loaded2, vl2);
 
                 vl = Vector128.Load(ptr);
                 vl2 = Vector128.Load(ptr + 4);
+
                 Assert.Equal(loaded, vl);
                 Assert.Equal(loaded2, vl2);
 
@@ -140,9 +142,9 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var v = Vector128.Create(1, 2, 3, 4);
 
             int extracted = PackedSimd.ExtractScalar(v, 2);
-            Assert.Equal(3, extracted);
-
             var modified = PackedSimd.ReplaceScalar(v, 2, 10);
+
+            Assert.Equal(3, extracted);
             Assert.Equal(Vector128.Create(1, 2, 10, 4), modified);
         }
 
@@ -172,6 +174,60 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
 
             // Verify expected subtraction results
             Assert.Equal(Vector128.Create((ushort)0), subSatUShort);
+        }
+
+        [Fact]
+        public unsafe void SaturatingArithmeticSignedTest()
+        {
+            var v1 = Vector128.Create((sbyte)120, 121, 122, 123, 124, 125, 126, 127,
+                                       120, 121, 122, 123, 124, 125, 126, 127);
+            var v2 = Vector128.Create((sbyte)10, 10, 10, 10, 10, 10, 10, 10,
+                                       10, 10, 10, 10, 10, 10, 10, 10);
+
+            var addSat = PackedSimd.AddSaturate(v1, v2);
+            var subSat = PackedSimd.SubtractSaturate(v1, v2);
+
+            // Verify saturation at 127 (max sbyte value) for addition
+            Assert.Equal(Vector128.Create((sbyte)127, 127, 127, 127, 127, 127, 127, 127,
+                                           127, 127, 127, 127, 127, 127, 127, 127), addSat);
+
+            // Verify expected subtraction results - should be original values minus 10
+            Assert.Equal(Vector128.Create((sbyte)110, 111, 112, 113, 114, 115, 116, 117,
+                                           110, 111, 112, 113, 114, 115, 116, 117), subSat);
+
+            // Test negative saturation - when results would be below sbyte.MinValue
+            var v3 = Vector128.Create((sbyte)-120, -121, -122, -123, -124, -125, -126, -127,
+                                        -120, -121, -122, -123, -124, -125, -126, -128);
+            var v4 = Vector128.Create((sbyte)10, 10, 10, 10, 10, 10, 10, 10,
+                                        10, 10, 10, 10, 10, 10, 10, 10);
+
+            var subSat2 = PackedSimd.SubtractSaturate(v3, v4);
+
+            // Verify saturation at -128 (min sbyte value) for subtraction
+            Assert.Equal(Vector128.Create((sbyte)-128, -128, -128, -128, -128, -128, -128, -128,
+                                           -128, -128, -128, -128, -128, -128, -128, -128), subSat2);
+
+            // Test shorts
+            var s1 = Vector128.Create((short)32000, 32001, 32002, 32003, 32004, 32005, 32006, 32007);
+            var s2 = Vector128.Create((short)1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000);
+
+            var shortAddSat = PackedSimd.AddSaturate(s1, s2);
+            var shortSubSat = PackedSimd.SubtractSaturate(s1, s2);
+
+            // Verify saturation at 32767 (max short value) for addition
+            Assert.Equal(Vector128.Create((short)32767, 32767, 32767, 32767, 32767, 32767, 32767, 32767), shortAddSat);
+
+            // Verify expected subtraction results - should be original values minus 1000
+            Assert.Equal(Vector128.Create((short)31000, 31001, 31002, 31003, 31004, 31005, 31006, 31007), shortSubSat);
+
+            // Test negative saturation
+            var s3 = Vector128.Create((short)-32000, -32001, -32002, -32003, -32004, -32005, -32006, -32007);
+            var s4 = Vector128.Create((short)1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000);
+
+            var shortSubSat2 = PackedSimd.SubtractSaturate(s3, s4);
+
+            // Verify saturation at -32768 (min short value) for subtraction
+            Assert.Equal(Vector128.Create((short)-32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768), shortSubSat2);
         }
 
         [Fact]
