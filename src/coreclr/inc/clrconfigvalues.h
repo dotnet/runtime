@@ -10,9 +10,9 @@
 //
 // Given any config knob below that looks like this example:
 //    RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogEnable, W("LogEnable"), 0, "Turns on the traditional CLR log.")
-//                                                                  ---------
-//                                                                     |
-//                                                 --------------------
+//                                                    ---------
+//                                                        |
+//                                                 -------
 //                                                 |
 //                                                 V
 // You can set an environment variable DOTNET_LogEnable=1 to enable it.

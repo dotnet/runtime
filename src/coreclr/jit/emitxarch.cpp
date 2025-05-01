@@ -2529,7 +2529,7 @@ regNumber AbsRegNumber(regNumber reg)
 bool IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    return ((reg >= REG_R8) && (reg <= REG_R23)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
+    return ((reg >= REG_R8) && (reg <= REG_R31)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
@@ -5214,7 +5214,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
 static bool baseRegisterRequiresSibByte(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_ESP || base == REG_R12 || base == REG_R20;
+    return base == REG_ESP || base == REG_R12 || base == REG_R20 || base == REG_R28;
 #else
     return base == REG_ESP;
 #endif
@@ -5223,7 +5223,7 @@ static bool baseRegisterRequiresSibByte(regNumber base)
 static bool baseRegisterRequiresDisplacement(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_EBP || base == REG_R13 || base == REG_R21;
+    return base == REG_EBP || base == REG_R13 || base == REG_R21 || base == REG_R29;
 #else
     return base == REG_EBP;
 #endif
@@ -11165,7 +11165,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         /* Indirect call, virtual calls */
 
         id = emitNewInstrCallInd(argCnt, params.disp, params.ptrVars, gcrefRegs, byrefRegs,
-                                 params.retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(params.secondRetSize));
+                                 params.retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(params.secondRetSize),
+                                 params.hasAsyncRet);
     }
     else
     {
@@ -11175,7 +11176,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         assert(params.callType == EC_FUNC_TOKEN || params.callType == EC_FUNC_TOKEN_INDIR);
 
         id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs,
-                                 params.retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(params.secondRetSize));
+                                 params.retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(params.secondRetSize),
+                                 params.hasAsyncRet);
     }
 
     /* Update the emitter's live GC ref sets */
@@ -18577,11 +18579,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 byrefRegs |= RBM_EAX;
             }
 
-#ifdef UNIX_AMD64_ABI
             // If is a multi-register return method is called, mark RDX appropriately (for System V AMD64).
             if (id->idIsLargeCall())
             {
                 instrDescCGCA* idCall = (instrDescCGCA*)id;
+#ifdef UNIX_AMD64_ABI
                 if (idCall->idSecondGCref() == GCT_GCREF)
                 {
                     gcrefRegs |= RBM_RDX;
@@ -18590,8 +18592,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     byrefRegs |= RBM_RDX;
                 }
-            }
 #endif // UNIX_AMD64_ABI
+                if (idCall->hasAsyncContinuationRet())
+                {
+                    gcrefRegs |= RBM_ASYNC_CONTINUATION_RET;
+                }
+            }
 
             // If the GC register set has changed, report the new set
             if (gcrefRegs != emitThisGCrefRegs)
