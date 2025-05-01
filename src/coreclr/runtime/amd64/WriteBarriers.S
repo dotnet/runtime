@@ -261,6 +261,14 @@ LEAF_END RhpCheckedXchg, _TEXT
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
 ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
     mov     rcx, [rsi]
+#ifdef TARGET_APPLE
+// Apple's linker has issues which break unwind info if
+// an ALTERNATE_ENTRY is present in the middle of a function
+    jmp     C_FUNC(RhpByRefAssignRef2)
+LEAF_END RhpByRefAssignRef, _TEXT
+
+LEAF_ENTRY RhpByRefAssignRef2, _TEXT
+#endif
 ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
     mov     [rdi], rcx
 
@@ -325,4 +333,8 @@ LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired):
     add     rdi, 0x8
     add     rsi, 0x8
     ret
+#ifdef TARGET_APPLE
+LEAF_END RhpByRefAssignRef2, _TEXT
+#else
 LEAF_END RhpByRefAssignRef, _TEXT
+#endif

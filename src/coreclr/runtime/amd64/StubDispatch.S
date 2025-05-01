@@ -15,13 +15,13 @@
 
 LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
 
-        // r11 currently contains the indirection cell address.
-        // load r10 to point to the cache block.
-        mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
-
         // Load the MethodTable from the object instance in rdi.
         ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
         mov     rax, [rdi]
+
+        // r11 currently contains the indirection cell address.
+        // load r10 to point to the cache block.
+        mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries
 

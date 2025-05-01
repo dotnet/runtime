@@ -27,12 +27,12 @@
 
     NESTED_ENTRY "RhpInterfaceDispatch\entries", _TEXT, NoHandler
 
-        // x11 holds the indirection cell address. Load the cache pointer.
-        ldr     x9, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
-
         // Load the MethodTable from the object instance in x0.
         ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
         ldr     x10, [x0]
+
+        // x11 holds the indirection cell address. Load the cache pointer.
+        ldr     x9, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
     .global CurrentEntry
     .set CurrentEntry, 0
