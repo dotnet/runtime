@@ -2313,11 +2313,11 @@ void ObjectAllocator::RewriteUses()
                                                           m_compiler->gtNewIconNode(targetOffset, TYP_I_IMPL));
                             GenTree* const target = m_compiler->gtNewIndir(TYP_I_IMPL, targetAddr);
 
-                            // Likely there is other residual call state we need to munge here
+                            // Update call state -- now an indirect call to the delegate target
                             //
-                            call->gtCallMethHnd = (CORINFO_METHOD_HANDLE)target;
-                            call->gtCallType    = CT_INDIRECT;
-                            call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
+                            call->gtCallAddr = target;
+                            call->gtCallType = CT_INDIRECT;
+                            call->gtCallMoreFlags &= ~(GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
                         }
                     }
                 }
