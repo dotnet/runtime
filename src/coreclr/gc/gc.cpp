@@ -13340,6 +13340,8 @@ void gc_heap::distribute_free_regions()
 #endif //MULTIPLE_HEAPS
     if (settings.reason == reason_induced_aggressive)
     {
+        global_regions_to_decommit[huge_free_region].transfer_regions (&global_free_huge_regions);
+
 #ifdef MULTIPLE_HEAPS
         for (int i = 0; i < n_heaps; i++)
         {
@@ -13518,7 +13520,7 @@ void gc_heap::distribute_free_regions()
             dprintf(REGIONS_LOG, ("distributing the %zd %s regions, removing %zd regions",
                 total_budget_in_region_units[kind],
                 free_region_kind_name[kind],
-                balance));
+                balance_to_decommit));
 
             if (balance_to_decommit > 0)
             {
@@ -13837,7 +13839,7 @@ void gc_heap::decide_on_decommit_strategy(bool joined_last_gc_before_oom)
     if (ephemeral_elapsed >= DECOMMIT_TIME_STEP_MILLISECONDS)
     {
         gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
-        size_t decommit_step_milliseconds = min (ephemeral_elapsed, (10*1000));
+        size_t decommit_step_milliseconds = min (ephemeral_elapsed, (size_t)(10 * 1000));
 
         decommit_step (decommit_step_milliseconds);
     }
