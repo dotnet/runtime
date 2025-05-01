@@ -4196,11 +4196,11 @@ bool VirtualCallStubManagerManager::isCachedInterfaceDispatchStubAVLocation(PCOD
     LIMITED_METHOD_CONTRACT;
 
     #define CHECK_RANGE(name) \
-    if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
+    if (GetEEFuncEntryPoint(name) <= addr && addr < GetEEFuncEntryPoint(name##_End)) return true;
 
 #ifdef TARGET_APPLE
     CHECK_RANGE(RhpVirtualDispatchHelpers);
-    CHECK_RANGE(RhpInterfaceDispatch);
+    CHECK_RANGE(RhpInterfaceDispatchHelpers);
 #else
     for (size_t i = 0; i < countCachedInterfaceDispatchHelpers; i++)
     {

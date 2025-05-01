@@ -25,7 +25,7 @@ LEAF_END RhpVirtualDispatchHelpers, _TEXT
 
         // Load the MethodTable from the object instance in x0, and add it to the vtable offset
         // to get the address in the vtable chunk list of what we want to dereference
-        AVLOCATON_ALTERNATE_ENTRY(RhpVTableOffsetDispatchAVLocation)
+        AVLOCATION_ALTERNATE_ENTRY(RhpVTableOffsetDispatchAVLocation)
         ldr     x9, [x0]
         add     x9, x10, x9
 
