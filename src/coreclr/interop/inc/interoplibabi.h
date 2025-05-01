@@ -11,7 +11,11 @@ namespace InteropLib
 {
     namespace ABI
     {
-        // Updating this also requires updating ComInterfaceDispatch::GetInstance<T>.
+        // The definitions in this file are constants and data structures that are shared between interoplib,
+        // the managed ComWrappers code, and the DAC's ComWrappers support.
+        // All constants, type layouts, and algorithms that calculate pointer offsets should be in this file
+        // and should have identical implementations with the managed ComWrappers code.
+
 #ifdef HOST_64BIT
         constexpr size_t DispatchAlignmentThisPtr = 64; // Should be a power of 2.
 #else

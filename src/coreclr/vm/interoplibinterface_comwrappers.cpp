@@ -476,7 +476,7 @@ namespace InteropLibImports
 
 namespace
 {
-    MethodTable* pManagedObjectWrapperHolderMT = NULL;
+    MethodTable* s_pManagedObjectWrapperHolderMT  = NULL;
 }
 
 bool ComWrappersNative::IsManagedObjectComWrapper(_In_ OBJECTREF managedObjectWrapperHolderRef, _Out_ bool* pIsRooted)
@@ -489,7 +489,7 @@ bool ComWrappersNative::IsManagedObjectComWrapper(_In_ OBJECTREF managedObjectWr
     }
     CONTRACTL_END;
 
-    if (managedObjectWrapperHolderRef->GetGCSafeMethodTable() != pManagedObjectWrapperHolderMT)
+    if (managedObjectWrapperHolderRef->GetGCSafeMethodTable() != s_pManagedObjectWrapperHolderMT )
     {
         return false;
     }
@@ -556,7 +556,7 @@ void ComWrappersNative::OnFullGCFinished()
     STRESS_LOG0(LF_INTEROP, LL_INFO10000, "End Reference Tracking\n");
 }
 
-void ComWrappersNative::OnGCAfterMarkPhase()
+void ComWrappersNative::OnAfterGCScanRoots()
 {
     CONTRACTL
     {
@@ -588,7 +588,7 @@ extern "C" void QCALLTYPE ComWrappers_RegisterIsRootedCallback()
     BEGIN_QCALL;
 
     // Grab the method table for the objects we inspect in our ref-counted handle callback.
-    pManagedObjectWrapperHolderMT = CoreLibBinder::GetClass(CLASS__MANAGED_OBJECT_WRAPPER_HOLDER);
+    s_pManagedObjectWrapperHolderMT  = CoreLibBinder::GetClass(CLASS__MANAGED_OBJECT_WRAPPER_HOLDER);
 
     END_QCALL;
 }

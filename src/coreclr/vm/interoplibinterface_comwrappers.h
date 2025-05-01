@@ -22,7 +22,7 @@ public: // Unwrapping support
 public: // GC interaction
     static void OnFullGCStarted();
     static void OnFullGCFinished();
-    static void OnGCAfterMarkPhase();
+    static void OnAfterGCScanRoots();
 };
 
 // Native QCalls for the abstract ComWrappers managed type.
