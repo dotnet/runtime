@@ -24,6 +24,7 @@
 
 #if defined(TARGET_ARM64)
 extern "C" void* PacStripPtr(void* ptr);
+extern "C" void* PacSignPtr(void* ptr);
 #endif // TARGET_ARM64
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -4554,20 +4555,6 @@ struct ExecutionState
     ExecutionState() : m_FirstPass(TRUE) {LIMITED_METHOD_CONTRACT;  }
 };
 
-#if defined(TARGET_ARM64) && defined(__GNUC__)
-static inline void* PacSignPtr(void* ptr)
-{
-
-    __asm__ volatile (".arch_extension pauth\n"
-                      "paciza %0"
-                      : "+r" (ptr)
-                      :
-                      : "memory"                // Memory is affected, prevent reordering
-                      );
-    return ptr;
-}
-#endif // TARGET_ARM64 && __GNUC__
-
 // Client is responsible for suspending the thread before calling
 void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
 {
@@ -4640,9 +4627,9 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
     m_HijackedFunction = esb->m_pFD;
 
     // Bash the stack to return to one of our stubs
-#if defined(TARGET_ARM64) && defined(__GNUC__)
+#if defined(TARGET_ARM64)
     pvHijackAddr = PacSignPtr(pvHijackAddr);
-#endif // TARGET_ARM64 && __GNUC__
+#endif // TARGET_ARM64
 
     *esb->m_ppvRetAddrPtr = pvHijackAddr;
     SetThreadState(TS_Hijacked);
@@ -4673,9 +4660,9 @@ void Thread::UnhijackThread()
         STRESS_LOG2(LF_SYNC, LL_INFO100, "Unhijacking return address 0x%p for thread %p\n", m_pvHJRetAddr, this);
         // restore the return address and clear the flag
         *m_ppvHJRetAddrPtr = m_pvHJRetAddr;
-#if defined(TARGET_ARM64) && defined(__GNUC__)
+#if defined(TARGET_ARM64)
         *m_ppvHJRetAddrPtr = PacSignPtr(*m_ppvHJRetAddrPtr);
-#endif // TARGET_ARM64 && __GNUC__
+#endif // TARGET_ARM64
         ResetThreadState(TS_Hijacked);
 
         // But don't touch m_pvHJRetAddr.  We may need that to resume a thread that

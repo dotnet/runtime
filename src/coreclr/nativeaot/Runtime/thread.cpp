@@ -40,6 +40,7 @@ static Thread* g_RuntimeInitializingThread;
 
 #if defined(TARGET_ARM64)
 extern "C" void* PacStripPtr(void* ptr);
+extern "C" void* PacSignPtr(void* ptr);
 #endif // TARGET_ARM64
 
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
@@ -790,20 +791,6 @@ void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHij
     HijackReturnAddressWorker(&frameIterator, pfnHijackFunction);
 }
 
-#if defined(TARGET_ARM64) && defined(__GNUC__)
-static inline void* PacSignPtr(void* ptr)
-{
-
-    __asm__ volatile (".arch_extension pauth\n"
-                      "paciza %0"
-                      : "+r" (ptr)
-                      :
-                      : "memory"                // Memory is affected, prevent reordering
-                      );
-    return ptr;
-}
-#endif // TARGET_ARM64 && __GNUC__
-
 void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction)
 {
     void** ppvRetAddrLocation;
@@ -839,9 +826,9 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 #endif
 
         *ppvRetAddrLocation = (void*)pfnHijackFunction;
-#if defined(TARGET_ARM64) && defined(__GNUC__)
+#if defined(TARGET_ARM64)
         *ppvRetAddrLocation = PacSignPtr(*ppvRetAddrLocation);
-#endif // TARGET_ARM64 && __GNUC__
+#endif // TARGET_ARM64
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
@@ -971,9 +958,9 @@ void Thread::UnhijackWorker()
     ASSERT(m_ppvHijackedReturnAddressLocation != NULL);
 
     *m_ppvHijackedReturnAddressLocation = m_pvHijackedReturnAddress;
-#if defined(TARGET_ARM64) && defined(__GNUC__)
+#if defined(TARGET_ARM64)
     *m_ppvHijackedReturnAddressLocation = PacSignPtr(*m_ppvHijackedReturnAddressLocation);
-#endif // TARGET_ARM64 && __GNUC__
+#endif // TARGET_ARM64
 
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;

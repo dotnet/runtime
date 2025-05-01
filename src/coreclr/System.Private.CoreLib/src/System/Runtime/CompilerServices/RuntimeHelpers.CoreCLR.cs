@@ -511,7 +511,7 @@ namespace System.Runtime.CompilerServices
             IntPtr callersRetAddr;
             TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
             PortableTailCallFrame* prevFrame = tls->Frame;
-            if ((callersRetAddr) == (prevFrame->TailCallAwareReturnAddress))
+            if (callersRetAddr == prevFrame->TailCallAwareReturnAddress)
             {
                 prevFrame->NextCall = callTarget;
                 return;
