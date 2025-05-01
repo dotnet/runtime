@@ -30,8 +30,9 @@ struct ECHash
 #ifdef DACCESS_COMPILE
 GVAL_DECL(TADDR, gLowestFCall);
 GVAL_DECL(TADDR, gHighestFCall);
-GARY_DECL(PTR_ECHash, gFCallMethods, FCALL_HASH_SIZE);
 #endif
+
+GARY_DECL(PTR_ECHash, gFCallMethods, FCALL_HASH_SIZE);
 
 enum {
     FCFuncFlag_EndOfArray   = 0x01,
