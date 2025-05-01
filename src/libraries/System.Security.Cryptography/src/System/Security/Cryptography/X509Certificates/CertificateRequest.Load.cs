@@ -299,6 +299,7 @@ namespace System.Security.Cryptography.X509Certificates
             RSA? rsa = publicKey.GetRSAPublicKey();
             ECDsa? ecdsa = publicKey.GetECDsaPublicKey();
             MLDsa? mldsa = publicKey.GetMLDsaPublicKey();
+            SlhDsa? slhDsa = publicKey.GetSlhDsaPublicKey();
 
             try
             {
@@ -348,6 +349,20 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.MLDsa87:
                         hashAlg = default;
                         break;
+                    case Oids.SlhDsaSha2_128s:
+                    case Oids.SlhDsaShake128s:
+                    case Oids.SlhDsaSha2_128f:
+                    case Oids.SlhDsaShake128f:
+                    case Oids.SlhDsaSha2_192s:
+                    case Oids.SlhDsaShake192s:
+                    case Oids.SlhDsaSha2_192f:
+                    case Oids.SlhDsaShake192f:
+                    case Oids.SlhDsaSha2_256s:
+                    case Oids.SlhDsaShake256s:
+                    case Oids.SlhDsaSha2_256f:
+                    case Oids.SlhDsaShake256f:
+                        hashAlg = default;
+                        break;
                     default:
                         throw new NotSupportedException(
                             SR.Format(SR.Cryptography_UnknownKeyAlgorithm, algorithmIdentifier.Algorithm));
@@ -390,6 +405,26 @@ namespace System.Security.Cryptography.X509Certificates
                         }
 
                         return mldsa.VerifyData(toBeSigned, signature);
+
+                    case Oids.SlhDsaSha2_128s:
+                    case Oids.SlhDsaShake128s:
+                    case Oids.SlhDsaSha2_128f:
+                    case Oids.SlhDsaShake128f:
+                    case Oids.SlhDsaSha2_192s:
+                    case Oids.SlhDsaShake192s:
+                    case Oids.SlhDsaSha2_192f:
+                    case Oids.SlhDsaShake192f:
+                    case Oids.SlhDsaSha2_256s:
+                    case Oids.SlhDsaShake256s:
+                    case Oids.SlhDsaSha2_256f:
+                    case Oids.SlhDsaShake256f:
+                        if (slhDsa is null)
+                        {
+                            return false;
+                        }
+
+                        return slhDsa.VerifyData(toBeSigned, signature);
+
                     default:
                         Debug.Fail(
                             $"Algorithm ID {algorithmIdentifier.Algorithm} was in the first switch, but not the second");
@@ -409,6 +444,7 @@ namespace System.Security.Cryptography.X509Certificates
                 rsa?.Dispose();
                 ecdsa?.Dispose();
                 mldsa?.Dispose();
+                slhDsa?.Dispose();
             }
         }
     }

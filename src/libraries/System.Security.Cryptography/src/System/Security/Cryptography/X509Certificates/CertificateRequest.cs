@@ -236,6 +236,62 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and SLH-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An SLH-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exceotion cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exceotion>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public CertificateRequest(
+            string subjectName,
+            SlhDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            SubjectName = new X500DistinguishedName(subjectName);
+
+            _key = key;
+            _generator = X509SignatureGenerator.CreateForSlhDsa(key);
+            PublicKey = _generator.PublicKey;
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and SLH-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An SLH-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exceotion cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exceotion>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public CertificateRequest(
+            X500DistinguishedName subjectName,
+            SlhDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            SubjectName = subjectName;
+
+            _key = key;
+            _generator = X509SignatureGenerator.CreateForSlhDsa(key);
+            PublicKey = _generator.PublicKey;
+        }
+
+        /// <summary>
         ///   Create a CertificateRequest for the specified subject name, encoded public key, and hash algorithm.
         /// </summary>
         /// <param name="subjectName">
@@ -610,6 +666,12 @@ namespace System.Security.Cryptography.X509Certificates
                 if (mldsa is not null)
                 {
                     return certificate.CopyWithPrivateKey(mldsa);
+                }
+
+                SlhDsa? slhDsa = _key as SlhDsa;
+                if (slhDsa is not null)
+                {
+                    return certificate.CopyWithPrivateKey(slhDsa);
                 }
             }
 

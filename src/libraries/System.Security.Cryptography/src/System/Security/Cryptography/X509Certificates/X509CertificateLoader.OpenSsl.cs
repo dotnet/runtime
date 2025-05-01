@@ -71,6 +71,10 @@ namespace System.Security.Cryptography.X509Certificates
                     return new AsymmetricAlgorithmPkcs12PrivateKey(pkcs8, static () => new DSAOpenSsl());
                 case Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024:
                     return new MLKemPkcs12PrivateKey(pkcs8);
+                case Oids.SlhDsaSha2_128s or Oids.SlhDsaShake128s or Oids.SlhDsaSha2_128f or Oids.SlhDsaShake128f or
+                     Oids.SlhDsaSha2_192s or Oids.SlhDsaShake192s or Oids.SlhDsaSha2_192f or Oids.SlhDsaShake192f or
+                     Oids.SlhDsaSha2_256s or Oids.SlhDsaShake256s or Oids.SlhDsaSha2_256f or Oids.SlhDsaShake256f:
+                    return new SlhDsaPkcs12PrivateKey(pkcs8);
                 default:
                     return null;
             }
@@ -93,6 +97,13 @@ namespace System.Security.Cryptography.X509Certificates
                 // We should always get back an MLKemImplementation from PKCS8 loading.
                 MLKemImplementation? impl = kem as MLKemImplementation;
                 Debug.Assert(impl is not null, "MLKem implementation is not handled for duplicating a handle.");
+                return impl.DuplicateHandle();
+            }
+
+            if (key.Key is SlhDsa slhDsa)
+            {
+                SlhDsaImplementation? impl = slhDsa as SlhDsaImplementation;
+                Debug.Assert(impl is not null, "SlhDsa implementation is not handled for duplicating a handle.");
                 return impl.DuplicateHandle();
             }
 

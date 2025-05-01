@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
 using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
@@ -659,6 +660,58 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Throws<CryptographicException>(
                     () => new X509Certificate2(pfxBytes, PfxPassword, keyStorageFlags));
+            }
+        }
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadSlhDsa_Pfx_Ietf(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = SlhDsaTestData.IetfSlhDsaSha2_128sCertificatePfx;
+            string pfxPassword = "PLACEHOLDER";
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (SlhDsa slhDsa = cert.GetSlhDsaPrivateKey())
+            {
+                Assert.NotNull(slhDsa);
+                Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
+                // Note this display string is reversed from the one in the IETF example but equivalent.
+                Assert.Equal("O=Bogus SLH-DSA-SHA2-128s CA, L=Paris, C=FR", cert.Subject);
+                AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaSecretKey());
+            }
+        }
+
+        [ConditionalTheory(typeof(SlhDsaTestHelpers), nameof(SlhDsaTestHelpers.SlhDsaIsNotSupported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadSlhDsa_Pfx_Ietf_NotSupported(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = SlhDsaTestData.IetfSlhDsaSha2_128sCertificatePfx_Pbes1;
+            string pfxPassword = "PLACEHOLDER";
+
+            // Windows when using non-ephemeral delays throwing no private key and instead acts as it the
+            // keyset does not exist. Exporting it again to PFX forces Windows to reconcile the fact the key
+            // didn't actually load.
+            if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
+            {
+                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+                {
+                    Assert.Throws<CryptographicException>(
+                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, pfxPassword));
+                }
+
+                using (X509Certificate2 cert = new(pfxBytes, pfxPassword, keyStorageFlags))
+                {
+                    Assert.Throws<CryptographicException>(
+                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, pfxPassword));
+                }
+            }
+            else
+            {
+                Assert.Throws<CryptographicException>(
+                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
+
+                Assert.Throws<CryptographicException>(
+                    () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
             }
         }
 

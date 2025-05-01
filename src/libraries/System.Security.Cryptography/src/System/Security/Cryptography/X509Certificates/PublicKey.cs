@@ -340,6 +340,29 @@ namespace System.Security.Cryptography.X509Certificates
             return EncodeSubjectPublicKeyInfo().Encode(MLDsa.ImportSubjectPublicKeyInfo);
         }
 
+        /// <summary>
+        ///   Gets the <see cref="SlhDsa"/> public key, or <see langword="null" />
+        ///   if the key is not an SLH-DSA key.
+        /// </summary>
+        /// <returns>
+        ///   The public key, or <see langword="null"/> if the key is not an SLH-DSA key.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The object represents an SLH-DSA public key, but the platform does not support the algorithm.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The key contents are corrupt or could not be read successfully.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [UnsupportedOSPlatform("browser")]
+        public SlhDsa? GetSlhDsaPublicKey()
+        {
+            if (SlhDsaAlgorithm.GetAlgorithmFromOid(_oid.Value) is null)
+                return null;
+
+            return EncodeSubjectPublicKeyInfo().Encode(SlhDsa.ImportSubjectPublicKeyInfo);
+        }
+
         internal AsnWriter EncodeSubjectPublicKeyInfo()
         {
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn

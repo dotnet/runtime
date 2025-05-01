@@ -12,6 +12,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 {
     internal static class SlhDsaTestHelpers
     {
+        public static bool SlhDsaIsNotSupported => !SlhDsa.IsSupported;
+
         // DER encoding of ASN.1 BitString "foo"
         internal static readonly ReadOnlyMemory<byte> s_derBitStringFoo = new byte[] { 0x03, 0x04, 0x00, 0x66, 0x6f, 0x6f };
 

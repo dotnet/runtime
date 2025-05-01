@@ -75,8 +75,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         private static void VerifyInstanceIsUsable(SlhDsaOpenSsl slhDsa)
         {
-            byte[] secretKey = new byte[slhDsa.Algorithm.SecretKeySizeInBytes];
-            Assert.Equal(slhDsa.Algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey)); // does not throw
+            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
 
             // usable
             byte[] data = [1, 2, 3];
