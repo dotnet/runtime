@@ -16,14 +16,6 @@ internal readonly struct Loader_1 : ILoader
         _target = target;
     }
 
-    AssemblyHandle ILoader.GetAssemblyHandle(TargetPointer assemblyPointer)
-    {
-        if (assemblyPointer == TargetPointer.Null)
-            throw new ArgumentNullException(nameof(assemblyPointer));
-
-        return new AssemblyHandle(assemblyPointer);
-    }
-
     ModuleHandle ILoader.GetModuleHandle(TargetPointer modulePointer)
     {
         if (modulePointer == TargetPointer.Null)
@@ -32,7 +24,7 @@ internal readonly struct Loader_1 : ILoader
         return new ModuleHandle(modulePointer);
     }
 
-    IEnumerable<TargetPointer> ILoader.GetAssemblies(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
+    IEnumerable<ModuleHandle> ILoader.GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
     {
         if (appDomain == TargetPointer.Null)
             throw new ArgumentNullException(nameof(appDomain));
@@ -53,7 +45,7 @@ internal readonly struct Loader_1 : ILoader
                 // otherwise we skip it and continue to the next assembly
                 if (iterationFlags.HasFlag(AssemblyIterationFlags.IncludeFailedToLoad))
                 {
-                    yield return pAssembly;
+                    yield return new ModuleHandle(assembly.Module);
                 }
                 continue;
             }
@@ -98,20 +90,9 @@ internal readonly struct Loader_1 : ILoader
                     continue; // skip collected assemblies
             }
 
-            yield return pAssembly;
+            yield return new ModuleHandle(assembly.Module);
         }
-    }
 
-    TargetPointer ILoader.GetModule(AssemblyHandle handle)
-    {
-        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(handle.Address);
-        return assembly.Module;
-    }
-
-    bool ILoader.IsAssemblyLoaded(AssemblyHandle handle)
-    {
-        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(handle.Address);
-        return assembly.IsLoaded;
     }
 
     TargetPointer ILoader.GetRootAssembly()
@@ -282,5 +263,12 @@ internal readonly struct Loader_1 : ILoader
         TargetPointer assembly = module.Assembly;
         Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
         return la.IsCollectible != 0;
+    }
+
+    bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
+        return assembly.IsLoaded;
     }
 }
