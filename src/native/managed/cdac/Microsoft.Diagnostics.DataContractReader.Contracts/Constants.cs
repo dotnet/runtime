@@ -62,6 +62,9 @@ public static class Constants
 
         public const string Architecture = nameof(Architecture);
         public const string OperatingSystem = nameof(OperatingSystem);
+
+        public const string FCallHashSize = nameof(FCallHashSize);
+        public const string FCallMethods = nameof(FCallMethods);
     }
     public static class FieldNames
     {

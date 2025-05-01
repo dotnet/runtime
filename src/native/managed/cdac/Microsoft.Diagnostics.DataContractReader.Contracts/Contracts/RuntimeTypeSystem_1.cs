@@ -1038,7 +1038,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         // FCall path, look up address in the FCall table
-        // TODO(cdac): FCall path if relevant
+        TargetPointer fCallMethodDesc = _target.Contracts.ECall.MapTargetBackToMethodDesc(pCode);
+        if (fCallMethodDesc != TargetPointer.Null)
+        {
+            return GetMethodDescHandle(fCallMethodDesc);
+        }
 
         // stub path, read address as a Precode and read MethodDesc from it
         {
