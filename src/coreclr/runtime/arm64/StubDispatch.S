@@ -31,7 +31,7 @@
         ldr     x9, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in x0.
-        AVLOCATION_ALTERNATE_ENTRY(RhpInterfaceDispatchAVLocation\entries)
+        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
         ldr     x10, [x0]
 
     .global CurrentEntry
@@ -48,10 +48,6 @@
     NESTED_END "RhpInterfaceDispatch\entries", _TEXT
 
     .endm
-
-LEAF_ENTRY RhpInterfaceDispatchHelpers, _TEXT
-    ret
-LEAF_END RhpInterfaceDispatchHelpers, _TEXT
 
 //
 // Define all the stub routines we currently need.
@@ -82,9 +78,5 @@ LEAF_END RhpInterfaceDispatchHelpers, _TEXT
         // Just tail call to the cache miss helper.
         b C_FUNC(RhpInterfaceDispatchSlow)
     LEAF_END RhpInitialInterfaceDispatch, _TEXT
-
-LEAF_ENTRY RhpInterfaceDispatchHelpers_End, _TEXT
-    ret
-LEAF_END RhpInterfaceDispatchHelpers_End, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

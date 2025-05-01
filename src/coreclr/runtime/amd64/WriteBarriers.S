@@ -151,7 +151,7 @@ LEAF_ENTRY RhpAssignRef\EXPORT_REG_NAME, _TEXT
     // Export the canonical write barrier under unqualified name as well
     .ifc \REFREG, RSI
     ALTERNATE_ENTRY RhpAssignRef
-    AVLOCATION_ALTERNATE_ENTRY(RhpAssignRefAVLocation)
+    ALTERNATE_ENTRY RhpAssignRefAVLocation
     .endif
 
     // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
@@ -162,10 +162,6 @@ LEAF_ENTRY RhpAssignRef\EXPORT_REG_NAME, _TEXT
 
 LEAF_END RhpAssignRef\EXPORT_REG_NAME, _TEXT
 .endm
-
-LEAF_ENTRY RhpWriteBarriers, _TEXT
-    ret
-LEAF_END RhpWriteBarriers, _TEXT
 
 // One day we might have write barriers for all the possible argument registers but for now we have
 // just one write barrier that assumes the input register is RSI.
@@ -209,7 +205,7 @@ LEAF_ENTRY RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
     // Export the canonical write barrier under unqualified name as well
     .ifc \REFREG, RSI
     ALTERNATE_ENTRY RhpCheckedAssignRef
-    AVLOCATION_ALTERNATE_ENTRY(RhpCheckedAssignRefAVLocation)
+    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
     .endif
 
     // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
@@ -263,9 +259,9 @@ LEAF_END RhpCheckedXchg, _TEXT
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1/2
 // - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
-    AVLOCATION_ALTERNATE_ENTRY(RhpByRefAssignRefAVLocation1)
+ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
     mov     rcx, [rsi]
-    AVLOCATION_ALTERNATE_ENTRY(RhpByRefAssignRefAVLocation2)
+ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
     mov     [rdi], rcx
 
     // Check whether the writes were even into the heap. If not there's no card update required.
@@ -330,8 +326,3 @@ LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired):
     add     rsi, 0x8
     ret
 LEAF_END RhpByRefAssignRef, _TEXT
-
-LEAF_ENTRY RhpWriteBarriers_End, _TEXT
-    ret
-LEAF_END RhpWriteBarriers_End, _TEXT
-

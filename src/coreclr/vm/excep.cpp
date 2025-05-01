@@ -5895,10 +5895,6 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
 
-#if defined(TARGET_APPLE)
-EXTERN_C void RhpWriteBarriers();
-EXTERN_C void RhpWriteBarriers_End();
-#else
 typedef uint8_t CODE_LOCATION;
 EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
 #if defined(HOST_X86)
@@ -5949,7 +5945,6 @@ static uintptr_t writeBarrierAVLocations[] =
     (uintptr_t)&RhpByRefAssignRefAVLocation2,
 #endif
 };
-#endif
 
 // Check if the passed in instruction pointer is in one of the
 // JIT helper functions.
@@ -5957,7 +5952,6 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef TARGET_APPLE
     // compare the IP against the list of known possible AV locations in the write barrier helpers
     for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
     {
@@ -5974,14 +5968,9 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 #endif
             return true;
     }
-#endif // !TARGET_APPLE
-    
+
 #define CHECK_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
-
-#ifdef TARGET_APPLE
-    CHECK_RANGE(RhpWriteBarriers)
-#endif
 
 #ifndef TARGET_X86
     CHECK_RANGE(JIT_WriteBarrier)

@@ -3,12 +3,6 @@
 
 #define C_VAR(Name) rip + C_FUNC(Name)
 
-#if defined(__APPLE__)
-#define AVLOCATION_ALTERNATE_ENTRY(name)
-#else
-#define AVLOCATION_ALTERNATE_ENTRY(name) ALTERNATE_ENTRY name
-#endif
-
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler

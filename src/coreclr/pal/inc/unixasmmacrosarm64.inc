@@ -1,12 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifdef TARGET_APPLE
-#define AVLOCATION_ALTERNATE_ENTRY(name)
-#else
-#define AVLOCATION_ALTERNATE_ENTRY(name) ALTERNATE_ENTRY name
-#endif
-
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler

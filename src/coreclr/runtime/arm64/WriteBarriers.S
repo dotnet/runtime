@@ -179,10 +179,6 @@
         // Exit label
     .endm
 
-LEAF_ENTRY RhpWriteBarriers, _TEXT
-    ret
-LEAF_END RhpWriteBarriers, _TEXT
-
 // void JIT_ByRefWriteBarrier
 // On entry:
 //   x13  : the source address (points to object reference to write)
@@ -202,7 +198,7 @@ LEAF_END RhpWriteBarriers, _TEXT
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
 LEAF_ENTRY RhpByRefAssignRefArm64, _TEXT
 
-        AVLOCATION_ALTERNATE_ENTRY(RhpByRefAssignRefAVLocation1)
+    ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
         ldr     x15, [x13], 8
         b       C_FUNC(RhpCheckedAssignRefArm64)
 
@@ -233,7 +229,7 @@ LEAF_END RhpByRefAssignRefArm64, _TEXT
         b       C_FUNC(RhpAssignRefArm64)
 
 LOCAL_LABEL(NotInHeap):
-        AVLOCATION_ALTERNATE_ENTRY(RhpCheckedAssignRefAVLocation)
+    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         str     x15, [x14], 8
         ret
 
@@ -253,7 +249,7 @@ LEAF_END RhpCheckedAssignRefArm64, _TEXT
 //  x14 : incremented by 8
 LEAF_ENTRY RhpAssignRefArm64, _TEXT
 
-        AVLOCATION_ALTERNATE_ENTRY(RhpAssignRefAVLocation)
+    ALTERNATE_ENTRY RhpAssignRefAVLocation
         stlr    x15, [x14]
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15
@@ -401,8 +397,3 @@ LOCAL_LABEL(NoBarrierXchg):
 .arch_extension nolse
 #endif
 #endif // FEATURE_NATIVEAOT
-
-LEAF_ENTRY RhpWriteBarriers_End, _TEXT
-    ret
-LEAF_END RhpWriteBarriers_End, _TEXT
-
