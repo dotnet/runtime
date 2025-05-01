@@ -296,10 +296,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         /// <summary>
-            /// We binding the type "SslClientAuthenticationOptions" which has a property "CipherSuitesPolicy" of type "CipherSuitesPolicy". We can't bind this type.
-            /// This test is to ensure not including the property "CipherSuitesPolicy" in the generated code caused a build break.
-            /// </summary>
-            [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        /// We binding the type "SslClientAuthenticationOptions" which has a property "CipherSuitesPolicy" of type "CipherSuitesPolicy". We can't bind this type.
+        /// This test is to ensure not including the property "CipherSuitesPolicy" in the generated code caused a build break.
+        /// </summary>
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task IgnoredUnBindablePropertiesTest()
         {
             string source = """
