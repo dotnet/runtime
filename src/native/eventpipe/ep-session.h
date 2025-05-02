@@ -67,6 +67,8 @@ struct _EventPipeSession_Internal {
 	bool enable_stackwalk;
 	// Indicate that session is fully running (streaming thread started).
 	volatile uint32_t started;
+	// The user_events_data file descriptor to register Tracepoints and write user_events to.
+	uint32_t user_events_data_fd;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_GETTER_SETTER)
@@ -98,7 +100,8 @@ ep_session_alloc (
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data);
+	void *callback_additional_data,
+	uint32_t user_events_data_fd);
 
 void
 ep_session_free (EventPipeSession *session);
