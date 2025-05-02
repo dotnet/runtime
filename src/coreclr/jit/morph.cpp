@@ -417,11 +417,16 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // Because there is no IL instruction conv.r4.un, uint/ulong -> float
     // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
     // We can usually eliminate the redundant intermediate cast as an optimization.
+    //
     // AArch and xarch+EVEX have instructions that can cast directly from
-    // all integers (except for longs on 32-bit of course) to floats.
+    // all integers (except for longs on ARM32) to floats.
     // On x64, we also have the option of widening uint -> long and
     // using the signed conversion instructions, and ulong -> float/double
     // is handled directly in codegen, so we can allow all casts.
+    //
+    // This logic will also catch CAST(float <- CAST(double <- float))
+    // and reduce it to CAST(float <- float), which is handled in codegen as
+    // an optional mov.
     else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
 #ifndef TARGET_64BIT
              && !varTypeIsLong(oper->AsCast()->CastOp())
@@ -481,6 +486,15 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #endif // TARGET_AMD64
 
 #ifdef TARGET_X86
+#ifdef FEATURE_HW_INTRINSICS
+    else if (varTypeIsLong(srcType) && varTypeIsFloating(dstType) && canUseEvexEncoding())
+    {
+        // We can handle these casts directly using SIMD instructions.
+        // The transform to SIMD is done in DecomposeLongs.
+        return nullptr;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     // Do we have to do two step U4/8 -> R4/8 ?
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
@@ -494,7 +508,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->gtFlags &= ~GTF_UNSIGNED;
+            tree->ClearUnsigned();
             return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
         }
     }
