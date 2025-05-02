@@ -11,11 +11,6 @@
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <!-- Set the apphost RID so we download the apphost pack if needed. -->
     <AppHostRuntimeIdentifier>$(OutputRID)</AppHostRuntimeIdentifier>
-    <!--
-      If the output RID isn't the current SDK RID and we have a "base" RID, then the output RID isn't known to the SDK.
-      In that case, we need to set the AppHostRuntimeIdentifier to the base RID so the SDK can find a runtime pack for publishing.
-    -->
-    <AppHostRuntimeIdentifier Condition="'$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)' and '$(BaseOS)' != '' ">$(BaseOS)</AppHostRuntimeIdentifier>
     <UseLocalAppHostPack>true</UseLocalAppHostPack>
     <!-- Don't use the local apphost pack on Windows as matching linker configurations is difficult. -->
     <UseLocalAppHostPack Condition="'$(TargetOS)' == 'windows'">false</UseLocalAppHostPack>
@@ -123,12 +118,20 @@
 
   <Target Name="GetBuildArgumentsForDNNE"
           DependsOnTargets="ResolveFrameworkReferences;
+                            UpdateLocalAppHostPack;
                             GetUnixBuildArgumentsForDNNE;
                             GetAppleBuildArgumentsForDNNE;
                             GetUnixCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports">
     <PropertyGroup>
       <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="SetRidGraphPath"
+          BeforeTargets="ProcessFrameworkReferences">
+    <PropertyGroup>
+      <RuntimeIdentifierGraphPath Condition="'$(UseBootstrap)' == 'true'">$([MSBuild]::NormalizePath('$(BootstrapRidGraphDir)', 'runtime.json'))</RuntimeIdentifierGraphPath>
     </PropertyGroup>
   </Target>
 </Project>
