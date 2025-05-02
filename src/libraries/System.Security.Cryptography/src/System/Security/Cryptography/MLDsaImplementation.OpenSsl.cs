@@ -36,25 +36,9 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa65 != null ||
             Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa87 != null;
 
-        internal MLDsaImplementation Duplicate()
-        {
-            return new MLDsaImplementation(Algorithm, _key.DuplicateHandle());
-        }
-
         internal SafeEvpPKeyHandle DuplicateHandle()
         {
             return _key.DuplicateHandle();
-        }
-
-        // TODO: Delete this when public MLDsaOpenSsl is added.
-        internal static MLDsaImplementation FromHandle(MLDsaAlgorithm algorithm, SafeEvpPKeyHandle key)
-        {
-            Debug.Assert(key is not null);
-            Debug.Assert(!key.IsInvalid);
-            Debug.Assert(algorithm is not null);
-
-            ThrowIfNotSupported();
-            return new MLDsaImplementation(algorithm, key.DuplicateHandle());
         }
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>

@@ -41,6 +41,11 @@
     <Artifact Remove="$(ArtifactsShippingPackagesDir)*.Manifest-*.nupkg" />
   </ItemGroup>
 
+  <!-- The PGO runtime should always have External visibility, even if someone changes the default artifact visibility -->    
+  <ItemGroup>    
+    <Artifact Update="$(ArtifactsNonShippingPackagesDir)dotnet-runtime-pgo-*" Visibility="External" />    
+  </ItemGroup>
+
   <!--
     Mark host-RID-targeting assets as Vertical visibility when building in the VMR.
     We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.
@@ -83,8 +88,11 @@
     but we do produce them in both the VMR and the runtime official build.
   -->
   <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
-    <ShouldGenerateProductVersionFiles Condition="'$(PackageRID)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
+    <ShouldGenerateProductVersionFiles Condition="'$(OutputRID)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
     <ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ShouldGenerateProductVersionFiles>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' != 'true'">
+    <ShouldGenerateProductVersionFiles Condition="'$(DotNetFinalPublish)' == 'true'">true</ShouldGenerateProductVersionFiles>
   </PropertyGroup>
 
   <Target Name="GenerateProductVersionFiles"
