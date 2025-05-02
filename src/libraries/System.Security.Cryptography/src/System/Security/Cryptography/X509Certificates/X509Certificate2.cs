@@ -1172,17 +1172,17 @@ namespace System.Security.Cryptography.X509Certificates
                         s_DsaPublicKeyPrivateKeyLabels,
                         static keyPem => CreateAndImport(keyPem, DSA.Create),
                         certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey when IsECDsa(certificate) =>
-                        ExtractKeyFromPem<ECDsa>(
-                            keyPem,
-                            s_EcPublicKeyPrivateKeyLabels,
-                            static keyPem => CreateAndImport(keyPem, ECDsa.Create),
-                            certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
                         ExtractKeyFromPem<ECDiffieHellman>(
                             keyPem,
                             s_EcPublicKeyPrivateKeyLabels,
                             static keyPem => CreateAndImport(keyPem, ECDiffieHellman.Create),
+                            certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDsa(certificate) =>
+                        ExtractKeyFromPem<ECDsa>(
+                            keyPem,
+                            s_EcPublicKeyPrivateKeyLabels,
+                            static keyPem => CreateAndImport(keyPem, ECDsa.Create),
                             certificate.CopyWithPrivateKey),
                     Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 =>
                         ExtractKeyFromPem<MLKem>(
@@ -1259,17 +1259,17 @@ namespace System.Security.Cryptography.X509Certificates
                             password,
                             static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, DSA.Create),
                             certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey when IsECDsa(certificate) =>
-                        ExtractKeyFromEncryptedPem<ECDsa>(
-                            keyPem,
-                            password,
-                            static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, ECDsa.Create),
-                            certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
                         ExtractKeyFromEncryptedPem<ECDiffieHellman>(
                             keyPem,
                             password,
                             static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, ECDiffieHellman.Create),
+                            certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDsa(certificate) =>
+                        ExtractKeyFromEncryptedPem<ECDsa>(
+                            keyPem,
+                            password,
+                            static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, ECDsa.Create),
                             certificate.CopyWithPrivateKey),
                     Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 =>
                         ExtractKeyFromEncryptedPem<MLKem>(
