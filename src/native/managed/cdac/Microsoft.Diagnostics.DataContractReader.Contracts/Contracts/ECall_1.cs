@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct ECall_1 : IECall
@@ -21,18 +19,18 @@ internal readonly struct ECall_1 : IECall
 
 
         TargetPointer pECHashTable = _target.ReadGlobalPointer(Constants.Globals.FCallMethods);
-        TargetPointer ecHashTable = _target.ReadPointer(pECHashTable);
 
-        TargetPointer pECHash = ecHashTable + (ulong)(FCallHash(codePointer) * _target.PointerSize);
+        TargetPointer pECHash = pECHashTable + (ulong)(FCallHash(codePointer) * _target.PointerSize);
+        TargetPointer ecHashAddr = _target.ReadPointer(pECHash);
 
-        while (pECHash != TargetPointer.Null)
+        while (ecHashAddr != TargetPointer.Null)
         {
-            Data.ECHash eCHash = _target.ProcessedData.GetOrAdd<Data.ECHash>(pECHash);
+            Data.ECHash eCHash = _target.ProcessedData.GetOrAdd<Data.ECHash>(ecHashAddr);
             if (eCHash.Implementation == codePointer)
             {
                 return eCHash.MethodDesc;
             }
-            pECHash = eCHash.Next;
+            ecHashAddr = eCHash.Next;
         }
 
         return TargetPointer.Null; // not found

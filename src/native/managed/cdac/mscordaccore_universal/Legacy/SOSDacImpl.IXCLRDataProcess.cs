@@ -290,7 +290,10 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                             TargetPointer cmt = _rts.GetCanonicalMethodTable(typeParam);
                             TypeHandle cmtHandle = _rts.GetTypeHandle(cmt);
 
-                            MethodDescHandle methodDesc = _rts.GetMethodDescForSlot(cmtHandle, slotNum);
+                            TargetPointer methodDescAddr = _rts.GetMethodDescForSlot(cmtHandle, slotNum);
+                            if (methodDescAddr == TargetPointer.Null) continue;
+                            MethodDescHandle methodDesc = _rts.GetMethodDescHandle(methodDescAddr);
+
                             if (HasNativeCodeAnyVersion(methodDesc))
                             {
                                 yield return methodDesc;

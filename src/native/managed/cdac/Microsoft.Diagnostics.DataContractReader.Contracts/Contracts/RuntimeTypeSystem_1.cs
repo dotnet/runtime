@@ -1008,7 +1008,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
-    MethodDescHandle IRuntimeTypeSystem.GetMethodDescForSlot(TypeHandle typeHandle, ushort slot)
+    TargetPointer IRuntimeTypeSystem.GetMethodDescForSlot(TypeHandle typeHandle, ushort slot)
     {
         if (!typeHandle.IsMethodTable())
             throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
@@ -1024,33 +1024,38 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 MethodDesc md = _methodDescs[mdh.Address];
                 if (md.Slot == slot)
                 {
-                    return mdh;
+                    return mdh.Address;
                 }
             }
         }
 
+        return GetMethodDescForEntrypoint(pCode);
+    }
+
+    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
+    {
         // standard path, ask ExecutionManager for the MethodDesc
         IExecutionManager executionManager = _target.Contracts.ExecutionManager;
         if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
         {
             TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
-            return GetMethodDescHandle(methodDescPtr);
+            return methodDescPtr;
         }
 
         // FCall path, look up address in the FCall table
-        TargetPointer fCallMethodDesc = _target.Contracts.ECall.MapTargetBackToMethodDesc(pCode);
-        if (fCallMethodDesc != TargetPointer.Null)
         {
-            return GetMethodDescHandle(fCallMethodDesc);
+            TargetPointer methodDescPtr = _target.Contracts.ECall.MapTargetBackToMethodDesc(pCode);
+            if (methodDescPtr != TargetPointer.Null)
+            {
+                return methodDescPtr;
+            }
         }
 
         // stub path, read address as a Precode and read MethodDesc from it
         {
             TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
-            return GetMethodDescHandle(methodDescPtr);
+            return methodDescPtr;
         }
-
-        throw new NotImplementedException("MethodDesc for slot is not implemented yet");
     }
 
     TargetPointer IRuntimeTypeSystem.GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc)
