@@ -388,6 +388,18 @@ namespace System.Globalization.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [InlineData("und-us", "und-US", "und-US")]
+        [InlineData("und-us_tradnl", "und-US", "und-US_tradnl")]
+        [InlineData("und-es-u-co-phoneb", "und-ES", "und-ES_phoneb")]
+        [InlineData("und-es-t-something", "und-ES", "und-ES")]
+        public void CtorUndeterminedLanguageTag(string cultureName, string expectedCultureName, string expectedSortName)
+        {
+            CultureInfo culture = new CultureInfo(cultureName);
+            Assert.Equal(expectedCultureName, culture.Name);
+            Assert.Equal(expectedSortName, culture.CompareInfo.Name);
+        }
+
         [Theory]
         [MemberData(nameof(Ctor_String_TestData))]
         public void Ctor_String(string name, string[] expectedNames)

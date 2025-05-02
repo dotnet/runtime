@@ -10515,8 +10515,8 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_NOP,
 
                                                  // These control-flow operations need no values.
-                                                 GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE,
-                                                 GT_SWIFT_ERROR_RET};
+                                                 GT_JTRUE, GT_RETURN, GT_RETURN_SUSPEND, GT_SWITCH, GT_RETFILT,
+                                                 GT_CKFINITE, GT_SWIFT_ERROR_RET};
 
 void ValueNumStore::ValidateValueNumStoreStatics()
 {
@@ -10865,11 +10865,7 @@ PhaseStatus Compiler::fgValueNumber()
     }
 
     assert(m_dfsTree != nullptr);
-
-    if (m_loops == nullptr)
-    {
-        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
-    }
+    assert(m_loops != nullptr);
 
     m_blockToLoop = BlockToNaturalLoopMap::Build(m_loops);
     // Compute the side effects of loops.
@@ -12401,9 +12397,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             break;
 
             case GT_CATCH_ARG:
+            case GT_ASYNC_CONTINUATION:
             case GT_SWIFT_ERROR:
-                // We know nothing about the value of a caught expression.
-                // We also know nothing about the error register's value post-Swift call.
+                // We know nothing about the value of these.
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                 break;
 
@@ -12773,6 +12769,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     case GT_SWITCH:
                     case GT_RETURN:
                     case GT_RETFILT:
+                    case GT_RETURN_SUSPEND:
                     case GT_NULLCHECK:
                         if (tree->gtGetOp1() != nullptr)
                         {

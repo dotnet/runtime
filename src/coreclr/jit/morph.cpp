@@ -709,6 +709,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "VarArgsCookie";
         case WellKnownArg::InstParam:
             return "InstParam";
+        case WellKnownArg::AsyncContinuation:
+            return "AsyncContinuation";
         case WellKnownArg::RetBuffer:
             return "RetBuffer";
         case WellKnownArg::PInvokeFrame:
@@ -4509,6 +4511,12 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 #endif
+
+    if (compIsAsync() != call->IsAsync())
+    {
+        failTailCall("Caller and callee do not agree on async-ness");
+        return nullptr;
+    }
 
     // We have to ensure to pass the incoming retValBuf as the
     // outgoing one. Using a temp will not do as this function will
@@ -12257,6 +12265,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 //    block                       - block containing the statement
 //    stmt                        - statement to morph
 //    msg                         - string to identify caller in a dump
+//    allowFGChange               - whether or not the flow graph can be changed
 //    invalidateDFSTreeOnFGChange - whether or not the DFS tree should be invalidated
 //                                  by this function if it makes a flow graph change
 //
@@ -12269,6 +12278,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 //
 bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
                                 Statement* stmt DEBUGARG(const char* msg),
+                                bool            allowFGChange,
                                 bool            invalidateDFSTreeOnFGChange)
 {
     assert(block != nullptr);
@@ -12318,7 +12328,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
     bool removedStmt = fgCheckRemoveStmt(block, stmt);
 
     // Or this is the last statement of a conditional branch that was just folded?
-    if (!removedStmt && (stmt->GetNextStmt() == nullptr) && !fgRemoveRestOfBlock)
+    if (allowFGChange && !removedStmt && (stmt->GetNextStmt() == nullptr) && !fgRemoveRestOfBlock)
     {
         FoldResult const fr = fgFoldConditional(block);
         if (invalidateDFSTreeOnFGChange && (fr != FoldResult::FOLD_DID_NOTHING))
@@ -12361,7 +12371,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
         //
         // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_ALWAYS.
         // We should not convert it to a ThrowBB.
-        if ((block != fgFirstBB) || !fgFirstBB->HasFlag(BBF_INTERNAL))
+        if (allowFGChange && ((block != fgFirstBB) || !fgFirstBB->HasFlag(BBF_INTERNAL)))
         {
             // Convert block to a throw bb, or make it rarely run if already a throw.
             //

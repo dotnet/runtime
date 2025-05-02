@@ -469,7 +469,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 
         // Re-morph the statement.
         Statement* curStmt = compCurStmt;
-        fgMorphBlockStmt(compCurBB, nullCheckStmt DEBUGARG("optFoldNullCheck"));
+        fgMorphBlockStmt(compCurBB, nullCheckStmt DEBUGARG("optFoldNullCheck"), /* allowFGChange */ false);
         optRecordSsaUses(nullCheckStmt->GetRootNode(), compCurBB);
         compCurStmt = curStmt;
 

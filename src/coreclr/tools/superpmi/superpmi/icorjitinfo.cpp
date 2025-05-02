@@ -1188,6 +1188,12 @@ void MyICJI::getEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     jitInstance->mc->repGetEEInfo(pEEInfoOut);
 }
 
+void MyICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
+{
+    jitInstance->mc->cr->AddCall("getAsyncInfo");
+    jitInstance->mc->repGetAsyncInfo(pAsyncInfo);
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods
@@ -1511,6 +1517,12 @@ bool MyICJI::getTailCallHelpers(
 {
     jitInstance->mc->cr->AddCall("getTailCallHelpers");
     return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
+}
+
+CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub()
+{
+    jitInstance->mc->cr->AddCall("getAsyncResumptionStub");
+    return jitInstance->mc->repGetAsyncResumptionStub();;
 }
 
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)

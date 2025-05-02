@@ -640,13 +640,15 @@ typedef enum CorMethodImpl
     miNoOptimization     =   0x0040,   // Method may not be optimized.
     miAggressiveOptimization = 0x0200, // Method may contain hot code and should be aggressively optimized.
 
+    miAsync              =   0x2000,   // Method requires async state machine rewrite.
+
     // These are the flags that are allowed in MethodImplAttribute's Value
     // property. This should include everything above except the code impl
     // flags (which are used for MethodImplAttribute's MethodCodeType field).
     miUserMask           =   miManagedMask | miForwardRef | miPreserveSig |
                              miInternalCall | miSynchronized |
                              miNoInlining | miAggressiveInlining |
-                             miNoOptimization | miAggressiveOptimization,
+                             miNoOptimization | miAggressiveOptimization | miAsync,
 
     miMaxMethodImplVal   =   0xffff,   // Range check value
 } CorMethodImpl;
@@ -670,6 +672,7 @@ typedef enum CorMethodImpl
 #define IsMiAggressiveInlining(x)           ((x) & miAggressiveInlining)
 #define IsMiNoOptimization(x)               ((x) & miNoOptimization)
 #define IsMiAggressiveOptimization(x)       (((x) & (miAggressiveOptimization | miNoOptimization)) == miAggressiveOptimization)
+#define IsMiAsync(x)                        ((x) & miAsync)
 
 // PinvokeMap attr bits, used by DefinePinvokeMap.
 typedef enum  CorPinvokeMap

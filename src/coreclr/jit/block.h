@@ -463,6 +463,7 @@ enum BasicBlockFlags : uint64_t
     BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(38), // Block has a node that needs a value probing
     BBF_HAS_NEWARR                     = MAKE_BBFLAG(39), // BB contains 'new' of an array type.
     BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(40), // BB *likely* has a bounds check (after rangecheck phase).
+    BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(41), // Block is a resumption block in an async method
 
     // The following are sets of flags.
 
@@ -488,7 +489,7 @@ enum BasicBlockFlags : uint64_t
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | BBF_HAS_NEWARR | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_MAY_HAVE_BOUNDS_CHECKS,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_MAY_HAVE_BOUNDS_CHECKS | BBF_ASYNC_RESUMPTION,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
     // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
@@ -1409,6 +1410,16 @@ public:
     void SetFirstLIRNode(GenTree* tree)
     {
         m_firstNode = tree;
+    }
+
+    GenTree* GetLastLIRNode() const
+    {
+        return m_lastNode;
+    }
+
+    void SetLastLIRNode(GenTree* tree)
+    {
+        m_lastNode = tree;
     }
 
     EntryState* bbEntryState; // verifier tracked state of all entries in stack.

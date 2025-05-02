@@ -127,10 +127,10 @@ namespace ILCompiler
             new("--opt-async-methods") { Description = SR.AsyncModuleOptimization };
         public Option<string> NonLocalGenericsModule { get; } =
             new("--non-local-generics-module") { DefaultValueFactory = _ => string.Empty, Description = SR.NonLocalGenericsModule };
-        public Option<ReadyToRunMethodLayoutAlgorithm> MethodLayout { get; } =
-            new("--method-layout") { CustomParser = MakeReadyToRunMethodLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunMethodLayoutAlgorithm, Description = SR.MethodLayoutOption, HelpName = "arg" };
-        public Option<ReadyToRunFileLayoutAlgorithm> FileLayout { get; } =
-            new("--file-layout") { CustomParser = MakeReadyToRunFileLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunFileLayoutAlgorithm, Description = SR.FileLayoutOption, HelpName = "arg" };
+        public Option<MethodLayoutAlgorithm> MethodLayout { get; } =
+            new("--method-layout") { CustomParser = MakeMethodLayoutAlgorithm, DefaultValueFactory = MakeMethodLayoutAlgorithm, Description = SR.MethodLayoutOption, HelpName = "arg" };
+        public Option<FileLayoutAlgorithm> FileLayout { get; } =
+            new("--file-layout") { CustomParser = MakeFileLayoutAlgorithm, DefaultValueFactory = MakeFileLayoutAlgorithm, Description = SR.FileLayoutOption, HelpName = "arg" };
         public Option<bool> VerifyTypeAndFieldLayout { get; } =
             new("--verify-type-and-field-layout") { Description = SR.VerifyTypeAndFieldLayoutOption };
         public Option<string> CallChainProfileFile { get; } =
@@ -309,9 +309,9 @@ namespace ILCompiler
 
                 Console.WriteLine(SR.CrossModuleInliningExtraHelp);
                 Console.WriteLine();
-                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--method-layout", String.Join("', '", Enum.GetNames<ReadyToRunMethodLayoutAlgorithm>())));
+                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--method-layout", String.Join("', '", Enum.GetNames<MethodLayoutAlgorithm>())));
                 Console.WriteLine();
-                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--file-layout", String.Join("', '", Enum.GetNames<ReadyToRunFileLayoutAlgorithm>())));
+                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--file-layout", String.Join("', '", Enum.GetNames<FileLayoutAlgorithm>())));
                 Console.WriteLine();
 
                 Console.WriteLine(SR.InstructionSetHelp);
@@ -378,33 +378,33 @@ namespace ILCompiler
             return parallelism;
         }
 
-        private static ReadyToRunMethodLayoutAlgorithm MakeReadyToRunMethodLayoutAlgorithm(ArgumentResult result)
+        private static MethodLayoutAlgorithm MakeMethodLayoutAlgorithm(ArgumentResult result)
         {
             if (result.Tokens.Count == 0 )
-                return ReadyToRunMethodLayoutAlgorithm.DefaultSort;
+                return MethodLayoutAlgorithm.DefaultSort;
 
             return result.Tokens[0].Value.ToLowerInvariant() switch
             {
-                "defaultsort" => ReadyToRunMethodLayoutAlgorithm.DefaultSort,
-                "exclusiveweight" => ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight,
-                "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
-                "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
-                "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
-                "pettishansen" => ReadyToRunMethodLayoutAlgorithm.PettisHansen,
-                "random" => ReadyToRunMethodLayoutAlgorithm.Random,
+                "defaultsort" => MethodLayoutAlgorithm.DefaultSort,
+                "exclusiveweight" => MethodLayoutAlgorithm.ExclusiveWeight,
+                "hotcold" => MethodLayoutAlgorithm.HotCold,
+                "hotwarmcold" => MethodLayoutAlgorithm.HotWarmCold,
+                "callfrequency" => MethodLayoutAlgorithm.CallFrequency,
+                "pettishansen" => MethodLayoutAlgorithm.PettisHansen,
+                "random" => MethodLayoutAlgorithm.Random,
                 _ => throw new CommandLineException(SR.InvalidMethodLayout)
             };
         }
 
-        private static ReadyToRunFileLayoutAlgorithm MakeReadyToRunFileLayoutAlgorithm(ArgumentResult result)
+        private static FileLayoutAlgorithm MakeFileLayoutAlgorithm(ArgumentResult result)
         {
             if (result.Tokens.Count == 0 )
-                return ReadyToRunFileLayoutAlgorithm.DefaultSort;
+                return FileLayoutAlgorithm.DefaultSort;
 
             return result.Tokens[0].Value.ToLowerInvariant() switch
             {
-                "defaultsort" => ReadyToRunFileLayoutAlgorithm.DefaultSort,
-                "methodorder" => ReadyToRunFileLayoutAlgorithm.MethodOrder,
+                "defaultsort" => FileLayoutAlgorithm.DefaultSort,
+                "methodorder" => FileLayoutAlgorithm.MethodOrder,
                 _ => throw new CommandLineException(SR.InvalidFileLayout)
             };
         }

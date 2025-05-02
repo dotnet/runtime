@@ -2310,8 +2310,112 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
                                         LPVOID          hCallBack,
                                         DWORD           relOffsetOverride)
 {
-    // Interpreter-TODO: Implement this
-    return false;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    unsigned curOffs = pCodeInfo->GetRelOffset();
+
+#ifdef _DEBUG
+    // Get the name of the current method
+    const char * methodName = pCodeInfo->GetMethodDesc()->GetName();
+    LOG((LF_GCINFO, LL_INFO1000, "Reporting GC refs for %s at offset %04x.\n",
+        methodName, curOffs));
+#endif
+
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+
+#ifdef _DEBUG
+    if (flags & ActiveStackFrame)
+    {
+        InterpreterGcInfoDecoder _gcInfoDecoder(
+                                                gcInfoToken,
+                                                DECODE_INTERRUPTIBILITY,
+                                                curOffs
+                                                );
+        _ASSERTE(_gcInfoDecoder.IsInterruptible() || _gcInfoDecoder.CouldBeSafePoint());
+    }
+#endif
+
+    // Check if we have been given an override value for relOffset
+    if (relOffsetOverride != NO_OVERRIDE_OFFSET)
+    {
+        // We've been given an override offset for GC Info
+#ifdef _DEBUG
+        InterpreterGcInfoDecoder _gcInfoDecoder(
+                                                gcInfoToken,
+                                                DECODE_CODE_LENGTH
+                                                );
+
+        // We only use override offset for wantsReportOnlyLeaf
+        _ASSERTE(_gcInfoDecoder.WantsReportOnlyLeaf());
+#endif // _DEBUG
+
+        curOffs = relOffsetOverride;
+
+        LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset to provided override offset. Now reporting GC refs for %s at offset %04x.\n",
+            methodName, curOffs));
+    }
+
+
+#if defined(FEATURE_EH_FUNCLETS)   // funclets
+    if (pCodeInfo->GetJitManager()->IsFilterFunclet(pCodeInfo))
+    {
+        // Filters are the only funclet that run during the 1st pass, and must have
+        // both the leaf and the parent frame reported.  In order to avoid double
+        // reporting of the untracked variables, do not report them for the filter.
+        flags |= NoReportUntracked;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+    bool reportScratchSlots;
+
+    // We report scratch slots only for leaf frames.
+    // A frame is non-leaf if we are executing a call, or a fault occurred in the function.
+    // The only case in which we need to report scratch slots for a non-leaf frame
+    //   is when execution has to be resumed at the point of interruption (via ResumableFrame)
+    _ASSERTE( sizeof( BOOL ) >= sizeof( ActiveStackFrame ) );
+    reportScratchSlots = (flags & ActiveStackFrame) != 0;
+
+
+    InterpreterGcInfoDecoder gcInfoDecoder(
+                                           gcInfoToken,
+                                           GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+                                           curOffs
+                                           );
+
+    if (!gcInfoDecoder.EnumerateLiveSlots(
+                                          pContext,
+                                          reportScratchSlots,
+                                          flags,
+                                          pCallback,
+                                          hCallBack
+                                          ))
+    {
+        return false;
+    }
+
+#ifdef FEATURE_EH_FUNCLETS   // funclets
+    //
+    // If we're in a funclet, we do not want to report the incoming varargs.  This is
+    // taken care of by the parent method and the funclet should access those arguments
+    // by way of the parent method's stack frame.
+    //
+    if(pCodeInfo->IsFunclet())
+    {
+        return true;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+    if (gcInfoDecoder.GetIsVarArg())
+    {
+        // Interpreter-TODO: Implement this
+        _ASSERTE(false);
+        return false;
+    }
+
+    return true;
 }
 
 OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
