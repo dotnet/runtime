@@ -396,7 +396,7 @@ namespace System.Globalization.Tests
             // On AppleMobile and MonoRuntime platforms, the behavior of CultureInfo differs due to platform-specific
             // handling of Unicode extensions and subtags. These platforms preserve the full language tag, including
             // extensions, while other platforms normalize the tag to a simpler form.
-            if (PlatformDetection.IsAppleMobile && PlatformDetection.IsMonoRuntime)
+            if (PlatformDetection.IsAppleMobile)
             {
                 yield return new object[] { "und-es-u-co-phoneb", "und-ES-u-co-phoneb", "und-ES-u-co-phoneb" };
                 yield return new object[] { "und-es-t-something", "und-ES-t-something", "und-ES-t-something" };
