@@ -2717,11 +2717,6 @@ mark*       gc_heap::loh_pinned_queue = 0;
 BOOL        gc_heap::loh_compacted_p = FALSE;
 #endif //FEATURE_LOH_COMPACTION
 
-#ifdef FEATURE_GCBRIDGE
-uint8_t**   gc_heap::bridge_list = 0;
-size_t      gc_heap::num_bridge_objs = 0;
-#endif //FEATURE_GCBRIDGE
-
 #ifdef BACKGROUND_GC
 
 EEThreadId  gc_heap::bgc_thread_id;
@@ -2870,6 +2865,11 @@ no_gc_region_info gc_heap::current_no_gc_region_info;
 FinalizerWorkItem* gc_heap::finalizer_work;
 BOOL gc_heap::proceed_with_gc_p = FALSE;
 GCSpinLock gc_heap::gc_lock;
+
+#ifdef FEATURE_GCBRIDGE
+uint8_t**   gc_heap::global_bridge_list;
+size_t      gc_heap::num_global_bridge_objs;
+#endif //FEATURE_GCBRIDGE
 
 #ifdef BACKGROUND_GC
 uint64_t gc_heap::total_uoh_a_last_bgc = 0;
@@ -30456,8 +30456,6 @@ void gc_heap::mark_phase (int condemned_gen_number)
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
 #ifdef FEATURE_GCBRIDGE
-    uint8_t** global_bridge_list = 0;
-    size_t total_num_bridge_objs = 0;
 
 #ifdef MULTIPLE_HEAPS
     dprintf(3, ("Joining for short weak handle scan"));
@@ -30465,28 +30463,25 @@ void gc_heap::mark_phase (int condemned_gen_number)
     if (gc_t_join.joined())
     {
 #endif //MULTIPLE_HEAPS
-        global_bridge_list = GCScan::GcProcessBridgeObjects (condemned_gen_number, max_generation, &sc, &total_num_bridge_objs);
-
-        // divide this up between heaps, fill in each heap's bridge_list and num_bridge_objs.
-        for (int i = 0; i < n_heaps; i++)
-        {
-        }
+        global_bridge_list = GCScan::GcProcessBridgeObjects (condemned_gen_number, max_generation, &sc, &num_global_bridge_objs);
 
 #ifdef MULTIPLE_HEAPS
         dprintf (3, ("Starting all gc thread after bridge processing"));
         gc_t_join.restart();
     }
-#else //MULTIPLE_HEAPS
-    bridge_list = global_bridge_list;
-    num_bridge_objs = total_num_bridge_objs;
 #endif //MULTIPLE_HEAPS
 
     {
-        // now actually mark these bridge objects
         int thread = heap_number;
-        for (int obj_idx = 0; obj_idx < num_bridge_objs; obj_idx++)
+        // Each thread will receive an equal chunk of bridge objects, with the last thread
+        // handling a few more objects from the remainder.
+        size_t count_per_heap = num_global_bridge_objs / n_heaps;
+        size_t start_index = thread * count_per_heap;
+        size_t end_index = (thread == n_heaps - 1) ? num_global_bridge_objs : (thread + 1) * count_per_heap;
+
+        for (int obj_idx = start_index; obj_idx < end_index; obj_idx++)
         {
-            mark_object_simple (&bridge_list[obj_idx] THREAD_NUMBER_ARG);
+            mark_object_simple (&global_bridge_list[obj_idx] THREAD_NUMBER_ARG);
         }
 
         drain_mark_queue();
@@ -39227,7 +39222,38 @@ void gc_heap::background_mark_phase ()
     bgc_overflow_count = 0;
 
 #ifdef FEATURE_GCBRIDGE
-    // FIXME Bridge impl for BGC goes here.
+
+    // FIXME Any reason this code should be different for BGC ? Otherwise extract it to some common method ?
+
+#ifdef MULTIPLE_HEAPS
+    dprintf(3, ("Joining for short weak handle scan"));
+    gc_t_join.join(this, gc_join_bridge_processing);
+    if (gc_t_join.joined())
+    {
+#endif //MULTIPLE_HEAPS
+        global_bridge_list = GCScan::GcProcessBridgeObjects (max_generation, max_generation, &sc, &num_global_bridge_objs);
+
+#ifdef MULTIPLE_HEAPS
+        dprintf (3, ("Starting all gc thread after bridge processing"));
+        gc_t_join.restart();
+    }
+#endif //MULTIPLE_HEAPS
+
+    {
+        int thread = heap_number;
+        // Each thread will receive an equal chunk of bridge objects, with the last thread
+        // handling a few more objects from the remainder.
+        size_t count_per_heap = num_global_bridge_objs / n_heaps;
+        size_t start_index = thread * count_per_heap;
+        size_t end_index = (thread == n_heaps - 1) ? num_global_bridge_objs : (thread + 1) * count_per_heap;
+
+        for (int obj_idx = start_index; obj_idx < end_index; obj_idx++)
+        {
+            mark_object_simple (&global_bridge_list[obj_idx] THREAD_NUMBER_ARG);
+        }
+
+        drain_mark_queue();
+    }
 #endif //FEATURE_GCBRIDGE
 
 #ifdef MULTIPLE_HEAPS
