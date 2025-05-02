@@ -2107,18 +2107,10 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     // We need to always generate this opcode because even if we have no IL locals, we may have
     //  global vars which contain managed pointers or interior pointers
     m_pInitLocalsIns = AddIns(INTOP_INITLOCALS);
-
-    if (methodInfo->options & CORINFO_OPT_INIT_LOCALS)
-    {
-        m_pInitLocalsIns->data[0] = m_ILLocalsOffset;
-        m_pInitLocalsIns->data[1] = m_ILLocalsSize;
-    }
-    else
-    {
-        // Generate a 0-byte memset at the *end* of IL locals so when we extend it later we won't zero the IL locals
-        m_pInitLocalsIns->data[0] = m_ILLocalsOffset + m_ILLocalsSize;
-        m_pInitLocalsIns->data[1] = 0;
-    }
+    // if (methodInfo->options & CORINFO_OPT_INIT_LOCALS)
+    // FIXME: We can't currently skip zeroing locals because we don't have accurate liveness for global refs and byrefs
+    m_pInitLocalsIns->data[0] = m_ILLocalsOffset;
+    m_pInitLocalsIns->data[1] = m_ILLocalsSize;
 
     codeEnd = m_ip + m_ILCodeSize;
 
