@@ -5049,6 +5049,7 @@ HRESULT ClrDataAccess::GetBreakingChangeVersion(int* pVersion)
     return S_OK;
 }
 
+#ifdef FEATURE_COMWRAPPERS
 namespace
 {
     typedef DPTR(InteropLib::ABI::ComInterfaceEntry) PTR_ComInterfaceEntry;
@@ -5106,6 +5107,7 @@ TADDR ClrDataAccess::GetIdentityForManagedObjectWrapper(TADDR mow)
 
     return (TADDR)NULL;
 }
+#endif // FEATURE_COMWRAPPERS
 
 HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS *rcw, unsigned int count, CLRDATA_ADDRESS *mowList, unsigned int *pNeeded)
 {
