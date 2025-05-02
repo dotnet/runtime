@@ -914,7 +914,10 @@ eventpipe_protocol_helper_collect_tracing (
 
 	uint32_t user_events_data_fd = -1;
 	if (payload->session_type == EP_IPC_SESSION_TYPE_USEREVENTS) {
-		// Extract file descriptor from IpcStream
+		if (!ds_ipc_stream_read_fd (stream, &user_events_data_fd)) {
+			ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
+			return false;
+		}
 	}
 
 	EventPipeSessionOptions options;
