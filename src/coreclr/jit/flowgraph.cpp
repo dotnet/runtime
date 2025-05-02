@@ -4879,7 +4879,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         BitVecTraits loopTraits = loop->LoopBlockTraits();
         loop->m_blocks          = BitVecOps::MakeEmpty(&loopTraits);
 
-        if (!FindNaturalLoopBlocks(loop, worklist))
+        if (!FindNaturalLoopBlocks(loop, worklist) || !IsLoopCanonicalizable(loop))
         {
             loops->m_improperLoopHeaders++;
 
@@ -5071,6 +5071,40 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, Ar
             {
                 worklist.Push(predBlock);
             }
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoops::IsLoopCanonicalizable:
+//   Check if a loop will be able to be canonicalized if we record it.
+//
+// Parameters:
+//   loop - Loop structure (partially filled by caller)
+//
+// Returns:
+//   True if the loop header can be canonicalized:
+//     - Can have a preheader created
+//     - Exits can be made unique from the loop
+//
+bool FlowGraphNaturalLoops::IsLoopCanonicalizable(FlowGraphNaturalLoop* loop)
+{
+    Compiler* comp = loop->GetDfsTree()->GetCompiler();
+    // The only (known) problematic case is when a backedge is a callfinally edge.
+    if (!comp->bbIsHandlerBeg(loop->GetHeader()))
+    {
+        return true;
+    }
+
+    for (FlowEdge* backedge : loop->BackEdges())
+    {
+        if (backedge->getSourceBlock()->KindIs(BBJ_CALLFINALLY))
+        {
+            // It would not be possible to create a preheader for this loop
+            // since this backedge could not be redirected.
+            return false;
         }
     }
 
