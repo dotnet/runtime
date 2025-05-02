@@ -1038,7 +1038,19 @@ SingleResponse ::= SEQUENCE {
 
             internal static KeyFactory[] BuildVariantFactories()
             {
-                return [RSA, ECDsa, MLDsa, SlhDsa];
+                List<KeyFactory> factories = [RSA, ECDsa];
+
+                if (Cryptography.MLDsa.IsSupported)
+                {
+                    factories.Add(MLDsa);
+                }
+
+                if (Cryptography.SlhDsa.IsSupported)
+                {
+                    factories.Add(SlhDsa);
+                }
+
+                return factories.ToArray();
             }
         }
 
