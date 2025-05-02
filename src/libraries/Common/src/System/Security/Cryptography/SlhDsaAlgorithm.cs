@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-128s algorithm.
         /// </value>
-        public static SlhDsaAlgorithm SlhDsaShake128s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-128s", 16, 7856, Oids.SlhDsaShake_128s);
+        public static SlhDsaAlgorithm SlhDsaShake128s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-128s", 16, 7856, Oids.SlhDsaShake128s);
 
         /// <summary>
         ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-128f algorithm.
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-128f algorithm.
         /// </value>
-        public static SlhDsaAlgorithm SlhDsaShake128f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-128f", 16, 17088, Oids.SlhDsaShake_128f);
+        public static SlhDsaAlgorithm SlhDsaShake128f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-128f", 16, 17088, Oids.SlhDsaShake128f);
 
         /// <summary>
         ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-192s algorithm.
@@ -130,7 +130,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-192s algorithm.
         /// </value>
-        public static SlhDsaAlgorithm SlhDsaShake192s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-192s", 24, 16224, Oids.SlhDsaShake_192s);
+        public static SlhDsaAlgorithm SlhDsaShake192s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-192s", 24, 16224, Oids.SlhDsaShake192s);
 
         /// <summary>
         ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-192f algorithm.
@@ -146,7 +146,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-192f algorithm.
         /// </value>
-        public static SlhDsaAlgorithm SlhDsaShake192f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-192f", 24, 35664, Oids.SlhDsaShake_192f);
+        public static SlhDsaAlgorithm SlhDsaShake192f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-192f", 24, 35664, Oids.SlhDsaShake192f);
 
         /// <summary>
         ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-256s algorithm.
@@ -162,7 +162,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-256s algorithm.
         /// </value>
-        public static SlhDsaAlgorithm SlhDsaShake256s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-256s", 32, 29792, Oids.SlhDsaShake_256s);
+        public static SlhDsaAlgorithm SlhDsaShake256s { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-256s", 32, 29792, Oids.SlhDsaShake256s);
 
         /// <summary>
         ///   Gets an SLH-DSA algorithm identifier for the SLH-DSA-SHA2-256f algorithm.
@@ -178,26 +178,26 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An SLH-DSA algorithm identifier for the SLH-DSA-SHAKE-256f algorithm.
         /// </value>
-        public static SlhDsaAlgorithm SlhDsaShake256f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-256f", 32, 49856, Oids.SlhDsaShake_256f);
+        public static SlhDsaAlgorithm SlhDsaShake256f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-256f", 32, 49856, Oids.SlhDsaShake256f);
 
-        internal static SlhDsaAlgorithm GetAlgorithmFromOid(string oid)
+        internal static SlhDsaAlgorithm? GetAlgorithmFromOid(string oid)
         {
             return oid switch
             {
                 Oids.SlhDsaSha2_128s => SlhDsaSha2_128s,
-                Oids.SlhDsaShake_128s => SlhDsaShake128s,
+                Oids.SlhDsaShake128s => SlhDsaShake128s,
                 Oids.SlhDsaSha2_128f => SlhDsaSha2_128f,
-                Oids.SlhDsaShake_128f => SlhDsaShake128f,
+                Oids.SlhDsaShake128f => SlhDsaShake128f,
                 Oids.SlhDsaSha2_192s => SlhDsaSha2_192s,
-                Oids.SlhDsaShake_192s => SlhDsaShake192s,
+                Oids.SlhDsaShake192s => SlhDsaShake192s,
                 Oids.SlhDsaSha2_192f => SlhDsaSha2_192f,
-                Oids.SlhDsaShake_192f => SlhDsaShake192f,
+                Oids.SlhDsaShake192f => SlhDsaShake192f,
                 Oids.SlhDsaSha2_256s => SlhDsaSha2_256s,
-                Oids.SlhDsaShake_256s => SlhDsaShake256s,
+                Oids.SlhDsaShake256s => SlhDsaShake256s,
                 Oids.SlhDsaSha2_256f => SlhDsaSha2_256f,
-                Oids.SlhDsaShake_256f => SlhDsaShake256f,
+                Oids.SlhDsaShake256f => SlhDsaShake256f,
 
-                _ => ThrowAlgorithmUnknown(oid),
+                _ => null,
             };
         }
 
