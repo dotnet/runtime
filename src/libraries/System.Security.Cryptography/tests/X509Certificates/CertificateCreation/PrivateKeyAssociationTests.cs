@@ -859,7 +859,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     pubOnly,
                     wrongAlg,
                     privKey,
-                    SlhDsaTestData.AlgorithmsRaw.Select(algo => (Func<SlhDsa>)(() => SlhDsa.GenerateKey(algo))),
+                    [
+                        () => SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128s),
+                        () => SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_192f),
+                        () => SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaShake256f),
+                    ],
                     (cert, key) => cert.CopyWithPrivateKey(key),
                     cert => cert.GetSlhDsaPublicKey(),
                     cert => cert.GetSlhDsaPrivateKey(),
