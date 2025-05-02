@@ -79,5 +79,8 @@ void InterpreterStackMap::PopulateStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_H
     }
 
     // Shrink our allocation based on the number of slots we actually recorded
-    m_slots = (InterpreterStackMapSlot *)realloc(m_slots, sizeof(InterpreterStackMapSlot) * m_slotCount);
+    unsigned finalSize = sizeof(InterpreterStackMapSlot) * m_slotCount;
+    if (finalSize == 0)
+        finalSize = sizeof(InterpreterStackMapSlot);
+    m_slots = (InterpreterStackMapSlot *)realloc(m_slots, finalSize);
 }
