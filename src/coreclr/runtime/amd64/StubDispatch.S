@@ -6,7 +6,7 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-#ifdef defined(__APPLE__)
+#if defined(__APPLE__)
     // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
     // Fix, but adding an empty, unused method
     LEAF_ENTRY RhpStubDispatchDoNotFailToBuild, _TEXT
