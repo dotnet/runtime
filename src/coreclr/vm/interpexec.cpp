@@ -1128,14 +1128,6 @@ CALL_TARGET_IP:
 
                     goto CALL_INTERP_SLOT;
                 }
-                case INTOP_GC_COLLECT:
-                {
-                    // HACK: blocking gc of all generations to enable early stackwalk testing
-                    // Interpreter-TODO: Remove this
-                    pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
-                    GCX_COOP();
-                    GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, collection_blocking | collection_aggressive);
-                }
                 case INTOP_NEWOBJ_VT:
                 {
                     returnOffset = ip[1];
@@ -1187,7 +1179,7 @@ CALL_TARGET_IP:
                     {
                         pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                         GCX_COOP();
-                        GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, 0x00000002);
+                        GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, collection_blocking | collection_aggressive);
                     }
                     ip++;
                     break;
