@@ -10,7 +10,6 @@ namespace System.Formats.Tar.Tests
     public partial class TarWriter_Tests : TarTestsBase
     {
         private readonly DateTimeOffset TimestampForChecksum = new DateTimeOffset(2022, 1, 2, 3, 45, 00, TimeSpan.Zero);
-        private readonly DateTimeOffset UnixEpochTimestampForChecksum = DateTimeOffset.UnixEpoch;
 
         [Fact]
         public void Constructors_NullStream()
@@ -459,11 +458,12 @@ namespace System.Formats.Tar.Tests
 
                             // '14164217674\0' = 49 + 52 + 49 + 54 + 52 + 50 + 49 + 55 + 54 + 55 + 52 + 0 = 571
                             expectedTimestampToTest = TimestampForChecksum; // ToUnixTimeSeconds() = decimal 1641095100, octal 14164217674;
+                            return;
                         }
 
                         expectedTimestampChecksumToTest = 0;
                         // '\0\0\0\0\0\0\0\0\0\0\0\0' = 0
-                        expectedTimestampToTest = UnixEpochTimestampForChecksum;
+                        expectedTimestampToTest = DateTimeOffset.MinValue;
                     }
                 }
             }

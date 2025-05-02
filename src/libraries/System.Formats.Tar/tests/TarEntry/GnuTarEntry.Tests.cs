@@ -688,30 +688,30 @@ namespace System.Formats.Tar.Tests
             return new GnuTarEntry(TarEntryType.SymbolicLink, name)
             {
                 LinkName = linkName,
-                ModificationTime = DateTimeOffset.UnixEpoch,
-                AccessTime = DateTimeOffset.UnixEpoch,
-                ChangeTime = DateTimeOffset.UnixEpoch,
-                Uid = TestUid,
-                Gid = TestGid,
-                Mode = (UnixFileMode)448, // // 448 dec = 700 oct
-                UserName = TestUName,
-                GroupName = TestGName
+                ModificationTime = TestModificationTime,
+                AccessTime = TestAccessTime, // This should only be set in the main entry
+                ChangeTime = TestChangeTime, // This should only be set in the main entry
+                Uid = TestUid, // This should only be set in the main entry
+                Gid = TestGid, // This should only be set in the main entry
+                Mode = TestMode, // This should only be set in the main entry
+                UserName = TestUName, // This should only be set in the main entry
+                GroupName = TestGName // This should only be set in the main entry
             };
         }
 
         private void ValidateEntryForRegularEntryInLongLinkAndLongPathChecks(GnuTarEntry entry, string name, string linkName)
         {
             Assert.NotNull(entry);
-            Assert.Equal(DateTimeOffset.UnixEpoch, entry.ModificationTime);
-            Assert.Equal(DateTimeOffset.UnixEpoch, entry.AccessTime); // Should be nulls in the long header
-            Assert.Equal(DateTimeOffset.UnixEpoch, entry.ChangeTime); // Should be nulls in the long header
+            Assert.Equal(TestModificationTime, entry.ModificationTime);
+            Assert.Equal(TestAccessTime, entry.AccessTime); // This should be different in the long entry header
+            Assert.Equal(TestChangeTime, entry.ChangeTime); // This should be different in the long entry header
             Assert.Equal(name, entry.Name);
             Assert.Equal(linkName, entry.LinkName);
-            Assert.Equal(TestUid, entry.Uid); // Should be '0' chars in the long header
-            Assert.Equal(TestGid, entry.Gid); // Should be '0' chars in the long header
-            Assert.Equal((UnixFileMode)448, entry.Mode); // 448 dec = 700 oct. Also, should be '0' chars in the long header
-            Assert.Equal(TestUName, entry.UserName);
-            Assert.Equal(TestGName, entry.GroupName);
+            Assert.Equal(TestUid, entry.Uid); // This should be different in the long entry header
+            Assert.Equal(TestGid, entry.Gid); // This should be different in the long entry header
+            Assert.Equal(TestMode, entry.Mode); // This should be different in the long entry header
+            Assert.Equal(TestUName, entry.UserName); // This should be different in the long entry header
+            Assert.Equal(TestGName, entry.GroupName); // This should be different in the long entry header
             Assert.Equal(0, entry.Length); // No data in the main entry
         }
 
@@ -745,9 +745,8 @@ namespace System.Formats.Tar.Tests
         [MemberData(nameof(NameAndLink_TestData))]
         public async Task Check_LongLink_AndLongPath_Metadata_Async(string name, string linkName)
         {
-            // The GNU format sets the mtime, atime and ctime to nulls in headers when they are set to the unix epoch.
-            // Also the uid and gid should be '0' in the long entries headers.
-            // Also the uname and gname in the long entry headers should be set to those of the main entry.
+            // The GNU format sets the mtime, atime and ctime to nulls in headers when they are set to MinValue
+            // Also the uid and gid should be '0' in the long entries headers, and uname and gname in the long entry headers should be set to root.
 
             await using MemoryStream ms = new();
 
@@ -821,27 +820,31 @@ namespace System.Formats.Tar.Tests
             long aTimeStart = devMinorStart + 8;
             long cTimeStart = aTimeStart + 12;
 
-            byte[] buffer = new byte[12]; // size, mtime, atime, ctime all are 12 bytes in length
+            Span<byte> buffer = stackalloc byte[12]; // size, mtime, atime, ctime all are 12 bytes in length (max length to check)
 
             if (isLongLinkOrLongPath)
             {
                 CheckBytesAreNulls(ms, buffer, aTimeStart); // no atime
                 CheckBytesAreNulls(ms, buffer, cTimeStart); // no ctime
-                CheckBytesAreZeros(ms, buffer.AsSpan(0, 8), uidStart); // uid 0
-                CheckBytesAreZeros(ms, buffer.AsSpan(0, 8), gidStart); // uid 0
-                CheckDataContainsExpectedString(ms, modeStart, 8, "0000644", shouldTrim: true);
+                CheckBytesAreZeros(ms, buffer.Slice(0, 8), uidStart); // uid 0
+                CheckBytesAreZeros(ms, buffer.Slice(0, 8), gidStart); // uid 0
+                Span<byte> expectedOctalModeBytes = Encoding.ASCII.GetBytes("0000644\0"); // 644 is the default mode set in LongLink/LongPath
+                CheckBytesAreSpecificSequence(ms, buffer.Slice(0, 8), modeStart, expectedOctalModeBytes);
                 CheckDataContainsExpectedString(ms, uNameStart, 32, RootUNameGName, shouldTrim: true);
                 CheckDataContainsExpectedString(ms, gNameStart, 32, RootUNameGName, shouldTrim: true);
+                CheckBytesAreZeros(ms, buffer, mTimeStart);
             }
             else
             {
-                CheckDataContainsExpectedString(ms, uidStart, 8, "0013056", shouldTrim: true); // 13056 oct is 5678 dec (TestUid)
-                CheckDataContainsExpectedString(ms, uidStart, 8, "0013056", shouldTrim: true); // 13056 oct is 5678 dec (TestGid)
-                CheckDataContainsExpectedString(ms, modeStart, 8, "0000700", shouldTrim: true); // 700 oct is 448 dec
+                Span<byte> expectedOctalUidBytes = Encoding.ASCII.GetBytes(Convert.ToString(TestUid, 8).PadLeft(7, '0') + '\0');
+                Span<byte> expectedOctalGidBytes = Encoding.ASCII.GetBytes(Convert.ToString(TestGid, 8).PadLeft(7, '0') + '\0');
+                Span<byte> expectedOctalModeBytes = Encoding.ASCII.GetBytes(Convert.ToString((int)TestMode, 8).PadLeft(7, '0') + '\0');
+                CheckBytesAreSpecificSequence(ms, buffer.Slice(0, 8), uidStart, expectedOctalUidBytes);
+                CheckBytesAreSpecificSequence(ms, buffer.Slice(0, 8), gidStart, expectedOctalGidBytes);
+                CheckBytesAreSpecificSequence(ms, buffer.Slice(0, 8), modeStart, expectedOctalModeBytes);
                 CheckDataContainsExpectedString(ms, uNameStart, 32, TestUName, shouldTrim: true);
                 CheckDataContainsExpectedString(ms, gNameStart, 32, TestGName, shouldTrim: true);
             }
-            CheckBytesAreZeros(ms, buffer, mTimeStart);
 
             ms.Seek(sizeStart, SeekOrigin.Begin);
             ms.Read(buffer);
@@ -852,11 +855,19 @@ namespace System.Formats.Tar.Tests
         {
             ms.Seek(dataStart, SeekOrigin.Begin);
             ms.Read(buffer);
-            foreach (byte b in buffer.Slice(0, buffer.Length - 1)) // The last byte should be a null character
-            {
-                Assert.Equal(charToCheck, b);
-            }
+            Span<byte> expectedSequence = stackalloc byte[buffer.Length - 1];
+            expectedSequence.Fill(charToCheck);
+            AssertExtensions.SequenceEqual(expectedSequence, buffer.Slice(0, buffer.Length - 1));
             Assert.Equal(0, buffer[^1]); // The last byte should be a null character
+        }
+
+        private void CheckBytesAreSpecificSequence(MemoryStream ms, Span<byte> buffer, long dataStart, ReadOnlySpan<byte> expectedSequence)
+        {
+            ms.Seek(dataStart, SeekOrigin.Begin);
+            ms.Read(buffer);
+            Assert.Equal(expectedSequence.Length, buffer.Length);
+            AssertExtensions.SequenceEqual(expectedSequence, buffer.Slice(0, expectedSequence.Length));
+            Assert.Equal(0, buffer[expectedSequence.Length - 1]); // The last byte should be a null character
         }
 
         private void CheckBytesAreNulls(MemoryStream ms, Span<byte> buffer, long dataStart) => CheckBytesAreSpecificChar(ms, buffer, dataStart, 0); // null char

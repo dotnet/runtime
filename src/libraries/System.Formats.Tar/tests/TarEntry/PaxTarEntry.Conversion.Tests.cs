@@ -100,8 +100,8 @@ namespace System.Formats.Tar.Tests
                 // The constructor should've set the atime and ctime automatically to the same value of UnixEpoch
                 if (originalEntry is GnuTarEntry gnuEntry)
                 {
-                    Assert.Equal(DateTimeOffset.UnixEpoch, gnuEntry.AccessTime);
-                    Assert.Equal(DateTimeOffset.UnixEpoch, gnuEntry.ChangeTime);
+                    Assert.Equal(DateTimeOffset.MinValue, gnuEntry.AccessTime);
+                    Assert.Equal(DateTimeOffset.MinValue, gnuEntry.ChangeTime);
                     // Change them to mtime
                     gnuEntry.AccessTime = gnuEntry.ModificationTime;
                     gnuEntry.ChangeTime = gnuEntry.ModificationTime;
