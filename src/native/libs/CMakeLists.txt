@@ -127,6 +127,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_definitions(-DMEMORY64)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMEMORY64")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --target=wasm64")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-experimental")
         add_compile_options(-DMEMORY64=1)
     endif()
 
