@@ -10449,21 +10449,42 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_WASM_SIMD_SWIZZLE: {
+			LLVMValueRef bidx = LLVMBuildBitCast (builder, rhs, LLVMVectorType (i1_t, 16), "");
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
-			if (nelems == 16) {
-				LLVMValueRef args [] = { lhs, rhs };
-				values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
-				break;
+			if (nelems < 16) {
+				int shift = 4;
+				LLVMValueRef fill = LLVMConstNull (LLVMVectorType (i1_t, 16));
+				LLVMValueRef offset = LLVMConstNull (LLVMVectorType (i1_t, 16));
+				int stride = 16 / nelems;
+				for (int i = 0; i < nelems; ++i) {
+					shift -= 1;
+					for (int j = 0; j < stride; ++j) {
+						offset = LLVMBuildInsertElement (builder, offset, const_int8 (i * stride), const_int32 (i * stride + j), "");
+						fill = LLVMBuildInsertElement (builder, fill, const_int8 (j), const_int32 (i * stride + j), "");
+					}
+				}
+				LLVMValueRef shiftv = create_shift_vector (ctx, fill, const_int32 (shift));
+				LLVMValueRef mask = LLVMBuildShl (builder, bidx, shiftv, "");
+				LLVMValueRef args [] = { mask, offset };
+				LLVMValueRef fill_mask = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+				bidx = LLVMBuildAnd (builder, fill_mask, offset, "");
 			}
-
+			LLVMValueRef lhs_b = LLVMBuildBitCast (builder, lhs, LLVMVectorType (i1_t, 16), "");
+			LLVMValueRef args [] = { lhs_b, bidx };
+			LLVMValueRef result_b = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+			values [ins->dreg] = LLVMBuildBitCast (builder, result_b, LLVMTypeOf (lhs), "");
+			break;
+/*
 			LLVMValueRef indexes [16];
 			for (int i = 0; i < nelems; ++i)
 				indexes [i] = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
 			LLVMValueRef shuffle_val = LLVMConstNull (LLVMVectorType (i4_t, nelems));
+
 			for (int i = 0; i < nelems; ++i)
 				shuffle_val = LLVMBuildInsertElement (builder, shuffle_val, convert (ctx, indexes [i], i4_t), const_int32 (i), "");
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (LLVMTypeOf (lhs)), shuffle_val, "");
 			break;
+*/
 		}
 		case OP_WASM_EXTRACT_NARROW: {
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));

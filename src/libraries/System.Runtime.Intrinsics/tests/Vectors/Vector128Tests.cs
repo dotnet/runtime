@@ -2775,7 +2775,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 Assert.Equal((ulong)1, result.GetElement(index));
             }
         }
-#if false // start of disabled tests
+
         [Fact]
         public void Vector128ByteShuffleNativeOneInputTest()
         {
@@ -3255,7 +3255,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 Assert.Equal((ulong)1, result.GetElement(index));
             }
         }
-#endif // end of disabled tests
+
         [Fact]
         public unsafe void Vector128ByteStoreTest()
         {
