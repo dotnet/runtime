@@ -3875,6 +3875,20 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                 }
 
                 assert(varTypeIsMask(condition));
+
+                // The TernaryLogic node normalizes small SIMD base types on import. To optimize
+                // to BlendVariableMask, we need to "un-normalize". We no longer have the original
+                // base type, so we use the mask base type instead.
+                NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+                assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId));
+
+                if (!condition->OperIsHWIntrinsic())
+                {
+                    break;
+                }
+
+                node->SetSimdBaseJitType(condition->AsHWIntrinsic()->GetSimdBaseJitType());
+
                 node->ResetHWIntrinsicId(NI_EVEX_BlendVariableMask, comp, selectFalse, selectTrue, condition);
                 BlockRange().Remove(op4);
                 break;
@@ -9893,7 +9907,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             for (GenTree* longOp : op1->Operands())
                             {
-                                if (IsContainableMemoryOp(longOp) && IsSafeToContainMem(node, longOp))
+                                if (!varTypeIsSmall(longOp) && IsContainableMemoryOp(longOp) &&
+                                    IsSafeToContainMem(node, longOp))
                                 {
                                     MakeSrcContained(node, longOp);
                                 }

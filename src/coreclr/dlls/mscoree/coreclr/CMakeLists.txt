@@ -50,12 +50,6 @@ else(CLR_CMAKE_HOST_WIN32)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
     endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
-    if(CLR_CMAKE_TARGET_OSX)
-        # These options are used to force every object to be included even if it's unused.
-        set(START_WHOLE_ARCHIVE -force_load)
-        set(END_WHOLE_ARCHIVE )
-    endif(CLR_CMAKE_TARGET_OSX)
-
     set_exports_linker_option(${EXPORTS_FILE})
 
 endif (CLR_CMAKE_HOST_WIN32)
@@ -98,7 +92,6 @@ set(CORECLR_LIBRARIES
     ceefgen
     comfloat_wks
     corguids
-    gcinfo
     utilcode
     v3binder
     System.Globalization.Native-Static
@@ -132,9 +125,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     )
 else()
     list(APPEND CORECLR_LIBRARIES
-        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
-        ${END_WHOLE_ARCHIVE}
         mscorrc
     )
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -229,7 +220,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
 install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
-if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS)
+if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS)
     install_clr(TARGETS coreclr_static DESTINATIONS . sharedFramework COMPONENT runtime)
 endif()
 

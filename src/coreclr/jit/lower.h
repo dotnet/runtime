@@ -110,6 +110,11 @@ private:
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
+#ifdef TARGET_RISCV64
+    bool TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next);
+    bool TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next);
+    bool TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next);
+#endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTreeUnOp* node);
     void ContainCheckCallOperands(GenTreeCall* call);
@@ -180,6 +185,8 @@ private:
     GenTree*   LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
+    GenTree*   LowerAsyncContinuation(GenTree* asyncCont);
+    void       LowerReturnSuspend(GenTree* retSuspend);
     void       LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList);
     bool       IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList);
     void       LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList);

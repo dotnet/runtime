@@ -133,7 +133,7 @@ unsigned ObjectAllocator::LocalToIndex(unsigned lclNum)
 {
     unsigned result = BAD_VAR_NUM;
 
-    if (lclNum < comp->lvaCount)
+    if (lclNum < m_firstPseudoLocalNum)
     {
         assert(IsTrackedLocal(lclNum));
         LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
@@ -297,6 +297,7 @@ void ObjectAllocator::MarkLclVarAsEscaping(unsigned int lclNum)
 void ObjectAllocator::MarkLclVarAsPossiblyStackPointing(unsigned int lclNum)
 {
     const unsigned bvIndex = LocalToIndex(lclNum);
+    JITDUMP("Marking V%02u (0x%02x) as possibly stack-pointing\n", lclNum, bvIndex);
     BitVecOps::AddElemD(&m_bitVecTraits, m_PossiblyStackPointingPointers, bvIndex);
 }
 
@@ -698,12 +699,27 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         {
             JITDUMP("   V%02u is address exposed\n", lclNum);
             MarkLclVarAsEscaping(lclNum);
+            continue;
         }
-        else if (lclNum == comp->info.compRetBuffArg)
+
+        if (lclNum == comp->info.compRetBuffArg)
         {
             JITDUMP("   V%02u is retbuff\n", lclNum);
             MarkLclVarAsEscaping(lclNum);
+            continue;
         }
+
+#if FEATURE_IMPLICIT_BYREFS
+        // We have to mark all implicit byref params as escaping, because
+        // their GC reporting is controlled by the caller
+        //
+        if (lclDsc->lvIsParam && lclDsc->lvIsImplicitByRef)
+        {
+            JITDUMP("   V%02u is an implicit byref param\n", lclNum);
+            MarkLclVarAsEscaping(lclNum);
+            continue;
+        }
+#endif
 
         // Parameters have unknown initial values.
         // OSR locals have unknown initial values.
@@ -824,6 +840,11 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
 
 void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
 {
+    // Keep track of locals that we know may point at the heap
+    //
+    BitVec possiblyHeapPointingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
+    BitVecOps::AddElemD(bitVecTraits, possiblyHeapPointingPointers, m_unknownSourceIndex);
+
     bool     changed = true;
     unsigned pass    = 0;
     while (changed)
@@ -844,23 +865,36 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
                                                 m_ConnGraphAdjacencyMatrix[lclIndex]))
             {
                 // We discovered a new pointer that may point to the stack.
+                JITDUMPEXEC(DumpIndex(lclIndex));
+                JITDUMP(" may point to the stack\n");
                 MarkLclVarAsPossiblyStackPointing(lclNum);
+                changed = true;
+            }
 
-                // If all locals assignable to this local are stack pointing, so is this local.
-                //
-                const bool isStackPointing = BitVecOps::IsSubset(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclIndex],
-                                                                 m_DefinitelyStackPointingPointers);
-
-                if (isStackPointing)
-                {
-                    MarkLclVarAsDefinitelyStackPointing(lclNum);
-                    JITDUMP("V%02u is stack pointing\n", lclNum);
-                }
-
+            if (!BitVecOps::IsMember(bitVecTraits, possiblyHeapPointingPointers, lclIndex) &&
+                !BitVecOps::IsEmptyIntersection(bitVecTraits, possiblyHeapPointingPointers,
+                                                m_ConnGraphAdjacencyMatrix[lclIndex]))
+            {
+                // We discovered a new pointer that may point to the heap.
+                JITDUMPEXEC(DumpIndex(lclIndex));
+                JITDUMP(" may point to the heap\n");
+                BitVecOps::AddElemD(bitVecTraits, possiblyHeapPointingPointers, lclIndex);
                 changed = true;
             }
         }
     }
+    JITDUMP("\n---- done computing stack pointing locals\n");
+
+    // If a local is possibly stack pointing and not possibly heap pointing, then it is definitely stack pointing.
+    //
+    BitVec newDefinitelyStackPointingPointers = BitVecOps::UninitVal();
+    BitVecOps::Assign(bitVecTraits, newDefinitelyStackPointingPointers, m_PossiblyStackPointingPointers);
+    BitVecOps::DiffD(bitVecTraits, newDefinitelyStackPointingPointers, possiblyHeapPointingPointers);
+
+    // We should have only added to the set of things that are definitely stack pointing.
+    //
+    assert(BitVecOps::IsSubset(bitVecTraits, m_DefinitelyStackPointingPointers, newDefinitelyStackPointingPointers));
+    BitVecOps::AssignNoCopy(bitVecTraits, m_DefinitelyStackPointingPointers, newDefinitelyStackPointingPointers);
 
 #ifdef DEBUG
     if (comp->verbose)
@@ -960,12 +994,6 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
                 return false;
             }
 
-            if (comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd) == NO_CLASS_HANDLE)
-            {
-                *reason = "[no boxed type available]";
-                return false;
-            }
-
             classSize = comp->info.compCompHnd->getClassSize(clsHnd);
         }
         else
@@ -1061,6 +1089,7 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
     return allocType;
 }
 
+//------------------------------------------------------------------------
 // MorphAllocObjNodes: Morph each GT_ALLOCOBJ node either into an
 //                     allocation helper call or stack allocation.
 //
@@ -1107,10 +1136,10 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 continue;
             }
 
-            bool         canStack     = false;
-            bool         bashCall     = false;
-            const char*  onHeapReason = nullptr;
-            unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
+            bool               canStack     = false;
+            bool               bashCall     = false;
+            const char*        onHeapReason = nullptr;
+            const unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
 
             // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
             //
@@ -1203,13 +1232,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     //------------------------------------------------------------------------
 
                     CORINFO_CLASS_HANDLE clsHnd       = data->AsAllocObj()->gtAllocObjClsHnd;
-                    CORINFO_CLASS_HANDLE stackClsHnd  = clsHnd;
                     const bool           isValueClass = comp->info.compCompHnd->isValueClass(clsHnd);
 
                     if (isValueClass)
                     {
                         comp->Metrics.NewBoxedValueClassHelperCalls++;
-                        stackClsHnd = comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd);
                     }
                     else
                     {
@@ -1221,28 +1248,30 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         // reason set by the call
                         canStack = false;
                     }
-                    else if (stackClsHnd == NO_CLASS_HANDLE)
-                    {
-                        assert(isValueClass);
-                        onHeapReason = "[no class handle for this boxed value class]";
-                        canStack     = false;
-                    }
                     else
                     {
                         JITDUMP("Allocating V%02u on the stack\n", lclNum);
                         canStack = true;
-                        const unsigned int stackLclNum =
-                            MorphAllocObjNodeIntoStackAlloc(data->AsAllocObj(), stackClsHnd, isValueClass, block, stmt);
-                        m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
+
+                        ClassLayout* layout = nullptr;
 
                         if (isValueClass)
                         {
+                            CORINFO_CLASS_HANDLE boxedClsHnd = comp->info.compCompHnd->getTypeForBox(clsHnd);
+                            assert(boxedClsHnd != NO_CLASS_HANDLE);
+                            ClassLayout* structLayout = comp->typGetObjLayout(boxedClsHnd);
+                            layout                    = GetBoxedLayout(structLayout);
                             comp->Metrics.StackAllocatedBoxedValueClasses++;
                         }
                         else
                         {
+                            layout = comp->typGetObjLayout(clsHnd);
                             comp->Metrics.StackAllocatedRefClasses++;
                         }
+
+                        const unsigned int stackLclNum =
+                            MorphAllocObjNodeIntoStackAlloc(data->AsAllocObj(), layout, block, stmt);
+                        m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
 
                         bashCall = true;
                     }
@@ -1295,6 +1324,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(data->AsAllocObj());
                     stmtExpr->AsLclVar()->Data() = newData;
                     stmtExpr->AddAllEffectsFlags(newData);
+                }
+
+                if (IsTrackedLocal(lclNum))
+                {
+                    AddConnGraphEdge(lclNum, m_unknownSourceLocalNum);
                 }
             }
         }
@@ -1449,8 +1483,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
 //                                  allocation.
 // Arguments:
 //    allocObj     - GT_ALLOCOBJ that will be replaced by a stack allocation
-//    clsHnd       - class representing the stack allocated object
-//    isValueClass - we are stack allocating a boxed value class
+//    layout       - layout for the stack allocated objectd
 //    block        - a basic block where allocObj is
 //    stmt         - a statement where allocObj is
 //
@@ -1460,24 +1493,29 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
 // Notes:
 //    This function can insert additional statements before stmt.
 //
-unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
-    GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt)
+unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj,
+                                                              ClassLayout*     layout,
+                                                              BasicBlock*      block,
+                                                              Statement*       stmt)
 {
     assert(allocObj != nullptr);
     assert(m_AnalysisDone);
-    assert(clsHnd != NO_CLASS_HANDLE);
+
+#ifdef DEBUG
+    const char* lclName = comp->printfAlloc("stack allocated %.110s", layout->GetShortClassName());
+#endif
 
     const bool         shortLifetime = false;
-    const unsigned int lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG(
-        isValueClass ? "stack allocated boxed value class temp" : "stack allocated ref class temp"));
+    const unsigned int lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG(lclName));
+    comp->lvaSetStruct(lclNum, layout, /* unsafeValueClsCheck */ false);
 
-    comp->lvaSetStruct(lclNum, clsHnd, /* unsafeValueClsCheck */ false);
-
-    // Initialize the object memory if necessary.
-    bool             bbInALoop     = block->HasFlag(BBF_BACKWARD_JUMP);
-    bool             bbIsReturn    = block->KindIs(BBJ_RETURN);
     LclVarDsc* const lclDsc        = comp->lvaGetDesc(lclNum);
     lclDsc->lvStackAllocatedObject = true;
+
+    // Initialize the object memory if necessary.
+    bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+    bool bbIsReturn = block->KindIs(BBJ_RETURN);
+
     if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {
         //------------------------------------------------------------------------
@@ -1831,6 +1869,14 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                             break;
                     }
                 }
+                else if (call->IsDelegateInvoke())
+                {
+                    if (tree == call->gtArgs.GetThisArg()->GetNode())
+                    {
+                        JITDUMP("Delegate invoke this...\n");
+                        canLclVarEscapeViaParentStack = false;
+                    }
+                }
 
                 // Note there is nothing special here about the parent being a call. We could move all this processing
                 // up to the caller and handle any sort of tree that could lead to escapes this way.
@@ -2048,8 +2094,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
 
                     // If we are storing to a GC struct field, we may need to retype the store
                     //
-                    if (retypeFields && parent->OperIs(GT_STOREIND) && (addr->OperIs(GT_FIELD_ADDR)) &&
-                        (varTypeIsGC(parent->TypeGet())))
+                    if (parent->OperIs(GT_STOREIND) && addr->OperIs(GT_FIELD_ADDR) && varTypeIsGC(parent->TypeGet()))
                     {
                         parent->ChangeType(newType);
                     }
@@ -2182,6 +2227,7 @@ void ObjectAllocator::RewriteUses()
                 }
             }
             // Make box accesses explicit for UNBOX_HELPER
+            // Expand delegate invoke for calls where "this" is possibly stack pointing
             //
             else if (tree->IsCall())
             {
@@ -2227,6 +2273,51 @@ void ObjectAllocator::RewriteUses()
                                                           m_compiler->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
                             GenTree* const comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_BYREF, call, payloadAddr);
                             *use                 = comma;
+                        }
+                    }
+                }
+                else if (call->IsDelegateInvoke())
+                {
+                    CallArg* const thisArg      = call->gtArgs.GetThisArg();
+                    GenTree* const delegateThis = thisArg->GetNode();
+
+                    if (delegateThis->OperIs(GT_LCL_VAR))
+                    {
+                        GenTreeLclVarCommon* const lcl = delegateThis->AsLclVarCommon();
+
+                        if (m_allocator->DoesLclVarPointToStack(lcl->GetLclNum()))
+                        {
+                            JITDUMP("Expanding delegate invoke [%06u]\n", m_compiler->dspTreeID(call));
+                            // Expand the delgate invoke early, so that physical promotion has
+                            // a chance to promote the delegate fields.
+                            //
+                            // Note the instance field may also be stack allocatable (someday)
+                            //
+                            GenTree* const cloneThis      = m_compiler->gtClone(lcl);
+                            unsigned const instanceOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateInstance;
+                            GenTree* const newThisAddr =
+                                m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, cloneThis,
+                                                          m_compiler->gtNewIconNode(instanceOffset, TYP_I_IMPL));
+
+                            // For now assume the instance is heap...
+                            //
+                            GenTree* const newThis = m_compiler->gtNewIndir(TYP_REF, newThisAddr);
+                            thisArg->SetEarlyNode(newThis);
+
+                            // the control target is
+                            // [originalThis + firstTgtOffs]
+                            //
+                            unsigned const targetOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget;
+                            GenTree* const targetAddr =
+                                m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, lcl,
+                                                          m_compiler->gtNewIconNode(targetOffset, TYP_I_IMPL));
+                            GenTree* const target = m_compiler->gtNewIndir(TYP_I_IMPL, targetAddr);
+
+                            // Update call state -- now an indirect call to the delegate target
+                            //
+                            call->gtCallAddr = target;
+                            call->gtCallType = CT_INDIRECT;
+                            call->gtCallMoreFlags &= ~(GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
                         }
                     }
                 }
@@ -2317,7 +2408,7 @@ void ObjectAllocator::RewriteUses()
             if (newType == TYP_I_IMPL)
             {
                 // New layout with no gc refs + padding
-                newLayout = comp->typGetNonGCLayout(layout);
+                newLayout = GetNonGCLayout(layout);
                 JITDUMP("Changing layout of struct V%02u to block\n", lclNum);
                 lclVarDsc->ChangeLayout(newLayout);
             }
@@ -2325,7 +2416,7 @@ void ObjectAllocator::RewriteUses()
             {
                 // New layout with all gc refs as byrefs + padding
                 // (todo, perhaps: see if old layout was already all byrefs)
-                newLayout = comp->typGetByrefLayout(layout);
+                newLayout = GetByrefLayout(layout);
                 JITDUMP("Changing layout of struct V%02u to byref\n", lclNum);
                 lclVarDsc->ChangeLayout(newLayout);
             }
@@ -4076,4 +4167,81 @@ void ObjectAllocator::CloneAndSpecialize()
     }
 
     assert(numberOfClonedRegions == m_regionsToClone);
+}
+
+//------------------------------------------------------------------------------
+// GetBoxedLayout: get a layout for a boxed version of a struct
+//
+// Arguments:
+//   layout - layout of the struct
+//
+// Notes:
+//   For Nullable<T>, layout class should be T
+//
+ClassLayout* ObjectAllocator::GetBoxedLayout(ClassLayout* layout)
+{
+    assert(layout->IsValueClass());
+
+    ClassLayoutBuilder b(comp, TARGET_POINTER_SIZE + layout->GetSize());
+    b.CopyPaddingFrom(TARGET_POINTER_SIZE, layout);
+    b.CopyGCInfoFrom(TARGET_POINTER_SIZE, layout);
+
+#ifdef DEBUG
+    b.CopyNameFrom(layout, "[boxed] ");
+#endif
+
+    return comp->typGetCustomLayout(b);
+}
+
+//------------------------------------------------------------------------------
+// GetNonGCLayout: get a layout with the same size and padding as an existing
+//   layout, but with no GC fields.
+//
+// Arguments:
+//   layout - existing layout to use as template
+//
+ClassLayout* ObjectAllocator::GetNonGCLayout(ClassLayout* layout)
+{
+    assert(layout->HasGCPtr());
+    ClassLayoutBuilder b(comp, layout->GetSize());
+    b.CopyPaddingFrom(0, layout);
+
+#ifdef DEBUG
+    b.CopyNameFrom(layout, "[nongc] ");
+#endif
+
+    return comp->typGetCustomLayout(b);
+}
+
+//------------------------------------------------------------------------------
+// GetByrefLayout: get a layout with the same size and padding as an existing
+//   layout, but with all GC fields retyped to byref.
+//
+// Arguments:
+//   layout - existing layout to use as template
+//
+ClassLayout* ObjectAllocator::GetByrefLayout(ClassLayout* layout)
+{
+    assert(layout->HasGCPtr());
+    ClassLayoutBuilder b(comp, layout->GetSize());
+    b.CopyPaddingFrom(0, layout);
+
+    if (layout->GetGCPtrCount() > 0)
+    {
+        for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
+        {
+            var_types gcType = layout->GetGCPtrType(slot);
+            if (gcType == TYP_REF)
+            {
+                gcType = TYP_BYREF;
+            }
+            b.SetGCPtrType(slot, gcType);
+        }
+    }
+
+#ifdef DEBUG
+    b.CopyNameFrom(layout, "[byref] ");
+#endif
+
+    return comp->typGetCustomLayout(b);
 }

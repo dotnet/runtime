@@ -3,12 +3,12 @@
   <PropertyGroup>
     <_IsPublishing>true</_IsPublishing>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
-    <RuntimeIdentifier Condition="'$(BaseOS)' != ''">$(BaseOS)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)crossgen2-published/</PublishDir>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <AotOrSingleFile>true</AotOrSingleFile>
+    <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />

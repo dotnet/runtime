@@ -534,13 +534,13 @@ struct HeapList
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
     PTR_LoaderAllocator pLoaderAllocator; // LoaderAllocator of HeapList
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine, NULL if there is no personality routine (e.g. interpreter code heap)
 #endif
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
         return (CLRPersonalityRoutine != NULL) ? (TADDR)CLRPersonalityRoutine : (TADDR)mapBase;
 #else
         return (TADDR)mapBase;
@@ -2281,7 +2281,7 @@ public:
         BOOL Acquired();
     };
 
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     static ULONG          GetCLRPersonalityRoutineValue()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2935,7 +2935,18 @@ public:
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
 
-    PTR_CBYTE   DecodeGCHdrInfo(hdrInfo   ** infoPtr);
+    FORCEINLINE PTR_CBYTE DecodeGCHdrInfo(hdrInfo   ** infoPtr)
+    {
+        if (m_hdrInfoTable == NULL)
+        {
+            return DecodeGCHdrInfoHelper(infoPtr);
+        }
+    
+        *infoPtr = &m_hdrInfoBody;
+        return m_hdrInfoTable;
+    }
+private:
+    PTR_CBYTE   DecodeGCHdrInfoHelper(hdrInfo   ** infoPtr);
 #endif // TARGET_X86
 
 #if defined(TARGET_WASM)
@@ -2947,7 +2958,6 @@ ULONG       GetFixedStackSize();
     ULONG       GetFixedStackSize();
 
     void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
-    ULONG        GetFrameOffsetFromUnwindInfo();
 #endif // TARGET_AMD64
 
 private:

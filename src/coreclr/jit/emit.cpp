@@ -2818,6 +2818,8 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BasicBlock* prevBlock)
 {
+    bool currIGWasNonEmpty = emitCurIGnonEmpty();
+
     // if starting a new block that can be a target of a branch and the last instruction was GC-capable call.
     if ((prevBlock != nullptr) && emitComp->compCurBB->HasFlag(BBF_HAS_LABEL) && emitLastInsIsCallWithGC())
     {
@@ -2852,6 +2854,21 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
 
     if (emitCurIGnonEmpty())
     {
+#if FEATURE_LOOP_ALIGN
+
+        if (!currIGWasNonEmpty && (emitAlignLast != nullptr) && (emitAlignLast->idaLoopHeadPredIG != nullptr) &&
+            (emitAlignLast->idaLoopHeadPredIG->igNext == emitCurIG))
+        {
+            // If the emitCurIG was thought to be a loop-head, but if it didn't turn out that way and we end up
+            // creating a new IG from which the loop starts, make sure to update the LoopHeadPred of last align
+            // instruction emitted. This will guarantee that the information stays up-to-date. Later if we
+            // notice a loop that encloses another loop, this information helps in removing the align field from
+            // such loops.
+            // We need to only update emitAlignLast because we do not align intermingled or overlapping loops.
+            emitAlignLast->idaLoopHeadPredIG = emitCurIG;
+        }
+#endif // FEATURE_LOOP_ALIGN
+
         emitNxtIG();
     }
     else
@@ -3573,7 +3590,8 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
                                                  regMaskTP        gcrefRegs,
                                                  regMaskTP        byrefRegs,
                                                  emitAttr retSizeIn
-                                                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
+                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                                                 bool hasAsyncRet)
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
@@ -3597,7 +3615,8 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
         (argCnt > ID_MAX_SMALL_CNS) || // too many args
         (argCnt < 0)                   // caller pops arguments
                                        // There is a second ref/byref return register.
-        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)))
+        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)) ||
+        hasAsyncRet)
     {
         instrDescCGCA* id;
 
@@ -3614,6 +3633,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 #if MULTIREG_HAS_SECOND_GC_RET
         emitSetSecondRetRegGCType(id, secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
+        id->hasAsyncContinuationRet(hasAsyncRet);
 
         return id;
     }
@@ -3657,7 +3677,8 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
                                                  regMaskTP        gcrefRegs,
                                                  regMaskTP        byrefRegs,
                                                  emitAttr retSizeIn
-                                                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
+                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                                                 bool hasAsyncRet)
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
@@ -3677,7 +3698,8 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
         (argCnt > ID_MAX_SMALL_CNS) ||           // too many args
         (argCnt < 0)                             // caller pops arguments
                                                  // There is a second ref/byref return register.
-        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)))
+        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)) ||
+        hasAsyncRet)
     {
         instrDescCGCA* id = emitAllocInstrCGCA(retSize);
 
@@ -3694,6 +3716,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
 #if MULTIREG_HAS_SECOND_GC_RET
         emitSetSecondRetRegGCType(id, secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
+        id->hasAsyncContinuationRet(hasAsyncRet);
 
         return id;
     }

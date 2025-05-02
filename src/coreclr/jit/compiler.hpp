@@ -1552,7 +1552,7 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 //    New CT_HELPER node
 //
 inline GenTreeCall* Compiler::gtNewHelperCallNode(
-    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
+    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3, GenTree* arg4)
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
@@ -1570,6 +1570,12 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 
     result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif
+
+    if (arg4 != nullptr)
+    {
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg4));
+        result->gtFlags |= arg4->gtFlags & GTF_ALL_EFFECT;
+    }
 
     if (arg3 != nullptr)
     {
@@ -2916,6 +2922,12 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
     }
 
     if (ILargNum >= info.compTypeCtxtArg)
+    {
+        ILargNum++;
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
+    }
+
+    if (ILargNum >= lvaAsyncContinuationArg)
     {
         ILargNum++;
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
@@ -4272,8 +4284,6 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
     result = result || (varNum == lvaOutgoingArgSpaceVar);
 #endif
 
-    result = result || (varNum == lvaPSPSym);
-
     return result;
 }
 
@@ -4374,6 +4384,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_LCL_FLD:
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -4454,6 +4465,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
+        case GT_RETURN_SUSPEND:
             visitor(this->AsUnOp()->gtOp1);
             return;
 

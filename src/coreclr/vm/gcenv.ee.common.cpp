@@ -441,7 +441,9 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                     if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
                     {
                         MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(pCF->GetParamTypeArg());
-                        _ASSERTE((pMDReal != NULL) || !pCF->IsFrameless());
+                        // Async methods may be in a state when the context is not yet restored from continuation.
+                        // We will allow that. The context is reachable via continuation in such case.
+                        _ASSERTE((pMDReal != NULL) || !pCF->IsFrameless() || pMD->IsAsyncMethod());
                         if (pMDReal != NULL)
                         {
                             GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMDReal->GetLoaderAllocator());
@@ -450,7 +452,9 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                     else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
                     {
                         MethodTable *pMTReal = dac_cast<PTR_MethodTable>(pCF->GetParamTypeArg());
-                        _ASSERTE((pMTReal != NULL) || !pCF->IsFrameless());
+                        // Async methods may be in a state when the context is not yet restored from continuation.
+                        // We will allow that. The context is reachable via continuation in such case.
+                        _ASSERTE((pMTReal != NULL) || !pCF->IsFrameless() || pMD->IsAsyncMethod());
                         if (pMTReal != NULL)
                         {
                             GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMTReal->GetLoaderAllocator());

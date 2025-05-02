@@ -49,8 +49,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="loggerFactory">The factory used to create loggers.</param>
         public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor, ILoggerFactory loggerFactory)
         {
-            ThrowHelper.ThrowIfNull(optionsAccessor);
-            ThrowHelper.ThrowIfNull(loggerFactory);
+            ArgumentNullException.ThrowIfNull(optionsAccessor);
+            ArgumentNullException.ThrowIfNull(loggerFactory);
 
             _options = optionsAccessor.Value;
             _logger = loggerFactory.CreateLogger<MemoryCache>();
@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public ICacheEntry CreateEntry(object key)
         {
             CheckDisposed();
-            ThrowHelper.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(key);
 
             return new CacheEntry(key, this);
         }
@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <inheritdoc />
         public bool TryGetValue(object key, out object? result)
         {
-            ThrowHelper.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(key);
 
             CheckDisposed();
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
@@ -318,7 +318,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <inheritdoc />
         public void Remove(object key)
         {
-            ThrowHelper.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(key);
 
             CheckDisposed();
 
