@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Test.Cryptography;
 using Xunit;
 
 #pragma warning disable SYSLIB5006
@@ -46,8 +47,18 @@ namespace System.Security.Cryptography.Cose.Tests
         private static void WithTestKeysInfo(Action<string, CoseTestKeyType, HashAlgorithmName?> action)
         {
             action("ECDsa", CoseTestKeyType.ECDsa, HashAlgorithmName.SHA256);
-            action("RSA-PSS", CoseTestKeyType.RSAPSS, HashAlgorithmName.SHA256);
+
             action("RSA-PKCS1", CoseTestKeyType.RSAPkcs1, HashAlgorithmName.SHA256);
+
+            if (PlatformSupport.IsRsaPssSupported)
+            {
+                action("RSA-PSS", CoseTestKeyType.RSAPSS, HashAlgorithmName.SHA256);
+            }
+            else
+            {
+                // we use 3 suffix because if PSS is not supported then ML-DSA will not be as well
+                action("RSA-PCS1-3", CoseTestKeyType.RSAPSS, HashAlgorithmName.SHA256);
+            }
 
             if (MLDsa.IsSupported)
             {
@@ -111,7 +122,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 throw new ArgumentException($"Key with ID {keyId} already exists.");
             }
 
-            _coseKeys[keyId] = CoseTestKey.GenerateKey(keyId, keyType, hashAlgorithm);
+            _coseKeys.Add(keyId, CoseTestKey.GenerateKey(keyId, keyType, hashAlgorithm));
         }
 
         public override string ToString() => nameof(CoseTestKeyManager);

@@ -9,6 +9,12 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs">
+      <Link>CommonTest\System\Security\Cryptography\PlatformSupport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs">
+      <Link>CommonTest\System\Security\Cryptography\CngKeyWrapper.cs</Link>
+    </Compile>
     <Compile Include="CoseHeaderValueTests.cs" />
     <Compile Include="CoseMessageTests.Verify.cs" />
     <Compile Include="CoseHeaderLabelTests.cs" />
