@@ -50,8 +50,7 @@ int64_t
 provider_compute_event_enable_mask (
 	const EventPipeConfiguration *config,
 	const EventPipeProvider *provider,
-	int64_t keywords,
-	EventPipeEventLevel event_level);
+	const EventPipeEvent *ep_event);
 
 /*
  * EventPipeProvider.
@@ -127,7 +126,7 @@ provider_refresh_event_state (EventPipeEvent *ep_event)
 	EventPipeConfiguration *config = provider->config;
 	EP_ASSERT (config != NULL);
 
-	int64_t enable_mask = provider_compute_event_enable_mask (config, provider, ep_event_get_keywords (ep_event), ep_event_get_level (ep_event));
+	int64_t enable_mask = provider_compute_event_enable_mask (config, provider, ep_event);
 	ep_event_set_enabled_mask (ep_event, enable_mask);
 
 	ep_requires_lock_held ();
@@ -139,8 +138,7 @@ int64_t
 provider_compute_event_enable_mask (
 	const EventPipeConfiguration *config,
 	const EventPipeProvider *provider,
-	int64_t keywords,
-	EventPipeEventLevel event_level)
+	const EventPipeEvent *ep_event)
 {
 	EP_ASSERT (provider != NULL);
 
@@ -148,6 +146,13 @@ provider_compute_event_enable_mask (
 
 	int64_t result = 0;
 	bool provider_enabled = ep_provider_get_enabled (provider);
+	if (!provider_enabled)
+		return result;
+
+	uint64_t keywords = ep_event_get_keywords (ep_event);
+	EventPipeEventLevel event_level = ep_event_get_level (ep_event);
+	uint32_t event_id = ep_event_get_event_id (ep_event);
+
 	for (int i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; i++) {
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
 		EventPipeSession *session = ep_volatile_load_session_without_barrier (i);
@@ -167,7 +172,9 @@ provider_compute_event_enable_mask (
                     (session_level == EP_EVENT_LEVEL_LOGALWAYS) ||
                     (session_level >= event_level);
 
-				if (provider_enabled && keyword_enabled && level_enabled)
+				bool event_allowed = ep_session_provider_allows_event (session_provider, event_id);
+
+				if (keyword_enabled && level_enabled && event_allowed)
 					result = result | ep_session_get_mask (session);
 			}
 		}

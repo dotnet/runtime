@@ -47,6 +47,11 @@ ep_session_provider_alloc (
 void
 ep_session_provider_free (EventPipeSessionProvider * session_provider);
 
+bool
+ep_session_provider_allows_event (
+	const EventPipeSessionProvider *session_provider,
+	uint32_t event_id);
+
 /*
 * EventPipeSessionProviderList.
  */
