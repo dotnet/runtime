@@ -92,6 +92,6 @@
 
       <InnerBuildArgs Condition="'$(EnableDefaultRidSpecificArtifacts)' != ''">$(InnerBuildArgs) /p:EnableDefaultRidSpecificArtifacts=$(EnableDefaultRidSpecificArtifacts)</InnerBuildArgs>
     </PropertyGroup>
-  </Target
+  </Target>
 
 </Project>
