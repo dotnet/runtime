@@ -1016,6 +1016,9 @@ SingleResponse ::= SEQUENCE {
             internal static KeyFactory MLDsa { get; } =
                 new(() => Cryptography.MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65));
 
+            internal static KeyFactory SlhDsa { get; } =
+                new(() => Cryptography.SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f));
+
             private Func<IDisposable> _factory;
 
             private KeyFactory(Func<IDisposable> factory)
@@ -1035,7 +1038,7 @@ SingleResponse ::= SEQUENCE {
 
             internal static KeyFactory[] BuildVariantFactories()
             {
-                return [RSA, ECDsa];
+                return [RSA, ECDsa, MLDsa, SlhDsa];
             }
         }
 
@@ -1056,6 +1059,7 @@ SingleResponse ::= SEQUENCE {
                     cert.GetRSAPrivateKey() ??
                     cert.GetECDsaPrivateKey() ??
                     cert.GetMLDsaPrivateKey() ??
+                    cert.GetSlhDsaPrivateKey() ??
                     (IDisposable)cert.GetDSAPrivateKey() ??
                     throw new NotSupportedException();
             }
@@ -1077,6 +1081,7 @@ SingleResponse ::= SEQUENCE {
                     RSA rsa => new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                     ECDsa ecdsa => new CertificateRequest(subject, ecdsa, HashAlgorithmName.SHA256),
                     MLDsa mldsa => new CertificateRequest(subject, mldsa),
+                    SlhDsa slhDsa => new CertificateRequest(subject, slhDsa),
                     _ => throw new NotSupportedException(),
                 };
             }
@@ -1088,6 +1093,7 @@ SingleResponse ::= SEQUENCE {
                     RSA rsa => X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
                     ECDsa ecdsa => X509SignatureGenerator.CreateForECDsa(ecdsa),
                     MLDsa mldsa => X509SignatureGenerator.CreateForMLDsa(mldsa),
+                    SlhDsa slhDsa => X509SignatureGenerator.CreateForSlhDsa(slhDsa),
                     _ => throw new NotSupportedException(),
                 };
             }
