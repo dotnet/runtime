@@ -5894,6 +5894,7 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
     return FALSE;
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
+#endif // FEATURE_EH_FUNCLETS
 
 typedef uint8_t CODE_LOCATION;
 EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
@@ -5992,7 +5993,6 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 
     return false;
 }
-#endif // FEATURE_EH_FUNCLETS
 
 // Returns TRUE if caller should resume execution.
 BOOL

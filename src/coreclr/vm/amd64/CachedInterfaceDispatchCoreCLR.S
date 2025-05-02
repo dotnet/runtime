@@ -12,7 +12,7 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
 
 #ifdef TARGET_APPLE // place all ALTERNATE_ENTRY for arm64 at the beginning of a method to make unwinding work
     ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
-        cmp [rdi], 0
+        cmp qword ptr [rdi], 0
 #endif
         // r11 currently contains the indirection cell address.
         // load r11 to point to the vtable offset (which is stored in the m_pCache field).
