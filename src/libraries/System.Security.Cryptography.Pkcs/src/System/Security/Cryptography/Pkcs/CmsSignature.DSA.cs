@@ -37,10 +37,8 @@ namespace System.Security.Cryptography.Pkcs
                 _expectedDigest = expectedDigest;
             }
 
-            protected override bool VerifyKeyType(AsymmetricAlgorithm key)
-            {
-                return (key as DSA) != null;
-            }
+            protected override bool VerifyKeyType(object key) => key is DSA;
+            internal override bool NeedsHashedMessage => true;
 
             internal override bool VerifySignature(
 #if NET || NETSTANDARD2_1
@@ -104,11 +102,11 @@ namespace System.Security.Cryptography.Pkcs
 #if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else
-                byte[] dataHash,
+                ReadOnlyMemory<byte> dataHash,
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm? key,
+                object? key,
                 bool silent,
                 [NotNullWhen(true)] out string? signatureAlgorithm,
                 [NotNullWhen(true)] out byte[]? signatureValue,

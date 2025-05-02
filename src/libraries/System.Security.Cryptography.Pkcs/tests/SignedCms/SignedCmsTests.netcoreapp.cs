@@ -4,7 +4,10 @@
 using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Linq;
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.Unicode;
 using Test.Cryptography;
 using Xunit;
 
@@ -66,7 +69,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
             using (RSA key = cert.GetRSAPrivateKey())
             {
-                VerifyWithExplicitPrivateKey(cert, key);
+                VerifyWithExplicitPrivateKey(cert, key, CreateAsymmetricAlgorithmSigner);
             }
         }
 
@@ -77,7 +80,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             using (X509Certificate2 cert = Certificates.Dsa1024.TryGetCertificateWithPrivateKey())
             using (DSA key = cert.GetDSAPrivateKey())
             {
-                VerifyWithExplicitPrivateKey(cert, key);
+                VerifyWithExplicitPrivateKey(cert, key, CreateAsymmetricAlgorithmSigner);
             }
         }
 
@@ -87,7 +90,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             using (X509Certificate2 cert = Certificates.ECDsaP256Win.TryGetCertificateWithPrivateKey())
             using (ECDsa key = cert.GetECDsaPrivateKey())
             {
-                VerifyWithExplicitPrivateKey(cert, key);
+                VerifyWithExplicitPrivateKey(cert, key, CreateAsymmetricAlgorithmSigner);
             }
         }
 
@@ -97,7 +100,17 @@ namespace System.Security.Cryptography.Pkcs.Tests
             using (X509Certificate2 cert = Certificates.ECDsaP521Win.TryGetCertificateWithPrivateKey())
             using (ECDsa key = cert.GetECDsaPrivateKey())
             {
-                VerifyWithExplicitPrivateKey(cert, key);
+                VerifyWithExplicitPrivateKey(cert, key, CreateAsymmetricAlgorithmSigner);
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void SignCmsUsingExplicitSlhDsaKey()
+        {
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey())
+            using (SlhDsa key = cert.GetSlhDsaPrivateKey())
+            {
+                VerifyWithExplicitPrivateKey(cert, key, CreateSlhDsaSigner);
             }
         }
 
@@ -110,7 +123,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
             using (X509Certificate2 counterSignerCert = Certificates.Dsa1024.TryGetCertificateWithPrivateKey())
             using (DSA counterSignerKey = counterSignerCert.GetDSAPrivateKey())
             {
-                VerifyCounterSignatureWithExplicitPrivateKey(cert, key, counterSignerCert, counterSignerKey);
+                VerifyCounterSignatureWithExplicitPrivateKey(
+                    cert, key, CreateAsymmetricAlgorithmSigner,
+                    counterSignerCert, counterSignerKey, CreateAsymmetricAlgorithmSigner);
             }
         }
 
@@ -123,7 +138,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
             using (X509Certificate2 counterSignerCert = Certificates.ECDsaP256Win.TryGetCertificateWithPrivateKey())
             using (ECDsa counterSignerKey = counterSignerCert.GetECDsaPrivateKey())
             {
-                VerifyCounterSignatureWithExplicitPrivateKey(cert, key, counterSignerCert, counterSignerKey);
+                VerifyCounterSignatureWithExplicitPrivateKey(
+                    cert, key, CreateAsymmetricAlgorithmSigner,
+                    counterSignerCert, counterSignerKey, CreateAsymmetricAlgorithmSigner);
             }
         }
 
@@ -135,7 +152,37 @@ namespace System.Security.Cryptography.Pkcs.Tests
             using (X509Certificate2 counterSignerCert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
             using (RSA counterSignerKey = counterSignerCert.GetRSAPrivateKey())
             {
-                VerifyCounterSignatureWithExplicitPrivateKey(cert, key, counterSignerCert, counterSignerKey);
+                VerifyCounterSignatureWithExplicitPrivateKey(
+                    cert, key, CreateAsymmetricAlgorithmSigner,
+                    counterSignerCert, counterSignerKey, CreateAsymmetricAlgorithmSigner);
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void CounterSignCmsUsingExplicitECDsaKeyForFirstSignerAndSlhDsaForCounterSignature()
+        {
+            using (X509Certificate2 cert = Certificates.ECDsaP256Win.TryGetCertificateWithPrivateKey())
+            using (ECDsa key = cert.GetECDsaPrivateKey())
+            using (X509Certificate2 counterSignerCert = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey())
+            using (SlhDsa counterSignerKey = counterSignerCert.GetSlhDsaPrivateKey())
+            {
+                VerifyCounterSignatureWithExplicitPrivateKey(
+                    cert, key, CreateAsymmetricAlgorithmSigner,
+                    counterSignerCert, counterSignerKey, CreateSlhDsaSigner);
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void CounterSignCmsUsingExplicitSlhDsaKeyForFirstSignerAndRSAForCounterSignature()
+        {
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey())
+            using (SlhDsa key = cert.GetSlhDsaPrivateKey())
+            using (X509Certificate2 counterSignerCert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            using (RSA counterSignerKey = counterSignerCert.GetRSAPrivateKey())
+            {
+                VerifyCounterSignatureWithExplicitPrivateKey(
+                    cert, key, CreateSlhDsaSigner,
+                    counterSignerCert, counterSignerKey, CreateAsymmetricAlgorithmSigner);
             }
         }
 
@@ -189,6 +236,38 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void SignCmsUsingECDSaCertAndSlhDsaKeyThrows()
+        {
+            byte[] content = { 9, 8, 7, 6, 5 };
+
+            ContentInfo contentInfo = new ContentInfo(content);
+            SignedCms cms = new SignedCms(contentInfo, detached: false);
+
+            using (X509Certificate2 cert = Certificates.ECDsaP256Win.GetCertificate())
+            using (SlhDsa key = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, key);
+                Assert.Throws<CryptographicException>(() => cms.ComputeSignature(signer));
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void SignCmsUsingSlhDsaCertAndRSAKeyThrows()
+        {
+            byte[] content = { 9, 8, 7, 6, 5 };
+
+            ContentInfo contentInfo = new ContentInfo(content);
+            SignedCms cms = new SignedCms(contentInfo, detached: false);
+
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
+            using (RSA key = RSA.Create())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, key);
+                Assert.Throws<CryptographicException>(() => cms.ComputeSignature(signer));
+            }
+        }
+
         [Fact]
         public static void SignCmsUsingRSACertWithNotMatchingKeyThrows()
         {
@@ -234,6 +313,22 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             using (X509Certificate2 cert = Certificates.ECDsaP256Win.GetCertificate())
             using (ECDsa key = ECDsa.Create())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, key);
+                Assert.Throws<CryptographicException>(() => cms.ComputeSignature(signer));
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void SignCmsUsingSlhDsaCertWithNotMatchingKeyThrows()
+        {
+            byte[] content = { 9, 8, 7, 6, 5 };
+
+            ContentInfo contentInfo = new ContentInfo(content);
+            SignedCms cms = new SignedCms(contentInfo, detached: false);
+
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
+            using (SlhDsa key = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128s))
             {
                 CmsSigner signer = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, key);
                 Assert.Throws<CryptographicException>(() => cms.ComputeSignature(signer));
@@ -471,6 +566,32 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void AddSigner_SlhDsa_EphemeralKey()
+        {
+            // TODO This key is imported so is it ephemeral?
+            using (SlhDsa slhDsa = SlhDsa.ImportSlhDsaSecretKey(SlhDsaAlgorithm.SlhDsaSha2_128s, SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue))
+            using (X509Certificate2 publicCertificate = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
+            using (X509Certificate2 certificateWithKey = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey(exportable: true))
+            {
+                if (certificateWithKey == null)
+                {
+                    return;
+                }
+
+                using (X509Certificate2 certWithEphemeralKey = publicCertificate.CopyWithPrivateKey(slhDsa))
+                {
+                    ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+                    SignedCms cms = new SignedCms(content, false);
+                    CmsSigner signer = new CmsSigner(certWithEphemeralKey)
+                    {
+                        IncludeOption = X509IncludeOption.EndCertOnly
+                    };
+                    cms.ComputeSignature(signer);
+                }
+            }
+        }
+
         [Fact]
         public static void CreateSignature_DigestAlgorithmWithSignatureOid_Prohibited()
         {
@@ -609,6 +730,41 @@ namespace System.Security.Cryptography.Pkcs.Tests
             {
                 CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, RSASignaturePadding.Pss);
                 Assert.ThrowsAny<CryptographicException>(() => cms.ComputeSignature(signer));
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void CreateSignature_SlhDsa_ThrowsWithRsaSignaturePadding()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, RSASignaturePadding.Pss);
+                Assert.ThrowsAny<CryptographicException>(() => cms.ComputeSignature(signer));
+            }
+        }
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [InlineData("2.16.840.1.101.3.4.2.11")] // SHAKE128
+        [InlineData("2.16.840.1.101.3.4.2.12")] // SHAKE256
+        public static void ComputeSignature_SlhDsa_ThrowsWithUnsupportedHash(string hashAlgorithm)
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+
+            SlhDsa slhDsa =
+                SlhDsa.ImportSlhDsaSecretKey(
+                    SlhDsaAlgorithm.SlhDsaSha2_128s,
+                    SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue);
+
+            using (slhDsa)
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.DigestAlgorithm = new Oid(hashAlgorithm, null);
+                Assert.Throws<CryptographicException>(() => cms.ComputeSignature(signer));
             }
         }
 
@@ -752,6 +908,106 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [InlineData(Oids.Sha3_256)]
+        [InlineData(Oids.Sha3_384)]
+        [InlineData(Oids.Sha3_512)]
+        public static void ComputeSignature_SlhDsa_Roundtrip(string hashAlgorithm)
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+            byte[] cmsBytes;
+
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.DigestAlgorithm = new Oid(hashAlgorithm, null);
+
+                cms.ComputeSignature(signer);
+                cmsBytes = cms.Encode();
+                cms = new SignedCms();
+                cms.Decode(cmsBytes);
+                cms.CheckSignature(true); // Assert.NoThrow
+                Assert.Single(cms.SignerInfos);
+
+                SignerInfo signerInfo = cms.SignerInfos[0];
+                Assert.Equal(hashAlgorithm, signerInfo.DigestAlgorithm.Value);
+            }
+        }
+
+        public static IEnumerable<object[]> AddFirstSignerTestData =>
+            from sit in new[] { SubjectIdentifierType.IssuerAndSerialNumber, SubjectIdentifierType.SubjectKeyIdentifier }
+            from detached in new[] { false, true }
+            from algorithms in new (SlhDsaAlgorithm signAlgorithm, string hashAlgorithm)[]
+            {
+                (SlhDsaAlgorithm.SlhDsaSha2_128s, Oids.Sha256),
+                (SlhDsaAlgorithm.SlhDsaShake128f, Oids.Sha256),
+                (SlhDsaAlgorithm.SlhDsaSha2_256f, Oids.Sha512),
+                (SlhDsaAlgorithm.SlhDsaShake256f, Oids.Sha512), // TODO SHAKE256 is not supported but it's the recommended algo here..
+            }
+            from SlhDsaTestData.SlhDsaGeneratedKeyInfo info in SlhDsaTestData.GeneratedKeyInfosRaw
+            where info.Algorithm == algorithms.signAlgorithm // Find the matching test data for the algorithm
+            select new object[] { sit, detached, algorithms.hashAlgorithm, info };
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(AddFirstSignerTestData))]
+        public static void AddFirstSigner_SlhDsa(SubjectIdentifierType identifierType, bool detached, string digestOid, SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, detached);
+
+            CertLoader loader = Certificates.SlhDsaGeneratedCerts.Single(cert => cert.CerData.SequenceEqual(info.Certificate));
+            using (X509Certificate2 signerCert = loader.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(identifierType, signerCert);
+                signer.IncludeOption = X509IncludeOption.EndCertOnly;
+                signer.DigestAlgorithm = new Oid(digestOid, digestOid);
+                cms.ComputeSignature(signer);
+            }
+
+            Assert.Single(cms.SignerInfos);
+            Assert.Single(cms.Certificates);
+
+            int expectedVersion = identifierType == SubjectIdentifierType.SubjectKeyIdentifier ? 3 : 1;
+            Assert.Equal(expectedVersion, cms.Version);
+
+            SignerInfo firstSigner = cms.SignerInfos[0];
+            Assert.Equal(identifierType, firstSigner.SignerIdentifier.Type);
+            Assert.NotNull(firstSigner.Certificate);
+            Assert.NotSame(cms.Certificates[0], firstSigner.Certificate);
+            Assert.Equal(cms.Certificates[0], firstSigner.Certificate);
+
+            byte[] signature = firstSigner.GetSignature();
+            Assert.NotEmpty(signature);
+
+            // SLH-DSA Oids are all under 2.16.840.1.101.3.4.3.
+            Assert.StartsWith("2.16.840.1.101.3.4.3.", firstSigner.SignatureAlgorithm.Value);
+
+            cms.CheckSignature(true);
+            byte[] encoded = cms.Encode();
+
+            cms = new SignedCms();
+            cms.Decode(encoded);
+
+            Assert.Single(cms.SignerInfos);
+            Assert.Single(cms.Certificates);
+            Assert.Equal(expectedVersion, cms.Version);
+            Assert.Equal(identifierType, cms.SignerInfos[0].SignerIdentifier.Type);
+            Assert.Equal(firstSigner.Certificate, cms.SignerInfos[0].Certificate);
+
+            byte[] sig2 = cms.SignerInfos[0].GetSignature();
+            Assert.Equal(signature, sig2);
+
+            if (detached)
+            {
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+                cms = new SignedCms(contentInfo, detached);
+                cms.Decode(encoded);
+            }
+
+            cms.CheckSignature(true);
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DoesNotSupportSha3))]
         [InlineData(Oids.Sha3_256)]
         [InlineData(Oids.Sha3_384)]
@@ -844,7 +1100,18 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(Oids.EcPublicKey, signerInfo.SignatureAlgorithm.Value);
         }
 
-        private static void VerifyWithExplicitPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key)
+        private delegate CmsSigner CreateSignerFunc<TKey>(SubjectIdentifierType sit, X509Certificate2 cert, TKey key);
+        private static CreateSignerFunc<AsymmetricAlgorithm> CreateAsymmetricAlgorithmSigner = (sit, cert, key) =>
+        {
+            return new CmsSigner(sit, cert, key);
+        };
+
+        private static CreateSignerFunc<SlhDsa> CreateSlhDsaSigner = (sit, cert, key) =>
+        {
+            return new CmsSigner(sit, cert, key);
+        };
+
+        private static void VerifyWithExplicitPrivateKey<TKey>(X509Certificate2 cert, TKey key, CreateSignerFunc<TKey> signerFactory)
         {
             using (var pubCert = new X509Certificate2(cert.RawData))
             {
@@ -854,11 +1121,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 ContentInfo contentInfo = new ContentInfo(content);
 
                 SignedCms cms = new SignedCms(contentInfo);
-                CmsSigner signer = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, pubCert, key)
-                {
-                    IncludeOption = X509IncludeOption.EndCertOnly,
-                    DigestAlgorithm = key is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256)
-                };
+                CmsSigner signer = signerFactory(SubjectIdentifierType.SubjectKeyIdentifier, pubCert, key);
+                signer.IncludeOption = X509IncludeOption.EndCertOnly;
+                signer.DigestAlgorithm = key is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256);
 
                 cms.ComputeSignature(signer);
                 cms.CheckSignature(true);
@@ -868,7 +1133,13 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        private static void VerifyCounterSignatureWithExplicitPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key, X509Certificate2 counterSignerCert, AsymmetricAlgorithm counterSignerKey)
+        private static void VerifyCounterSignatureWithExplicitPrivateKey<TKey, TCounterSignerKey>(
+            X509Certificate2 cert,
+            TKey key,
+            CreateSignerFunc<TKey> signerFactory,
+            X509Certificate2 counterSignerCert,
+            TCounterSignerKey counterSignerKey,
+            CreateSignerFunc<TCounterSignerKey> counterSignerFactory)
         {
             Assert.NotNull(key);
             Assert.NotNull(counterSignerKey);
@@ -881,17 +1152,13 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 ContentInfo contentInfo = new ContentInfo(content);
 
                 SignedCms cms = new SignedCms(contentInfo);
-                CmsSigner cmsSigner = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, pubCert, key)
-                {
-                    IncludeOption = X509IncludeOption.EndCertOnly,
-                    DigestAlgorithm = key is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256)
-                };
+                CmsSigner cmsSigner = signerFactory(SubjectIdentifierType.SubjectKeyIdentifier, pubCert, key);
+                cmsSigner.IncludeOption = X509IncludeOption.EndCertOnly;
+                cmsSigner.DigestAlgorithm = key is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256);
 
-                CmsSigner cmsCounterSigner = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, counterSignerPubCert, counterSignerKey)
-                {
-                    IncludeOption = X509IncludeOption.EndCertOnly,
-                    DigestAlgorithm = counterSignerKey is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256)
-                };
+                CmsSigner cmsCounterSigner = counterSignerFactory(SubjectIdentifierType.SubjectKeyIdentifier, counterSignerPubCert, counterSignerKey);
+                cmsCounterSigner.IncludeOption = X509IncludeOption.EndCertOnly;
+                cmsCounterSigner.DigestAlgorithm = counterSignerKey is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256);
 
                 cms.ComputeSignature(cmsSigner);
                 Assert.Equal(1, cms.SignerInfos.Count);

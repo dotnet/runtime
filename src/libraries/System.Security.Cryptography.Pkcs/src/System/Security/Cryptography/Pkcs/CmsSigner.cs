@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
@@ -14,19 +15,47 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class CmsSigner
+    public sealed partial class CmsSigner
     {
         private static readonly Oid s_defaultAlgorithm = Oids.Sha256Oid;
 
         private SubjectIdentifierType _signerIdentifierType;
         private RSASignaturePadding? _signaturePadding;
+        private IDisposable? _privateKey;
 
         public X509Certificate2? Certificate { get; set; }
+
 #if NET || NETSTANDARD2_1
-        public AsymmetricAlgorithm? PrivateKey { get; set; }
+        public AsymmetricAlgorithm? PrivateKey
 #else
-        private AsymmetricAlgorithm? PrivateKey { get; set; }
+        private AsymmetricAlgorithm? PrivateKey
 #endif
+        {
+            get => _privateKey as AsymmetricAlgorithm;
+            set => _privateKey = value;
+        }
+
+        // TODO not sure why PrivateKey is ifdef'd out...
+#if NET || NETSTANDARD2_1
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public
+#else
+        private
+#endif
+
+        SlhDsa? SlhDsaPrivateKey
+        {
+            get => _privateKey as SlhDsa;
+            set => _privateKey = value;
+        }
+
+#if NET || NETSTANDARD2_1
+        public
+#else
+        private
+#endif
+        bool HasPrivateKey => _privateKey is not null;
+
         public X509Certificate2Collection Certificates { get; } = new X509Certificate2Collection();
         public Oid DigestAlgorithm { get; set; }
         public X509IncludeOption IncludeOption { get; set; }
@@ -89,7 +118,8 @@ namespace System.Security.Cryptography.Pkcs
         [EditorBrowsable(EditorBrowsableState.Never)]
         public CmsSigner(CspParameters parameters) => throw new PlatformNotSupportedException();
 
-        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate) : this(signerIdentifierType, certificate, null)
+        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate)
+            : this(signerIdentifierType, certificate, null, null)
         {
         }
 
@@ -101,6 +131,21 @@ namespace System.Security.Cryptography.Pkcs
         CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, AsymmetricAlgorithm? privateKey)
             : this(signerIdentifierType, certificate, privateKey, signaturePadding: null)
         {
+        }
+
+
+#if NET || NETSTANDARD2_1
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public
+#else
+        private
+#endif
+        CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, SlhDsa? privateKey)
+            : this(signerIdentifierType, certificate, privateKey, signaturePadding: null)
+        {
+            // TODO this ctor can break users if they had been passing in null for privateKey since it's now ambiguous
+            // between this and the AsymmetricAlgorithm one *BUT* if they were doing that, they should have been
+            // using the 2-argument constructor anyway, so it should be fine.
         }
 
         /// <summary>
@@ -137,7 +182,7 @@ namespace System.Security.Cryptography.Pkcs
         private CmsSigner(
             SubjectIdentifierType signerIdentifierType,
             X509Certificate2? certificate,
-            AsymmetricAlgorithm? privateKey,
+            object? privateKey,
             RSASignaturePadding? signaturePadding)
         {
             if (signaturePadding is not null &&
@@ -171,8 +216,14 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             Certificate = certificate;
+            // TODO for higher security level, we can pick SHA-512. This is the
+            // default recommended for level 3 and 5 SLH-DSA in the spec.
+            // Or we can just leave it to the user to set the DigestAlgorithm property.
             DigestAlgorithm = s_defaultAlgorithm.CopyOid();
-            PrivateKey = privateKey;
+
+            Debug.Assert(privateKey is null or AsymmetricAlgorithm or SlhDsa);
+            _privateKey = (IDisposable?)privateKey;
+
             _signaturePadding = signaturePadding;
         }
 
@@ -188,11 +239,118 @@ namespace System.Security.Cryptography.Pkcs
                 throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoSignerCert);
             }
 
-            if (PrivateKey == null && !Certificate.HasPrivateKey)
+            if (_privateKey == null && !Certificate.HasPrivateKey)
             {
                 throw new CryptographicException(SR.Cryptography_Cms_Signing_RequiresPrivateKey);
             }
         }
+
+        private byte[] PrepareAttributesToSign(ReadOnlySpan<byte> contentHash, string? contentTypeOid, out AsnWriter newSignedAttrsWriter)
+        {
+            List<AttributeAsn> signedAttrs = PkcsHelpers.BuildAttributes(SignedAttributes);
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteOctetString(contentHash);
+
+            signedAttrs.Add(
+                new AttributeAsn
+                {
+                    AttrType = Oids.MessageDigest,
+                    AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
+                });
+
+            if (contentTypeOid != null)
+            {
+                writer.Reset();
+                writer.WriteObjectIdentifierForCrypto(contentTypeOid);
+
+                signedAttrs.Add(
+                    new AttributeAsn
+                    {
+                        AttrType = Oids.ContentType,
+                        AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
+                    });
+            }
+            // else: TODO if we're in pure mode we *should* add a content type according to
+            // the SLH-DSA and ML-DSA spec. However, the only case when the content type is null
+            // is when we're countersigning, and RFC 5652 specifically states that
+            // countersignatures must not contain a content type. We'll leave it as is for now
+            // as countersignatures don't seem to be in the SLH-DSA CMS spec.
+
+            // Use the serializer/deserializer to DER-normalize the attribute order.
+            SignedAttributesSet signedAttrsSet = default;
+            byte[]? attributesToSign = null;
+            signedAttrsSet.SignedAttributes = PkcsHelpers.NormalizeAttributeSet(
+                signedAttrs.ToArray(),
+                encodedSignedAttrs => attributesToSign = encodedSignedAttrs);
+            Debug.Assert(
+                attributesToSign is not null,
+                $"{attributesToSign} should have been set by {nameof(PkcsHelpers.NormalizeAttributeSet)}");
+
+            // Since this contains user data in a context where BER is permitted, use BER.
+            // There shouldn't be any observable difference here between BER and DER, though,
+            // since the top level fields were written by NormalizeSet.
+            newSignedAttrsWriter = new AsnWriter(AsnEncodingRules.BER);
+            signedAttrsSet.Encode(newSignedAttrsWriter);
+
+            return attributesToSign;
+        }
+
+        internal ReadOnlyMemory<byte> GetMessageToSignPure(
+            HashAlgorithmName hashAlgorithmName,
+            ReadOnlyMemory<byte> data,
+            string? contentTypeOid,
+            out ReadOnlyMemory<byte>? signedAttributesAsn)
+        {
+            byte[] dataHash;
+            // In pure mode we will always sign the attributes rather than the message content even
+            // when signing the content is allowed. In general the attribute payload is smaller.
+            using (IncrementalHash hasher = Helpers.CreateIncrementalHash(hashAlgorithmName))
+            {
+                hasher.AppendData(data.Span);
+                dataHash = hasher.GetHashAndReset();
+            }
+
+            byte[] contentToSign = PrepareAttributesToSign(dataHash, contentTypeOid, out AsnWriter newSignedAttrsWriter);
+            signedAttributesAsn = newSignedAttrsWriter.Encode();
+            return contentToSign;
+        }
+
+        internal ReadOnlyMemory<byte> GetMessageToSignHashed(
+            HashAlgorithmName hashAlgorithmName,
+            ReadOnlyMemory<byte> data,
+            string? contentTypeOid,
+            out ReadOnlyMemory<byte>? signedAttributesAsn)
+        {
+            using (IncrementalHash hasher = Helpers.CreateIncrementalHash(hashAlgorithmName))
+            {
+                hasher.AppendData(data.Span);
+                byte[] dataHash = hasher.GetHashAndReset();
+
+                // If the user specified attributes (not null, count > 0) we need attributes.
+                // If the content type is null we're counter-signing, and need the message digest attr.
+                // If the content type is otherwise not-data we need to record it as the content-type attr.
+                if (SignedAttributes?.Count > 0 || contentTypeOid != Oids.Pkcs7Data)
+                {
+                    hasher.AppendData(PrepareAttributesToSign(dataHash, contentTypeOid, out AsnWriter newSignedAttrsWriter));
+                    signedAttributesAsn = newSignedAttrsWriter.Encode();
+                    return hasher.GetHashAndReset();
+                }
+
+                signedAttributesAsn = null;
+                return dataHash;
+            }
+        }
+
+        internal ReadOnlyMemory<byte> GetMessageToSign(
+            bool shouldHash,
+            HashAlgorithmName hashAlgorithmName,
+            ReadOnlyMemory<byte> data,
+            string? contentTypeOid,
+            out ReadOnlyMemory<byte>? signedAttributesAsn) =>
+                shouldHash
+                    ? GetMessageToSignHashed(hashAlgorithmName, data, contentTypeOid, out signedAttributesAsn)
+                    : GetMessageToSignPure(hashAlgorithmName, data, contentTypeOid, out signedAttributesAsn);
 
         internal SignerInfoAsn Sign(
             ReadOnlyMemory<byte> data,
@@ -200,73 +358,9 @@ namespace System.Security.Cryptography.Pkcs
             bool silent,
             out X509Certificate2Collection chainCerts)
         {
-            HashAlgorithmName hashAlgorithmName = PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm);
             SignerInfoAsn newSignerInfo = default;
+            HashAlgorithmName hashAlgorithmName = PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm);
             newSignerInfo.DigestAlgorithm.Algorithm = DigestAlgorithm.Value!;
-            byte[] dataHash;
-
-            IncrementalHash hasher;
-
-            try
-            {
-                hasher = IncrementalHash.CreateHash(hashAlgorithmName);
-            }
-            catch (PlatformNotSupportedException ex)
-            {
-                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName), ex);
-            }
-
-            using (hasher)
-            {
-                hasher.AppendData(data.Span);
-                dataHash = hasher.GetHashAndReset();
-
-                // If the user specified attributes (not null, count > 0) we need attributes.
-                // If the content type is null we're counter-signing, and need the message digest attr.
-                // If the content type is otherwise not-data we need to record it as the content-type attr.
-                if (SignedAttributes?.Count > 0 || contentTypeOid != Oids.Pkcs7Data)
-                {
-                    List<AttributeAsn> signedAttrs = PkcsHelpers.BuildAttributes(SignedAttributes);
-
-                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                    writer.WriteOctetString(dataHash);
-
-                    signedAttrs.Add(
-                        new AttributeAsn
-                        {
-                            AttrType = Oids.MessageDigest,
-                            AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
-                        });
-
-                    if (contentTypeOid != null)
-                    {
-                        writer.Reset();
-                        writer.WriteObjectIdentifierForCrypto(contentTypeOid);
-
-                        signedAttrs.Add(
-                            new AttributeAsn
-                            {
-                                AttrType = Oids.ContentType,
-                                AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
-                            });
-                    }
-
-                    // Use the serializer/deserializer to DER-normalize the attribute order.
-                    SignedAttributesSet signedAttrsSet = default;
-                    signedAttrsSet.SignedAttributes = PkcsHelpers.NormalizeAttributeSet(
-                        signedAttrs.ToArray(),
-                        hasher.AppendData);
-
-                    // Since this contains user data in a context where BER is permitted, use BER.
-                    // There shouldn't be any observable difference here between BER and DER, though,
-                    // since the top level fields were written by NormalizeSet.
-                    AsnWriter attrsWriter = new AsnWriter(AsnEncodingRules.BER);
-                    signedAttrsSet.Encode(attrsWriter);
-                    newSignerInfo.SignedAttributes = attrsWriter.Encode();
-
-                    dataHash = hasher.GetHashAndReset();
-                }
-            }
 
             switch (SignerIdentifierType)
             {
@@ -311,21 +405,63 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlyMemory<byte> signatureValue;
             ReadOnlyMemory<byte> signatureParameters = default;
 
+
             if (SignerIdentifierType == SubjectIdentifierType.NoSignature)
             {
+                // TODO Not sure what the use case of this is, but if it's just for determining if a message hash
+                // been modified, we can always compute the hash. On the other hand, if it is a temporary value
+                // that will eventually be signed, then we need to keep it unhashed for SLH-DSA/ML-DSA since they
+                // are pure signing algos.
+                //
+                // In the second case, we need a processor. This code is a placeholder for now to get the processor.
+                bool shouldHash = true;
+                string? keyAlgorithm = null;
+                if (Certificate != null)
+                {
+                    try
+                    {
+                        keyAlgorithm = Certificate.GetKeyAlgorithm();
+                    }
+                    catch (CryptographicException) // sad..
+                    {
+                    }
+                }
+
+                if (keyAlgorithm != null)
+                {
+                    CmsSignature? processor = CmsSignature.ResolveAndVerifyKeyType(keyAlgorithm, _privateKey, SignaturePadding);
+                    shouldHash = processor == null || processor.NeedsHashedMessage;
+                }
+
+                ReadOnlyMemory<byte> messageToSign =
+                    GetMessageToSign(shouldHash, hashAlgorithmName, data, contentTypeOid, out newSignerInfo.SignedAttributes);
+
                 signatureAlgorithm = Oids.NoSignature;
-                signatureValue = dataHash;
+                signatureValue = messageToSign;
                 signed = true;
             }
             else
             {
-                signed = CmsSignature.Sign(
-                    dataHash,
+                CmsSignature? processor = CmsSignature.ResolveAndVerifyKeyType(Certificate!.GetKeyAlgorithm(), _privateKey, SignaturePadding);
+                if (processor == null)
+                {
+                    throw new CryptographicException(SR.Cryptography_Cms_CannotDetermineSignatureAlgorithm);
+                }
+
+                bool shouldHash = processor.NeedsHashedMessage;
+                ReadOnlyMemory<byte> messageToSign =
+                    GetMessageToSign(shouldHash, hashAlgorithmName, data, contentTypeOid, out newSignerInfo.SignedAttributes);
+
+                signed = processor.Sign(
+#if NET || NETSTANDARD2_1
+                    messageToSign.Span,
+#else
+                    messageToSign.ToArray(),
+#endif
                     hashAlgorithmName,
                     Certificate!,
-                    PrivateKey,
+                    _privateKey,
                     silent,
-                    SignaturePadding,
                     out signatureAlgorithm,
                     out signatureValue,
                     out signatureParameters);

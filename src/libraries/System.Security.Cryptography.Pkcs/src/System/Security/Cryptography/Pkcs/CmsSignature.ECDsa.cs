@@ -38,10 +38,8 @@ namespace System.Security.Cryptography.Pkcs
                 _expectedDigest = expectedDigest;
             }
 
-            protected override bool VerifyKeyType(AsymmetricAlgorithm key)
-            {
-                return (key as ECDsa) != null;
-            }
+            protected override bool VerifyKeyType(object key) => key is ECDsa;
+            internal override bool NeedsHashedMessage => true;
 
             internal override bool VerifySignature(
 #if NET || NETSTANDARD2_1
@@ -112,7 +110,7 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm? certKey,
+                object? certKey,
                 bool silent,
                 [NotNullWhen(true)] out string? signatureAlgorithm,
                 [NotNullWhen(true)] out byte[]? signatureValue,

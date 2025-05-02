@@ -183,6 +183,7 @@
              Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
 
     <Compile Include="System\Security\Cryptography\Helpers.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateKeyAccessors.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX509Loader)' == 'true'">
