@@ -1655,7 +1655,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             useCount++;
             if (useEvex)
             {
-                BuildUse(srcAddrOrFill);
+                BuildUse(srcAddrOrFill, srcRegMask);
             }
             else
             {
