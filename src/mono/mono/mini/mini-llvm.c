@@ -10465,7 +10465,7 @@ MONO_RESTORE_WARNING
 				}
 				LLVMValueRef shiftv = create_shift_vector (ctx, fill, const_int32 (shift));
 				LLVMValueRef mask = LLVMBuildShl (builder, bidx, shiftv, "");
-				LLVMValueRef args [] = { mask, offset };
+				LLVMValueRef args [] = { mask, fill };
 				LLVMValueRef fill_mask = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
 				bidx = LLVMBuildAnd (builder, fill_mask, offset, "");
 			}
