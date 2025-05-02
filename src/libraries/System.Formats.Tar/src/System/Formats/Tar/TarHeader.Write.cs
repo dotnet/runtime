@@ -474,8 +474,8 @@ namespace System.Formats.Tar
                 _dataStream = dataStream,
                 _uName = RootUNameGName,
                 _gName = RootUNameGName,
-                _aTime = default, // LongLink/LongPath entries store these as nulls
-                _cTime = default, // LongLink/LongPath entries store these as nulls
+                _aTime = DateTime.MinValue, // LongLink/LongPath entries store these as nulls
+                _cTime = DateTime.MinValue, // LongLink/LongPath entries store these as nulls
             };
         }
 
@@ -785,7 +785,7 @@ namespace System.Formats.Tar
 
         private int WriteAsGnuTimestamp(DateTimeOffset timestamp, Span<byte> buffer)
         {
-            if (_typeFlag is TarEntryType.LongLink or TarEntryType.LongPath || timestamp == DateTimeOffset.UnixEpoch)
+            if (_typeFlag is TarEntryType.LongLink or TarEntryType.LongPath || timestamp == DateTimeOffset.MinValue)
             {
                 buffer.Clear();
                 return 0;
