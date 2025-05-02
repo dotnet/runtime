@@ -23,9 +23,10 @@ namespace System.Security.Cryptography
         internal static SlhDsaImplementation DuplicatePrivateKey(SlhDsa key)
         {
             Debug.Assert(key is not SlhDsaImplementation);
+            Debug.Assert(key.Algorithm.SecretKeySizeInBytes <= 128);
 
-            // TODO Does this need to use CryptoPool?
-            byte[] secretKey = key.ExportSlhDsaSecretKey();
+            Span<byte> secretKey = (stackalloc byte[128])[..key.Algorithm.SecretKeySizeInBytes];
+            key.ExportSlhDsaSecretKey(secretKey);
             try
             {
                 return ImportSecretKey(key.Algorithm, secretKey);

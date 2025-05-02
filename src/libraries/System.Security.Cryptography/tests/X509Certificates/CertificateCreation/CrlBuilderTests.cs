@@ -1771,8 +1771,7 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             return certKind switch
             {
                 CertKind.ECDsa or CertKind.RsaPkcs1 or CertKind.RsaPss => true,
-                CertKind.MLDsa => false,
-                CertKind.SlhDsa => false,
+                CertKind.MLDsa or CertKind.SlhDsa => false,
                 _ => throw new NotSupportedException(certKind.ToString())
             };
         }
