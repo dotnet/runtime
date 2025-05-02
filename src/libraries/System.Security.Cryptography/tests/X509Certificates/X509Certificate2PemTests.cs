@@ -280,8 +280,7 @@ MII
             key.ImportFromPem(TestData.EcDhPkcs8Key);
             CertificateRequest req = new("CN=radish", key, HashAlgorithmName.SHA256);
             using X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
-            using X509Certificate2 pubOnly = X509CertificateLoader.LoadCertificate(cert.RawDataMemory.Span);
-            string pemAggregate = $"{pubOnly.ExportCertificatePem()}\n{TestData.EcDhPkcs8Key}";
+            string pemAggregate = $"{cert.ExportCertificatePem()}\n{TestData.EcDhPkcs8Key}";
             using X509Certificate2 reLoaded = X509Certificate2.CreateFromPem(pemAggregate, pemAggregate);
 
             AssertKeysMatch(TestData.EcDhPkcs8Key, reLoaded.GetECDiffieHellmanPrivateKey);
@@ -301,7 +300,6 @@ MII
             key.ImportFromPem(TestData.EcDhPkcs8Key);
             CertificateRequest req = new("CN=radish", key, HashAlgorithmName.SHA256);
             using X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
-            using X509Certificate2 pubOnly = X509CertificateLoader.LoadCertificate(cert.RawDataMemory.Span);
 
             PbeParameters pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA1, 32);
             const string Password = "PLACEHOLDER";
@@ -310,7 +308,7 @@ MII
                 "ENCRYPTED PRIVATE KEY",
                 key.ExportEncryptedPkcs8PrivateKey(Password, pbe));
 
-            string pemAggregate = $"{pubOnly.ExportCertificatePem()}\n{encryptedPrivateKey}";
+            string pemAggregate = $"{cert.ExportCertificatePem()}\n{encryptedPrivateKey}";
             using X509Certificate2 reLoaded = X509Certificate2.CreateFromEncryptedPem(pemAggregate, pemAggregate, Password);
 
             AssertKeysMatch(encryptedPrivateKey, reLoaded.GetECDiffieHellmanPrivateKey, Password);
