@@ -4,6 +4,7 @@
     <!-- in its output folder for the purpose of testing assembly loading. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SetIlcRPath>false</SetIlcRPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />

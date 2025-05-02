@@ -527,10 +527,10 @@
          variables is horribly slow (seeing 1.4 seconds on a 11th gen Intel Core i7) -->
     <IlcUseEnvironmentalTools>true</IlcUseEnvironmentalTools>
 
-    <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to tweak
+    <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to set
          rpath so that the test can load its native library dependencies if there's any -->
-    <IlcRPath Condition="'$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true'">@executable_path/..</IlcRPath>
-    <IlcRPath Condition="'$(IlcRPath)' == ''">$ORIGIN/..</IlcRPath>
+    <IlcRPath Condition="'$(SetIlcRPath)' != 'false' and ('$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true')">@executable_path/..</IlcRPath>
+    <IlcRPath Condition="'$(SetIlcRPath)' != 'false' and '$(IlcRPath)' == ''">$ORIGIN/..</IlcRPath>
 
     <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only" -->
     <DisableUnsupportedError>true</DisableUnsupportedError>
