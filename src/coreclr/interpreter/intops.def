@@ -31,6 +31,22 @@ OPDEF(INTOP_MOV_4, "mov.4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_8, "mov.8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_VT, "mov.vt", 4, 1, 1, InterpOpInt)
 
+OPDEF(INTOP_LOAD_I4_I1, "load.i4.i1", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_LOAD_I4_U1, "load.i4.u1", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_LOAD_I4_I2, "load.i4.i2", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_LOAD_I4_U2, "load.i4.u2", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_LOAD_4, "load.4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_LOAD_8, "load.8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_LOAD_VT, "load.vt", 4, 1, 1, InterpOpInt)
+
+OPDEF(INTOP_STORE_I4_I1, "store.i4.i1", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_STORE_I4_U1, "store.i4.u1", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_STORE_I4_I2, "store.i4.i2", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_STORE_I4_U2, "store.i4.u2", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_STORE_4, "store.4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_STORE_8, "store.8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_STORE_VT, "store.vt", 4, 1, 1, InterpOpInt)
+
 OPDEF(INTOP_LDLOCA, "ldloca", 3, 1, 0, InterpOpInt)
 
 OPDEF(INTOP_SWITCH, "switch", 0, 0, 1, InterpOpSwitch)
@@ -257,12 +273,19 @@ OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodToken)
 OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodToken)
 
 OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 5, 1, 0, InterpOpThreeInts)
+OPDEF(INTOP_CALL_HELPER_PP_2, "call.helper.pp.2", 6, 1, 1, InterpOpThreeInts)
 
 OPDEF(INTOP_ZEROBLK_IMM, "zeroblk.imm", 3, 0, 1, InterpOpInt)
 OPDEF(INTOP_LOCALLOC, "localloc", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
 
+// Exception
 OPDEF(INTOP_THROW, "throw", 4, 0, 1, InterpOpInt)
+OPDEF(INTOP_ENTER_FUNCLET, "enterfunclet", 2, 1, 0, InterpOpNoArgs)
+OPDEF(INTOP_LEAVE_CATCH, "leavecatch", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_LEAVE_FILTER, "leavefilter", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_CALL_FINALLY, "call.finally", 3, 1, 0, InterpOpBranch)
+OPDEF(INTOP_RET_FINALLY, "ret.finally", 2, 0, 1, InterpOpNoArgs)
 
 OPDEF(INTOP_FAILFAST, "failfast", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_GC_COLLECT, "gc.collect", 1, 0, 0, InterpOpNoArgs)

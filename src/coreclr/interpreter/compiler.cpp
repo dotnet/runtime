@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "gcinfoencoder.h"
 
 // HACK: debugreturn.h (included by gcinfoencoder.h) breaks constexpr
@@ -305,7 +306,10 @@ InterpBasicBlock* InterpCompiler::GetBB(int32_t ilOffset)
     if (!bb)
     {
         bb = AllocBB(ilOffset);
-
+#ifdef DEBUG
+        // We should not be creating any more basic block after CreateBasicBlocks
+        assert(!m_generatedAllBasicBlocks);
+#endif
         m_ppOffsetToBB[ilOffset] = bb;
     }
 
@@ -568,6 +572,7 @@ bool InterpCompiler::CheckStackHelper(int n)
     int32_t currentSize = (int32_t)(m_pStackPointer - m_pStackBase);
     if (currentSize < n)
     {
+        assert(false);
         m_hasInvalidCode = true;
         return false;
     }
@@ -648,43 +653,15 @@ uint32_t InterpCompiler::ConvertOffset(int32_t offset)
     return offset * sizeof(int32_t) + sizeof(void*);
 }
 
-int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*> *relocs)
+int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*> *relocs, bool enteringFunclet)
 {
     ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
-
-    if (ins->ilOffset != -1)
-    {
-        assert(ins->ilOffset >= 0);
-        assert(ins->nativeOffset >= 0);
-        uint32_t ilOffset = ins->ilOffset;
-        uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
-        if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
-        {
-            //
-            // This code assumes IL offsets in the actual opcode stream with valid IL offsets is monotonically
-            // increasing, so the generated map contains strictly increasing IL offsets.
-            //
-            // Native offsets are obviously strictly increasing by construction here.
-            //
-            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset < ilOffset));
-            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].nativeOffset < nativeOffset));
-
-            //
-            // Since we can have at most one entry per IL offset,
-            // this map cannot possibly use more entries than the size of the IL code
-            //
-            assert(m_ILToNativeMapSize < m_ILCodeSize);
-
-            m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
-            m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-            m_ILToNativeMapSize++;
-        }
-    }
 
     int32_t opcode = ins->opcode;
     int32_t *startIp = ip;
 
     *ip++ = opcode;
+    bool reverted = false;
 
     if (opcode == INTOP_SWITCH)
     {
@@ -703,6 +680,8 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     else if (InterpOpIsUncondBranch(opcode) || InterpOpIsCondBranch(opcode))
     {
         int32_t brBaseOffset = (int32_t)(startIp - m_pMethodCode);
+        if (g_interpOpDVars[opcode])
+            *ip++ = m_pVars[ins->dVar].offset;
         for (int i = 0; i < g_interpOpSVars[opcode]; i++)
             *ip++ = m_pVars[ins->sVars[i]].offset;
 
@@ -714,12 +693,14 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         {
             // Ignore branch to the next basic block. Revert the added INTOP_BR.
             ip--;
+            reverted = true;
+            ins->flags |= INTERP_INST_FLAG_REVERTED;
         }
         else
         {
             // We don't know yet the IR offset of the target, add a reloc instead
             Reloc *reloc = (Reloc*)AllocMemPool(sizeof(Reloc));
-            new (reloc) Reloc(RelocLongBranch, brBaseOffset, ins->info.pTargetBB, g_interpOpSVars[opcode]);
+            new (reloc) Reloc(RelocLongBranch, brBaseOffset, ins->info.pTargetBB, g_interpOpDVars[opcode] + g_interpOpSVars[opcode]);
             relocs->Add(reloc);
             *ip++ = (int32_t)0xdeadbeef;
         }
@@ -734,6 +715,8 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         int32_t fSize = ins->data[2];
         // Revert opcode emit
         ip--;
+        reverted = true;
+        ins->flags |= INTERP_INST_FLAG_REVERTED;
 
         int destOffset = m_pVars[ins->dVar].offset;
         int srcOffset = m_pVars[ins->sVars[0]].offset;
@@ -785,6 +768,45 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
             *ip++ = ins->data[i];
     }
 
+    if (!reverted && (ins->ilOffset != -1))
+    {
+        assert(ins->ilOffset >= 0);
+        assert(ins->nativeOffset >= 0);
+        uint32_t ilOffset = ins->ilOffset;
+        uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
+        if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
+        {
+            //
+            // Native offsets are obviously strictly increasing by construction here - note the possibility
+            // of an instruction emission being reverted above is handled
+            //
+            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].nativeOffset < nativeOffset));
+
+            //
+            // IL offsets are arranged into two blocks - the body and the funclets
+            // Both blocks are monotonically increasing, and the check above make sure we get a sequence
+            // of two strictly increasing ilOffsets
+            //
+            // Therefore, the only case where the ilOffset decrease is when we enter a funclet
+            //
+            assert((m_ILToNativeMapSize == 0) || enteringFunclet || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset < ilOffset));
+
+            //
+            // Since we can have at most one entry per IL offset,
+            // this map cannot possibly use more entries than the size of the IL code
+            //
+            assert(m_ILToNativeMapSize < m_ILCodeSize);
+
+            m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
+            m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+            if (m_verbose)
+            {
+                printf("Reporting IL_%04x is mapped to IR_%04x(%d)\n", ins->ilOffset, ins->nativeOffset, nativeOffset);
+            }
+            m_ILToNativeMapSize++;
+        }
+    }
+
     return ip;
 }
 
@@ -825,16 +847,29 @@ void InterpCompiler::EmitCode()
     }
 
     int32_t *ip = m_pMethodCode;
+    bool insideFunclet = false;
     for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
     {
+        bool enteringFunclet = false;
+        if (!insideFunclet)
+        {
+            if ((bb->funclet_type == FILTER_ENTRY) || (bb->funclet_type == CATCH_ENTRY) || (bb->funclet_type == FINALLY_ENTRY))
+            {
+                enteringFunclet = true;
+            }
+        }
         bb->nativeOffset = (int32_t)(ip - m_pMethodCode);
         m_pCBB = bb;
         for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
         {
             if (InterpOpIsEmitNop(ins->opcode))
+            {
+                ins->flags |= INTERP_INST_FLAG_REVERTED;
                 continue;
+            }
 
-            ip = EmitCodeIns(ip, ins, &relocs);
+            ip = EmitCodeIns(ip, ins, &relocs, enteringFunclet);
+            enteringFunclet = false;
         }
     }
 
@@ -852,6 +887,10 @@ void InterpCompiler::EmitCode()
         eeVars[j].loc.vlType           = ICorDebugInfo::VLT_STK;               // This is a stack slot
         eeVars[j].loc.vlStk.vlsBaseReg = ICorDebugInfo::REGNUM_FP;             // This specifies which register this offset is based off
         eeVars[j].loc.vlStk.vlsOffset  = m_pVars[i].offset;                    // This specifies starting from the offset, how much offset is this from
+        if (m_verbose)
+        {
+            printf("Reporting var[%d] has life time [%d(%d), %d(%d)) on stack+%d\n", i, GetLiveStartOffset(i), eeVars[j].startOffset, GetLiveEndOffset(i), eeVars[j].endOffset, m_pVars[i].offset);
+        }
         j++;
     }
 
@@ -1139,6 +1178,39 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
     m_ppOffsetToBB = (InterpBasicBlock**)AllocMemPool0(sizeof(InterpBasicBlock*) * (methodInfo->ILCodeSize + 1));
     GetBB(0);
 
+    //
+    // Parsing the try/catch/finally block
+    //
+    // The goal of parsing these blocks are:
+    // 1.) Assigning the funclet_type of these blocks
+    // 2.) Assigning the try_exit_block of the associated handler block (i.e. catch/finally), we don't need that for filter, and
+    // 3.) Assign the finally start and finally id
+    //
+
+    //
+    // Phase 1: For each funclet entry block, allocate sufficient space to store the exits
+    //
+    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
+        InterpBasicBlock* tryBB = GetBB(clause.TryOffset);
+        tryBB->funclet_exit_count += 1;
+        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+        {
+            InterpBasicBlock* filterBB = GetBB(clause.FilterOffset);
+            filterBB->funclet_exit_count += 1;
+        }
+        InterpBasicBlock* handlerBB = GetBB(clause.HandlerOffset);
+        handlerBB->funclet_exit_count += 1;
+    }
+
+    //
+    // Phase 2: For each funclet entry block, populate their exits into them, we have the space ready now
+    //          For each finally block, allocate a global variable for it to store the frame pointer and
+    //          save the finally index in the associated try and finally entry basic block
+    //
+    int finally_index = 0;
     for (unsigned int i = 0; i < methodInfo->EHcount; i++)
     {
         CORINFO_EH_CLAUSE clause;
@@ -1149,29 +1221,199 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
         {
             return false;
         }
-        GetBB(clause.TryOffset);
+        InterpBasicBlock* tryBB = GetBB(clause.TryOffset);
+        tryBB->funclet_type = TRY_ENTRY;
+        if (tryBB->funclet_exit_current == 0)
+        {
+            tryBB->funclet_exits = (int*)AllocMemPool0(sizeof(int) * (tryBB->funclet_exit_count));
+            tryBB->funclet_handlers = (InterpBasicBlock**)AllocMemPool0(sizeof(InterpBasicBlock**) * (tryBB->funclet_exit_count));
+        }
+        tryBB->funclet_exits[tryBB->funclet_exit_current] = clause.TryOffset + clause.TryLength;
+        tryBB->funclet_handlers[tryBB->funclet_exit_current] = GetBB(clause.HandlerOffset);
+        tryBB->funclet_exit_current++;
+        if (tryBB->funclet_exit_current == tryBB->funclet_exit_count)
+        {
+            //
+            // For try block, we could have multiple try block start on the same address.
+            // We arrange their exits in a decreasing ilOffset order
+            //
+            for (int i = 0; i < tryBB->funclet_exit_count; i++)
+            {
+                for (int j = i + 1; j < tryBB->funclet_exit_count; j++)
+                {
+                    if (tryBB->funclet_exits[i] < tryBB->funclet_exits[j])
+                    {
+                        int temp = tryBB->funclet_exits[i];
+                        tryBB->funclet_exits[i] = tryBB->funclet_exits[j];
+                        tryBB->funclet_exits[j] = temp;
+
+                        InterpBasicBlock* tempBlock = tryBB->funclet_handlers[i];
+                        tryBB->funclet_handlers[i] = tryBB->funclet_handlers[j];
+                        tryBB->funclet_handlers[j] = tempBlock;
+                    }
+                }
+            }
+        }
 
         if ((codeStart + clause.HandlerOffset) > codeEnd ||
                 (codeStart + clause.HandlerOffset + clause.HandlerLength) > codeEnd)
         {
             return false;
         }
-        GetBB(clause.HandlerOffset);
+
+        InterpBasicBlock* handlerBB = GetBB(clause.HandlerOffset);
+        assert(handlerBB->funclet_exit_count == 1);
+        if (handlerBB->funclet_exit_current == 0)
+        {
+            handlerBB->funclet_exits = (int*)AllocMemPool0(sizeof(int) * (handlerBB->funclet_exit_count));
+        }
+        handlerBB->funclet_exits[handlerBB->funclet_exit_current++] = clause.HandlerOffset + clause.HandlerLength;
+        handlerBB->stackHeight = 0;
 
         if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
         {
             if ((codeStart + clause.FilterOffset) > codeEnd)
                 return false;
-            GetBB(clause.FilterOffset);
+            InterpBasicBlock* filterBB = GetBB(clause.FilterOffset);
+            assert(filterBB->funclet_exit_count == 1);
+            filterBB->funclet_type = FILTER_ENTRY;
+            if (filterBB->funclet_exit_current == 0)
+            {
+                filterBB->funclet_exits = (int*)AllocMemPool0(sizeof(int) * (filterBB->funclet_exit_count));
+            }
+            filterBB->funclet_exits[filterBB->funclet_exit_current++] = clause.HandlerOffset;
+            filterBB->stackHeight = 0;
+        }
+        if (clause.Flags != CORINFO_EH_CLAUSE_FINALLY)
+        {
+            handlerBB->funclet_type = CATCH_ENTRY;
+        }
+        else
+        {
+            handlerBB->funclet_type = FINALLY_ENTRY;
+            tryBB->finally_index = finally_index;
+            handlerBB->finally_index = finally_index;
+            finally_index++;
+            // For each finally block, a variable is created to store a return address
+            // so that we know where to return to when the finally block ends.
+            CreateVarExplicit(InterpTypeI, NULL, sizeof(int32_t));
         }
     }
 
+    //
+    // Phase 3: Perform a linear scan on the IL instructions to assign the funclet type
+    //
+    // As we walk the instructions, we create the blocks on the fly, for funclet type assignment purpose
+    // there are two types of interesting 'events':
+    //
+    // Entering a funclet entry block - where we already marked above
+    // - In this case, we already know the exits of these blocks, so we can produce a queue of these future events into
+    //   the stacks below, the top of the stack should correspond to the event with the least ilOffset
+    //
+    // or
+    //
+    // Leaving a funclet block - where the stack will tell us when that happens earliest on the tip of the stack
+    // - In this case, pop away the event from the stacks
+    //
+
+    // TODO: Make a stack of 1 struct instead of 4 stacks
+    int *exceptionBlockTypeStack = (int*) AllocMemPool((methodInfo->EHcount + 1) * sizeof(int));
+    InterpBasicBlock **exceptionBlockStack = (InterpBasicBlock**) AllocMemPool((methodInfo->EHcount + 1) * sizeof(InterpBasicBlock*));
+    InterpBasicBlock **exceptionHandlerStack = (InterpBasicBlock**) AllocMemPool((methodInfo->EHcount + 1) * sizeof(InterpBasicBlock*));
+    int *exceptionExitOffsetStack = (int*) AllocMemPool((methodInfo->EHcount + 1) * sizeof(int));
+    int *finallyIndexStack = (int*) AllocMemPool((methodInfo->EHcount + 1) * sizeof(int));
+
+    int exceptionStackPointer = 0;
+
+    exceptionBlockTypeStack[exceptionStackPointer] = NOT_A_FUNCLET;
+    exceptionBlockStack[exceptionStackPointer] = nullptr;
+    exceptionHandlerStack[exceptionStackPointer] = nullptr;
+    exceptionExitOffsetStack[exceptionStackPointer] = -1;
+    exceptionBlockStack[exceptionStackPointer] = nullptr;
+    finallyIndexStack[exceptionStackPointer] = -1;
+    exceptionStackPointer++;
+
+    InterpBasicBlock *lastBodyBB = nullptr;
+    InterpBasicBlock *lastFuncletBB = nullptr;
     while (ip < codeEnd)
     {
         int32_t insOffset = (int32_t)(ip - codeStart);
         OPCODE opcode = CEEDecodeOpcode(&ip);
         OPCODE_FORMAT opArgs = g_CEEOpArgs[opcode];
         int32_t target;
+
+        {
+            InterpBasicBlock *bb = m_ppOffsetToBB [insOffset];
+            //
+            // Funclet type change can happen only when we switch basic blocks
+            //
+            if (bb != nullptr)
+            {
+                // TODO: Assert stack pointer inside range
+                while (insOffset == exceptionExitOffsetStack[exceptionStackPointer - 1])
+                {
+                    exceptionBlockStack[exceptionStackPointer - 1]->funclet_exit_block = lastFuncletBB;
+                    if (exceptionHandlerStack[exceptionStackPointer - 1] != nullptr)
+                    {
+                        exceptionHandlerStack[exceptionStackPointer - 1]->try_exit_block = lastBodyBB;
+                    }
+                    exceptionStackPointer -= 1;
+                }
+                if (bb->funclet_type == NOT_A_FUNCLET)
+                {
+                    //
+                    // At this point, we are entering a basic block that is unclassified earlier
+                    //
+                    if (insOffset < exceptionExitOffsetStack[exceptionStackPointer - 1])
+                    {
+                        // In case we are not inside a exception handling block, the exit offset should be -1
+                        // which mean the above expression cannot be true. This means we are inside an exception
+                        // handling block, and we are not leaving it yet. That's why we should continue the labeling
+                        bb->funclet_type = (FuncletType)(exceptionBlockTypeStack[exceptionStackPointer - 1]);
+                        if ((bb->funclet_type == FINALLY) || (bb->funclet_type == TRY))
+                        {
+                            bb->finally_index = finallyIndexStack[exceptionStackPointer - 1];
+                            if (bb->funclet_type == TRY)
+                            {
+                                bb->finally_start = exceptionHandlerStack[exceptionStackPointer - 1]->ilOffset;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // At this point, we are entering an entry, so we should push the state onto the stack
+                    for (int i = 0; i < bb->funclet_exit_count; i++)
+                    {
+                        exceptionBlockTypeStack[exceptionStackPointer] = bb->funclet_type + funclet_leave_entry;
+                        if (bb->funclet_type == TRY_ENTRY)
+                        {
+                            exceptionHandlerStack[exceptionStackPointer] = bb->funclet_handlers[i];
+                            finallyIndexStack[exceptionStackPointer] = bb->funclet_handlers[i]->finally_index;
+                            bb->finally_index = finallyIndexStack[exceptionStackPointer];
+                            bb->finally_start = exceptionHandlerStack[exceptionStackPointer]->ilOffset;
+                        }
+                        else
+                        {
+                            exceptionHandlerStack[exceptionStackPointer] = nullptr;
+                            finallyIndexStack[exceptionStackPointer] = bb->finally_index;
+                        }
+                        exceptionBlockStack[exceptionStackPointer] = bb;
+                        exceptionExitOffsetStack[exceptionStackPointer] = bb->funclet_exits[i];
+                        exceptionStackPointer += 1;
+                    }
+                }
+                if ((bb->funclet_type == NOT_A_FUNCLET) || (bb->funclet_type == TRY_ENTRY) || (bb->funclet_type == TRY))
+                {
+                    lastBodyBB = bb;
+                }
+                else
+                {
+                    lastFuncletBB = bb;
+                }
+            }
+        }
+        // TODO: Assert stack pointer not inside any scope
 
         switch (opArgs)
         {
@@ -1329,6 +1571,16 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
 
 void InterpCompiler::EmitLoadVar(int32_t var)
 {
+    InterpCompiler::EmitLoadVarHelper(var, 2);
+}
+
+void InterpCompiler::EmitLoadFrameVar(int32_t var)
+{
+    InterpCompiler::EmitLoadVarHelper(var, 1);
+}
+
+void InterpCompiler::EmitLoadVarHelper(int32_t var, int mode)
+{
     InterpType interpType = m_pVars[var].interpType;
     int32_t size = m_pVars[var].size;
     CORINFO_CLASS_HANDLE clsHnd = m_pVars[var].clsHnd;
@@ -1338,7 +1590,13 @@ void InterpCompiler::EmitLoadVar(int32_t var)
     else
         PushInterpType(interpType, clsHnd);
 
-    AddIns(InterpGetMovForType(interpType, true));
+    int32_t op = InterpGetMovForType(interpType, true);
+    if ((mode == 1) && (m_pCBB->funclet_type != TRY_ENTRY) && (m_pCBB->funclet_type != TRY) && (m_pCBB->funclet_type != NOT_A_FUNCLET))
+    {
+        op += (INTOP_LOAD_I4_I1 - INTOP_MOV_I4_I1);
+    }
+    AddIns(op);
+
     m_pLastNewIns->SetSVar(var);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
     if (interpType == InterpTypeVT)
@@ -1346,6 +1604,16 @@ void InterpCompiler::EmitLoadVar(int32_t var)
 }
 
 void InterpCompiler::EmitStoreVar(int32_t var)
+{
+    EmitStoreVarHelper(var, 2);
+}
+
+void InterpCompiler::EmitStoreFrameVar(int32_t var)
+{
+    EmitStoreVarHelper(var, 1);
+}
+
+void InterpCompiler::EmitStoreVarHelper(int32_t var, int mode)
 {
     InterpType interpType = m_pVars[var].interpType;
     CHECK_STACK_RET_VOID(1);
@@ -1361,7 +1629,13 @@ void InterpCompiler::EmitStoreVar(int32_t var)
         EmitConv(m_pStackPointer - 1, NULL, StackTypeR4, INTOP_CONV_R4_R8);
 
     m_pStackPointer--;
-    AddIns(InterpGetMovForType(interpType, false));
+    int32_t op = InterpGetMovForType(interpType, false);
+    if ((mode == 1) && (m_pCBB->funclet_type != TRY_ENTRY) && (m_pCBB->funclet_type != TRY) && (m_pCBB->funclet_type != NOT_A_FUNCLET))
+    {
+        // Access of IL variable inside a funclet need to use STORE
+        op += (INTOP_STORE_I4_I1 - INTOP_MOV_I4_I1);
+    }
+    AddIns(op);
     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
     m_pLastNewIns->SetDVar(var);
     if (interpType == InterpTypeVT)
@@ -1903,11 +2177,36 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     m_pEntryBB->stackHeight = 0;
     m_pCBB = m_pEntryBB;
 
+    //
+    // We will create two separated linked list of basic blocks, the blocks of funclets
+    // and the blocks of others.
+    //
+    // The reason of doing that is that the runtime requires the funclets to be separated from
+    // the body so that funclets are never inside try
+    //
+    // All the funclet entries have initialized their stack height to be 0, so they are guaranteed
+    // to be generated in the first pass.
+    //
+    // After the first pass, we will join the body part with the funclet part so it becomes one
+    // linked list of blocks.
+    //
+    // Then, we revisit the blocks in this new order and retry the generation of missed blocks earlier
+    // these missed block is because there are not reachable from the normal control flow so we can't
+    // initialize their stack yet.
+    //
+
+    InterpBasicBlock funclet_head = {0};
+    InterpBasicBlock* funclet_tail = &funclet_head;
+    InterpBasicBlock* body_tail = m_pEntryBB;
+
     if (!CreateBasicBlocks(methodInfo))
     {
         m_hasInvalidCode = true;
         goto exit_bad_code;
     }
+#ifdef DEBUG
+    m_generatedAllBasicBlocks = true;
+#endif
 
     m_currentILOffset = -1;
 
@@ -1927,8 +2226,13 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
     linkBBlocks = true;
     needsRetryEmit = false;
+
+    bool first_pass = true;
+
 retry_emit:
     emittedBBlocks = false;
+    bool is_first_exception_funclet_instruction = false;
+
     while (m_ip < codeEnd)
     {
         // Check here for every opcode to avoid code bloat
@@ -1959,7 +2263,19 @@ retry_emit:
                 // Skip through all emitted bblocks.
                 m_pCBB = pNewBB;
                 while (m_pCBB->pNextBB && m_pCBB->pNextBB->emitState == BBStateEmitted)
+                {
+                    INTERP_DUMP("Skipping BB%d (IL_%04x):\n", m_pCBB->index, m_pCBB->ilOffset);
                     m_pCBB = m_pCBB->pNextBB;
+                }
+
+                if (m_pCBB->funclet_type == NOT_A_FUNCLET)
+                {
+                    body_tail = m_pCBB;
+                }
+                else
+                {
+                    funclet_tail = m_pCBB;
+                }
 
                 if (m_pCBB->pNextBB)
                     m_ip = m_pILCode + m_pCBB->pNextBB->ilOffset;
@@ -1970,7 +2286,12 @@ retry_emit:
             }
             else
             {
-                assert (pNewBB->emitState == BBStateNotEmitted);
+                assert(pNewBB->emitState == BBStateNotEmitted);
+                if ((pNewBB->funclet_type == CATCH_ENTRY) || (pNewBB->funclet_type == FILTER_ENTRY))
+                {
+                    assert(first_pass);
+                    is_first_exception_funclet_instruction = true;
+                }
             }
             // We are starting a new basic block. Change cbb and link them together
             if (linkBBlocks)
@@ -2018,8 +2339,24 @@ retry_emit:
                     // We will just skip all instructions instead, since it doesn't seem that problematic.
                 }
             }
-            if (!m_pCBB->pNextBB)
-                m_pCBB->pNextBB = pNewBB;
+
+            InterpBasicBlock* prev = m_pCBB;
+            if ((pNewBB->funclet_type == NOT_A_FUNCLET) || (pNewBB->funclet_type == TRY_ENTRY) || (pNewBB->funclet_type == TRY))
+            {
+                prev = body_tail;
+                body_tail = pNewBB;
+            }
+            else
+            {
+                prev = funclet_tail;
+                funclet_tail = pNewBB;
+            }
+
+            if (first_pass)
+            {
+                assert(prev != nullptr);
+                prev->pNextBB = pNewBB;
+            }
             m_pCBB = pNewBB;
         }
 
@@ -2032,6 +2369,15 @@ retry_emit:
         }
 
         m_ppOffsetToBB[insOffset] = m_pCBB;
+
+        if (is_first_exception_funclet_instruction)
+        {
+            AddIns(INTOP_ENTER_FUNCLET);
+            // TODO, the type should be type of the exception caught, do we care?
+            PushStackType(StackTypeO, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            is_first_exception_funclet_instruction = false;
+        }
 
 #ifdef DEBUG
         if (m_verbose)
@@ -2138,14 +2484,14 @@ retry_emit:
                 break;
             }
             case CEE_LDARG_S:
-                EmitLoadVar(m_ip[1]);
+                EmitLoadFrameVar(m_ip[1]);
                 m_ip += 2;
                 break;
             case CEE_LDARG_0:
             case CEE_LDARG_1:
             case CEE_LDARG_2:
             case CEE_LDARG_3:
-                EmitLoadVar(*m_ip - CEE_LDARG_0);
+                EmitLoadFrameVar(*m_ip - CEE_LDARG_0);
                 m_ip++;
                 break;
             case CEE_LDARGA_S:
@@ -2153,18 +2499,18 @@ retry_emit:
                 m_ip += 2;
                 break;
             case CEE_STARG_S:
-                EmitStoreVar(m_ip[1]);
+                EmitStoreFrameVar(m_ip[1]);
                 m_ip += 2;
                 break;
             case CEE_LDLOC_S:
-                EmitLoadVar(numArgs + m_ip[1]);
+                EmitLoadFrameVar(numArgs + m_ip[1]);
                 m_ip += 2;
                 break;
             case CEE_LDLOC_0:
             case CEE_LDLOC_1:
             case CEE_LDLOC_2:
             case CEE_LDLOC_3:
-                EmitLoadVar(numArgs + *m_ip - CEE_LDLOC_0);
+                EmitLoadFrameVar(numArgs + *m_ip - CEE_LDLOC_0);
                 m_ip++;
                 break;
             case CEE_LDLOCA_S:
@@ -2172,14 +2518,14 @@ retry_emit:
                 m_ip += 2;
                 break;
             case CEE_STLOC_S:
-                EmitStoreVar(numArgs + m_ip[1]);
+                EmitStoreFrameVar(numArgs + m_ip[1]);
                 m_ip += 2;
                 break;
             case CEE_STLOC_0:
             case CEE_STLOC_1:
             case CEE_STLOC_2:
             case CEE_STLOC_3:
-                EmitStoreVar(numArgs + *m_ip - CEE_STLOC_0);
+                EmitStoreFrameVar(numArgs + *m_ip - CEE_STLOC_0);
                 m_ip++;
                 break;
 
@@ -3141,7 +3487,7 @@ retry_emit:
                 switch (*m_ip + 256)
                 {
                     case CEE_LDARG:
-                        EmitLoadVar(getU2LittleEndian(m_ip + 1));
+                        EmitLoadFrameVar(getU2LittleEndian(m_ip + 1));
                         m_ip += 3;
                         break;
                     case CEE_LDARGA:
@@ -3149,11 +3495,11 @@ retry_emit:
                         m_ip += 3;
                         break;
                     case CEE_STARG:
-                        EmitStoreVar(getU2LittleEndian(m_ip + 1));
+                        EmitStoreFrameVar(getU2LittleEndian(m_ip + 1));
                         m_ip += 3;
                         break;
                     case CEE_LDLOC:
-                        EmitLoadVar(numArgs + getU2LittleEndian(m_ip + 1));
+                        EmitLoadFrameVar(numArgs + getU2LittleEndian(m_ip + 1));
                         m_ip += 3;
                         break;
                     case CEE_LDLOCA:
@@ -3161,7 +3507,7 @@ retry_emit:
                         m_ip += 3;
                         break;
                     case CEE_STLOC:
-                        EmitStoreVar(numArgs + getU2LittleEndian(m_ip + 1));\
+                        EmitStoreFrameVar(numArgs + getU2LittleEndian(m_ip + 1));\
                         m_ip += 3;
                         break;
                     case CEE_CEQ:
@@ -3257,26 +3603,106 @@ retry_emit:
                         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                         m_ip++;
                         break;
+
+                    case CEE_ENDFILTER:
+                        // At this point, we expect the top of the stack is the decision of the filter
+                        // below it is the exception object, and nothing else
+                        assert((m_pStackPointer - m_pStackBase) == 2);
+                        AddIns(INTOP_LEAVE_FILTER);
+                        m_pStackPointer--;
+                        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                        m_ip++;
+                        break;
                     default:
                         assert(0);
                         break;
                 }
                 break;
 
+            case CEE_LEAVE:
+            case CEE_LEAVE_S:
+                {
+                    // At this point, we are leaving the block, we should not have anything on the stack
+                    assert(m_pStackPointer == m_pStackBase);
+                    // We should not have a LEAVE instruction in a filter or a finally block
+                    assert((m_pCBB->funclet_type == TRY_ENTRY) || (m_pCBB->funclet_type == TRY) || (m_pCBB->funclet_type == CATCH_ENTRY) || (m_pCBB->funclet_type == CATCH));
+                    InterpInst* prev = AddIns(INTOP_NOP);
+                    InterpInst* next = AddIns(INTOP_NOP);
+                    int ilOffset = (int)(m_ip - m_pILCode);
+                    int target = (opcode == CEE_LEAVE) ? ilOffset + 5 + *(int32_t*)(m_ip + 1) : (ilOffset + 2 + (int8_t)m_ip[1]);
+                    if (m_pCBB->finally_index != -1)
+                    {
+                        EmitBranch(INTOP_CALL_FINALLY, m_pCBB->finally_start - (int)(m_ip - m_pILCode));
+                        m_pLastNewIns->SetDVar(m_numILVars + m_pCBB->finally_index);
+                    }
+                    if ((m_pCBB->funclet_type == CATCH_ENTRY) || (m_pCBB->funclet_type == CATCH))
+                    {
+                        // When catch block execution completes, returns to InterpreterCodeManager::CallFunclet
+                        InterpInst* leave = NewIns(INTOP_LEAVE_CATCH, GetDataLen(INTOP_LEAVE_CATCH));
+                        prev->pNext = leave;
+                        leave->pNext = next;
+                        next->pPrev = leave;
+                        leave->pPrev = prev;
+                    }
+                    EmitBranch(INTOP_BR, target - ilOffset);
+                    linkBBlocks = false;
+                }
+                m_ip += (opcode == CEE_LEAVE) ? 5 : 2;
+                break;
+
+            case CEE_ENDFINALLY:
+                {
+                    AddIns(INTOP_RET_FINALLY);
+                    m_ip += 1;
+                    m_pLastNewIns->SetSVar(m_numILVars + m_pCBB->finally_index);
+                    assert((m_pCBB->funclet_type == FINALLY_ENTRY) || (m_pCBB->funclet_type == FINALLY));
+                    linkBBlocks = false;
+                }
+
+                break;
+
             case CEE_THROW:
+                CHECK_STACK(1);
                 AddIns(INTOP_THROW);
                 m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
                 m_ip += 1;
+                linkBBlocks = false;
                 break;
 
+            case CEE_ISINST:
+                {
+                    CHECK_STACK(1);
+                    CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                    void* helperFtnSlot = nullptr;
+                    void *helperFtn = m_compHnd->getHelperFtn(CORINFO_HELP_ISINSTANCEOFANY, &helperFtnSlot);
+                    AddIns(INTOP_CALL_HELPER_PP_2);
+                    m_pLastNewIns->data[0] = GetDataItemIndex(helperFtn);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(helperFtnSlot);
+                    m_pLastNewIns->data[2] = GetDataItemIndex(clsHnd);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+                    PushInterpType(InterpTypeI, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    m_ip += 5;
+                    break;
+                }
+
             default:
-                assert(0);
+                assert(!"NYI: Unexpected opcode");
                 break;
         }
     }
 
     if (m_pCBB->emitState == BBStateEmitting)
         m_pCBB->emitState = BBStateEmitted;
+
+    if (first_pass)
+    {
+        first_pass = false;
+        if (body_tail != nullptr)
+        {
+            body_tail->pNextBB = funclet_head.pNextBB;
+        }
+    }
 
     // If no bblocks were emitted during the last iteration, there is no point to try again
     // Some bblocks are just unreachable in the code.
@@ -3335,6 +3761,8 @@ void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
 
     m_compHnd->printMethodName(method, methodName, 100);
     printf(".%s", methodName);
+
+    // m_interesting = (strcmp(methodName, "TestCatchFinally") == 0);
 }
 
 void InterpCompiler::PrintCode()
@@ -3345,11 +3773,38 @@ void InterpCompiler::PrintCode()
 
 void InterpCompiler::PrintBBCode(InterpBasicBlock *pBB)
 {
-    printf("BB%d:\n", pBB->index);
+    printf("BB%d (%d, %d):\n", pBB->index, pBB->funclet_type, pBB->finally_index);
+    switch(pBB->funclet_type)
+    {
+        case CATCH_ENTRY: printf("Enter catch\n"); break;
+        case FILTER_ENTRY: printf("Enter filter\n"); break;
+        case FINALLY_ENTRY: printf("Enter finally\n"); break;
+    }
     for (InterpInst *ins = pBB->pFirstIns; ins != NULL; ins = ins->pNext)
     {
         PrintIns(ins);
         printf("\n");
+    }
+
+    int funclet_type = pBB->funclet_type;
+    int next_funclet_type = (pBB->pNextBB == nullptr) ? NOT_A_FUNCLET : pBB->pNextBB->funclet_type;
+    if ((funclet_type != NOT_A_FUNCLET) && ((next_funclet_type < FILTER) || ((next_funclet_type - funclet_type) % funclet_leave_entry != 0)))
+    {
+        switch(pBB->funclet_type)
+        {
+            case CATCH_ENTRY:
+            case CATCH:
+                printf("Exit catch\n");
+                break;
+            case FILTER_ENTRY:
+            case FILTER:
+                printf("Exit filter\n");
+                break;
+            case FINALLY:
+            case FINALLY_ENTRY:
+                printf("Exit finally\n");
+                break;
+        }
     }
 }
 
@@ -3516,9 +3971,71 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line)
             return;
     }
 
+
 #ifdef _MSC_VER
     __debugbreak();
 #else // _MSC_VER
     __builtin_trap();
 #endif // _MSC_VER
+}
+
+void InterpCompiler::BuildEHInfo()
+{
+    if (m_methodInfo->EHcount > 0)
+    {
+        m_compHnd->setEHcount(m_methodInfo->EHcount);
+        for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
+        {
+            CORINFO_EH_CLAUSE clause;
+
+            m_compHnd->getEHinfo(m_methodInfo->ftn, i, &clause);
+
+            InterpBasicBlock* tryStart = GetBB(clause.TryOffset);
+            InterpBasicBlock* filterStart = (clause.Flags == CORINFO_EH_CLAUSE_FILTER) ? GetBB(clause.FilterOffset) : nullptr;
+            InterpBasicBlock* handlerStart = GetBB(clause.HandlerOffset);
+
+            InterpBasicBlock* tryEnd = handlerStart->try_exit_block;
+            assert(tryEnd != nullptr);
+            InterpInst* lastTryInst = tryEnd->pLastIns;
+            while (lastTryInst->flags & INTERP_INST_FLAG_REVERTED)
+            {
+                lastTryInst = lastTryInst->pPrev;
+            }
+            int tryEndOffset = lastTryInst->nativeOffset + GetInsLength(lastTryInst);
+
+            InterpBasicBlock* handlerEnd = handlerStart->funclet_exit_block;
+            assert(handlerEnd != nullptr);
+            InterpInst* lastHandlerInst = handlerEnd->pLastIns;
+            int handlerEndOffset = lastHandlerInst->nativeOffset + GetInsLength(lastHandlerInst);
+
+            // Note - TryLength and HandlerLength are actually interpreted as the exclusive end of the block by the VM
+            // I believe the fields are abused (see how CEECodeGenInfo::setEHinfoWorker interpret the field)
+
+            clause.TryOffset = ConvertOffset(tryStart->nativeOffset);
+            clause.TryLength = ConvertOffset(tryEndOffset);
+            clause.HandlerOffset = ConvertOffset(handlerStart->nativeOffset);
+            clause.HandlerLength = ConvertOffset(handlerEndOffset);
+            if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+            {
+                clause.FilterOffset = ConvertOffset(filterStart->nativeOffset);
+            }
+            if (m_verbose)
+            {
+                printf("Reporting try [IR_%04x(%d), IR_%04x(%d)) ", tryStart->nativeOffset, clause.TryOffset, tryEndOffset, clause.TryLength);
+                if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+                {
+                    printf("filter [IR_%04x(%d), IR_%04x(%d)) ", filterStart->nativeOffset, clause.FilterOffset, handlerStart->nativeOffset, clause.HandlerOffset);
+                }
+                if (clause.Flags == CORINFO_EH_CLAUSE_FINALLY)
+                {
+                    printf("finally [IR_%04x(%d), IR_%04x(%d))\n", handlerStart->nativeOffset, clause.HandlerOffset, handlerEndOffset, clause.HandlerLength);
+                }
+                else
+                {
+                    printf("catch [IR_%04x(%d), IR_%04x(%d))\n", handlerStart->nativeOffset, clause.HandlerOffset, handlerEndOffset, clause.HandlerLength);
+                }
+            }
+            m_compHnd->setEHinfo(i, &clause);
+        }
+    }
 }

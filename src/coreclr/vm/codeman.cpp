@@ -4339,8 +4339,34 @@ BOOL InterpreterJitManager::JitCodeToMethodInfo(
 
 TADDR InterpreterJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
 {
-    // Interpreter-TODO: Verify that this is correct
-    return pCodeInfo->GetCodeAddress() - pCodeInfo->GetRelOffset();
+    EH_CLAUSE_ENUMERATOR enumState;
+    unsigned ehCount;
+
+    IJitManager *pJitMan = pCodeInfo->GetJitManager();
+    ehCount = pJitMan->InitializeEHEnumeration(pCodeInfo->GetMethodToken(), &enumState);
+    DWORD relOffset = pCodeInfo->GetRelOffset();
+    TADDR methodBaseAddress = pCodeInfo->GetCodeAddress() - relOffset;
+
+    for (unsigned i = 0; i < ehCount; i++)
+    {
+        EE_ILEXCEPTION_CLAUSE ehClause;
+        pJitMan->GetNextEHClause(&enumState, &ehClause);
+
+        if ((ehClause.HandlerStartPC <= relOffset) && (relOffset < ehClause.HandlerEndPC))
+        {
+            return methodBaseAddress + ehClause.HandlerStartPC;
+        }
+
+        // For filters, we also need to check the filter funclet range. The filter funclet is always stored right
+        // before its handler funclet. So the filter end offset is equal to the start offset of the handler funclet.
+        if (IsFilterHandler(&ehClause) && (ehClause.FilterOffset <= relOffset) && (relOffset < ehClause.HandlerStartPC))
+        {
+            // Filter handlers are not funclets, but we need to return the start address of the filter code.
+            return methodBaseAddress + ehClause.FilterOffset;
+        }
+    }
+
+    return methodBaseAddress;
 }
 
 void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo)

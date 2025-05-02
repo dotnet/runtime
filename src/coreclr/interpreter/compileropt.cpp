@@ -254,7 +254,7 @@ void InterpCompiler::AllocOffsets()
                     int32_t *callArgs = pIns->info.pCallInfo->pCallArgs;
                     int32_t var = *callArgs;
 
-                    while (var != -1)
+                    while (var != CALL_ARGS_TERMINATOR)
                     {
                         if (m_pVars[var].global || m_pVars[var].noCallArgs)
                         {
