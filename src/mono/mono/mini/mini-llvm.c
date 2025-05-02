@@ -10468,7 +10468,7 @@ MONO_RESTORE_WARNING
 				bidx  = LLVMBuildShl (builder, bidx, shiftv, "");
 				LLVMValueRef args [] = { bidx, fill };
 				LLVMValueRef fill_mask = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
-				bidx = LLVMBuildAnd (builder, fill_mask, offset, "");
+				bidx = LLVMBuildAdd (builder, fill_mask, offset, "");
 			}
 			LLVMValueRef lhs_b = LLVMBuildBitCast (builder, lhs, LLVMVectorType (i1_t, 16), "");
 			LLVMValueRef args [] = { lhs_b, bidx };
