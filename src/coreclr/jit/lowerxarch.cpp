@@ -107,30 +107,6 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
     }
     ContainCheckStoreIndir(node);
 
-#if defined(FEATURE_HW_INTRINSICS)
-    if (comp->IsBaselineVector512IsaSupportedOpportunistically() ||
-        comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-    {
-        if (!node->Data()->IsCnsVec())
-        {
-            return node->gtNext;
-        }
-
-        if (!node->Data()->AsVecCon()->TypeIs(TYP_SIMD32, TYP_SIMD64))
-        {
-            return node->gtNext;
-        }
-
-        if (node->Data()->IsVectorAllBitsSet() || node->Data()->IsVectorZero())
-        {
-            // To avoid some unexpected regression, this optimization only applies to non-all 1/0 constant vectors.
-            return node->gtNext;
-        }
-
-        TryCompressConstVecData(node);
-    }
-#endif
-
     return node->gtNext;
 }
 
@@ -4145,7 +4121,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         BlockRange().Remove(node);
 
-        return LowerNode(vecCon);
+        return vecCon->gtNext;
     }
     else if (argCnt == 1)
     {
@@ -8921,9 +8897,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
-                case NI_AVX2_BroadcastVector128ToVector256:
-                case NI_AVX512F_BroadcastVector128ToVector512:
-                case NI_AVX512F_BroadcastVector256ToVector512:
                 {
                     // These can have either pointer or vector operands. For the pointer case, we can't check
                     // size, so just assume it matches. Otherwise, do normal size check based on tuple type.
@@ -9484,83 +9457,6 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
     MakeSrcContained(parentNode, childNode);
 }
 
-//----------------------------------------------------------------------------------------------
-// TryCompressConstVecData:
-//  Try to compress the constant vector input if it has duplicated parts and can be optimized by
-//  broadcast
-//
-//  Arguments:
-//     node - the storeind node.
-//
-//  Return:
-//     return true if compress success.
-void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
-{
-    assert(node->Data()->IsCnsVec());
-    assert(node->Data()->AsVecCon()->TypeIs(TYP_SIMD32, TYP_SIMD64));
-
-    GenTreeVecCon*      vecCon    = node->Data()->AsVecCon();
-    GenTreeHWIntrinsic* broadcast = nullptr;
-
-    if (vecCon->TypeIs(TYP_SIMD32))
-    {
-        assert(comp->compOpportunisticallyDependsOn(InstructionSet_AVX2));
-        if (vecCon->gtSimd32Val.v128[0] == vecCon->gtSimdVal.v128[1])
-        {
-            simd16_t simd16Val              = {};
-            simd16Val.f64[0]                = vecCon->gtSimd32Val.f64[0];
-            simd16Val.f64[1]                = vecCon->gtSimd32Val.f64[1];
-            GenTreeVecCon* compressedVecCon = comp->gtNewVconNode(TYP_SIMD16);
-            memcpy(&compressedVecCon->gtSimdVal, &simd16Val, sizeof(simd16_t));
-            BlockRange().InsertBefore(node->Data(), compressedVecCon);
-            BlockRange().Remove(vecCon);
-            broadcast = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, compressedVecCon,
-                                                       NI_AVX2_BroadcastVector128ToVector256, CORINFO_TYPE_UINT, 32);
-        }
-    }
-    else
-    {
-        assert(vecCon->TypeIs(TYP_SIMD64));
-        assert(comp->IsBaselineVector512IsaSupportedOpportunistically());
-        if (vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[1] &&
-            vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[2] &&
-            vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[3])
-        {
-            simd16_t simd16Val              = {};
-            simd16Val.f64[0]                = vecCon->gtSimd64Val.f64[0];
-            simd16Val.f64[1]                = vecCon->gtSimd64Val.f64[1];
-            GenTreeVecCon* compressedVecCon = comp->gtNewVconNode(TYP_SIMD16);
-            memcpy(&compressedVecCon->gtSimdVal, &simd16Val, sizeof(simd16_t));
-            BlockRange().InsertBefore(node->Data(), compressedVecCon);
-            BlockRange().Remove(vecCon);
-            broadcast = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon,
-                                                       NI_AVX512F_BroadcastVector128ToVector512, CORINFO_TYPE_UINT, 64);
-        }
-        else if (vecCon->gtSimd64Val.v256[0] == vecCon->gtSimd64Val.v256[1])
-        {
-            simd32_t simd32Val              = {};
-            simd32Val.v128[0]               = vecCon->gtSimd32Val.v128[0];
-            simd32Val.v128[1]               = vecCon->gtSimd32Val.v128[1];
-            GenTreeVecCon* compressedVecCon = comp->gtNewVconNode(TYP_SIMD32);
-            memcpy(&compressedVecCon->gtSimdVal, &simd32Val, sizeof(simd32_t));
-            BlockRange().InsertBefore(node->Data(), compressedVecCon);
-            BlockRange().Remove(vecCon);
-            broadcast =
-                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon, NI_AVX512F_BroadcastVector256ToVector512,
-                                               CORINFO_TYPE_ULONG, 64);
-        }
-    }
-
-    if (broadcast == nullptr)
-    {
-        return;
-    }
-
-    BlockRange().InsertBefore(node, broadcast);
-    node->Data() = broadcast;
-    LowerNode(broadcast);
-}
-
 //------------------------------------------------------------------------
 // TryMakeSrcContainedOrRegOptional: Tries to make "childNode" a contained or regOptional node
 //
@@ -9811,20 +9707,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                             }
                         }
-                        break;
-                    }
-
-                    case NI_AVX2_BroadcastVector128ToVector256:
-                    case NI_AVX512F_BroadcastVector128ToVector512:
-                    case NI_AVX512F_BroadcastVector256ToVector512:
-                    {
-                        if (node->OperIsMemoryLoad())
-                        {
-                            ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ 32);
-                            return;
-                        }
-
-                        assert(op1->IsCnsVec());
                         break;
                     }
 

@@ -1539,7 +1539,7 @@ public:
         }
     };
 
-    OperandDesc genOperandDesc(GenTree* op);
+    OperandDesc genOperandDesc(instruction ins, GenTree* op);
 
     void inst_TT(instruction ins, emitAttr size, GenTree* op1);
     void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2);
