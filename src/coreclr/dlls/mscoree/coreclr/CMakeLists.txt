@@ -185,6 +185,7 @@ if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr_static
         PUBLIC
         coreclrminipal_objects
+        coreclrpal_objects
         eventprovider_objects
         gcinfo
         libunwind
