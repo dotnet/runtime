@@ -23,9 +23,6 @@
 #ifdef FEATURE_COMWRAPPERS
 #include <interoplibinterface.h>
 #include <interoplibabi.h>
-
-typedef DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) PTR_ManagedObjectWrapper;
-typedef DPTR(InteropLib::ABI::ComInterfaceEntry) PTR_ComInterfaceEntry;
 #endif // FEATURE_COMWRAPPERS
 
 #ifndef TARGET_UNIX
@@ -5052,27 +5049,58 @@ HRESULT ClrDataAccess::GetBreakingChangeVersion(int* pVersion)
     return S_OK;
 }
 
+namespace
+{
+    typedef DPTR(InteropLib::ABI::ComInterfaceEntry) PTR_ComInterfaceEntry;
+
+    struct TargetManagedObjectWrapper : public InteropLib::ABI::ManagedObjectWrapperLayout
+    {
+        public:
+        InteropLib::Com::CreateComInterfaceFlagsEx GetFlags()
+        {
+            return _flags;
+        }
+
+        PTR_ComInterfaceEntry GetUserDefined(int32_t* pNumEntries)
+        {
+            return dac_cast<PTR_ComInterfaceEntry>((TADDR)_userDefined);
+        }
+
+        TADDR IndexIntoDispatchSection(int32_t index)
+        {
+            return (TADDR)InteropLib::ABI::IndexIntoDispatchSection(index, _dispatches);
+        }
+
+        TADDR GetRuntimeDefinedIUnknown()
+        {
+            return (TADDR)InteropLib::ABI::IndexIntoDispatchSection(_userDefinedCount, _dispatches);
+        }
+    };
+
+    typedef DPTR(TargetManagedObjectWrapper) PTR_ManagedObjectWrapper;
+}
+
 TADDR ClrDataAccess::GetIdentityForManagedObjectWrapper(TADDR mow)
 {
     PTR_ManagedObjectWrapper pMOW = dac_cast<PTR_ManagedObjectWrapper>(mow);
     // Replicate the logic for ManagedObjectWrapper.As(IID_IUnknown)
-    if ((pMOW->_flags & InteropLib::Com::CreateComInterfaceFlagsEx::CallerDefinedIUnknown) == InteropLib::Com::CreateComInterfaceFlagsEx::None)
+    if ((pMOW->GetFlags() & InteropLib::Com::CreateComInterfaceFlagsEx::CallerDefinedIUnknown) == InteropLib::Com::CreateComInterfaceFlagsEx::None)
     {
         // We have the standard IUnknown implementation, so grab it from its known location.
         // The index returned from IndexIntoDispatchSection is in the target address space.
-        return (TADDR)InteropLib::ABI::IndexIntoDispatchSection(pMOW->_userDefinedCount, pMOW->_dispatches);
+        return pMOW->GetRuntimeDefinedIUnknown();
     }
 
     // We need to find the IUnknown interface pointer in the MOW.
-    for (int32_t i = 0; i < pMOW->_userDefinedCount; i++)
+    int32_t userDefinedCount;
+    PTR_ComInterfaceEntry pUserDefined = pMOW->GetUserDefined(&userDefinedCount);
+    for (int32_t i = 0; i < userDefinedCount; i++)
     {
-        // _userDefined is a pointer into the target address space.
-        PTR_ComInterfaceEntry pEntry = dac_cast<PTR_ComInterfaceEntry>((TADDR)(pMOW->_userDefined + i));
-        if (pEntry->IID == IID_IUnknown)
+        if (pUserDefined[i].IID == IID_IUnknown)
         {
             // We found the IUnknown interface pointer.
             // The index returned from IndexIntoDispatchSection is in the target address space.
-            return (TADDR)InteropLib::ABI::IndexIntoDispatchSection(i, pMOW->_dispatches);
+            return pMOW->IndexIntoDispatchSection(i);
         }
     }
 

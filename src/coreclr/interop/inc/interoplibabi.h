@@ -55,9 +55,6 @@ namespace InteropLib
         // This is designed to codify the binary layout.
         struct ManagedObjectWrapperLayout
         {
-#ifdef DACCESS_COMPILE
-            friend class ClrDataAccess;
-#endif // DACCESS_COMPILE
         public:
             LONGLONG GetRawRefCount() const
             {
