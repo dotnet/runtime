@@ -109,6 +109,44 @@ ep_session_provider_free (EventPipeSessionProvider * session_provider)
 	ep_rt_object_free (session_provider);
 }
 
+bool
+ep_event_filter_allows_event_id (
+	const EventPipeProviderEventFilter *event_filter,
+	uint32_t event_id)
+{
+	if (event_filter == NULL)
+		return true;
+
+	if (event_filter->event_ids == NULL)
+		return !event_filter->enable;
+
+	return event_filter->enable == dn_umap_contains (event_filter->event_ids, &event_id);
+}
+
+bool
+ep_session_provider_allows_event (
+	const EventPipeSessionProvider *session_provider,
+	const EventPipeEvent *ep_event)
+{
+	EP_ASSERT(session_provider != NULL);
+
+	uint64_t keywords = ep_event_get_keywords (ep_event);
+	uint64_t session_keywords = ep_session_provider_get_keywords(session_provider);
+	if ((keywords != 0) && ((session_keywords & keywords) == 0))
+		return false;
+
+	EventPipeEventLevel event_level = ep_event_get_level (ep_event);
+	EventPipeEventLevel session_level = ep_session_provider_get_logging_level(session_provider);
+	if ((event_level != EP_EVENT_LEVEL_LOGALWAYS) &&
+		(session_level != EP_EVENT_LEVEL_LOGALWAYS) &&
+		(session_level < event_level))
+		return false;
+
+	uint32_t event_id = ep_event_get_event_id (ep_event);
+	EventPipeProviderEventFilter *event_filter = ep_session_provider_get_event_filter (session_provider);
+	return ep_event_filter_allows_event_id (event_filter, event_id);
+}
+
 /*
  * EventPipeSessionProviderList.
  */
