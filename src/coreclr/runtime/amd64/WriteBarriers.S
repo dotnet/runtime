@@ -4,6 +4,14 @@
 .intel_syntax noprefix
 #include "AsmMacros_Shared.h"
 
+#ifdef defined(__APPLE__)
+    // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
+    // Fix, but adding an empty, unused method
+    LEAF_ENTRY RhpWriteBarriersDoNotFailToBuild, _TEXT
+       ret
+    LEAF_END RhpWriteBarriersDoNotFailToBuild, _TEXT
+#endif
+
 #ifdef WRITE_BARRIER_CHECK
 
 .macro UPDATE_GC_SHADOW BASENAME, REFREG, DESTREG

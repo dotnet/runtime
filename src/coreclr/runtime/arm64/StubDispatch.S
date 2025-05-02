@@ -5,6 +5,14 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+#ifdef defined(__APPLE__)
+    // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
+    // Fix, but adding an empty, unused method
+    LEAF_ENTRY RhpStubDispatchDoNotFailToBuild, _TEXT
+       ret
+    LEAF_END RhpStubDispatchDoNotFailToBuild, _TEXT
+#endif
+
     // Macro that generates code to check a single cache entry.
     .macro CHECK_CACHE_ENTRY entry
         // Check a single entry in the cache.
