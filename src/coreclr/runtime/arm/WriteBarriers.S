@@ -52,6 +52,8 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
           // we're in a debug build and write barrier checking has been enabled).
           UPDATE_GC_SHADOW \BASENAME, \REFREG, r0
 
+          UPDATE_WRITE_WATCH_TABLE r0, r12, \TMPREG
+
           // If the reference is to an object that's not in an ephemeral generation we have no need to track it
           // (since the object won't be collected or moved by an ephemeral collection).
           PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, r12
@@ -62,7 +64,6 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
           cmp          \REFREG, r12
           bhs          LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG)
 
-          UPDATE_WRITE_WATCH_TABLE r0, r12, \TMPREG
 
           // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
           // track this write. The location address is translated into an offset in the card table bitmap. We set
@@ -287,6 +288,8 @@ GLOBAL_LABEL RhpByRefAssignRefAVLocation2
           // we're in a debug build and write barrier checking has been enabled).
           UPDATE_GC_SHADOW BASENAME, r2, r0
 
+          UPDATE_WRITE_WATCH_TABLE r0, r12, r3
+
           // If the reference is to an object that's not in an ephemeral generation we have no need to track it
           // (since the object won't be collected or moved by an ephemeral collection).
           PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, r3
@@ -300,12 +303,6 @@ GLOBAL_LABEL RhpByRefAssignRefAVLocation2
           mov          r2, r0
           add          r1, #4
           add          r0, #4
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-          mov          r12, r0
-          UPDATE_WRITE_WATCH_TABLE r2, r3, r0
-          mov          r0, r12
-#endif
 
           // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
           // track this write. The location address is translated into an offset in the card table bitmap. We set
