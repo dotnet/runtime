@@ -9,7 +9,7 @@ struct InterpreterStackMapSlot
 
 class InterpreterStackMap
 {
-    void PopulateStackMap (ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle, uint32_t offset);
+    void PopulateStackMap (ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle);
 
 public:
     unsigned m_slotCount;
@@ -19,7 +19,7 @@ public:
         : m_slotCount(0)
         , m_slots(nullptr)
     {
-        PopulateStackMap(jitInfo, classHandle, 0);
+        PopulateStackMap(jitInfo, classHandle);
     }
 };
 
