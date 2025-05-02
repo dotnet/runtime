@@ -1019,8 +1019,6 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     gcInfoEncoder->Emit();
-
-    fflush(stdout);
 #endif
 }
 

@@ -2203,15 +2203,11 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
     else
     {
         _ASSERTE( GC_FRAMEREG_REL == spBase );
-
-        // HACK: The register slot we stash the frame pointer into varies per-architecture.
-        // CONTEXTGetFp is unavailable here (including its header doesn't work either).
         uint8_t* fp = (uint8_t *)GetFP(pRD->pCurrentContext);
         _ASSERTE(fp);
         pObjRef = (OBJECTREF*)(fp + spOffset);
     }
 
-    // printf("interp sp+%u at offset %p points to %p\n", spOffset, pObjRef, *(void **)pObjRef);
     return pObjRef;
 }
 #endif
