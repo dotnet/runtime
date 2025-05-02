@@ -393,7 +393,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "und-us", "und-US", "und-US" };
             yield return new object[] { "und-us_tradnl", "und-US", "und-US_tradnl"};
 
-            // On AppleMobile and MonoRuntime platforms, the behavior of CultureInfo differs due to platform-specific
+            // On AppleMobile, the behavior of CultureInfo differs due to platform-specific
             // handling of Unicode extensions and subtags. These platforms preserve the full language tag, including
             // extensions, while other platforms normalize the tag to a simpler form.
             if (PlatformDetection.IsAppleMobile)
