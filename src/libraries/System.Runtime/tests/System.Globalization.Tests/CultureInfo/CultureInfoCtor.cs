@@ -388,11 +388,25 @@ namespace System.Globalization.Tests
             }
         }
 
+        public static IEnumerable<object[]> Ctor_Undetermined_TestData()
+        {
+            yield return new object[] { "und-us", "und-US", "und-US" };
+            yield return new object[] { "und-us_tradnl", "und-US", "und-US_tradnl"};
+
+            if (PlatformDetection.IsAppleMobile && PlatformDetection.IsMonoRuntime)
+            {
+                yield return new object[] { "und-es-u-co-phoneb", "und-ES-u-co-phoneb", "und-ES-u-co-phoneb" };
+                yield return new object[] { "und-es-t-something", "und-ES-t-something", "und-ES-t-something" };
+            }
+            else
+            {
+                yield return new object[] { "und-es-u-co-phoneb", "und-ES", "und-ES_phoneb" };
+                yield return new object[] { "und-es-t-something", "und-ES", "und-ES"};
+            }
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
-        [InlineData("und-us", "und-US", "und-US")]
-        [InlineData("und-us_tradnl", "und-US", "und-US_tradnl")]
-        [InlineData("und-es-u-co-phoneb", "und-ES", "und-ES_phoneb")]
-        [InlineData("und-es-t-something", "und-ES", "und-ES")]
+        [MemberData(nameof(Ctor_Undetermined_TestData))]
         public void CtorUndeterminedLanguageTag(string cultureName, string expectedCultureName, string expectedSortName)
         {
             CultureInfo culture = new CultureInfo(cultureName);
