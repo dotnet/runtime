@@ -248,7 +248,7 @@ public:
 #endif // FEATURE_SVR_GC
     }
 
-    bool UseThreadAllocationContexts()
+    static bool UseThreadAllocationContexts()
     {
 #if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
         return s_useThreadAllocationContexts;
