@@ -7353,6 +7353,9 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
         case GT_SWIFT_ERROR:
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
             return true;
         default:
             return false;

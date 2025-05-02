@@ -563,12 +563,19 @@ bool FoldNeverNegativeRangeTest(
     GenTreeIntCon* cns1Node;
     genTreeOps     cmp1Op;
 
-    // First cmp has to be "X >= 0" (or "0 <= X")
-    // TODO: handle "X < NN && X >= 0" (where the 2nd comparison is the lower bound)
-    // It seems to be a rare case, so we don't handle it for now.
+    // One of the cmp has to be "X >= 0" (or "0 <= X")
+    bool upperBoundFirst = false;
     if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op))
     {
-        return false;
+        if (!IsConstantRangeTest(cmp2, &var1Node, &cns1Node, &cmp1Op))
+        {
+            return false;
+        }
+
+        // If we have "X < NN && X >= 0" -> normalize to "X >= 0 && X < NN"
+        upperBoundFirst = true;
+        std::swap(cmp1, cmp2);
+        std::swap(cmp1IsReversed, cmp2IsReversed);
     }
 
     // Now, reverse the comparison if necessary depending on cmp1IsReversed and cmp2IsReversed
@@ -612,9 +619,10 @@ bool FoldNeverNegativeRangeTest(
         return false;
     }
 
-    if ((upperBound->gtFlags & GTF_SIDE_EFFECT) != 0)
+    if (!upperBoundFirst && ((upperBound->gtFlags & GTF_SIDE_EFFECT) != 0))
     {
         // We can't fold "X >= 0 && X < NN" to "X u< NN" if NN has side effects.
+        // Unless the upper bound is the first in the execution order (e.g. "X < NN && X >= 0").
         return false;
     }
 
@@ -1213,6 +1221,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
         m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
     }
+    m_comp->gtUpdateStmtSideEffects(m_testInfo1.testStmt);
 
     /* Modify the target of the conditional jump and update bbRefs and bbPreds */
 
