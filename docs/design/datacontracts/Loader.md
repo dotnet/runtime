@@ -74,7 +74,7 @@ bool IsAssemblyLoaded(ModuleHandle handle);
 
 ## Version 1
 
-Data descriptors used:
+### Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `Module` | `Assembly` | Assembly of the Module |
@@ -120,12 +120,31 @@ Data descriptors used:
 | `ArrayListBlock` | `ArrayStart` | Start of data section in block |
 
 
-Global variables used:
+### Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | `AppDomain` | TargetPointer | Pointer to the global AppDomain |
 
 
+### Contract Constants:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `ASSEMBLY_LEVEL_LOADED` | uint | The value of Assembly Level required for an Assembly to be considered loaded. In the runtime, this is `FILE_LOAD_DELIVER_EVENTS` | `0x4` |
+| `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
+
+### Data Structures
+```csharp
+// The runtime representation of Module's flag field.
+// For contract version 1, these are identical to ModuleFlags on the contract interface, but could diverge in the future.
+private enum ModuleFlags_1 : uint
+{
+    Tenured = 0x00000001,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
+    EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
+    ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+}
+```
+
+### Method Implementations
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
 {
@@ -161,7 +180,7 @@ IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationF
             continue;
         }
 
-        if ((assembly.NotifyFlags & 0x1 /*PROFILER_NOTIFIED*/) != 0 &&
+        if ((assembly.NotifyFlags & ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED) != 0 &&
             !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
         {
             // The assembly has reached the state at which we would notify profilers,
@@ -171,7 +190,7 @@ IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationF
             // IncludeAvailableToProfilers contains some loaded AND loading
             // assemblies.
         }
-        else if (assembly.IsLoaded)
+        else if (assembly.Level >= ASSEMBLY_LEVEL_LOADED)
         {
             if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoaded))
             {
@@ -292,9 +311,22 @@ bool IsProbeExtensionResultValid(ModuleHandle handle)
     return type != 0; // 0 is the invalid type. See assemblyprobeextension.h for details
 }
 
+private static ModuleFlags GetFlags(uint flags)
+{
+    ModuleFlags_1 runtimeFlags = (ModuleFlags_1)flags;
+    ModuleFlags flags = default;
+    if (runtimeFlags.HasFlag(ModuleFlags_1.Tenured))
+        flags |= ModuleFlags.Tenured;
+    if (runtimeFlags.HasFlag(ModuleFlags_1.EditAndContinue))
+        flags |= ModuleFlags.EditAndContinue;
+    if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
+        flags |= ModuleFlags.ReflectionEmit;
+    return flags;
+}
+
 ModuleFlags GetFlags(ModuleHandle handle)
 {
-    return target.Read<uint>(handle.Address + /* Module::Flags offset */);
+    return GetFlags(target.Read<uint>(handle.Address + /* Module::Flags offset */));
 }
 
 string GetPath(ModuleHandle handle)
@@ -380,6 +412,6 @@ bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
 {
     TargetPointer assembly = _target.ReadPointer(handle.Address + /*Module::Assembly*/);
     uint loadLevel = _target.Read<uint>(assembly + /* Assembly::Level*/);
-    return loadLevel >= 4; // FILE_LOAD_DELIVER_EVENTS
+    return assembly.Level >= ASSEMBLY_LEVEL_LOADED;
 }
 ```

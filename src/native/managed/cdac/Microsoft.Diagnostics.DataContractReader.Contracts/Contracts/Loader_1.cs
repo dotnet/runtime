@@ -9,6 +9,16 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Loader_1 : ILoader
 {
+    private const uint ASSEMBLY_LEVEL_LOADED = 4; // Assembly Level required to be considered Loaded
+    private const uint ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED = 0x1; // Assembly Notify Flag for profiler notification
+
+    private enum ModuleFlags_1 : uint
+    {
+        Tenured = 0x00000001,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
+        EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
+        ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+    }
+
     private readonly Target _target;
 
     internal Loader_1(Target target)
@@ -50,7 +60,7 @@ internal readonly struct Loader_1 : ILoader
                 continue;
             }
 
-            if ((assembly.NotifyFlags & 0x1 /*PROFILER_NOTIFIED*/) != 0 && !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
+            if ((assembly.NotifyFlags & ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED) != 0 && !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
             {
                 // The assembly has reached the state at which we would notify profilers,
                 // and we're supposed to include such assemblies in the enumeration. So
@@ -59,7 +69,7 @@ internal readonly struct Loader_1 : ILoader
                 // IncludeAvailableToProfilers contains some loaded AND loading
                 // assemblies.
             }
-            else if (assembly.IsLoaded)
+            else if (assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */)
             {
                 if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoaded))
                     continue; // skip loaded assemblies
@@ -82,7 +92,7 @@ internal readonly struct Loader_1 : ILoader
                     continue; // skip collectible assemblies
 
                 Module module = _target.ProcessedData.GetOrAdd<Data.Module>(assembly.Module);
-                if (!((ModuleFlags)module.Flags).HasFlag(ModuleFlags.Tenured))
+                if (!GetFlags(module).HasFlag(ModuleFlags.Tenured))
                     continue; // skip un-tenured modules
 
                 LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(module.LoaderAllocator);
@@ -179,10 +189,24 @@ internal readonly struct Loader_1 : ILoader
         return peImage.ProbeExtensionResult.Type != 0;
     }
 
+    private static ModuleFlags GetFlags(Data.Module module)
+    {
+        // currently these flags are the same, but could diverge in the future
+        ModuleFlags_1 runtimeFlags = (ModuleFlags_1)module.Flags;
+        ModuleFlags flags = default;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.Tenured))
+            flags |= ModuleFlags.Tenured;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.EditAndContinue))
+            flags |= ModuleFlags.EditAndContinue;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
+            flags |= ModuleFlags.ReflectionEmit;
+        return flags;
+    }
+
     ModuleFlags ILoader.GetFlags(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        return (ModuleFlags)module.Flags;
+        return GetFlags(module);
     }
 
     string ILoader.GetPath(ModuleHandle handle)
@@ -269,6 +293,6 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
-        return assembly.IsLoaded;
+        return assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */;
     }
 }
