@@ -169,11 +169,12 @@ ep_session_alloc (
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data)
+	void *callback_additional_data,
+	uint32_t user_events_data_fd)
 {
 	EP_ASSERT (index < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (session_type == EP_SESSION_TYPE_SYNCHRONOUS || circular_buffer_size_in_mb > 0);
+	EP_ASSERT (session_type == EP_SESSION_TYPE_SYNCHRONOUS || session_type == EP_SESSION_TYPE_USEREVENTS || circular_buffer_size_in_mb > 0);
 	EP_ASSERT (providers_len > 0);
 	EP_ASSERT (providers != NULL);
 	EP_ASSERT ((sync_callback != NULL) == (session_type == EP_SESSION_TYPE_SYNCHRONOUS));
@@ -205,7 +206,7 @@ ep_session_alloc (
 		sequence_point_alloc_budget = 10 * 1024 * 1024;
 	}
 
-	if (session_type != EP_SESSION_TYPE_SYNCHRONOUS) {
+	if (session_type != EP_SESSION_TYPE_SYNCHRONOUS && session_type != EP_SESSION_TYPE_USEREVENTS) {
 		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget);
 		ep_raise_error_if_nok (instance->buffer_manager != NULL);
 	}
@@ -231,6 +232,14 @@ ep_session_alloc (
 		instance->file = ep_file_alloc (ep_ipc_stream_writer_get_stream_writer_ref (ipc_stream_writer), format);
 		ep_raise_error_if_nok (instance->file != NULL);
 		ipc_stream_writer = NULL;
+		break;
+
+	case EP_SESSION_TYPE_USEREVENTS:
+		ep_raise_error_if_nok (user_events_data_fd != 0);
+		// Transfer ownership of the user_events_data file descriptor to the EventPipe Session.
+		instance->user_events_data_fd = user_events_data_fd;
+		// With the user_events_data file, register tracepoints for each provider's tracepoint configurations
+		// ep_session_user_events_tracepoints_init (instance);
 		break;
 
 	default:

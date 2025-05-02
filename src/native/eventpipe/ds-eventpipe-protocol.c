@@ -977,13 +977,14 @@ eventpipe_protocol_helper_collect_tracing (
 		payload->circular_buffer_size_in_mb,
 		dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration),
 		dn_vector_size (payload->provider_configs),
-		EP_SESSION_TYPE_IPCSTREAM,
+		payload->output_format == 1 ? EP_SESSION_TYPE_USEREVENTS : EP_SESSION_TYPE_IPCSTREAM,
 		payload->serialization_format,
 		payload->rundown_keyword,
 		payload->stackwalk_requested,
-		ds_ipc_stream_get_stream_ref (stream),
+		payload->output_format == 0 ? ds_ipc_stream_get_stream_ref (stream) : NULL,
 		NULL,
-		NULL);
+		NULL,
+		user_events_data_fd);
 
 	EventPipeSessionID session_id = 0;
 	bool result = false;

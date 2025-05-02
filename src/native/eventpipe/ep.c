@@ -497,13 +497,16 @@ static bool check_options_valid (const EventPipeSessionOptions *options)
 {
 	if (options->format >= EP_SERIALIZATION_FORMAT_COUNT)
 		return false;
-	if (options->circular_buffer_size_in_mb <= 0 && options->session_type != EP_SESSION_TYPE_SYNCHRONOUS)
+	if (options->circular_buffer_size_in_mb <= 0 && options->session_type != EP_SESSION_TYPE_SYNCHRONOUS && options->session_type != EP_SESSION_TYPE_USEREVENTS)
 		return false;
 	if (options->providers == NULL || options->providers_len <= 0)
 		return false;
 	if ((options->session_type == EP_SESSION_TYPE_FILE || options->session_type == EP_SESSION_TYPE_FILESTREAM) && options->output_path == NULL)
 		return false;
 	if (options->session_type == EP_SESSION_TYPE_IPCSTREAM && options->stream == NULL)
+		return false;
+	// More UserEvents specific checks can be added here.
+	if (options->session_type == EP_SESSION_TYPE_USEREVENTS && options->user_events_data_fd == 0)
 		return false;
 
 	return true;
@@ -519,7 +522,7 @@ enable (
 
 	EP_ASSERT (options != NULL);
 	EP_ASSERT (options->format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->circular_buffer_size_in_mb > 0);
+	EP_ASSERT (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->session_type == EP_SESSION_TYPE_USEREVENTS || options->circular_buffer_size_in_mb > 0);
 	EP_ASSERT (options->providers_len > 0 && options->providers != NULL);
 
 	EventPipeSession *session = NULL;
@@ -543,7 +546,8 @@ enable (
 		options->providers,
 		options->providers_len,
 		options->sync_callback,
-		options->callback_additional_data);
+		options->callback_additional_data,
+		options->user_events_data_fd);
 
 	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session));
 
@@ -1024,7 +1028,8 @@ ep_enable (
 		true, // stackwalk_requested
 		stream,
 		sync_callback,
-		callback_additional_data);
+		callback_additional_data,
+		NULL);
 
 	sessionId = ep_enable_3(&options);
 
@@ -1154,7 +1159,8 @@ ep_session_options_init (
 	bool stackwalk_requested,
 	IpcStream* stream,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void* callback_additional_data)
+	void* callback_additional_data,
+	uint32_t user_events_data_fd)
 {
 	EP_ASSERT (options != NULL);
 
@@ -1169,6 +1175,7 @@ ep_session_options_init (
 	options->stream = stream;
 	options->sync_callback = sync_callback;
 	options->callback_additional_data = callback_additional_data;
+	options->user_events_data_fd = user_events_data_fd;
 }
 
 void
