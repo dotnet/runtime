@@ -44,7 +44,9 @@
       <InnerBuildArgs Condition="'$(OS)' != 'Windows_NT'">$(InnerBuildArgs) --outputrid $(OutputRID)</InnerBuildArgs>
       <!-- BaseOS is an expected known rid in the graph that OutputRID is compatible with.
            It's used to add OutputRID in the graph if the parent can't be detected. -->
-      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS) /p:BaseOS=$(BaseOS)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
+      <!-- Source-build will use non-portable RIDs. To build for these non-portable RID scenarios, we must do a boostrapped build. -->
+      <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(DotNetBuildUseMonoRuntime)' != 'true'">$(InnerBuildArgs) --bootstrap</InnerBuildArgs>
       <!-- Pass through special build modes controlled by properties -->
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoEnableLLVM=$(DotNetBuildMonoEnableLLVM)</InnerBuildArgs>
