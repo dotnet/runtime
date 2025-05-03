@@ -799,10 +799,12 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
             m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
             m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+#ifdef DEBUG
             if (m_verbose)
             {
                 printf("Reporting IL_%04x is mapped to IR_%04x(%d)\n", ins->ilOffset, ins->nativeOffset, nativeOffset);
             }
+#endif
             m_ILToNativeMapSize++;
         }
     }
@@ -887,10 +889,12 @@ void InterpCompiler::EmitCode()
         eeVars[j].loc.vlType           = ICorDebugInfo::VLT_STK;               // This is a stack slot
         eeVars[j].loc.vlStk.vlsBaseReg = ICorDebugInfo::REGNUM_FP;             // This specifies which register this offset is based off
         eeVars[j].loc.vlStk.vlsOffset  = m_pVars[i].offset;                    // This specifies starting from the offset, how much offset is this from
+#ifdef DEBUG
         if (m_verbose)
         {
             printf("Reporting var[%d] has life time [%d(%d), %d(%d)) on stack+%d\n", i, GetLiveStartOffset(i), eeVars[j].startOffset, GetLiveEndOffset(i), eeVars[j].endOffset, m_pVars[i].offset);
         }
+#endif
         j++;
     }
 
@@ -2198,6 +2202,8 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     InterpBasicBlock funclet_head = {0};
     InterpBasicBlock* funclet_tail = &funclet_head;
     InterpBasicBlock* body_tail = m_pEntryBB;
+    bool first_pass = true;
+    bool is_first_exception_funclet_instruction = false;
 
     if (!CreateBasicBlocks(methodInfo))
     {
@@ -2227,11 +2233,8 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     linkBBlocks = true;
     needsRetryEmit = false;
 
-    bool first_pass = true;
-
 retry_emit:
     emittedBBlocks = false;
-    bool is_first_exception_funclet_instruction = false;
 
     while (m_ip < codeEnd)
     {
@@ -3779,6 +3782,7 @@ void InterpCompiler::PrintBBCode(InterpBasicBlock *pBB)
         case CATCH_ENTRY: printf("Enter catch\n"); break;
         case FILTER_ENTRY: printf("Enter filter\n"); break;
         case FINALLY_ENTRY: printf("Enter finally\n"); break;
+        default: break;
     }
     for (InterpInst *ins = pBB->pFirstIns; ins != NULL; ins = ins->pNext)
     {
@@ -3804,6 +3808,7 @@ void InterpCompiler::PrintBBCode(InterpBasicBlock *pBB)
             case FINALLY_ENTRY:
                 printf("Exit finally\n");
                 break;
+            default: break;
         }
     }
 }
@@ -4019,6 +4024,7 @@ void InterpCompiler::BuildEHInfo()
             {
                 clause.FilterOffset = ConvertOffset(filterStart->nativeOffset);
             }
+#ifdef DEBUG
             if (m_verbose)
             {
                 printf("Reporting try [IR_%04x(%d), IR_%04x(%d)) ", tryStart->nativeOffset, clause.TryOffset, tryEndOffset, clause.TryLength);
@@ -4035,6 +4041,7 @@ void InterpCompiler::BuildEHInfo()
                     printf("catch [IR_%04x(%d), IR_%04x(%d))\n", handlerStart->nativeOffset, clause.HandlerOffset, handlerEndOffset, clause.HandlerLength);
                 }
             }
+#endif
             m_compHnd->setEHinfo(i, &clause);
         }
     }

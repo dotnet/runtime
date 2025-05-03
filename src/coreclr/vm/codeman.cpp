@@ -4361,7 +4361,6 @@ TADDR InterpreterJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
         // before its handler funclet. So the filter end offset is equal to the start offset of the handler funclet.
         if (IsFilterHandler(&ehClause) && (ehClause.FilterOffset <= relOffset) && (relOffset < ehClause.HandlerStartPC))
         {
-            // Filter handlers are not funclets, but we need to return the start address of the filter code.
             return methodBaseAddress + ehClause.FilterOffset;
         }
     }
