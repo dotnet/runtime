@@ -35,6 +35,11 @@ class TargetClass
         _f1 = c2;
         _f2 = c2;
     }
+    private TargetClass(ref C2 c2)
+    {
+        _f1 = c2;
+        _f2 = c2;
+    }
     private C2 M_C1(C1 a) => _f1;
     private C2 M_RC1(ref C1 a) => _f1;
     private C2 M_RROC1(ref readonly C1 a) => _f1;
@@ -78,12 +83,6 @@ public static unsafe class UnsafeAccessorsTestsTypes
         AssertExtensions.ThrowsAny<COMException, InvalidProgramException>(() => CallStaticMethod1(null));
         Assert.Throws<TypeLoadException>(() => CallStaticMethod2(null));
         Assert.Throws<NotSupportedException>(() => CallStaticMethod3(null));
-        Assert.Throws<NotSupportedException>(() =>
-        {
-            object o = null;
-            CallStaticMethod4(ref o);
-        });
-        Assert.Throws<NotSupportedException>(() => CallStaticMethod5(null));
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "MethodName")]
         extern static ref int CallStaticMethod1([UnsafeAccessorType(null!)] object a);
@@ -93,12 +92,6 @@ public static unsafe class UnsafeAccessorsTestsTypes
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "MethodName")]
         extern static ref int CallStaticMethod3([UnsafeAccessorType("S1")] object a);
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "MethodName")]
-        extern static ref int CallStaticMethod4([UnsafeAccessorType("C1&")] ref object a);
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "MethodName")]
-        extern static ref int CallStaticMethod5([UnsafeAccessorType("S1*")] object a);
     }
 
     [Fact]
@@ -119,6 +112,23 @@ public static unsafe class UnsafeAccessorsTestsTypes
 
     [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
     extern static TargetClass CreateTargetClass([UnsafeAccessorType("C2")] object a);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+    extern static TargetClass CreateTargetClass([UnsafeAccessorType("C2&")] ref object a);
+
+    // Skip validating error cases on Mono runtime
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotMonoRuntime))]
+    public static void Verify_Type_TypeCheck()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Type_TypeCheck)}");
+
+        Assert.Throws<InvalidCastException>(() => CreateTargetClass(new C1()));
+        Assert.Throws<InvalidCastException>(() =>
+        {
+            object c1 = new C1();
+            CreateTargetClass(ref c1);
+        });
+    }
 
     [Fact]
     public static void Verify_Type_CallInstanceMethods()
@@ -141,14 +151,14 @@ public static unsafe class UnsafeAccessorsTestsTypes
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_RC1")]
         [return: UnsafeAccessorType("C2")]
-        extern static object CallM_RC1(TargetClass tgt, [UnsafeAccessorType("C1")] ref object a);
+        extern static object CallM_RC1(TargetClass tgt, [UnsafeAccessorType("C1&")] ref object a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_RROC1")]
         [return: UnsafeAccessorType("C2")]
-        extern static object CallM_RROC1(TargetClass tgt, [UnsafeAccessorType("C1")] ref readonly object a);
+        extern static object CallM_RROC1(TargetClass tgt, [UnsafeAccessorType("C1&")] ref readonly object a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1_RC2")]
-        [return: UnsafeAccessorType("C2")]
+        [return: UnsafeAccessorType("C2&")]
         extern static ref object CallM_C1_RC2(TargetClass tgt, [UnsafeAccessorType("C1")] object a);
     }
 

@@ -3964,30 +3964,44 @@ MetaSig::CompareElementType(
                     return (hInternal == hOtherType);
                 }
                 case ELEMENT_TYPE_GENERICINST:
+                case ELEMENT_TYPE_BYREF:
                 {
                     // Due to how SigPointer works, we need to fiddle with the signature pointer
-                    // to get the ELEMENT_TYPE_GENERICINST element type back in the stream.
+                    // to get the current element type back in the stream.
                     // Since we know the size of the element type, we can just subtract one byte from the
                     // signature pointer to get the correct value.
-                    PCCOR_SIGNATURE genericInstSig;
-                    uint32_t genericInstSigLen;
+                    PCCOR_SIGNATURE currInstSig;
+                    uint32_t currInstSigLen;
                     if (Type1 == ELEMENT_TYPE_INTERNAL)
                     {
                         const BYTE* sigRaw = (const BYTE*)pSig2;
-                        genericInstSig = (PCCOR_SIGNATURE)(sigRaw - 1);
-                        genericInstSigLen = (uint32_t)((intptr_t)pEndSig2 - (intptr_t)genericInstSig);
+                        currInstSig = (PCCOR_SIGNATURE)(sigRaw - 1);
+                        currInstSigLen = (uint32_t)((intptr_t)pEndSig2 - (intptr_t)currInstSig);
                     }
                     else
                     {
                         const BYTE* sigRaw = (const BYTE*)pSig1;
-                        genericInstSig = (PCCOR_SIGNATURE)(sigRaw - 1);
-                        genericInstSigLen = (uint32_t)((intptr_t)pEndSig1 - (intptr_t)genericInstSig);
+                        currInstSig = (PCCOR_SIGNATURE)(sigRaw - 1);
+                        currInstSigLen = (uint32_t)((intptr_t)pEndSig1 - (intptr_t)currInstSig);
                     }
                     // Assert we are in the same state as before.
-                    _ASSERTE(*genericInstSig == ELEMENT_TYPE_GENERICINST);
+                    _ASSERTE(*currInstSig == eOtherType);
 
-                    SigPointer inst{ genericInstSig, genericInstSigLen };
+                    SigPointer inst{ currInstSig, currInstSigLen };
                     TypeHandle hOtherType = inst.GetTypeHandleThrowing(pOtherModule, NULL);
+
+                    // SigPointer::GetTypeHandleThrowing() is non-consuming, so we need to
+                    // consume the signature to move past the current type and update the appropriate
+                    // 'in/out' parameter.
+                    IfFailThrow(inst.SkipExactlyOne());
+                    if (Type1 == ELEMENT_TYPE_INTERNAL)
+                    {
+                        pSig2 = inst.GetPtr();
+                    }
+                    else
+                    {
+                        pSig1 = inst.GetPtr();
+                    }
 
                     return (hInternal == hOtherType);
                 }
