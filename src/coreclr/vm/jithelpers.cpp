@@ -1227,7 +1227,8 @@ HCIMPLEND
 
 #if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
-EXTERN_C FCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
+EXTERN_C FCDECL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock);
+FCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
 #else
 FCIMPL1(void, IL_Throw,  Object* obj)
 #endif
@@ -1286,7 +1287,7 @@ FCIMPL1(void, IL_Throw,  Object* obj)
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    g_ExceptionEIP = transitionBlock->m_ReturnAddress;
+    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
     if (oref == 0)
@@ -1330,7 +1331,8 @@ FCIMPLEND
 
 #if defined(TARGET_X86)
 EXTERN_C FCDECL0(void, IL_Rethrow);
-EXTERN_C FCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
+EXTERN_C FCDECL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock);
+FCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
 #else
 FCIMPL0(void, IL_Rethrow)
 #endif
@@ -1395,7 +1397,8 @@ FCIMPLEND
 
 #if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
-EXTERN_C FCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
+EXTERN_C FCDECL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock);
+FCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
 #else
 FCIMPL1(void, IL_ThrowExact, Object* obj)
 #endif
@@ -1429,7 +1432,7 @@ FCIMPL1(void, IL_ThrowExact, Object* obj)
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    g_ExceptionEIP = transitionBlock->m_ReturnAddress;
+    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
     RaiseTheExceptionInternalOnly(oref, FALSE);
