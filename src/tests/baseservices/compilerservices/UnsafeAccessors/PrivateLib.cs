@@ -36,5 +36,7 @@ namespace PrivateLib
         List<int> M3() => new List<int>();
 
         List<Class2> M4() => new List<Class2>();
+
+        bool M5<V, S>(List<T> a, List<V> b, List<S> c, List<Class2> d) where S : T => true;
     }
 }

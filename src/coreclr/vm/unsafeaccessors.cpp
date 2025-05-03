@@ -90,7 +90,7 @@ namespace
         FieldDesc* TargetField;
     };
 
-    void AppendTypeSignature(
+    void AppendTypeToSignature(
         SigBuilder& sig,
         TypeHandle th,
         Instantiation inst)
@@ -98,7 +98,11 @@ namespace
         STANDARD_VM_CONTRACT;
         _ASSERTE(!th.IsNull());
 
-        // We have at least one generic variable, mark GENERICINST.
+        //
+        // Building the signature follows details defined in ECMA-335 - II.23.2.12
+        //
+
+        // We have at least one generic variable, mark as ELEMENT_TYPE_GENERICINST.
         BOOL hasGenericVariables = inst.ContainsGenericVariables();
         if (hasGenericVariables)
             sig.AppendElementType(ELEMENT_TYPE_GENERICINST);
@@ -148,9 +152,9 @@ namespace
         IfFailThrow(origSig.GetCallingConvInfo(&callConvDecl));
         newSig.AppendByte((BYTE)callConvDecl);
 
-        uint32_t declGenericCount = 0;
         if (callConvDecl & IMAGE_CEE_CS_CALLCONV_GENERIC)
         {
+            uint32_t declGenericCount;
             IfFailThrow(origSig.GetData(&declGenericCount));
             newSig.AppendData(declGenericCount);
         }
@@ -162,7 +166,7 @@ namespace
         // Now we can copy over the return type and arguments.
         // The format for the return type is the same as the arguments,
         // except return parameters can be ELEMENT_TYPE_VOID.
-        uint32_t totalParamCount = declArgCount + 1;
+        const uint32_t totalParamCount = declArgCount + 1;
         for (uint32_t i = 0; i < totalParamCount; ++i)
         {
             // Copy over any modopts or modreqs.
@@ -190,7 +194,7 @@ namespace
             // Validate the parameter resolves correctly. There is only one acceptable mapping:
             //     ELEMENT_TYPE_OBJECT - if new type is a reference type.
             _ASSERTE(!newTypeMaybe.IsValueType());
-            if (currHandle != TypeHandle(g_pObjectClass))
+            if (currHandle != TypeHandle{ g_pObjectClass })
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
 
             // Extract from the parameterized type from the new target.
@@ -214,10 +218,10 @@ namespace
 
             Instantiation inst = newTypeMaybe.GetInstantiation();
 
-            // Go back to the original translated type since during analysis
-            // the local may have been altered.
+            // Go back to the original translated type because
+            // analysis the local may have been altered.
             newTypeMaybe = cxt.TranslatedTypes[i];
-            AppendTypeSignature(newSig, newTypeMaybe, inst);
+            AppendTypeToSignature(newSig, newTypeMaybe, inst);
         }
 
         // Create a copy of the new signature and store it on the context.
@@ -231,7 +235,7 @@ namespace
 
         // Update the declaration signature with the new signature.
         cxt.DeclarationSig = SigPointer{ (PCCOR_SIGNATURE)newSigAlloc, newSigLen };
-        SigTypeContext tmpContext( cxt.Declaration );
+        SigTypeContext tmpContext{ cxt.Declaration };
         cxt.DeclarationMetaSig = MetaSig{ (PCCOR_SIGNATURE)newSigAlloc, newSigLen, cxt.Declaration->GetModule(), &tmpContext };
     }
 
@@ -242,12 +246,11 @@ namespace
         // Acquire attribute name to search for.
         const char* typeAttrName = GetWellKnownAttributeName(WellKnownAttribute::UnsafeAccessorTypeAttribute);
 
-        uint32_t attrCount = 0;
-
         // Determine the max parameter count. +1 for the return value, which is always index 0.
         const uint32_t totalParamCount = cxt.DeclarationMetaSig.NumFixedArgs() + 1;
 
         // Inspect all parameters to the declaration method for UnsafeAccessorTypeAttribute.
+        uint32_t attrCount = 0;
         IMDInternalImport *pInternalImport = cxt.Declaration->GetModule()->GetMDImport();
         HENUMInternalHolder hEnumParams(pInternalImport);
         hEnumParams.EnumInit(mdtParamDef, cxt.Declaration->GetMemberDef());
@@ -278,8 +281,8 @@ namespace
             StackSString typeStringUtf8{ SString::Utf8, typeString, typeStringLen };
 
             // Pass the string in the attribute to similar logic as Type.GetType(String).
-            // The below API creates a dependency between the returned type and the requesting
-            // assembly for the purposes of lifetime tracking of collectible types.
+            // The below API will also handle any dependency between the returned type and the
+            // requesting assembly for the purposes of lifetime tracking of collectible types.
             TypeHandle targetType = TypeName::GetTypeReferencedByCustomAttribute(
                 typeStringUtf8.GetUnicode(),
                 cxt.Declaration->GetAssembly(),
@@ -452,14 +455,10 @@ namespace
 
     void VerifyDeclarationSatisfiesTargetConstraints(MethodDesc* declaration, MethodTable* targetType, MethodDesc* targetMethod)
     {
-        CONTRACTL
-        {
-            STANDARD_VM_CHECK;
-            PRECONDITION(declaration != NULL);
-            PRECONDITION(targetType != NULL);
-            PRECONDITION(targetMethod != NULL);
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(declaration != NULL);
+        _ASSERTE(targetType != NULL);
+        _ASSERTE(targetMethod != NULL);
 
         // If the target method has no generic parameters there is nothing to verify
         if (!targetMethod->HasClassOrMethodInstantiation())
@@ -741,7 +740,7 @@ namespace
         else
         {
             SigBuilder sigBuilder;
-            AppendTypeSignature(sigBuilder, th, th.GetInstantiation());
+            AppendTypeToSignature(sigBuilder, th, th.GetInstantiation());
 
             uint32_t sigLen;
             PCCOR_SIGNATURE sig = (PCCOR_SIGNATURE)sigBuilder.GetSignature((DWORD*)&sigLen);

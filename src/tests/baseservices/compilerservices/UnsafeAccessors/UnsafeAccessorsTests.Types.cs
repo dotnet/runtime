@@ -44,34 +44,36 @@ class TargetClass
     private C2 M_RC1(ref C1 a) => _f1;
     private C2 M_RROC1(ref readonly C1 a) => _f1;
     private ref C2 M_C1_RC2(C1 a) => ref _f1;
+
+    private class InnerClass
+    {
+        private InnerClass() { }
+        private InnerClass(string _) { }
+    }
 }
 
 public static unsafe class UnsafeAccessorsTestsTypes
 {
     [Fact]
-    public static void Verify_Type_CallDefaultCtorClass()
+    public static void Verify_Type_CallInnerCtorClass()
     {
-        Console.WriteLine($"Running {nameof(Verify_Type_CallDefaultCtorClass)}");
+        Console.WriteLine($"Running {nameof(Verify_Type_CallInnerCtorClass)}");
 
-        var local = CallPrivateConstructorClassByName();
-        Assert.Equal("UserDataClass", local.GetType().Name);
+        object obj;
+
+        obj = CreateInner();
+        Assert.Equal("InnerClass", obj.GetType().Name);
+
+        obj = CreateInnerString(string.Empty);
+        Assert.Equal("InnerClass", obj.GetType().Name);
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        [return: UnsafeAccessorType("UnsafeAccessorsTests+UserDataClass")]
-        extern static object CallPrivateConstructorClassByName();
-    }
-
-    [Fact]
-    public static void Verify_Type_CallCtorClass()
-    {
-        Console.WriteLine($"Running {nameof(Verify_Type_CallCtorClass)}");
-
-        var local = CallPrivateConstructorClassByName(string.Empty);
-        Assert.Equal("UserDataClass", local.GetType().Name);
+        [return: UnsafeAccessorType("TargetClass+InnerClass")]
+        extern static object CreateInner();
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        [return: UnsafeAccessorType("UnsafeAccessorsTests+UserDataClass")]
-        extern static object CallPrivateConstructorClassByName(string a);
+        [return: UnsafeAccessorType("TargetClass+InnerClass")]
+        extern static object CreateInnerString(string a);
     }
 
     // Skip validating error cases on Mono runtime
@@ -136,14 +138,14 @@ public static unsafe class UnsafeAccessorsTestsTypes
         Console.WriteLine($"Running {nameof(Verify_Type_CallInstanceMethods)}");
 
         C2 c2 = new();
-        TargetClass tgt = CreateTargetClass(c2);
+        object arg = c2;
+        TargetClass tgt = CreateTargetClass(arg);
 
-        C1 c1 = new();
-        object oc1 = c1;
-        Assert.Equal(c2, CallM_C1(tgt, c1));
-        Assert.Equal(c2, CallM_RC1(tgt, ref oc1));
-        Assert.Equal(c2, CallM_RROC1(tgt, ref oc1));
-        Assert.Equal(c2, CallM_C1_RC2(tgt, c1));
+        arg = new C1();
+        Assert.Equal(c2, CallM_C1(tgt, arg));
+        Assert.Equal(c2, CallM_RC1(tgt, ref arg));
+        Assert.Equal(c2, CallM_RROC1(tgt, ref arg));
+        Assert.Equal(c2, CallM_C1_RC2(tgt, arg));
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1")]
         [return: UnsafeAccessorType("C2")]
@@ -253,6 +255,28 @@ public static unsafe class UnsafeAccessorsTestsTypes
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M4")]
         [return: UnsafeAccessorType("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")]
         public extern static object CallGenericClassM4([UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M5")]
+        public extern static bool CallGenericClassM5<V, W>(
+            [UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object tgt,
+            [UnsafeAccessorType("System.Collections.Generic.List`1[[!0]]")]
+            object a,
+            [UnsafeAccessorType("System.Collections.Generic.List`1[[!!0]]")]
+            object b,
+            List<W> c,
+            [UnsafeAccessorType("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")]
+            object d) where W : T;
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M5")]
+        public extern static bool CallGenericClassM5_NoConstraint<V, W>(
+            [UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object tgt,
+            [UnsafeAccessorType("System.Collections.Generic.List`1[[!0]]")]
+            object a,
+            [UnsafeAccessorType("System.Collections.Generic.List`1[[!!0]]")]
+            object b,
+            List<W> c,
+            [UnsafeAccessorType("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")]
+            object d);
     }
 
     private static bool TypeNameEquals(TypeName typeName1, TypeName typeName2)
@@ -344,6 +368,8 @@ public static unsafe class UnsafeAccessorsTestsTypes
             object genericListString = Accessors<int>.CallGenericClassM2<string>(genericClass);
             TypeName genericListStringName = TypeName.Parse(genericListString.GetType().FullName);
             Assert.True(TypeNameEquals(genericListStringName, TypeName.Parse("System.Collections.Generic.List`1[[System.String]]")));
+
+            Assert.True(Accessors<int>.CallGenericClassM5<string, int>(genericClass, null, null, null, null));
         }
 
         {
@@ -358,6 +384,27 @@ public static unsafe class UnsafeAccessorsTestsTypes
             object genericListString = Accessors<string>.CallGenericClassM2<string>(genericClass);
             TypeName genericListStringName = TypeName.Parse(genericListString.GetType().FullName);
             Assert.True(TypeNameEquals(genericListStringName, TypeName.Parse("System.Collections.Generic.List`1[[System.String]]")));
+
+            Assert.True(Accessors<string>.CallGenericClassM5<int, string>(genericClass, null, null, null, null));
+        }
+    }
+
+    // Skip private types and Generic support on Mono runtime
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotMonoRuntime))]
+    public static void Verify_Type_CallPrivateLibTypeAndMethodGenericParamsWithConstraints()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Type_CallPrivateLibTypeAndMethodGenericParamsWithConstraints)}");
+
+        {
+            object genericClass = Accessors<int>.CreateGenericClass();
+            Assert.True(Accessors<int>.CallGenericClassM5<string, int>(genericClass, null, null, null, null));
+            Assert.Throws<InvalidProgramException>(() => Accessors<int>.CallGenericClassM5_NoConstraint<string, string>(genericClass, null, null, null, null));
+        }
+
+        {
+            object genericClass = Accessors<string>.CreateGenericClass();
+            Assert.True(Accessors<string>.CallGenericClassM5<int, string>(genericClass, null, null, null, null));
+            Assert.Throws<InvalidProgramException>(() => Accessors<string>.CallGenericClassM5_NoConstraint<int, int>(genericClass, null, null, null, null));
         }
     }
 }
