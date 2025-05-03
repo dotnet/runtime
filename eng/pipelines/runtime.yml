@@ -1753,7 +1753,7 @@ extends:
     - stage: SourceBuild
       displayName: Source Build Validation
       dependsOn: []
-      condition: eq(variables['isRollingBuild'], true)
+      # condition: eq(variables['isRollingBuild'], true)
       jobs:
         #
         # Sourcebuild legs
