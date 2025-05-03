@@ -24,7 +24,7 @@ namespace Microsoft.Interop
                 StringMarshallingCustomType = generatedComInterfaceAttr.StringMarshallingCustomType is not null
                     ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(generatedComInterfaceAttr.StringMarshallingCustomType)
                     : null,
-                Options = generatedComInterfaceAttr.Options,
+                Options = generatedComInterfaceAttr.Options
             };
     }
 
