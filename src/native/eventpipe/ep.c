@@ -409,7 +409,13 @@ ep_provider_config_init (
 void
 ep_provider_config_fini (EventPipeProviderConfiguration *provider_config)
 {
-	;
+	ep_return_void_if_nok (provider_config != NULL);
+
+	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (provider_config));
+	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (provider_config));
+	ep_event_filter_free (ep_provider_config_get_event_filter (provider_config));
+	ep_tracepoint_config_free (ep_provider_config_get_tracepoint_config (provider_config));
+	provider_config = NULL;
 }
 
 /*
@@ -1764,6 +1770,82 @@ void
 ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallback suspended_ports_callback)
 {
 	_ep_ipc_stream_factory_suspended_ports_callback = suspended_ports_callback;
+}
+
+void
+ep_event_filter_fini (EventPipeEventFilter *event_filter)
+{
+	EP_ASSERT (event_filter != NULL);
+
+	if (event_filter->event_ids) {
+		dn_vector_free (event_filter->event_ids);
+		event_filter->event_ids = NULL;
+	}
+}
+
+void
+ep_event_filter_free (EventPipeEventFilter *event_filter)
+{
+	ep_return_void_if_nok (event_filter != NULL);
+
+	ep_event_filter_fini (event_filter);
+	ep_rt_object_free (event_filter);
+}
+
+void
+ep_tracepoint_set_fini (ProviderTracepointSet *tracepoint_set)
+{
+	EP_ASSERT (tracepoint_set != NULL);
+
+	if (tracepoint_set->tracepoint_name) {
+		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_set->tracepoint_name);
+		tracepoint_set->tracepoint_name = NULL;
+	}
+
+	if (tracepoint_set->event_ids) {
+		dn_vector_free (tracepoint_set->event_ids);
+		tracepoint_set->event_ids = NULL;
+	}
+}
+
+void
+ep_tracepoint_set_free (ProviderTracepointSet *tracepoint_set)
+{
+	ep_return_void_if_nok (tracepoint_set != NULL);
+
+	ep_tracepoint_set_fini (tracepoint_set);
+	ep_rt_object_free (tracepoint_set);
+}
+
+void
+ep_tracepoint_config_fini (ProviderTracepointConfiguration *tracepoint_config)
+{
+	EP_ASSERT (tracepoint_config != NULL);
+
+	if (tracepoint_config->default_tracepoint_name) {
+		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_config->default_tracepoint_name);
+		tracepoint_config->default_tracepoint_name = NULL;
+	}
+
+	if (tracepoint_config->tracepoints) {
+		for (uint32_t i = 0; i < tracepoint_config->tracepoints->size; ++i) {
+			ProviderTracepointSet *tracepoint_set = *dn_vector_index_t (tracepoint_config->tracepoints, ProviderTracepointSet *, i);
+			if (tracepoint_set != NULL) {
+				ep_tracepoint_set_free (tracepoint_set);
+			}
+		}
+		dn_vector_free (tracepoint_config->tracepoints);
+		tracepoint_config->tracepoints = NULL;
+	}
+}
+
+void
+ep_tracepoint_config_free (ProviderTracepointConfiguration *tracepoint_config)
+{
+	ep_return_void_if_nok (tracepoint_config != NULL);
+
+	ep_tracepoint_config_fini (tracepoint_config);
+	ep_rt_object_free (tracepoint_config);
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

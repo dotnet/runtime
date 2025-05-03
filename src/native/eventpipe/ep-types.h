@@ -180,15 +180,34 @@ struct EventPipeEventFilter {
 	dn_vector_t *event_ids;
 };
 
+void
+ep_event_filter_fini (EventPipeEventFilter *event_filter);
+
+void
+ep_event_filter_free (EventPipeEventFilter *event_filter);
+
 struct ProviderTracepointSet {
 	const ep_char8_t *tracepoint_name;
 	dn_vector_t *event_ids;
 };
 
+void
+ep_tracepoint_set_fini (ProviderTracepointSet *tracepoint_set);
+
+void
+ep_tracepoint_set_free (ProviderTracepointSet *tracepoint_set);
+
 struct ProviderTracepointConfiguration {
 	const ep_char8_t *default_tracepoint_name;
 	dn_vector_t *tracepoints;
 };
+
+void
+ep_tracepoint_config_fini (ProviderTracepointConfiguration *tracepoint_config);
+
+void
+ep_tracepoint_config_free (ProviderTracepointConfiguration *tracepoint_config);
+
 /*
  * EventPipeProviderConfiguration.
  */
@@ -198,10 +217,12 @@ struct _EventPipeProviderConfiguration {
 #else
 struct _EventPipeProviderConfiguration_Internal {
 #endif
+	// V0
 	const ep_char8_t *provider_name;
 	const ep_char8_t *filter_data;
 	uint64_t keywords;
 	EventPipeEventLevel logging_level;
+	// V1
 	EventPipeEventFilter *event_filter;
 	ProviderTracepointConfiguration *tracepoint_config;
 };
