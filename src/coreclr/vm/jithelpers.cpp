@@ -1227,10 +1227,9 @@ HCIMPLEND
 
 #if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
-EXTERN_C FCDECL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock);
-FCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
+EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
 #else
-FCIMPL1(void, IL_Throw,  Object* obj)
+HCIMPL1(void, IL_Throw,  Object* obj)
 #endif
 {
     FCALL_CONTRACT;
@@ -1325,16 +1324,15 @@ FCIMPL1(void, IL_Throw,  Object* obj)
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
-FCIMPLEND
+HCIMPLEND
 
 /*************************************************************/
 
 #if defined(TARGET_X86)
 EXTERN_C FCDECL0(void, IL_Rethrow);
-EXTERN_C FCDECL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock);
-FCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
+EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
 #else
-FCIMPL0(void, IL_Rethrow)
+HCIMPL0(void, IL_Rethrow)
 #endif
 {
     FCALL_CONTRACT;
@@ -1393,14 +1391,13 @@ FCIMPL0(void, IL_Rethrow)
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
-FCIMPLEND
+HCIMPLEND
 
 #if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
-EXTERN_C FCDECL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock);
-FCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
+EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
 #else
-FCIMPL1(void, IL_ThrowExact, Object* obj)
+HCIMPL1(void, IL_ThrowExact, Object* obj)
 #endif
 {
     FCALL_CONTRACT;
@@ -1444,7 +1441,7 @@ FCIMPL1(void, IL_ThrowExact, Object* obj)
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
-FCIMPLEND
+HCIMPLEND
 
 #ifndef STATUS_STACK_BUFFER_OVERRUN  // Not defined yet in CESDK includes
 # define STATUS_STACK_BUFFER_OVERRUN      ((NTSTATUS)0xC0000409L)
