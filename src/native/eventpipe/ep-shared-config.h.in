@@ -3,6 +3,7 @@
 
 #cmakedefine01 HAVE_SYS_SOCKET_H
 #cmakedefine01 HAVE_LINUX_USER_EVENTS_H
+#cmakedefine01 HAVE_SYS_UIO_H
 /* This platforms supports setting flags atomically when accepting connections. */
 #cmakedefine01 HAVE_ACCEPT4
 

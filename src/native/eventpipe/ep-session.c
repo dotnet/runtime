@@ -628,6 +628,64 @@ ep_session_write_all_buffers_to_file (EventPipeSession *session, bool *events_wr
 }
 
 bool
+ep_tracepoint_write (
+	EventPipeSession *session,
+	ep_rt_thread_handle_t thread,
+	EventPipeEvent *ep_event,
+	EventPipeEventPayload *payload,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id,
+	ep_rt_thread_handle_t event_thread,
+	EventPipeStackContents *stack)
+{
+#ifdef HAVE_SYS_UIO_H
+	EventPipeProvider *provider = ep_event_get_provider (ep_event);
+
+	EventPipeSessionProviderList *session_provider_list = ep_session_get_providers (session);
+	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (session_provider_list), ep_provider_get_provider_name (provider));
+
+	uint32_t event_id = ep_event_get_event_id (ep_event);
+
+	dn_umap_t *event_id_to_tracepoint_map = ep_session_provider_get_event_id_to_tracepoint_map (session_provider);
+	dn_umap_it_t found1 = dn_umap_find (event_id_to_tracepoint_map, &event_id);
+	EventPipeTracepoint *tracepoint = dn_umap_it_value_t (found1, EventPipeTracepoint *);
+	if (tracepoint == NULL) {
+		// If we don't have a tracepoint for this event_id, use the default tracepoint
+		tracepoint = session_provider->default_tracepoint;
+	}
+	if (tracepoint == NULL) {
+		// No tracepoint for this event_id and no default tracepoint, so we can't write the event.
+		return false;
+	}
+
+	if (*tracepoint->enabled == 0) {
+		// No listeners
+		return true;
+	}
+
+	// Just write some dummy data for now
+	__u32 mihw = 1418;
+	struct iovec io[2];
+	io[0].iov_base = (void *)tracepoint->write_index;
+	io[0].iov_len = sizeof (*tracepoint->write_index);
+	io[1].iov_base = &mihw;
+	io[1].iov_len = sizeof (mihw);
+
+	int32_t result = writev(session->user_events_data_fd, (const struct iovec *)io, 2);
+	if (result == -1) {
+		// Failed to write the event, return false.
+		// return false;
+		return true;
+	}
+
+	return true;
+#else // HAVE_SYS_UIO_H
+	// Not Supported
+	return false;
+#endif // HAVE_SYS_UIO_H
+}
+
+bool
 ep_session_write_event (
 	EventPipeSession *session,
 	ep_rt_thread_handle_t thread,
@@ -664,6 +722,17 @@ ep_session_write_event (
 				stack == NULL ? NULL : (uintptr_t *)ep_stack_contents_get_pointer (stack),
 				session->callback_additional_data);
 			result = true;
+		} else if (session->session_type == EP_SESSION_TYPE_USEREVENTS) {
+			EP_ASSERT (session->user_events_data_fd != 0);
+			result = ep_tracepoint_write (
+				session,
+				thread,
+				ep_event,
+				payload,
+				activity_id,
+				related_activity_id,
+				event_thread,
+				stack);
 		} else {
 			EP_ASSERT (session->buffer_manager != NULL);
 			result = ep_buffer_manager_write_event (
