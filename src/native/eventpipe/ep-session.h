@@ -19,6 +19,10 @@
 #include <unistd.h> // close
 #endif // HAVE_LINUX_USER_EVENTS_H
 
+
+#if HAVE_SYS_UIO_H
+#include <sys/uio.h> // iovec
+#endif // HAVE_SYS_UIO_H
 /*
  * EventPipeSession.
  */

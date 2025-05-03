@@ -74,6 +74,16 @@ typedef struct _StreamWriterVtable StreamWriterVtable;
 
 #define EP_TRACEPOINT_FORMAT_V1 "u8 version; u16 event_id; __rel_loc u8[] extension; __rel_loc u8[] payload; __rel_loc u8[] meta"
 
+#define EP_MAX_EXTENSION_SIZE (2 * (EP_ACTIVITY_ID_SIZE + 1))
+
+// Number of static iovec buffers for writing user_events
+// EventPipeEventPayloads may contain a variable number of EventData structures,
+// so statically allocate a reasonable number of iovecs to avoid dynamic allocations
+#define EP_DEFAULT_IOVEC_SIZE 30
+
+// Tracepoint V1 - write_index, version, truncated_event_id, extension_rel_loc, payload_rel_loc, meta_rel_loc, extension, payload, metadata
+#define EP_TRACEPOINT_V1_PAYLOAD_INDEX 7
+
 /*
  * EventPipe Enums.
  */

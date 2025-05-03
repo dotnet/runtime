@@ -22,6 +22,11 @@ check_include_files(
     HAVE_LINUX_USER_EVENTS_H
 )
 
+check_include_file(
+    "sys/uio.h"
+    HAVE_SYS_UIO_H
+)
+
 if (NOT DEFINED EP_GENERATED_HEADER_PATH)
     message(FATAL_ERROR "Required configuration EP_GENERATED_HEADER_PATH not set.")
 endif (NOT DEFINED EP_GENERATED_HEADER_PATH)
