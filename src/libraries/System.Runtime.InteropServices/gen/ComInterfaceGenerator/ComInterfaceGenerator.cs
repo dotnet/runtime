@@ -395,7 +395,7 @@ namespace Microsoft.Interop
             {
                 exceptionMarshallingInfo = CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
                     environment.Compilation.GetTypeByMetadataName(TypeNames.System_Exception),
-                    generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller,
+                    (INamedTypeSymbol)generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller,
                     generatedComAttribute,
                     environment.Compilation,
                     generatorDiagnostics);

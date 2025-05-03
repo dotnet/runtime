@@ -617,6 +617,11 @@
         <target state="translated">提供的值不是 “ExceptionMarshalling” 枚举的已知标志。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
+        <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
+        <target state="new">The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
         <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
         <target state="translated">具有“GeneratedComClassAttribute”的类必须执行一个或多个具有“GeneratedComInterfaceAttribute”的接口，并标记为部分和非泛型。</target>

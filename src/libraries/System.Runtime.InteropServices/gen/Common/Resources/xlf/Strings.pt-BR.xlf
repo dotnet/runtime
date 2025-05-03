@@ -617,6 +617,11 @@
         <target state="translated">O valor fornecido não é um sinalizador conhecido da enumeração 'ExceptionMarshalling'.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
+        <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
+        <target state="new">The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
         <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
         <target state="translated">As classes com 'GeneratedComClassAttribute' devem implementar uma ou mais interfaces com 'GeneratedComInterfaceAttribute', ser marcadas como parciais e não genéricas.</target>

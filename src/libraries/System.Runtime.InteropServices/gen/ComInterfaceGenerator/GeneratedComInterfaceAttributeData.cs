@@ -35,7 +35,7 @@ namespace Microsoft.Interop
     internal sealed record GeneratedComInterfaceCompilationData : InteropAttributeCompilationData
     {
         public ComInterfaceOptions Options { get; init; } = ComInterfaceOptions.ManagedObjectWrapper | ComInterfaceOptions.ComObjectWrapper;
-        public INamedTypeSymbol? ExceptionToUnmanagedMarshaller { get; init; }
+        public ITypeSymbol? ExceptionToUnmanagedMarshaller { get; init; }
 
         public static bool TryGetGeneratedComInterfaceAttributeFromInterface(INamedTypeSymbol interfaceSymbol, [NotNullWhen(true)] out AttributeData? generatedComInterfaceAttribute)
         {
@@ -73,13 +73,9 @@ namespace Microsoft.Interop
             }
             if (args.TryGetValue(nameof(ExceptionToUnmanagedMarshaller), out TypedConstant exceptionToUnmanagedMarshaller))
             {
-                if (exceptionToUnmanagedMarshaller.Value is not INamedTypeSymbol)
-                {
-                    return null;
-                }
                 generatedComInterfaceAttributeData = generatedComInterfaceAttributeData with
                 {
-                    ExceptionToUnmanagedMarshaller = (INamedTypeSymbol)exceptionToUnmanagedMarshaller.Value
+                    ExceptionToUnmanagedMarshaller = (ITypeSymbol)exceptionToUnmanagedMarshaller.Value
                 };
             }
             return generatedComInterfaceAttributeData;

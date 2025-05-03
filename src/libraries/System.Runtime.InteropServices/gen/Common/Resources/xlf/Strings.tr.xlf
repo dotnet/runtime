@@ -617,6 +617,11 @@
         <target state="translated">Sağlanan değer bilinen bir 'ExceptionMarshalling' sabit listesi bayrağı değil.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
+        <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
+        <target state="new">The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
         <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
         <target state="translated">'GeneratedComClassAttribute' içeren sınıflar 'GeneratedComInterfaceAttribute' ile bir veya daha fazla arabirim uygulamalı, kısmi olarak işaretlenmeli ve genel olmayan olmalıdır.</target>

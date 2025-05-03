@@ -919,4 +919,7 @@
   <data name="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode" xml:space="preserve">
     <value>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</value>
   </data>
+  <data name="InvalidExceptionToUnmanagedMarshallerType" xml:space="preserve">
+    <value>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</value>
+  </data>
 </root>

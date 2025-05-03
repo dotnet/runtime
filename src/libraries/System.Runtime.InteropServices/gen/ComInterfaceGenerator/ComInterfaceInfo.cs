@@ -305,6 +305,13 @@ namespace Microsoft.Interop
                     return false;
                 }
             }
+            else if (attrSymbolInfo.ExceptionToUnmanagedMarshaller is not null)
+            {
+                exceptionToUnmanagedMarshallerDiagnostic = DiagnosticInfo.Create(
+                    GeneratorDiagnostics.InvalidExceptionToUnmanagedMarshallerType,
+                    syntax.Identifier.GetLocation());
+                return false;
+            }
             exceptionToUnmanagedMarshallerDiagnostic = null;
             return true;
         }

@@ -617,6 +617,11 @@
         <target state="translated">指定された値は、'ExceptionMarshalling' 列挙型の既知のフラグではありません。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
+        <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
+        <target state="new">The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
         <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
         <target state="translated">'GeneratedComClassAttribute' を持つクラスは、'GeneratedComInterfaceAttribute' を持つ 1 つ以上のインターフェイスを実装し、partial に設定し、非ジェネリックにする必要があります。</target>

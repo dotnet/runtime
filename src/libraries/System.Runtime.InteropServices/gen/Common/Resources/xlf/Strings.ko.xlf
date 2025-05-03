@@ -617,6 +617,11 @@
         <target state="translated">제공된 값은 'ExceptionMarshalling' 열거형의 알려진 플래그가 아닙니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
+        <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
+        <target state="new">The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
         <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
         <target state="translated">'GeneratedComClassAttribute'가 있는 클래스는 'GeneratedComInterfaceAttribute'를 사용하여 인터페이스를 하나 이상 구현하고 'partial'로 표시되어야 하며 제네릭이 아니어야 합니다.</target>

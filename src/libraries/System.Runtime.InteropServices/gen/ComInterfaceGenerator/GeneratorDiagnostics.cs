@@ -141,6 +141,7 @@ namespace Microsoft.Interop
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        /// <inheritdoc cref="SR.ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode"/>
         public static readonly DiagnosticDescriptor ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode =
             DiagnosticDescriptorHelper.Create(
             Ids.InvalidGeneratedComInterfaceAttributeUsage,
@@ -160,6 +161,16 @@ namespace Microsoft.Interop
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidExceptionMarshallingConfigurationDescription)));
+
+        /// <inheritdoc cref="SR.InvalidExceptionToUnmanagedMarshallerType"/>
+        public static readonly DiagnosticDescriptor InvalidExceptionToUnmanagedMarshallerType =
+            DiagnosticDescriptorHelper.Create(
+            Ids.InvalidGeneratedComInterfaceAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidExceptionToUnmanagedMarshallerType)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
 
         /// <inheritdoc cref="SR.TypeNotSupportedMessageParameterCom"/>
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =

@@ -617,6 +617,11 @@
         <target state="translated">Zadaná hodnota není známý příznak výčtu ExceptionMarsnuming.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
+        <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
+        <target state="new">The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
         <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
         <target state="translated">Třídy s třídou GeneratedComClassAttribute musí implementovat jedno nebo více rozhraní s „GeneratedComInterfaceAttribute“, být označeny jako částečné a musí být neobecné.</target>
