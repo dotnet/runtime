@@ -11315,12 +11315,11 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 }
 
 
-#ifdef FEATURE_EH_FUNCLETS
-
 void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef FEATURE_EH_FUNCLETS
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -11341,6 +11340,16 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+#elif defined(TARGET_X86)
+#define CALLEE_SAVED_REGISTER(regname) pRD->Set##regname##Location(m_ContextPointers.regname);
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    pRD->ControlPC = ::GetIP(&m_Context);
+    pRD->SP = ::GetSP(&m_Context);
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("SoftwareExceptionFrame::UpdateRegDisplay_Impl");
+#endif // FEATURE_EH_FUNCLETS
 }
 
 #ifndef DACCESS_COMPILE
@@ -11421,4 +11430,3 @@ void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
 }
 
 #endif // DACCESS_COMPILE
-#endif // FEATURE_EH_FUNCLETS
