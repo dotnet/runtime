@@ -97,6 +97,92 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             Assert.Equal(Vector128.Create(4.0f, 9.0f, 16.0f, 25.0f), floorResult);
         }
 
+        [Fact]
+        public unsafe void BitwiseSelectTest()
+        {
+            // Test with integers
+            var mask = Vector128.Create(unchecked((int)0xFFFFFFFF), 0, unchecked((int)0xFFFFFFFF), 0);
+            var a = Vector128.Create(1, 2, 3, 4);
+            var b = Vector128.Create(5, 6, 7, 8);
+
+            // Use the correct parameter order: left(a), right(b), select(mask)
+            var result = PackedSimd.BitwiseSelect(a, b, mask);
+            // Where mask is all 1s, should select from a; where mask is all 0s, should select from b
+            Assert.Equal(Vector128.Create(1, 6, 3, 8), result);
+
+            // Test with bytes for more granular bit-level control
+            var byteMask = Vector128.Create(
+                (byte)0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00,
+                0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00
+            );
+            var byteA = Vector128.Create(
+                (byte)1, 2, 3, 4, 5, 6, 7, 8,
+                9, 10, 11, 12, 13, 14, 15, 16
+            );
+            var byteB = Vector128.Create(
+                (byte)17, 18, 19, 20, 21, 22, 23, 24,
+                25, 26, 27, 28, 29, 30, 31, 32
+            );
+
+            // Use the correct parameter order: left(byteA), right(byteB), select(byteMask)
+            var byteResult = PackedSimd.BitwiseSelect(byteA, byteB, byteMask);
+            Assert.Equal(Vector128.Create(
+                (byte)1, 18, 3, 20, 5, 22, 7, 24,
+                9, 26, 11, 28, 13, 30, 15, 32
+            ), byteResult);
+
+            // Test with floats to ensure proper handling of floating-point data
+            var floatMask = Vector128.Create(
+                BitConverter.Int32BitsToSingle(unchecked((int)0xFFFFFFFF)),
+                BitConverter.Int32BitsToSingle(0),
+                BitConverter.Int32BitsToSingle(unchecked((int)0xFFFFFFFF)),
+                BitConverter.Int32BitsToSingle(0)
+            );
+            var floatA = Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f);
+            var floatB = Vector128.Create(5.0f, 6.0f, 7.0f, 8.0f);
+
+            // Use the correct parameter order: left(floatA), right(floatB), select(floatMask)
+            var floatResult = PackedSimd.BitwiseSelect(floatA, floatB, floatMask);
+            // Verify expected selection pattern (though we need to interpret bits, not values)
+            for (int i = 0; i < 4; i++)
+            {
+                if (i % 2 == 0) // Mask has all 1s for even elements
+                {
+                    Assert.Equal(floatA.GetElement(i), floatResult.GetElement(i));
+                }
+                else // Mask has all 0s for odd elements
+                {
+                    Assert.Equal(floatB.GetElement(i), floatResult.GetElement(i));
+                }
+            }
+
+            // Test with mixed bit patterns for more complex selection
+            var partialMask = Vector128.Create(unchecked((int)0x0F0F0F0F), unchecked((int)0xF0F0F0F0), unchecked((int)0xAAAAAAAA), unchecked((int)0x55555555));
+            // Use the correct parameter order: left(a), right(b), select(partialMask)
+            var intResult = PackedSimd.BitwiseSelect(a, b, partialMask);
+
+            // For this mixed mask test, verify the result by manually calculating the expected values
+            int expectedValue0 = (unchecked((int)0x0F0F0F0F) & 1) | (~unchecked((int)0x0F0F0F0F) & 5);
+            int expectedValue1 = (unchecked((int)0xF0F0F0F0) & 2) | (~unchecked((int)0xF0F0F0F0) & 6);
+            int expectedValue2 = (unchecked((int)0xAAAAAAAA) & 3) | (~unchecked((int)0xAAAAAAAA) & 7);
+            int expectedValue3 = (unchecked((int)0x55555555) & 4) | (~unchecked((int)0x55555555) & 8);
+
+            Assert.Equal(Vector128.Create(expectedValue0, expectedValue1, expectedValue2, expectedValue3), intResult);
+
+            // Test edge cases: all bits from one source
+            var allOnes = Vector128.Create(unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF));
+            var allZeros = Vector128.Create(0, 0, 0, 0);
+
+            // All bits from a
+            // Use the correct parameter order: left(a), right(b), select(allOnes)
+            var allFromA = PackedSimd.BitwiseSelect(a, b, allOnes);
+            Assert.Equal(a, allFromA);
+
+            // All bits from b
+            // Use the correct parameter order: left(a), right(b), select(allZeros)
+            var allFromB = PackedSimd.BitwiseSelect(a, b, allZeros);
+            Assert.Equal(b, allFromB);
+        }
 
         [Fact]
         public unsafe void LoadStoreTest()
