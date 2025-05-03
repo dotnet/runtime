@@ -168,13 +168,31 @@ event_reg(uint32_t fd, const char *command, uint32_t *write, uint32_t *enabled)
 	reg.enable_size = sizeof(*enabled); // uint8_t
 	// reg.flags //uint16_t
 	reg.enable_addr = (uint64_t)enabled; // uint64_t
-	reg.name_args = (uint64_t)command; // uint64_t
 
-	if (ioctl(fd, DIAG_IOCSREG, &reg) == -1)
+	// Hard-coded format as per the documentation
+	const char *format = "u8 version; u16 event_id; __rel_loc u8[] extension; __rel_loc u8[] payload; __rel_loc u8[] meta";
+
+	// Dynamically allocate space for name_args
+	size_t name_args_size = strlen(command) + strlen(format) + 2; // +2 for space and null terminator
+	char *name_args = (char *)malloc(name_args_size);
+	if (!name_args)
+		return -1; // Memory allocation failed
+
+	if (snprintf(name_args, name_args_size, "%s %s", command, format) >= name_args_size) {
+		free(name_args);
+		return -1; // Name and format combination is too long
+	}
+
+	reg.name_args = (uint64_t)name_args; // uint64_t
+
+	if (ioctl(fd, DIAG_IOCSREG, &reg) == -1) {
+		free(name_args);
 		return -1;
+	}
 
 	*write = reg.write_index; // uint32_t
 
+	free(name_args);
 	return 0;
 #else // HAVE_LINUX_USER_EVENTS_H
 	// Not Supported
@@ -637,6 +655,158 @@ ep_session_write_all_buffers_to_file (EventPipeSession *session, bool *events_wr
 }
 
 bool
+ep_tracepoint_write (
+	EventPipeSession *session,
+	ep_rt_thread_handle_t thread,
+	EventPipeEvent *ep_event,
+	EventPipeEventPayload *ep_event_payload,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id,
+	ep_rt_thread_handle_t event_thread,
+	EventPipeStackContents *stack)
+{
+#ifdef HAVE_SYS_UIO_H
+	EventPipeProvider *provider = ep_event_get_provider (ep_event);
+
+	EventPipeSessionProviderList *session_provider_list = ep_session_get_providers (session);
+	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (session_provider_list), ep_provider_get_provider_name (provider));
+
+	uint32_t event_id = ep_event_get_event_id (ep_event);
+
+	dn_umap_t *event_id_to_tracepoint_map = ep_session_provider_get_event_id_to_tracepoint_map (session_provider);
+	dn_umap_it_t found1 = dn_umap_find (event_id_to_tracepoint_map, &event_id);
+	EventPipeTracepoint *tracepoint = NULL;
+	if (dn_umap_it_end (found1)) {
+		// If we don't have a tracepoint for this event_id, use the default tracepoint
+		tracepoint = session_provider->default_tracepoint;
+	} else {
+		// We have a tracepoint for this event_id
+		tracepoint = dn_umap_it_value_t (found1, EventPipeTracepoint *);
+	}
+	if (tracepoint == NULL) {
+		// No tracepoint for this event_id and no default tracepoint, so we can't write the event.
+		return false;
+	}
+
+	if (tracepoint->enabled == 0) {
+		// No listeners
+		return false;
+	}
+
+	struct iovec io[9];
+
+	io[0].iov_base = &tracepoint->write_index;      // __u32 from event_reg
+	io[0].iov_len = sizeof(tracepoint->write_index);
+
+	uint8_t version = 0x01; // hardcoded for the first tracepoint format version
+	io[1].iov_base = &version;
+	io[1].iov_len = sizeof(version);
+
+	uint16_t truncated_event_id = event_id & 0xFFFF;
+	io[2].iov_base = &truncated_event_id;
+	io[2].iov_len = sizeof(truncated_event_id);
+
+	// The data transmitted in version 1 is
+	// extension - a NetTrace V6 LabelList
+	// payload - the EventPipe Event Payload
+	// meta - the EventPipe Event metadata
+
+	bool activity_id_is_empty = true;
+	if (activity_id != NULL) {
+		// If the activity_id is not empty, then we don't consider it empty.
+		for (int i = 0; i < EP_ACTIVITY_ID_SIZE; ++i) {
+			if (activity_id[i] != 0) {
+				activity_id_is_empty = false;
+				break;
+			}
+		}
+	}
+	bool related_activity_id_is_empty = true;
+	if (related_activity_id != NULL) {
+		// If the related_activity_id is not empty, then we don't consider it empty.
+		for (int i = 0; i < EP_ACTIVITY_ID_SIZE; ++i) {
+			if (related_activity_id[i] != 0) {
+				related_activity_id_is_empty = false;
+				break;
+			}
+		}
+	}
+	// extension generation helper
+	uint16_t extension_len = 0;
+	if (activity_id != NULL && !activity_id_is_empty)
+		extension_len += 1 + EP_ACTIVITY_ID_SIZE; // ActivityId kind + value
+	if (related_activity_id != NULL && !related_activity_id_is_empty)
+		extension_len += 1 + EP_ACTIVITY_ID_SIZE; // RelatedActivityId kind + value
+
+	uint8_t *extension = NULL;
+	if (extension_len > 0) {
+		extension = (uint8_t *)malloc(extension_len);
+		EP_ASSERT(extension != NULL);
+		uint16_t offset = 0;
+		if (activity_id != NULL && !activity_id_is_empty) {
+			// If there is a related_activity_id, use 0x81 (more follows), else 0x01 (no more follows)
+			extension[offset] = (related_activity_id != NULL && !related_activity_id_is_empty) ? 0x81 : 0x01;
+			memcpy(extension + offset + 1, activity_id, EP_ACTIVITY_ID_SIZE);
+			offset += 1 + EP_ACTIVITY_ID_SIZE;
+		}
+		if (related_activity_id != NULL && !related_activity_id_is_empty) {
+			// RelatedActivityId: 0x02 (no more follows)
+			extension[offset] = 0x02;
+			memcpy(extension + offset + 1, related_activity_id, EP_ACTIVITY_ID_SIZE);
+			offset += 1 + EP_ACTIVITY_ID_SIZE;
+		}
+	}
+
+	uint32_t payload_len = ep_event_payload_get_size (ep_event_payload);
+	if ((payload_len & 0xFFFF0000) != 0) {
+		// Payload is too large, we can't write it.
+		return false;
+	}
+	uint8_t *payload = (uint8_t *)malloc (payload_len);
+	EP_ASSERT (payload != NULL);
+	ep_event_payload_copy_data (ep_event_payload, payload);
+
+	// meta
+	const uint8_t *metadata = ep_event_get_metadata (ep_event);
+	uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
+
+	// calculated __rel_loc values
+	uint32_t meta_rel_loc = metadata_len << 16 | ((extension_len + payload_len) & 0xFFFF);
+	uint32_t payload_rel_loc = payload_len << 16 | ((sizeof(meta_rel_loc) + extension_len) & 0xFFFF);
+	uint32_t extension_rel_loc = extension_len << 16 | ((sizeof(payload_rel_loc) + sizeof(meta_rel_loc)) & 0xFFFF);
+	io[3].iov_base = &extension_rel_loc;
+	io[3].iov_len = sizeof(extension_rel_loc);
+
+	io[4].iov_base = &payload_rel_loc;
+	io[4].iov_len = sizeof(payload_rel_loc);
+
+	io[5].iov_base = &meta_rel_loc;
+	io[5].iov_len = sizeof(meta_rel_loc);
+
+	// Actual data buffers
+	io[6].iov_base = extension;
+	io[6].iov_len = extension_len;
+
+	io[7].iov_base = payload;
+	io[7].iov_len = payload_len;
+
+	io[8].iov_base = (void *)metadata;
+	io[8].iov_len = metadata_len;
+	int32_t result = writev(session->user_events_data_fd, (const struct iovec *)io, 9);
+	if (result == -1) {
+		// Failed to write the event, return false.
+		// return false;
+		return false;
+	}
+
+	return true;
+#else // HAVE_SYS_UIO_H
+	// Not Supported
+	return false;
+#endif // HAVE_SYS_UIO_H
+}
+
+bool
 ep_session_write_event (
 	EventPipeSession *session,
 	ep_rt_thread_handle_t thread,
@@ -673,6 +843,17 @@ ep_session_write_event (
 				stack == NULL ? NULL : (uintptr_t *)ep_stack_contents_get_pointer (stack),
 				session->callback_additional_data);
 			result = true;
+		} else if (session->session_type == EP_SESSION_TYPE_USEREVENTS) {
+			EP_ASSERT (session->user_events_data_fd != 0);
+			result = ep_tracepoint_write (
+				session,
+				thread,
+				ep_event,
+				payload,
+				activity_id,
+				related_activity_id,
+				event_thread,
+				stack);
 		} else {
 			EP_ASSERT (session->buffer_manager != NULL);
 			result = ep_buffer_manager_write_event (
