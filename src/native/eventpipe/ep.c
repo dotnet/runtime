@@ -370,6 +370,26 @@ ep_provider_config_init (
 	EventPipeEventLevel logging_level,
 	const ep_char8_t *filter_data)
 {
+	return ep_provider_config_init (
+		provider_config,
+		provider_name,
+		keywords,
+		logging_level,
+		filter_data,
+		NULL,
+		NULL);
+}
+
+EventPipeProviderConfiguration *
+ep_provider_config_init (
+	EventPipeProviderConfiguration *provider_config,
+	const ep_char8_t *provider_name,
+	uint64_t keywords,
+	EventPipeEventLevel logging_level,
+	const ep_char8_t *filter_data,
+	EventPipeEventFilter *event_filter,
+	ProviderTracepointConfiguration *tracepoint_config)
+{
 	EP_ASSERT (provider_config != NULL);
 	EP_ASSERT (provider_name != NULL);
 
@@ -377,6 +397,8 @@ ep_provider_config_init (
 	provider_config->keywords = keywords;
 	provider_config->logging_level = logging_level;
 	provider_config->filter_data = filter_data;
+	provider_config->event_filter = event_filter;
+	provider_config->tracepoint_config = tracepoint_config;
 
 	// Runtime specific rundown provider configuration.
 	ep_rt_provider_config_init (provider_config);
