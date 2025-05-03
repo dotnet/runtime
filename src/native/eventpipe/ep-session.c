@@ -156,6 +156,110 @@ session_disable_streaming_thread (EventPipeSession *session)
 	ep_rt_wait_event_free (rt_thread_shutdown_event);
 }
 
+static
+uint32_t
+event_reg(uint32_t fd, const char *command, uint32_t *write, uint32_t *enabled)
+{
+#ifdef HAVE_LINUX_USER_EVENTS_H
+	struct user_reg reg = {0};
+
+	reg.size = sizeof(reg); // uint32_t
+	reg.enable_bit = 31; // uint8_t
+	reg.enable_size = sizeof(*enabled); // uint8_t
+	// reg.flags //uint16_t
+	reg.enable_addr = (uint64_t)enabled; // uint64_t
+	reg.name_args = (uint64_t)command; // uint64_t
+
+	if (ioctl(fd, DIAG_IOCSREG, &reg) == -1)
+		return -1;
+
+	*write = reg.write_index; // uint32_t
+
+	return 0;
+#else // HAVE_LINUX_USER_EVENTS_H
+	// Not Supported
+	return -1;
+#endif // HAVE_LINUX_USER_EVENTS_H
+}
+
+// Could bump this to when we are deserializing the payload
+// And then the ProviderConfigurations would instead own the actual
+// Tracepoint info like write_index, enable bit, mapping
+static
+void
+ep_session_user_events_tracepoints_init (
+	EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+	EP_ASSERT (session->session_type == EP_SESSION_TYPE_USEREVENTS);
+
+	EP_ASSERT (session->user_events_data_fd != 0);
+
+	EventPipeSessionProviderList *providers = ep_session_get_providers (session);
+	EP_ASSERT (providers != NULL);
+
+	// Create a mapping of event_id to Tracepoint that we generate, for writing.
+	for (dn_list_it_t it = dn_list_begin (ep_session_provider_list_get_providers (providers)); !dn_list_it_end (it); it = dn_list_it_next (it)) {
+		EventPipeSessionProvider *session_provider = *dn_list_it_data_t (it, EventPipeSessionProvider *);
+		EP_ASSERT (session_provider != NULL);
+
+		// Should this be owned by each EventPipeSession ProviderConfiguration
+		dn_umap_custom_alloc_params_t params = {0, };
+		params.hash_func = dn_int_hash;
+		params.equal_func = dn_int_equal;
+		dn_umap_t *provider_event_id_to_tracepoint_map = dn_umap_custom_alloc (&params);
+
+		// Should we bother to register tracepoints whos events don't pass the event_filter?
+		ProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
+
+		dn_vector_t *tracepoints = tracepoint_config->tracepoints;
+		if (tracepoints != NULL) {
+			for (int32_t i = 0; i < tracepoints->size; ++i) {
+				// Get the tracepoint set
+				ProviderTracepointSet *tracepoint_set = *dn_vector_index_t (tracepoints, ProviderTracepointSet *, i);
+				EP_ASSERT (tracepoint_set != NULL);
+
+				// Get the tracepoint name for this set
+				const ep_char8_t *tracepoint_name = tracepoint_set->tracepoint_name;
+				EP_ASSERT (tracepoint_name != NULL);
+
+				EventPipeTracepoint *tracepoint = ep_rt_object_alloc (EventPipeTracepoint);
+				EP_ASSERT(tracepoint != NULL);
+				if (event_reg (session->user_events_data_fd, tracepoint_name, &tracepoint->write_index, &tracepoint->enabled) == -1) {
+					ep_raise_error ();
+				}
+
+				dn_vector_t *event_ids = tracepoint_set->event_ids;
+				if (event_ids != NULL) {
+					for (int32_t j = 0; j < event_ids->size; ++j) {
+						uint32_t *event_id = dn_vector_index_t (event_ids, uint32_t, j);
+						dn_umap_result_t result = dn_umap_insert (provider_event_id_to_tracepoint_map, event_id, tracepoint);
+						EP_ASSERT (result.result);
+					}
+				}
+			}
+		}
+		session_provider->event_id_to_tracepoint_map = provider_event_id_to_tracepoint_map;
+
+		const ep_char8_t *default_tracepoint_name = tracepoint_config->default_tracepoint_name;
+		if (default_tracepoint_name != NULL) {
+			EventPipeTracepoint *default_tracepoint = ep_rt_object_alloc (EventPipeTracepoint);
+			EP_ASSERT(default_tracepoint != NULL);
+			if (event_reg (session->user_events_data_fd, default_tracepoint_name, &default_tracepoint->write_index, &default_tracepoint->enabled) == -1) {
+				ep_raise_error ();
+			}
+
+			session_provider->default_tracepoint = default_tracepoint;
+		}
+	}
+
+ep_on_exit:
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
+}
+
 EventPipeSession *
 ep_session_alloc (
 	uint32_t index,
@@ -239,7 +343,7 @@ ep_session_alloc (
 		// Transfer ownership of the user_events_data file descriptor to the EventPipe Session.
 		instance->user_events_data_fd = user_events_data_fd;
 		// With the user_events_data file, register tracepoints for each provider's tracepoint configurations
-		// ep_session_user_events_tracepoints_init (instance);
+		ep_session_user_events_tracepoints_init (instance);
 		break;
 
 	default:

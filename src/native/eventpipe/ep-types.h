@@ -175,6 +175,11 @@ ep_provider_callback_data_queue_try_dequeue (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
 	EventPipeProviderCallbackData *provider_callback_data);
 
+struct EventPipeTracepoint {
+	uint32_t write_index;
+	uint32_t enabled;
+};
+
 struct EventPipeEventFilter {
 	bool enable;
 	dn_vector_t *event_ids;

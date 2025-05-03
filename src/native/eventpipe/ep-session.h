@@ -13,6 +13,11 @@
 #endif
 #include "ep-getter-setter.h"
 
+#ifdef HAVE_LINUX_USER_EVENTS_H
+#include <linux/user_events.h> // DIAG_IOCSREG
+#include <sys/ioctl.h> // event_reg
+#endif // HAVE_LINUX_USER_EVENTS_H
+
 /*
  * EventPipeSession.
  */
