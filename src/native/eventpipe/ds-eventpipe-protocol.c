@@ -62,10 +62,44 @@ eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 
 static
 bool
+eventpipe_collect_tracing_command_try_parse_event_filter (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	EventPipeEventFilter *event_filter);
+
+static
+bool
+eventpipe_collect_tracing_command_try_parse_tracepoint_config (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	ProviderTracepointConfiguration *tracepoint_config);
+
+static
+bool
+eventpipe_collect_tracing_command_try_parse_one_provider_config (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	uint64_t *keywords,
+	EventPipeEventLevel *logging_level,
+	ep_char8_t **provider_name,
+	ep_char8_t **filter_data,
+	EventPipeEventFilter *event_filter,
+	ProviderTracepointConfiguration *tracepoint_config);
+
+static
+bool
 eventpipe_collect_tracing_command_try_parse_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	dn_vector_t **result);
+
+static
+bool
+eventpipe_collect_tracing_command_try_parse_config (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	dn_vector_t **result,
+	uint32_t output_format);
 
 static
 uint8_t *
@@ -195,6 +229,234 @@ eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 
 static
 bool
+eventpipe_collect_tracing_command_try_parse_event_filter (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	EventPipeEventFilter *event_filter)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (event_filter != NULL);
+
+	bool result = false;
+	uint32_t event_id_array_len = 0;
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_bool (buffer, buffer_len, &event_filter->allow));
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_id_array_len));
+	if (event_id_array_len > 0) {
+		dn_vector_custom_alloc_params_t event_id_array_params = {0, };
+		event_id_array_params.capacity = event_id_array_len;
+		event_filter->event_ids = dn_vector_custom_alloc_t (&event_id_array_params, uint32_t);
+		ep_raise_error_if_nok (event_filter->event_ids != NULL);
+
+		for (uint32_t i = 0; i < event_id_array_len; ++i) {
+			uint32_t event_id = 0;
+			ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_id));
+			ep_raise_error_if_nok (dn_vector_push_back (event_filter->event_ids, event_id));
+		}
+	} else {
+		event_filter->event_ids = NULL;
+	}
+
+	result = true;
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	if (event_filter->event_ids != NULL) {
+		dn_vector_free (event_filter->event_ids);
+		event_filter->event_ids = NULL;
+	}
+
+	ep_exit_error_handler ();
+}
+
+static
+bool
+eventpipe_collect_tracing_command_try_parse_tracepoint_config (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	ProviderTracepointConfiguration *tracepoint_config)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (tracepoint_config != NULL);
+
+	bool result = false;
+
+	uint8_t *default_tracepoint_name_byte_array = NULL;
+	uint32_t default_tracepoint_name_byte_array_len = 0;
+
+	uint8_t *tracepoint_set_name_byte_array = NULL;
+	uint32_t tracepoint_set_name_byte_array_len = 0;
+
+	uint32_t tracepoint_set_array_len = 0;
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &default_tracepoint_name_byte_array, &default_tracepoint_name_byte_array_len));
+
+	if (default_tracepoint_name_byte_array) {
+		tracepoint_config->default_tracepoint_name = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)default_tracepoint_name_byte_array);
+		ep_rt_byte_array_free (default_tracepoint_name_byte_array);
+		default_tracepoint_name_byte_array = NULL;
+	} else {
+		tracepoint_config->default_tracepoint_name = NULL;
+	}
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &tracepoint_set_array_len));
+
+	if (tracepoint_set_array_len > 0) {
+		dn_vector_custom_alloc_params_t tracepoint_set_array_params = {0, };
+		tracepoint_set_array_params.capacity = tracepoint_set_array_len;
+		tracepoint_config->tracepoints = dn_vector_custom_alloc_t (&tracepoint_set_array_params, ProviderTracepointSet);
+		ep_raise_error_if_nok (tracepoint_config->tracepoints != NULL);
+
+		for (uint32_t i = 0; i < tracepoint_set_array_len; ++i) {
+			ProviderTracepointSet *tracepoint_set = ep_rt_object_alloc (ProviderTracepointSet);
+			ep_raise_error_if_nok (tracepoint_set != NULL);
+
+			ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &tracepoint_set_name_byte_array, &tracepoint_set_name_byte_array_len));
+
+			tracepoint_set->tracepoint_name = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)tracepoint_set_name_byte_array);
+			ep_raise_error_if_nok (tracepoint_set->tracepoint_name != NULL);
+			ep_rt_byte_array_free (tracepoint_set_name_byte_array);
+			tracepoint_set_name_byte_array = NULL;
+
+			uint32_t event_id_array_len = 0;
+			ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_id_array_len));
+
+			if (event_id_array_len > 0) {
+				dn_vector_custom_alloc_params_t event_id_array_params = {0, };
+				event_id_array_params.capacity = event_id_array_len;
+				tracepoint_set->event_ids = dn_vector_custom_alloc_t (&event_id_array_params, uint32_t);
+				ep_raise_error_if_nok (tracepoint_set->event_ids != NULL);
+
+				for (uint32_t j = 0; j < event_id_array_len; ++j) {
+					uint32_t event_id = 0;
+					ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_id));
+					ep_raise_error_if_nok (dn_vector_push_back (tracepoint_set->event_ids, event_id));
+				}
+			}
+
+			ep_raise_error_if_nok (dn_vector_push_back (tracepoint_config->tracepoints, tracepoint_set));
+		}
+	} else {
+		tracepoint_config->tracepoints = NULL;
+	}
+
+	ep_raise_error_if_nok (tracepoint_config->default_tracepoint_name != NULL || tracepoint_config->tracepoints != NULL);
+
+	result = true;
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	ep_rt_byte_array_free (default_tracepoint_name_byte_array);
+	ep_rt_byte_array_free (tracepoint_set_name_byte_array);
+	if (tracepoint_config->tracepoints != NULL) {
+		// Free the tracepoint set names
+		for (uint32_t i = 0; i < tracepoint_config->tracepoints->size; ++i) {
+			ProviderTracepointSet *tracepoint_set = *dn_vector_index_t (tracepoint_config->tracepoints, ProviderTracepointSet *, i);
+			if (tracepoint_set != NULL) {
+				dn_vector_free (tracepoint_set->event_ids);
+				ep_rt_object_free (tracepoint_set);
+				ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_set->tracepoint_name);
+				tracepoint_set->tracepoint_name = NULL;
+			}
+		}
+		dn_vector_free (tracepoint_config->tracepoints);
+		tracepoint_config->tracepoints = NULL;
+	}
+	ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_config->default_tracepoint_name);
+	tracepoint_config->default_tracepoint_name = NULL;
+
+	ep_exit_error_handler ();
+}
+
+/*
+ * eventpipe_collect_tracing_command_try_parse_one_provider_config
+ *
+ * The Provider Configuration format varies depending on CollectTracing version
+ *
+ * keywords: Always deserialized
+ * log_level: Always deserialized
+ * provider_name: Always deserialized, cannot be 0 length
+ * filter_data: Always deserialized, may be 0 length
+ * event_filter: Opt-in deserialization
+ * tracepoint_config: Opt-in deserialization
+ */
+static
+bool
+eventpipe_collect_tracing_command_try_parse_one_provider_config (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	uint64_t *keywords,
+	EventPipeEventLevel *logging_level,
+	ep_char8_t **provider_name,
+	ep_char8_t **filter_data,
+	EventPipeEventFilter *event_filter,
+	ProviderTracepointConfiguration *tracepoint_config)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (provider_name != NULL);
+	EP_ASSERT (keywords != NULL);
+	EP_ASSERT (logging_level != NULL);
+
+	bool result = false;
+
+	uint8_t *provider_name_byte_array = NULL;
+	uint8_t *filter_data_byte_array = NULL;
+
+	uint32_t provider_name_byte_array_len = 0;
+	uint32_t filter_data_byte_array_len = 0;
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (buffer, buffer_len, keywords));
+
+	uint32_t log_level;
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &log_level));
+	*logging_level = (EventPipeEventLevel)log_level;
+	ep_raise_error_if_nok (*logging_level <= EP_EVENT_LEVEL_VERBOSE);
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &provider_name_byte_array, &provider_name_byte_array_len));
+	*provider_name = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)provider_name_byte_array);
+	ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (*provider_name));
+	ep_rt_byte_array_free (provider_name_byte_array);
+	provider_name_byte_array = NULL;
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &filter_data_byte_array, &filter_data_byte_array_len));
+	if (filter_data_byte_array) {
+		*filter_data = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)filter_data_byte_array);
+		ep_raise_error_if_nok (*filter_data != NULL);
+		ep_rt_byte_array_free (filter_data_byte_array);
+		filter_data_byte_array = NULL;
+	}
+
+	if (event_filter != NULL) {
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_filter (buffer, buffer_len, event_filter));
+	}
+
+	if (tracepoint_config != NULL) {
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_tracepoint_config (buffer, buffer_len, tracepoint_config));
+	}
+
+	result = true;
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	ep_rt_byte_array_free (provider_name_byte_array);
+	ep_rt_utf8_string_free (*provider_name);
+	ep_rt_byte_array_free (filter_data_byte_array);
+	ep_rt_utf8_string_free (*filter_data);
+	ep_exit_error_handler ();
+}
+
+static
+bool
 eventpipe_collect_tracing_command_try_parse_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
@@ -278,6 +540,86 @@ ep_on_error:
 	ep_rt_utf8_string_free (provider_name_utf8);
 	ep_rt_byte_array_free (filter_data_byte_array);
 	ep_rt_utf8_string_free (filter_data_utf8);
+	ep_exit_error_handler ();
+}
+
+static
+bool
+eventpipe_collect_tracing_command_try_parse_config (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	dn_vector_t **result,
+	uint32_t output_format)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (result != NULL);
+
+	// Picking an arbitrary upper bound,
+	// This should be larger than any reasonable client request.
+	// TODO: This might be too large.
+	const uint32_t max_count_configs = 1000;
+	uint32_t count_configs = 0;
+
+	ep_char8_t *provider_name_utf8 = NULL;
+	ep_char8_t *filter_data_utf8 = NULL;
+
+	dn_vector_custom_alloc_params_t params = {0, };
+
+	EventPipeEventFilter *event_filter = NULL;
+	ProviderTracepointConfiguration *tracepoint_config = NULL;
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &count_configs));
+	ep_raise_error_if_nok (count_configs <= max_count_configs);
+
+	params.capacity = count_configs;
+
+	*result = dn_vector_custom_alloc_t (&params, EventPipeProviderConfiguration);
+	ep_raise_error_if_nok (*result);
+
+	for (uint32_t i = 0; i < count_configs; ++i) {
+		uint64_t keywords = 0;
+		EventPipeEventLevel logging_level;
+		event_filter = ep_rt_object_alloc (EventPipeEventFilter);
+		ep_raise_error_if_nok (event_filter != NULL);
+
+		tracepoint_config = ep_rt_object_alloc (ProviderTracepointConfiguration);
+		ep_raise_error_if_nok (tracepoint_config != NULL);
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_one_provider_config (
+			buffer,
+			buffer_len,
+			&keywords,
+			&logging_level,
+			&provider_name_utf8,
+			&filter_data_utf8,
+			event_filter,
+			output_format == 1 ? tracepoint_config : NULL));
+
+		EventPipeProviderConfiguration provider_config;
+		if (ep_provider_config_init (&provider_config, provider_name_utf8, keywords, logging_level, filter_data_utf8, event_filter, tracepoint_config)) {
+			if (dn_vector_push_back (*result, provider_config)) {
+				// Ownership transferred.
+				provider_name_utf8 = NULL;
+				filter_data_utf8 = NULL;
+				event_filter = NULL;
+				tracepoint_config = NULL;
+			}
+			ep_provider_config_fini (&provider_config);
+		}
+		ep_raise_error_if_nok (provider_name_utf8 == NULL && filter_data_utf8 == NULL);
+	}
+
+ep_on_exit:
+	return (count_configs > 0);
+
+ep_on_error:
+	count_configs = 0;
+	ep_rt_utf8_string_free (provider_name_utf8);
+	ep_rt_utf8_string_free (filter_data_utf8);
+	ep_rt_object_free (tracepoint_config);
+	ep_rt_object_free (event_filter);
+	dn_vector_free (*result);
+	*result = NULL;
 	ep_exit_error_handler ();
 }
 
