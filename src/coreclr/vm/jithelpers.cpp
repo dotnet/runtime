@@ -1225,7 +1225,7 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
 EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
 #else
@@ -1241,8 +1241,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
-#ifdef FEATURE_EH_FUNCLETS
-
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
@@ -1255,6 +1253,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     FC_CAN_TRIGGER_GC();
 
+#ifdef FEATURE_EH_FUNCLETS
     if (oref == 0)
         DispatchManagedException(kNullReferenceException);
     else
@@ -1282,15 +1281,12 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     }
 
     DispatchManagedException(oref, exceptionFrame.GetContext());
-    FC_CAN_TRIGGER_GC_END();
-    UNREACHABLE();
-#endif // FEATURE_EH_FUNCLETS
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+#elif defined(TARGET_X86)
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.EnsureInit(NULL);
-    g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
+    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
     if (oref == 0)
@@ -1321,13 +1317,20 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     RaiseTheExceptionInternalOnly(oref, FALSE);
 
-    HELPER_METHOD_FRAME_END();
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("IL_Throw");
+#endif // FEATURE_EH_FUNCLETS
+
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 }
 HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
 EXTERN_C FCDECL0(void, IL_Rethrow);
 EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
 #else
@@ -1338,7 +1341,6 @@ HCIMPL0(void, IL_Rethrow)
 
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
-#ifdef FEATURE_EH_FUNCLETS
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
@@ -1349,11 +1351,12 @@ HCIMPL0(void, IL_Rethrow)
 #endif
     exceptionFrame.InitAndLink(pThread);
 
+    FC_CAN_TRIGGER_GC();
+
+#ifdef FEATURE_EH_FUNCLETS
     ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, exceptionFrame.GetContext(), ExKind::None);
-
-    FC_CAN_TRIGGER_GC();
 
     GCPROTECT_BEGIN(exInfo.m_exception);
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
@@ -1367,12 +1370,9 @@ HCIMPL0(void, IL_Rethrow)
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
     CALL_MANAGED_METHOD_NORET(args)
     GCPROTECT_END();
-
-    FC_CAN_TRIGGER_GC_END();
-    UNREACHABLE();
-#endif
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+#elif defined(TARGET_X86)
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
@@ -1386,11 +1386,18 @@ HCIMPL0(void, IL_Rethrow)
         RealCOMPlusThrow(kInvalidProgramException, (UINT)IDS_EE_RETHROW_NOT_ALLOWED);
     }
 
-    HELPER_METHOD_FRAME_END();
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("IL_Rethrow");
+#endif // FEATURE_EH_FUNCLETS
+
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 }
 HCIMPLEND
 
-#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
 EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
 #else
@@ -1407,7 +1414,6 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     OBJECTREF oref = ObjectToOBJECTREF(obj);
     GetThread()->GetExceptionState()->SetRaisingForeignException();
 
-#ifdef FEATURE_EH_FUNCLETS
     Thread *pThread = GetThread();
     
     SoftwareExceptionFrame exceptionFrame;
@@ -1419,19 +1425,27 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
+
+#ifdef FEATURE_EH_FUNCLETS
     DispatchManagedException(oref, exceptionFrame.GetContext());
-    FC_CAN_TRIGGER_GC_END();
-    UNREACHABLE();
-#else
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+#elif defined(TARGET_X86)
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
 #if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.EnsureInit(NULL);
-    g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
+    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
     RaiseTheExceptionInternalOnly(oref, FALSE);
-    HELPER_METHOD_FRAME_END();
-#endif
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("IL_ThrowExact");
+#endif // FEATURE_EH_FUNCLETS
+
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 }
 HCIMPLEND
 
