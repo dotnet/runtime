@@ -33,6 +33,11 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 
         [Theory]
         [MemberData(nameof(TestCases))]
+        public void OneShotRoundtrip_ViaSetKey(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            OneShotRoundtripTest(plaintext, ciphertext, padding, mode, feedbackSize, viaSetKey: true);
+
+        [Theory]
+        [MemberData(nameof(TestCases))]
         public void TryDecryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
             TryDecryptOneShot_DestinationTooSmallTest(plaintext, ciphertext, padding, mode);
 

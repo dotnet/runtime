@@ -330,18 +330,26 @@ struct simdmask_t
         return !(*this == other);
     }
 
-    static simdmask_t AllBitsSet()
+    static simdmask_t AllBitsSet(unsigned elementCount)
     {
+        assert((elementCount >= 1) && (elementCount <= 64));
         simdmask_t result;
 
-        result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+        if (elementCount == 64)
+        {
+            result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+        }
+        else
+        {
+            result.u64[0] = (1ULL << elementCount) - 1;
+        }
 
         return result;
     }
 
     bool IsAllBitsSet() const
     {
-        return *this == AllBitsSet();
+        return *this == AllBitsSet(64);
     }
 
     bool IsZero() const
@@ -704,8 +712,9 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
 
 inline bool IsBinaryBitwiseOperation(genTreeOps oper)
 {
-    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_LSH) || (oper == GT_OR) || (oper == GT_ROL) ||
-           (oper == GT_ROR) || (oper == GT_RSH) || (oper == GT_RSZ) || (oper == GT_XOR);
+    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_LSH) || (oper == GT_OR) || (oper == GT_OR_NOT) ||
+           (oper == GT_ROL) || (oper == GT_ROR) || (oper == GT_RSH) || (oper == GT_RSZ) || (oper == GT_XOR) ||
+           (oper == GT_XOR_NOT);
 }
 
 template <typename TBase>
@@ -842,6 +851,11 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             return arg0 | arg1;
         }
 
+        case GT_OR_NOT:
+        {
+            return arg0 | ~arg1;
+        }
+
         case GT_ROL:
         {
             // Normalize the "rotate by" value
@@ -899,6 +913,11 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
         case GT_XOR:
         {
             return arg0 ^ arg1;
+        }
+
+        case GT_XOR_NOT:
+        {
+            return arg0 ^ ~arg1;
         }
 
         default:
@@ -1401,7 +1420,7 @@ void EvaluateWithElementFloating(var_types simdBaseType, TSimd* result, const TS
 
         case TYP_DOUBLE:
         {
-            result->f64[arg1] = static_cast<float>(arg2);
+            result->f64[arg1] = arg2;
             break;
         }
 

@@ -410,12 +410,7 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
-        if (!SharedMemoryManager::StaticInitialize())
-        {
-            ERROR("Shared memory static initialization failed!\n");
-            palError = ERROR_PALINIT_SHARED_MEMORY_MANAGER;
-            goto CLEANUP1;
-        }
+        SharedMemoryManager::StaticInitialize();
 
         //
         // Initialize global process data
@@ -607,6 +602,7 @@ Initialize(
             }
         }
 
+#ifndef __wasm__
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -619,7 +615,7 @@ Initialize(
                 goto CLEANUP13;
             }
         }
-
+#endif
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {
@@ -949,6 +945,10 @@ Return value:
 --*/
 static BOOL INIT_IncreaseDescriptorLimit(void)
 {
+#ifdef __wasm__
+    // WebAssembly cannot set limits
+    return TRUE;
+#endif
 #ifndef DONT_SET_RLIMIT_NOFILE
     struct rlimit rlp;
     int result;

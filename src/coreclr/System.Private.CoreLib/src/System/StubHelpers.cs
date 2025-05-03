@@ -31,6 +31,7 @@ namespace System.StubHelpers
         internal static unsafe byte ConvertToNative(char managedChar, bool fBestFit, bool fThrowOnUnmappableChar)
         {
             int cbAllocLength = (1 + 1) * Marshal.SystemMaxDBCSCharSize;
+            Debug.Assert(cbAllocLength <= 512); // Some arbitrary upper limit, in most cases SystemMaxDBCSCharSize is expected to be 1 or 2.
             byte* bufferPtr = stackalloc byte[cbAllocLength];
 
             int cbLength = Marshal.StringToAnsiString(managedChar.ToString(), bufferPtr, cbAllocLength, fBestFit, fThrowOnUnmappableChar);
@@ -1597,6 +1598,9 @@ namespace System.StubHelpers
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr NextCallReturnAddress();
+
+        [Intrinsic]
+        internal static Continuation? AsyncCallContinuation() => null;
     }  // class StubHelpers
 
 #if FEATURE_COMINTEROP

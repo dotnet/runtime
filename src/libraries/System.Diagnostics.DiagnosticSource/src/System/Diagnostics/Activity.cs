@@ -58,8 +58,8 @@ namespace System.Diagnostics
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
         private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
-        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
-        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
+        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
+        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
         private static readonly AsyncLocal<Activity?> s_current = new AsyncLocal<Activity?>();
@@ -551,10 +551,7 @@ namespace System.Diagnostics
         /// </remarks>
         public Activity AddException(Exception exception, in TagList tags = default, DateTimeOffset timestamp = default)
         {
-            if (exception == null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
+            ArgumentNullException.ThrowIfNull(exception);
 
             TagList exceptionTags = tags;
 
@@ -1233,7 +1230,9 @@ namespace System.Diagnostics
                     activity._parentSpanId = parentContext.SpanId.ToString();
                 }
 
-                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                // Note: Don't inherit Recorded from parent as it is set below
+                // based on sampling decision
+                activity.ActivityTraceFlags = parentContext.TraceFlags & ~ActivityTraceFlags.Recorded;
                 activity._parentTraceFlags = (byte)parentContext.TraceFlags;
                 activity.HasRemoteParent = parentContext.IsRemote;
             }

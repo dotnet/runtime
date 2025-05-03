@@ -2448,6 +2448,7 @@ namespace System.Threading.Tasks
         /// true to attempt to marshal the continuation back to the original context captured; otherwise, false.
         /// </param>
         /// <returns>An object used to await this task.</returns>
+        [Intrinsic]
         public ConfiguredTaskAwaitable ConfigureAwait(bool continueOnCapturedContext)
         {
             return new ConfiguredTaskAwaitable(this, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
@@ -2457,6 +2458,7 @@ namespace System.Threading.Tasks
         /// <param name="options">Options used to configure how awaits on this task are performed.</param>
         /// <returns>An object used to await this task.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="options"/> argument specifies an invalid value.</exception>
+        [Intrinsic]
         public ConfiguredTaskAwaitable ConfigureAwait(ConfigureAwaitOptions options)
         {
             if ((options & ~(ConfigureAwaitOptions.ContinueOnCapturedContext |
@@ -3060,26 +3062,21 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
-#if CORECLR
-                if (ThreadPoolWorkQueue.s_prioritizationExperiment)
-                {
-                    // We're about to block waiting for the task to complete, which is expensive, and if
-                    // the task being waited on depends on some other work to run, this thread could end up
-                    // waiting for some other thread to do work. If the two threads are part of the same scheduler,
-                    // such as the thread pool, that could lead to a (temporary) deadlock. This is made worse by
-                    // it also leading to a possible priority inversion on previously queued work. Each thread in
-                    // the thread pool has a local queue. A key motivator for this local queue is it allows this
-                    // thread to create work items that it will then prioritize above all other work in the
-                    // pool. However, while this thread makes its own local queue the top priority, that queue is
-                    // every other thread's lowest priority. If this thread blocks, all of its created work that's
-                    // supposed to be high priority becomes low priority, and work that's typically part of a
-                    // currently in-flight operation gets deprioritized relative to new requests coming into the
-                    // pool, which can lead to the whole system slowing down or even deadlocking. To address that,
-                    // just before we block, we move all local work into a global queue, so that it's at least
-                    // prioritized by other threads more fairly with respect to other work.
-                    ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue();
-                }
-#endif
+                // We're about to block waiting for the task to complete, which is expensive, and if
+                // the task being waited on depends on some other work to run, this thread could end up
+                // waiting for some other thread to do work. If the two threads are part of the same scheduler,
+                // such as the thread pool, that could lead to a (temporary) deadlock. This is made worse by
+                // it also leading to a possible priority inversion on previously queued work. Each thread in
+                // the thread pool has a local queue. A key motivator for this local queue is it allows this
+                // thread to create work items that it will then prioritize above all other work in the
+                // pool. However, while this thread makes its own local queue the top priority, that queue is
+                // every other thread's lowest priority. If this thread blocks, all of its created work that's
+                // supposed to be high priority becomes low priority, and work that's typically part of a
+                // currently in-flight operation gets deprioritized relative to new requests coming into the
+                // pool, which can lead to the whole system slowing down or even deadlocking. To address that,
+                // just before we block, we move all local work into a global queue, so that it's at least
+                // prioritized by other threads more fairly with respect to other work.
+                ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue();
 
                 var mres = new SetOnInvokeMres();
                 try

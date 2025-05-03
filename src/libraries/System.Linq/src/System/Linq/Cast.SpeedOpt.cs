@@ -110,6 +110,19 @@ namespace System.Linq
                     (e as IDisposable)?.Dispose();
                 }
             }
+
+            public override bool Contains(TResult value)
+            {
+                foreach (TResult item in _source)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(item, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
     }
 }

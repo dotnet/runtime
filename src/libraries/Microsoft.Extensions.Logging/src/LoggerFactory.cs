@@ -172,7 +172,7 @@ namespace Microsoft.Extensions.Logging
                 throw new ObjectDisposedException(nameof(LoggerFactory));
             }
 
-            ThrowHelper.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(provider);
 
             lock (_sync)
             {

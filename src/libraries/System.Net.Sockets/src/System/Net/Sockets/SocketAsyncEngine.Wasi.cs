@@ -35,9 +35,7 @@ namespace System.Net.Sockets
             return true;
         }
 
-#pragma warning disable CA1822
-        public void UnregisterSocket(IntPtr _, SocketAsyncContext context)
-#pragma warning restore CA1822
+        public static void UnregisterSocket(SocketAsyncContext context)
         {
             context.unregisterPollHook.Cancel();
         }

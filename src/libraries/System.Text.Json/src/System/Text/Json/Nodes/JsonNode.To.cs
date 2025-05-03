@@ -27,7 +27,7 @@ namespace System.Text.Json.Nodes
             {
                 WriteTo(writer, options);
                 writer.Flush();
-                return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
+                return JsonHelpers.Utf8GetString(output.WrittenSpan);
             }
             finally
             {
@@ -60,7 +60,7 @@ namespace System.Text.Json.Nodes
             {
                 WriteTo(writer);
                 writer.Flush();
-                return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
+                return JsonHelpers.Utf8GetString(output.WrittenSpan);
             }
             finally
             {

@@ -54,54 +54,15 @@ void *EEClass::operator new(
 }
 
 //*******************************************************************************
-void EEClass::Destruct(MethodTable * pOwningMT)
+void EEClass::Destruct()
 {
     CONTRACTL
     {
         NOTHROW;
         GC_TRIGGERS;
         FORBID_FAULT;
-        PRECONDITION(pOwningMT != NULL);
     }
     CONTRACTL_END
-
-#ifdef PROFILING_SUPPORTED
-    // If profiling, then notify the class is getting unloaded.
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
-        {
-            // Calls to the profiler callback may throw, or otherwise fail, if
-            // the profiler AVs/throws an unhandled exception/etc. We don't want
-            // those failures to affect the runtime, so we'll ignore them.
-            //
-            // Note that the profiler callback may turn around and make calls into
-            // the profiling runtime that may throw. This try/catch block doesn't
-            // protect the profiler against such failures. To protect the profiler
-            // against that, we will need try/catch blocks around all calls into the
-            // profiling API.
-            //
-            // (Bug #26467)
-            //
-
-            FAULT_NOT_FATAL();
-
-            EX_TRY
-            {
-                GCX_PREEMP();
-
-                (&g_profControlBlock)->ClassUnloadStarted((ClassID) pOwningMT);
-            }
-            EX_CATCH
-            {
-                // The exception here came from the profiler itself. We'll just
-                // swallow the exception, since we don't want the profiler to bring
-                // down the runtime.
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
-        }
-        END_PROFILER_CALLBACK();
-    }
-#endif // PROFILING_SUPPORTED
 
 #ifdef FEATURE_COMINTEROP
     // clean up any COM Data
@@ -147,29 +108,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     if (GetSparseCOMInteropVTableMap() != NULL)
         delete GetSparseCOMInteropVTableMap();
 #endif // FEATURE_COMINTEROP
-
-#ifdef PROFILING_SUPPORTED
-    // If profiling, then notify the class is getting unloaded.
-    {
-        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
-        {
-            // See comments in the call to ClassUnloadStarted for details on this
-            // FAULT_NOT_FATAL marker and exception swallowing.
-            FAULT_NOT_FATAL();
-            EX_TRY
-            {
-                GCX_PREEMP();
-                (&g_profControlBlock)->ClassUnloadFinished((ClassID) pOwningMT, S_OK);
-            }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
-        }
-        END_PROFILER_CALLBACK();
-    }
-#endif // PROFILING_SUPPORTED
-
 }
 
 //*******************************************************************************
@@ -723,6 +661,18 @@ HRESULT EEClass::AddMethodDesc(
     PCCOR_SIGNATURE sig;
     if (FAILED(hr = pImport->GetSigOfMethodDef(methodDef, &sigLen, &sig)))
         return hr;
+
+    SigParser sigParser(sig, sigLen);
+    ULONG offsetOfAsyncDetails;
+    bool isValueTask;
+    MethodReturnKind returnKind = ClassifyMethodReturnKind(sigParser, pModule, &offsetOfAsyncDetails, &isValueTask);
+    if (returnKind != MethodReturnKind::NormalMethod)
+    {
+        // TODO: (async) revisit and examine if this can be supported
+        LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
+        return E_FAIL;
+    }
+
     uint32_t callConv = CorSigUncompressData(sig);
     DWORD classification = (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
         ? mcInstantiated
@@ -741,6 +691,7 @@ HRESULT EEClass::AddMethodDesc(
                                                             classification,
                                                             TRUE, // fNonVtableSlot
                                                             TRUE, // fNativeCodeSlot
+                                                            FALSE, /* HasAsyncMethodData */
                                                             pMT,
                                                             &dummyAmTracker);
 
@@ -788,7 +739,9 @@ HRESULT EEClass::AddMethodDesc(
                                 TRUE,   // fEnC
                                 0,      // RVA - non-zero only for NDirect
                                 pImport,
-                                NULL
+                                NULL,
+                                Signature(),
+                                AsyncMethodKind::NotAsync
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)
@@ -2498,7 +2451,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
             {
                 FieldDesc *pFD = &GetClass()->GetFieldDescList()[i];
 #ifdef DEBUG_LAYOUT
-                printf("offset %s%3d %s\n", pFD->IsByValue() ? "byvalue " : "", pFD->GetOffset(), pFD->GetName());
+                minipal_log_print_info("offset %s%3d %s\n", pFD->IsByValue() ? "byvalue " : "", pFD->GetOffset(), pFD->GetName());
 #endif
                 if(debug) {
                     ssBuff.Printf("offset %3d %s\n", pFD->GetOffset(), pFD->GetName());

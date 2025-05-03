@@ -113,212 +113,10 @@ private:
     Signature         m_sig;
 };
 
-
-//----------------------------------------------------------------------
-// This structure contains the minimal information required to
-// distinguish one function pointer from another, with the rest
-// being stored in a shared UMThunkMarshInfo.
-//
-// This structure also contains the actual code bytes that form the
-// front end of the thunk. A pointer to the m_code[] byte array is
-// what is actually handed to unmanaged client code.
-//----------------------------------------------------------------------
-class UMEntryThunk
+struct UMEntryThunkData
 {
-    friend class CheckAsmOffsets;
     friend class NDirectStubLinker;
-    friend class UMEntryThunkFreeList;
 
-private:
-#ifdef _DEBUG
-    enum
-    {
-        kLoadTimeInited = 0x4c554554,   //'LUET'
-        kRunTimeInited  = 0x52554554,   //'RUET'
-    };
-#endif
-
-public:
-    static UMEntryThunk* CreateUMEntryThunk();
-    static VOID FreeUMEntryThunk(UMEntryThunk* p);
-
-#ifndef DACCESS_COMPILE
-    VOID LoadTimeInit(UMEntryThunk           *pUMEntryThunkRX,
-                      PCODE                   pManagedTarget,
-                      OBJECTHANDLE            pObjectHandle,
-                      UMThunkMarshInfo       *pUMThunkMarshInfo,
-                      MethodDesc             *pMD)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            PRECONDITION(CheckPointer(pUMThunkMarshInfo));
-            PRECONDITION(pMD != NULL);
-        }
-        CONTRACTL_END;
-
-        m_pManagedTarget = pManagedTarget;
-        m_pObjectHandle     = pObjectHandle;
-        m_pUMThunkMarshInfo = pUMThunkMarshInfo;
-
-        m_pMD = pMD;    // For debugging and profiling, so they can identify the target
-
-        m_code.Encode(&pUMEntryThunkRX->m_code, (BYTE*)TheUMThunkPreStub(), pUMEntryThunkRX);
-
-#ifdef _DEBUG
-        m_state = kLoadTimeInited;
-#endif
-    }
-
-    void Terminate();
-
-    VOID RunTimeInit(UMEntryThunk *pUMEntryThunkRX)
-    {
-        STANDARD_VM_CONTRACT;
-
-        // Ensure method's module is activate in app domain
-        m_pMD->EnsureActive();
-
-        ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(m_pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
-        uMThunkMarshInfoWriterHolder.GetRW()->RunTimeInit();
-
-        // Ensure that we have either the managed target or the delegate.
-        if (m_pObjectHandle == NULL && m_pManagedTarget == (TADDR)0)
-            m_pManagedTarget = m_pMD->GetMultiCallableAddrOfCode();
-
-        m_code.Encode(&pUMEntryThunkRX->m_code, (BYTE*)m_pUMThunkMarshInfo->GetExecStubEntryPoint(), pUMEntryThunkRX);
-
-#ifdef _DEBUG
-        m_state = kRunTimeInited;
-#endif // _DEBUG
-    }
-
-    PCODE GetManagedTarget() const
-    {
-        CONTRACT (PCODE)
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
-            PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(RETVAL != NULL);
-        }
-        CONTRACT_END;
-
-        OBJECTHANDLE hndDelegate = GetObjectHandle();
-        if (hndDelegate != NULL)
-        {
-            GCX_COOP();
-
-            DELEGATEREF orDelegate = (DELEGATEREF)ObjectFromHandle(hndDelegate);
-            _ASSERTE(orDelegate != NULL);
-            _ASSERTE(m_pMD->IsEEImpl());
-
-            // We have optimizations that skip the Invoke method and call directly the
-            // delegate's target method. We need to return the target in that case,
-            // otherwise debugger would fail to step in.
-            RETURN orDelegate->GetMethodPtr();
-        }
-        else
-        {
-            if (m_pManagedTarget != (TADDR)0)
-            {
-                RETURN m_pManagedTarget;
-            }
-            else
-            {
-                RETURN m_pMD->GetMultiCallableAddrOfCode();
-            }
-        }
-    }
-#endif // !DACCESS_COMPILE
-
-    OBJECTHANDLE GetObjectHandle() const
-    {
-        CONTRACT (OBJECTHANDLE)
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            // If we OOM after we create the holder but
-            // before we set the m_state we can have
-            // m_state == 0 and m_pObjectHandle == NULL
-            PRECONDITION(m_state == kRunTimeInited  ||
-                         m_state == kLoadTimeInited ||
-                         m_pObjectHandle == NULL);
-        }
-        CONTRACT_END;
-
-        RETURN m_pObjectHandle;
-    }
-
-    UMThunkMarshInfo* GetUMThunkMarshInfo() const
-    {
-        CONTRACT (UMThunkMarshInfo*)
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            SUPPORTS_DAC;
-            PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(RETVAL));
-        }
-        CONTRACT_END;
-
-        RETURN m_pUMThunkMarshInfo;
-    }
-
-
-    const BYTE* GetCode() const
-    {
-        CONTRACT (const BYTE*)
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        }
-        CONTRACT_END;
-
-        RETURN m_code.GetEntryPoint();
-    }
-
-    static UMEntryThunk* RecoverUMEntryThunk(const VOID* pCode)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (UMEntryThunk*)( ((LPBYTE)pCode) - offsetof(UMEntryThunk, m_code) );
-    }
-
-
-    MethodDesc* GetMethod() const
-    {
-        CONTRACT (MethodDesc*)
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
-        }
-        CONTRACT_END;
-
-        RETURN m_pMD;
-    }
-
-    static DWORD GetCodeOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(UMEntryThunk, m_code);
-    }
-
-    static UMEntryThunk* Decode(LPVOID pCallback);
-
-    static VOID __fastcall ReportViolation(UMEntryThunk* p);
-
-private:
     // The start of the managed code.
     // if m_pObjectHandle is non-NULL, this field is still set to help with diagnostic of call on collected delegate crashes
     // but it may not have the correct value.
@@ -339,11 +137,212 @@ private:
         UMEntryThunk *m_pNextFreeThunk;
     };
 
+    PTR_UMEntryThunk m_pUMEntryThunk;
+
 #ifdef _DEBUG
     DWORD                   m_state;        // the initialization state
 #endif
+};
 
-    UMEntryThunkCode        m_code;
+typedef DPTR(struct UMEntryThunkData) PTR_UMEntryThunkData;
+
+//----------------------------------------------------------------------
+// This structure contains the minimal information required to
+// distinguish one function pointer from another, with the rest
+// being stored in a shared UMThunkMarshInfo.
+//
+// This structure also contains the actual code bytes that form the
+// front end of the thunk. A pointer to the m_code[] byte array is
+// what is actually handed to unmanaged client code.
+//----------------------------------------------------------------------
+class UMEntryThunk : private StubPrecode
+{
+    friend class UMEntryThunkFreeList;
+
+private:
+#ifdef _DEBUG
+    enum
+    {
+        kLoadTimeInited = 0x4c554554,   //'LUET'
+        kRunTimeInited  = 0x52554554,   //'RUET'
+    };
+#endif
+
+    PTR_UMEntryThunkData GetData() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        
+        return dac_cast<PTR_UMEntryThunkData>(GetSecretParam());
+    }
+
+public:
+
+    static const int Type = PRECODE_UMENTRY_THUNK;
+
+    static UMEntryThunk* CreateUMEntryThunk();
+    static VOID FreeUMEntryThunk(UMEntryThunk* p);
+
+#ifndef DACCESS_COMPILE
+    VOID LoadTimeInit(PCODE                   pManagedTarget,
+                      OBJECTHANDLE            pObjectHandle,
+                      UMThunkMarshInfo       *pUMThunkMarshInfo,
+                      MethodDesc             *pMD)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(CheckPointer(pUMThunkMarshInfo));
+            PRECONDITION(pMD != NULL);
+        }
+        CONTRACTL_END;
+
+        PTR_UMEntryThunkData data = GetData();
+        data->m_pManagedTarget = pManagedTarget;
+        data->m_pObjectHandle     = pObjectHandle;
+        data->m_pUMThunkMarshInfo = pUMThunkMarshInfo;
+
+        data->m_pMD = pMD;    // For debugging and profiling, so they can identify the target
+
+        SetTargetUnconditional(TheUMThunkPreStub());
+
+#ifdef _DEBUG
+        data->m_state = kLoadTimeInited;
+#endif
+    }
+
+    void Terminate();
+
+    VOID RunTimeInit()
+    {
+        STANDARD_VM_CONTRACT;
+
+        PTR_UMEntryThunkData data = GetData();
+        // Ensure method's module is activate in app domain
+        data->m_pMD->EnsureActive();
+
+        data->m_pUMThunkMarshInfo->RunTimeInit();
+
+        // Ensure that we have either the managed target or the delegate.
+        if (data->m_pObjectHandle == NULL && data->m_pManagedTarget == (TADDR)0)
+            data->m_pManagedTarget = data->m_pMD->GetMultiCallableAddrOfCode();
+
+        SetTargetUnconditional(data->m_pUMThunkMarshInfo->GetExecStubEntryPoint());
+
+#ifdef _DEBUG
+        data->m_state = kRunTimeInited;
+#endif // _DEBUG
+    }
+
+    PCODE GetManagedTarget() const
+    {
+        CONTRACT (PCODE)
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+            PRECONDITION(GetData()->m_state == kRunTimeInited || GetData()->m_state == kLoadTimeInited);
+            POSTCONDITION(RETVAL != NULL);
+        }
+        CONTRACT_END;
+
+        OBJECTHANDLE hndDelegate = GetObjectHandle();
+        if (hndDelegate != NULL)
+        {
+            GCX_COOP();
+
+            DELEGATEREF orDelegate = (DELEGATEREF)ObjectFromHandle(hndDelegate);
+            _ASSERTE(orDelegate != NULL);
+            _ASSERTE(GetData()->m_pMD->IsEEImpl());
+
+            // We have optimizations that skip the Invoke method and call directly the
+            // delegate's target method. We need to return the target in that case,
+            // otherwise debugger would fail to step in.
+            RETURN orDelegate->GetMethodPtr();
+        }
+        else
+        {
+            PTR_UMEntryThunkData data = GetData();
+            if (data->m_pManagedTarget != (TADDR)0)
+            {
+                RETURN data->m_pManagedTarget;
+            }
+            else
+            {
+                RETURN data->m_pMD->GetMultiCallableAddrOfCode();
+            }
+        }
+    }
+#endif // !DACCESS_COMPILE
+
+    OBJECTHANDLE GetObjectHandle() const
+    {
+        CONTRACT (OBJECTHANDLE)
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            // If we OOM after we create the holder but
+            // before we set the m_state we can have
+            // m_state == 0 and m_pObjectHandle == NULL
+            PRECONDITION(GetData()->m_state == kRunTimeInited  ||
+                         GetData()->m_state == kLoadTimeInited ||
+                         GetData()->m_pObjectHandle == NULL);
+        }
+        CONTRACT_END;
+
+        RETURN GetData()->m_pObjectHandle;
+    }
+
+    UMThunkMarshInfo* GetUMThunkMarshInfo() const
+    {
+        CONTRACT (UMThunkMarshInfo*)
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            SUPPORTS_DAC;
+            PRECONDITION(GetData()->m_state == kRunTimeInited || GetData()->m_state == kLoadTimeInited);
+            POSTCONDITION(CheckPointer(RETVAL));
+        }
+        CONTRACT_END;
+
+        RETURN GetData()->m_pUMThunkMarshInfo;
+    }
+
+
+    PCODE GetCode() const
+    {
+        CONTRACT (PCODE)
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(GetData()->m_state == kRunTimeInited || GetData()->m_state == kLoadTimeInited);
+            POSTCONDITION(CheckPointer(dac_cast<BYTE*>(RETVAL), NULL_OK));
+        }
+        CONTRACT_END;
+
+        RETURN PINSTRToPCODE(dac_cast<TADDR>(this));
+    }
+
+    MethodDesc* GetMethod() const
+    {
+        CONTRACT (MethodDesc*)
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(GetData()->m_state == kRunTimeInited || GetData()->m_state == kLoadTimeInited);
+            POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
+        }
+        CONTRACT_END;
+
+        RETURN GetData()->m_pMD;
+    }
+
+    static VOID __fastcall ReportViolation(UMEntryThunkData* pEntryThunkData);
 };
 
 // Cache to hold UMEntryThunk/UMThunkMarshInfo instances associated with MethodDescs.
@@ -397,7 +396,7 @@ EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 #endif // FEATURE_EH_FUNCLETS
 
 extern "C" void TheUMEntryPrestub(void);
-extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk);
+extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunk);
 
 #ifdef _DEBUG
 void STDCALL LogUMTransition(UMEntryThunk* thunk);

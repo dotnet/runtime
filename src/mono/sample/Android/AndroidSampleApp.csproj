@@ -1,145 +1,44 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">Mono</RuntimeFlavor>
     <OutputType>Exe</OutputType>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">$(ForceAOT)</RunAOTCompilation>
+    <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+    <AppName>HelloAndroid</AppName>
+    <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
+    <!-- With Mono AOT on Android we default to not using AOT data file optimization as it can degrade runtime performance for small binary size improvements. -->
+    <_UseAotDataFile Condition="'$(RunAOTCompilation)' == 'true'">false</_UseAotDataFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+    <RuntimeComponents Condition="'$(RuntimeFlavor)' == 'Mono' and '$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+    <RuntimeHeaders Include="$(SharedNativeRoot)" Condition="'$(RuntimeFlavor)' != 'Mono'"/>
   </ItemGroup>
 
-  <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
-  <UsingTask TaskName="AndroidAppBuilderTask" 
-             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
-  <UsingTask TaskName="MonoAOTCompiler" 
-             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
-             TaskName="NdkToolFinderTask"
-             AssemblyFile="$(MobileBuildTasksAssemblyPath)" />
-  
-  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
-    <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
+  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
+  <PropertyGroup>
+    <!-- Import after SDK targets in order to override R2R-related targets in the SDK -->
+    <AfterMicrosoftNETSdkTargets>$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
 
-  <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
-    <PropertyGroup>
-      <StripDebugSymbols>False</StripDebugSymbols>
-      <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
-      <ApkDir>$(PublishDir)apk\</ApkDir>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <AotInputAssemblies Include="$(PublishDir)\*.dll">
-        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-      </AotInputAssemblies>
-    </ItemGroup>
-
-    <MakeDir Directories="$(_MobileIntermediateOutputPath)" 
-             Condition="'$(ForceAOT)' == 'true'"/>
-    <RemoveDir Directories="$(ApkDir)" />
-
-    <Message Importance="High" Text="Path: $(PublishDir)" />
-    <Message Importance="High" Text="SourceDir: $(OutputPath)" />
-
-    <!-- Make sure marshal-ilgen is included in the components list. -->
-    <ItemGroup>
-      <RuntimeComponents Include="marshal-ilgen" KeepDuplicates="false"/>
-    </ItemGroup>
-
-    <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' == 'true'">
-      <_AotOutputType>Library</_AotOutputType>
-      <_AotLibraryFormat>So</_AotLibraryFormat>
-      <_AotMode Condition="'$(AotMode)' == ''">Normal</_AotMode>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' != 'true'">
-      <_AotOutputType>AsmOnly</_AotOutputType>
-      <_AotModulesTablePath>$(ApkDir)\modules.c</_AotModulesTablePath>
-      <_AotMode Condition="'$(AotMode)' == ''">Full</_AotMode>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true'">
-      <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
-      <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <_Triple Condition="'$(TargetArchitecture)' == 'arm'">armv7-linux-gnueabi</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'arm64'">aarch64-linux-android</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'x86'">i686-linux-android</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-linux-android</_Triple>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <_AsOptions>-target $(_Triple) -c -x assembler</_AsOptions>
-      <_LdName>clang</_LdName>
-      <_LdOptions>-fuse-ld=lld</_LdOptions>
-      <_AsName>clang</_AsName>
-    </PropertyGroup>
-
-    <MonoAOTCompiler Condition="'$(ForceAOT)' == 'true'"
-        AotModulesTablePath="$(_AotModulesTablePath)"
-        AsName="$(_AsName)"
-        AsOptions="$(_AsOptions)"
-        Assemblies="@(AotInputAssemblies)"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
-        IntermediateOutputPath="$(IntermediateOutputPath)"
-        LdName="$(_LdName)"
-        LdOptions="$(_LdOptions)"
-        LibraryFormat="$(_AotLibraryFormat)"
-        LLVMPath="$(MonoAotCrossDir)"
-        Mode="$(_AotMode)"
-        OutputDir="$(_MobileIntermediateOutputPath)"
-        OutputType="$(_AotOutputType)"
-        Triple="$(_Triple)"
-        UseAotDataFile="false"
-        UseLLVM="$(UseLLVM)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
-    </MonoAOTCompiler>
-
-    <AndroidAppBuilderTask
-        AppDir="$(PublishDir)"
-        Assemblies="@(BundleAssemblies)"
-        DiagnosticPorts="$(DiagnosticPorts)"
-        ExtraLinkerArguments="@(_ExtraAppLinkerArgs)"
-        ForceInterpreter="$(MonoForceInterpreter)"
-        ForceAOT="$(ForceAOT)"
-        MainLibraryFileName="$(AssemblyName).dll"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\android-$(TargetArchitecture)\native\include\mono-2.0"
-        OutputDir="$(ApkDir)"
-        ProjectName="HelloAndroid"
-        RuntimeComponents="@(RuntimeComponents)"
-        RuntimeIdentifier="$(RuntimeIdentifier)"
-        StripDebugSymbols="$(StripDebugSymbols)">
-        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
-        <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
-    </AndroidAppBuilderTask>
-
-    <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
-    <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
-
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="dotnet xharness android test --package-name=net.dot.HelloAndroid --instrumentation=net.dot.MonoRunner --app=$(ApkDir)/bin/HelloAndroid.apk --expected-exit-code=42 --output-directory=$(ApkDir)/log" />
+  <Target Name="RunAppBundle"
+          Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'"
+          AfterTargets="_AfterAndroidBuild"
+          DependsOnTargets="$(AndroidBuildDependsOn)" >
+    <Exec Command="$(DotNetTool) xharness android test --package-name=net.dot.HelloAndroid --instrumentation=net.dot.MonoRunner --app=$(AndroidBundleDir)/bin/HelloAndroid.apk --expected-exit-code=42 --output-directory=$(AndroidBundleDir)/log" />
   </Target>
 
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-  </ItemGroup>
-
-  <Target Name="CopySampleAppToHelixTestDir" 
-          Condition="'$(ArchiveTests)' == 'true'" 
-          AfterTargets="Build"
-          DependsOnTargets="Publish;BuildApp" >
+  <Target Name="CopySampleAppToHelixTestDir"
+          Condition="'$(ArchiveTests)' == 'true'"
+          AfterTargets="_AfterAndroidBuild"
+          DependsOnTargets="$(AndroidBuildDependsOn)" >
     <PropertyGroup>
       <!-- Helix properties -->
       <!-- AnyCPU as Platform-->
@@ -158,4 +57,5 @@
     <Message Importance="High" Text="ApkBundlePath: $(ApkBundlePath)"/>
     <Message Importance="High" Text="TestArchiveTestsDir: $(TestArchiveTestsDir)"/>
   </Target>
+
 </Project>

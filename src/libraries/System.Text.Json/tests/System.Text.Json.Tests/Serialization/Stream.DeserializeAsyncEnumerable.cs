@@ -415,16 +415,6 @@ namespace System.Text.Json.Serialization.Tests
             return options.TypeInfoResolver.GetTypeInfo(type, options);
         }
 
-        private static async Task<List<T>> ToListAsync<T>(this IAsyncEnumerable<T> source)
-        {
-            var list = new List<T>();
-            await foreach (T item in source)
-            {
-                list.Add(item);
-            }
-            return list;
-        }
-
         private sealed class SlowStream(IEnumerable<byte> byteSource) : Stream, IDisposable
         {
             private readonly IEnumerator<byte> _enumerator = byteSource.GetEnumerator();

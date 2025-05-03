@@ -7,7 +7,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private static IEnumerable<TSource> SkipIterator<TSource>(IEnumerable<TSource> source, int count)
+        private static IEnumerable<TSource> SizeOptimizedSkipIterator<TSource>(IEnumerable<TSource> source, int count)
         {
             using IEnumerator<TSource> e = source.GetEnumerator();
             while (count > 0 && e.MoveNext()) count--;

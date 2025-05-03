@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Tests;
 using Xunit;
 
@@ -10,6 +12,8 @@ namespace System.Numerics.Tests
 {
     public sealed class Vector3Tests
     {
+        private const int ElementCount = 3;
+
         /// <summary>Verifies that two <see cref="Vector3" /> values are equal, within the <paramref name="variance" />.</summary>
         /// <param name="expected">The expected value</param>
         /// <param name="actual">The value to be compared against</param>
@@ -1555,6 +1559,322 @@ namespace System.Numerics.Tests
         {
             Vector3 actualResult = Vector3.Truncate(Vector3.Create(value));
             AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Fact]
+        public void AllAnyNoneTest()
+        {
+            Test(3, 2);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void Test(float value1, float value2)
+            {
+                var input1 = Vector3.Create(value1);
+                var input2 = Vector3.Create(value2);
+
+                Assert.True(Vector3.All(input1, value1));
+                Assert.True(Vector3.All(input2, value2));
+                Assert.False(Vector3.All(input1.WithElement(0, value2), value1));
+                Assert.False(Vector3.All(input2.WithElement(0, value1), value2));
+                Assert.False(Vector3.All(input1, value2));
+                Assert.False(Vector3.All(input2, value1));
+                Assert.False(Vector3.All(input1.WithElement(0, value2), value2));
+                Assert.False(Vector3.All(input2.WithElement(0, value1), value1));
+
+                Assert.True(Vector3.Any(input1, value1));
+                Assert.True(Vector3.Any(input2, value2));
+                Assert.True(Vector3.Any(input1.WithElement(0, value2), value1));
+                Assert.True(Vector3.Any(input2.WithElement(0, value1), value2));
+                Assert.False(Vector3.Any(input1, value2));
+                Assert.False(Vector3.Any(input2, value1));
+                Assert.True(Vector3.Any(input1.WithElement(0, value2), value2));
+                Assert.True(Vector3.Any(input2.WithElement(0, value1), value1));
+
+                Assert.False(Vector3.None(input1, value1));
+                Assert.False(Vector3.None(input2, value2));
+                Assert.False(Vector3.None(input1.WithElement(0, value2), value1));
+                Assert.False(Vector3.None(input2.WithElement(0, value1), value2));
+                Assert.True(Vector3.None(input1, value2));
+                Assert.True(Vector3.None(input2, value1));
+                Assert.False(Vector3.None(input1.WithElement(0, value2), value2));
+                Assert.False(Vector3.None(input2.WithElement(0, value1), value1));
+            }
+        }
+
+        [Fact]
+        public void AllAnyNoneTest_AllBitsSet()
+        {
+            Test(BitConverter.Int32BitsToSingle(-1));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void Test(float value)
+            {
+                var input = Vector3.Create(value);
+
+                Assert.False(Vector3.All(input, value));
+                Assert.False(Vector3.Any(input, value));
+                Assert.True(Vector3.None(input, value));
+            }
+        }
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetTest()
+        {
+            Test(BitConverter.Int32BitsToSingle(-1), 2);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void Test(float allBitsSet, float value2)
+            {
+                var input1 = Vector3.Create(allBitsSet);
+                var input2 = Vector3.Create(value2);
+
+                Assert.True(Vector3.AllWhereAllBitsSet(input1));
+                Assert.False(Vector3.AllWhereAllBitsSet(input2));
+                Assert.False(Vector3.AllWhereAllBitsSet(input1.WithElement(0, value2)));
+                Assert.False(Vector3.AllWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+                Assert.True(Vector3.AnyWhereAllBitsSet(input1));
+                Assert.False(Vector3.AnyWhereAllBitsSet(input2));
+                Assert.True(Vector3.AnyWhereAllBitsSet(input1.WithElement(0, value2)));
+                Assert.True(Vector3.AnyWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+                Assert.False(Vector3.NoneWhereAllBitsSet(input1));
+                Assert.True(Vector3.NoneWhereAllBitsSet(input2));
+                Assert.False(Vector3.NoneWhereAllBitsSet(input1.WithElement(0, value2)));
+                Assert.False(Vector3.NoneWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+            }
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSingleTest()
+        {
+            Test(3, 2);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void Test(float value1, float value2)
+            {
+                var input1 = Vector3.Create(value1);
+                var input2 = Vector3.Create(value2);
+
+                Assert.Equal(ElementCount, Vector3.Count(input1, value1));
+                Assert.Equal(ElementCount, Vector3.Count(input2, value2));
+                Assert.Equal(ElementCount - 1, Vector3.Count(input1.WithElement(0, value2), value1));
+                Assert.Equal(ElementCount - 1, Vector3.Count(input2.WithElement(0, value1), value2));
+                Assert.Equal(0, Vector3.Count(input1, value2));
+                Assert.Equal(0, Vector3.Count(input2, value1));
+                Assert.Equal(1, Vector3.Count(input1.WithElement(0, value2), value2));
+                Assert.Equal(1, Vector3.Count(input2.WithElement(0, value1), value1));
+
+                Assert.Equal(0, Vector3.IndexOf(input1, value1));
+                Assert.Equal(0, Vector3.IndexOf(input2, value2));
+                Assert.Equal(1, Vector3.IndexOf(input1.WithElement(0, value2), value1));
+                Assert.Equal(1, Vector3.IndexOf(input2.WithElement(0, value1), value2));
+                Assert.Equal(-1, Vector3.IndexOf(input1, value2));
+                Assert.Equal(-1, Vector3.IndexOf(input2, value1));
+                Assert.Equal(0, Vector3.IndexOf(input1.WithElement(0, value2), value2));
+                Assert.Equal(0, Vector3.IndexOf(input2.WithElement(0, value1), value1));
+
+                Assert.Equal(ElementCount - 1, Vector3.LastIndexOf(input1, value1));
+                Assert.Equal(ElementCount - 1, Vector3.LastIndexOf(input2, value2));
+                Assert.Equal(ElementCount - 1, Vector3.LastIndexOf(input1.WithElement(0, value2), value1));
+                Assert.Equal(ElementCount - 1, Vector3.LastIndexOf(input2.WithElement(0, value1), value2));
+                Assert.Equal(-1, Vector3.LastIndexOf(input1, value2));
+                Assert.Equal(-1, Vector3.LastIndexOf(input2, value1));
+                Assert.Equal(0, Vector3.LastIndexOf(input1.WithElement(0, value2), value2));
+                Assert.Equal(0, Vector3.LastIndexOf(input2.WithElement(0, value1), value1));
+            }
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSingleTest_AllBitsSet()
+        {
+            Test(BitConverter.Int32BitsToSingle(-1));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void Test(float value)
+            {
+                var input = Vector3.Create(value);
+
+                Assert.Equal(0, Vector3.Count(input, value));
+                Assert.Equal(-1, Vector3.IndexOf(input, value));
+                Assert.Equal(-1, Vector3.LastIndexOf(input, value));
+            }
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetSingleTest()
+        {
+            Test(BitConverter.Int32BitsToSingle(-1), 2);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void Test(float allBitsSet, float value2)
+            {
+                var input1 = Vector3.Create(allBitsSet);
+                var input2 = Vector3.Create(value2);
+
+                Assert.Equal(ElementCount, Vector3.CountWhereAllBitsSet(input1));
+                Assert.Equal(0, Vector3.CountWhereAllBitsSet(input2));
+                Assert.Equal(ElementCount - 1, Vector3.CountWhereAllBitsSet(input1.WithElement(0, value2)));
+                Assert.Equal(1, Vector3.CountWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+                Assert.Equal(0, Vector3.IndexOfWhereAllBitsSet(input1));
+                Assert.Equal(-1, Vector3.IndexOfWhereAllBitsSet(input2));
+                Assert.Equal(1, Vector3.IndexOfWhereAllBitsSet(input1.WithElement(0, value2)));
+                Assert.Equal(0, Vector3.IndexOfWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+                Assert.Equal(ElementCount - 1, Vector3.LastIndexOfWhereAllBitsSet(input1));
+                Assert.Equal(-1, Vector3.LastIndexOfWhereAllBitsSet(input2));
+                Assert.Equal(ElementCount - 1, Vector3.LastIndexOfWhereAllBitsSet(input1.WithElement(0, value2)));
+                Assert.Equal(0, Vector3.LastIndexOfWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerTest(float value) => Assert.Equal(float.IsEvenInteger(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsEvenInteger(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteTest(float value) => Assert.Equal(float.IsFinite(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsFinite(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityTest(float value) => Assert.Equal(float.IsInfinity(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsInfinity(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerTest(float value) => Assert.Equal(float.IsInteger(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsInteger(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNTest(float value) => Assert.Equal(float.IsNaN(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsNaN(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeTest(float value) => Assert.Equal(float.IsNegative(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsNegative(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityTest(float value) => Assert.Equal(float.IsNegativeInfinity(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsNegativeInfinity(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalTest(float value) => Assert.Equal(float.IsNormal(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsNormal(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerTest(float value) => Assert.Equal(float.IsOddInteger(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsOddInteger(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveTest(float value) => Assert.Equal(float.IsPositive(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsPositive(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityTest(float value) => Assert.Equal(float.IsPositiveInfinity(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsPositiveInfinity(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalTest(float value) => Assert.Equal(float.IsSubnormal(value) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsSubnormal(Vector3.Create(value)));
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroSingleTest(float value) => Assert.Equal((value == 0) ? Vector3.AllBitsSet : Vector3.Zero, Vector3.IsZero(Vector3.Create(value)));
+
+        [Fact]
+        public void AllBitsSetTest()
+        {
+            Assert.Equal(-1, BitConverter.SingleToInt32Bits(Vector3.AllBitsSet.X));
+            Assert.Equal(-1, BitConverter.SingleToInt32Bits(Vector3.AllBitsSet.Y));
+            Assert.Equal(-1, BitConverter.SingleToInt32Bits(Vector3.AllBitsSet.Z));
+        }
+
+        [Fact]
+        public void ConditionalSelectTest()
+        {
+            Test(Vector3.Create(1, 2, 3), Vector3.AllBitsSet, Vector3.Create(1, 2, 3), Vector3.Create(5, 6, 7));
+            Test(Vector3.Create(5, 6, 7), Vector3.Zero, Vector3.Create(1, 2, 3), Vector3.Create(5, 6, 7));
+            Test(Vector3.Create(1, 6, 3), Vector128.Create(-1, 0, -1, 0).AsSingle().AsVector3(), Vector3.Create(1, 2, 3), Vector3.Create(5, 6, 7));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void Test(Vector3 expectedResult, Vector3 condition, Vector3 left, Vector3 right)
+            {
+                Assert.Equal(expectedResult, Vector3.ConditionalSelect(condition, left, right));
+            }
+        }
+
+        [Theory]
+        [InlineData(+0.0f, +0.0f, +0.0f, 0b000)]
+        [InlineData(-0.0f, +1.0f, -0.0f, 0b101)]
+        [InlineData(-0.0f, -0.0f, -0.0f, 0b111)]
+        public void ExtractMostSignificantBitsTest(float x, float y, float z, uint expectedResult)
+        {
+            Assert.Equal(expectedResult, Vector3.Create(x, y, z).ExtractMostSignificantBits());
+        }
+
+        [Theory]
+        [InlineData(1.0f, 2.0f, 3.0f)]
+        [InlineData(5.0f, 6.0f, 7.0f)]
+        public void GetElementTest(float x, float y, float z)
+        {
+            Assert.Equal(x, Vector3.Create(x, y, z).GetElement(0));
+            Assert.Equal(y, Vector3.Create(x, y, z).GetElement(1));
+            Assert.Equal(z, Vector3.Create(x, y, z).GetElement(2));
+        }
+
+        [Theory]
+        [InlineData(1.0f, 2.0f, 3.0f)]
+        [InlineData(5.0f, 6.0f, 7.0f)]
+        public void ShuffleTest(float x, float y, float z)
+        {
+            Assert.Equal(Vector3.Create(z, y, x), Vector3.Shuffle(Vector3.Create(x, y, z), 2, 1, 0));
+            Assert.Equal(Vector3.Create(y, x, z), Vector3.Shuffle(Vector3.Create(x, y, z), 1, 0, 2));
+        }
+
+        [Theory]
+        [InlineData(1.0f, 2.0f, 3.0f, 6.0f)]
+        [InlineData(5.0f, 6.0f, 7.0f, 18.0f)]
+        public void SumTest(float x, float y, float z, float expectedResult)
+        {
+            Assert.Equal(expectedResult, Vector3.Sum(Vector3.Create(x, y, z)));
+        }
+
+        [Theory]
+        [InlineData(1.0f, 2.0f, 3.0f)]
+        [InlineData(5.0f, 6.0f, 7.0f)]
+        public void ToScalarTest(float x, float y, float z)
+        {
+            Assert.Equal(x, Vector3.Create(x, y, z).ToScalar());
+        }
+
+        [Theory]
+        [InlineData(1.0f, 2.0f, 3.0f)]
+        [InlineData(5.0f, 6.0f, 7.0f)]
+        public void WithElementTest(float x, float y, float z)
+        {
+            var vector = Vector3.Create(10);
+
+            Assert.Equal(10, vector.X);
+            Assert.Equal(10, vector.Y);
+            Assert.Equal(10, vector.Z);
+
+            vector = vector.WithElement(0, x);
+
+            Assert.Equal(x, vector.X);
+            Assert.Equal(10, vector.Y);
+            Assert.Equal(10, vector.Z);
+
+            vector = vector.WithElement(1, y);
+
+            Assert.Equal(x, vector.X);
+            Assert.Equal(y, vector.Y);
+            Assert.Equal(10, vector.Z);
+
+            vector = vector.WithElement(2, z);
+
+            Assert.Equal(x, vector.X);
+            Assert.Equal(y, vector.Y);
+            Assert.Equal(z, vector.Z);
         }
     }
 }

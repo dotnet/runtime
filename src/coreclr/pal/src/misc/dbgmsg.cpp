@@ -733,7 +733,7 @@ bool DBG_ShouldCheckStackAlignment()
 }
 #endif // _DEBUG && __APPLE__
 
-#ifdef __APPLE__
+#if defined(TARGET_OSX)
 #include "CoreFoundation/CFUserNotification.h"
 #include "CoreFoundation/CFString.h"
 #include "Security/AuthSession.h"
@@ -853,4 +853,4 @@ void PAL_DisplayDialogFormatted(const char *szTitle, const char *szTextFormat, .
 
     va_end(args);
 }
-#endif // __APPLE__
+#endif // TARGET_OSX

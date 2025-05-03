@@ -15,7 +15,7 @@ set(DOTNET_EXTRA_SOURCES
     preloaded-assemblies.c
 %ExtraSources%)
 
-include_directories("%MonoInclude%")
+include_directories(%MonoInclude%)
 
 add_library(
     aot_library STATIC

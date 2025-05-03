@@ -1,0 +1,36 @@
+{
+    "Version": "1.0.0",
+    "UseMinimatch" : false,
+    "SignBatches": [
+        {
+            "SigningInfo" : {
+                "Operations" : [
+                    {
+                        "keyCode": "CP-471322",
+                        "operationCode": "SigntoolSign",
+                        "parameters": {
+                        "OpusName": "Microsoft",
+                        "OpusInfo": "http://www.microsoft.com",
+                        "PageHash": "/NPH",
+                        "FileDigest": "/fd sha256",
+                        "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+                        },
+                        "toolName": "sign",
+                        "toolVersion": "1.0"
+                    },
+                    {
+                        "KeyCode": "CP-471322",
+                        "OperationCode": "SigntoolVerify",
+                        "Parameters": {},
+                        "ToolName": "sign",
+                        "ToolVersion": "1.0"
+                    }
+                ]
+            },
+            "SourceLocationType" : "UNC",
+            "DestinationLocationType": "UNC",
+            "SignRequestFiles" : [
+            ]
+        }
+    ]
+}

@@ -65,3 +65,9 @@ int32_t local_X509_get_version(const X509* x509);
 int32_t local_X509_up_ref(X509* x509);
 typedef void (*SSL_CTX_keylog_cb_func)(const SSL *ssl, const char *line);
 void local_SSL_CTX_set_keylog_callback(SSL_CTX *ctx, SSL_CTX_keylog_cb_func cb);
+
+typedef void *(*CRYPTO_malloc_fn)(size_t num, const char *file, int line);
+typedef void *(*CRYPTO_realloc_fn)(void *addr, size_t num, const char *file, int line);
+typedef void (*CRYPTO_free_fn)(void *addr, const char *file, int line);
+
+int CRYPTO_set_mem_functions(CRYPTO_malloc_fn malloc_fn, CRYPTO_realloc_fn realloc_fn, CRYPTO_free_fn free_fn);

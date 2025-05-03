@@ -129,7 +129,7 @@ murmur3_scan_forward (const uint8_t *ptr)
 {
 	// TODO: On wasm we could do a single u32 load then scan the bytes,
 	//  as long as we're sure ptr isn't up against the end of memory
-	murmur3_scan_result_t result = { 0, };
+	murmur3_scan_result_t result = { };
 
 	// I tried to get a loop to auto-unroll, but GCC only unrolls at O3 and MSVC never does.
 #define SCAN_1(i) \
@@ -172,6 +172,35 @@ MurmurHash3_32_streaming (const uint8_t *key, uint32_t seed)
 	//  since then we can compute the length and hash in one go and use memcmp later,
 	// since emscripten/musl strcmp isn't optimized at all
 	h1 ^= block_count;
+	h1 = murmur3_fmix32(h1);
+	return h1;
+}
+
+static inline uint32_t
+MurmurHash3_32 (const uint8_t *key, uint32_t key_length, uint32_t seed)
+{
+	uint32_t h1 = seed;
+
+	while (key_length >= sizeof(uint32_t)) {
+		uint32_t block = *(uint32_t *)key;
+		MURMUR3_HASH_BLOCK(block);
+		key += sizeof(uint32_t);
+		key_length -= sizeof(uint32_t);
+	}
+
+	if (key_length) {
+		uint32_t last_block = 0;
+		// This is incorrect but easier to write
+		while (key_length > 0) {
+			last_block |= *key;
+			last_block <<= 8;
+			key++;
+		}
+		MURMUR3_HASH_BLOCK(last_block);
+	}
+
+	// finalize. note this is not the same as 32_streaming
+	h1 ^= key_length;
 	h1 = murmur3_fmix32(h1);
 	return h1;
 }

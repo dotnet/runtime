@@ -1,7 +1,7 @@
 <Project>
   <!-- iOS/tvOS device + arm64 simulators need to AOT -->
   <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or (('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64')">
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == '' and '$(UseMonoRuntime)' != 'false'">true</RunAOTCompilation>
   </PropertyGroup>
 
   <!-- iOS/tvOS arm64 simulators do not support JIT, so force interpreter fallback, devices should FullAOT -->
@@ -12,7 +12,9 @@
   <PropertyGroup>
     <iOSLikeDedup Condition="'$(iOSLikeDedup)' == '' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</iOSLikeDedup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
-    <UseMonoRuntime>true</UseMonoRuntime>
+    <!-- TODO: Revisit this.
+      We need to check for RuntimeFlavor setting as for runtime tests we always import CoreCLR props which force UseMonoRuntime=false (see: https://github.com/dotnet/runtime/issues/111919) -->
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == ''">true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
     <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''" >false</StripDebugSymbols>
@@ -24,7 +26,7 @@
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile</_AotCompileTargetName>
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_AppleAotCompile</_AotCompileTargetName>
     <IlcCompileDependsOn>ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
-    <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
+    <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
 
     <AppleBuildAfterThisTarget Condition="'$(AppleBuildAfterThisTarget)' == ''">Publish</AppleBuildAfterThisTarget>
     <AppleBuildDependsOn>
@@ -44,6 +46,7 @@
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
   </PropertyGroup>
 
-  <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
-  <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and ('$(UseMonoRuntime)' != 'false' and '$(RunAOTCompilation)' == 'true')" Project="$(_CommonTargetsDir)MonoAOTCompiler.props" />
 </Project>

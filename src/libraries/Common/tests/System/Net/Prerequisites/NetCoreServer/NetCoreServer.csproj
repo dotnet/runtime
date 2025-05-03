@@ -16,11 +16,16 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(GenevaTelemetry)' == 'true'">
-    <PackageReference Include="OpenTelemetry" Version="1.2.0-rc2" />
-    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.2.0-rc2" />
-    <PackageReference Include="OpenTelemetry.Exporter.Geneva" Version="1.2.1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.0.0-rc9" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc9" />
+    <PackageReference Include="OpenTelemetry" Version="1.10.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.10.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Geneva" Version="1.7.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.10.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="swagger.json" />
   </ItemGroup>
 
   <ItemGroup>

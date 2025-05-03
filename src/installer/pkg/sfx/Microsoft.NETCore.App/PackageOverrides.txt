@@ -187,6 +187,7 @@ System.IO.Pipes|4.3.0
 System.IO.Pipes.AccessControl|5.0.0
 System.IO.UnmanagedMemoryStream|4.3.0
 System.Linq|4.3.0
+System.Linq.AsyncEnumerable|${ProductVersion}
 System.Linq.Expressions|4.3.0
 System.Linq.Parallel|4.3.0
 System.Linq.Queryable|4.3.0
@@ -199,6 +200,7 @@ System.Net.Ping|4.3.0
 System.Net.Primitives|4.3.1
 System.Net.Requests|4.3.0
 System.Net.Security|4.3.2
+System.Net.ServerSentEvents|${ProductVersion}
 System.Net.Sockets|4.3.0
 System.Net.WebHeaderCollection|4.3.0
 System.Net.WebSockets|4.3.0

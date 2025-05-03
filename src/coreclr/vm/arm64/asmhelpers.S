@@ -301,7 +301,7 @@ NESTED_END TheUMEntryPrestub, _TEXT
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -176
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -192
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, 16
     PROLOG_SAVE_REG_PAIR   x21, x22, 32
@@ -312,9 +312,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // save any integral return value(s)
     stp x0, x1, [sp, #96]
 
+    // save async continuation return value
+    str x2, [sp, #112]
+
     // save any FP/HFA return value(s)
-    stp q0, q1, [sp, #112]
-    stp q2, q3, [sp, #144]
+    stp q0, q1, [sp, #128]
+    stp q2, q3, [sp, #160]
 
     mov x0, sp
     bl C_FUNC(OnHijackWorker)
@@ -322,16 +325,19 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore any integral return value(s)
     ldp x0, x1, [sp, #96]
 
+    // restore async continuation return value
+    ldr x2, [sp, #112]
+
     // restore any FP/HFA return value(s)
-    ldp q0, q1, [sp, #112]
-    ldp q2, q3, [sp, #144]
+    ldp q0, q1, [sp, #128]
+    ldp q2, q3, [sp, #160]
 
     EPILOG_RESTORE_REG_PAIR   x19, x20, 16
     EPILOG_RESTORE_REG_PAIR   x21, x22, 32
     EPILOG_RESTORE_REG_PAIR   x23, x24, 48
     EPILOG_RESTORE_REG_PAIR   x25, x26, 64
     EPILOG_RESTORE_REG_PAIR   x27, x28, 80
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   176
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   192
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
@@ -369,7 +375,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
     // of method. However, this method needs to be able to change fp before calling funclet.
     // This is required to access locals in funclet.
-    PROLOG_SAVE_REG_PAIR_INDEXED   x29, lr, -96
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   x29, lr, -96
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, 16
@@ -403,21 +409,23 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFunclet, _TEXT
 
-// This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-// frame pointer for accessing the locals in the parent method.
+// This helper enables us to call into a filter funclet after restoring Fp register
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
 
     // On entry:
     //
     // X0 = throwable
-    // X1 = SP of the caller of the method/funclet containing the filter
+    // X1 = FP of main function
     // X2 = PC to invoke
     // X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
     // Save the SP of this function
+    mov fp, sp
     str fp, [x3]
+    // Restore frame pointer
+    mov fp, x1
     // Invoke the filter funclet
     blr x2
 
@@ -426,8 +434,8 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFilterFunclet, _TEXT
 
-#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__FaultingExceptionFrame)
+#define FaultingExceptionFrame_FrameOffset 0
 
 .macro GenerateRedirectedStubWithFrame stub, target
 
@@ -522,6 +530,7 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 //   x12       contains our contract (DispatchToken)
 //   x16,x17   will be trashed
 //
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 
 #define BACKPATCH_FLAG      1
 #define PROMOTE_CHAIN_FLAG  2
@@ -586,7 +595,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  x9
 
 NESTED_END ResolveWorkerAsmStub, _TEXT
-
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
@@ -747,6 +756,22 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG x9
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
+    bl      C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+NESTED_END JIT_Patchpoint, _TEXT
+
+// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
+    mov x1, x0
+    mov x0, #0
+    b C_FUNC(JIT_Patchpoint)
+LEAF_END JIT_PatchpointForced, _TEXT
+
 #endif // FEATURE_TIERED_COMPILATION
 
 LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
@@ -757,7 +782,7 @@ LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
     br x9
 LEAF_END JIT_DispatchIndirectCall, _TEXT
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
 // ------------------------------------------------------------------
 // void* GetThreadVarsAddress()
 
@@ -771,12 +796,13 @@ LEAF_ENTRY GetThreadVarsAddress, _TEXT
         ret
 LEAF_END GetThreadVarsAddress, _TEXT
 // ------------------------------------------------------------------
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()
 
+#ifndef TARGET_ANDROID
 // Helper to calculate the offset of native thread local variable `t_ThreadStatics` in TCB. The offset has to be found at runtime
 // once linker does its relocation and fixup of thread locals. The offset, after calculation is returned in `x0` register.
 
@@ -805,4 +831,41 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
         EPILOG_RETURN
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
-#endif // !TARGET_OSX
+#endif // TARGET_ANDROID
+#endif // !TARGET_APPLE
+
+LEAF_ENTRY  JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, x9
+        ldr     w9, [x9]
+        cbnz    w9, LOCAL_LABEL(JIT_PollGCRarePath)
+        ret
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, x9
+        ldr     x9, [x9]
+        br x9
+LEAF_END  JIT_PollGC, _TEXT
+
+#ifdef FEATURE_INTERPRETER
+NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+    mov x1, METHODDESC_REGISTER // pMethodDesc
+
+    bl  C_FUNC(ExecuteInterpretedMethod)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+#endif // FEATURE_INTERPRETER
+
+//x0 -This pointer
+//x1 -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    ldr  x12, [METHODDESC_REGISTER, #ThisPtrRetBufPrecodeData__Target]
+    mov  x11, x0     // Move first arg pointer to temp register
+    mov  x0,  x1     // Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
+    mov  x1, x11     // Move temp register to first arg register for static method with return buffer
+    EPILOG_BRANCH_REG x12
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT

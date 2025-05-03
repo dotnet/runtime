@@ -1084,6 +1084,7 @@ namespace ComWrappersTests
 
                 staThread.Start();
                 mtaThread.Start();
+                testCompleted.WaitOne();
             }
             finally
             {
@@ -1092,8 +1093,6 @@ namespace ComWrappersTests
                     Marshal.Release(agileReference);
                 }
             }
-
-            testCompleted.WaitOne();
         }
 
         [DllImport("ole32.dll")]
@@ -1121,7 +1120,7 @@ namespace ComWrappersTests
                     }
                 }
 
-                return CustomQueryInterfaceResult.Failed;
+                return CustomQueryInterfaceResult.NotHandled;
             }
         }
     }

@@ -714,6 +714,14 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
+FCIMPL0(FC_BOOL_RET, ThreadNative::CatchAtSafePoint)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(GetThread()->CatchAtSafePoint());
+}
+FCIMPLEND
+
 // Get whether or not this is a background thread.
 extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread)
 {
@@ -847,6 +855,12 @@ extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::Threa
     thread->SetDisableComObjectEagerCleanup();
 }
 #endif //FEATURE_COMINTEROP
+
+extern "C" void QCALLTYPE ThreadNative_PollGC()
+{
+    // This is an intentional no-op.  The call is made to ensure that the thread goes through a GC transition
+    // and is thus marked as a GC safe point, and that the p/invoke rare path will kick in
+}
 
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
 {

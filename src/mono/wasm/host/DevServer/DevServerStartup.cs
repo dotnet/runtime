@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 using Microsoft.WebAssembly.AppHost;
 
 namespace Microsoft.WebAssembly.AppHost.DevServer;
@@ -67,7 +68,6 @@ internal sealed class DevServerStartup
             ServeUnknownFileTypes = true,
         });
 
-        app.UseRouting();
         app.UseWebSockets();
 
         if (options.OnConsoleConnected is not null)
@@ -100,6 +100,14 @@ internal sealed class DevServerStartup
             {
                 OnPrepareResponse = fileContext =>
                 {
+                    // Avoid caching index.html during development.
+                    // When hot reload is enabled, a middleware injects a hot reload script into the response HTML.
+                    // We don't want the browser to bypass this injection by using a cached response that doesn't
+                    // contain the injected script. In the future, if script injection is removed in favor of a
+                    // different mechanism, we can delete this comment and the line below it.
+                    // See also: https://github.com/dotnet/aspnetcore/issues/45213
+                    fileContext.Context.Response.Headers[HeaderNames.CacheControl] = "no-store";
+
                     if (options.WebServerUseCrossOriginPolicy)
                     {
                         // Browser multi-threaded runtime requires cross-origin policy headers to enable SharedArrayBuffer.
