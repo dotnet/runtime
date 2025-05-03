@@ -10458,17 +10458,15 @@ MONO_RESTORE_WARNING
 				int stride = 16 / nelems;
 				for (int i = 0; i < nelems; ++i) {
 					for (int j = 0; j < stride; ++j) {
-						offset = LLVMBuildInsertElement (builder, offset, const_int8 (i * stride), const_int8 (i * stride + j), "");
-						fill = LLVMBuildInsertElement (builder, fill, const_int8 (j), const_int8 (i * stride + j), "");
+						offset = LLVMBuildInsertElement (builder, offset, const_int8 (j), const_int8 (i * stride + j), "");
+						fill = LLVMBuildInsertElement (builder, fill, const_int8 (i * stride), const_int8 (i * stride + j), "");
 					}
 				}
-				// FIXME: this v128 << v128 shift should get reduced to the wasm intrinsic
-				// with a single scalar by llvm but we could just call the intrinsic directly
-				LLVMValueRef shiftv = create_shift_vector (ctx, fill, const_int32 (shift));
+				LLVMValueRef shiftv = create_shift_vector (ctx, bidx, const_int32 (shift));
 				bidx  = LLVMBuildShl (builder, bidx, shiftv, "");
 				LLVMValueRef args [] = { bidx, fill };
-				LLVMValueRef fill_mask = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
-				bidx = LLVMBuildAdd (builder, fill_mask, offset, "");
+				bidx = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+				bidx = LLVMBuildAdd (builder, bidx, offset, "");
 			}
 			LLVMValueRef lhs_b = LLVMBuildBitCast (builder, lhs, LLVMVectorType (i1_t, 16), "");
 			LLVMValueRef args [] = { lhs_b, bidx };
