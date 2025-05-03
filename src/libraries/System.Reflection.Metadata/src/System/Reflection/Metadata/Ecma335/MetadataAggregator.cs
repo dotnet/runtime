@@ -153,7 +153,7 @@ namespace System.Reflection.Metadata.Ecma335
                 userStringSizes[r + 1] = userStringSizes[r] + deltaReaders[r].GetHeapSize(HeapIndex.UserString);
                 stringSizes[r + 1] = stringSizes[r] + deltaReaders[r].GetHeapSize(HeapIndex.String);
                 blobSizes[r + 1] = blobSizes[r] + deltaReaders[r].GetHeapSize(HeapIndex.Blob);
-                guidSizes[r + 1] = guidSizes[r] + deltaReaders[r].GetHeapSize(HeapIndex.Guid) / guidSize;
+                guidSizes[r + 1] = deltaReaders[r].GetHeapSize(HeapIndex.Guid) / guidSize;
             }
 
             return ImmutableArray.Create(
