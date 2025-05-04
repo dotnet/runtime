@@ -1907,6 +1907,8 @@ static MonoInst*
 emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	const char *cmethod_name = cmethod->name;
+	if (fsig->hasthis)
+		return FALSE;
 
 	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
 		if (strncmp (cmethod_name + 45, "Runtime.Intrinsics.Vector", 25) == 0) {
