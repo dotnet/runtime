@@ -1,7 +1,7 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
-include asmmacros.inc
+include AsmMacros_Shared.inc
 
 
 ;; Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
@@ -9,8 +9,8 @@ include asmmacros.inc
 ;;  RCX == MethodTable
 LEAF_ENTRY RhpNewFast, _TEXT
 
-        ;; rdx = GetThread(), TRASHES rax
-        INLINE_GETTHREAD rdx, rax
+        ;; rdx = ee_alloc_context pointer, TRASHES rax
+        INLINE_GET_ALLOC_CONTEXT rdx, rax
 
         ;;
         ;; rcx contains MethodTable pointer
@@ -20,16 +20,16 @@ LEAF_ENTRY RhpNewFast, _TEXT
         ;;
         ;; eax: base size
         ;; rcx: MethodTable pointer
-        ;; rdx: Thread pointer
+        ;; rdx: ee_alloc_context pointer
         ;;
 
-        mov         rax, [rdx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        mov         rax, [rdx + OFFSETOF__ee_alloc_context__alloc_ptr]
         add         r8, rax
-        cmp         r8, [rdx + OFFSETOF__Thread__m_eeAllocContext__combined_limit]
+        cmp         r8, [rdx + OFFSETOF__ee_alloc_context__combined_limit]
         ja          RhpNewFast_RarePath
 
         ;; set the new alloc pointer
-        mov         [rdx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], r8
+        mov         [rdx + OFFSETOF__ee_alloc_context__alloc_ptr], r8
 
         ;; set the new object's MethodTable pointer
         mov         [rax], rcx
@@ -58,7 +58,6 @@ LEAF_END RhpNewFinalizable, _TEXT
 NESTED_ENTRY RhpNewObject, _TEXT
 
         PUSH_COOP_PINVOKE_FRAME r9
-        END_PROLOGUE
 
         ; R9: transition frame
 
@@ -107,21 +106,22 @@ LEAF_ENTRY RhNewString, _TEXT
         ; rcx == MethodTable
         ; rdx == element count
 
-        INLINE_GETTHREAD r10, r8
+        ; r10 = ee_alloc_context pointer, TRASHES r8
+        INLINE_GET_ALLOC_CONTEXT r10, r8
 
         mov         r8, rax
-        add         rax, [r10 + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-        jc          RhpNewArrayRare
+        add         rax, [r10 + OFFSETOF__ee_alloc_context__alloc_ptr]
+        jc          RhpNewArray
 
         ; rax == new alloc ptr
         ; rcx == MethodTable
         ; rdx == element count
         ; r8 == array size
-        ; r10 == thread
-        cmp         rax, [r10 + OFFSETOF__Thread__m_eeAllocContext__combined_limit]
-        ja          RhpNewArrayRare
+        ; r10 == ee_alloc_context pointer
+        cmp         rax, [r10 + OFFSETOF__ee_alloc_context__combined_limit]
+        ja          RhpNewArray
 
-        mov         [r10 + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rax
+        mov         [r10 + OFFSETOF__ee_alloc_context__alloc_ptr], rax
 
         ; calc the new object pointer
         sub         rax, r8
@@ -145,7 +145,7 @@ LEAF_END RhNewString, _TEXT
 ;; Allocate one dimensional, zero based array (SZARRAY).
 ;;  RCX == MethodTable
 ;;  EDX == element count
-LEAF_ENTRY RhpNewArray, _TEXT
+LEAF_ENTRY RhpNewArrayFast, _TEXT
 
         ; we want to limit the element count to the non-negative 32-bit int range
         cmp         rdx, 07fffffffh
@@ -168,21 +168,22 @@ LEAF_ENTRY RhpNewArray, _TEXT
         ; rcx == MethodTable
         ; rdx == element count
 
-        INLINE_GETTHREAD r10, r8
+        ; r10 = ee_alloc_context pointer, TRASHES r8
+        INLINE_GET_ALLOC_CONTEXT r10, r8
 
         mov         r8, rax
-        add         rax, [r10 + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-        jc          RhpNewArrayRare
+        add         rax, [r10 + OFFSETOF__ee_alloc_context__alloc_ptr]
+        jc          RhpNewArray
 
         ; rax == new alloc ptr
         ; rcx == MethodTable
         ; rdx == element count
         ; r8 == array size
-        ; r10 == thread
-        cmp         rax, [r10 + OFFSETOF__Thread__m_eeAllocContext__combined_limit]
-        ja          RhpNewArrayRare
+        ; r10 == ee_alloc_context pointer
+        cmp         rax, [r10 + OFFSETOF__ee_alloc_context__combined_limit]
+        ja          RhpNewArray
 
-        mov         [r10 + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rax
+        mov         [r10 + OFFSETOF__ee_alloc_context__alloc_ptr], rax
 
         ; calc the new object pointer
         sub         rax, r8
@@ -200,15 +201,14 @@ ArraySizeOverflow:
         ; rcx holds MethodTable pointer already
         mov         edx, 1              ; Indicate that we should throw OverflowException
         jmp         RhExceptionHandling_FailedAllocation
-LEAF_END RhpNewArray, _TEXT
+LEAF_END RhpNewArrayFast, _TEXT
 
-NESTED_ENTRY RhpNewArrayRare, _TEXT
+NESTED_ENTRY RhpNewArray, _TEXT
 
         ; rcx == MethodTable
         ; rdx == element count
 
         PUSH_COOP_PINVOKE_FRAME r9
-        END_PROLOGUE
 
         ; r9: transition frame
 
@@ -241,7 +241,6 @@ ArrayOutOfMemory:
 
         jmp         RhExceptionHandling_FailedAllocation
 
-NESTED_END RhpNewArrayRare, _TEXT
-
+NESTED_END RhpNewArray, _TEXT
 
         END

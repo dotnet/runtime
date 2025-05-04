@@ -126,9 +126,9 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object RhpNewFinalizable(MethodTable* pEEType);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpNewArray")]
+        [RuntimeImport(Redhawk.BaseName, "RhpNewArrayFast")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object RhpNewArray(MethodTable* pEEType, int length);
+        internal static extern unsafe object RhpNewArrayFast(MethodTable* pEEType, int length);
 
 #if FEATURE_64BIT_ALIGNMENT
         [RuntimeImport(Redhawk.BaseName, "RhpNewFastAlign8")]
@@ -141,7 +141,7 @@ namespace System.Runtime
 
         [RuntimeImport(Redhawk.BaseName, "RhpNewArrayAlign8")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object RhpNewArrayAlign8(MethodTable* pEEType, int length);
+        internal static extern unsafe object RhpNewArrayFastAlign8(MethodTable* pEEType, int length);
 
         [RuntimeImport(Redhawk.BaseName, "RhpNewFastMisalign")]
         [MethodImpl(MethodImplOptions.InternalCall)]

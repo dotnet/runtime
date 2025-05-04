@@ -1,60 +1,61 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <unixasmmacros.inc>
-#include "AsmOffsets.inc"
-
-// GC type flags
-#define GC_ALLOC_FINALIZE               1
-
-//
-// Rename fields of nested structs
-//
-#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        (OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
-#define OFFSETOF__Thread__m_eeAllocContext__combined_limit  (OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit)
+#include "AsmMacros_Shared.h"
 
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  a0 == MethodTable
     LEAF_ENTRY RhpNewFast, _TEXT
+        PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0x20
+        PROLOG_SAVE_REG               s1,     0x10
 
-        // a1 = GetThread()
-        // Save MethodTable pointer. INLINE_GETTHREAD will trash a0.
-        mv                t2, a0
-        INLINE_GETTHREAD  a1
+        // Save MethodTable pointer
+        mv    s1, a0
 
-        //
-        // t2 contains MethodTable pointer
-        //
-        lw  a2, OFFSETOF__MethodTable__m_uBaseSize(t2)
+        // a0 = ee_alloc_context pointer; trashes volatile registers
+        INLINE_GET_ALLOC_CONTEXT
 
         //
-        // t2: MethodTable pointer
-        // a1: Thread pointer
-        // a2: base size
+        // s1 contains MethodTable pointer
+        //
+        lw    t0, OFFSETOF__MethodTable__m_uBaseSize(s1)
+
+        //
+        // s1: MethodTable pointer
+        // a0: ee_alloc_context pointer
+        // t0: base size
         //
 
-        // Load potential new object address into t3.
-        ld  t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a1)
+        // Load potential new object address into t1.
+        ld    t1, OFFSETOF__ee_alloc_context__alloc_ptr(a0)
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add   a2, a2, t3
-        ld    t4, OFFSETOF__Thread__m_eeAllocContext__combined_limit(a1)
-        bltu  t4, a2, LOCAL_LABEL(RhpNewFast_RarePath)
+        add   t0, t0, t1
+        ld    t2, OFFSETOF__ee_alloc_context__combined_limit(a0)
+        bltu  t2, t0, LOCAL_LABEL(RhpNewFast_RarePath)
 
         // Update the alloc pointer to account for the allocation.
-        sd    a2, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a1)
+        sd    t0, OFFSETOF__ee_alloc_context__alloc_ptr(a0)
 
         // Set the new objects MethodTable pointer
-        sd    t2, OFFSETOF__Object__m_pEEType(t3)
+        sd    s1, OFFSETOF__Object__m_pEEType(t1)
 
-        mv    a0, t3
+        mv    a0, t1
+
+        EPILOG_RESTORE_REG               s1,     0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20
+
         ret
 
 LOCAL_LABEL(RhpNewFast_RarePath):
         mv    a1, zero
-        mv    a0, t2
+        mv    a0, a1
+
+        EPILOG_RESTORE_REG               s1,     0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20
+
         tail  RhpNewObject
     LEAF_END RhpNewFast, _TEXT
 
@@ -108,45 +109,50 @@ LOCAL_LABEL(NewOutOfMemory):
 //  a0 == MethodTable
 //  a1 == element/character count
     LEAF_ENTRY RhNewString, _TEXT
+        PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0x20
+        PROLOG_SAVE_REG_PAIR          s1, s2, 0x10
+
         // Make sure computing the overall allocation size won't overflow
         li    a2, MAX_STRING_LENGTH
         bltu  a2, a1, LOCAL_LABEL(StringSizeOverflow)   // Branch if a2 < a1 (overflow)
 
+        // Save MethodTable pointer and string length
+        mv    s1, a0
+        mv    s2, a1
+
+        // a0 = ee_alloc_context pointer; trashes volatile registers
+        INLINE_GET_ALLOC_CONTEXT
+
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
-        li    a3, STRING_COMPONENT_SIZE                 // Load STRING_COMPONENT_SIZE into a3
-        slli  a2, a1, 1                                 // a2 = a1 * STRING_COMPONENT_SIZE, where STRING_COMPONENT_SIZE == 2
-        addi  a2, a2, STRING_BASE_SIZE + 7              // a2 = a2 + STRING_BASE_SIZE + 7
-        andi  a2, a2, ~0x7                              // Clear the bits[2:0] of a2 (align to 8 bytes)
+        slli  t0, a1, 1                                 // t0 = a1 * STRING_COMPONENT_SIZE, where STRING_COMPONENT_SIZE == 2
+        addi  t0, t0, STRING_BASE_SIZE + 7              // t0 = t0 + STRING_BASE_SIZE + 7
+        andi  t0, t0, ~0x7                              // Clear the bits[2:0] of t0 (align to 8 bytes)
 
-        // a0 == MethodTable
-        // a1 == element count
-        // a2 == string size
-
-        // Save MethodTable pointer. INLINE_GETTHREAD will trash a0.
-        mv               t2, a0
-        INLINE_GETTHREAD a3
+        // s1 == MethodTable
+        // s2 == element count
+        // t0 == string size
 
         // Load potential new object address into t3.
-        ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
+        ld   t1, OFFSETOF__ee_alloc_context__alloc_ptr(a0)
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add  a2, a2, t3
-        ld   t3, OFFSETOF__Thread__m_eeAllocContext__combined_limit(a3)
-        bltu t3, a2, LOCAL_LABEL(RhNewString_Rare)
-
-        // Reload new object address into t3.
-        ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
+        add  t0, t0, t1
+        ld   t2, OFFSETOF__ee_alloc_context__combined_limit(a0)
+        bltu t2, t0, LOCAL_LABEL(RhNewString_Rare)
 
         // Update the alloc pointer to account for the allocation.
-        sd   a2, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
+        sd   t0, OFFSETOF__ee_alloc_context__alloc_ptr(a0)
 
         // Set the new object's MethodTable pointer and element count.
-        sd   t2, OFFSETOF__Object__m_pEEType(t3)
-        sd   a1, OFFSETOF__Array__m_Length(t3)
+        sd   s1, OFFSETOF__Object__m_pEEType(t1)
+        sd   s2, OFFSETOF__Array__m_Length(t1)
 
         // Return the object allocated in a0.
-        mv   a0, t3
+        mv   a0, t1
+
+        EPILOG_RESTORE_REG_PAIR          s1, s2, 0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20
 
         ret
 
@@ -155,63 +161,77 @@ LOCAL_LABEL(StringSizeOverflow):
         // 32-bit value. We are going to tail-call to a managed helper that will throw
         // an OOM exception that the caller of this allocator understands.
 
-        mv    a0, t2
+        mv    a0, s1
         li    a1, 1                  // Indicate that we should throw OverflowException
+
+        EPILOG_RESTORE_REG_PAIR          s1, s2, 0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20
+
         tail  C_FUNC(RhExceptionHandling_FailedAllocation)
 
 LOCAL_LABEL(RhNewString_Rare):
-        mv    a0, t2
-        tail  C_FUNC(RhpNewArrayRare)
+        mv    a0, s1
+        mv    a1, s2
+
+        EPILOG_RESTORE_REG_PAIR          s1, s2, 0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20
+
+        tail  C_FUNC(RhpNewArray)
     LEAF_END RhNewString, _TEXT
 
 // Allocate one-dimensional, zero-based array (SZARRAY).
 //  a0 == MethodTable
 //  a1 == element count
-    LEAF_ENTRY RhpNewArray, _TEXT
+    LEAF_ENTRY RhpNewArrayFast, _TEXT
+        PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0x20
+        PROLOG_SAVE_REG_PAIR          s1, s2, 0x10
 
         // We want to limit the element count to the non-negative 32-bit int range.
         // If the element count is <= 0x7FFFFFFF, no overflow is possible because the component
         // size is <= 0xffff (it is an unsigned 16-bit value), and the base size for the worst
         // case (32-dimensional MdArray) is less than 0xffff, and thus the product fits in 64 bits.
-        li  a2, 0x7fffffff
+        li    a2, 0x7fffffff
         bltu  a2, a1, LOCAL_LABEL(ArraySizeOverflow)  // Branch if a2 < a1 (check for overflow)
 
-        lhu  a2, OFFSETOF__MethodTable__m_usComponentSize(a0) // Load component size
-        mul  a2, a1, a2                // a2 = a1 * component size
-        lw   a3, OFFSETOF__MethodTable__m_uBaseSize(a0)       // Load base size
-        add  a2, a2, a3                // a2 = a2 + base size
-        addi a2, a2, 7                 // a2 = a2 + 7
-        andi a2, a2, ~0x7              // Clear the bits[2:0] of a2 (align to 8 bytes)
+        // Save MethodTable pointer and element count
+        mv    s1, a0
+        mv    s2, a1
 
-        // a0 == MethodTable
-        // a1 == element count
-        // a2 == array size
+        // a0 = ee_alloc_context pointer; trashes volatile registers
+        INLINE_GET_ALLOC_CONTEXT
 
-        // Save MethodTable pointer. INLINE_GETTHREAD will trash a0.
-        mv               t2, a0
-        INLINE_GETTHREAD a3
+        lhu   t0, OFFSETOF__MethodTable__m_usComponentSize(s1) // Load component size
+        mul   t0, s2, t0                // t0 = s2 * component size
+        lw    t1, OFFSETOF__MethodTable__m_uBaseSize(s1)       // Load base size
+        add   t0, t0, t1                // t0 = t0 + base size
+        addi  t0, t0, 7                 // t0 = t0 + 7
+        andi  t0, t0, ~0x7              // Clear the bits[2:0] of t0 (align to 8 bytes)
 
-        // Load potential new object address into t3.
-        ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
+        // s1 == MethodTable
+        // s2 == element count
+        // t0 == array size
+
+        // Load potential new object address into t1.
+        ld    t1, OFFSETOF__ee_alloc_context__alloc_ptr(a0)
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add  a2, a2, t3
-        ld   t3, OFFSETOF__Thread__m_eeAllocContext__combined_limit(a3)
-        bltu t3, a2, LOCAL_LABEL(RhpNewArray_Rare)
-
-        // Reload new object address into t3.
-        ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
+        add   t0, t0, t1
+        ld    t2, OFFSETOF__ee_alloc_context__combined_limit(a0)
+        bltu  t2, t0, LOCAL_LABEL(RhpNewArrayFast_Rare)
 
         // Update the alloc pointer to account for the allocation.
-        sd   a2, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
+        sd    t0, OFFSETOF__ee_alloc_context__alloc_ptr(a0)
 
         // Set the new object's MethodTable pointer and element count.
-        sd   t2, OFFSETOF__Object__m_pEEType(t3)
-        sd   a1, OFFSETOF__Array__m_Length(t3)
+        sd   s1, OFFSETOF__Object__m_pEEType(t1)
+        sd   s2, OFFSETOF__Array__m_Length(t1)
 
         // Return the object allocated in a0.
-        mv   a0, t3
+        mv   a0, t1
+
+        EPILOG_RESTORE_REG_PAIR          s1, s2, 0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20
 
         ret
 
@@ -220,25 +240,29 @@ LOCAL_LABEL(ArraySizeOverflow):
         // 32-bit value. We are going to tail-call to a managed helper that will throw
         // an overflow exception that the caller of this allocator understands.
 
-        mv   a0, t2
+        mv   a0, s1
         li   a1, 1 // Indicate that we should throw OverflowException
+
+
+        EPILOG_RESTORE_REG_PAIR          s1, s2, 0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20
+
         tail  C_FUNC(RhExceptionHandling_FailedAllocation)
 
-LOCAL_LABEL(RhpNewArray_Rare):
-        mv    a0, t2
-        tail  C_FUNC(RhpNewArrayRare)
-    LEAF_END RhpNewArray, _TEXT
+LOCAL_LABEL(RhpNewArrayFast_Rare):
+        mv    a0, s1
+        mv    a1, s2
+
+        EPILOG_RESTORE_REG_PAIR          s1, s2, 0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20
+
+        tail  C_FUNC(RhpNewArray)
+    LEAF_END RhpNewArrayFast, _TEXT
 
 // Allocate one-dimensional, zero-based array (SZARRAY) using the slow path that calls a runtime helper.
 //  a0 == MethodTable
 //  a1 == element count
-//  a2 == array size + Thread::m_alloc_context::alloc_ptr
-//  a3 == Thread
-    NESTED_ENTRY RhpNewArrayRare, _TEXT, NoHandler
-
-        // Recover array size by subtracting the alloc_ptr from a2.
-        ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
-        sub  a2, a2, t3
+    NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME a3
 
@@ -265,9 +289,9 @@ LOCAL_LABEL(ArrayOutOfMemory):
         // an out of memory exception that the caller of this allocator understands.
 
         mv   a0, s2             // MethodTable Pointer
-        li   a1, 0               // Indicate that we should throw OOM.
+        li   a1, 0              // Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
         tail  C_FUNC(RhExceptionHandling_FailedAllocation)
 
-    NESTED_END RhpNewArrayRare, _TEXT
+    NESTED_END RhpNewArray, _TEXT

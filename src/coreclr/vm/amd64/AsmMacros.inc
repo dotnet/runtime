@@ -422,6 +422,13 @@ PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, stackAllocOnEntry := <0>,
 
         endm
 
+EPILOG_WITH_TRANSITION_BLOCK macro
+
+        add rsp, __PWTB_StackAlloc
+        POP_CALLEE_SAVED_REGISTERS
+
+        endm
+
 EPILOG_WITH_TRANSITION_BLOCK_RETURN macro
 
         add rsp, __PWTB_StackAlloc
@@ -438,3 +445,35 @@ EPILOG_WITH_TRANSITION_BLOCK_TAILCALL macro
         POP_CALLEE_SAVED_REGISTERS
 
         endm
+
+t_runtime_thread_locals  TEXTEQU <?t_runtime_thread_locals@@3URuntimeThreadLocals@@A>
+
+; Inlined version of GetThreadEEAllocContext. Trashes RegTrash, r11
+INLINE_GET_ALLOC_CONTEXT macro Reg, RegTrash
+
+        EXTERN _tls_index : DWORD
+        EXTERN t_runtime_thread_locals : DWORD
+
+        mov     r11d, [_tls_index]
+        mov     RegTrash, gs:[OFFSET__TEB__ThreadLocalStoragePointer]
+        mov     RegTrash, [RegTrash + r11 * 8]
+        mov     r11d, SECTIONREL t_runtime_thread_locals
+        lea     Reg, [RegTrash + r11 + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
+
+        endm
+
+PUSH_COOP_PINVOKE_FRAME macro target
+        
+        PROLOG_WITH_TRANSITION_BLOCK
+        lea     target, [rsp + __PWTB_TransitionBlock]
+
+        endm
+
+POP_COOP_PINVOKE_FRAME macro
+
+        EPILOG_WITH_TRANSITION_BLOCK
+
+        endm
+
+;; GC type flags
+GC_ALLOC_FINALIZE               equ 1
