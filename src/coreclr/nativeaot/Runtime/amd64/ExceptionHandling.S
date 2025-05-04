@@ -245,6 +245,8 @@ NESTED_END RhpRethrow, _TEXT
 
     alloc_stack     stack_alloc_size
 
+    vzeroupper
+
     END_PROLOGUE
 .endm
 
@@ -473,6 +475,9 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
 
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
+        vzeroupper
+
+#if 0 // Any register value changes made in the funclet are lost in the current ABI
         mov     rsi, [rsp + locArg1]                                 // rsi <- regdisplay
 
         mov     rax, [rsi + OFFSETOF__REGDISPLAY__pRbx]
@@ -487,6 +492,7 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
         mov     [rax]                            , r14
         mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR15]
         mov     [rax]                            , r15
+#endif
 
         mov     rax, [rsp + locThread]                               // rax <- Thread*
    lock or      dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
@@ -519,6 +525,8 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         call    rsi
 
 ALTERNATE_ENTRY RhpCallFilterFunclet2
+
+        vzeroupper
 
         // RAX contains the result of the filter execution
 

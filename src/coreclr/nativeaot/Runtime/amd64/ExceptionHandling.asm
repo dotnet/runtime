@@ -308,6 +308,8 @@ FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
 
     alloc_stack     stack_alloc_size
 
+    vzeroupper
+
     save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
     save_xmm128_postrsp xmm7,  (arguments_scratch_area_size + 1 * 10h)
     save_xmm128_postrsp xmm8,  (arguments_scratch_area_size + 2 * 10h)
@@ -642,6 +644,9 @@ endif
 
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
+        vzeroupper
+
+if 0 ;; Any register value changes made in the funclet are lost in the current ABI
         mov     rdx, [rsp + rsp_offsetof_arguments + 8h]            ;; rdx <- regdisplay
 
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
@@ -672,6 +677,7 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
         movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 7*10h], xmm13
         movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h], xmm14
         movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h], xmm15
+endif
 
         mov     rax, [rsp + rsp_offsetof_thread]                                    ;; rax <- Thread*
         lock or             dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
@@ -703,6 +709,8 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT
         call    rdx
 
 ALTERNATE_ENTRY RhpCallFilterFunclet2
+
+        vzeroupper
 
         ;; RAX contains the result of the filter execution
 
