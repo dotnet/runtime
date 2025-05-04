@@ -588,7 +588,17 @@ private:
                 numAddrUses++;
             }
 
-            if (numAddrUses > 1)
+            if (numAddrUses == 0)
+            {
+                GenTree* sideEffects = nullptr;
+                m_compiler->gtExtractSideEffList(addr, &sideEffects);
+
+                if (sideEffects != nullptr)
+                {
+                    statements->AddStatement(sideEffects);
+                }
+            }
+            else if (numAddrUses > 1)
             {
                 m_compiler->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
 

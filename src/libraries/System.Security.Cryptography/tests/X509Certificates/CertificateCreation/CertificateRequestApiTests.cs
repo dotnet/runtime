@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
 using Xunit;
 
@@ -254,6 +255,51 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 AssertExtensions.Throws<ArgumentNullException>(
                     "padding",
                     () => new CertificateRequest(subjectName, key, HashAlgorithmName.SHA256, padding));
+            }
+        }
+
+        [Fact]
+        public static void CtorValidation_SlhDsa_string()
+        {
+            string subjectName = null;
+            SlhDsa key = null;
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "subjectName",
+                () => new CertificateRequest(subjectName, key));
+
+            subjectName = "";
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => new CertificateRequest(subjectName, key));
+        }
+
+        [Fact]
+        public static void CtorValidation_SlhDsa_X500DN()
+        {
+            X500DistinguishedName subjectName = null;
+            SlhDsa key = null;
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "subjectName",
+                () => new CertificateRequest(subjectName, key));
+
+            subjectName = new X500DistinguishedName("");
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => new CertificateRequest(subjectName, key));
+        }
+
+        [Fact]
+        public static void SlhDsa_DoesNotSetHashAlgorithm()
+        {
+            using (SlhDsaMockImplementation key = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            {
+                key.ExportSlhDsaPublicKeyCoreHook = _ => { };
+                CertificateRequest req = new CertificateRequest("CN=Test", key);
+                Assert.Null(req.HashAlgorithm.Name);
             }
         }
 

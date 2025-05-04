@@ -998,6 +998,7 @@ SingleResponse ::= SEQUENCE {
                 RSA rsa => cert.CopyWithPrivateKey(rsa),
                 ECDsa ecdsa => cert.CopyWithPrivateKey(ecdsa),
                 MLDsa mldsa => cert.CopyWithPrivateKey(mldsa),
+                SlhDsa slhDsa => cert.CopyWithPrivateKey(slhDsa),
                 DSA dsa => cert.CopyWithPrivateKey(dsa),
                 _ => throw new InvalidOperationException(
                     $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")

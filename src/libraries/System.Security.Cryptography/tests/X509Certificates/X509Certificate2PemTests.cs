@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
@@ -268,6 +269,54 @@ MII
             }
         }
 
+        [Fact]
+        public static void CreateFromPem_EC_Pkcs8_Success()
+        {
+            // ecPublicKey certificates that have no key usage restrictions should be allowed to be used as both
+            // an ECDsa key and an ECDiffieHellman key.
+
+            // For purposes of creating the certificate, it doesn't matter if we use an ECDSA or ECDH key, but starting
+            // with ECDSA means we can make a self-signed cert.
+            using ECDsa key = ECDsa.Create();
+            key.ImportFromPem(TestData.EcDhPkcs8Key);
+            CertificateRequest req = new("CN=radish", key, HashAlgorithmName.SHA256);
+            using X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
+            string pemAggregate = $"{cert.ExportCertificatePem()}\n{TestData.EcDhPkcs8Key}";
+            using X509Certificate2 reLoaded = X509Certificate2.CreateFromPem(pemAggregate, pemAggregate);
+
+            AssertKeysMatch(TestData.EcDhPkcs8Key, reLoaded.GetECDiffieHellmanPrivateKey);
+            AssertKeysMatch(TestData.EcDhPkcs8Key, reLoaded.GetECDsaPrivateKey);
+            AssertExtensions.SequenceEqual(cert.SerialNumberBytes.Span, reLoaded.SerialNumberBytes.Span);
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPem_EC_Pkcs8_Success()
+        {
+            // ecPublicKey certificates that have no key usage restrictions should be allowed to be used as both
+            // an ECDsa key and an ECDiffieHellman key.
+
+            // For purposes of creating the certificate, it doesn't matter if we use an ECDSA or ECDH key, but starting
+            // with ECDSA means we can make a self-signed cert.
+            using ECDsa key = ECDsa.Create();
+            key.ImportFromPem(TestData.EcDhPkcs8Key);
+            CertificateRequest req = new("CN=radish", key, HashAlgorithmName.SHA256);
+            using X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
+
+            PbeParameters pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA1, 32);
+            const string Password = "PLACEHOLDER";
+
+            string encryptedPrivateKey = PemEncoding.WriteString(
+                "ENCRYPTED PRIVATE KEY",
+                key.ExportEncryptedPkcs8PrivateKey(Password, pbe));
+
+            string pemAggregate = $"{cert.ExportCertificatePem()}\n{encryptedPrivateKey}";
+            using X509Certificate2 reLoaded = X509Certificate2.CreateFromEncryptedPem(pemAggregate, pemAggregate, Password);
+
+            AssertKeysMatch(encryptedPrivateKey, reLoaded.GetECDiffieHellmanPrivateKey, Password);
+            AssertKeysMatch(encryptedPrivateKey, reLoaded.GetECDsaPrivateKey, Password);
+            AssertExtensions.SequenceEqual(cert.SerialNumberBytes.Span, reLoaded.SerialNumberBytes.Span);
+        }
+
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void CreateFromPem_MLKem_Pkcs8_Success()
         {
@@ -391,6 +440,79 @@ MII
                 {
                     Assert.Equal(Thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
                     AssertKeysMatch(PrivateKeyPem, cert.GetMLKemPrivateKey, MLKemTestData.EncryptedPrivateKeyPassword);
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void CreateFromPem_SlhDsa_Pkcs8_Ietf_Success()
+        {
+            string certPem = PemEncoding.WriteString("CERTIFICATE", SlhDsaTestData.IetfSlhDsaSha2_128sCertificate);
+            string privateKeyPem = PemEncoding.WriteString("PRIVATE KEY", SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8);
+
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(
+                certPem,
+                privateKeyPem))
+            {
+                Assert.Equal(
+                    SlhDsaTestData.IetfSlhDsaSha2_128sCertificateThumbprint,
+                    cert.GetCertHash(HashAlgorithmName.SHA1));
+                AssertKeysMatch(privateKeyPem, cert.GetSlhDsaPrivateKey);
+            }
+
+            using (SlhDsa slhDsa = SlhDsa.ImportPkcs8PrivateKey(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8))
+            {
+                const string password = "PLACEHOLDER";
+                string encryptedPrivateKeyPem = slhDsa.ExportEncryptedPkcs8PrivateKeyPem(
+                    password,
+                    new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA384, 1));
+
+                using (X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
+                    certPem,
+                    encryptedPrivateKeyPem,
+                    password))
+                {
+                    Assert.Equal(
+                        SlhDsaTestData.IetfSlhDsaSha2_128sCertificateThumbprint,
+                        cert.GetCertHash(HashAlgorithmName.SHA1));
+                    AssertKeysMatch(encryptedPrivateKeyPem, cert.GetSlhDsaPrivateKey, password);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(SlhDsaTestData.GeneratedKeyInfosData), MemberType = typeof(SlhDsaTestData))]
+        public static void CreateFromPem_SlhDsa_Pkcs8_Success(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
+        {
+            string certPem = PemEncoding.WriteString("CERTIFICATE", info.Certificate);
+            string privateKeyPem = PemEncoding.WriteString("PRIVATE KEY", info.Pkcs8PrivateKey);
+
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(
+                certPem,
+                privateKeyPem))
+            {
+                Assert.Equal(
+                    info.Thumbprint,
+                    cert.GetCertHash(HashAlgorithmName.SHA1));
+                AssertKeysMatch(privateKeyPem, cert.GetSlhDsaPrivateKey);
+            }
+
+            using (SlhDsa slhDsa = SlhDsa.ImportPkcs8PrivateKey(info.Pkcs8PrivateKey))
+            {
+                const string password = "PLACEHOLDER";
+                string encryptedPrivateKeyPem = slhDsa.ExportEncryptedPkcs8PrivateKeyPem(
+                    password,
+                    new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA384, 1));
+
+                using (X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
+                    certPem,
+                    encryptedPrivateKeyPem,
+                    password))
+                {
+                    Assert.Equal(
+                        info.Thumbprint,
+                        cert.GetCertHash(HashAlgorithmName.SHA1));
+                    AssertKeysMatch(encryptedPrivateKeyPem, cert.GetSlhDsaPrivateKey, password);
                 }
             }
         }
@@ -610,6 +732,10 @@ MII
             {
                 alg = password is null ? MLKem.ImportFromPem(keyPem) : MLKem.ImportFromEncryptedPem(keyPem, password);
             }
+            else if (key is SlhDsa)
+            {
+                alg = password is null ? SlhDsa.ImportFromPem(keyPem) : SlhDsa.ImportFromEncryptedPem(keyPem, password);
+            }
             else
             {
                 Assert.Fail($"Unhandled key type {key.GetType()}.");
@@ -658,6 +784,12 @@ MII
                         kemPem.Encapsulate(out ciphertext, out sharedSecret1);
                         sharedSecret2 = kem.Decapsulate(ciphertext);
                         AssertExtensions.SequenceEqual(sharedSecret1, sharedSecret2);
+                        break;
+                    case (SlhDsa slhDsa, SlhDsa slhDsaPem):
+
+                        byte[] slhDsaSignature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
+                        Assert.Equal(slhDsaSignature.Length, slhDsa.SignData(data, slhDsaSignature));
+                        Assert.True(slhDsaPem.VerifyData(data, slhDsaSignature));
                         break;
                     default:
                         throw new CryptographicException("Unknown key algorithm");

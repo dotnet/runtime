@@ -54,5 +54,25 @@ namespace System.Security.Cryptography.X509Certificates
 
             return new MLDsaX509SignatureGenerator(key);
         }
+
+        /// <summary>
+        ///   Creates a signature generator for SLH-DSA signatures using the specified key.
+        /// </summary>
+        /// <param name="key">
+        ///   The private key.
+        /// </param>
+        /// <returns>
+        ///   An <see cref="X509SignatureGenerator" /> object for SLH-DSA signatures.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public static X509SignatureGenerator CreateForSlhDsa(SlhDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            return new SlhDsaX509SignatureGenerator(key);
+        }
     }
 }

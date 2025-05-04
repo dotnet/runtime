@@ -133,7 +133,7 @@ unsigned ObjectAllocator::LocalToIndex(unsigned lclNum)
 {
     unsigned result = BAD_VAR_NUM;
 
-    if (lclNum < comp->lvaCount)
+    if (lclNum < m_firstPseudoLocalNum)
     {
         assert(IsTrackedLocal(lclNum));
         LclVarDsc* const varDsc = comp->lvaGetDesc(lclNum);
@@ -297,6 +297,7 @@ void ObjectAllocator::MarkLclVarAsEscaping(unsigned int lclNum)
 void ObjectAllocator::MarkLclVarAsPossiblyStackPointing(unsigned int lclNum)
 {
     const unsigned bvIndex = LocalToIndex(lclNum);
+    JITDUMP("Marking V%02u (0x%02x) as possibly stack-pointing\n", lclNum, bvIndex);
     BitVecOps::AddElemD(&m_bitVecTraits, m_PossiblyStackPointingPointers, bvIndex);
 }
 
@@ -698,12 +699,27 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         {
             JITDUMP("   V%02u is address exposed\n", lclNum);
             MarkLclVarAsEscaping(lclNum);
+            continue;
         }
-        else if (lclNum == comp->info.compRetBuffArg)
+
+        if (lclNum == comp->info.compRetBuffArg)
         {
             JITDUMP("   V%02u is retbuff\n", lclNum);
             MarkLclVarAsEscaping(lclNum);
+            continue;
         }
+
+#if FEATURE_IMPLICIT_BYREFS
+        // We have to mark all implicit byref params as escaping, because
+        // their GC reporting is controlled by the caller
+        //
+        if (lclDsc->lvIsParam && lclDsc->lvIsImplicitByRef)
+        {
+            JITDUMP("   V%02u is an implicit byref param\n", lclNum);
+            MarkLclVarAsEscaping(lclNum);
+            continue;
+        }
+#endif
 
         // Parameters have unknown initial values.
         // OSR locals have unknown initial values.
@@ -824,6 +840,11 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
 
 void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
 {
+    // Keep track of locals that we know may point at the heap
+    //
+    BitVec possiblyHeapPointingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
+    BitVecOps::AddElemD(bitVecTraits, possiblyHeapPointingPointers, m_unknownSourceIndex);
+
     bool     changed = true;
     unsigned pass    = 0;
     while (changed)
@@ -844,23 +865,36 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
                                                 m_ConnGraphAdjacencyMatrix[lclIndex]))
             {
                 // We discovered a new pointer that may point to the stack.
+                JITDUMPEXEC(DumpIndex(lclIndex));
+                JITDUMP(" may point to the stack\n");
                 MarkLclVarAsPossiblyStackPointing(lclNum);
+                changed = true;
+            }
 
-                // If all locals assignable to this local are stack pointing, so is this local.
-                //
-                const bool isStackPointing = BitVecOps::IsSubset(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclIndex],
-                                                                 m_DefinitelyStackPointingPointers);
-
-                if (isStackPointing)
-                {
-                    MarkLclVarAsDefinitelyStackPointing(lclNum);
-                    JITDUMP("V%02u is stack pointing\n", lclNum);
-                }
-
+            if (!BitVecOps::IsMember(bitVecTraits, possiblyHeapPointingPointers, lclIndex) &&
+                !BitVecOps::IsEmptyIntersection(bitVecTraits, possiblyHeapPointingPointers,
+                                                m_ConnGraphAdjacencyMatrix[lclIndex]))
+            {
+                // We discovered a new pointer that may point to the heap.
+                JITDUMPEXEC(DumpIndex(lclIndex));
+                JITDUMP(" may point to the heap\n");
+                BitVecOps::AddElemD(bitVecTraits, possiblyHeapPointingPointers, lclIndex);
                 changed = true;
             }
         }
     }
+    JITDUMP("\n---- done computing stack pointing locals\n");
+
+    // If a local is possibly stack pointing and not possibly heap pointing, then it is definitely stack pointing.
+    //
+    BitVec newDefinitelyStackPointingPointers = BitVecOps::UninitVal();
+    BitVecOps::Assign(bitVecTraits, newDefinitelyStackPointingPointers, m_PossiblyStackPointingPointers);
+    BitVecOps::DiffD(bitVecTraits, newDefinitelyStackPointingPointers, possiblyHeapPointingPointers);
+
+    // We should have only added to the set of things that are definitely stack pointing.
+    //
+    assert(BitVecOps::IsSubset(bitVecTraits, m_DefinitelyStackPointingPointers, newDefinitelyStackPointingPointers));
+    BitVecOps::AssignNoCopy(bitVecTraits, m_DefinitelyStackPointingPointers, newDefinitelyStackPointingPointers);
 
 #ifdef DEBUG
     if (comp->verbose)
@@ -1102,10 +1136,10 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 continue;
             }
 
-            bool         canStack     = false;
-            bool         bashCall     = false;
-            const char*  onHeapReason = nullptr;
-            unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
+            bool               canStack     = false;
+            bool               bashCall     = false;
+            const char*        onHeapReason = nullptr;
+            const unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
 
             // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
             //
@@ -1290,6 +1324,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(data->AsAllocObj());
                     stmtExpr->AsLclVar()->Data() = newData;
                     stmtExpr->AddAllEffectsFlags(newData);
+                }
+
+                if (IsTrackedLocal(lclNum))
+                {
+                    AddConnGraphEdge(lclNum, m_unknownSourceLocalNum);
                 }
             }
         }
@@ -1830,6 +1869,14 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                             break;
                     }
                 }
+                else if (call->IsDelegateInvoke())
+                {
+                    if (tree == call->gtArgs.GetThisArg()->GetNode())
+                    {
+                        JITDUMP("Delegate invoke this...\n");
+                        canLclVarEscapeViaParentStack = false;
+                    }
+                }
 
                 // Note there is nothing special here about the parent being a call. We could move all this processing
                 // up to the caller and handle any sort of tree that could lead to escapes this way.
@@ -2047,8 +2094,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
 
                     // If we are storing to a GC struct field, we may need to retype the store
                     //
-                    if (retypeFields && parent->OperIs(GT_STOREIND) && (addr->OperIs(GT_FIELD_ADDR)) &&
-                        (varTypeIsGC(parent->TypeGet())))
+                    if (parent->OperIs(GT_STOREIND) && addr->OperIs(GT_FIELD_ADDR) && varTypeIsGC(parent->TypeGet()))
                     {
                         parent->ChangeType(newType);
                     }
@@ -2181,6 +2227,7 @@ void ObjectAllocator::RewriteUses()
                 }
             }
             // Make box accesses explicit for UNBOX_HELPER
+            // Expand delegate invoke for calls where "this" is possibly stack pointing
             //
             else if (tree->IsCall())
             {
@@ -2226,6 +2273,51 @@ void ObjectAllocator::RewriteUses()
                                                           m_compiler->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
                             GenTree* const comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_BYREF, call, payloadAddr);
                             *use                 = comma;
+                        }
+                    }
+                }
+                else if (call->IsDelegateInvoke())
+                {
+                    CallArg* const thisArg      = call->gtArgs.GetThisArg();
+                    GenTree* const delegateThis = thisArg->GetNode();
+
+                    if (delegateThis->OperIs(GT_LCL_VAR))
+                    {
+                        GenTreeLclVarCommon* const lcl = delegateThis->AsLclVarCommon();
+
+                        if (m_allocator->DoesLclVarPointToStack(lcl->GetLclNum()))
+                        {
+                            JITDUMP("Expanding delegate invoke [%06u]\n", m_compiler->dspTreeID(call));
+                            // Expand the delgate invoke early, so that physical promotion has
+                            // a chance to promote the delegate fields.
+                            //
+                            // Note the instance field may also be stack allocatable (someday)
+                            //
+                            GenTree* const cloneThis      = m_compiler->gtClone(lcl);
+                            unsigned const instanceOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateInstance;
+                            GenTree* const newThisAddr =
+                                m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, cloneThis,
+                                                          m_compiler->gtNewIconNode(instanceOffset, TYP_I_IMPL));
+
+                            // For now assume the instance is heap...
+                            //
+                            GenTree* const newThis = m_compiler->gtNewIndir(TYP_REF, newThisAddr);
+                            thisArg->SetEarlyNode(newThis);
+
+                            // the control target is
+                            // [originalThis + firstTgtOffs]
+                            //
+                            unsigned const targetOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget;
+                            GenTree* const targetAddr =
+                                m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, lcl,
+                                                          m_compiler->gtNewIconNode(targetOffset, TYP_I_IMPL));
+                            GenTree* const target = m_compiler->gtNewIndir(TYP_I_IMPL, targetAddr);
+
+                            // Update call state -- now an indirect call to the delegate target
+                            //
+                            call->gtCallAddr = target;
+                            call->gtCallType = CT_INDIRECT;
+                            call->gtCallMoreFlags &= ~(GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
                         }
                     }
                 }
