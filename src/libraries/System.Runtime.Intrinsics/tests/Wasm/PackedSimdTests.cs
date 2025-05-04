@@ -107,18 +107,14 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
 
             // Use the correct parameter order: left(a), right(b), select(mask)
             var result = PackedSimd.BitwiseSelect(a, b, mask);
+            var v128result = Vector128.ConditionalSelect(mask, a, b);
             // Where mask is all 1s, should select from a; where mask is all 0s, should select from b
-            Assert.Equal(Vector128.Create(1, 6, 3, 8), result);
+            Assert.Equal(Vector128.Create(1, 6, 3, 8), v128result);
+            Assert.Equal(v128result, result);
 
             // Test with bytes for more granular bit-level control
-            var byteMask = Vector128.Create(
-                (byte)0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00,
-                0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00
-            );
-            var byteA = Vector128.Create(
-                (byte)1, 2, 3, 4, 5, 6, 7, 8,
-                9, 10, 11, 12, 13, 14, 15, 16
-            );
+            var byteMask = Vector128.Create((byte)0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00);
+            var byteA = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
             var byteB = Vector128.Create(
                 (byte)17, 18, 19, 20, 21, 22, 23, 24,
                 25, 26, 27, 28, 29, 30, 31, 32
@@ -701,35 +697,90 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [Fact]
-        public unsafe void ConvertNarrowingSaturateUnsignedTest()
+        public unsafe void ConvertNarrowingSaturateUnsignedShortToByte()
         {
+            // Test shorts to bytes - valid values and values that need saturation
+            var lower = Vector128.Create((short)255, 256, 127, -1, 300, 0, 200, 100);
+            var upper = Vector128.Create((short)50, 150, -50, -150, 75, 175, 225, 0);
+
+            var result = PackedSimd.ConvertNarrowingSaturateUnsigned(lower, upper);
+
+            // Values should saturate between 0 and 255
+            // - Values >= 256 saturate to 255
+            // - Negative values saturate to 0
+            // - Values between 0-255 remain unchanged
+            Assert.Equal(Vector128.Create(
+                (byte)255, 255, 127, 0, 255, 0, 200, 100,
+                50, 150, 0, 0, 75, 175, 225, 0
+            ), result);
+
+            // Edge cases - test with maximum short values and extreme negative values
+            var lowerEdge = Vector128.Create((short)32767, 256, 255, 0, -1, -32768, 1, 254);
+            var upperEdge = Vector128.Create((short)1, 2, 3, 4, 32767, 16384, 8192, 4096);
+
+            var resultEdge = PackedSimd.ConvertNarrowingSaturateUnsigned(lowerEdge, upperEdge);
+
+            // All values above 255 should saturate to 255
+            // All negative values should saturate to 0
+            Assert.Equal(Vector128.Create(
+                (byte)255, 255, 255, 0, 0, 0, 1, 254,
+                1, 2, 3, 4, 255, 255, 255, 255
+            ), resultEdge);
+        }
+
+        [Fact]
+        public unsafe void ConvertNarrowingSaturateUnsignedIntToUShort()
+        {
+            // Existing test renamed for clarity (was ConvertNarrowingSaturateUnsignedTest)
             var v1 = Vector128.Create(65535, 65536, -1, -100);
             var v2 = Vector128.Create(100, 200, 300, 400);
 
             var result = PackedSimd.ConvertNarrowingSaturateUnsigned(v1, v2);
 
             Assert.Equal(Vector128.Create((ushort)65535, 65535, 0, 0, 100, 200, 300, 400), result);
+            
+            // Edge cases - test with maximum int values and extreme negative values
+            var lowerEdge = Vector128.Create(int.MaxValue, 65536, 65535, 0);
+            var upperEdge = Vector128.Create(-1, int.MinValue, 32768, 32767);
+            
+            var resultEdge = PackedSimd.ConvertNarrowingSaturateUnsigned(lowerEdge, upperEdge);
+            
+            // Values > 65535 should saturate to 65535
+            // Negative values should saturate to 0
+            Assert.Equal(Vector128.Create(
+                (ushort)65535, 65535, 65535, 0,
+                0, 0, 32768, 32767
+            ), resultEdge);
         }
 
         [Fact]
         public unsafe void BitmaskTest()
         {
             var v1 = Vector128.Create((byte)0b00000001, 0b00000010, 0b00000100, 0b00001000,
-                                       0b00010000, 0b00100000, 0b01000000, 0b10000000,
-                                       0b00000001, 0b00000010, 0b00000100, 0b00001000,
-                                       0b00010000, 0b10100000, 0b01000000, 0b10000000);
+                                            0b00010000, 0b00100000, 0b01000000, 0b10000000,
+                                            0b00000001, 0b00000010, 0b00000100, 0b00001000,
+                                            0b00010000, 0b10100000, 0b01000000, 0b10000000);
             var v2 = Vector128.Create((ushort)0b1100001001100001, 0b0000000000000010, 0b0000000000000100, 0b0000000000001000,
-                                       0b0000000000010000, 0b0000000000100000, 0b0000000001000000, 0b0000000010000000);
+                                    0b0000000000010000, 0b0000000000100000, 0b0000000001000000, 0b0000000010000000);
 
             var v3 = Vector128.Create(0b10000000000000000000000000000001, 0b00000000000111111000000000000010,
                                       0b00000000000000000000000000000100, 0b10000000000000000000000000001000);
 
-            var bitmask1 = PackedSimd.Bitmask(v1);
-            var bitmask2 = PackedSimd.Bitmask(v2);
-            var bitmask3 = PackedSimd.Bitmask(v3);
-            Assert.Equal(0b1010000010000000, bitmask1);
-            Assert.Equal(0b1, bitmask2);
-            Assert.Equal(0b1001, bitmask3);
+            var bitmask_b = PackedSimd.Bitmask(v1);
+            var bitmask_s = PackedSimd.Bitmask(v2);
+            var bitmask_i = PackedSimd.Bitmask(v3);
+
+            var v128emsb_b = Vector128.ExtractMostSignificantBits(v1);
+            var v128emsb_s = Vector128.ExtractMostSignificantBits(v2);
+            var v128emsb_i = Vector128.ExtractMostSignificantBits(v3);
+
+            Assert.Equal(0b1010000010000000, bitmask_b);
+            Assert.Equal(0b1, bitmask_s);
+            Assert.Equal(0b1001, bitmask_i);
+
+            Assert.Equal(v128emsb_b, (uint)bitmask_b);
+            Assert.Equal(v128emsb_s, (uint)bitmask_s);
+            Assert.Equal(v128emsb_i, (uint)bitmask_i);
         }
     }
 }
