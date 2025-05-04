@@ -79,10 +79,9 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
-      # We use a CentOS Stream 8 image here to test building from source on CentOS Stream 8.
+      # We use a CentOS Stream image here to test building from source on CentOS Stream
       SourceBuild_centos_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
-
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9
       # AlmaLinux 8 is a RHEL 8 rebuild, so we use it to test building from source on RHEL 8.
       SourceBuild_linux_x64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-8-source-build
@@ -106,7 +105,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64
 
       linux_x64_llvmaot:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9
 
       browser_wasm:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-webassembly-amd64
