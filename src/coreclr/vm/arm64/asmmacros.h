@@ -91,10 +91,10 @@ __PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
     MEND
 
 ;-----------------------------------------------------------------------------
-; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and returns to caller.
+; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK.
 ;
     MACRO
-        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+        EPILOG_WITH_TRANSITION_BLOCK
 
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
 
@@ -104,6 +104,15 @@ __PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
         EPILOG_RESTORE_REG_PAIR   x25, x26, #64
         EPILOG_RESTORE_REG_PAIR   x27, x28, #80
         EPILOG_RESTORE_REG_PAIR   fp, lr,   #176!
+    MEND
+
+;-----------------------------------------------------------------------------
+; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and returns to caller.
+;
+    MACRO
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        EPILOG_WITH_TRANSITION_BLOCK
 		EPILOG_RETURN
     MEND
 
@@ -153,6 +162,39 @@ $FuncName
     EXPORT $FuncName
 
     MEND
+
+;-----------------------------------------------------------------------------
+; Macros used for shared allocation helpers
+
+    SETALIAS t_runtime_thread_locals, ?t_runtime_thread_locals@@3URuntimeThreadLocals@@A
+
+    MACRO
+    INLINE_GET_ALLOC_CONTEXT $destReg, $trashReg
+
+        EXTERN $t_runtime_thread_locals
+
+        INLINE_GET_TLS_VAR $destReg, $trashReg, $t_runtime_thread_locals
+        IF OFFSETOF__RuntimeThreadLocals__ee_alloc_context != 0
+            add     $destReg, $destReg, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        ENDIF
+    MEND
+
+    MACRO
+    PUSH_COOP_PINVOKE_FRAME $Target
+
+        PROLOG_WITH_TRANSITION_BLOCK
+        add     $Target, sp, #__PWTB_TransitionBlock
+
+    MEND
+
+    MACRO
+    POP_COOP_PINVOKE_FRAME
+
+        EPILOG_WITH_TRANSITION_BLOCK
+
+    MEND
+
+#define GC_ALLOC_FINALIZE 1
 
 ;-----------------------------------------------------------------------------
 ; Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling

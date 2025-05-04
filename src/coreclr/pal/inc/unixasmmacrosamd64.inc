@@ -340,11 +340,17 @@ C_FUNC(\Name\()_End):
 
 .endm
 
-.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+.macro EPILOG_WITH_TRANSITION_BLOCK
 
         free_stack      __PWTB_StackAlloc
         POP_ARGUMENT_REGISTERS
         POP_CALLEE_SAVED_REGISTERS
+
+.endm
+
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        EPILOG_WITH_TRANSITION_BLOCK
         ret
 
 .endm
@@ -365,4 +371,33 @@ C_FUNC(\Name\()_End):
         pop_nonvol_reg rbp
         .cfi_same_value rbp
 
+.endm
+
+// Inlined version of GetThreadEEAllocContext. Trashes volatile registers.
+.macro INLINE_GET_ALLOC_CONTEXT
+#if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
+        call    C_FUNC(GetThreadEEAllocContext)
+#else
+        .att_syntax
+        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
+        leaq    t_runtime_thread_locals@TLSGD(%rip), %rdi
+        .byte 0x66  //
+        .byte 0x66  //
+        .byte 0x48  // rex.W prefix, also for padding
+        callq   __tls_get_addr@PLT
+        .intel_syntax noprefix
+
+        .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
+                lea     rax, [rax + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
+        .endif
+#endif
+.endm
+
+.macro PUSH_COOP_PINVOKE_FRAME target
+        PROLOG_WITH_TRANSITION_BLOCK
+        lea     \target, [rsp + __PWTB_TransitionBlock]
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+        EPILOG_WITH_TRANSITION_BLOCK
 .endm

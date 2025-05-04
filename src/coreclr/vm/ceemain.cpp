@@ -864,14 +864,15 @@ void EEStartupHelper()
 
         // Before setting up the execution manager initialize the first part
         // of the JIT helpers.
-        InitJITHelpers1();
+        InitJITAllocationHelpers();
+        InitJITWriteBarrierHelpers();
 
         // Set up the sync block
         SyncBlockCache::Start();
 
         // This isn't done as part of InitializeGarbageCollector() above because it
         // requires write barriers to have been set up on x86, which happens as part
-        // of InitJITHelpers1.
+        // of InitJITWriteBarrierHelpers.
         hr = g_pGCHeap->Initialize();
         if (FAILED(hr))
         {

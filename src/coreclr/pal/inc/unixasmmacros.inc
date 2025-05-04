@@ -38,6 +38,13 @@
         .equiv \New, \Old
 .endm
 
+// GC type flags
+#define GC_ALLOC_FINALIZE           1
+#define GC_ALLOC_ALIGN8_BIAS        4
+#define GC_ALLOC_ALIGN8             8
+
+#define G_FREE_OBJECT_METHOD_TABLE  g_pFreeObjectMethodTable
+
 #if defined(HOST_X86)
 #include "unixasmmacrosx86.inc"
 #elif defined(HOST_AMD64)

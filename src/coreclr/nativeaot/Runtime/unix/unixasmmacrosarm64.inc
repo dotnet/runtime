@@ -181,7 +181,7 @@ C_FUNC(\Name):
 
 // Loads the address of a thread-local variable into the target register,
 // which cannot be x0. Preserves all other registers.
-.macro INLINE_GET_TLS_VAR target, var
+.macro INLINE_GET_TLS_VAR target, var, ofs = 0
     .ifc \target, x0
         .error "target cannot be x0"
     .endif
@@ -202,7 +202,7 @@ C_FUNC(\Name):
     blr     \target
     // End of the sequence
 
-    mov     \target, x0
+    add     \target, x0, \ofs
 #else
     adrp    x0, :tlsdesc:\var
     ldr     \target, [x0, #:tlsdesc_lo12:\var]
@@ -213,6 +213,9 @@ C_FUNC(\Name):
 
     mrs     \target, tpidr_el0
     add     \target, \target, x0
+    .ifnc \ofs, 0
+            add     \target, \target, \ofs
+    .endif
 #endif
 
 #if defined(__APPLE__)
@@ -225,6 +228,27 @@ C_FUNC(\Name):
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
 .endm
+
+// Target cannot be x0.
+.macro INLINE_GET_ALLOC_CONTEXT target
+    .ifc \target, x0
+        .error "target cannot be x0"
+    .endif
+
+#ifdef FEATURE_EMULATED_TLS
+    PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x20
+    PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
+
+    bl C_FUNC(RhpGetThread)
+    add         \target, x0, OFFSETOF__Thread__m_eeAllocContext
+
+    EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
+#else
+    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread), OFFSETOF__Thread__m_eeAllocContext
+#endif
+.endm
+
 
 // Do not use these ETLS macros in functions that already create a stack frame.
 // Creating two stack frames in one function can confuse the unwinder/debugger

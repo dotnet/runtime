@@ -70,13 +70,18 @@ endm
 ;;
 ;; This macro builds a frame describing the current state of managed code.
 ;;
-;; The macro assumes it is called from a helper that has already set up an EBP frame and that the values of
-;; EBX, ESI and EDI remain unchanged from their values in managed code. It pushes the frame at the top of the
-;; stack.
+;; The macro assumes it is called from a helper that the values of EBX, ESI and EDI remain unchanged from their
+;; values in managed code. It pushes the frame at the top of the stack.
 ;;
-;; EAX is trashed by this macro.
+;; EAX is trashed by this macro. ECX, EDX are preserved.
 ;;
 PUSH_COOP_PINVOKE_FRAME macro transitionFrameReg
+    push        ebp
+    mov         ebp, esp
+
+    push        ecx
+    push        edx
+
     lea         eax, [ebp + 8]                      ; get the ESP of the caller
     push        eax                                 ; save ESP
     push        edi
@@ -94,9 +99,7 @@ endm
 
 ;;
 ;; Remove the frame from a previous call to PUSH_COOP_PINVOKE_FRAME from the top of the stack and restore EBX,
-;; ESI and EDI to their previous values.
-;;
-;; TRASHES ECX
+;; ESI, EDI, ECX, and EDX to their previous values. Tears down the EBP frame.
 ;;
 POP_COOP_PINVOKE_FRAME macro
     add         esp, 4*4
@@ -104,8 +107,17 @@ POP_COOP_PINVOKE_FRAME macro
     pop         esi
     pop         edi
     pop         ecx
+
+    pop         edx
+    pop         ecx
+
+    pop         ebp
 endm
 
+INLINE_GET_ALLOC_CONTEXT macro destReg, trashReg
+    INLINE_GETTHREAD destReg, trashReg
+    lea         destReg, [destReg + OFFSETOF__Thread__m_eeAllocContext]
+endm
 
 ;;
 ;; CONSTANTS -- INTEGER
@@ -115,6 +127,8 @@ TSF_DoNotTriggerGc              equ 10h
 
 ;; GC type flags
 GC_ALLOC_FINALIZE               equ 1
+GC_ALLOC_ALIGN8_BIAS            equ 4
+GC_ALLOC_ALIGN8                 equ 8
 
 ;; Note: these must match the defs in PInvokeTransitionFrameFlags
 PTFF_SAVE_RBX           equ 00000001h
@@ -131,14 +145,15 @@ TrapThreadsFlags_None            equ 0
 TrapThreadsFlags_AbortInProgress equ 1
 TrapThreadsFlags_TrapThreads     equ 2
 
+ASM_MIN_OBJECT_SIZE              equ MIN_OBJECT_SIZE
+
 ;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
 STATUS_REDHAWK_THREAD_ABORT      equ 43h
 
 ;;
 ;; Rename fields of nested structs
 ;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_eeAllocContext__combined_limit  equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
+OFFSETOF__ee_alloc_context__alloc_ptr        equ OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
 
 ;;
 ;; CONSTANTS -- SYMBOLS
@@ -151,6 +166,7 @@ G_HIGHEST_ADDRESS                           equ _g_highest_address
 G_EPHEMERAL_LOW                             equ _g_ephemeral_low
 G_EPHEMERAL_HIGH                            equ _g_ephemeral_high
 G_CARD_TABLE                                equ _g_card_table
+G_FREE_OBJECT_METHOD_TABLE                  equ ?g_pFreeObjectEEType@@3PAVMethodTable@@A
 RhpWaitForGC2                               equ @RhpWaitForGC2@4
 RhpTrapThreads                              equ _RhpTrapThreads
 RhpStressGc                                 equ @RhpStressGc@0
@@ -197,4 +213,5 @@ EXTERN G_HIGHEST_ADDRESS : DWORD
 EXTERN G_EPHEMERAL_LOW : DWORD
 EXTERN G_EPHEMERAL_HIGH : DWORD
 EXTERN G_CARD_TABLE : DWORD
+EXTERN G_FREE_OBJECT_METHOD_TABLE : DWORD
 EXTERN RhpTrapThreads : DWORD
