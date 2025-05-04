@@ -645,6 +645,22 @@ namespace System.Reflection.Metadata
             _length += (uint)value;
         }
 
+        /// <summary>
+        /// Returns a buffer to write new data into. You must call <see cref="AddLength"/> afterwards with the
+        /// number of bytes written.
+        /// </summary>
+        /// <remarks>
+        /// Alongside <see cref="AddLength"/>, this method provides an API similar to <see cref="Buffers.IBufferWriter{T}"/>.
+        /// </remarks>
+        private ArraySegment<byte> GetWriteBuffer()
+        {
+            if (FreeBytes == 0)
+            {
+                Expand(_maxChunkSize);
+            }
+            return new ArraySegment<byte>(_buffer, Length, FreeBytes);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void Expand(int newLength)
         {
@@ -759,20 +775,13 @@ namespace System.Reflection.Metadata
                 Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
-            int bytesToCurrent = Math.Min(FreeBytes, byteCount);
-
-            _buffer.WriteBytes(Length, value, bytesToCurrent);
-            AddLength(bytesToCurrent);
-
-            int remaining = byteCount - bytesToCurrent;
-            while (remaining > 0)
+            while (byteCount > 0)
             {
-                int chunkSize = Math.Min(remaining, _maxChunkSize);
-                Expand(chunkSize);
-
-                _buffer.WriteBytes(0, value, chunkSize);
-                AddLength(chunkSize);
-                remaining -= chunkSize;
+                Span<byte> writeBuffer = GetWriteBuffer().AsSpan();
+                int writeSize = Math.Min(byteCount, writeBuffer.Length);
+                writeBuffer.Slice(0, writeSize).Fill(value);
+                AddLength(writeSize);
+                byteCount -= writeSize;
             }
         }
 
@@ -801,21 +810,13 @@ namespace System.Reflection.Metadata
 
         private void WriteBytesUnchecked(ReadOnlySpan<byte> buffer)
         {
-            int bytesToCurrent = Math.Min(FreeBytes, buffer.Length);
-
-            buffer.Slice(0, bytesToCurrent).CopyTo(_buffer.AsSpan(Length));
-
-            AddLength(bytesToCurrent);
-
-            ReadOnlySpan<byte> remaining = buffer.Slice(bytesToCurrent);
-            while (!remaining.IsEmpty)
+            while (!buffer.IsEmpty)
             {
-                var chunkSize = Math.Min(remaining.Length, _maxChunkSize);
-                Expand(chunkSize);
-
-                remaining.Slice(0, chunkSize).CopyTo(_buffer);
-                AddLength(chunkSize);
-                remaining = remaining.Slice(chunkSize);
+                Span<byte> writeBuffer = GetWriteBuffer().AsSpan();
+                int writeSize = Math.Min(buffer.Length, writeBuffer.Length);
+                buffer.Slice(0, writeSize).CopyTo(writeBuffer);
+                AddLength(writeSize);
+                buffer = buffer.Slice(writeSize);
             }
         }
 
@@ -840,39 +841,22 @@ namespace System.Reflection.Metadata
                 return 0;
             }
 
-            int totalBytesRead = 0;
-            int bytesToCurrent = Math.Min(FreeBytes, byteCount);
+            int remaining = byteCount;
 
-            if (bytesToCurrent > 0)
-            {
-                int bytesRead = source.TryReadAll(_buffer, Length, bytesToCurrent);
-                AddLength(bytesRead);
-
-                totalBytesRead += bytesRead;
-                if (bytesRead != bytesToCurrent)
-                {
-                    return totalBytesRead;
-                }
-            }
-
-            int remaining = byteCount - bytesToCurrent;
             while (remaining > 0)
             {
-                int chunkSize = Math.Min(remaining, _maxChunkSize);
-                Expand(chunkSize);
-
-                int bytesRead = source.TryReadAll(_buffer, 0, chunkSize);
+                ArraySegment<byte> writeBuffer = GetWriteBuffer();
+                int writeSize = Math.Min(remaining, writeBuffer.Count);
+                int bytesRead = source.TryReadAll(writeBuffer.Array!, writeBuffer.Offset, writeSize);
                 AddLength(bytesRead);
-
-                totalBytesRead += bytesRead;
                 remaining -= bytesRead;
-                if (bytesRead != chunkSize)
+                if (bytesRead != writeSize)
                 {
                     break;
                 }
             }
 
-            return totalBytesRead;
+            return byteCount - remaining;
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
@@ -1220,25 +1204,17 @@ namespace System.Reflection.Metadata
                 Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
-            int byteCount = Encoding.UTF8.GetByteCount(str);
             if (prependSize)
             {
-                WriteCompressedInteger(byteCount);
+                WriteCompressedInteger(Encoding.UTF8.GetByteCount(str));
             }
 
-            int remainingBytes = byteCount;
-            while (true)
+            while (!str.IsEmpty)
             {
-                BlobUtilities.WriteUtf8(str, _buffer.AsSpan(Length), out int charsConsumed, out int bytesWritten, allowUnpairedSurrogates);
+                Span<byte> writeBuffer = GetWriteBuffer().AsSpan();
+                BlobUtilities.WriteUtf8(str, writeBuffer, out int charsConsumed, out int bytesWritten, allowUnpairedSurrogates);
                 AddLength(bytesWritten);
                 str = str.Slice(charsConsumed);
-                remainingBytes -= bytesWritten;
-
-                if (str.IsEmpty)
-                {
-                    break;
-                }
-                Expand(Math.Min(_maxChunkSize, remainingBytes));
             }
         }
 
