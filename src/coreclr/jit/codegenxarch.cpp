@@ -10928,7 +10928,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         maskArgRegsLiveIn = RBM_ARG_0 | RBM_ARG_2;
     }
 
-    bool      initRegZeroed = false;
+    bool initRegZeroed = false;
     genAllocLclFrame(genFuncletInfo.fiSpDelta, REG_NA, &initRegZeroed, maskArgRegsLiveIn);
 
     // This is the end of the OS-reported prolog for purposes of unwinding
