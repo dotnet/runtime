@@ -78,8 +78,7 @@ STATUS_REDHAWK_THREAD_ABORT      equ 0x43
 ;;
 ;; Rename fields of nested structs
 ;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_eeAllocContext__combined_limit  equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
+OFFSETOF__ee_alloc_context__alloc_ptr        equ OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
 
 ;;
 ;; IMPORTS
@@ -220,7 +219,6 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         INLINE_GET_TLS_VAR $destReg, $trashReg, tls_CurrentThread
     MEND
 
-
     MACRO
         INLINE_THREAD_UNHIJACK $threadReg, $trashReg1, $trashReg2
         ;;
@@ -234,6 +232,13 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         str         xzr, [$threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
         str         xzr, [$threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 0
+    MEND
+
+    MACRO
+        INLINE_GET_ALLOC_CONTEXT $destReg, $trashReg
+
+        INLINE_GET_TLS_VAR $destReg, $trashReg, tls_CurrentThread
+        add         $destReg, $destReg, OFFSETOF__Thread__m_eeAllocContext
     MEND
 
 ;; ---------------------------------------------------------------------------- -

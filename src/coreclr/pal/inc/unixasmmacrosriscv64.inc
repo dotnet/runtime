@@ -298,13 +298,17 @@ C_FUNC(\Name):
 
 .endm
 
-.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
+.macro EPILOG_WITH_TRANSITION_BLOCK
     RESTORE_CALLEESAVED_REGISTERS sp, __PWTB_CalleeSavedRegisters
 
     EPILOG_RESTORE_REG_PAIR       fp, ra, __PWTB_CalleeSavedRegisters
 
     EPILOG_STACK_FREE             __PWTB_StackAlloc
+.endm
+
+
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+    EPILOG_WITH_TRANSITION_BLOCK
 
     ret
 .endm
@@ -326,6 +330,23 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR fp, ra, __PWTB_CalleeSavedRegisters
 
     EPILOG_STACK_FREE                 __PWTB_StackAlloc
+.endm
+
+// Inlined version of GetThreadEEAllocContext
+.macro INLINE_GET_ALLOC_CONTEXT
+    call    C_FUNC(_ZTW23t_runtime_thread_locals)
+    .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
+        addi    \target, a0, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+    .endif
+.endm
+
+.macro PUSH_COOP_PINVOKE_FRAME target
+    PROLOG_WITH_TRANSITION_BLOCK
+    addi    \target, sp, __PWTB_TransitionBlock
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+    EPILOG_WITH_TRANSITION_BLOCK
 .endm
 
 // ------------------------------------------------------------------

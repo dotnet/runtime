@@ -64,12 +64,12 @@ namespace System.Runtime
             MethodTable* pEEElementType = pEEType->RelatedParameterType;
             if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
             {
-                return InternalCalls.RhpNewArrayAlign8(pEEType, length);
+                return InternalCalls.RhpNewArrayFastAlign8(pEEType, length);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                return InternalCalls.RhpNewArray(pEEType, length);
+                return InternalCalls.RhpNewArrayFast(pEEType, length);
             }
         }
 
@@ -380,10 +380,10 @@ namespace System.Runtime
 #if FEATURE_64BIT_ALIGNMENT
                     MethodTable* pEEElementType = pEEType->RelatedParameterType;
                     if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
-                        return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayAlign8;
+                        return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayFastAlign8;
 #endif // FEATURE_64BIT_ALIGNMENT
 
-                    return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArray;
+                    return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayFast;
 
                 default:
                     Debug.Fail("Unknown RuntimeHelperKind");

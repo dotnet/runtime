@@ -233,15 +233,6 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
-//
-// Rename fields of nested structs
-//
-#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-#define OFFSETOF__Thread__m_eeAllocContext__combined_limit   OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
-
-// GC type flags
-#define GC_ALLOC_FINALIZE           1
-
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 #define PTFF_SAVE_RBX            0x00000001
 #define PTFF_SAVE_R12            0x00000010
@@ -285,6 +276,11 @@ C_FUNC(\Name):
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR tls_CurrentThread
 #endif
+.endm
+
+.macro INLINE_GET_ALLOC_CONTEXT
+        INLINE_GETTHREAD
+        lea         rax, [rax + OFFSETOF__Thread__m_eeAllocContext]
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
