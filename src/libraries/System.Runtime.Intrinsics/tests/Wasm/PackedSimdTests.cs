@@ -261,33 +261,26 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [Fact]
         public unsafe void SaturatingArithmeticSignedTest()
         {
-            var v1 = Vector128.Create((sbyte)120, 121, 122, 123, 124, 125, 126, 127,
-                                       120, 121, 122, 123, 124, 125, 126, 127);
-            var v2 = Vector128.Create((sbyte)10, 10, 10, 10, 10, 10, 10, 10,
-                                       10, 10, 10, 10, 10, 10, 10, 10);
+            var v1 = Vector128.Create((sbyte)120, 121, 122, 123, 124, 125, 126, 127, 120, 121, 122, 123, 124, 125, 126, 127);
+            var v2 = Vector128.Create((sbyte)10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10);
 
             var addSat = PackedSimd.AddSaturate(v1, v2);
             var subSat = PackedSimd.SubtractSaturate(v1, v2);
 
             // Verify saturation at 127 (max sbyte value) for addition
-            Assert.Equal(Vector128.Create((sbyte)127, 127, 127, 127, 127, 127, 127, 127,
-                                           127, 127, 127, 127, 127, 127, 127, 127), addSat);
+            Assert.Equal(Vector128.Create((sbyte)127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127), addSat);
 
             // Verify expected subtraction results - should be original values minus 10
-            Assert.Equal(Vector128.Create((sbyte)110, 111, 112, 113, 114, 115, 116, 117,
-                                           110, 111, 112, 113, 114, 115, 116, 117), subSat);
+            Assert.Equal(Vector128.Create((sbyte)110, 111, 112, 113, 114, 115, 116, 117, 110, 111, 112, 113, 114, 115, 116, 117), subSat);
 
             // Test negative saturation - when results would be below sbyte.MinValue
-            var v3 = Vector128.Create((sbyte)-120, -121, -122, -123, -124, -125, -126, -127,
-                                        -120, -121, -122, -123, -124, -125, -126, -128);
-            var v4 = Vector128.Create((sbyte)10, 10, 10, 10, 10, 10, 10, 10,
-                                        10, 10, 10, 10, 10, 10, 10, 10);
+            var v3 = Vector128.Create((sbyte)-120, -121, -122, -123, -124, -125, -126, -127, -120, -121, -122, -123, -124, -125, -126, -128);
+            var v4 = Vector128.Create((sbyte)10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10);
 
             var subSat2 = PackedSimd.SubtractSaturate(v3, v4);
 
             // Verify saturation at -128 (min sbyte value) for subtraction
-            Assert.Equal(Vector128.Create((sbyte)-128, -128, -128, -128, -128, -128, -128, -128,
-                                           -128, -128, -128, -128, -128, -128, -128, -128), subSat2);
+            Assert.Equal(Vector128.Create((sbyte)-128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128), subSat2);
 
             // Test shorts
             var s1 = Vector128.Create((short)32000, 32001, 32002, 32003, 32004, 32005, 32006, 32007);
@@ -738,13 +731,13 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var result = PackedSimd.ConvertNarrowingSaturateUnsigned(v1, v2);
 
             Assert.Equal(Vector128.Create((ushort)65535, 65535, 0, 0, 100, 200, 300, 400), result);
-            
+
             // Edge cases - test with maximum int values and extreme negative values
             var lowerEdge = Vector128.Create(int.MaxValue, 65536, 65535, 0);
             var upperEdge = Vector128.Create(-1, int.MinValue, 32768, 32767);
-            
+
             var resultEdge = PackedSimd.ConvertNarrowingSaturateUnsigned(lowerEdge, upperEdge);
-            
+
             // Values > 65535 should saturate to 65535
             // Negative values should saturate to 0
             Assert.Equal(Vector128.Create(
