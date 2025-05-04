@@ -1035,7 +1035,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         mdToken    *tkEnclosedToken) PURE;    // [OUT] The enclosed type token
 
 #define MD_STREAM_VER_1X    0x10000
-#define MD_STREAM_VER_2_B1  0x10001
 #define MD_STREAM_VER_2     0x20000
     STDMETHOD_(DWORD, GetMetadataStreamVersion)() PURE;  //returns DWORD with major version of
                                 // MD stream in senior word and minor version--in junior word
