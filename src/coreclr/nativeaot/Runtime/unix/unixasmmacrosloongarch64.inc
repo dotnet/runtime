@@ -145,7 +145,7 @@ C_FUNC(\Name):
 
 // Loads the address of a thread-local variable into the target register,
 // which cannot be a0. Preserves all other registers.
-.macro INLINE_GET_TLS_VAR target, var
+.macro INLINE_GET_TLS_VAR target, var, ofs = 0
     .ifc  \target, $a0
         .error "target cannot be a0"
     .endif
@@ -159,7 +159,7 @@ C_FUNC(\Name):
     la.tls.desc  $a0, \var
 
     ori  \target, $tp, 0
-    add.d  \target, \target, $a0
+    addi.d  \target, $a0, \ofs
 
     ld.d  $a0, $sp, 0
     ld.d  $ra, $sp, 8
@@ -169,6 +169,11 @@ C_FUNC(\Name):
 // Inlined version of RhpGetThread. Target cannot be a0.
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
+.endm
+
+// Target cannot be x0.
+.macro INLINE_GET_ALLOC_CONTEXT target
+    INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread), OFFSETOF__Thread__m_eeAllocContext
 .endm
 
 .macro  InterlockedOperationBarrier

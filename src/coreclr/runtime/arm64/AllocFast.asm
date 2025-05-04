@@ -1,7 +1,7 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
-#include "AsmMacros.h"
+#include "AsmMacros_Shared.h"
 
     TEXTAREA
 
@@ -10,8 +10,8 @@
 ;;  x0 == MethodTable
     LEAF_ENTRY RhpNewFast
 
-        ;; x1 = GetThread(), TRASHES x2
-        INLINE_GETTHREAD x1, x2
+        ;; x1 = ee_alloc_context pointer, TRASHES x2
+        INLINE_GET_ALLOC_CONTEXT x1, x2
 
         ;;
         ;; x0 contains MethodTable pointer
@@ -20,22 +20,22 @@
 
         ;;
         ;; x0: MethodTable pointer
-        ;; x1: Thread pointer
+        ;; x1: ee_alloc_context pointer
         ;; x2: base size
         ;;
 
         ;; Load potential new object address into x12.
-        ldr         x12, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        ldr         x12, [x1, #OFFSETOF__ee_alloc_context__alloc_ptr]
 
         ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x13, [x1, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
+        ldr         x13, [x1, #OFFSETOF__ee_alloc_context__combined_limit]
         cmp         x2, x13
         bhi         RhpNewFast_RarePath
 
         ;; Update the alloc pointer to account for the allocation.
-        str         x2, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        str         x2, [x1, #OFFSETOF__ee_alloc_context__alloc_ptr]
 
         ;; Set the new object's MethodTable pointer
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
@@ -90,6 +90,42 @@ NewOutOfMemory
 
     NESTED_END RhpNewObject
 
+;; Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
+;;  x0 == MethodTable
+;;  x1 == character/element count
+;;  x2 == string/array size
+    MACRO
+        NEW_ARRAY_FAST
+
+        INLINE_GET_ALLOC_CONTEXT x3, x5
+
+        ;; Load potential new object address into x12.
+        ldr         x12, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
+
+        ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
+        ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        add         x2, x2, x12
+        ldr         x12, [x3, #OFFSETOF__ee_alloc_context__combined_limit]
+        cmp         x2, x12
+        bhi         RhpNewArray
+
+        ;; Reload new object address into r12.
+        ldr         x12, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
+
+        ;; Update the alloc pointer to account for the allocation.
+        str         x2, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
+
+        ;; Set the new object's MethodTable pointer and element count.
+        str         x0, [x12, #OFFSETOF__Object__m_pEEType]
+        str         x1, [x12, #OFFSETOF__Array__m_Length]
+
+        ;; Return the object allocated in x0.
+        mov         x0, x12
+
+        ret
+
+    MEND
+
 ;; Allocate a string.
 ;;  x0 == MethodTable
 ;;  x1 == element/character count
@@ -106,36 +142,7 @@ NewOutOfMemory
         umaddl      x2, w1, w2, x3          ; x2 = w1 * w2 + x3
         and         x2, x2, #-8
 
-        ; x0 == MethodTable
-        ; x1 == element count
-        ; x2 == string size
-
-        INLINE_GETTHREAD x3, x5
-
-        ;; Load potential new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-
-        ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
-        ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
-        cmp         x2, x12
-        bhi         RhpNewArrayRare
-
-        ;; Reload new object address into r12.
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-
-        ;; Update the alloc pointer to account for the allocation.
-        str         x2, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-
-        ;; Set the new object's MethodTable pointer and element count.
-        str         x0, [x12, #OFFSETOF__Object__m_pEEType]
-        str         x1, [x12, #OFFSETOF__Array__m_Length]
-
-        ;; Return the object allocated in x0.
-        mov         x0, x12
-
-        ret
+        NEW_ARRAY_FAST
 
 StringSizeOverflow
         ; We get here if the length of the final string object can't be represented as an unsigned
@@ -150,7 +157,7 @@ StringSizeOverflow
 ;; Allocate one dimensional, zero based array (SZARRAY).
 ;;  x0 == MethodTable
 ;;  x1 == element count
-    LEAF_ENTRY RhpNewArray
+    LEAF_ENTRY RhpNewArrayFast
 
         ;; We want to limit the element count to the non-negative 32-bit int range.
         ;; If the element count is <= 0x7FFFFFFF, no overflow is possible because the component
@@ -167,36 +174,7 @@ StringSizeOverflow
         add         x2, x2, #7
         and         x2, x2, #-8
 
-        ; x0 == MethodTable
-        ; x1 == element count
-        ; x2 == array size
-
-        INLINE_GETTHREAD x3, x5
-
-        ;; Load potential new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-
-        ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
-        ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
-        cmp         x2, x12
-        bhi         RhpNewArrayRare
-
-        ;; Reload new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-
-        ;; Update the alloc pointer to account for the allocation.
-        str         x2, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-
-        ;; Set the new object's MethodTable pointer and element count.
-        str         x0, [x12, #OFFSETOF__Object__m_pEEType]
-        str         x1, [x12, #OFFSETOF__Array__m_Length]
-
-        ;; Return the object allocated in r0.
-        mov         x0, x12
-
-        ret
+        NEW_ARRAY_FAST
 
 ArraySizeOverflow
         ; We get here if the size of the final array object can't be represented as an unsigned
@@ -206,18 +184,37 @@ ArraySizeOverflow
         ; x0 holds MethodTable pointer already
         mov         x1, #1                  ; Indicate that we should throw OverflowException
         b           RhExceptionHandling_FailedAllocation
-    LEAF_END    RhpNewArray
+    LEAF_END    RhpNewArrayFast
+
+#ifndef FEATURE_NATIVEAOT
+;; Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
+;;  x0 == MethodTable
+;;  x1 == element count
+    LEAF_ENTRY RhpNewObjectArrayFast
+
+        mov         x2, #((ASM_LARGE_OBJECT_SIZE - 256)/8) ; sizeof(void*)
+        cmp         x1, x2
+        bhs         RhpNewArray
+
+        ; In this case we know the element size is sizeof(void *), or 8 for arm64
+        ; This helps us in two ways - we can shift instead of multiplying, and
+        ; there's no need to align the size either
+
+        ldr         w2, [x0, #OFFSETOF__MethodTable__m_uBaseSize]
+        add         x2, x2, x1, lsl #3
+
+        ; No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
+        ; to be a multiple of 8.
+
+        NEW_ARRAY_FAST
+
+    LEAF_END    RhpNewObjectArrayFast
+#endif
 
 ;; Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 ;;  x0 == MethodTable
 ;;  x1 == element count
-;;  x2 == array size + Thread::m_alloc_context::alloc_ptr
-;;  x3 == Thread
-    NESTED_ENTRY RhpNewArrayRare
-
-        ; Recover array size by subtracting the alloc_ptr from x2.
-        PROLOG_NOP ldr x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-        PROLOG_NOP sub x2, x2, x12
+    NESTED_ENTRY RhpNewArray
 
         PUSH_COOP_PINVOKE_FRAME x3
 
@@ -245,6 +242,6 @@ ArrayOutOfMemory
         POP_COOP_PINVOKE_FRAME
         EPILOG_NOP b RhExceptionHandling_FailedAllocation
 
-    NESTED_END RhpNewArrayRare
+    NESTED_END RhpNewArray
 
     END

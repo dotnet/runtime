@@ -287,7 +287,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 
-.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+.macro EPILOG_WITH_TRANSITION_BLOCK
 
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
 
@@ -297,7 +297,14 @@ C_FUNC(\Name\()_End):
         EPILOG_RESTORE_REG_PAIR   x25, x26, 64
         EPILOG_RESTORE_REG_PAIR   x27, x28, 80
         EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
-        ret
+
+.endm
+
+
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        EPILOG_WITH_TRANSITION_BLOCK
+        EPILOG_RETURN
 
 .endm
 
@@ -324,6 +331,55 @@ C_FUNC(\Name\()_End):
         EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
 
 .endm
+
+// Inlined version of GetThreadEEAllocContext. Target cannot be x0 or x1.
+.macro INLINE_GET_ALLOC_CONTEXT target
+        .ifc  \target, x0
+                .error "target cannot be x0"
+        .endif
+        .ifc  \target, x1
+                .error "target cannot be x1"
+        .endif
+
+#if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
+        PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x20
+        PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
+
+        bl      C_FUNC(GetThreadEEAllocContext)
+        mov     \target, x0
+
+        EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
+#else
+        PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
+
+        // This sequence of instructions is recognized and potentially patched
+        // by the linker (GD->IE/LE relaxation).
+        adrp    x0, :tlsdesc:t_runtime_thread_locals
+        ldr     \target, [x0, :tlsdesc_lo12:t_runtime_thread_locals]
+        add     x0, x0, :tlsdesc_lo12:t_runtime_thread_locals
+        blr     \target
+        // End of the sequence
+
+        mrs     \target, TPIDR_EL0
+        add     \target, \target, x0
+
+        .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
+                add     \target, x0, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        .endif
+
+        EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10
+#endif
+.endm
+
+.macro PUSH_COOP_PINVOKE_FRAME target
+        PROLOG_WITH_TRANSITION_BLOCK
+        add     \target, sp, #__PWTB_TransitionBlock
+.endm 
+
+.macro POP_COOP_PINVOKE_FRAME
+        EPILOG_WITH_TRANSITION_BLOCK
+.endm 
 
 // ------------------------------------------------------------------
 // Macro to generate Redirection Stubs

@@ -399,13 +399,20 @@ C_FUNC(\Name\()_End):
 
 .endm
 
-.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+.macro EPILOG_WITH_TRANSITION_BLOCK
 
         RESTORE_CALLEESAVED_REGISTERS 3, __PWTB_CalleeSavedRegisters
 
         EPILOG_RESTORE_REG_PAIR 22, 1, __PWTB_CalleeSavedRegisters
 
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+.endm
+
+
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        EPILOG_WITH_TRANSITION_BLOCK
 
         jirl  $r0, $ra, 0
 
@@ -430,6 +437,35 @@ C_FUNC(\Name\()_End):
 
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
 
+.endm
+
+// Inlined version of GetThreadEEAllocContext. Target cannot be a0.
+.macro INLINE_GET_ALLOC_CONTEXT target
+        .ifc  \target, $a0
+                .error "target cannot be a0"
+        .endif
+
+        // Save $a0, $ra
+        PROLOG_SAVE_REG_PAIR_INDEXED   4, 1, 16
+
+        // This instruction is recognized and potentially patched
+        // by the linker (GD->IE/LE relaxation).
+        la.tls.desc  $a0, t_runtime_thread_locals
+
+        ori  \target, $tp, 0
+        addi.d  \target, $a0, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+
+        // Restore $a0, $ra
+        EPILOG_RESTORE_REG_PAIR_INDEXED 4, 1, 16
+.endm
+
+.macro PUSH_COOP_PINVOKE_FRAME target
+        PROLOG_WITH_TRANSITION_BLOCK
+        addi.d  \target, $sp, __PWTB_TransitionBlock
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+        EPILOG_WITH_TRANSITION_BLOCK
 .endm
 
 // ------------------------------------------------------------------

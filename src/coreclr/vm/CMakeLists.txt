@@ -16,6 +16,10 @@ include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
+if(CLR_CMAKE_TARGET_ANDROID)
+    add_definitions(-DFEATURE_EMULATED_TLS)
+endif(CLR_CMAKE_TARGET_ANDROID)
+
 if(FEATURE_AUTO_TRACE)
     add_definitions(-DFEATURE_AUTO_TRACE)
 endif(FEATURE_AUTO_TRACE)
@@ -349,6 +353,7 @@ set(VM_SOURCES_WKS
     interpframeallocator.cpp
     invokeutil.cpp
     jithelpers.cpp
+    jitinterfacegen.cpp
     managedmdimport.cpp
     marshalnative.cpp
     methodtablebuilder.cpp
@@ -627,6 +632,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_WKS_ARCH_ASM
+        ${ARCH_SOURCES_DIR}/AllocSlow.asm
         ${ARCH_SOURCES_DIR}/AsmHelpers.asm
         ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
         ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
@@ -649,6 +655,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/UMThunkStub.asm
         ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
         ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
         ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
     )
 
@@ -658,12 +665,14 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
 elseif(CLR_CMAKE_TARGET_ARCH_I386)
     set(VM_SOURCES_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
+        ${ARCH_SOURCES_DIR}/AllocSlow.asm
         ${ARCH_SOURCES_DIR}/asmhelpers.asm
         ${ARCH_SOURCES_DIR}/ehhelpers.asm
         ${ARCH_SOURCES_DIR}/gmsasm.asm
         ${ARCH_SOURCES_DIR}/jithelp.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
         ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
         )
 
@@ -672,6 +681,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
     )
 elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH_ASM
+        ${ARCH_SOURCES_DIR}/AllocSlow.asm
         ${ARCH_SOURCES_DIR}/AsmHelpers.asm
         ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
         ${ARCH_SOURCES_DIR}/patchedcode.asm
@@ -680,6 +690,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
         ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
         ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.asm
         ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
         )
 
@@ -693,6 +704,7 @@ else(CLR_CMAKE_TARGET_WIN32)
 
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
             ${ARCH_SOURCES_DIR}/calldescrworkeramd64.S
@@ -712,11 +724,13 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/unixasmhelpers.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_I386)
         set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/ehhelpers.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/jithelp.S
@@ -724,19 +738,23 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
         set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/ehhelpers.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
             ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
@@ -745,22 +763,27 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
         set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkerloongarch64.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/AllocSlow.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkerriscv64.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/AllocFast.S
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     endif()
@@ -788,7 +811,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/profiler.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
-        jitinterfacegen.cpp
         writebarriermanager.cpp
     )
 
