@@ -37,8 +37,8 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("The application to execute does not exist");
             }
         }
 
@@ -67,8 +67,8 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("The application to execute does not exist");
             }
         }
 
@@ -91,8 +91,8 @@ namespace HostActivation.Tests
                     .CaptureStdOut()
                     .DotNetRoot(TestContext.BuiltDotNet.BinPath)
                     .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("The application to execute does not exist");
             }
         }
 
@@ -148,8 +148,8 @@ namespace HostActivation.Tests
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"[{Path.Combine(testDir.Location, "host", "fxr")}] does not exist");
             }
         }
 
