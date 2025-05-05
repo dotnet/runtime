@@ -12397,6 +12397,7 @@ MONO_RESTORE_WARNING
 #endif
 #ifdef TARGET_WASM
 		case OP_WASM_ONESCOMPLEMENT: {
+			// FIXME: llvm bug workaround
 			LLVMTypeRef i4v128_t = LLVMVectorType (i4_t, 4);
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
 			LLVMValueRef cast = LLVMBuildBitCast (builder, lhs, i4v128_t, "");
@@ -12404,29 +12405,24 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMBuildBitCast (builder, result, ret_t, "");
 			break;
 		}
+		case OP_WASM_BITSELECT: // Fall through to OP_BSL:
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
-#if defined(TARGET_WASM)
-		case OP_WASM_BITSELECT:
-#endif
 		case OP_BSL: {
 			LLVMValueRef select;
 			LLVMValueRef left;
 			LLVMValueRef right;
 
-#if defined(TARGET_WASM)
-			// For PackedSimd the selection mask is last not first
-			if (ins->opcode == OP_WASM_BITSELECT) {
-				select = bitcast_to_integral (ctx, arg3);
-				left = bitcast_to_integral (ctx, lhs);
-				right = bitcast_to_integral (ctx, rhs);
-			} else
-#endif
-			{
-
+			if (ins->opcode == OP_BSL){
 				select = bitcast_to_integral (ctx, lhs);
 				left = bitcast_to_integral (ctx, rhs);
 				right = bitcast_to_integral (ctx, arg3);
+			} else {
+				// OP_WASM_BITSELECT:
+				// For PackedSimd the selection mask is last not first
+				select = bitcast_to_integral (ctx, arg3);
+				left = bitcast_to_integral (ctx, lhs);
+				right = bitcast_to_integral (ctx, rhs);
 			}
 
 			LLVMTypeRef ret_t = LLVMTypeOf (left);
