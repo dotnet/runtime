@@ -182,7 +182,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
         private IEnumerable<MethodDescHandle> IterateMethodInstantiations(Contracts.ModuleHandle moduleHandle)
         {
-            List<TargetPointer> methodInstantiations = _loader.GetInstantiatedMethods(moduleHandle);
+            IEnumerable<TargetPointer> methodInstantiations = _loader.GetInstantiatedMethods(moduleHandle);
 
             foreach (TargetPointer methodPtr in methodInstantiations)
             {
@@ -192,7 +192,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
         private IEnumerable<Contracts.TypeHandle> IterateTypeParams(Contracts.ModuleHandle moduleHandle)
         {
-            List<TargetPointer> typeParams = _loader.GetAvailableTypeParams(moduleHandle);
+            IEnumerable<TargetPointer> typeParams = _loader.GetAvailableTypeParams(moduleHandle);
 
             foreach (TargetPointer type in typeParams)
             {

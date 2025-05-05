@@ -8,6 +8,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class EETypeHashTable : IData<EETypeHashTable>
 {
+    private const ulong FLAG_MASK = 0x1ul;
+
     static EETypeHashTable IData<EETypeHashTable>.Create(Target target, TargetPointer address) => new EETypeHashTable(target, address);
     public EETypeHashTable(Target target, TargetPointer address)
     {
@@ -15,14 +17,20 @@ internal sealed class EETypeHashTable : IData<EETypeHashTable>
 
         DacEnumerableHash baseHashTable = new(target, address, type);
 
-        List<TargetPointer> entries = [];
+        List<Entry> entries = [];
         foreach (TargetPointer entry in baseHashTable.Entries)
         {
             TargetPointer typeHandle = target.ReadPointer(entry);
-            entries.Add(typeHandle.Value & ~0x1ul);
+            entries.Add(new(typeHandle));
         }
         Entries = entries;
     }
 
-    public IReadOnlyList<TargetPointer> Entries { get; init; }
+    public IReadOnlyList<Entry> Entries { get; init; }
+
+    public readonly struct Entry(TargetPointer value)
+    {
+        public TargetPointer TypeHandle { get; } = value & ~FLAG_MASK;
+        public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
+    }
 }
