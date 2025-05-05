@@ -1,3 +1,6 @@
+# Workflow template imported and updated from:
+# https://github.com/dotnet/issue-labeler/wiki/Onboarding
+#
 # Promote a model from staging to 'ACTIVE', backing up the currently 'ACTIVE' model
 name: "Labeler: Promotion"
 

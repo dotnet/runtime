@@ -1,3 +1,6 @@
+# Workflow template imported and updated from:
+# https://github.com/dotnet/issue-labeler/wiki/Onboarding
+#
 # Train the Issues and Pull Requests models for label prediction
 name: "Labeler: Training"
 
