@@ -59,7 +59,7 @@ internal sealed class ClassInfo
             // however it's impossible to get such output with BinaryFormatter,
             // so we prohibit that on purpose.
             string memberName = reader.ReadString();
-#if NET
+#if !NETFRAMEWORK && !NETSTANDARD2_0
             if (memberNames.TryAdd(memberName, i))
             {
                 continue;

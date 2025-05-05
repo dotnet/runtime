@@ -44,7 +44,7 @@ internal sealed class RecordMap : IReadOnlyDictionary<SerializationRecordId, Ser
             }
             else
             {
-#if NET
+#if !NETFRAMEWORK && !NETSTANDARD2_0
                 if (_map.TryAdd(record.Id, record))
                 {
                     return;
