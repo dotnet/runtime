@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -596,9 +597,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact]
         public static void NameConstraintViolation_ExcludedTree_Upn()
         {
+            if (PlatformDetection.IsOSX && !AppleHasExcludedSubTreeHandling)
+            {
+                throw new SkipTestException("Platform does not handle excludedSubtrees correctly.");
+            }
+
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
             builder.AddUserPrincipalName("v@example.com");
 
@@ -686,7 +692,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 else
                 {
                     Assert.Equal(
-                        X509ChainStatusFlags.HasNotSupportedNameConstraint,
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint, true),
                         chain.AllStatusFlags());
                 }
             });
@@ -1029,6 +1035,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return flags;
         }
 
+        private static bool AppleHasExcludedSubTreeHandling
+        {
+            get
+            {
+                // Apple operating systems did not initially handle name constraint excluded subtree handling
+                // correctly, and trustd would effectively ignore them. This was addressed in macOS 15.4 and iOS-like 18.4.
+                return OperatingSystem.IsMacOSVersionAtLeast(15, 4) ||
+                    OperatingSystem.IsIOSVersionAtLeast(18, 4) || // Also handles MacCatalyst
+                    OperatingSystem.IsTvOSVersionAtLeast(18, 4);
+            }
+        }
+
         private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags, bool allowNotSupported = false)
         {
             if (PlatformDetection.UsesAppleCrypto)
@@ -1039,7 +1057,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     X509ChainStatusFlags.HasNotPermittedNameConstraint |
                     X509ChainStatusFlags.InvalidNameConstraints;
 
-                if (!allowNotSupported)
+                if (allowNotSupported)
                 {
                     anyNameConstraintFlags |= X509ChainStatusFlags.HasNotSupportedNameConstraint;
                 }
