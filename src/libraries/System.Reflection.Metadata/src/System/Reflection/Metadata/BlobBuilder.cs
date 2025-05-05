@@ -21,6 +21,8 @@ namespace System.Reflection.Metadata
 
         internal const int DefaultChunkSize = 256;
 
+        internal const int DefaultMaxChunkSize = 8192;
+
         // Must be at least the size of the largest primitive type we write atomically (Guid).
         internal const int MinChunkSize = 16;
 
@@ -65,6 +67,7 @@ namespace System.Reflection.Metadata
 
             _nextOrPrevious = this;
             _buffer = new byte[Math.Max(MinChunkSize, capacity)];
+            _maxChunkSize = DefaultMaxChunkSize;
         }
 
         /// <summary>
@@ -80,7 +83,7 @@ namespace System.Reflection.Metadata
             }
             if (maxChunkSize == 0)
             {
-                maxChunkSize = int.MaxValue;
+                maxChunkSize = DefaultMaxChunkSize;
             }
             if (maxChunkSize < MinChunkSize)
             {
