@@ -1013,7 +1013,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (!typeHandle.IsMethodTable())
             throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
 
-        TargetPointer slotPtr = GetAddressOfMethodTableSlot(GetCanonicalMethodTable(typeHandle), slot);
+        TargetPointer cannonMTPTr = GetCanonicalMethodTable(typeHandle);
+        TypeHandle canonMT = GetTypeHandle(cannonMTPTr);
+        TargetPointer slotPtr = GetAddressOfSlot(canonMT, slot);
         TargetCodePointer pCode = _target.ReadCodePointer(slotPtr);
 
         if (pCode == TargetCodePointer.Null)
