@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             ExerciseSuccessfulVerify(slhDsa, data, signature, []);
 
             signature.AsSpan().Clear();
-            signature = slhDsa.SignData(data, Array.Empty<byte>());
+            slhDsa.SignData(data, signature, Array.Empty<byte>());
             ExerciseSuccessfulVerify(slhDsa, data, signature, Array.Empty<byte>());
         }
 
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             ExerciseSuccessfulVerify(slhDsa, [], signature, []);
 
             signature.AsSpan().Clear();
-            signature = slhDsa.SignData(Array.Empty<byte>(), Array.Empty<byte>());
+            slhDsa.SignData(Array.Empty<byte>(), signature, Array.Empty<byte>());
             ExerciseSuccessfulVerify(slhDsa, [], signature, []);
         }
 
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             ExerciseSuccessfulVerify(slhDsa, [], signature, context);
 
             signature.AsSpan().Clear();
-            signature = slhDsa.SignData(Array.Empty<byte>(), context);
+            slhDsa.SignData(Array.Empty<byte>(), signature, context);
             ExerciseSuccessfulVerify(slhDsa, [], signature, context);
         }
 
@@ -141,7 +141,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using (SlhDsa slhDsa = GenerateKey(algorithm))
             {
                 signature = slhDsa.SignData(data);
-
                 secretKey = slhDsa.ExportSlhDsaSecretKey();
             }
 
@@ -150,7 +149,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 ExerciseSuccessfulVerify(slhDsa, data, signature, []);
 
                 signature.AsSpan().Clear();
-                signature = slhDsa.SignData(data);
+                slhDsa.SignData(data, signature, []);
 
                 ExerciseSuccessfulVerify(slhDsa, data, signature, []);
             }

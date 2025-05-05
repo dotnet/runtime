@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 byte[] data = [1, 1, 2, 3, 5, 8];
                 byte[] context = [13, 21];
-                byte[] oneSignature = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SignatureSizeInBytes];
+                byte[] oneSignature;
 
                 using (one)
                 {
