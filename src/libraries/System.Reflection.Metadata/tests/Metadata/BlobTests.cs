@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Reflection.Internal;
 using System.Text;
 using Xunit;
 
@@ -34,6 +33,10 @@ namespace System.Reflection.Metadata.Tests
         public void Ctor_Errors()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilder(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilder(BlobBuilder.MinChunkSize - 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilderWithEvents(new byte[BlobBuilder.MinChunkSize - 1]));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilderWithEvents(new byte[1024], BlobBuilder.MinChunkSize - 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilderWithEvents(new byte[1024], -1));
         }
 
         [Fact]
