@@ -12413,7 +12413,7 @@ MONO_RESTORE_WARNING
 			LLVMValueRef left;
 			LLVMValueRef right;
 
-			if (true){
+			if (ins->opcode == OP_BSL) {
 				// OP_BSL: Vector128.ConditionalSelect
 				// (mask, left, right)
 				select = bitcast_to_integral (ctx, lhs);
