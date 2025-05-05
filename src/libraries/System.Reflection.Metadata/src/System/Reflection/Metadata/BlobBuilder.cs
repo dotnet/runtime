@@ -659,7 +659,7 @@ namespace System.Reflection.Metadata
         {
             if (FreeBytes == 0)
             {
-                Expand(_maxChunkSize);
+                Expand(Math.Min(Count, _maxChunkSize));
             }
             return new ArraySegment<byte>(_buffer, Length, FreeBytes);
         }
