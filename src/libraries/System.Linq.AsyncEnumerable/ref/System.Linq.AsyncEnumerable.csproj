@@ -26,7 +26,6 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Memory\src\Microsoft.Bcl.Memory.csproj" />
   </ItemGroup>
 </Project>
