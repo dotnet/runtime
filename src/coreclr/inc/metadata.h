@@ -1048,9 +1048,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     STDMETHOD(SetOptimizeAccessForSpeed)(// S_OK or error
         BOOL    fOptSpeed) PURE;
 
-    STDMETHOD(SetVerifiedByTrustedSource)(// S_OK or error
-        BOOL    fVerified) PURE;
-
     STDMETHOD(GetRvaOffsetData)(
         DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
         DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.

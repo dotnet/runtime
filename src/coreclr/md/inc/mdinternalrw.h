@@ -782,14 +782,6 @@ public:
     {
         return (DWORD)m_pStgdb->m_MiniMd.m_Schema.m_minor |
                ((DWORD)m_pStgdb->m_MiniMd.m_Schema.m_major << 16);
-    };
-
-    __checkReturn
-    STDMETHODIMP SetVerifiedByTrustedSource(// return hresult
-        BOOL    fVerified)
-    {
-        m_pStgdb->m_MiniMd.SetVerifiedByTrustedSource(fVerified);
-        return S_OK;
     }
 
     STDMETHODIMP GetRvaOffsetData(// S_OK or error

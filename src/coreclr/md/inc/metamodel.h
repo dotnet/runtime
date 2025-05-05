@@ -530,11 +530,6 @@ public:
         return m_fVerifiedByTrustedSource && CommonIsRo();
     }
 
-    void SetVerifiedByTrustedSource(BOOL fVerifiedByTrustedSource)
-    {
-        m_fVerifiedByTrustedSource = fVerifiedByTrustedSource;
-    }
-
     STDMETHODIMP GetRvaOffsetData(// S_OK or error
         DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
         DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.

@@ -784,12 +784,6 @@ public:
         ((DWORD)m_LiteWeightStgdb.m_MiniMd.m_Schema.m_major << 16);
     };
 
-    STDMETHODIMP SetVerifiedByTrustedSource(// return hresult
-        BOOL    fVerified)
-    {
-        m_LiteWeightStgdb.m_MiniMd.SetVerifiedByTrustedSource(fVerified);
-        return S_OK;
-    }
 };  // class MDInternalRO
 
 #endif //FEATURE_METADATA_INTERNAL_APIS
