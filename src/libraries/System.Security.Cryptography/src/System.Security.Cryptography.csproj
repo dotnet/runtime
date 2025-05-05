@@ -1266,20 +1266,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true'">
-    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\GeneralSubtreeAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\GeneralSubtreeAsn.xml</Link>
-    </AsnXml>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\GeneralSubtreeAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\GeneralSubtreeAsn.xml.cs</Link>
-      <DependentUpon>Common\System\Security\Cryptography\Asn1\GeneralSubtreeAsn.xml</DependentUpon>
-    </Compile>
-    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\NameConstraintsAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\NameConstraintsAsn.xml</Link>
-    </AsnXml>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\NameConstraintsAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\NameConstraintsAsn.xml.cs</Link>
-      <DependentUpon>Common\System\Security\Cryptography\Asn1\NameConstraintsAsn.xml</DependentUpon>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
              Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFArray.cs"

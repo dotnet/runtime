@@ -600,7 +600,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [ConditionalFact]
         public static void NameConstraintViolation_ExcludedTree_Upn()
         {
-            if (PlatformDetection.IsOSX && !AppleHasExcludedSubTreeHandling)
+            if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
             {
                 throw new SkipTestException("Platform does not handle excludedSubtrees correctly.");
             }
@@ -644,7 +644,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 else
                 {
                     Assert.Equal(
-                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint, true),
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint),
                         chain.AllStatusFlags());
                 }
             });
@@ -692,7 +692,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 else
                 {
                     Assert.Equal(
-                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint, true),
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint),
                         chain.AllStatusFlags());
                 }
             });
@@ -1047,24 +1047,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags, bool allowNotSupported = false)
+        private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
         {
             if (PlatformDetection.UsesAppleCrypto)
             {
-                X509ChainStatusFlags anyNameConstraintFlags =
+                const X509ChainStatusFlags AnyNameConstraintFlags =
                     X509ChainStatusFlags.HasExcludedNameConstraint |
                     X509ChainStatusFlags.HasNotDefinedNameConstraint |
                     X509ChainStatusFlags.HasNotPermittedNameConstraint |
+                    X509ChainStatusFlags.HasNotSupportedNameConstraint |
                     X509ChainStatusFlags.InvalidNameConstraints;
 
-                if (allowNotSupported)
+                if ((flags & AnyNameConstraintFlags) != 0)
                 {
-                    anyNameConstraintFlags |= X509ChainStatusFlags.HasNotSupportedNameConstraint;
-                }
-
-                if ((flags & anyNameConstraintFlags) != 0)
-                {
-                    flags &= ~anyNameConstraintFlags;
+                    flags &= ~AnyNameConstraintFlags;
                     flags |= X509ChainStatusFlags.InvalidNameConstraints;
                 }
             }

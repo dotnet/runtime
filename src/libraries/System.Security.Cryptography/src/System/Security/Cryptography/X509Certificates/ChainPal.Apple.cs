@@ -3,9 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates.Asn1;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
