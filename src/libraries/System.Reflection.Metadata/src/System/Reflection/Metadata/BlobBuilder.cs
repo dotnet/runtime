@@ -78,13 +78,13 @@ namespace System.Reflection.Metadata
             {
                 Throw.ArgumentNull(nameof(buffer));
             }
-            if (maxChunkSize < MinChunkSize)
-            {
-                Throw.ArgumentOutOfRange(nameof(maxChunkSize));
-            }
             if (maxChunkSize == 0)
             {
                 maxChunkSize = int.MaxValue;
+            }
+            if (maxChunkSize < MinChunkSize)
+            {
+                Throw.ArgumentOutOfRange(nameof(maxChunkSize));
             }
 
             _nextOrPrevious = this;
