@@ -438,4 +438,7 @@
   <data name="Arg_NotSimpleTypeName" xml:space="preserve">
     <value>'{0}' is not a simple TypeName.</value>
   </data>
+  <data name="BuilderBufferTooSmall" xml:space="preserve">
+    <value>Array passed to BlobBuilder must be at least 16 bytes long.</value>
+  </data>
 </root>
