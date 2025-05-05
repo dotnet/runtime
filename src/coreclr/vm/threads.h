@@ -142,6 +142,7 @@ class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
+struct    InterpThreadContext;
 
 typedef void(*ADCallBackFcnType)(LPVOID);
 
@@ -1217,7 +1218,7 @@ public:
         {
             void* curSP;
             curSP = (void *)GetCurrentSP();
-            _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
+            _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
         }
 #endif
 
@@ -3982,6 +3983,14 @@ private:
     bool m_hasPendingActivation;
 
     friend struct ::cdac_data<Thread>;
+
+#ifdef FEATURE_INTERPRETER
+private:
+    InterpThreadContext *m_pInterpThreadContext;
+
+public:
+    InterpThreadContext* GetInterpThreadContext();
+#endif // FEATURE_INTERPRETER
 };
 
 template<>

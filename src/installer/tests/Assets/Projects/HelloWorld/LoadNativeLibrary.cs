@@ -40,7 +40,7 @@ namespace HelloWorld
         public static void UseAPI(DllImportSearchPath? flags)
         {
             string name = GetLibraryName(flags);
-            bool success = NativeLibrary.TryLoad(name, typeof(LoadNativeLibrary).Assembly, null, out _);
+            bool success = NativeLibrary.TryLoad(name, typeof(LoadNativeLibrary).Assembly, flags, out _);
             Console.WriteLine($"Loading {name} via NativeLibrary API (flags: {(flags.HasValue ? flags : "default")}) {(success ? "succeeded" : "failed")}");
         }
 

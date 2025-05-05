@@ -821,19 +821,6 @@ bool CoffNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     return true;
 }
 
-// Convert the return kind that was encoded by RyuJIT to the
-// enum used by the runtime.
-GCRefKind GetGcRefKind(ReturnKind returnKind)
-{
-#ifdef TARGET_ARM64
-    ASSERT((returnKind >= RT_Scalar) && (returnKind <= RT_ByRef_ByRef));
-#else
-    ASSERT((returnKind >= RT_Scalar) && (returnKind <= RT_ByRef));
-#endif
-
-    return (GCRefKind)returnKind;
-}
-
 bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                 REGDISPLAY *    pRegisterSet,       // in
                                                 PTR_PTR_VOID *  ppvRetAddrLocation) // out
@@ -983,7 +970,8 @@ GCRefKind CoffNativeCodeManager::GetReturnValueKind(MethodInfo *   pMethodInfo, 
     hdrInfo infoBuf;
     size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
 
-    return GetGcRefKind(infoBuf.returnKind);
+    ASSERT(infoBuf.returnKind != RT_Float); // See TODO above
+    return (GCRefKind)infoBuf.returnKind;
 }
 #endif
 

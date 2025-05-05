@@ -7307,6 +7307,50 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     }
 }
 
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+size_t GetSSPForFrameOnCurrentStack(TADDR ip);
+#endif // HOST_AMD64 && HOST_WINDOWS
+
+#ifdef FEATURE_INTERPRETER
+void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)
+{
+    throw ResumeAfterCatchException(resumeSP, resumeIP);
+}
+
+VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    CONTEXT context;
+    ClrCaptureContext(&context);
+
+    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
+    Thread::VirtualUnwindToFirstManagedCallFrame(&context);
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    size_t targetSSP = GetSSPForFrameOnCurrentStack(GetIP(&context));
+#else
+    size_t targetSSP = 0;
+#endif
+
+    // Skip all managed frames upto a native frame
+    while (ExecutionManager::IsManagedCode(GetIP(&context)))
+    {
+        Thread::VirtualUnwindCallFrame(&context);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+        if (targetSSP != 0)
+        {
+            targetSSP += sizeof(size_t);
+        }
+#endif
+    }
+
+    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &context, targetSSP, resumeSP, resumeIP);
+}
+#endif // FEATURE_INTERPRETER
+
 thread_local DWORD t_dwCurrentExceptionCode;
 thread_local PEXCEPTION_RECORD t_pCurrentExceptionRecord;
 thread_local PCONTEXT t_pCurrentExceptionContext;
@@ -11271,12 +11315,11 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 }
 
 
-#ifdef FEATURE_EH_FUNCLETS
-
 void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef FEATURE_EH_FUNCLETS
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -11297,6 +11340,16 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+#elif defined(TARGET_X86)
+#define CALLEE_SAVED_REGISTER(regname) pRD->Set##regname##Location(m_ContextPointers.regname);
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    pRD->ControlPC = ::GetIP(&m_Context);
+    pRD->SP = ::GetSP(&m_Context);
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("SoftwareExceptionFrame::UpdateRegDisplay_Impl");
+#endif // FEATURE_EH_FUNCLETS
 }
 
 #ifndef DACCESS_COMPILE
@@ -11377,4 +11430,3 @@ void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
 }
 
 #endif // DACCESS_COMPILE
-#endif // FEATURE_EH_FUNCLETS
