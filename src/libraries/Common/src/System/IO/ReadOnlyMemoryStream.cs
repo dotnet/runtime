@@ -132,12 +132,20 @@ namespace System.IO
                 Task.FromResult(ReadBuffer(new Span<byte>(buffer, offset, count)));
         }
 
-#if !NETFRAMEWORK && !NETSTANDARD2_0
+#if !NETFRAMEWORK && !NETSTANDARD2_0 && !NETSTANDARD2_1
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             EnsureNotClosed();
             return cancellationToken.IsCancellationRequested ?
                 ValueTask.FromCanceled<int>(cancellationToken) :
+                new ValueTask<int>(ReadBuffer(buffer.Span));
+        }
+#elif NETSTANDARD2_1
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            EnsureNotClosed();
+            return cancellationToken.IsCancellationRequested ?
+                new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
                 new ValueTask<int>(ReadBuffer(buffer.Span));
         }
 #endif
@@ -151,7 +159,7 @@ namespace System.IO
             return TaskToAsyncResult.End<int>(asyncResult);
         }
 
-#if !NETFRAMEWORK && !NETSTANDARD2_0
+#if !NETFRAMEWORK && !NETSTANDARD2_0 && !NETSTANDARD2_1
         public override void CopyTo(Stream destination, int bufferSize)
         {
             ValidateCopyToArguments(destination, bufferSize);
@@ -195,7 +203,7 @@ namespace System.IO
             base.Dispose(disposing);
         }
 
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if NETFRAMEWORK || NETSTANDARD2_0 || NETSTANDARD2_1
         private static void ValidateBufferArguments(byte[] buffer, int offset, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
