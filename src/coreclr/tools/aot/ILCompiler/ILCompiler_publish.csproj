@@ -2,7 +2,8 @@
   <!-- This project is publishes a self-contained copy of ILCompiler. -->
   <PropertyGroup>
     <_IsPublishing>true</_IsPublishing>
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <!-- Use portable/base RIDs to ensure restore works for AOT tools, avoiding opaque distro-specific OutputRID in source-build scenarios -->
+    <RuntimeIdentifier>$(PortableOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>

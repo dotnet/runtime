@@ -149,7 +149,6 @@ public:
     HRESULT TryOpenFile(bool takeLock = false);
 
     void GetMVID(GUID *pMvid);
-    BOOL HasV1Metadata();
     IMDInternalImport* GetMDImport();
     BOOL MDImportLoaded();
 
