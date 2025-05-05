@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.ObjectModel;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
@@ -118,7 +119,7 @@ namespace System.Net.Security
                     // Continue even if we can't add certificates due to permission issues
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        NetEventSource.Error(null, $"Failed to add certificate to store: {ex.Message}");
+                        NetEventSource.Error(null, $"Failed to add certificate to store: {ex.Message}, certificate: {certificate}");
                     }
                 }
             }
