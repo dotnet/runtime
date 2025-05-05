@@ -234,7 +234,7 @@ namespace
             Instantiation inst = newTypeMaybe.GetInstantiation();
 
             // Go back to the original translated type because
-            // analysis the local may have been altered.
+            // analysis may have altered the local.
             newTypeMaybe = cxt.TranslatedParams[i].Type;
             AppendTypeToSignature(newSig, newTypeMaybe, inst);
         }
@@ -714,7 +714,7 @@ namespace
         return false;
     }
 
-    void EmitTypeCheck(UINT argId, ParamDetails& param, ILCodeStream* pDispatchCode, ILCodeStream* pReturnCode)
+    void EmitTypeCheck(UINT argId, const ParamDetails& param, ILCodeStream* pDispatchCode, ILCodeStream* pReturnCode)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(pDispatchCode != NULL);
@@ -731,9 +731,10 @@ namespace
         // type safety, so we do it here.
         //
         // Ensuring type safety is paramount in the UnsafeAccessorTypeAttribute scenario
-        // so we pass a byref to a local variable after the type check as opposed
-        // to simply forwarding the original byref argument. This does mean the byref itself
-        // isn't the same as the input byref, but the byref is now verifiable.
+        // so when a byref is involved, we pass a byref to a local variable after the type
+        // check as opposed to simply forwarding the original byref argument. This does
+        // mean the byref itself isn't the same as the input byref, but the byref is now
+        // verifiable.
         if (th.IsByRef())
         {
             th = th.GetTypeParam();
