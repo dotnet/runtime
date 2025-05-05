@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
@@ -839,6 +841,86 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         AssertExtensions.SequenceEqual(
                             MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
                             kem.ExportDecapsulationKey());
+                    }
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void CheckCopyWithPrivateKey_SlhDsa()
+        {
+            string certPem = PemEncoding.WriteString("CERTIFICATE", SlhDsaTestData.IetfSlhDsaSha2_128sCertificate);
+
+            using (X509Certificate2 pubOnly = X509Certificate2.CreateFromPem(certPem))
+            using (SlhDsa privKey = SlhDsa.ImportPkcs8PrivateKey(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8))
+            using (X509Certificate2 wrongAlg = X509CertificateLoader.LoadCertificate(TestData.CertWithEnhancedKeyUsage))
+            {
+                CheckCopyWithPrivateKey(
+                    pubOnly,
+                    wrongAlg,
+                    privKey,
+                    [
+                        () => SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128s),
+                        () => SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_192f),
+                        () => SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaShake256f),
+                    ],
+                    (cert, key) => cert.CopyWithPrivateKey(key),
+                    cert => cert.GetSlhDsaPublicKey(),
+                    cert => cert.GetSlhDsaPrivateKey(),
+                    (priv, pub) =>
+                    {
+                        byte[] data = new byte[RandomNumberGenerator.GetInt32(97)];
+                        RandomNumberGenerator.Fill(data);
+
+                        byte[] signature = new byte[pub.Algorithm.SignatureSizeInBytes];
+                        int written = priv.SignData(data, signature);
+                        Assert.Equal(signature.Length, written);
+                        Assert.True(pub.VerifyData(data, signature));
+                    });
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void CheckCopyWithPrivateKey_SlhDsa_OtherSlhDsa()
+        {
+            string certPem = PemEncoding.WriteString("CERTIFICATE", SlhDsaTestData.IetfSlhDsaSha2_128sCertificate);
+
+            using (X509Certificate2 pubOnly = X509Certificate2.CreateFromPem(certPem))
+            {
+                using (SlhDsaMockImplementation publicSlhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128s))
+                {
+                    Exception e = new Exception("no secret key");
+                    publicSlhDsa.ExportSlhDsaSecretKeyCoreHook = _ => throw e;
+                    publicSlhDsa.ExportSlhDsaPublicKeyCoreHook = (Span<byte> destination) =>
+                        SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue.CopyTo(destination);
+
+                    Assert.Same(e, AssertExtensions.Throws<Exception>(() => pubOnly.CopyWithPrivateKey(publicSlhDsa)));
+                }
+
+                SlhDsaMockImplementation privateSlhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128s);
+                privateSlhDsa.ExportSlhDsaPublicKeyCoreHook = (Span<byte> destination) =>
+                    SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue.CopyTo(destination);
+                privateSlhDsa.ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
+                    SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue.CopyTo(destination);
+
+                using (X509Certificate2 privCert = pubOnly.CopyWithPrivateKey(privateSlhDsa))
+                {
+                    AssertExtensions.TrueExpression(privCert.HasPrivateKey);
+
+                    using (SlhDsa certPrivateSlhDsa = privCert.GetSlhDsaPrivateKey())
+                    {
+                        AssertExtensions.SequenceEqual(
+                            SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue,
+                            certPrivateSlhDsa.ExportSlhDsaSecretKey());
+
+                        privateSlhDsa.Dispose();
+                        privateSlhDsa.ExportSlhDsaPublicKeyCoreHook = _ => Assert.Fail();
+                        privateSlhDsa.ExportSlhDsaSecretKeyCoreHook = _ => Assert.Fail();
+
+                        // Ensure the key is actual a clone
+                        AssertExtensions.SequenceEqual(
+                            SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue,
+                            certPrivateSlhDsa.ExportSlhDsaSecretKey());
                     }
                 }
             }

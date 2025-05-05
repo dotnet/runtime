@@ -427,6 +427,12 @@ float mb (size_t num)
     return (float)((float)num / 1000.0 / 1000.0);
 }
 
+inline
+size_t gib (size_t num)
+{
+    return (num / 1024 / 1024 / 1024);
+}
+
 #ifdef BACKGROUND_GC
 uint32_t bgc_alloc_spin_count = 140;
 uint32_t bgc_alloc_spin_count_uoh = 16;
@@ -3907,6 +3913,10 @@ bool region_allocator::init (uint8_t* start, uint8_t* end, size_t alignment, uin
 
         *lowest = global_region_start;
         *highest = global_region_end;
+    }
+    else
+    {
+        log_init_error_to_host ("global region allocator failed to allocate %zd bytes during init", (total_num_units * sizeof (uint32_t)));
     }
 
     return (unit_map != 0);
@@ -9467,6 +9477,7 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
             succeed = virtual_commit (commit_begins[i], commit_sizes[i], recorded_committed_bookkeeping_bucket);
             if (!succeed)
             {
+                log_init_error_to_host ("Committing %zd bytes (%.3f mb) for GC bookkeeping element#%d failed", commit_sizes[i], mb (commit_sizes[i]), i);
                 failed_commit = i;
                 break;
             }
@@ -9520,7 +9531,10 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     bookkeeping_start = mem;
 
     if (!mem)
+    {
+        log_init_error_to_host ("Reserving %zd bytes (%.3f mb) for GC bookkeeping failed", alloc_size, mb (alloc_size));
         return 0;
+    }
 
     dprintf (2, ("Init - Card table alloc for %zd bytes: [%zx, %zx[",
                  alloc_size, (size_t)mem, (size_t)(mem+alloc_size)));
@@ -12398,6 +12412,7 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
 
     if (!virtual_commit (new_pages, initial_commit, oh, h_number))
     {
+        log_init_error_to_host ("Committing %zd bytes for a region failed", initial_commit);
         return 0;
     }
 
@@ -14345,6 +14360,7 @@ bool allocate_initial_regions(int number_of_heaps)
     initial_regions = new (nothrow) uint8_t*[number_of_heaps][total_generation_count][2];
     if (initial_regions == nullptr)
     {
+        log_init_error_to_host ("allocate_initial_regions failed to allocate %zd bytes", (number_of_heaps * total_generation_count * 2 * sizeof (uint8_t*)));
         return false;
     }
     for (int i = 0; i < number_of_heaps; i++)
@@ -14407,7 +14423,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
         if (gc_config_log == NULL)
         {
-            GCToEEInterface::LogErrorToHost("Cannot create log file");
             return E_FAIL;
         }
 
@@ -14532,7 +14547,11 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         size_t reserve_size = regions_range;
         uint8_t* reserve_range = (uint8_t*)virtual_alloc (reserve_size, use_large_pages_p);
         if (!reserve_range)
+        {
+            log_init_error_to_host ("Reserving %zd bytes (%zd GiB) for the regions range failed, do you have a virtual memory limit set on this process?",
+                reserve_size, gib (reserve_size));
             return E_OUTOFMEMORY;
+        }
 
         if (!global_region_allocator.init (reserve_range, (reserve_range + reserve_size),
                                            ((size_t)1 << min_segment_size_shr),
@@ -14545,7 +14564,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     else
     {
         assert (!"cannot use regions without specifying the range!!!");
-        GCToEEInterface::LogErrorToHost("Cannot use regions without specifying the range (using DOTNET_GCRegionRange)");
+        log_init_error_to_host ("Regions range is 0! unexpected");
         return E_FAIL;
     }
 #else //USE_REGIONS
@@ -14685,7 +14704,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
     if (!init_semi_shared())
     {
-        GCToEEInterface::LogErrorToHost("PER_HEAP_ISOLATED data members initialization failed");
+        log_init_error_to_host ("PER_HEAP_ISOLATED data members initialization failed");
         hres = E_FAIL;
     }
 
@@ -49226,6 +49245,7 @@ HRESULT GCHeap::Initialize()
     memset (gc_heap::committed_by_oh, 0, sizeof (gc_heap::committed_by_oh));
     if (!gc_heap::compute_hard_limit())
     {
+        log_init_error_to_host ("compute_hard_limit failed, check your heap hard limit related configs");
         return CLR_E_GC_BAD_HARD_LIMIT;
     }
 
@@ -49243,6 +49263,7 @@ HRESULT GCHeap::Initialize()
     uintptr_t config_affinity_mask = static_cast<uintptr_t>(GCConfig::GetGCHeapAffinitizeMask());
     if (!ParseGCHeapAffinitizeRanges(cpu_index_ranges_holder.Get(), &config_affinity_set, config_affinity_mask))
     {
+        log_init_error_to_host ("ParseGCHeapAffinitizeRange failed, check your HeapAffinitizeRanges config");
         return CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT;
     }
 
@@ -49251,6 +49272,7 @@ HRESULT GCHeap::Initialize()
 
     if (process_affinity_set->IsEmpty())
     {
+        log_init_error_to_host ("This process is affinitize to 0 CPUs, check your GC heap affinity related configs");
         return CLR_E_GC_BAD_AFFINITY_CONFIG;
     }
 
@@ -49393,6 +49415,8 @@ HRESULT GCHeap::Initialize()
 
     if (gc_region_size >= MAX_REGION_SIZE)
     {
+        log_init_error_to_host ("The GC RegionSize config is set to %zd bytes (%zd GiB), it needs to be < %zd GiB",
+            gc_region_size, gib (gc_region_size), gib (MAX_REGION_SIZE));
         return CLR_E_GC_BAD_REGION_SIZE;
     }
 
@@ -49421,6 +49445,8 @@ HRESULT GCHeap::Initialize()
 
     if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * min_regions_per_heap) > gc_heap::regions_range))
     {
+        log_init_error_to_host ("Region size is %zd bytes, range is %zd bytes, (%d heaps * %d regions/heap = %d) regions needed initially",
+            gc_region_size, gc_heap::regions_range, nhp, min_regions_per_heap, (nhp * min_regions_per_heap));
         return E_OUTOFMEMORY;
     }
 
@@ -49495,7 +49521,7 @@ HRESULT GCHeap::Initialize()
 
     if (!WaitForGCEvent->CreateManualEventNoThrow(TRUE))
     {
-        GCToEEInterface::LogErrorToHost("Creation of WaitForGCEvent failed");
+        log_init_error_to_host ("Creation of WaitForGCEvent failed");
         return E_FAIL;
     }
 
@@ -49584,12 +49610,10 @@ HRESULT GCHeap::Initialize()
         uint8_t* numa_mem = (uint8_t*)GCToOSInterface::VirtualReserve (hb_info_size_per_node, 0, 0, (uint16_t)numa_node_index);
         if (!numa_mem)
         {
-            GCToEEInterface::LogErrorToHost("Reservation of numa_mem failed");
             return E_FAIL;
         }
         if (!GCToOSInterface::VirtualCommit (numa_mem, hb_info_size_per_node, (uint16_t)numa_node_index))
         {
-            GCToEEInterface::LogErrorToHost("Commit of numa_mem failed");
             return E_FAIL;
         }
 
@@ -49691,7 +49715,6 @@ HRESULT GCHeap::Initialize()
 
             if (seg_mem == nullptr)
             {
-                GCToEEInterface::LogErrorToHost("STRESS_REGIONS couldn't allocate ro segment");
                 hr = E_FAIL;
                 break;
             }
@@ -49705,7 +49728,6 @@ HRESULT GCHeap::Initialize()
 
             if (!RegisterFrozenSegment(&seg_info))
             {
-                GCToEEInterface::LogErrorToHost("STRESS_REGIONS failed to RegisterFrozenSegment");
                 hr = E_FAIL;
                 break;
             }

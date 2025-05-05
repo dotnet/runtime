@@ -26,18 +26,25 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         public delegate void ExportSlhDsaPublicKeyCoreAction(Span<byte> s);
         public delegate void ExportSlhDsaSecretKeyCoreAction(Span<byte> s);
+        public delegate bool TryExportPkcs8PrivateKeyCoreFunc(Span<byte> destination, out int bytesWritten);
         public delegate void SignDataCoreAction(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> s);
         public delegate bool VerifyDataCoreFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
         public delegate void DisposeAction(bool disposing);
+
+        public TryExportPkcs8PrivateKeyCoreFunc BaseTryExportPkcs8PrivateKeyCore =>
+            base.TryExportPkcs8PrivateKeyCore;
 
         public int VerifyDataCoreCallCount = 0;
         public int SignDataCoreCallCount = 0;
         public int ExportSlhDsaPublicKeyCoreCallCount = 0;
         public int ExportSlhDsaSecretKeyCoreCallCount = 0;
+        public int TryExportPkcs8PrivateKeyCoreCallCount = 0;
         public int DisposeCallCount = 0;
 
         public ExportSlhDsaPublicKeyCoreAction ExportSlhDsaPublicKeyCoreHook { get; set; } = _ => Assert.Fail();
         public ExportSlhDsaSecretKeyCoreAction ExportSlhDsaSecretKeyCoreHook { get; set; } = _ => Assert.Fail();
+        public TryExportPkcs8PrivateKeyCoreFunc TryExportPkcs8PrivateKeyCoreHook { get; set; } =
+            (_, out bytesWritten) => { Assert.Fail(); bytesWritten = 0; return false; };
         public SignDataCoreAction SignDataCoreHook { get; set; } = (_, _, _) => Assert.Fail();
         public VerifyDataCoreFunc VerifyDataCoreHook { get; set; } = (_, _, _) => { Assert.Fail(); return false; };
         public DisposeAction DisposeHook { get; set; } = _ => { };
@@ -58,6 +65,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             DisposeCallCount++;
             DisposeHook(disposing);
+        }
+
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            TryExportPkcs8PrivateKeyCoreCallCount++;
+            return TryExportPkcs8PrivateKeyCoreHook(destination, out bytesWritten);
         }
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination)
@@ -125,6 +138,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 oldSignDataCoreHook(data, context, destination);
                 AssertExtensions.Same(buffer.Span, destination);
+            };
+
+            TryExportPkcs8PrivateKeyCoreFunc oldTryExportPkcs8PrivateKeyCoreHook = TryExportPkcs8PrivateKeyCoreHook;
+            TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+            {
+                bool ret = oldTryExportPkcs8PrivateKeyCoreHook(destination, out bytesWritten);
+                AssertExtensions.Same(buffer.Span, destination);
+                return ret;
             };
         }
 
@@ -196,6 +217,15 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 oldSignDataCoreHook(data, context, destination);
                 destination.Fill(b);
+            };
+
+            TryExportPkcs8PrivateKeyCoreFunc oldTryExportPkcs8PrivateKeyCoreHook = TryExportPkcs8PrivateKeyCoreHook;
+            TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+            {
+                _ = oldTryExportPkcs8PrivateKeyCoreHook(destination, out bytesWritten);
+                destination.Fill(b);
+                bytesWritten = destination.Length;
+                return true;
             };
         }
     }

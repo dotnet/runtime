@@ -93,7 +93,20 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface
     int ISOSDacInterface.GetAppDomainConfigFile(ulong appDomain, int count, char* configFile, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetAppDomainConfigFile(appDomain, count, configFile, pNeeded) : HResults.E_NOTIMPL;
+    {
+        // Method is not supported on CoreCLR
+        int hr = HResults.E_FAIL;
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetAppDomainConfigFile(appDomain, count, configFile, pNeeded);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetAppDomainData(ulong addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ulong[] values, uint* pNeeded)
@@ -103,7 +116,20 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetAppDomainStoreData(void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainStoreData(data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetApplicationBase(ulong appDomain, int count, char* appBase, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetApplicationBase(appDomain, count, appBase, pNeeded) : HResults.E_NOTIMPL;
+    {
+        // Method is not supported on CoreCLR
+        int hr = HResults.E_FAIL;
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetApplicationBase(appDomain, count, appBase, pNeeded);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetAssemblyData(ulong baseDomainPtr, ulong assembly, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyData(baseDomainPtr, assembly, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAssemblyList(ulong appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ulong[] values, int* pNeeded)
@@ -129,11 +155,51 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetDomainFromContext(ulong context, ulong* domain)
         => _legacyImpl is not null ? _legacyImpl.GetDomainFromContext(context, domain) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetDomainLocalModuleData(ulong addr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetDomainLocalModuleData(addr, data) : HResults.E_NOTIMPL;
+    {
+        // CoreCLR does not use domain local modules anymore
+        int hr = HResults.E_NOTIMPL;
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetDomainLocalModuleData(addr, data);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
+
     int ISOSDacInterface.GetDomainLocalModuleDataFromAppDomain(ulong appDomainAddr, int moduleID, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetDomainLocalModuleDataFromAppDomain(appDomainAddr, moduleID, data) : HResults.E_NOTIMPL;
+    {
+        // CoreCLR does not support multi-appdomain shared assembly loading. Thus, a non-pointer sized moduleID cannot exist.
+        int hr = HResults.E_INVALIDARG;
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetDomainLocalModuleDataFromAppDomain(appDomainAddr, moduleID, data);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetDomainLocalModuleDataFromModule(ulong moduleAddr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetDomainLocalModuleDataFromModule(moduleAddr, data) : HResults.E_NOTIMPL;
+    {
+        // CoreCLR does not use domain local modules anymore
+        int hr = HResults.E_NOTIMPL;
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetDomainLocalModuleDataFromModule(moduleAddr, data);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetFailedAssemblyData(ulong assembly, uint* pContext, int* pResult)
         => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyData(assembly, pContext, pResult) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyDisplayName(ulong assembly, uint count, char* name, uint* pNeeded)
@@ -215,8 +281,22 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetHeapAnalyzeStaticData(data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapSegmentData(ulong seg, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetHeapSegmentData(seg, data) : HResults.E_NOTIMPL;
+
     int ISOSDacInterface.GetHillClimbingLogEntry(ulong addr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetHillClimbingLogEntry(addr, data) : HResults.E_NOTIMPL;
+    {
+        // This API is not implemented by the legacy DAC
+        int hr = HResults.E_NOTIMPL;
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetHillClimbingLogEntry(addr, data);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetILForModule(ulong moduleAddr, int rva, ulong* il)
         => _legacyImpl is not null ? _legacyImpl.GetILForModule(moduleAddr, rva, il) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetJitHelperFunctionName(ulong ip, uint count, byte* name, uint* pNeeded)
@@ -1241,7 +1321,20 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetPrivateBinPaths(ulong appDomain, int count, char* paths, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetPrivateBinPaths(appDomain, count, paths, pNeeded) : HResults.E_NOTIMPL;
+    {
+        // Method is not supported on CoreCLR
+        int hr = HResults.E_NOTIMPL;
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetPrivateBinPaths(appDomain, count, paths, pNeeded);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetRCWData(ulong addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetRCWData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetRCWInterfaces(ulong rcw, uint count, void* interfaces, uint* pNeeded)
@@ -1342,9 +1435,36 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetThreadFromThinlockID(uint thinLockId, ulong* pThread)
         => _legacyImpl is not null ? _legacyImpl.GetThreadFromThinlockID(thinLockId, pThread) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetThreadLocalModuleData(ulong thread, uint index, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetThreadLocalModuleData(thread, index, data) : HResults.E_NOTIMPL;
+    {
+        // CoreCLR does not use thread local modules anymore
+        int hr = HResults.E_NOTIMPL;
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetThreadLocalModuleData(thread, index, data);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
+
     int ISOSDacInterface.GetThreadpoolData(void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetThreadpoolData(data) : HResults.E_NOTIMPL;
+    {
+        // This API is not implemented by the legacy DAC
+        int hr = HResults.E_NOTIMPL;
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetThreadpoolData(data);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
 
     int ISOSDacInterface.GetThreadStoreData(DacpThreadStoreData* data)
     {
@@ -1444,7 +1564,20 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetWorkRequestData(ulong addrWorkRequest, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetWorkRequestData(addrWorkRequest, data) : HResults.E_NOTIMPL;
+    {
+        // This API is not implemented by the legacy DAC
+        int hr = HResults.E_NOTIMPL;
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetWorkRequestData(addrWorkRequest, data);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.TraverseEHInfo(ulong ip, void* pCallback, void* token)
         => _legacyImpl is not null ? _legacyImpl.TraverseEHInfo(ip, pCallback, token) : HResults.E_NOTIMPL;
     int ISOSDacInterface.TraverseLoaderHeap(ulong loaderHeapAddr, void* pCallback)
