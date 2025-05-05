@@ -2760,12 +2760,7 @@ public:
 
     virtual TADDR GetFuncletStartAddress(EECodeInfo * pCodeInfo);
 
-    virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
-    {
-        // Not used for the interpreter
-        _ASSERTE(FALSE);
-        return 0;
-    }
+    virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
 
 #if !defined DACCESS_COMPILE
 protected:
