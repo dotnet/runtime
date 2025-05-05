@@ -18,7 +18,6 @@
 //*****************************************************************************
 // Verify the signature at the front of the file to see what type it is.
 //*****************************************************************************
-#define STORAGE_MAGIC_OLD_SIG   0x2B4D4F43  // +MOC (old version of BSJB signature code:STORAGE_MAGIC_SIG)
 HRESULT
 MDFormat::VerifySignature(
     PSTORAGESIGNATURE pSig,     // The signature to check.
@@ -28,11 +27,6 @@ MDFormat::VerifySignature(
 
     // If signature didn't match, you shouldn't be here.
     ULONG dwSignature = pSig->GetSignature();
-    if (dwSignature == STORAGE_MAGIC_OLD_SIG)
-    {
-        Debug_ReportError("Invalid MetaData storage signature - old magic signature +MOC.");
-        return PostError(CLDB_E_FILE_OLDVER, 1, 0);
-    }
     if (dwSignature != STORAGE_MAGIC_SIG)
     {
         Debug_ReportError("Invalid MetaData storage signature - unrecognized magic signature, should be BSJB.");
