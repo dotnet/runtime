@@ -12412,14 +12412,15 @@ MONO_RESTORE_WARNING
 			LLVMValueRef left;
 			LLVMValueRef right;
 
-			// The order of the arguments is different for packed simd
+			// For PackedSimd the selection mask is last not first
 			if (ins->opcode == OP_WASM_BITSELECT) {
 				select = bitcast_to_integral (ctx, arg3);
-				right = bitcast_to_integral (ctx, rhs);
 				left = bitcast_to_integral (ctx, lhs);
+				right = bitcast_to_integral (ctx, rhs);
+				
 			} else {
 				select = bitcast_to_integral (ctx, lhs);
-				left = bitcast_to_integral (ctx, rhs)
+				left = bitcast_to_integral (ctx, rhs);
 				right = bitcast_to_integral (ctx, arg3);
 			}
 
