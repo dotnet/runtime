@@ -591,8 +591,7 @@ namespace Internal.IL
                     return SetTargetResult.Missing;
                 }
 
-                if (replacementType.IsByRef
-                    || replacementType.IsFunctionPointer
+                if (replacementType.IsFunctionPointer
                     || replacementType.IsPointer)
                 {
                     return SetTargetResult.NotSupported;
@@ -605,14 +604,23 @@ namespace Internal.IL
                     return SetTargetResult.NotSupported;
                 }
 
-                if (initialTypeIsByRef)
+                if (replacementType.IsByRef != initialTypeIsByRef)
                 {
-                    // We need to reapply the byref to the type.
-                    replacementType = method.Context.GetByRefType(replacementType);
+                    // The replacement type must match the original type
+                    // in terms of byref-ness.
+                    return SetTargetResult.Invalid;
                 }
 
                 if (isReturnValue)
                 {
+                    if (context.Kind is UnsafeAccessorKind.Field or UnsafeAccessorKind.StaticField)
+                    {
+                        // UnsafeAccessorAttribute requires the return type to be byref for any field kind.
+                        // This is a deviation from the normal UnsafeAccessorTypeAttribute requirements
+                        // where the type is expected to match the signature exactly. Users aren't required to
+                        // state the byref for field access because that isn't in the target field signature.
+                        replacementType = replacementType.MakeByRefType();
+                    }
                     updatedSignature.ReturnType = replacementType;
                 }
                 else
@@ -639,6 +647,10 @@ namespace Internal.IL
             for (int i = beginIndex; i < stubArgCount; ++i)
             {
                 codeStream.EmitLdArg(i);
+                if (context.DeclarationSignature[i] is { Category: TypeFlags.Class } classType)
+                {
+                    codeStream.Emit(ILOpcode.castclass, emit.NewToken(classType));
+                }
             }
 
             // Provide access to the target member
