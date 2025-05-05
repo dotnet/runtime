@@ -183,7 +183,7 @@ CMiniMdSchema::SaveTo(
 
     // Minor version is preset when we instantiate the MiniMd.
 
-    _ASSERTE((m_major == METAMODEL_MAJOR_VER && m_minor == METAMODEL_MINOR_VER));
+    _ASSERTE((m_major == METAMODEL_MAJOR_VER) && (m_minor == METAMODEL_MINOR_VER));
 
     // Transfer the fixed fields.
     *static_cast<CMiniMdSchemaBase*>(pDest) = *static_cast<CMiniMdSchemaBase*>(this);
