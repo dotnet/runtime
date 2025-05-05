@@ -65,7 +65,7 @@ namespace
     {
         ParamDetails() = default;
 
-        ParamDetails(TypeHandle type, DWORD attrs)
+        ParamDetails(TypeHandle type, CorParamAttr attrs)
             : Type{ type }
             , Attrs{ attrs }
         { }
@@ -73,7 +73,7 @@ namespace
         ParamDetails(const ParamDetails&) = default;
 
         TypeHandle Type;
-        DWORD Attrs;
+        CorParamAttr Attrs;
     };
 
     struct GenerationContext final
@@ -314,7 +314,7 @@ namespace
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
 
             // Store the TypeHandle for the loaded type at the sequence number for the parameter.
-            cxt.TranslatedParams[seq] = { targetType, attr };
+            cxt.TranslatedParams[seq] = { targetType, (CorParamAttr)attr };
             attrCount++;
         }
 
@@ -773,7 +773,7 @@ namespace
             pDispatchCode->EmitLDLOCA(localIndex);
 
             // Update the byref on return, except if it is marked "in".
-            if (!(param.Attrs & pdIn))
+            if (!IsPdIn(param.Attrs))
             {
                 pReturnCode->EmitLDARG(argId);
                 pReturnCode->EmitLDLOC(localIndex);
