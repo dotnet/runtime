@@ -250,7 +250,11 @@ public:
 
     static bool UseThreadAllocationContexts()
     {
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
         return s_useThreadAllocationContexts;
+#else
+        return true;
+#endif
     }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP

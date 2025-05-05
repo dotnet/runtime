@@ -85,7 +85,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
 EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
-EXTERN_C FCDECL1(void, JIT_PartialCompilationPatchpoint, int ilOffset);
+EXTERN_C FCDECL1(void, JIT_PatchpointForced, int ilOffset);
 
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
@@ -627,7 +627,7 @@ public:
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars) override final;
-    void CompressDebugInfo();
+    void CompressDebugInfo(PCODE nativeEntry);
     virtual void SetDebugInfo(PTR_BYTE pDebugInfo) = 0;
 
     virtual PatchpointInfo* GetPatchpointInfo()
@@ -893,6 +893,8 @@ public:
     }
 #endif
 
+    void PublishFinalCodeAddress(PCODE addr);
+
     CEEJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
                EECodeGenManager* jm, bool allowInlining = true)
         : CEECodeGenInfo(fd, header, jm, allowInlining)
@@ -916,6 +918,7 @@ public:
           m_pPatchpointInfoFromRuntime(NULL),
           m_ilOffset(0)
 #endif
+        , m_finalCodeAddressSlot(NULL)
     {
         CONTRACTL
         {
@@ -966,6 +969,8 @@ public:
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;
 
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() override final;
+
 protected :
 
 #ifdef FEATURE_PGO
@@ -1010,6 +1015,7 @@ protected :
     PatchpointInfo        * m_pPatchpointInfoFromRuntime;
     unsigned                m_ilOffset;
 #endif
+    PCODE* m_finalCodeAddressSlot;
 
 };
 
@@ -1101,9 +1107,6 @@ void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 // the pointer to the pinned string is returned in *ppPinnedPointer. ppPinnedPointer == nullptr
 // means that the caller does not care whether the string is pinned or not.
 STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString = nullptr);
-
-FCDECL2(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* data);
-FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 

@@ -174,6 +174,13 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void ImportSubjectPublicKeyInfo_NotAsn()
+        {
+            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo("potatoes"u8));
+            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo("potatoes"u8.ToArray()));
+        }
+
+        [Fact]
         public static void ImportSubjectPublicKeyInfo_WrongParameters()
         {
             byte[] mlKem512BadParameters = (
@@ -212,6 +219,15 @@ namespace System.Security.Cryptography.Tests
         {
             byte[] mlKem512BadEncapKey = "3014300B060960864801650304040103050000264512".HexToByteArray();
             Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(mlKem512BadEncapKey));
+        }
+
+        [Fact]
+        public static void ImportSubjectPublicKeyInfo_TrailingData()
+        {
+            byte[] spki = new byte[MLKemTestData.IetfMlKem512Spki.Length + 1];
+            MLKemTestData.IetfMlKem512Spki.AsSpan().CopyTo(spki);
+            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(spki));
+            Assert.Throws<CryptographicException>(() => MLKem.ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(spki)));
         }
 
         [Fact]
@@ -453,7 +469,14 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-       [Fact]
+        [Fact]
+        public static void ImportPkcs8PrivateKey_NotAsn()
+        {
+            Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey("potatoes"u8));
+            Assert.Throws<CryptographicException>(() => MLKem.ImportPkcs8PrivateKey("potatoes"u8.ToArray()));
+        }
+
+        [Fact]
         public static void ImportEncryptedPkcs8PrivateKey_WrongAlgorithm()
         {
             byte[] ecP256Key = Convert.FromBase64String(@"
@@ -464,7 +487,7 @@ namespace System.Security.Cryptography.Tests
                 gJoH9z0+/Z9WzLU8ix8F7B+HWwRhib5Cd6si+AX6DsNelMq2zP1NO7Un416dkg==");
 
             Assert.Throws<CryptographicException>(() =>
-                MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER", new ReadOnlySpan<byte>(ecP256Key)));
+                MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER", ecP256Key));
 
             Assert.Throws<CryptographicException>(() =>
                 MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER".AsSpan(), new ReadOnlySpan<byte>(ecP256Key)));
@@ -490,6 +513,19 @@ namespace System.Security.Cryptography.Tests
                 Assert.Throws<CryptographicException>(() =>
                     MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPasswordBytes, oversized));
             }
+        }
+
+        [Fact]
+        public static void ImportEncryptedPkcs8PrivateKey_NotAsn()
+        {
+            Assert.Throws<CryptographicException>(() =>
+                MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER", "potatoes"u8.ToArray()));
+
+            Assert.Throws<CryptographicException>(() =>
+                MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER".AsSpan(), "potatoes"u8));
+
+            Assert.Throws<CryptographicException>(() =>
+                MLKem.ImportEncryptedPkcs8PrivateKey("PLACEHOLDER"u8, "potatoes"u8));
         }
 
         [Fact]
@@ -618,6 +654,16 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.SequenceEqual(decapKey, decapsulationKey);
                 AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, seed);
             }
+        }
+
+        [Fact]
+        public static void ImportEncryptedPkcs8PrivateKey_NullArgs()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", static () =>
+                MLKem.ImportEncryptedPkcs8PrivateKey(MLKemTestData.EncryptedPrivateKeyPassword, (byte[])null));
+
+            AssertExtensions.Throws<ArgumentNullException>("password", static () =>
+                MLKem.ImportEncryptedPkcs8PrivateKey((string)null, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
         }
 
         [Fact]
