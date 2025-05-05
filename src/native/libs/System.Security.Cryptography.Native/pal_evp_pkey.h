@@ -20,6 +20,7 @@ typedef enum
     PalPKeyFamilyId_DSA = 2,
     PalPKeyFamilyId_ECC = 3,
     PalPKeyFamilyId_MLKem = 4,
+    PalPKeyFamilyId_SlhDsa = 5,
 } PalPKeyFamilyId;
 
 typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;

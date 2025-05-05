@@ -25,7 +25,7 @@ namespace ILCompiler
         private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corinfos = new ConditionalWeakTable<Thread, CorInfoImpl>();
         internal readonly RyuJitCompilationOptions _compilationOptions;
         private readonly ProfileDataManager _profileDataManager;
-        private readonly ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
+        private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
         private readonly ReadOnlyFieldPolicy _readOnlyFieldPolicy;
         private readonly int _parallelism;
@@ -45,8 +45,8 @@ namespace ILCompiler
             MethodImportationErrorProvider errorProvider,
             ReadOnlyFieldPolicy readOnlyFieldPolicy,
             RyuJitCompilationOptions options,
-            ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
-            ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
+            MethodLayoutAlgorithm methodLayoutAlgorithm,
+            FileLayoutAlgorithm fileLayoutAlgorithm,
             int parallelism)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, inliningPolicy, logger)
         {
@@ -61,7 +61,7 @@ namespace ILCompiler
 
             _parallelism = parallelism;
 
-            _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileDataManager, nodeFactory);
+            _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileDataManager, nodeFactory);
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;

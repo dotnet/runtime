@@ -2529,7 +2529,7 @@ regNumber AbsRegNumber(regNumber reg)
 bool IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    return ((reg >= REG_R8) && (reg <= REG_R23)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
+    return ((reg >= REG_R8) && (reg <= REG_R31)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
@@ -5214,7 +5214,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
 static bool baseRegisterRequiresSibByte(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_ESP || base == REG_R12 || base == REG_R20;
+    return base == REG_ESP || base == REG_R12 || base == REG_R20 || base == REG_R28;
 #else
     return base == REG_ESP;
 #endif
@@ -5223,7 +5223,7 @@ static bool baseRegisterRequiresSibByte(regNumber base)
 static bool baseRegisterRequiresDisplacement(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_EBP || base == REG_R13 || base == REG_R21;
+    return base == REG_EBP || base == REG_R13 || base == REG_R21 || base == REG_R29;
 #else
     return base == REG_EBP;
 #endif
@@ -7331,6 +7331,7 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_vmovdqu8:
         case INS_vmovdqu16:
         case INS_vmovdqu64:
+        case INS_movq:
         case INS_movsd_simd:
         case INS_movss:
         case INS_movsx:
@@ -7350,7 +7351,6 @@ bool emitter::IsMovInstruction(instruction ins)
         }
 
 #if defined(TARGET_AMD64)
-        case INS_movq:
         case INS_movsxd:
         {
             return true;
@@ -7501,7 +7501,6 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
-#if defined(TARGET_AMD64)
         case INS_movq:
         {
             // Clears the upper bits
@@ -7509,6 +7508,7 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
+#if defined(TARGET_AMD64)
         case INS_movsxd:
         {
             // Sign-extends the source
@@ -7781,13 +7781,13 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
             break;
         }
 
-#if defined(TARGET_AMD64)
         case INS_movq:
         {
             assert(isFloatReg(dstReg) && isFloatReg(srcReg));
             break;
         }
 
+#if defined(TARGET_AMD64)
         case INS_movsxd:
         {
             assert(isGeneralRegister(dstReg) && isGeneralRegister(srcReg));
