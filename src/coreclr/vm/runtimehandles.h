@@ -125,6 +125,7 @@ public:
     FCDECL1(FC_BOOL_RET, ContainsGenericVariables, PTR_ReflectClassBaseObject pType);
 
     static FCDECL2(FC_BOOL_RET, CompareCanonicalHandles, PTR_ReflectClassBaseObject pLeft, PTR_ReflectClassBaseObject pRight);
+    static FCDECL1(Object*, InternalAllocNoChecks_FastPath, MethodTable* pMT);
 
     static FCDECL1(EnregisteredTypeHandle, GetElementTypeHandle, EnregisteredTypeHandle th);
     static FCDECL1(INT32, GetNumVirtuals, ReflectClassBaseObject *pType);
@@ -143,6 +144,7 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsEquivalentTo(QCall::TypeHandle rtT
 #endif // FEATURE_TYPEEQUIVALENCE
 extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter(QCall::TypeHandle pTypeHandle, TypeHandle *pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack pInstantiatedObject);
 extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, QCall::ObjectHandleOnStack allocated);
+
 extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAllocNoChecks(MethodTable* pMT, QCall::ObjectHandleOnStack allocated);
 extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall::TypeHandle type, uint32_t size);
 

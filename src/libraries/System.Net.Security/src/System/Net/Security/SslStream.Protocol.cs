@@ -1056,8 +1056,9 @@ namespace System.Net.Security
                     return true;
                 }
 
-                _remoteCertificate = certificate;
-                if (_remoteCertificate == null)
+                // don't assign to _remoteCertificate yet, this prevents weird exceptions if SslStream is disposed in parallel with X509Chain building
+
+                if (certificate == null)
                 {
                     if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
@@ -1099,15 +1100,17 @@ namespace System.Net.Security
                     sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
                         _securityContext!,
                         chain,
-                        _remoteCertificate,
+                        certificate,
                         _sslAuthenticationOptions.CheckCertName,
                         _sslAuthenticationOptions.IsServer,
                         TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost));
                 }
 
+                _remoteCertificate = certificate;
+
                 if (remoteCertValidationCallback != null)
                 {
-                    success = remoteCertValidationCallback(this, _remoteCertificate, chain, sslPolicyErrors);
+                    success = remoteCertValidationCallback(this, certificate, chain, sslPolicyErrors);
                 }
                 else
                 {

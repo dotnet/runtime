@@ -1708,8 +1708,9 @@ enum CorInfoContinuationFlags
     // should be placed at index 0 or 1 depending on whether the continuation
     // also expects a result.
     CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
-    // If this bit is set the continuation has an OSR IL offset saved in the
-    // beginning of 'Data'.
+    // If this bit is set the continuation has the IL offset that inspired the
+    // OSR method saved in the beginning of 'Data', or -1 if the continuation
+    // belongs to a tier 0 method.
     CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
 };
 

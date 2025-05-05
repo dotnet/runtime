@@ -8,7 +8,9 @@ using System.Diagnostics;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
+#if READYTORUN
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+#endif
 using ILCompiler.DependencyAnalysisFramework;
 using System.Linq;
 using System.Collections.Immutable;
@@ -16,30 +18,36 @@ using System.Text;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.PettisHansenSort;
 
+#if !READYTORUN
+using MethodWithGCInfo = ILCompiler.DependencyAnalysis.MethodCodeNode;
+#endif
+
 namespace ILCompiler
 {
-    public enum ReadyToRunMethodLayoutAlgorithm
+    public enum MethodLayoutAlgorithm
     {
         DefaultSort,
         ExclusiveWeight,
         HotCold,
         HotWarmCold,
+#if READYTORUN
         CallFrequency,
+#endif
         PettisHansen,
         Random,
     }
 
-    public enum ReadyToRunFileLayoutAlgorithm
+    public enum FileLayoutAlgorithm
     {
         DefaultSort,
         MethodOrder,
     }
 
-    class ReadyToRunFileLayoutOptimizer
+    class FileLayoutOptimizer
     {
-        public ReadyToRunFileLayoutOptimizer (Logger logger,
-                                              ReadyToRunMethodLayoutAlgorithm methodAlgorithm,
-                                              ReadyToRunFileLayoutAlgorithm fileAlgorithm,
+        public FileLayoutOptimizer (Logger logger,
+                                              MethodLayoutAlgorithm methodAlgorithm,
+                                              FileLayoutAlgorithm fileAlgorithm,
                                               ProfileDataManager profileData,
                                               NodeFactory nodeFactory)
         {
@@ -51,14 +59,14 @@ namespace ILCompiler
         }
 
         private Logger _logger;
-        private ReadyToRunMethodLayoutAlgorithm _methodLayoutAlgorithm = ReadyToRunMethodLayoutAlgorithm.DefaultSort;
-        private ReadyToRunFileLayoutAlgorithm _fileLayoutAlgorithm = ReadyToRunFileLayoutAlgorithm.DefaultSort;
+        private MethodLayoutAlgorithm _methodLayoutAlgorithm = MethodLayoutAlgorithm.DefaultSort;
+        private FileLayoutAlgorithm _fileLayoutAlgorithm = FileLayoutAlgorithm.DefaultSort;
         private ProfileDataManager _profileData;
         private NodeFactory _nodeFactory;
 
         public ImmutableArray<DependencyNodeCore<NodeFactory>> ApplyProfilerGuidedMethodSort(ImmutableArray<DependencyNodeCore<NodeFactory>> nodes)
         {
-            if (_methodLayoutAlgorithm == ReadyToRunMethodLayoutAlgorithm.DefaultSort)
+            if (_methodLayoutAlgorithm == MethodLayoutAlgorithm.DefaultSort)
                 return nodes;
 
             List<MethodWithGCInfo> methods = new List<MethodWithGCInfo>();
@@ -79,15 +87,17 @@ namespace ILCompiler
             foreach (var methodNode in sortedMethodsList)
             {
                 methodNode.CustomSort = sortOrder;
+#if READYTORUN
                 MethodColdCodeNode methodColdCodeNode = methodNode.ColdCodeNode;
                 if (methodColdCodeNode != null)
                 {
                     methodColdCodeNode.CustomSort = sortOrder + sortedMethodsList.Count;
                 }
+#endif
                 sortOrder++;
             }
 
-            if (_fileLayoutAlgorithm == ReadyToRunFileLayoutAlgorithm.MethodOrder)
+            if (_fileLayoutAlgorithm == FileLayoutAlgorithm.MethodOrder)
             {
                 // Sort the dependencies of methods by the method order
                 foreach (var method in sortedMethodsList)
@@ -122,10 +132,10 @@ namespace ILCompiler
         {
             switch (_methodLayoutAlgorithm)
             {
-                case ReadyToRunMethodLayoutAlgorithm.DefaultSort:
+                case MethodLayoutAlgorithm.DefaultSort:
                     break;
 
-                case ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight:
+                case MethodLayoutAlgorithm.ExclusiveWeight:
                     methods.MergeSortAllowDuplicates(sortMethodWithGCInfoByWeight);
 
                     int sortMethodWithGCInfoByWeight(MethodWithGCInfo left, MethodWithGCInfo right)
@@ -134,7 +144,7 @@ namespace ILCompiler
                     }
                     break;
 
-                case ReadyToRunMethodLayoutAlgorithm.HotCold:
+                case MethodLayoutAlgorithm.HotCold:
                     methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => ComputeHotColdRegion(left).CompareTo(ComputeHotColdRegion(right)));
 
                     int ComputeHotColdRegion(MethodWithGCInfo method)
@@ -143,7 +153,7 @@ namespace ILCompiler
                     }
                     break;
 
-                case ReadyToRunMethodLayoutAlgorithm.HotWarmCold:
+                case MethodLayoutAlgorithm.HotWarmCold:
                     methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => ComputeHotWarmColdRegion(left).CompareTo(ComputeHotWarmColdRegion(right)));
 
                     int ComputeHotWarmColdRegion(MethodWithGCInfo method)
@@ -164,15 +174,17 @@ namespace ILCompiler
                     };
                     break;
 
-                case ReadyToRunMethodLayoutAlgorithm.CallFrequency:
+#if READYTORUN
+                case MethodLayoutAlgorithm.CallFrequency:
                     methods = MethodCallFrequencySort(methods);
                     break;
+#endif
 
-                case ReadyToRunMethodLayoutAlgorithm.PettisHansen:
+                case MethodLayoutAlgorithm.PettisHansen:
                     methods = PettisHansenSort(methods);
                     break;
 
-                case ReadyToRunMethodLayoutAlgorithm.Random:
+                case MethodLayoutAlgorithm.Random:
                     Random rand = new Random(0);
                     for (int i = 0; i < methods.Count - 1; i++)
                     {
@@ -216,6 +228,7 @@ namespace ILCompiler
             }
         }
 
+#if READYTORUN
         /// <summary>
         /// Use callchain profile information to generate method ordering. We place
         /// callers and callees by traversing the caller-callee pairs in the callchain
@@ -268,6 +281,7 @@ namespace ILCompiler
             Debug.Assert(outputMethods.Count == methodsToPlace.Count);
             return outputMethods;
         }
+#endif
 
         /// <summary>
         /// Sort methods with Pettis-Hansen using call graph data from profile.
@@ -303,7 +317,9 @@ namespace ILCompiler
 
             if (!any)
             {
+#if READYTORUN
                 _logger.Writer.WriteLine("Warning: no call graph data was found or a .mibc file was not specified. Skipping Pettis Hansen method ordering.");
+#endif
                 return methodsToPlace;
             }
 
