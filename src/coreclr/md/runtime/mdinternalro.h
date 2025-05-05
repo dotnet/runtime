@@ -66,13 +66,6 @@ public:
         return static_cast<IMetaModelCommonRO*>(&m_LiteWeightStgdb.m_MiniMd);
     }
 
-    __checkReturn
-    STDMETHODIMP SetOptimizeAccessForSpeed(
-        BOOL fOptSpeed)
-    {
-        return S_OK;
-    }
-
     //*****************************************************************************
     // return the count of entries of a given kind in a scope
     // For example, pass in mdtMethodDef will tell you how many MethodDef

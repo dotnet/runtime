@@ -1045,9 +1045,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         LPCUTF8          *pszNamespace,     // [OUT] Namespace of Custom Attribute.
         LPCUTF8          *pszName) PURE;    // [OUT] Name of Custom Attribute.
 
-    STDMETHOD(SetOptimizeAccessForSpeed)(// S_OK or error
-        BOOL    fOptSpeed) PURE;
-
     STDMETHOD(GetRvaOffsetData)(
         DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
         DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
