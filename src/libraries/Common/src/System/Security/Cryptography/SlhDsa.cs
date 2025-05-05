@@ -93,13 +93,14 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Sign the specified data, writing the signature into the provided buffer.
+        ///   Signs the specified data, writing the signature into the provided buffer.
         /// </summary>
         /// <param name="data">
         ///   The data to sign.
         /// </param>
         /// <param name="destination">
-        ///   The buffer to receive the signature.
+        ///   The buffer to receive the signature. Its length must be exactly
+        ///   <see cref="SlhDsaAlgorithm.SignatureSizeInBytes"/>.
         /// </param>
         /// <param name="context">
         ///   An optional context-specific value to limit the scope of the signature.
@@ -120,10 +121,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the data.</para>
         /// </exception>
-        /// <remarks>
-        ///   <paramref name="destination"/> is required to be exactly
-        ///   <see cref="SlhDsaAlgorithm.SignatureSizeInBytes"/> in length.
-        /// </remarks>
         public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
             int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
@@ -149,14 +146,14 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Sign the specified data.
+        ///   Signs the specified data.
         /// </summary>
         /// <param name="data">
         ///   The data to sign.
         /// </param>
         /// <param name="context">
         ///   An optional context-specific value to limit the scope of the signature.
-        ///   A <see langword="null"/> context is treated as empty.
+        ///   The default value is <see langword="null" />.
         /// </param>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="data"/> is <see langword="null"/>.
@@ -172,6 +169,9 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the data.</para>
         /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
         public byte[] SignData(byte[] data, byte[]? context = default)
         {
             ArgumentNullException.ThrowIfNull(data);
@@ -240,7 +240,7 @@ namespace System.Security.Cryptography
         /// </param>
         /// <param name="context">
         ///   The context value which was provided during signing.
-        ///   A <see langword="null"/> context is treated as empty.
+        ///   The default value is <see langword="null" />.
         /// </param>
         /// <returns>
         ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
@@ -259,6 +259,9 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the data.</para>
         /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
         public bool VerifyData(byte[] data, byte[] signature, byte[]? context = default)
         {
             ArgumentNullException.ThrowIfNull(data);
@@ -831,7 +834,8 @@ namespace System.Security.Cryptography
         ///   Exports the public-key portion of the current key in the FIPS 205 public key format.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the public key.
+        ///   The buffer to receive the public key. Its length must be exactly
+        ///   <see cref="SlhDsaAlgorithm.SecretKeySizeInBytes"/>.
         /// </param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the public key.
@@ -883,7 +887,8 @@ namespace System.Security.Cryptography
         ///   Exports the current key in the FIPS 205 secret key format.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the secret key.
+        ///   The buffer to receive the secret key. Its length must be exactly
+        ///   <see cref="SlhDsaAlgorithm.SecretKeySizeInBytes"/>.
         /// </param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="destination"/> is the incorrect length to receive the secret key.
@@ -894,10 +899,6 @@ namespace System.Security.Cryptography
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        /// <remarks>
-        ///   <paramref name="destination"/> is required to be exactly
-        ///   <see cref="SlhDsaAlgorithm.SecretKeySizeInBytes"/> in length.
-        /// </remarks>
         public void ExportSlhDsaSecretKey(Span<byte> destination)
         {
             int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
