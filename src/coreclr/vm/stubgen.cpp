@@ -1049,6 +1049,8 @@ LPCSTR ILCodeStream::GetStreamDescription(ILStubLinker::CodeStreamType streamTyp
         "ExceptionCleanup",
         "Cleanup",
         "ExceptionHandler",
+        "TypeCheckAndCallMethod",
+        "UpdateByRefsAndReturn"
     };
 
 #ifdef _DEBUG

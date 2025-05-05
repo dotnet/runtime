@@ -746,6 +746,8 @@ public:
         kExceptionCleanup,
         kCleanup,
         kExceptionHandler,
+        kTypeCheckDispatch,
+        kUpdateByRefsReturn
     };
 
     ILCodeStream* NewCodeStream(CodeStreamType codeStreamType);

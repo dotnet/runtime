@@ -45,6 +45,13 @@ class TargetClass
     private C2 M_RROC1(ref readonly C1 a) => _f1;
     private ref C2 M_C1_RC2(C1 a) => ref _f1;
 
+    private void M_ByRefs(C1 c, in C1 ic, ref C1 rc, out C1 oc)
+    {
+        Assert.Null(ic); // See caller
+        rc = c;
+        oc = c;
+    }
+
     private class InnerClass
     {
         private InnerClass() { }
@@ -54,28 +61,6 @@ class TargetClass
 
 public static unsafe class UnsafeAccessorsTestsTypes
 {
-    [Fact]
-    public static void Verify_Type_CallInnerCtorClass()
-    {
-        Console.WriteLine($"Running {nameof(Verify_Type_CallInnerCtorClass)}");
-
-        object obj;
-
-        obj = CreateInner();
-        Assert.Equal("InnerClass", obj.GetType().Name);
-
-        obj = CreateInnerString(string.Empty);
-        Assert.Equal("InnerClass", obj.GetType().Name);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        [return: UnsafeAccessorType("TargetClass+InnerClass")]
-        extern static object CreateInner();
-
-        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        [return: UnsafeAccessorType("TargetClass+InnerClass")]
-        extern static object CreateInnerString(string a);
-    }
-
     // Skip validating error cases on Mono runtime
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotMonoRuntime))]
     public static void Verify_Type_InvalidArgument()
@@ -147,6 +132,14 @@ public static unsafe class UnsafeAccessorsTestsTypes
         Assert.Equal(c2, CallM_RROC1(tgt, ref arg));
         Assert.Equal(c2, CallM_C1_RC2(tgt, arg));
 
+        object ic = null;
+        object rc = null;
+        object oc = null;
+        CallM_ByRefs(tgt, arg, in ic, ref rc, out oc);
+        Assert.Null(ic);
+        Assert.Equal(arg, rc);
+        Assert.Equal(arg, oc);
+
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1")]
         [return: UnsafeAccessorType("C2")]
         extern static object CallM_C1(TargetClass tgt, [UnsafeAccessorType("C1")] object a);
@@ -162,6 +155,13 @@ public static unsafe class UnsafeAccessorsTestsTypes
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1_RC2")]
         [return: UnsafeAccessorType("C2&")]
         extern static ref object CallM_C1_RC2(TargetClass tgt, [UnsafeAccessorType("C1")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_ByRefs")]
+        extern static void CallM_ByRefs(TargetClass tgt,
+            [UnsafeAccessorType("C1")] object c,
+            [UnsafeAccessorType("C1&")] in object ic,
+            [UnsafeAccessorType("C1&")] ref object rc,
+            [UnsafeAccessorType("C1&")] out object oc);
     }
 
     [Fact]
@@ -182,6 +182,28 @@ public static unsafe class UnsafeAccessorsTestsTypes
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_f2")]
         [return: UnsafeAccessorType("C2")]
         extern static ref readonly object CallField2(TargetClass tgt);
+    }
+
+    [Fact]
+    public static void Verify_Type_CallInnerCtorClass()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Type_CallInnerCtorClass)}");
+
+        object obj;
+
+        obj = CreateInner();
+        Assert.Equal("InnerClass", obj.GetType().Name);
+
+        obj = CreateInnerString(string.Empty);
+        Assert.Equal("InnerClass", obj.GetType().Name);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType("TargetClass+InnerClass")]
+        extern static object CreateInner();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType("TargetClass+InnerClass")]
+        extern static object CreateInnerString(string a);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetClass")]

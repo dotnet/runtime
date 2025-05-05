@@ -61,6 +61,21 @@ namespace
         return true;
     }
 
+    struct ParamDetails final
+    {
+        ParamDetails() = default;
+
+        ParamDetails(TypeHandle type, DWORD attrs)
+            : Type{ type }
+            , Attrs{ attrs }
+        { }
+
+        ParamDetails(const ParamDetails&) = default;
+
+        TypeHandle Type;
+        DWORD Attrs;
+    };
+
     struct GenerationContext final
     {
         GenerationContext(UnsafeAccessorKind kind, MethodDesc* pMD)
@@ -68,7 +83,7 @@ namespace
             , Declaration{ pMD }
             , DeclarationSig{ pMD->GetSigPointer() }
             , DeclarationMetaSig{ pMD }
-            , TranslatedTypes{}
+            , TranslatedParams{}
             , TargetTypeSig{}
             , TargetType{}
             , IsTargetStatic{ false }
@@ -81,8 +96,8 @@ namespace
         SigPointer DeclarationSig;  // This is the official declaration signature. It may be modified
                                     // to include the UnsafeAccessorTypeAttribute types.
         MetaSig DeclarationMetaSig;
-        NewArrayHolder<TypeHandle> TranslatedTypes; // Redefined types from UnsafeAccessorTypeAttribute usage.
-                                                    // Return type is at 0 index. Function arguments are 1 to N.
+        NewArrayHolder<ParamDetails> TranslatedParams; // Redefined types from UnsafeAccessorTypeAttribute usage.
+                                                       // Return type is at 0 index. Function arguments are 1 to N.
         SigPointer TargetTypeSig;
         TypeHandle TargetType;
         bool IsTargetStatic;
@@ -131,7 +146,7 @@ namespace
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(cxt.Declaration != NULL);
-        _ASSERTE(cxt.TranslatedTypes != NULL);
+        _ASSERTE(cxt.TranslatedParams != NULL);
 
         //
         // Parsing and building the signature follows details defined in ECMA-335 - II.23.2.1
@@ -172,7 +187,7 @@ namespace
             // Copy over any modopts or modreqs.
             origSig.CopyModOptsReqs(pSigModule, &newSig);
 
-            TypeHandle newTypeMaybe = cxt.TranslatedTypes[i];
+            TypeHandle newTypeMaybe = cxt.TranslatedParams[i].Type;
             if (newTypeMaybe.IsNull())
             {
                 // Copy the original parameter and continue.
@@ -220,7 +235,7 @@ namespace
 
             // Go back to the original translated type because
             // analysis the local may have been altered.
-            newTypeMaybe = cxt.TranslatedTypes[i];
+            newTypeMaybe = cxt.TranslatedParams[i].Type;
             AppendTypeToSignature(newSig, newTypeMaybe, inst);
         }
 
@@ -263,13 +278,9 @@ namespace
             if (hr != S_OK)
                 continue;
 
-            // The first time we find an attribute, we need to allocate and
-            // initialize the translations array.
+            // The first time we find an attribute, we allocate the translations array.
             if (attrCount == 0)
-            {
-                cxt.TranslatedTypes = new TypeHandle[totalParamCount];
-                memset(cxt.TranslatedTypes, 0, sizeof(cxt.TranslatedTypes[0]) * totalParamCount);
-            }
+                cxt.TranslatedParams = new ParamDetails[totalParamCount];
 
             // Parse the attribute data.
             CustomAttributeParser cap(pData, cbData);
@@ -303,7 +314,7 @@ namespace
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
 
             // Store the TypeHandle for the loaded type at the sequence number for the parameter.
-            cxt.TranslatedTypes[seq] = targetType;
+            cxt.TranslatedParams[seq] = { targetType, attr };
             attrCount++;
         }
 
@@ -703,39 +714,40 @@ namespace
         return false;
     }
 
-    void EmitTypeCheck(ILCodeStream* pCode, TypeHandle th)
+    void EmitTypeCheck(UINT argId, ParamDetails& param, ILCodeStream* pDispatchCode, ILCodeStream* pReturnCode)
     {
         STANDARD_VM_CONTRACT;
+        _ASSERTE(pDispatchCode != NULL);
+        _ASSERTE(pReturnCode != NULL);
 
-        if (th.IsNull())
+        if (param.Type.IsNull())
             return;
 
-        TypeHandle origType = th;
+        TypeHandle th = param.Type;
+        DWORD localIndex = MAXDWORD;
 
         // We are going to emit a type check for the UnsafeAccessorTypeAttribute
         // scenario. We do this because the callable signature isn't going to enforce
         // type safety, so we do it here.
         //
-        // If the type is a byref, DUP the value so the execution stack has a
-        // byref value on it after the type check. Emit a load indirection of the byref
-        // in order to validate the type. After the typecheck, we'll pop off the object.
-        // This doesn't handle the null byref case.
-        //
-        // In the non-byref case, an object reference will be placed back on the stack
-        // through the type check so there is no need for the DUP.
-        if (origType.IsByRef())
+        // Ensuring type safety is paramount in the UnsafeAccessorTypeAttribute scenario
+        // so we pass a byref to a local variable after the type check as opposed
+        // to simply forwarding the original byref argument. This does mean the byref itself
+        // isn't the same as the input byref, but the byref is now verifiable.
+        if (th.IsByRef())
         {
-            pCode->EmitDUP();
+            th = th.GetTypeParam();
+            LocalDesc typedLocal{ th };
+            localIndex = pDispatchCode->NewLocal(typedLocal);
 
-            th = origType.GetTypeParam();
-            pCode->EmitLDIND_REF();
+            pDispatchCode->EmitLDIND_REF();
         }
         _ASSERTE(!th.IsTypeDesc());
 
         int tk;
         if (!th.GetMethodTable()->ContainsGenericVariables())
         {
-            tk = pCode->GetToken(th);
+            tk = pDispatchCode->GetToken(th);
         }
         else
         {
@@ -744,16 +756,30 @@ namespace
 
             uint32_t sigLen;
             PCCOR_SIGNATURE sig = (PCCOR_SIGNATURE)sigBuilder.GetSignature((DWORD*)&sigLen);
-            mdToken typeSig = pCode->GetSigToken(sig, sigLen);
-            tk = pCode->GetToken(th, typeSig);
+            mdToken typeSig = pDispatchCode->GetSigToken(sig, sigLen);
+            tk = pDispatchCode->GetToken(th, typeSig);
         }
 
         // Perform the type check.
-        pCode->EmitCASTCLASS(tk);
+        pDispatchCode->EmitCASTCLASS(tk);
 
-        // If the type was a byref, pop the object reference
-        if (origType.IsByRef())
-            pCode->EmitPOP();
+        // If we have a local variable, we need to store the cast result
+        // in the local variable and load a byref to the local variable as
+        // the argument to the target method. Finally, we may need to update
+        // the byref on return.
+        if (localIndex != MAXDWORD)
+        {
+            pDispatchCode->EmitSTLOC(localIndex);
+            pDispatchCode->EmitLDLOCA(localIndex);
+
+            // Update the byref on return, except if it is marked "in".
+            if (!(param.Attrs & pdIn))
+            {
+                pReturnCode->EmitLDARG(argId);
+                pReturnCode->EmitLDLOC(localIndex);
+                pReturnCode->EmitSTIND_REF();
+            }
+        }
     }
 
     void GenerateAccessor(
@@ -780,7 +806,8 @@ namespace
             cxt.TargetMethod,
             (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE);
 
-        ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+        ILCodeStream* pDispatchCode = sl.NewCodeStream(ILStubLinker::kTypeCheckDispatch);
+        ILCodeStream* pReturnCode = sl.NewCodeStream(ILStubLinker::kUpdateByRefsReturn);
 
         // Load stub arguments.
         // When the target is static, the first argument is only
@@ -790,11 +817,11 @@ namespace
         UINT stubArgCount = cxt.DeclarationMetaSig.NumFixedArgs();
         for (UINT i = beginIndex; i < stubArgCount; ++i)
         {
-            pCode->EmitLDARG(i);
+            pDispatchCode->EmitLDARG(i);
 
             // Perform a typecheck if the type was translated.
-            if (cxt.TranslatedTypes != NULL)
-                EmitTypeCheck(pCode, cxt.TranslatedTypes[i + 1]); // Index is +1 to account for the return value.
+            if (cxt.TranslatedParams != NULL)
+                EmitTypeCheck(i, cxt.TranslatedParams[i + 1], pDispatchCode, pReturnCode); // Index is +1 to account for the return value.
         }
 
         // Provide access to the target member
@@ -808,17 +835,17 @@ namespace
             mdToken target;
             if (!cxt.TargetType.HasInstantiation())
             {
-                target = pCode->GetToken(cxt.TargetMethod);
+                target = pDispatchCode->GetToken(cxt.TargetMethod);
             }
             else
             {
                 PCCOR_SIGNATURE sig;
                 uint32_t sigLen;
                 cxt.TargetTypeSig.GetSignature(&sig, &sigLen);
-                mdToken targetTypeSigToken = pCode->GetSigToken(sig, sigLen);
-                target = pCode->GetToken(cxt.TargetMethod, targetTypeSigToken);
+                mdToken targetTypeSigToken = pDispatchCode->GetSigToken(sig, sigLen);
+                target = pDispatchCode->GetToken(cxt.TargetMethod, targetTypeSigToken);
             }
-            pCode->EmitNEWOBJ(target, targetArgCount);
+            pDispatchCode->EmitNEWOBJ(target, targetArgCount);
             break;
         }
         case UnsafeAccessorKind::Method:
@@ -828,7 +855,7 @@ namespace
             mdToken target;
             if (!cxt.TargetMethod->HasClassOrMethodInstantiation())
             {
-                target = pCode->GetToken(cxt.TargetMethod);
+                target = pDispatchCode->GetToken(cxt.TargetMethod);
             }
             else
             {
@@ -850,16 +877,16 @@ namespace
                     }
 
                     sig = (PCCOR_SIGNATURE)sigBuilder.GetSignature((DWORD*)&sigLen);
-                    methodSpecSigToken = pCode->GetSigToken(sig, sigLen);
+                    methodSpecSigToken = pDispatchCode->GetSigToken(sig, sigLen);
                 }
 
                 cxt.TargetTypeSig.GetSignature(&sig, &sigLen);
-                mdToken targetTypeSigToken = pCode->GetSigToken(sig, sigLen);
+                mdToken targetTypeSigToken = pDispatchCode->GetSigToken(sig, sigLen);
 
                 if (methodSpecSigToken == mdTokenNil)
                 {
                     // Create a MemberRef
-                    target = pCode->GetToken(cxt.TargetMethod, targetTypeSigToken);
+                    target = pDispatchCode->GetToken(cxt.TargetMethod, targetTypeSigToken);
                     _ASSERTE(TypeFromToken(target) == mdtMemberRef);
                 }
                 else
@@ -869,18 +896,18 @@ namespace
                     MethodDesc* instantiatedTarget = MethodDesc::FindOrCreateAssociatedMethodDesc(cxt.TargetMethod, cxt.TargetType.GetMethodTable(), FALSE, methodInst, TRUE);
 
                     // Create a MethodSpec
-                    target = pCode->GetToken(instantiatedTarget, targetTypeSigToken, methodSpecSigToken);
+                    target = pDispatchCode->GetToken(instantiatedTarget, targetTypeSigToken, methodSpecSigToken);
                     _ASSERTE(TypeFromToken(target) == mdtMethodSpec);
                 }
             }
 
             if (cxt.Kind == UnsafeAccessorKind::StaticMethod)
             {
-                pCode->EmitCALL(target, targetArgCount, targetRetCount);
+                pDispatchCode->EmitCALL(target, targetArgCount, targetRetCount);
             }
             else
             {
-                pCode->EmitCALLVIRT(target, targetArgCount, targetRetCount);
+                pDispatchCode->EmitCALLVIRT(target, targetArgCount, targetRetCount);
             }
             break;
         }
@@ -890,15 +917,15 @@ namespace
             mdToken target;
             if (!cxt.TargetType.HasInstantiation())
             {
-                target = pCode->GetToken(cxt.TargetField);
+                target = pDispatchCode->GetToken(cxt.TargetField);
             }
             else
             {
                 // See the static field case for why this can be mdTokenNil.
                 mdToken targetTypeSigToken = mdTokenNil;
-                target = pCode->GetToken(cxt.TargetField, targetTypeSigToken);
+                target = pDispatchCode->GetToken(cxt.TargetField, targetTypeSigToken);
             }
-            pCode->EmitLDFLDA(target);
+            pDispatchCode->EmitLDFLDA(target);
             break;
         }
         case UnsafeAccessorKind::StaticField:
@@ -906,7 +933,7 @@ namespace
             mdToken target;
             if (!cxt.TargetType.HasInstantiation())
             {
-                target = pCode->GetToken(cxt.TargetField);
+                target = pDispatchCode->GetToken(cxt.TargetField);
             }
             else
             {
@@ -919,17 +946,17 @@ namespace
                 PCCOR_SIGNATURE sig;
                 uint32_t sigLen;
                 cxt.TargetTypeSig.GetSignature(&sig, &sigLen);
-                mdToken targetTypeSigToken = pCode->GetSigToken(sig, sigLen);
-                target = pCode->GetToken(cxt.TargetField, targetTypeSigToken);
+                mdToken targetTypeSigToken = pDispatchCode->GetSigToken(sig, sigLen);
+                target = pDispatchCode->GetToken(cxt.TargetField, targetTypeSigToken);
             }
-            pCode->EmitLDSFLDA(target);
+            pDispatchCode->EmitLDSFLDA(target);
             break;
         default:
             _ASSERTE(!"Unknown UnsafeAccessorKind");
         }
 
         // Return from the generated stub
-        pCode->EmitRET();
+        pReturnCode->EmitRET();
 
         // Generate all IL associated data for JIT
         {
