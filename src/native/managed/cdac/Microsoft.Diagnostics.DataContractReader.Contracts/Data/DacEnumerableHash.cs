@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 /// <summary>
 /// Parses hash tables that are implemented by DacEnumerableHash defined in dacenumerablehash.h
-/// Requires the following datadescriptor fields on the inherited type:
+/// Requires the following datadescriptor fields on the passed type:
 /// Buckets - Pointer to array of VolatileEntry pointers
 /// Count - Count of elements
 /// VolatileEntryValue - Offset of the value in the VolatileEntry struct
@@ -17,8 +17,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class DacEnumerableHash
 {
     private const int SLOT_LENGTH = 0;
-    // private const int SLOT_NIEXT = 1;
-    private const int SLOT_ENDSENTINEL = 2;
     private const int SKIP_SPECIAL_SLOTS = 3;
 
     private readonly Target _target;
@@ -76,12 +74,6 @@ internal sealed class DacEnumerableHash
         return (uint)length;
     }
 
-    private TargetPointer GetBaseSentinel()
-    {
-        // Second pointer is a size_t base sentinel
-        TargetPointer baseSentinel = _target.ReadPointer(Buckets + (ulong)(SLOT_ENDSENTINEL * _target.PointerSize));
-        return baseSentinel;
-    }
 
     private static bool IsEndSentinel(TargetPointer value)
     {

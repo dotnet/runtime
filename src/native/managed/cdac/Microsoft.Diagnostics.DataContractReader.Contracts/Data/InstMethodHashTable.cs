@@ -3,12 +3,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class InstMethodHashTable : IData<InstMethodHashTable>
 {
+    private const ulong FLAG_MASK = 0x3ul;
+
     static InstMethodHashTable IData<InstMethodHashTable>.Create(Target target, TargetPointer address) => new InstMethodHashTable(target, address);
     public InstMethodHashTable(Target target, TargetPointer address)
     {
@@ -16,32 +17,20 @@ internal sealed class InstMethodHashTable : IData<InstMethodHashTable>
 
         DacEnumerableHash baseHashTable = new(target, address, type);
 
-        List<InstMethodHashTableEntry> entries = [];
+        List<Entry> entries = [];
         foreach (TargetPointer entry in baseHashTable.Entries)
         {
             TargetPointer methodDescPtr = target.ReadPointer(entry);
-            InstMethodHashTableEntry instMethodHashTableEntry = new()
-            {
-                MethodDesc = methodDescPtr.Value & ~0x3ul,
-                Flags = (InstMethodHashTableFlags)(methodDescPtr.Value & 0x3ul)
-            };
-            entries.Add(instMethodHashTableEntry);
+            entries.Add(new(methodDescPtr));
         }
         Entries = entries;
     }
 
-    public IReadOnlyList<InstMethodHashTableEntry> Entries { get; init; }
+    public IReadOnlyList<Entry> Entries { get; init; }
 
-    public readonly struct InstMethodHashTableEntry
+    public readonly struct Entry(TargetPointer value)
     {
-        public TargetPointer MethodDesc { get; init; }
-        public InstMethodHashTableFlags Flags { get; init; }
-    }
-
-    [Flags]
-    public enum InstMethodHashTableFlags
-    {
-        UnboxingStub = 0x1,
-        RequiresInstArg = 0x2,
+        public TargetPointer MethodDesc { get; } = value & ~FLAG_MASK;
+        public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
     }
 }

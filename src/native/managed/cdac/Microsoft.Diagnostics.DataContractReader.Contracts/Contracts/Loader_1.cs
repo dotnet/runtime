@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -188,36 +189,27 @@ internal readonly struct Loader_1 : ILoader
         return true;
     }
 
-    List<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle)
+    IEnumerable<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        List<TargetPointer> typeParams = [];
 
         if (module.AvailableTypeParams == TargetPointer.Null)
-            return typeParams;
+            return [];
 
         EETypeHashTable typeHashTable = _target.ProcessedData.GetOrAdd<EETypeHashTable>(module.AvailableTypeParams);
-        typeParams.AddRange(typeHashTable.Entries);
-
-        return typeParams;
+        return typeHashTable.Entries.Select(entry => entry.TypeHandle);
     }
 
-    List<TargetPointer> ILoader.GetInstantiatedMethods(ModuleHandle handle)
+    IEnumerable<TargetPointer> ILoader.GetInstantiatedMethods(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        List<TargetPointer> typeParams = [];
 
         if (module.InstMethodHashTable == TargetPointer.Null)
-            return typeParams;
+            return [];
 
         InstMethodHashTable methodHashTable = _target.ProcessedData.GetOrAdd<InstMethodHashTable>(module.InstMethodHashTable);
 
-        foreach (InstMethodHashTable.InstMethodHashTableEntry entry in methodHashTable.Entries)
-        {
-            typeParams.Add(entry.MethodDesc);
-        }
-
-        return typeParams;
+        return methodHashTable.Entries.Select(entry => entry.MethodDesc);
     }
 
     bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle)
