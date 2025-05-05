@@ -12,7 +12,7 @@ The following workflow templates were imported and updated from [dotnet/issue-la
 
 ## Repository Configuration
 
-Across these workflows, the following changes were made to configure the issue labeler for the dotnet/runtime repository:
+Across these workflows, the following changes were made to configure the issue labeler for this repository:
 
 1. Set `LABEL_PREFIX` to `"area-"`:
     - `labeler-predict-issues.yml`
