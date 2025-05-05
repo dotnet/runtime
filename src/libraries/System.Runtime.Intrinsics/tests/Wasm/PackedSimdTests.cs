@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Wasm;
 using System.Tests;
@@ -12,6 +16,16 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
     [PlatformSpecific(TestPlatforms.Browser)]
     public sealed class PackedSimdTests
     {
+        [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(PackedSimd))]
+        public unsafe void PackedSimdIsSupported()
+        {
+            MethodInfo methodInfo = typeof(PackedSimd).GetMethod("get_IsSupported");
+            Assert.Equal(PackedSimd.IsSupported, methodInfo.Invoke(null, null));
+            Assert.Equal(PackedSimd.IsSupported, Vector128.IsHardwareAccelerated);
+            Assert.True(PackedSimd.IsSupported);
+        }
+
         [Fact]
         public unsafe void BasicArithmeticTest()
         {
