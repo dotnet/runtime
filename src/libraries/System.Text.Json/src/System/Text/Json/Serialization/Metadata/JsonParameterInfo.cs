@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using AllowNullAttribute = System.Diagnostics.CodeAnalysis.AllowNullAttribute;
+using DisallowNullAttribute = System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata

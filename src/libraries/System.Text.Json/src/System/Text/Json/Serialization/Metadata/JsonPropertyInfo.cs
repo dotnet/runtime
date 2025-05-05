@@ -4,6 +4,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
+using MaybeNullAttribute = System.Diagnostics.CodeAnalysis.MaybeNullAttribute;
+using AllowNullAttribute = System.Diagnostics.CodeAnalysis.AllowNullAttribute;
+using DisallowNullAttribute = System.Diagnostics.CodeAnalysis.DisallowNullAttribute;
 using System.Reflection;
 using System.Threading;
 
