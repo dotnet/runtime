@@ -525,18 +525,6 @@ public:
         return m_fVerifiedByTrustedSource && CommonIsRo();
     }
 
-    STDMETHODIMP GetRvaOffsetData(// S_OK or error
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount)            // [OUT] Number of records in FieldRVA table.
-    {
-        _ASSERTE("Not implemented");
-        return E_NOTIMPL;
-    }
-
     //*****************************************************************************
     // Some of the tables need coded tokens, not just rids (ie, the column can
     //  refer to more than one other table).  Code the tokens into as few bits

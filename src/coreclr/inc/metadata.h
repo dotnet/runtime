@@ -1045,24 +1045,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         LPCUTF8          *pszNamespace,     // [OUT] Namespace of Custom Attribute.
         LPCUTF8          *pszName) PURE;    // [OUT] Name of Custom Attribute.
 
-    STDMETHOD(GetRvaOffsetData)(
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount             // [OUT] Number of records in FieldRVA table.
-        ) PURE;
-
-    //----------------------------------------------------------------------------------------
-    // !!! READ THIS !!!
-    //
-    // New methods have to be added at the end. The order and signatures of the existing methods
-    // have to be preserved. We need to maintain a backward compatibility for this interface to
-    // allow ildasm to work on SingleCLR.
-    //
-    //----------------------------------------------------------------------------------------
-
 };  // IMDInternalImport
 
 
