@@ -448,7 +448,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 static MonoInst*
 emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoInst **args, MonoTypeEnum arg_type, int id)
 {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 	int op = -1;
 	switch (id){
 	case SN_Negate:
@@ -461,22 +461,6 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 		break;
 	default:
 		g_assert_not_reached ();
-	}
-	return emit_simd_ins_for_sig (cfg, klass, op, -1, arg_type, fsig, args);
-#elif defined(TARGET_WASM)
-	int op = -1;
-	switch (id)
-	{
-	case SN_Negate:
-	case SN_op_UnaryNegation:
-		op = OP_NEGATION;
-		break;
-	case SN_OnesComplement:
-	case SN_op_OnesComplement:
-		op = OP_WASM_ONESCOMPLEMENT;
-		break;
-	default:
-		return NULL;
 	}
 	return emit_simd_ins_for_sig (cfg, klass, op, -1, arg_type, fsig, args);
 #else
@@ -2747,10 +2731,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!type_enum_is_float(arg0_type))
 			return emit_xzero (cfg, klass);
 		int op = -1;
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		op = OP_ONES_COMPLEMENT;
-#elif defined(TARGET_WASM)
-		op = OP_WASM_ONESCOMPLEMENT;
 #endif
 		if (op == -1)
 			return NULL;
@@ -6163,7 +6145,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_MultiplyWideningLower, OP_WASM_EXTMUL_LOWER, 0, OP_WASM_EXTMUL_LOWER_U},
 	{SN_MultiplyWideningUpper, OP_WASM_EXTMUL_UPPER, 0, OP_WASM_EXTMUL_UPPER_U},
 	{SN_Negate},
-	{SN_Not, OP_WASM_ONESCOMPLEMENT},
+	{SN_Not, OP_ONES_COMPLEMENT},
 	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OR},
 	{SN_PopCount, OP_XOP_OVR_X_X, INTRINS_SIMD_POPCNT},
 	{SN_PseudoMax, OP_XOP_OVR_X_X_X, INTRINS_WASM_PMAX},

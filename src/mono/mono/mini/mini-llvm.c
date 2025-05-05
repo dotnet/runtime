@@ -12395,19 +12395,18 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#ifdef TARGET_WASM
-		case OP_WASM_ONESCOMPLEMENT: {
-			// FIXME: llvm bug workaround
-			LLVMTypeRef i4v128_t = LLVMVectorType (i4_t, 4);
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+		case OP_ONES_COMPLEMENT: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef cast = LLVMBuildBitCast (builder, lhs, i4v128_t, "");
-			LLVMValueRef result = LLVMBuildNot (builder, cast, "wasm_not");
-			values [ins->dreg] = LLVMBuildBitCast (builder, result, ret_t, "");
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			result = LLVMBuildNot (builder, result, "v128_not");
+			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
 			break;
 		}
+#if defined(TARGET_WASM)
 		case OP_WASM_BITSELECT: // Fall through to OP_BSL:
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_BSL: {
 			LLVMValueRef select;
 			LLVMValueRef left;
@@ -12505,16 +12504,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-		case OP_ONES_COMPLEMENT: {
-			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
-			result = LLVMBuildNot (builder, result, "");
-			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
-#endif
+
 		case OP_DUMMY_USE:
 			break;
 
