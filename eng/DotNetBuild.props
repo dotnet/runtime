@@ -31,10 +31,10 @@
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)pack</InnerBuildArgs>
 
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArchitecture)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(_portableOS)' == 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os windows</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(_portableOS)' != 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(_portableOS)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(PortableOS)' == 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os windows</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(PortableOS)' != 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(PortableOS)</InnerBuildArgs>
       <!-- Mobile builds are never "cross" builds as they don't have a rootfs-based filesystem build. -->
-      <InnerBuildArgs Condition="'$(CrossBuild)' == 'true' or ('$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(TargetsMobile)' != 'true' and '$(_portableOS)' != 'linux-bionic')">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(CrossBuild)' == 'true' or ('$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(TargetsMobile)' != 'true' and '$(PortableOS)' != 'linux-bionic')">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)configuration $(Configuration)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)verbosity $(LogVerbosity)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)nodereuse $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
@@ -44,7 +44,9 @@
       <InnerBuildArgs Condition="'$(OS)' != 'Windows_NT'">$(InnerBuildArgs) --outputrid $(OutputRID)</InnerBuildArgs>
       <!-- BaseOS is an expected known rid in the graph that OutputRID is compatible with.
            It's used to add OutputRID in the graph if the parent can't be detected. -->
-      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS) /p:BaseOS=$(BaseOS)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
+      <!-- Source-build will use non-portable RIDs. To build for these non-portable RID scenarios, we must do a boostrapped build. -->
+      <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(DotNetBuildUseMonoRuntime)' != 'true'">$(InnerBuildArgs) --bootstrap</InnerBuildArgs>
       <!-- Pass through special build modes controlled by properties -->
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoEnableLLVM=$(DotNetBuildMonoEnableLLVM)</InnerBuildArgs>

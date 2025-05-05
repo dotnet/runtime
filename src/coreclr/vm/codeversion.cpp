@@ -163,7 +163,7 @@ void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationT
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-PatchpointInfo* NativeCodeVersionNode::GetOSRInfo(unsigned * ilOffset) const
+PatchpointInfo* NativeCodeVersionNode::GetOSRInfo(unsigned * ilOffset)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     *ilOffset = m_ilOffset;
