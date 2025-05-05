@@ -523,6 +523,7 @@ FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
 
         alloc_stack     stack_alloc_size
 
+        ;; Mirror clearing of AVX state done by regular method prologs
         vzeroupper
 
         save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
@@ -543,6 +544,9 @@ endm
 ;; Epilogue of all funclet calling helpers (CallXXXXFunclet)
 ;;
 FUNCLET_CALL_EPILOGUE macro
+        ;; Mirror clearing of AVX state done by regular method epilogs
+        vzeroupper
+
         movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
         movdqa  xmm7,  [rsp + arguments_scratch_area_size + 1 * 10h]
         movdqa  xmm8,  [rsp + arguments_scratch_area_size + 2 * 10h]
@@ -597,10 +601,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         ; Invoke the funclet
         call    rdx
 
-        vzeroupper
-
         FUNCLET_CALL_EPILOGUE
-
         ret
 NESTED_END CallEHFunclet, _TEXT
 
@@ -623,8 +624,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         mov     rbp, rdx
         ; Invoke the filter funclet
         call    r8
-
-        vzeroupper
 
         FUNCLET_CALL_EPILOGUE
         ret

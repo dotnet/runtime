@@ -378,6 +378,7 @@ LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
         alloc_stack     stack_alloc_size
 
+        // Mirror clearing of AVX state done by regular method prologs
         vzeroupper
 
         END_PROLOGUE
@@ -387,6 +388,9 @@ LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 // Epilogue of all funclet calling helpers (CallXXXXFunclet)
 //
 .macro FUNCLET_CALL_EPILOGUE
+        // Mirror clearing of AVX state done by regular method epilogs
+        vzeroupper
+
         free_stack      stack_alloc_size
 
         pop_nonvol_reg rbp
@@ -421,8 +425,6 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         // Invoke the funclet
         call    rsi
 
-        vzeroupper
-
         FUNCLET_CALL_EPILOGUE
         ret
 NESTED_END CallEHFunclet, _TEXT
@@ -446,8 +448,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         mov     [rcx], rsp
         // Invoke the filter funclet
         call    rdx
-
-        vzeroupper
 
         FUNCLET_CALL_EPILOGUE
         ret
