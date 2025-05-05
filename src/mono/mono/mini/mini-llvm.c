@@ -12406,19 +12406,24 @@ MONO_RESTORE_WARNING
 		}
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+#if defined(TARGET_WASM)
 		case OP_WASM_BITSELECT:
+#endif
 		case OP_BSL: {
 			LLVMValueRef select;
 			LLVMValueRef left;
 			LLVMValueRef right;
 
+#if defined(TARGET_WASM)
 			// For PackedSimd the selection mask is last not first
 			if (ins->opcode == OP_WASM_BITSELECT) {
 				select = bitcast_to_integral (ctx, arg3);
 				left = bitcast_to_integral (ctx, lhs);
 				right = bitcast_to_integral (ctx, rhs);
-				
-			} else {
+			} else
+#endif
+			{
+
 				select = bitcast_to_integral (ctx, lhs);
 				left = bitcast_to_integral (ctx, rhs);
 				right = bitcast_to_integral (ctx, arg3);
