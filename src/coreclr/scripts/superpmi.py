@@ -3701,14 +3701,14 @@ def list_superpmi_collections_container_via_azure_api(path_filter=lambda unused:
     """
 
     require_azure_storage_libraries()
-    from jitutil import ContainerClient, DefaultAzureCredential
+    from jitutil import ContainerClient, AzureCliCredential
 
     superpmi_container_url = az_blob_storage_superpmi_container_uri
 
     paths = []
     ok = True
     try:
-        az_credential = DefaultAzureCredential()
+        az_credential = AzureCliCredential()
         container = ContainerClient.from_container_url(superpmi_container_url, credential=az_credential)
         blob_name_prefix = az_collections_root_folder + "/"
         blob_list = container.list_blobs(name_starts_with=blob_name_prefix, retry_total=0)
@@ -3928,7 +3928,7 @@ def upload_mch(coreclr_args):
     """
 
     require_azure_storage_libraries(need_azure_identity=True)
-    from jitutil import BlobServiceClient, DefaultAzureCredential
+    from jitutil import BlobServiceClient, AzureCliCredential
 
     def upload_blob(file, blob_name):
         blob_client = blob_service_client.get_blob_client(container=az_superpmi_container_name, blob=blob_name)
@@ -3964,7 +3964,7 @@ def upload_mch(coreclr_args):
     for item in files_to_upload:
         logging.info("  %s", item)
 
-    default_credential = DefaultAzureCredential()
+    default_credential = AzureCliCredential()
 
     blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=default_credential)
     blob_folder_name = "{}/{}/{}/{}".format(az_collections_root_folder, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)

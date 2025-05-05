@@ -468,9 +468,11 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 	switch (id)
 	{
 	case SN_Negate:
+	case SN_op_UnaryNegation:
 		op = OP_NEGATION;
 		break;
 	case SN_OnesComplement:
+	case SN_op_OnesComplement:
 		op = OP_WASM_ONESCOMPLEMENT;
 		break;
 	default:
@@ -2182,7 +2184,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Floor: {
 		if (!type_enum_is_float (arg0_type))
 			return NULL;
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
 		int ceil_or_floor = id == SN_Ceiling ? INTRINS_SIMD_CEIL : INTRINS_SIMD_FLOOR;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
 #elif defined(TARGET_AMD64)

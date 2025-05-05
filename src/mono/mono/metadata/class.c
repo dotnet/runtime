@@ -1252,7 +1252,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	mono_mem_manager_lock (mm);
 	if (!mm->gmethod_cache)
 		mm->gmethod_cache = dn_simdhash_ght_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method, 0, NULL);
-	dn_simdhash_ght_try_get_value (mm->gmethod_cache, iresult, (void **)&cached);
+	cached = dn_simdhash_ght_get_value_or_default (mm->gmethod_cache, iresult);
 	mono_mem_manager_unlock (mm);
 
 	if (cached) {
@@ -1358,8 +1358,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	// check cache
 	mono_mem_manager_lock (mm);
-	cached = NULL;
-	dn_simdhash_ght_try_get_value (mm->gmethod_cache, iresult, (void **)&cached);
+	cached = dn_simdhash_ght_get_value_or_default (mm->gmethod_cache, iresult);
 	if (!cached) {
 		dn_simdhash_ght_insert (mm->gmethod_cache, iresult, iresult);
 		iresult->owner = mm;

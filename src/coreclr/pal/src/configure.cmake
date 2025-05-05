@@ -120,7 +120,20 @@ check_function_exists(statvfs HAVE_STATVFS)
 check_function_exists(thread_self HAVE_THREAD_SELF)
 check_function_exists(_lwp_self HAVE__LWP_SELF)
 check_function_exists(pthread_mach_thread_np HAVE_MACH_THREADS)
-check_function_exists(thread_set_exception_ports HAVE_MACH_EXCEPTIONS)
+check_cxx_source_compiles("
+#include <mach/mach.h>
+int main(int argc, char **argv) {
+  static mach_port_name_t port;
+  thread_set_exception_ports(mach_thread_self(), EXC_MASK_BAD_ACCESS, port, EXCEPTION_DEFAULT, MACHINE_THREAD_STATE);
+  return 0;
+}" HAVE_MACH_EXCEPTIONS)
+check_cxx_source_compiles("
+#include <signal.h>
+#include <stdlib.h>
+int main(int argc, char **argv) {
+  sigaltstack(NULL, NULL);
+  return 0;
+}" HAVE_SIGALTSTACK)
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
 check_function_exists(vm_read HAVE_VM_READ)
 check_function_exists(directio HAVE_DIRECTIO)
@@ -942,7 +955,7 @@ elseif(CLR_CMAKE_TARGET_BROWSER)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 else() # Anything else is Linux
   # LTTNG is not available on Android, so don't error out
-  if(NOT HAVE_LTTNG_TRACEPOINT_H AND NOT CLR_CMAKE_TARGET_ANDROID AND FEATURE_EVENT_TRACE)
+  if(FEATURE_EVENTSOURCE_XPLAT AND NOT HAVE_LTTNG_TRACEPOINT_H)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
     message(FATAL_ERROR "Cannot find liblttng-ust-dev. Try installing liblttng-ust-dev  (or the appropriate packages for your platform)")
   endif()

@@ -41,9 +41,7 @@ inline static bool isHighSimdReg(regNumber reg)
 inline static bool isHighGPReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    // TODO-apx: the definition here is incorrect, we will need to revisit this after we extend the register definition.
-    //           for now, we can simply use REX2 as REX.
-    return ((reg >= REG_R16) && (reg <= REG_R23));
+    return ((reg >= REG_R16) && (reg <= REG_R31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended regs are not available.
     return false;
@@ -756,14 +754,16 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool             hasAsyncRet);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool             hasAsyncRet);
 
 void    emitGetInsCns(const instrDesc* id, CnsVal* cv) const;
 ssize_t emitGetInsAmdCns(const instrDesc* id, CnsVal* cv) const;
@@ -1226,36 +1226,6 @@ void emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNum
 
 regNumber emitIns_BASE_R_R_RM(
     instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp);
-
-enum EmitCallType
-{
-    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method (call addr with RIP-relative encoding)
-    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method (call [addr]/call [rip+addr])
-    EC_INDIR_R,          // Indirect call via register (call rax)
-    EC_INDIR_ARD,        // Indirect call via an addressing mode (call [rax+rdx*8+disp])
-
-    EC_COUNT
-};
-
-// clang-format off
-void emitIns_Call(EmitCallType          callType,
-                  CORINFO_METHOD_HANDLE methHnd,
-                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*                 addr,
-                  ssize_t               argSize,
-                  emitAttr              retSize
-                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                  VARSET_VALARG_TP      ptrVars,
-                  regMaskTP             gcrefRegs,
-                  regMaskTP             byrefRegs,
-                  const DebugInfo& di = DebugInfo(),
-                  regNumber             ireg     = REG_NA,
-                  regNumber             xreg     = REG_NA,
-                  unsigned              xmul     = 0,
-                  ssize_t               disp     = 0,
-                  bool                  isJump   = false,
-                  bool                  noSafePoint   = false);
-// clang-format on
 
 #ifdef TARGET_AMD64
 // Is the last instruction emitted a call instruction?

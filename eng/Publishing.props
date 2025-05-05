@@ -36,9 +36,14 @@
     </Artifact>
   </ItemGroup>
 
-  <!-- remove the manifest .Msi packages, they are built in the SDK repo now -->
-  <ItemGroup>
-    <Artifact Remove="$(ArtifactsShippingPackagesDir)*.Manifest-*.Msi.*.nupkg" />
+  <!-- remove the manifest packages, they are built in the SDK repo now -->
+  <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
+    <Artifact Remove="$(ArtifactsShippingPackagesDir)*.Manifest-*.nupkg" />
+  </ItemGroup>
+
+  <!-- The PGO runtime should always have External visibility, even if someone changes the default artifact visibility -->    
+  <ItemGroup>    
+    <Artifact Update="$(ArtifactsNonShippingPackagesDir)dotnet-runtime-pgo-*" Visibility="External" />    
   </ItemGroup>
 
   <!--
@@ -83,8 +88,11 @@
     but we do produce them in both the VMR and the runtime official build.
   -->
   <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
-    <ShouldGenerateProductVersionFiles Condition="'$(PackageRID)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
+    <ShouldGenerateProductVersionFiles Condition="'$(OutputRID)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
     <ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ShouldGenerateProductVersionFiles>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' != 'true'">
+    <ShouldGenerateProductVersionFiles Condition="'$(DotNetFinalPublish)' == 'true'">true</ShouldGenerateProductVersionFiles>
   </PropertyGroup>
 
   <Target Name="GenerateProductVersionFiles"
