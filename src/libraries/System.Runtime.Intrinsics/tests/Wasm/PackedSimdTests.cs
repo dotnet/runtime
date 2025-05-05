@@ -142,9 +142,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             // Test with bytes for more granular bit-level control
             var byteMask = Vector128.Create((byte)0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00);
             var byteA = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            var byteB = Vector128.Create(
-                (byte)17, 18, 19, 20, 21, 22, 23, 24,
-                25, 26, 27, 28, 29, 30, 31, 32
+            var byteB = Vector128.Create((byte)17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
             );
 
             // Use the correct parameter order: left(byteA), right(byteB), select(byteMask)
@@ -330,6 +328,134 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
 
             // Verify saturation at -32768 (min short value) for subtraction
             Assert.Equal(Vector128.Create((short)-32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768), shortSubSat2);
+        }
+
+        [Fact]
+        public unsafe void SaturatingArithmeticForIntegersTest()
+        {
+            // Test for sbyte (saturates at -128 and 127)
+            var sb1 = Vector128.Create((sbyte)120, (sbyte)120, (sbyte)-120, (sbyte)-120,
+                                     (sbyte)120, (sbyte)120, (sbyte)-120, (sbyte)-120,
+                                     (sbyte)120, (sbyte)120, (sbyte)-120, (sbyte)-120,
+                                     (sbyte)120, (sbyte)120, (sbyte)-120, (sbyte)-120);
+            var sb2 = Vector128.Create((sbyte)10, (sbyte)20, (sbyte)-10, (sbyte)-20,
+                                     (sbyte)10, (sbyte)20, (sbyte)-10, (sbyte)-20,
+                                     (sbyte)10, (sbyte)20, (sbyte)-10, (sbyte)-20,
+                                     (sbyte)10, (sbyte)20, (sbyte)-10, (sbyte)-20);
+
+            var sbAddSat = PackedSimd.AddSaturate(sb1, sb2);
+            var sbSubSat = PackedSimd.SubtractSaturate(sb1, sb2);
+
+            Assert.Equal(Vector128.Create((sbyte)127, (sbyte)127, (sbyte)-128, (sbyte)-128,
+                                        (sbyte)127, (sbyte)127, (sbyte)-128, (sbyte)-128,
+                                        (sbyte)127, (sbyte)127, (sbyte)-128, (sbyte)-128,
+                                        (sbyte)127, (sbyte)127, (sbyte)-128, (sbyte)-128), sbAddSat);
+            Assert.Equal(Vector128.Create((sbyte)110, (sbyte)100, (sbyte)-110, (sbyte)-100,
+                                        (sbyte)110, (sbyte)100, (sbyte)-110, (sbyte)-100,
+                                        (sbyte)110, (sbyte)100, (sbyte)-110, (sbyte)-100,
+                                        (sbyte)110, (sbyte)100, (sbyte)-110, (sbyte)-100), sbSubSat);
+
+            // Test for short (saturates at -32768 and 32767)
+            var short1 = Vector128.Create((short)32000, (short)32000, (short)-32000, (short)-32000,
+                                        (short)30000, (short)30000, (short)-30000, (short)-30000);
+            var short2 = Vector128.Create((short)1000, (short)2000, (short)-1000, (short)-2000,
+                                        (short)1000, (short)2000, (short)-1000, (short)-2000);
+
+            var shortAddSat = PackedSimd.AddSaturate(short1, short2);
+            var shortSubSat = PackedSimd.SubtractSaturate(short1, short2);
+
+            Assert.Equal(Vector128.Create((short)32767, (short)32767, (short)-32768, (short)-32768,
+                                        (short)31000, (short)32000, (short)-31000, (short)-32000), shortAddSat);
+            Assert.Equal(Vector128.Create((short)31000, (short)30000, (short)-31000, (short)-30000,
+                                        (short)29000, (short)28000, (short)-29000, (short)-28000), shortSubSat);
+        }
+
+        [Fact]
+        public unsafe void SaturatingArithmeticForUnsignedIntegersTest()
+        {
+            // Test for byte (saturates at 0 and 255)
+            var b1 = Vector128.Create((byte)250, (byte)250, (byte)5, (byte)5,
+                                     (byte)250, (byte)250, (byte)5, (byte)5,
+                                     (byte)250, (byte)250, (byte)5, (byte)5,
+                                     (byte)250, (byte)250, (byte)5, (byte)5);
+            var b2 = Vector128.Create((byte)10, (byte)20, (byte)10, (byte)20,
+                                     (byte)10, (byte)20, (byte)10, (byte)20,
+                                     (byte)10, (byte)20, (byte)10, (byte)20,
+                                     (byte)10, (byte)20, (byte)10, (byte)20);
+
+            var bAddSat = PackedSimd.AddSaturate(b1, b2);
+            var bSubSat = PackedSimd.SubtractSaturate(b1, b2);
+
+            Assert.Equal(Vector128.Create((byte)255, (byte)255, (byte)15, (byte)25,
+                                        (byte)255, (byte)255, (byte)15, (byte)25,
+                                        (byte)255, (byte)255, (byte)15, (byte)25,
+                                        (byte)255, (byte)255, (byte)15, (byte)25), bAddSat);
+            Assert.Equal(Vector128.Create((byte)240, (byte)230, (byte)0, (byte)0,
+                                        (byte)240, (byte)230, (byte)0, (byte)0,
+                                        (byte)240, (byte)230, (byte)0, (byte)0,
+                                        (byte)240, (byte)230, (byte)0, (byte)0), bSubSat);
+
+            // Test for ushort (saturates at 0 and 65535)
+            var ushort1 = Vector128.Create((ushort)65000, (ushort)65000, (ushort)5, (ushort)5,
+                                         (ushort)60000, (ushort)60000, (ushort)10, (ushort)10);
+            var ushort2 = Vector128.Create((ushort)1000, (ushort)2000, (ushort)10, (ushort)20,
+                                         (ushort)10000, (ushort)20000, (ushort)15, (ushort)25);
+
+            var ushortAddSat = PackedSimd.AddSaturate(ushort1, ushort2);
+            var ushortSubSat = PackedSimd.SubtractSaturate(ushort1, ushort2);
+
+            Assert.Equal(Vector128.Create((ushort)65535, (ushort)65535, (ushort)15, (ushort)25,
+                                        (ushort)65535, (ushort)65535, (ushort)25, (ushort)35), ushortAddSat);
+            Assert.Equal(Vector128.Create((ushort)64000, (ushort)63000, (ushort)0, (ushort)0,
+                                        (ushort)50000, (ushort)40000, (ushort)0, (ushort)0), ushortSubSat);
+        }
+
+        [Fact]
+        public unsafe void SaturatingArithmeticEdgeCasesTest()
+        {
+            // Edge cases for signed bytes
+            var sbMax = Vector128.Create(sbyte.MaxValue);
+            var sbMin = Vector128.Create(sbyte.MinValue);
+            var sbOne = Vector128.Create((sbyte)1);
+
+            var sbOverflow = PackedSimd.AddSaturate(sbMax, sbOne);
+            var sbUnderflow = PackedSimd.SubtractSaturate(sbMin, sbOne);
+
+            Assert.Equal(Vector128.Create(sbyte.MaxValue), sbOverflow);
+            Assert.Equal(Vector128.Create(sbyte.MinValue), sbUnderflow);
+
+            // Edge cases for unsigned bytes
+            var bMax = Vector128.Create(byte.MaxValue);
+            var bMin = Vector128.Create(byte.MinValue);
+            var bOne = Vector128.Create((byte)1);
+
+            var bOverflow = PackedSimd.AddSaturate(bMax, bOne);
+            var bUnderflow = PackedSimd.SubtractSaturate(bMin, bOne);
+
+            Assert.Equal(Vector128.Create(byte.MaxValue), bOverflow);
+            Assert.Equal(Vector128.Create(byte.MinValue), bUnderflow);
+
+            // Edge cases for signed shorts
+            var shortMax = Vector128.Create(short.MaxValue);
+            var shortMin = Vector128.Create(short.MinValue);
+            var shortOne = Vector128.Create((short)1);
+
+            var shortOverflow = PackedSimd.AddSaturate(shortMax, shortOne);
+            var shortUnderflow = PackedSimd.SubtractSaturate(shortMin, shortOne);
+
+            Assert.Equal(Vector128.Create(short.MaxValue), shortOverflow);
+            Assert.Equal(Vector128.Create(short.MinValue), shortUnderflow);
+
+            // Edge cases for unsigned shorts
+            var ushortMax = Vector128.Create(ushort.MaxValue);
+            var ushortMin = Vector128.Create(ushort.MinValue);
+            var ushortOne = Vector128.Create((ushort)1);
+
+            var ushortOverflow = PackedSimd.AddSaturate(ushortMax, ushortOne);
+            var ushortUnderflow = PackedSimd.SubtractSaturate(ushortMin, ushortOne);
+
+            Assert.Equal(Vector128.Create(ushort.MaxValue), ushortOverflow);
+            Assert.Equal(Vector128.Create(ushort.MinValue), ushortUnderflow);
         }
 
         [Fact]
