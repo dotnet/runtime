@@ -12421,7 +12421,7 @@ MONO_RESTORE_WARNING
 				right = bitcast_to_integral (ctx, arg3);
 			} else {
 				// OP_WASM_BITSELECT: PackedSimd.BitwiseSelect
-				// (left, right, mast)
+				// (left, right, mask)
 				select = bitcast_to_integral (ctx, arg3);
 				left = bitcast_to_integral (ctx, lhs);
 				right = bitcast_to_integral (ctx, rhs);
