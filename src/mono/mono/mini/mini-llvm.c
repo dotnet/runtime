@@ -12413,19 +12413,21 @@ MONO_RESTORE_WARNING
 			LLVMValueRef left;
 			LLVMValueRef right;
 
-			if (ins->opcode == OP_BSL){
+			if (true){
+				// OP_BSL: Vector128.ConditionalSelect
+				// (mask, left, right)
 				select = bitcast_to_integral (ctx, lhs);
 				left = bitcast_to_integral (ctx, rhs);
 				right = bitcast_to_integral (ctx, arg3);
 			} else {
-				// OP_WASM_BITSELECT:
-				// For PackedSimd the selection mask is last not first
+				// OP_WASM_BITSELECT: PackedSimd.BitwiseSelect
+				// (left, right, mast)
 				select = bitcast_to_integral (ctx, arg3);
 				left = bitcast_to_integral (ctx, lhs);
 				right = bitcast_to_integral (ctx, rhs);
 			}
 
-			LLVMTypeRef ret_t = LLVMTypeOf (left);
+			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
 			LLVMValueRef result1 = LLVMBuildAnd (builder, select, left, "bit_select");
 			LLVMValueRef result2 = LLVMBuildAnd (builder, LLVMBuildNot (builder, select, ""), right, "");
 			LLVMValueRef result = LLVMBuildOr (builder, result1, result2, "");
