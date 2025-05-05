@@ -5981,10 +5981,8 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #else
-#ifdef TARGET_UNIX
     CHECK_RANGE(JIT_WriteBarrierGroup)
     CHECK_RANGE(JIT_PatchedWriteBarrierGroup)
-#endif // TARGET_UNIX
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
