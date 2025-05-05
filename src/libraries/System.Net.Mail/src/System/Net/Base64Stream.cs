@@ -171,7 +171,7 @@ namespace System.Net
             WriteState.Reset();
         }
 
-        public override int Read(Span<byte> buffer)
+        protected override int ReadInternal(Span<byte> buffer)
         {
             while (true)
             {
@@ -194,7 +194,7 @@ namespace System.Net
             }
         }
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override async ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             while (true)
             {
@@ -217,7 +217,7 @@ namespace System.Net
             }
         }
 
-        public override void Write(ReadOnlySpan<byte> buffer)
+        protected override void WriteInternal(ReadOnlySpan<byte> buffer)
         {
             int written = 0;
 
@@ -237,7 +237,7 @@ namespace System.Net
             }
         }
 
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             int written = 0;
 

@@ -101,19 +101,38 @@ namespace System.Net
         }
 
         // Abstract methods for derived classes to implement core logic
-        public abstract override int Read(Span<byte> buffer);
-        public abstract override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default);
-        public abstract override void Write(ReadOnlySpan<byte> buffer);
-        public abstract override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default);
+        protected abstract int ReadInternal(Span<byte> buffer);
 
-        // Sealed implementations using the abstract Span/Memory methods
+        protected abstract ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken);
+
+        protected abstract void WriteInternal(ReadOnlySpan<byte> buffer);
+
+        protected abstract ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
+
+        // Sealed methods implementing the Stream Read/Write methods
+        public sealed override int Read(Span<byte> buffer)
+        {
+            if (!CanRead)
+                throw new NotSupportedException(SR.ReadNotSupported);
+
+            return ReadInternal(buffer);
+        }
+
+        public sealed override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!CanRead)
+                throw new NotSupportedException(SR.ReadNotSupported);
+
+            return ReadAsyncInternal(buffer, cancellationToken);
+        }
+
         public sealed override int Read(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
             if (!CanRead)
                 throw new NotSupportedException(SR.ReadNotSupported);
 
-            return Read(buffer.AsSpan(offset, count));
+            return ReadInternal(buffer.AsSpan(offset, count));
         }
 
         public sealed override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -122,7 +141,7 @@ namespace System.Net
             if (!CanRead)
                 throw new NotSupportedException(SR.ReadNotSupported);
 
-            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            return ReadAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
         public sealed override int ReadByte()
@@ -131,7 +150,7 @@ namespace System.Net
                 throw new NotSupportedException(SR.ReadNotSupported);
 
             byte b = 0;
-            return Read(new Span<byte>(ref b)) != 0 ? b : -1;
+            return ReadInternal(new Span<byte>(ref b)) != 0 ? b : -1;
         }
 
         public sealed override long Seek(long offset, SeekOrigin origin)
@@ -150,13 +169,29 @@ namespace System.Net
             _stream.SetLength(value);
         }
 
+        public sealed override void Write(ReadOnlySpan<byte> buffer)
+        {
+            if (!CanWrite)
+                throw new NotSupportedException(SR.WriteNotSupported);
+
+            WriteInternal(buffer);
+        }
+
+        public sealed override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!CanWrite)
+                throw new NotSupportedException(SR.WriteNotSupported);
+
+            return WriteAsyncInternal(buffer, cancellationToken);
+        }
+
         public sealed override void Write(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
             if (!CanWrite)
                 throw new NotSupportedException(SR.WriteNotSupported);
 
-            Write(buffer.AsSpan(offset, count));
+            WriteInternal(buffer.AsSpan(offset, count));
         }
 
         public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -165,7 +200,7 @@ namespace System.Net
             if (!CanWrite)
                 throw new NotSupportedException(SR.WriteNotSupported);
 
-            return WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            return WriteAsyncInternal(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
     }
 }

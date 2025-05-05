@@ -29,22 +29,22 @@ namespace System.Net
             }
         }
 
-        public override void Write(ReadOnlySpan<byte> buffer)
+        protected override void WriteInternal(ReadOnlySpan<byte> buffer)
         {
             BaseStream.Write(buffer);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             return BaseStream.WriteAsync(buffer, cancellationToken);
         }
 
-        public override int Read(Span<byte> buffer)
+        protected override int ReadInternal(Span<byte> buffer)
         {
             return BaseStream.Read(buffer);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             return BaseStream.ReadAsync(buffer, cancellationToken);
         }

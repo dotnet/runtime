@@ -49,18 +49,18 @@ namespace System.Net.Mime
         public override bool CanRead => false;
         public override bool CanWrite => BaseStream.CanWrite;
 
-        public override int Read(Span<byte> buffer)
+        protected override int ReadInternal(Span<byte> buffer)
         {
             throw new NotImplementedException();
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
         // Implement abstract Write methods
-        public override void Write(ReadOnlySpan<byte> buffer)
+        protected override void WriteInternal(ReadOnlySpan<byte> buffer)
         {
             if (_shouldEncodeLeadingDots)
             {
@@ -75,7 +75,7 @@ namespace System.Net.Mime
             }
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (_shouldEncodeLeadingDots)
             {

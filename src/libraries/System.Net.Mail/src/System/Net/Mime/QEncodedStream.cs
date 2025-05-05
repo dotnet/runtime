@@ -216,17 +216,17 @@ namespace System.Net.Mime
             }
         }
 
-        public override int Read(Span<byte> buffer)
+        protected override int ReadInternal(Span<byte> buffer)
         {
             throw new NotImplementedException();
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public override void Write(ReadOnlySpan<byte> buffer)
+        protected override void WriteInternal(ReadOnlySpan<byte> buffer)
         {
             int written = 0;
             while (true)
@@ -243,7 +243,7 @@ namespace System.Net.Mime
             }
         }
 
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             int written = 0;
             while (true)

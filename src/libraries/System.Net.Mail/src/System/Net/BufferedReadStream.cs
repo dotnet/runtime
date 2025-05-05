@@ -29,7 +29,7 @@ namespace System.Net
 
         public override bool CanSeek => false;
 
-        public override int Read(Span<byte> buffer)
+        protected override int ReadInternal(Span<byte> buffer)
         {
             if (_storedOffset < _storedLength)
             {
@@ -48,7 +48,7 @@ namespace System.Net
             return BaseStream.Read(buffer);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (_storedOffset >= _storedLength)
             {
@@ -73,14 +73,14 @@ namespace System.Net
             return bytesAlreadyRead + returnValue;
         }
 
-        public override void Write(ReadOnlySpan<byte> buffer)
+        protected override void WriteInternal(ReadOnlySpan<byte> buffer)
         {
-            throw new NotSupportedException(SR.WriteNotSupported);
+            throw new NotImplementedException();
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        protected override ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException(SR.WriteNotSupported);
+            throw new NotImplementedException();
         }
 
         // adds additional content to the beginning of the buffer
