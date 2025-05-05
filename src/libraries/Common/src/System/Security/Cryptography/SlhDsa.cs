@@ -106,7 +106,7 @@ namespace System.Security.Cryptography
         ///   The default value is an empty buffer.
         /// </param>
         /// <exception cref="ArgumentException">
-        ///   The buffer in <paramref name="destination"/> is too incorrect length to receive the signature.
+        ///   The buffer in <paramref name="destination"/> is the incorrect length to receive the signature.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
@@ -120,6 +120,10 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the data.</para>
         /// </exception>
+        /// <remarks>
+        ///   <paramref name="destination"/> is required to be exactly
+        ///   <see cref="SlhDsaAlgorithm.SignatureSizeInBytes"/> in length.
+        /// </remarks>
         public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
             int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
@@ -127,7 +131,7 @@ namespace System.Security.Cryptography
             if (destination.Length != signatureSizeInBytes)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SignatureSizeInBytes),
+                    SR.Format(SR.Argument_DestinationImprecise, signatureSizeInBytes),
                     nameof(destination));
             }
 
@@ -152,7 +156,7 @@ namespace System.Security.Cryptography
         /// </param>
         /// <param name="context">
         ///   An optional context-specific value to limit the scope of the signature.
-        ///   The default value is a <see langword="null"/> buffer.
+        ///   A <see langword="null"/> context is treated as empty.
         /// </param>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="data"/> is <see langword="null"/>.
@@ -236,7 +240,7 @@ namespace System.Security.Cryptography
         /// </param>
         /// <param name="context">
         ///   The context value which was provided during signing.
-        ///   The default value is a <see langword="null"/> buffer.
+        ///   A <see langword="null"/> context is treated as empty.
         /// </param>
         /// <returns>
         ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
@@ -836,6 +840,10 @@ namespace System.Security.Cryptography
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   <paramref name="destination"/> is required to be exactly
+        ///   <see cref="SlhDsaAlgorithm.PublicKeySizeInBytes"/> in length.
+        /// </remarks>
         public void ExportSlhDsaPublicKey(Span<byte> destination)
         {
             int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
@@ -843,7 +851,7 @@ namespace System.Security.Cryptography
             if (destination.Length != publicKeySizeInBytes)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.PublicKeySizeInBytes),
+                    SR.Format(SR.Argument_DestinationImprecise, publicKeySizeInBytes),
                     nameof(destination));
             }
 
@@ -886,6 +894,10 @@ namespace System.Security.Cryptography
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   <paramref name="destination"/> is required to be exactly
+        ///   <see cref="SlhDsaAlgorithm.SecretKeySizeInBytes"/> in length.
+        /// </remarks>
         public void ExportSlhDsaSecretKey(Span<byte> destination)
         {
             int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
@@ -893,7 +905,7 @@ namespace System.Security.Cryptography
             if (destination.Length != secretKeySizeInBytes)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SecretKeySizeInBytes),
+                    SR.Format(SR.Argument_DestinationImprecise, secretKeySizeInBytes),
                     nameof(destination));
             }
 
