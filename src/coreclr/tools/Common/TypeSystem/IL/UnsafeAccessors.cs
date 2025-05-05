@@ -604,6 +604,18 @@ namespace Internal.IL
                     return SetTargetResult.NotSupported;
                 }
 
+                bool isUnsafeAccessorFieldReturn = isReturnValue
+                    && context.Kind is UnsafeAccessorKind.Field or UnsafeAccessorKind.StaticField;
+
+                if (isUnsafeAccessorFieldReturn)
+                {
+                    // UnsafeAccessorAttribute requires the return type to be byref for any field kind.
+                    // This is a deviation from the normal UnsafeAccessorTypeAttribute requirements
+                    // where the type is expected to match the signature exactly. Users aren't required to
+                    // state the byref for field access because that isn't in the target field signature.
+                    replacementType = replacementType.MakeByRefType();
+                }
+
                 if (replacementType.IsByRef != initialTypeIsByRef)
                 {
                     // The replacement type must match the original type
@@ -613,14 +625,6 @@ namespace Internal.IL
 
                 if (isReturnValue)
                 {
-                    if (context.Kind is UnsafeAccessorKind.Field or UnsafeAccessorKind.StaticField)
-                    {
-                        // UnsafeAccessorAttribute requires the return type to be byref for any field kind.
-                        // This is a deviation from the normal UnsafeAccessorTypeAttribute requirements
-                        // where the type is expected to match the signature exactly. Users aren't required to
-                        // state the byref for field access because that isn't in the target field signature.
-                        replacementType = replacementType.MakeByRefType();
-                    }
                     updatedSignature.ReturnType = replacementType;
                 }
                 else
@@ -644,12 +648,36 @@ namespace Internal.IL
             // during dispatch.
             int beginIndex = context.IsTargetStatic ? 1 : 0;
             int stubArgCount = context.DeclarationSignature.Length;
+            Stubs.ILLocalVariable?[] localsToRestore = null;
             for (int i = beginIndex; i < stubArgCount; ++i)
             {
-                codeStream.EmitLdArg(i);
-                if (context.DeclarationSignature[i] is { Category: TypeFlags.Class } classType)
+                if (context.Declaration.Signature[i] != context.DeclarationSignature[i])
                 {
-                    codeStream.Emit(ILOpcode.castclass, emit.NewToken(classType));
+                    if (context.DeclarationSignature[i] is { Category: TypeFlags.Class } classType)
+                    {
+                        codeStream.EmitLdArg(i);
+                        codeStream.Emit(ILOpcode.castclass, emit.NewToken(classType));
+                    }
+                    else if (context.DeclarationSignature[i] is ByRefType { ParameterType.Category: TypeFlags.Class } byrefType)
+                    {
+                        localsToRestore ??= new Stubs.ILLocalVariable?[stubArgCount];
+
+                        TypeDesc targetType = byrefType.ParameterType;
+                        codeStream.EmitLdArg(i);
+                        localsToRestore[i] = emit.NewLocal(targetType);
+                        codeStream.EmitLdInd(targetType);
+                        codeStream.Emit(ILOpcode.castclass, emit.NewToken(targetType));
+                        codeStream.EmitStLoc(localsToRestore[i].Value);
+                        codeStream.EmitLdLoca(localsToRestore[i].Value);
+                    }
+                    else
+                    {
+                        codeStream.EmitLdArg(i);
+                    }
+                }
+                else
+                {
+                    codeStream.EmitLdArg(i);
                 }
             }
 
@@ -679,6 +707,19 @@ namespace Internal.IL
                 default:
                     Debug.Fail("Unknown UnsafeAccessorKind");
                     break;
+            }
+
+            if (localsToRestore is not null)
+            {
+                for (int i = beginIndex; i < stubArgCount; ++i)
+                {
+                    if (localsToRestore[i] != null)
+                    {
+                        codeStream.EmitLdArg(i);
+                        codeStream.EmitLdLoc(localsToRestore[i].Value);
+                        codeStream.EmitStInd(((ParameterizedType)context.Declaration.Signature[i]).ParameterType);
+                    }
+                }
             }
 
             // Return from the generated stub
