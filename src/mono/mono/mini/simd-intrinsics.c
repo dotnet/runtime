@@ -6133,7 +6133,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_AnyTrue},
 	{SN_AverageRounded},
 	{SN_Bitmask, OP_WASM_SIMD_BITMASK},
-	{SN_BitwiseSelect, OP_BSL},
+	{SN_BitwiseSelect, OP_WASM_BITSELECT},
 	{SN_Ceiling, OP_XOP_OVR_X_X, INTRINS_SIMD_CEIL},
 	{SN_CompareEqual, OP_XCOMPARE, CMP_EQ, OP_XCOMPARE, CMP_EQ, OP_XCOMPARE_FP, CMP_EQ},
 	{SN_CompareGreaterThan, OP_XCOMPARE, CMP_GT, OP_XCOMPARE, CMP_GT_UN, OP_XCOMPARE_FP, CMP_GT},

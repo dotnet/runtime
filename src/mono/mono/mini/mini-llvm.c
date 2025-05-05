@@ -12406,11 +12406,24 @@ MONO_RESTORE_WARNING
 		}
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+		case OP_WASM_BITSELECT:
 		case OP_BSL: {
-			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
-			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
-			LLVMValueRef left = bitcast_to_integral (ctx, rhs);
-			LLVMValueRef right = bitcast_to_integral (ctx, arg3);
+			LLVMValueRef select;
+			LLVMValueRef left;
+			LLVMValueRef right;
+
+			// The order of the arguments is different for packed simd
+			if (ins->opcode == OP_WASM_BITSELECT) {
+				select = bitcast_to_integral (ctx, arg3);
+				right = bitcast_to_integral (ctx, rhs);
+				left = bitcast_to_integral (ctx, lhs);
+			} else {
+				select = bitcast_to_integral (ctx, lhs);
+				left = bitcast_to_integral (ctx, rhs)
+				right = bitcast_to_integral (ctx, arg3);
+			}
+
+			LLVMTypeRef ret_t = LLVMTypeOf (left);
 			LLVMValueRef result1 = LLVMBuildAnd (builder, select, left, "bit_select");
 			LLVMValueRef result2 = LLVMBuildAnd (builder, LLVMBuildNot (builder, select, ""), right, "");
 			LLVMValueRef result = LLVMBuildOr (builder, result1, result2, "");

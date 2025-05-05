@@ -98,6 +98,33 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         }
 
         [Fact]
+        public unsafe void NotTests()
+        {
+            var v16 = Vector128.Create((byte)0b11001100);
+            var v8 = Vector128.Create((ushort)0b11110000_11001100);
+            var v4 = Vector128.Create((uint)0b11111111_00000000_11110000_00000000);
+
+            var notResult16 = PackedSimd.Not(v16);
+            var notResult8 = PackedSimd.Not(v8);
+            var notResult4 = PackedSimd.Not(v4);
+
+            Assert.Equal(Vector128.Create((byte)0b00110011), notResult16);
+            Assert.Equal(Vector128.Create((ushort)0b00001111_00110011), notResult8);
+            Assert.Equal(Vector128.Create((uint)0b00000000_11111111_00001111_11111111), notResult4);
+            var oc16 = ~v16;
+            var oc8 = ~v8;
+            var oc4 = ~v4;
+
+            Assert.Equal(oc4, notResult4);
+            Assert.Equal(oc8, notResult8);
+            Assert.Equal(oc16, notResult16);
+
+            Assert.Equal(Vector128.OnesComplement(v4), notResult4);
+            Assert.Equal(Vector128.OnesComplement(v8), notResult8);
+            Assert.Equal(Vector128.OnesComplement(v16), notResult16);
+        }
+
+        [Fact]
         public unsafe void BitwiseSelectTest()
         {
             // Test with integers
