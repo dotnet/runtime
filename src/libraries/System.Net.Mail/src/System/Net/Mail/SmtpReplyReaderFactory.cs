@@ -75,7 +75,7 @@ namespace System.Net.Mail
                 {
                     _byteBuffer ??= new byte[SmtpReplyReaderFactory.DefaultBufferSize];
 
-                    while (0 != Read(caller, _byteBuffer, 0, _byteBuffer.Length)) ;
+                    while (0 != Read(caller, _byteBuffer)) ;
                 }
 
                 _currentReader = null;
@@ -106,10 +106,10 @@ namespace System.Net.Mail
             return _currentReader;
         }
 
-        private int ProcessRead(byte[] buffer, int offset, int read, bool readLine)
+        private int ProcessRead(ReadOnlySpan<byte> buffer, bool readLine)
         {
             // if 0 bytes were read,there was a failure
-            if (read == 0)
+            if (buffer.Length == 0)
             {
                 throw new IOException(SR.Format(SR.net_io_readfailure, SR.net_io_connectionclosed));
             }
@@ -118,9 +118,9 @@ namespace System.Net.Mail
             {
                 fixed (byte* pBuffer = buffer)
                 {
-                    byte* start = pBuffer + offset;
+                    byte* start = pBuffer;
                     byte* ptr = start;
-                    byte* end = ptr + read;
+                    byte* end = ptr + buffer.Length;
 
                     switch (_readState)
                     {
@@ -263,20 +263,20 @@ namespace System.Net.Mail
             }
         }
 
-        internal int Read(SmtpReplyReader caller, byte[] buffer, int offset, int count)
+        internal int Read(SmtpReplyReader caller, Span<byte> buffer)
         {
-            // if we've already found the delimitter, then return 0 indicating
+            // if we've already found the delimiter, then return 0 indicating
             // end of stream.
-            if (count == 0 || _currentReader != caller || _readState == ReadState.Done)
+            if (buffer.Length == 0 || _currentReader != caller || _readState == ReadState.Done)
             {
                 return 0;
             }
 
-            int read = _bufferedStream.Read(buffer, offset, count);
-            int actual = ProcessRead(buffer, offset, read, false);
+            int read = _bufferedStream.Read(buffer);
+            int actual = ProcessRead(buffer.Slice(0, read), false);
             if (actual < read)
             {
-                _bufferedStream.Push(buffer, offset + actual, read - actual);
+                _bufferedStream.Push(buffer.Slice(actual, read - actual));
             }
 
             return actual;
@@ -316,11 +316,11 @@ namespace System.Net.Mail
             {
                 if (start == read)
                 {
-                    read = _bufferedStream.Read(_byteBuffer, 0, _byteBuffer.Length);
+                    read = _bufferedStream.Read(_byteBuffer);
                     start = 0;
                 }
 
-                int actual = ProcessRead(_byteBuffer, start, read - start, true);
+                int actual = ProcessRead(_byteBuffer.AsSpan(start, read), true);
 
                 if (statusRead < 4)
                 {
@@ -344,7 +344,7 @@ namespace System.Net.Mail
 
                     if (oneLine)
                     {
-                        _bufferedStream.Push(_byteBuffer, start, read - start);
+                        _bufferedStream.Push(_byteBuffer.AsSpan(start, read - start));
                         return lines.ToArray();
                     }
                     builder = new StringBuilder();
@@ -352,7 +352,7 @@ namespace System.Net.Mail
                 else if (_readState == ReadState.Done)
                 {
                     lines.Add(new LineInfo(_statusCode, builder.ToString(0, builder.Length - 2))); // return everything except CRLF
-                    _bufferedStream.Push(_byteBuffer, start, read - start);
+                    _bufferedStream.Push(_byteBuffer.AsSpan(start, read - start));
                     return lines.ToArray();
                 }
             }
@@ -454,7 +454,7 @@ namespace System.Net.Mail
 
                 for (int start = 0; start != _read;)
                 {
-                    int actual = _parent.ProcessRead(_parent._byteBuffer!, start, _read - start, true);
+                    int actual = _parent.ProcessRead(_parent._byteBuffer!.AsSpan(start, _read - start), true);
 
                     if (_statusRead < 4)
                     {
@@ -479,7 +479,7 @@ namespace System.Net.Mail
 
                         if (_oneLine)
                         {
-                            _parent._bufferedStream.Push(_parent._byteBuffer!, start, _read - start);
+                            _parent._bufferedStream.Push(_parent._byteBuffer!.AsSpan(start, _read - start));
                             InvokeCallback();
                             return false;
                         }
@@ -487,7 +487,7 @@ namespace System.Net.Mail
                     else if (_parent._readState == ReadState.Done)
                     {
                         _lines!.Add(new LineInfo(_parent._statusCode, _builder.ToString(0, _builder.Length - 2))); // return everything except CRLF
-                        _parent._bufferedStream.Push(_parent._byteBuffer!, start, _read - start);
+                        _parent._bufferedStream.Push(_parent._byteBuffer!.AsSpan(start, _read - start));
                         InvokeCallback();
                         return false;
                     }

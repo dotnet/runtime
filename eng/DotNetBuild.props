@@ -31,10 +31,10 @@
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)pack</InnerBuildArgs>
 
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArchitecture)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(_portableOS)' == 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os windows</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(_portableOS)' != 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(_portableOS)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(PortableOS)' == 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os windows</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(PortableOS)' != 'win'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(PortableOS)</InnerBuildArgs>
       <!-- Mobile builds are never "cross" builds as they don't have a rootfs-based filesystem build. -->
-      <InnerBuildArgs Condition="'$(CrossBuild)' == 'true' or ('$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(TargetsMobile)' != 'true' and '$(_portableOS)' != 'linux-bionic')">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(CrossBuild)' == 'true' or ('$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(TargetsMobile)' != 'true' and '$(PortableOS)' != 'linux-bionic')">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)configuration $(Configuration)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)verbosity $(LogVerbosity)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)nodereuse $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
@@ -94,40 +94,6 @@
 
       <InnerBuildArgs Condition="'$(EnableDefaultRidSpecificArtifacts)' != ''">$(InnerBuildArgs) /p:EnableDefaultRidSpecificArtifacts=$(EnableDefaultRidSpecificArtifacts)</InnerBuildArgs>
     </PropertyGroup>
-  </Target>
-
-  <Target Name="CategorizeRuntimeSupplementalArtifacts"
-          BeforeTargets="GetCategorizedIntermediateNupkgContents">
-    <PropertyGroup>
-      <!-- Symbols archive is too big for main intermediate package, add it to a different one. -->
-      <SymbolsIntermediateNupkgCategory>runtime</SymbolsIntermediateNupkgCategory>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!--
-        Runtime artifacts are too large to fit into a single package (Azure DevOps feeds 500 mb constraint).
-        Split large components into separate packages.
-      -->
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-*$(ArchiveExtension)" Category="runtime" />
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.DotNet.ILCompiler.*.nupkg" Category="ILCompiler" />
-
-      <IntermediateNupkgArtifactFile
-        Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
-        Category="Crossgen2Pack" />
-
-        <IntermediateNupkgArtifactFile
-        Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*$(ArchiveExtension)"
-        Category="Crossgen2Archive" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
-      <!-- Include installers when in product VMR builds. These are not necessary when building the repo-only build as we don't
-           need them in downstream source-only PR legs. We could include them, but it may bump us over the package size limit. -->
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.msi" />
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.deb" />
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.rpm" />
-      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.pkg" />
-    </ItemGroup>
   </Target>
 
 </Project>

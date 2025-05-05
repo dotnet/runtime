@@ -468,9 +468,11 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 	switch (id)
 	{
 	case SN_Negate:
+	case SN_op_UnaryNegation:
 		op = OP_NEGATION;
 		break;
 	case SN_OnesComplement:
+	case SN_op_OnesComplement:
 		op = OP_WASM_ONESCOMPLEMENT;
 		break;
 	default:
@@ -2182,7 +2184,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Floor: {
 		if (!type_enum_is_float (arg0_type))
 			return NULL;
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
 		int ceil_or_floor = id == SN_Ceiling ? INTRINS_SIMD_CEIL : INTRINS_SIMD_FLOOR;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
 #elif defined(TARGET_AMD64)
@@ -6152,8 +6154,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_LoadScalarVector128},
 	{SN_LoadVector128, OP_LOADX_MEMBASE},
 	{SN_LoadWideningVector128, OP_WASM_SIMD_LOAD_WIDENING},
-	{SN_Max, OP_XBINOP, OP_IMIN, OP_XBINOP, OP_IMIN_UN, OP_XBINOP, OP_FMIN},
-	{SN_Min, OP_XBINOP, OP_IMAX, OP_XBINOP, OP_IMAX_UN, OP_XBINOP, OP_FMAX},
+	{SN_Max, OP_XBINOP, OP_IMAX, OP_XBINOP, OP_IMAX_UN, OP_XBINOP, OP_FMAX},
+	{SN_Min, OP_XBINOP, OP_IMIN, OP_XBINOP, OP_IMIN_UN, OP_XBINOP, OP_FMIN},
 	{SN_Multiply},
 	{SN_MultiplyRoundedSaturateQ15, OP_XOP_X_X_X, INTRINS_WASM_Q15MULR_SAT_SIGNED},
 	{SN_MultiplyWideningLower, OP_WASM_EXTMUL_LOWER, 0, OP_WASM_EXTMUL_LOWER_U},
