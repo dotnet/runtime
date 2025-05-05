@@ -3263,6 +3263,12 @@ retry_emit:
                 }
                 break;
 
+            case CEE_THROW:
+                AddIns(INTOP_THROW);
+                m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+                m_ip += 1;
+                break;
+
             default:
                 assert(0);
                 break;
