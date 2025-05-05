@@ -40,11 +40,6 @@
 #define METAMODEL_MAJOR_VER 2
 #define METAMODEL_MINOR_VER 0
 
-// Metadata version number up through Whidbey Beta2
-#define METAMODEL_MAJOR_VER_B1 1
-#define METAMODEL_MINOR_VER_B1 1
-
-
 typedef enum MetadataVersion
 {
     MDVersion1          = 0x00000001,
@@ -1993,9 +1988,8 @@ public:
 
     BOOL SupportsGenerics()
     {
-        // Only 2.0 of the metadata (and 1.1) support generics
-        return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_0 ||
-                (m_Schema.m_major == METAMODEL_MAJOR_VER_B1 && m_Schema.m_minor == METAMODEL_MINOR_VER_B1));
+        // Only 2.0 of the metadata support generics
+        return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_0);
     }// SupportGenerics
 
     protected:
