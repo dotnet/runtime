@@ -728,7 +728,8 @@ void emitter::emitIns_R_R_I(
 
     if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
         (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
-        INS_flw == ins || INS_slli_uw == ins || INS_rori == ins || INS_roriw == ins)
+        INS_flw == ins || INS_slli_uw == ins || INS_rori == ins || INS_roriw == ins ||
+        (INS_bseti <= ins && ins <= INS_binvi))
     {
         assert(isGeneralRegister(reg2));
         code |= (reg1 & 0x1f) << 7; // rd
@@ -827,7 +828,8 @@ void emitter::emitIns_R_R_R(
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
-        (INS_sh1add <= ins && ins <= INS_sh3add_uw) || (INS_rol <= ins && ins <= INS_maxu))
+        (INS_sh1add <= ins && ins <= INS_sh3add_uw) || (INS_rol <= ins && ins <= INS_maxu) ||
+        (INS_bset <= ins && ins <= INS_binv))
     {
 #ifdef DEBUG
         switch (ins)
@@ -934,6 +936,11 @@ void emitter::emitIns_R_R_R(
             case INS_minu:
             case INS_max:
             case INS_maxu:
+
+            case INS_bset:
+            case INS_bclr:
+            case INS_bext:
+            case INS_binv:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -3871,7 +3878,7 @@ void emitter::emitDispInsName(
                 case 0x1:
                 {
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
-                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV6
+                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV64
                     switch (funct6)
                     {
                         case 0b011000:
@@ -3888,12 +3895,20 @@ void emitter::emitDispInsName(
                         }
                         case 0b000000:
                             printLength = printf("slli");
-                            imm12       = shamt;
                             break;
-
+                        case 0b001010:
+                            printLength = printf("bseti");
+                            break;
+                        case 0b010010:
+                            printLength = printf("bclri");
+                            break;
+                        case 0b011010:
+                            printLength = printf("binvi");
+                            break;
                         default:
                             return emitDispIllegalInstruction(code);
                     }
+                    imm12 = shamt;
                 }
                 break;
                 case 0x2: // SLTI
@@ -3913,7 +3928,7 @@ void emitter::emitDispInsName(
                         printLength = printf("xori");
                     }
                     break;
-                case 0x5: // SRLI & SRAI
+                case 0x5:
                 {
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
                     imm12 &= 0x3f; // 6BITS for SHAMT in RISCV64
@@ -3927,6 +3942,9 @@ void emitter::emitDispInsName(
                             break;
                         case 0b011000:
                             printLength = printf("rori");
+                            break;
+                        case 0b010010:
+                            printLength = printf("bexti");
                             break;
                         case 0b011010:
                             if (imm12 != 0b111000) // shift amount is treated as additional funct opcode
@@ -4178,6 +4196,28 @@ void emitter::emitDispInsName(
                     printf("%s           %s, %s, %s\n", names[opcode3 & 0b11], rd, rs1, rs2);
                     return;
                 }
+                case 0b0010100:
+                    if (opcode3 != 0b001)
+                        return emitDispIllegalInstruction(code);
+                    printf("bset           %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0b0100100:
+                    switch (opcode3)
+                    {
+                        case 0b001:
+                            printf("bclr           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0b101:
+                            printf("bext           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                case 0b0110100:
+                    if (opcode3 != 0b001)
+                        return emitDispIllegalInstruction(code);
+                    printf("binv           %s, %s, %s\n", rd, rs1, rs2);
+                    return;
                 default:
                     return emitDispIllegalInstruction(code);
             }
