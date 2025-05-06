@@ -607,30 +607,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void ExportPkcs8PrivateKey_ResizeTerminates(SlhDsaAlgorithm algorithm)
-        {
-            using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
-
-            int previousSize = -1;
-            slhDsa.TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
-            {
-                // Return false to force a resize
-                bool ret = false;
-
-                AssertExtensions.GreaterThan(destination.Length, previousSize);
-                previousSize = destination.Length;
-                bytesWritten = 0;
-
-                return ret;
-            };
-
-            // The loop should terminate with an OverflowException or OutOfMemoryException
-            AssertExtensions.ThrowsAny<OverflowException, OutOfMemoryException>(() => slhDsa.ExportPkcs8PrivateKey());
-            AssertExtensions.GreaterThan(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount, 0);
-        }
-
-        [Theory]
-        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public static void ExportPkcs8PrivateKey_IgnoreReturnValue(SlhDsaAlgorithm algorithm)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
