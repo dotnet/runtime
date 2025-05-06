@@ -3840,7 +3840,7 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
         case SimdIntrinsic3.V128_I1_SHUFFLE:
         case SimdIntrinsic3.V128_I2_SHUFFLE:
         case SimdIntrinsic3.V128_I4_SHUFFLE:
-        case SimdIntrinsic3.V128_I8_SHUFFLE:
+        case SimdIntrinsic3.V128_I8_SHUFFLE: {
             let elementCount = 16;
             if (index === SimdIntrinsic3.V128_I2_SHUFFLE)
                 elementCount = 8;
@@ -3849,7 +3849,8 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
             else if (index === SimdIntrinsic3.V128_I8_SHUFFLE)
                 elementCount = 2;
 
-            return emit_shuffle(builder, ip, elementCount);
+            return emit_shuffle(builder, ip, elementCount, true);
+        }
         default:
             return false;
     }
@@ -3857,9 +3858,9 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
     return false;
 }
 
-// implement i16 and i32 shuffles on top of wasm's only shuffle opcode by expanding the
-//  element shuffle indices into byte indices
-function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number): boolean {
+// implement shuffles on top of wasm's swizzle opcode by expanding the
+// element shuffle indices into byte indices
+function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number, check_bounds: boolean): boolean {
     const elementSize = 16 / elementCount,
         indicesOffset = getArgU16(ip, 3),
         constantIndices = get_known_constant_value(builder, indicesOffset);
@@ -3868,20 +3869,26 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
     builder.local("pLocals");
     // Load vec
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
-    if (typeof (constantIndices) === "object" && (elementSize <= 4)) {
-        // HACK: We have a known constant shuffle vector with char or int indices. Expand it to
+    if (typeof (constantIndices) === "object") {
+        // HACK: We have a known constant shuffle vector indices. Expand it to
         //  byte indices and then embed a new constant in the trace.
         const newShuffleVector = new Uint8Array(sizeOfV128),
-            nativeIndices = (elementSize === 1) ?
-                new Uint8Array(constantIndices.buffer, constantIndices.byteOffset, elementCount)
-                : (elementSize === 2) ?
-                    new Uint16Array(constantIndices.buffer, constantIndices.byteOffset, elementCount)
-                    : new Uint32Array(constantIndices.buffer, constantIndices.byteOffset, elementCount);
+            nativeIndices = new Uint8Array(constantIndices.buffer, constantIndices.byteOffset, elementCount);
 
         for (let i = 0, k = 0; i < elementCount; i++, k += elementSize) {
-            const elementIndex = nativeIndices[i];
-            for (let j = 0; j < elementSize; j++)
+            let elementIndex = 0;
+            for (let j = 0; j < elementSize; j++) {
+                if (j == 0)
+                    elementIndex = nativeIndices[k + j];
+                else if (nativeIndices[k + j] > 0) {
+                    // this an invalid index, set it to zero
+                    elementIndex = 0;
+                    break;
+                }
+            }
+            for (let j = 0; j < elementSize; j++) {
                 newShuffleVector[k + j] = (elementIndex * elementSize) + j;
+            }
         }
         // console.log(`shuffle w/element size ${elementSize} with constant indices ${nativeIndices} (${constantIndices}) -> byte indices ${newShuffleVector}`);
         builder.appendSimd(WasmSimdOpcode.v128_const);
@@ -3891,6 +3898,25 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
         append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
         if (elementCount < 16) {
             const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
+
+            if (check_bounds) {
+                builder.local("shuffle_indices", WasmOpcode.tee_local);
+
+                builder.appendSimd(WasmSimdOpcode.v128_const);
+                for (let i = 0; i < elementCount; i++) {
+                    builder.appendU8(elementSize - 1);
+                }
+                if (elementSize === 2)
+                    builder.appendSimd(WasmSimdOpcode.i16x8_ge_u);
+                else if (elementSize === 4)
+                    builder.appendSimd(WasmSimdOpcode.i32x4_ge_u);
+                else if (elementSize === 8) {
+                    builder.appendSimd(WasmSimdOpcode.i64x2_ge_s);
+                }
+
+                builder.local("shuffle_indices");
+                builder.appendSimd(WasmSimdOpcode.v128_or);
+            }
 
             builder.i32_const(shift);
             builder.appendSimd(WasmSimdOpcode.i8x16_shl);
