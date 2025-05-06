@@ -101,8 +101,6 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
 };
 
-const SIZE_T MethodDesc::s_ClassificationSizeTableSize = sizeof(MethodDesc::s_ClassificationSizeTable);
-
 #ifndef FEATURE_COMINTEROP
 #undef CLRToCOMCallMethodDesc
 #endif
