@@ -515,8 +515,8 @@ DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
 
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
-DEFINE_CLASS(METHODBASEINVOKER,     Reflection,             MethodBaseInvoker)
-
+DEFINE_CLASS(METHOD_BASE_INVOKER,   Reflection,             MethodBaseInvoker)
+DEFINE_CLASS(METHOD_INVOKER_COMMON, Reflection,             MethodInvokerCommon)
 DEFINE_CLASS(INSTANCE_CALLI_HELPER, Reflection,             InstanceCalliHelper)
 
 DEFINE_CLASS_U(Reflection,          RuntimeMethodInfo,      NoClass)

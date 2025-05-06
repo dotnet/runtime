@@ -2,51 +2,72 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
 
 namespace System.Reflection
 {
-    internal static class MethodInvokerCommon
+    /// <summary>
+    /// Shared functionality for MethodBaseInvoker, MethodInvoker and ConstructorInvoker.
+    /// </summary>
+    /// <remarks>
+    /// This class is known by the runtime in order to ignore reflection frames during stack walks.
+    /// </remarks>
+    internal static partial class MethodInvokerCommon
     {
         internal static void Initialize(
-            RuntimeType[] argumentTypes,
+            bool backwardsCompat,
+            MethodBase method,
+            RuntimeType[] parameterTypes,
+            RuntimeType returnType,
+            bool callCtorAsMethod,
+            out IntPtr functionPointer,
+            out Delegate? invokeFunc,
             out InvokerStrategy strategy,
-            out InvokerArgFlags[] invokerFlags,
-            out bool needsByRefStrategy)
+            out InvokerArgFlags[] invokerArgFlags)
         {
-            if (LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke)
+            invokerArgFlags = GetInvokerArgFlags(parameterTypes, out bool needsByRefStrategy);
+            strategy = GetInvokerStrategy(parameterTypes.Length, needsByRefStrategy);
+
+            if (TryGetCalliFunc(method, parameterTypes, returnType, strategy, out invokeFunc))
             {
-                // Always use the native interpreted invoke.
-                // Useful for testing, to avoid startup overhead of emit, or for calling a ctor on already initialized object.
-                strategy = GetStrategyForUsingInterpreted();
+                functionPointer = method.MethodHandle.GetFunctionPointer();
+                Debug.Assert(functionPointer != IntPtr.Zero);
             }
-            else if (LocalAppContextSwitches.ForceEmitInvoke && !LocalAppContextSwitches.ForceInterpretedInvoke)
+            else if (UseInterpretedPath)
             {
-                // Always use emit invoke (if IsDynamicCodeSupported == true); useful for testing.
-                strategy = GetStrategyForUsingEmit();
+                invokeFunc = null; // The caller will create the invokeFunc.
+                functionPointer = IntPtr.Zero;
             }
             else
             {
-                strategy = default;
+                invokeFunc = CreateIlInvokeFunc(backwardsCompat, method, callCtorAsMethod, strategy);
+                functionPointer = IntPtr.Zero;
             }
+        }
 
-            int argCount = argumentTypes.Length;
-            invokerFlags = new InvokerArgFlags[argCount];
+        private static InvokerArgFlags[] GetInvokerArgFlags(RuntimeType[] parameterTypes, out bool needsByRefStrategy)
+        {
             needsByRefStrategy = false;
+            int argCount = parameterTypes.Length;
+            InvokerArgFlags[] invokerFlags = new InvokerArgFlags[argCount];
 
             for (int i = 0; i < argCount; i++)
             {
-                RuntimeType type = argumentTypes[i];
+                RuntimeType type = (RuntimeType)parameterTypes[i];
                 if (RuntimeTypeHandle.IsByRef(type))
                 {
                     type = (RuntimeType)type.GetElementType()!;
                     invokerFlags[i] |= InvokerArgFlags.IsValueType_ByRef_Or_Pointer;
                     needsByRefStrategy = true;
-                    if (type.IsNullableOfT)
+                    if (type.IsValueType)
                     {
-                        invokerFlags[i] |= InvokerArgFlags.IsNullableOfT;
+                        invokerFlags[i] |= InvokerArgFlags.IsByRefForValueType;
+
+                        if (type.IsNullableOfT)
+                        {
+                            invokerFlags[i] |= InvokerArgFlags.IsNullableOfT;
+                        }
                     }
                 }
 
@@ -68,22 +89,42 @@ namespace System.Reflection
                     }
                 }
             }
+
+            return invokerFlags;
         }
 
-        internal static InvokerStrategy GetStrategyForUsingInterpreted()
+        private static InvokerStrategy GetInvokerStrategy(int argCount, bool needsByRefStrategy)
         {
-            // This causes the default strategy, which is interpreted, to always be used.
-            return InvokerStrategy.StrategyDetermined_Obj4Args | InvokerStrategy.StrategyDetermined_ObjSpanArgs | InvokerStrategy.StrategyDetermined_RefArgs;
+            if (needsByRefStrategy || UseInterpretedPath)
+            {
+                return argCount <= 4 ? InvokerStrategy.Ref4 : InvokerStrategy.RefMany;
+            }
+
+            return argCount switch
+            {
+                0 => InvokerStrategy.Obj0,
+                1 => InvokerStrategy.Obj1,
+                2 or 3 or 4 => InvokerStrategy.Obj4,
+                _ => InvokerStrategy.ObjSpan
+            };
         }
 
-        private static InvokerStrategy GetStrategyForUsingEmit()
+        internal static Delegate CreateIlInvokeFunc(bool backwardsCompat, MethodBase method, bool callCtorAsMethod, InvokerStrategy strategy)
         {
-            // This causes the emit strategy, if supported, to be used on the first call as well as subsequent calls.
-            return InvokerStrategy.HasBeenInvoked_Obj4Args | InvokerStrategy.HasBeenInvoked_ObjSpanArgs | InvokerStrategy.HasBeenInvoked_RefArgs;
+            Debug.Assert(!UseInterpretedPath);
+
+            return strategy switch
+            {
+                InvokerStrategy.Obj0 => CreateInvokeDelegateForObj0Args(method, callCtorAsMethod, backwardsCompat),
+                InvokerStrategy.Obj1 => CreateInvokeDelegateForObj1Arg(method, callCtorAsMethod, backwardsCompat),
+                InvokerStrategy.Obj4 => CreateInvokeDelegateForObj4Args(method, callCtorAsMethod, backwardsCompat),
+                InvokerStrategy.ObjSpan => CreateInvokeDelegateForObjSpanArgs(method, callCtorAsMethod, backwardsCompat),
+                _ => CreateInvokeDelegateForRefArgs(method, callCtorAsMethod, backwardsCompat)
+            };
         }
 
         /// <summary>
-        /// Confirm member invocation has an instance and is of the correct type
+        /// Confirm member invocation has an instance and is of the correct type.
         /// </summary>
         internal static void ValidateInvokeTarget(object? target, MethodBase method)
         {
@@ -97,88 +138,6 @@ namespace System.Reflection
             if (!method.DeclaringType!.IsInstanceOfType(target))
             {
                 throw new TargetException(SR.Format(SR.RFLCT_Targ_ITargMismatch_WithType, method.DeclaringType, target.GetType()));
-            }
-        }
-
-        internal static void DetermineStrategy_ObjSpanArgs(
-            ref InvokerStrategy strategy,
-            ref InvokeFunc_ObjSpanArgs?
-            invokeFunc_ObjSpanArgs,
-            MethodBase method,
-            bool needsByRefStrategy,
-            bool backwardsCompat)
-        {
-            if (needsByRefStrategy)
-            {
-                // If ByRefs are used, we can't use this strategy.
-                strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
-            }
-            else if (((strategy & InvokerStrategy.HasBeenInvoked_ObjSpanArgs) == 0) && !Debugger.IsAttached)
-            {
-                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
-                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
-                strategy |= InvokerStrategy.HasBeenInvoked_ObjSpanArgs;
-            }
-            else
-            {
-                if (RuntimeFeature.IsDynamicCodeSupported)
-                {
-                    invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(method, backwardsCompat);
-                }
-
-                strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
-            }
-        }
-
-        internal static void DetermineStrategy_Obj4Args(
-            ref InvokerStrategy strategy,
-            ref InvokeFunc_Obj4Args? invokeFunc_Obj4Args,
-            MethodBase method,
-            bool needsByRefStrategy,
-            bool backwardsCompat)
-        {
-            if (needsByRefStrategy)
-            {
-                // If ByRefs are used, we can't use this strategy.
-                strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
-            }
-            else if (((strategy & InvokerStrategy.HasBeenInvoked_Obj4Args) == 0) && !Debugger.IsAttached)
-            {
-                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
-                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
-                strategy |= InvokerStrategy.HasBeenInvoked_Obj4Args;
-            }
-            else
-            {
-                if (RuntimeFeature.IsDynamicCodeSupported)
-                {
-                    invokeFunc_Obj4Args = CreateInvokeDelegate_Obj4Args(method, backwardsCompat);
-                }
-
-                strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
-            }
-        }
-
-        internal static void DetermineStrategy_RefArgs(
-            ref InvokerStrategy strategy,
-            ref InvokeFunc_RefArgs? invokeFunc_RefArgs,
-            MethodBase method,
-            bool backwardsCompat)
-        {
-            if (((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0) && !Debugger.IsAttached)
-            {
-                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
-                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
-                strategy |= InvokerStrategy.HasBeenInvoked_RefArgs;
-            }
-            else
-            {
-                if (RuntimeFeature.IsDynamicCodeSupported)
-                {
-                    invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method, backwardsCompat);
-                }
-
-                strategy |= InvokerStrategy.StrategyDetermined_RefArgs;
             }
         }
     }

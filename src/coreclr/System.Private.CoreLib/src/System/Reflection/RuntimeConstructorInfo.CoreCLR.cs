@@ -29,13 +29,19 @@ namespace System.Reflection
         private readonly BindingFlags m_bindingFlags;
         private Signature? m_signature;
         private MethodBaseInvoker? m_invoker;
+        private InvocationFlags m_invocationFlags;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = Invoker._invocationFlags;
+                InvocationFlags flags = m_invocationFlags;
+                if (flags == InvocationFlags.Unknown)
+                {
+                    m_invocationFlags = flags = ComputeInvocationFlags();
+                }
+
                 Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
@@ -46,8 +52,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_invoker ??= new MethodBaseInvoker(this);
-                return m_invoker;
+                return m_invoker ??= new MethodBaseInvoker(this, ArgumentTypes, GetReturnType());
             }
         }
         #endregion

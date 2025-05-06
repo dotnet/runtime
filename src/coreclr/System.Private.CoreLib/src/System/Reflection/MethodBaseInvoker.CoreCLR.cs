@@ -1,38 +1,54 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using static System.Reflection.InvokerEmitUtil;
+using static System.Reflection.MethodBase;
+using static System.RuntimeType;
 
 namespace System.Reflection
 {
     internal partial class MethodBaseInvoker
     {
-        private readonly Signature? _signature;
+        private readonly CreateUninitializedCache? _allocator;
 
-        internal unsafe MethodBaseInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private object CreateUninitializedObject() => _allocator!.CreateUninitializedObject(_declaringType!);
+
+        private bool ShouldAllocate
         {
-            _signature = method.Signature;
-            _invocationFlags = method.ComputeAndUpdateInvocationFlags();
-            _invokeFunc_RefArgs = InterpretedInvoke_Method;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _allocator is not null;
         }
 
-        internal unsafe MethodBaseInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.Signature.Arguments)
+        private unsafe Delegate CreateInvokeDelegateForInterpreted()
         {
-            _signature = constructor.Signature;
-            _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
-            _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
+            Debug.Assert(MethodInvokerCommon.UseInterpretedPath);
+            Debug.Assert(_strategy == InvokerStrategy.Ref4 || _strategy == InvokerStrategy.RefMany);
+
+            if (_method is RuntimeMethodInfo)
+            {
+                return (InvokeFunc_RefArgs)InterpretedInvoke_Method;
+            }
+
+            if (_method is RuntimeConstructorInfo)
+            {
+                return (InvokeFunc_RefArgs)InterpretedInvoke_Constructor;
+            }
+
+            Debug.Assert(_method is DynamicMethod);
+            return (InvokeFunc_RefArgs)InterpretedInvoke_DynamicMethod;
         }
 
-        internal unsafe MethodBaseInvoker(DynamicMethod method, Signature signature) : this(method, signature.Arguments)
-        {
-            _signature = signature;
-            _invokeFunc_RefArgs = InterpretedInvoke_Method;
-        }
+        private unsafe object? InterpretedInvoke_Method(IntPtr _, object? obj, IntPtr* args) =>
+            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, ((RuntimeMethodInfo)_method).Signature, isConstructor: false);
 
-        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args) =>
-            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: obj is null);
+        private unsafe object? InterpretedInvoke_Constructor(IntPtr _, object? obj, IntPtr* args) =>
+            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, ((RuntimeConstructorInfo)_method).Signature, isConstructor: obj is null);
 
-        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args) =>
-            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: false);
+        private unsafe object? InterpretedInvoke_DynamicMethod(IntPtr _, object? obj, IntPtr* args) =>
+            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, ((DynamicMethod)_method).Signature, isConstructor: false);
     }
 }

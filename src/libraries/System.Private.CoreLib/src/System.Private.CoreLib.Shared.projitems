@@ -733,7 +733,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBaseInvoker.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBaseInvoker.Constructor.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBody.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />
@@ -2763,7 +2762,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolCallbackWrapper.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
   </ItemGroup>
   <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(FeatureWasmManagedThreads)' != 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Browser.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Browser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true'">
