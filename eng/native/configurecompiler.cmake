@@ -153,6 +153,7 @@ elseif (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wno-alloca)
     add_compile_options(-Wno-implicit-int-float-conversion)
+    add_compile_options(-Wno-experimental)    
   endif()
 endif(MSVC)
 
