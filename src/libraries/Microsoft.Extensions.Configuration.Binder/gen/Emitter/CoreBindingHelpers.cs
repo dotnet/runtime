@@ -748,6 +748,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ParsableFromStringSpec keyType = (ParsableFromStringSpec)_typeIndex.GetEffectiveTypeSpec(type.KeyTypeRef);
                 TypeSpec elementType = _typeIndex.GetTypeSpec(type.ElementTypeRef);
 
+                if (elementType is NullableSpec nullableSpec)
+                {
+                    elementType = _typeIndex.GetTypeSpec(nullableSpec.EffectiveTypeRef);
+                }
+
                 // Parse key
                 EmitBindingLogic(
                     keyType,
