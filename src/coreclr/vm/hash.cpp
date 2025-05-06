@@ -1167,7 +1167,7 @@ HashMap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 // This is for testing purposes only!
 void HashMap::HashMapTest()
 {
-    printf("HashMap test\n");
+    minipal_log_print_info("HashMap test\n");
 
     const unsigned int MinValue = 2;  // Deleted is reserved, and is 1.
     const unsigned int MinThreshold = 10000;
@@ -1179,7 +1179,7 @@ void HashMap::HashMapTest()
     table->Init(10, (CompareFnPtr) NULL, false, &lock);
     for(unsigned int i=MinValue; i < MinThreshold; i++)
         table->InsertValue(i, i);
-    printf("Added %d values.\n", MinThreshold);
+    minipal_log_print_info("Added %d values.\n", MinThreshold);
     //table.DumpStatistics();
 
     LookupPerfTest(table, MinThreshold);
@@ -1200,7 +1200,7 @@ void HashMap::HashMapTest()
 
         if (rep % 500 == 0) {
             t1 = GetTickCount();
-            printf("Repetition %d, took %d ms\n", rep, (int) (t1-t0));
+            minipal_log_print_info("Repetition %d, took %d ms\n", rep, (int) (t1-t0));
             t0 = t1;
             LookupPerfTest(table, MinThreshold);
             //table.DumpStatistics();
@@ -1217,7 +1217,7 @@ void HashMap::LookupPerfTest(HashMap * table, const unsigned int MinThreshold)
         for(unsigned int i=2; i<MinThreshold; i++) {
             UPTR v = table->LookupValue(i, i);
             if (v != i) {
-                printf("LookupValue didn't return the expected value!");
+                minipal_log_print_info("LookupValue didn't return the expected value!\n");
                 _ASSERTE(v == i);
             }
         }
@@ -1227,10 +1227,10 @@ void HashMap::LookupPerfTest(HashMap * table, const unsigned int MinThreshold)
         table->LookupValue(i, i);
     //cout << "Lookup perf test (1000 * " << MinThreshold << ": " << (t1-t0) << " ms." << endl;
 #ifdef HASHTABLE_PROFILE
-    printf("Lookup perf test time: %d ms  table size: %d  max failure probe: %d  longest collision chain: %d\n", (int) (t1-t0), (int) table->GetSize(table->Buckets()), (int) table->maxFailureProbe, (int) table->m_cbMaxCollisionLength);
+    minipal_log_print_info("Lookup perf test time: %d ms  table size: %d  max failure probe: %d  longest collision chain: %d\n", (int) (t1-t0), (int) table->GetSize(table->Buckets()), (int) table->maxFailureProbe, (int) table->m_cbMaxCollisionLength);
     table->DumpStatistics();
 #else // !HASHTABLE_PROFILE
-    printf("Lookup perf test time: %d ms   table size: %d\n", (int) (t1-t0), table->GetSize(table->Buckets()));
+    minipal_log_print_info("Lookup perf test time: %d ms   table size: %d\n", (int) (t1-t0), table->GetSize(table->Buckets()));
 #endif // !HASHTABLE_PROFILE
 }
 #endif // !DACCESS_COMPILE

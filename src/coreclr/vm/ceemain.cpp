@@ -735,6 +735,7 @@ void EEStartupHelper()
 
 #ifdef FEATURE_PERFMAP
         PerfMap::Initialize();
+        InitThreadManagerPerfMapData();
 #endif
 
 #ifdef FEATURE_PGO
@@ -779,7 +780,7 @@ void EEStartupHelper()
             Disassembler::StaticInitialize();
             if (!Disassembler::IsAvailable())
             {
-                fprintf(stderr, "External disassembler is not available.\n");
+                minipal_log_print_error("External disassembler is not available.\n");
                 IfFailGo(E_FAIL);
             }
         }
@@ -873,7 +874,7 @@ void EEStartupHelper()
 #endif
 
         // This isn't done as part of InitializeGarbageCollector() above because
-        // debugger must be initialized before creating EE thread objects 
+        // debugger must be initialized before creating EE thread objects
         FinalizerThread::FinalizerThreadCreate();
 
         InitPreStubManager();
@@ -887,7 +888,6 @@ void EEStartupHelper()
         // Before setting up the execution manager initialize the first part
         // of the JIT helpers.
         InitJITHelpers1();
-        InitJITHelpers2();
 
         SyncBlockCache::Attach();
 
@@ -1735,7 +1735,7 @@ static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 #define FLS_STATE_ARMED 1
 #define FLS_STATE_INVOKED 2
 
-static __declspec(thread) byte t_flsState;
+static thread_local byte t_flsState;
 
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.

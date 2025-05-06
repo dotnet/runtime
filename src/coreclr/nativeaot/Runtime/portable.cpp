@@ -13,7 +13,6 @@
 
 #include "slist.h"
 #include "shash.h"
-#include "varint.h"
 #include "holder.h"
 #include "rhbinder.h"
 #include "Crst.h"

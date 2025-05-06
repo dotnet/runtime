@@ -47,7 +47,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         callTryGetMethod = false;
                         methodHandle = QMethodDefinition.FromObjectAndInt(resolver->Reader, resolver->Handle);
 
-                        if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out _, out _, out genericMethodTypeArgumentHandles))
+                        if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out _, out QMethodDefinition dummy, out genericMethodTypeArgumentHandles))
                             throw new NotSupportedException(SR.DelegateGetMethodInfo_NoInstantiation);
                     }
                 }

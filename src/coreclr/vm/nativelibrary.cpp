@@ -473,9 +473,12 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        NATIVE_LIBRARY_HANDLE hmod = NULL;
+        if (pAssembly->GetPEAssembly()->GetPath().IsEmpty())
+            return NULL;
 
+        NATIVE_LIBRARY_HANDLE hmod = NULL;
         SString path{ pAssembly->GetPEAssembly()->GetPath() };
+        _ASSERTE(!Path::IsRelative(path));
 
         SString::Iterator lastPathSeparatorIter = path.End();
         if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
@@ -618,7 +621,7 @@ namespace
 #endif // TARGET_UNIX
 
     // Search for the library and variants of its name in probing directories.
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(Assembly *callingAssembly,
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(Assembly *callingAssembly, BOOL userSpecifiedSearchFlags,
                                                     BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlags,
                                                     LoadLibErrorTracker * pErrorTracker, LPCWSTR wszLibName)
     {
@@ -656,6 +659,14 @@ namespace
 
         AppDomain* pDomain = GetAppDomain();
         DWORD loadWithAlteredPathFlags = GetLoadWithAlteredSearchPathFlag();
+        DWORD loadLibrarySearchFlags = 0;
+#ifdef TARGET_WINDOWS
+        loadLibrarySearchFlags = LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR
+            | LOAD_LIBRARY_SEARCH_APPLICATION_DIR
+            | LOAD_LIBRARY_SEARCH_USER_DIRS
+            | LOAD_LIBRARY_SEARCH_SYSTEM32
+            | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
+#endif
         bool libNameIsRelativePath = Path::IsRelative(wszLibName);
 
         // P/Invokes are often declared with variations on the actual library name.
@@ -689,14 +700,8 @@ namespace
 
             if (!libNameIsRelativePath)
             {
-                DWORD flags = loadWithAlteredPathFlags;
-                if ((dllImportSearchPathFlags & LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR) != 0)
-                {
-                    // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR is the only flag affecting absolute path. Don't OR the flags
-                    // unconditionally as all absolute path P/Invokes could then lose LOAD_WITH_ALTERED_SEARCH_PATH.
-                    flags |= dllImportSearchPathFlags;
-                }
-
+                // LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.
+                DWORD flags = loadWithAlteredPathFlags | (dllImportSearchPathFlags & ~loadLibrarySearchFlags);
                 hmod = LocalLoadLibraryHelper(currLibNameVariation, flags, pErrorTracker);
                 if (hmod != NULL)
                 {
@@ -705,17 +710,29 @@ namespace
             }
             else if ((callingAssembly != nullptr) && searchAssemblyDirectory)
             {
-                hmod = LoadFromPInvokeAssemblyDirectory(callingAssembly, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
+                // LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.
+                DWORD flags = loadWithAlteredPathFlags | (dllImportSearchPathFlags & ~loadLibrarySearchFlags);
+                hmod = LoadFromPInvokeAssemblyDirectory(callingAssembly, currLibNameVariation, flags, pErrorTracker);
                 if (hmod != NULL)
                 {
                     return hmod;
                 }
             }
 
-            hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, pErrorTracker);
-            if (hmod != NULL)
+            // Internally, search path flags and whether or not to search the assembly directory are
+            // tracked separately. However, on the API level, DllImportSearchPath represents them both.
+            // When unspecified, the default is to search the assembly directory and all OS defaults,
+            // which maps to searchAssemblyDirectory being true and dllImportSearchPathFlags being 0.
+            // When a user specifies DllImportSearchPath.AssemblyDirectory, searchAssemblyDirectory is
+            // true, dllImportSearchPathFlags is 0, and the desired logic is to only search the assembly
+            // directory (handled above), so we avoid doing any additional load search in that case.
+            if (!userSpecifiedSearchFlags || !searchAssemblyDirectory || dllImportSearchPathFlags != 0)
             {
-                return hmod;
+                hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, pErrorTracker);
+                if (hmod != NULL)
+                {
+                    return hmod;
+                }
             }
         }
 
@@ -729,10 +746,10 @@ namespace
         BOOL searchAssemblyDirectory;
         DWORD dllImportSearchPathFlags;
 
-        GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
+        BOOL userSpecifiedSearchFlags = GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
 
         Assembly *pAssembly = pMD->GetMethodTable()->GetAssembly();
-        return LoadNativeLibraryBySearch(pAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
+        return LoadNativeLibraryBySearch(pAssembly, userSpecifiedSearchFlags, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
     }
 }
 
@@ -769,12 +786,12 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
     }
     else
     {
-        GetDllImportSearchPathFlags(callingAssembly->GetModule(),
+        hasDllImportSearchFlags = GetDllImportSearchPathFlags(callingAssembly->GetModule(),
                                     &dllImportSearchPathFlags, &searchAssemblyDirectory);
     }
 
     LoadLibErrorTracker errorTracker;
-    hmod = LoadNativeLibraryBySearch(callingAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
+    hmod = LoadNativeLibraryBySearch(callingAssembly, hasDllImportSearchFlags, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
     if (hmod != nullptr)
         return hmod;
 

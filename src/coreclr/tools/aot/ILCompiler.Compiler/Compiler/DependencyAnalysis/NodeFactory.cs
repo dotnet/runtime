@@ -541,7 +541,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodsWithMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
             {
-                return new MethodMetadataNode(method);
+                return new MethodMetadataNode(method, isMinimal: false);
+            });
+
+            _methodsWithLimitedMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
+            {
+                return new MethodMetadataNode(method, isMinimal: true);
             });
 
             _fieldsWithMetadata = new NodeCache<FieldDesc, FieldMetadataNode>(field =>
@@ -562,6 +567,11 @@ namespace ILCompiler.DependencyAnalysis
             _customAttributesWithMetadata = new NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode>(ca =>
             {
                 return new CustomAttributeMetadataNode(ca);
+            });
+
+            _parametersWithMetadata = new NodeCache<ReflectableParameter, MethodParameterMetadataNode>(p =>
+            {
+                return new MethodParameterMetadataNode(p);
             });
 
             _genericDictionaryLayouts = new NodeCache<TypeSystemEntity, DictionaryLayoutNode>(_dictionaryLayoutProvider.GetLayout);
@@ -1331,6 +1341,16 @@ namespace ILCompiler.DependencyAnalysis
             return _methodsWithMetadata.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, MethodMetadataNode> _methodsWithLimitedMetadata;
+
+        internal MethodMetadataNode LimitedMethodMetadata(MethodDesc method)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _methodsWithLimitedMetadata.GetOrAdd(method);
+        }
+
         private NodeCache<FieldDesc, FieldMetadataNode> _fieldsWithMetadata;
 
         internal FieldMetadataNode FieldMetadata(FieldDesc field)
@@ -1365,6 +1385,16 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _customAttributesWithMetadata.GetOrAdd(ca);
+        }
+
+        private NodeCache<ReflectableParameter, MethodParameterMetadataNode> _parametersWithMetadata;
+
+        internal MethodParameterMetadataNode MethodParameterMetadata(ReflectableParameter ca)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _parametersWithMetadata.GetOrAdd(ca);
         }
 
         private NodeCache<string, FrozenStringNode> _frozenStringNodes;

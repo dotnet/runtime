@@ -98,7 +98,7 @@ private:
     void ContainCheckReturnTrap(GenTreeOp* node);
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
     bool      TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next);
     insCflags TruthifyingFlags(GenCondition cond);
     void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
@@ -109,6 +109,11 @@ private:
     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
+#endif
+#ifdef TARGET_RISCV64
+    bool TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next);
+    bool TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next);
+    bool TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTreeUnOp* node);
@@ -131,7 +136,6 @@ private:
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
     void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode);
-    void TryCompressConstVecData(GenTreeStoreInd* node);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
@@ -170,13 +174,18 @@ private:
     GenTree*   LowerCompare(GenTree* cmp);
     GenTree*   LowerJTrue(GenTreeOp* jtrue);
     GenTree*   LowerSelect(GenTreeConditional* cond);
-    bool       TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* code);
+    bool       TryLowerConditionToFlagsNode(GenTree*      parent,
+                                            GenTree*      condition,
+                                            GenCondition* code,
+                                            bool          allowMultipleFlagChecks = true);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void       LowerJmpMethod(GenTree* jmp);
     void       LowerRet(GenTreeOp* ret);
     GenTree*   LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
+    GenTree*   LowerAsyncContinuation(GenTree* asyncCont);
+    void       LowerReturnSuspend(GenTree* retSuspend);
     void       LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList);
     bool       IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList);
     void       LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList);
@@ -418,7 +427,7 @@ private:
                                      GenTree*    switchValue,
                                      weight_t    defaultLikelihood);
 
-    GenTree* LowerCast(GenTree* node);
+    void LowerCast(GenTree* node);
 
 #if !CPU_LOAD_STORE_ARCH
     bool IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd);
@@ -463,61 +472,6 @@ private:
                                                  CorInfoType simdBaseJitType,
                                                  unsigned    simdSize);
 #endif // FEATURE_HW_INTRINSICS
-
-    //----------------------------------------------------------------------------------------------
-    // TryRemoveCastIfPresent: Removes op it is a cast operation and the size of its input is at
-    //                         least the size of expectedType
-    //
-    //  Arguments:
-    //     expectedType - The expected type of the cast operation input if it is to be removed
-    //     op           - The tree to remove if it is a cast op whose input is at least the size of expectedType
-    //
-    //  Returns:
-    //     op if it was not a cast node or if its input is not at least the size of expected type;
-    //     Otherwise, it returns the underlying operation that was being casted
-    GenTree* TryRemoveCastIfPresent(var_types expectedType, GenTree* op)
-    {
-        if (!op->OperIs(GT_CAST) || !comp->opts.OptimizationEnabled())
-        {
-            return op;
-        }
-
-        GenTreeCast* cast   = op->AsCast();
-        GenTree*     castOp = cast->CastOp();
-
-        // FP <-> INT casts should be kept
-        if (varTypeIsFloating(castOp) ^ varTypeIsFloating(expectedType))
-        {
-            return op;
-        }
-
-        // Keep casts which can overflow
-        if (cast->gtOverflow())
-        {
-            return op;
-        }
-
-        // Keep casts with operands usable from memory.
-        if (castOp->isContained() || castOp->IsRegOptional())
-        {
-            return op;
-        }
-
-        if (genTypeSize(cast->CastToType()) >= genTypeSize(expectedType))
-        {
-#ifndef TARGET_64BIT
-            // Don't expose TYP_LONG on 32bit
-            if (castOp->TypeIs(TYP_LONG))
-            {
-                return op;
-            }
-#endif
-            BlockRange().Remove(op);
-            return castOp;
-        }
-
-        return op;
-    }
 
     // Utility functions
 public:
@@ -568,6 +522,13 @@ public:
     bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTree* childNode, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
 
+    // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode
+    // can be contained.
+    bool IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const;
+
+    // Similar to above, but allows bypassing a "transparent" parent.
+    bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
+
     static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
 
 private:
@@ -598,13 +559,6 @@ private:
                                  GenTree* rangeEnd,
                                  GenTree* endExclusive,
                                  GenTree* ignoreNode) const;
-
-    // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode
-    // can be contained.
-    bool IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const;
-
-    // Similar to above, but allows bypassing a "transparent" parent.
-    bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
 
     // Check if marking an operand of a node as reg-optional is safe.
     bool IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* node) const;

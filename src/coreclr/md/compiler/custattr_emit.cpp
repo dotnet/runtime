@@ -1025,7 +1025,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
     CQuickArray<BYTE>       qNativeType;// Native type string.
 
     _ASSERTE(ixCa > 0 && ixCa < CA_COUNT);
-    *bKeep = props->bKeepCa || m_bKeepKnownCa;
+    *bKeep = props->bKeepCa;
 
     // Validate that target is valid for attribute.
     tkObjType = TypeFromToken(tkObj);
