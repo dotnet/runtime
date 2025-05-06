@@ -64,7 +64,7 @@ public partial class ApkBuilder
     public (string apk, string packageId) BuildApk(
         string runtimeIdentifier,
         string mainLibraryFileName,
-        string runtimeHeaders)
+        string[] runtimeHeaders)
     {
         if (!Enum.TryParse(RuntimeFlavor, true, out parsedRuntimeFlavor))
         {
@@ -324,9 +324,10 @@ public partial class ApkBuilder
         string aotSources = assemblerFiles.ToString();
         string monodroidSource = IsCoreCLR ?
             "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
+        string runtimeInclude = string.Join(" ", runtimeHeaders.Select(h => $"\"{NormalizePathToUnix(h)}\""));
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
-            .Replace("%RuntimeInclude%", NormalizePathToUnix(runtimeHeaders))
+            .Replace("%RuntimeInclude%", runtimeInclude)
             .Replace("%NativeLibrariesToLink%", NormalizePathToUnix(nativeLibraries))
             .Replace("%MONODROID_SOURCE%", monodroidSource)
             .Replace("%AotSources%", NormalizePathToUnix(aotSources))
@@ -447,7 +448,17 @@ public partial class ApkBuilder
         }
         else
         {
-            dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => Path.GetFileName(file) != "libmonodroid.so"));
+            var excludedLibs = new HashSet<string> { "libmonodroid.so" };
+            if (IsCoreCLR)
+            {
+                if (StripDebugSymbols)
+                {
+                    // exclude debugger support libs
+                    excludedLibs.Add("libmscordbi.so");
+                    excludedLibs.Add("libmscordaccore.so");
+                }
+            }
+            dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
         }
 
         // add all *.so files to lib/%abi%/

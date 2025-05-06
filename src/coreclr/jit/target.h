@@ -235,10 +235,14 @@ typedef uint64_t regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 #define HAS_MORE_THAN_64_REGISTERS 1
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_AMD64
 
+#define REG_LOW_BASE 0
+#ifdef HAS_MORE_THAN_64_REGISTERS
+#define REG_HIGH_BASE 64
+#endif
 // TODO: Rename regMaskSmall as RegSet64 (at least for 64-bit)
 typedef regMaskSmall    SingleTypeRegSet;
 inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
@@ -377,6 +381,11 @@ public:
 #else
         return getLow();
 #endif
+    }
+
+    static regMaskTP FromIntRegSet(SingleTypeRegSet intRegs)
+    {
+        return regMaskTP(intRegs);
     }
 
     void operator|=(const regMaskTP& second)
@@ -1065,16 +1074,6 @@ inline SingleTypeRegSet getSingleTypeRegMask(regNumber reg, var_types regType)
 #endif // TARGET_ARM
     return regMask;
 }
-
-/*****************************************************************************
- *
- *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
- *  the current architecture.
- */
-extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
-
-// This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
-regMaskTP genRegMaskFromCalleeSavedMask(unsigned short);
 
 /*****************************************************************************
  *

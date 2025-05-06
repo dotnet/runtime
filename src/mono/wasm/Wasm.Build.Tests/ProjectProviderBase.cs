@@ -41,8 +41,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public bool IsFingerprintingEnabled => EnvironmentVariables.UseFingerprinting;
 
-    public bool IsFingerprintingOnDotnetJsEnabled => EnvironmentVariables.UseFingerprintingDotnetJS;
-
     // Returns the actual files on disk
     public IReadOnlyDictionary<string, DotNetFileName> AssertBasicBundle(AssertBundleOptions assertOptions)
     {
@@ -82,7 +80,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         EnsureProjectDirIsSet();
         return FindAndAssertDotnetFiles(binFrameworkDir: assertOptions.BinFrameworkDir,
-                                        expectFingerprintOnDotnetJs: IsFingerprintingOnDotnetJsEnabled,
                                         assertOptions,
                                         superSet: GetAllKnownDotnetFilesToFingerprintMap(assertOptions),
                                         expected: GetDotNetFilesExpectedSet(assertOptions)
@@ -94,11 +91,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public IReadOnlyDictionary<string, DotNetFileName> FindAndAssertDotnetFiles(
         string binFrameworkDir,
-        bool expectFingerprintOnDotnetJs,
         AssertBundleOptions assertOptions,
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlySet<string> expected)
     {
+        var expectFingerprintOnDotnetJs = assertOptions.ExpectDotnetJsFingerprinting;
         EnsureProjectDirIsSet();
         var actual = new SortedDictionary<string, DotNetFileName>();
 
@@ -109,6 +106,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                                              SearchOption.TopDirectoryOnly)
                                                 .Order()
                                                 .ToList();
+        
+        var comparisonLogging = new List<string>();
+
         foreach ((string expectedFilename, bool expectFingerprint) in superSet.OrderByDescending(kvp => kvp.Key))
         {
             string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
@@ -121,7 +121,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                         return false;
 
                     string actualFilename = Path.GetFileName(actualFile);
-                    // _testOutput.WriteLine($"Comparing {expectedFilename} with {actualFile}, expectFingerprintOnDotnetJs: {expectFingerprintOnDotnetJs}, expectFingerprint: {expectFingerprint}");
+                    comparisonLogging.Add($"Comparing {expectedFilename} with {actualFile}, expectFingerprint: {expectFingerprint}");
                     if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
                                                expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                                expectFingerprintForThisFile: expectFingerprint))
@@ -149,12 +149,18 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 }).ToList();
         }
 
-        // _testOutput.WriteLine($"Accepted count: {actual.Count}");
-        // foreach (var kvp in actual)
-        //     _testOutput.WriteLine($"Accepted: \t[{kvp.Key}] = {kvp.Value}");
-
         if (dotnetFiles.Any())
         {
+            foreach (var message in comparisonLogging)
+            {
+                _testOutput.WriteLine(message);
+            }
+            _testOutput.WriteLine($"Accepted count: {actual.Count}");
+            foreach (var kvp in actual)
+            {
+                _testOutput.WriteLine($"Accepted: \t[{kvp.Key}] = {kvp.Value}");
+            }
+
             throw new XunitException($"Found unknown files in {binFrameworkDir}:{Environment.NewLine}    " +
                     $"{string.Join($"{Environment.NewLine}  ", dotnetFiles.Select(f => Path.GetRelativePath(binFrameworkDir, f)))}{Environment.NewLine}" +
                     $"Add these to {nameof(GetAllKnownDotnetFilesToFingerprintMap)} method{Environment.NewLine}" + 
@@ -173,7 +179,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         IReadOnlySet<string> expected,
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlyDictionary<string, DotNetFileName> actualReadOnly,
-        bool expectFingerprintOnDotnetJs,
+        bool? expectFingerprintOnDotnetJs,
         string bundleDir)
     {
         EnsureProjectDirIsSet();
@@ -315,7 +321,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         // filter files with a single fingerprint segment, e.g. "dotnet*.js" should not catch "dotnet.native.d1au9i.js" but should catch "dotnet.js"
         string pattern = $@"^{Regex.Escape(fileNameWithoutExtensionAndFingerprinting)}(\.[^.]+)?{Regex.Escape(fileExtension)}$";
-        var tmp = files.Where(f => Regex.IsMatch(Path.GetFileName(f), pattern)).ToArray();
+        var tmp = files.Where(f => Regex.IsMatch(Path.GetFileName(f), pattern)).Where(f => !f.Contains("dotnet.boot")).ToArray();
         return tmp;
     }
 
@@ -366,14 +372,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             dict[Path.GetFileName(file)] = (file, unchanged);
 
         // those files do not change on re-link
-        dict["dotnet.js"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.js"), true);
         dict["dotnet.js.map"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.js.map"), true);
         dict["dotnet.runtime.js"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.runtime.js"), true);
         dict["dotnet.runtime.js.map"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.runtime.js.map"), true);
 
         if (IsFingerprintingEnabled)
         {
-            string bootJsonPath = Path.Combine(paths.BinFrameworkDir, "blazor.boot.json");
+            string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.js");
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             var keysToUpdate = new List<string>();
             var updates = new List<(string oldKey, string newKey, (string fullPath, bool unchanged) value)>();
@@ -400,8 +405,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return dict;
     }
 
-    public bool ShouldCheckFingerprint(string expectedFilename, bool expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile)
-        => IsFingerprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs) || expectFingerprintForThisFile);
+    public bool ShouldCheckFingerprint(string expectedFilename, bool? expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile)
+        => IsFingerprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs == true) || expectFingerprintForThisFile);
 
 
     public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
@@ -484,16 +489,59 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
-    private BootJsonData GetBootJson(string bootJsonPath)
+    public BootJsonData GetBootJson(string bootJsonPath)
     {
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
         return ParseBootData(bootJsonPath);
     }
 
+    public string GetBootConfigPath(string binFrameworkDir, string? bootConfigFileName = null)
+    {
+        string[] allDotnetFiles = [
+            "dotnet.runtime",
+            "dotnet.native",
+            "dotnet.native.worker",
+            "dotnet.diagnostics"
+        ];
+
+        bootConfigFileName ??= "dotnet.js";
+
+        if (bootConfigFileName.EndsWith(".js"))
+        {
+            string bootFileNameWithoutExtension = Path.GetFileNameWithoutExtension(bootConfigFileName);
+            string bootFileExtension = Path.GetExtension(bootConfigFileName);
+            string? fingerprintedBootJsonPath = Directory
+                .EnumerateFiles(binFrameworkDir)
+                .FirstOrDefault(f =>
+                {
+                    if (Path.GetExtension(f) != bootFileExtension)
+                        return false;
+
+                    string fileName = Path.GetFileName(f);
+                    if (!fileName.StartsWith(bootFileNameWithoutExtension))
+                        return false;
+                    
+                    if (allDotnetFiles.Except([bootFileNameWithoutExtension]).Any(a => fileName.StartsWith(a)))
+                        return false;
+
+                    return true;
+                });
+            
+            if (fingerprintedBootJsonPath == null)
+                throw new XunitException($"Could not find boot config '{bootConfigFileName}' with fingerprint in '{binFrameworkDir}'");
+
+            return fingerprintedBootJsonPath;
+        }
+        else
+        {
+            return Path.Combine(binFrameworkDir, bootConfigFileName);
+        }
+    }
+
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
         EnsureProjectDirIsSet();
-        string bootJsonPath = Path.Combine(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
+        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
@@ -535,7 +583,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 string extension = Path.GetExtension(expectedFilename).Substring(1);
 
                 if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
-                                           expectFingerprintOnDotnetJs: IsFingerprintingOnDotnetJsEnabled,
+                                           expectFingerprintOnDotnetJs: options.ExpectDotnetJsFingerprinting,
                                            expectFingerprintForThisFile: expectFingerprint))
                 {
                     return Regex.Match(item, $"{prefix}{s_dotnetVersionHashRegex}{extension}").Success;
@@ -568,17 +616,38 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return bootJson;
     }
 
-    public static BootJsonData ParseBootData(string bootJsonPath)
+    public static BootJsonData ParseBootData(string bootConfigPath)
     {
-        using FileStream stream = File.OpenRead(bootJsonPath);
-        stream.Position = 0;
-        var serializer = new DataContractJsonSerializer(
-            typeof(BootJsonData),
-            new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+        string jsonContent = GetBootJsonContent(bootConfigPath);
+        try
+        {
+            BootJsonData? config = JsonSerializer.Deserialize<BootJsonData>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            Assert.NotNull(config);
+            return config!;
+        }
+        catch (JsonException e)
+        {
+            throw new XunitException($"Parsing config failed{Environment.NewLine}{Environment.NewLine}{jsonContent}", e);
+        }
+    }
 
-        var config = (BootJsonData?)serializer.ReadObject(stream);
-        Assert.NotNull(config);
-        return config;
+    public static string GetBootJsonContent(string bootConfigPath)
+    {
+        string startComment = "/*json-start*/";
+        string endComment = "/*json-end*/";
+
+        string moduleContent = File.ReadAllText(bootConfigPath);
+        int startCommentIndex = moduleContent.IndexOf(startComment);
+        int endCommentIndex = moduleContent.IndexOf(endComment);
+        if (startCommentIndex >= 0 && endCommentIndex >= 0)
+        {
+            // boot.js
+            int startJsonIndex = startCommentIndex + startComment.Length;
+            string jsonContent = moduleContent.Substring(startJsonIndex, endCommentIndex - startJsonIndex);
+            return jsonContent;
+        }
+
+        return moduleContent;
     }
 
     private void AssertFileNames(IEnumerable<string> expected, IEnumerable<string> actual)
@@ -598,6 +667,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public virtual string GetBinFrameworkDir(Configuration config, bool forPublish, string framework, string? projectDir = null)
     {
         throw new NotImplementedException();
+    }
+
+    public string GetObjDir(Configuration config, string framework, string? projectDir = null)
+    {
+        EnsureProjectDirIsSet();
+        return Path.Combine(projectDir ?? ProjectDir!, "obj", config.ToString(), framework);
     }
 
     [MemberNotNull(nameof(ProjectDir))]

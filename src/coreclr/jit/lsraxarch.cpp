@@ -441,6 +441,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMP:
         case GT_TEST:
         case GT_BT:
+#ifdef TARGET_AMD64
+        case GT_CCMP:
+#endif
             srcCount = BuildCmp(tree);
             break;
 
@@ -622,6 +625,11 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 1);
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
             break;
 
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -1105,19 +1113,17 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         }
 #endif
     }
-#if defined(TARGET_64BIT)
-    else if (tree->OperIsShift() && !tree->isContained() &&
+    else if (!tree->isContained() && (tree->OperIsShift() || source->isContained()) &&
              compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
     {
-        // shlx (as opposed to mov+shl) instructions handles all register forms, but it does not handle contained form
-        // for memory operand. Likewise for sarx and shrx.
+        // We don'thave any specific register requirements here, so skip the logic that
+        // reserves RCX or preferences the source reg.
         // ToDo-APX : Remove when extended EVEX support is available
         srcCount += BuildOperandUses(source, BuildApxIncompatibleGPRMask(source, srcCandidates));
         srcCount += BuildOperandUses(shiftBy, BuildApxIncompatibleGPRMask(shiftBy, dstCandidates));
         BuildDef(tree, BuildApxIncompatibleGPRMask(tree, dstCandidates, true));
         return srcCount;
     }
-#endif
     else
     {
         // This ends up being BMI
@@ -1141,9 +1147,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #ifdef TARGET_X86
     // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
     // we can have a three operand form.
-    if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
+    if (tree->OperIs(GT_LSH_HI) || tree->OperIs(GT_RSH_LO))
     {
-        assert((source->OperGet() == GT_LONG) && source->isContained());
+        assert(source->OperIs(GT_LONG) && source->isContained());
 
         GenTree* sourceLo = source->gtGetOp1();
         GenTree* sourceHi = source->gtGetOp2();
@@ -1153,7 +1159,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 
         if (!tree->isContained())
         {
-            if (tree->OperGet() == GT_LSH_HI)
+            if (tree->OperIs(GT_LSH_HI))
             {
                 setDelayFree(sourceLoUse);
             }
@@ -1174,6 +1180,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     {
         srcCount += BuildOperandUses(source, srcCandidates);
     }
+
     if (!tree->isContained())
     {
         if (!shiftBy->isContained())
@@ -1356,6 +1363,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
+    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    {
+        MarkAsyncContinuationBusyForCall(call);
+    }
+
     regMaskTP killMask = getKillSetForCall(call);
     if (dstCount > 0)
     {
@@ -2046,39 +2058,47 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
-// SkipContainedCreateScalarUnsafe: Skips a contained CreateScalarUnsafe node
+// SkipContainedUnaryOp: Skips a contained non-memory or const node
 // and gets the underlying op1 instead
 //
 // Arguments:
 //    node - The node to handle
 //
 // Return Value:
-//    If node is a contained CreateScalarUnsafe, it's op1 is returned;
+//    If node is a contained non-memory or const unary op, its op1 is returned;
 //    otherwise node is returned unchanged.
-static GenTree* SkipContainedCreateScalarUnsafe(GenTree* node)
+static GenTree* SkipContainedUnaryOp(GenTree* node)
 {
-    if (!node->OperIsHWIntrinsic() || !node->isContained())
+    if (!node->isContained())
     {
         return node;
     }
 
-    GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
-    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-
-    switch (intrinsicId)
+    if (node->OperIsHWIntrinsic())
     {
-        case NI_Vector128_CreateScalarUnsafe:
-        case NI_Vector256_CreateScalarUnsafe:
-        case NI_Vector512_CreateScalarUnsafe:
-        {
-            return hwintrinsic->Op(1);
-        }
+        GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
 
-        default:
+        switch (intrinsicId)
         {
-            return node;
+            case NI_Vector128_CreateScalar:
+            case NI_Vector256_CreateScalar:
+            case NI_Vector512_CreateScalar:
+            case NI_Vector128_CreateScalarUnsafe:
+            case NI_Vector256_CreateScalarUnsafe:
+            case NI_Vector512_CreateScalarUnsafe:
+            {
+                return hwintrinsic->Op(1);
+            }
+
+            default:
+            {
+                break;
+            }
         }
     }
+
+    return node;
 }
 
 //------------------------------------------------------------------------
@@ -2135,8 +2155,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // A contained CreateScalarUnsafe is special in that we're not containing it to load from
-        // memory and it isn't a constant. Instead, its essentially a "transparent" node we're ignoring
+        // In a few cases, we contain an operand that isn't a load from memory or a constant. Instead,
+        // it is essentially a "transparent" node we're ignoring or handling specially in codegen
         // to simplify the overall IR handling. As such, we need to "skip" such nodes when present and
         // get the underlying op1 so that delayFreeUse and other preferencing remains correct.
 
@@ -2145,37 +2165,37 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         GenTree* op3    = nullptr;
         GenTree* op4    = nullptr;
         GenTree* op5    = nullptr;
-        GenTree* lastOp = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(numArgs));
+        GenTree* lastOp = SkipContainedUnaryOp(intrinsicTree->Op(numArgs));
 
         switch (numArgs)
         {
             case 5:
             {
-                op5 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(5));
+                op5 = SkipContainedUnaryOp(intrinsicTree->Op(5));
                 FALLTHROUGH;
             }
 
             case 4:
             {
-                op4 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(4));
+                op4 = SkipContainedUnaryOp(intrinsicTree->Op(4));
                 FALLTHROUGH;
             }
 
             case 3:
             {
-                op3 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(3));
+                op3 = SkipContainedUnaryOp(intrinsicTree->Op(3));
                 FALLTHROUGH;
             }
 
             case 2:
             {
-                op2 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(2));
+                op2 = SkipContainedUnaryOp(intrinsicTree->Op(2));
                 FALLTHROUGH;
             }
 
             case 1:
             {
-                op1 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(1));
+                op1 = SkipContainedUnaryOp(intrinsicTree->Op(1));
                 break;
             }
 
@@ -2224,11 +2244,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // must be handled within the case.
         switch (intrinsicId)
         {
+            case NI_Vector128_CreateScalar:
+            case NI_Vector256_CreateScalar:
+            case NI_Vector512_CreateScalar:
             case NI_Vector128_CreateScalarUnsafe:
-            case NI_Vector128_ToScalar:
             case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector256_ToScalar:
             case NI_Vector512_CreateScalarUnsafe:
+            case NI_Vector128_ToScalar:
+            case NI_Vector256_ToScalar:
             case NI_Vector512_ToScalar:
             {
                 assert(numArgs == 1);
@@ -2242,17 +2265,38 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
                     else
                     {
-                        // We will either be in memory and need to be moved
-                        // into a register of the appropriate size or we
-                        // are already in an XMM/YMM/ZMM register and can stay
-                        // where we are.
+                        // CreateScalarUnsafe and ToScalar are essentially no-ops for floating point types and can reuse
+                        // the op1 register. CreateScalar needs to clear the upper elements, so if we have a float and
+                        // can't use insertps to zero the upper elements in-place, we'll need a different target reg.
 
-                        tgtPrefUse = BuildUse(op1);
+                        RefPosition* op1Use = BuildUse(op1);
                         srcCount += 1;
+
+                        if ((baseType == TYP_FLOAT) && HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) &&
+                            !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                        {
+                            setDelayFree(op1Use);
+                        }
+                        else
+                        {
+                            tgtPrefUse = op1Use;
+                        }
                     }
 
                     buildUses = false;
                 }
+#if TARGET_X86
+                else if (varTypeIsByte(baseType) && HWIntrinsicInfo::IsVectorToScalar(intrinsicId))
+                {
+                    dstCandidates = allByteRegs();
+                }
+                else if (varTypeIsLong(baseType) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // For SSE2 fallbacks, we will need a temp register to insert the upper half of a long
+                    buildInternalFloatRegisterDefForNode(intrinsicTree);
+                    setInternalRegsDelayFree = true;
+                }
+#endif // TARGET_X86
                 break;
             }
 
@@ -2775,6 +2819,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(op5->isContained());
 
                 // get a tmp register for mask that will be cleared by gather instructions
+                buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+                setInternalRegsDelayFree = true;
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_Vector128_op_Division:
+            case NI_Vector256_op_Division:
+            {
+                srcCount = BuildOperandUses(op1, lowSIMDRegs());
+                srcCount += BuildOperandUses(op2, lowSIMDRegs());
+
+                // get a tmp register for div-by-zero check
+                buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+
+                // get a tmp register for overflow check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
                 setInternalRegsDelayFree = true;
 

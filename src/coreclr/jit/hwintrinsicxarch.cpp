@@ -2125,16 +2125,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             if (sig->numArgs == 1)
             {
-#if defined(TARGET_X86)
-                if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
-                {
-                    // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                    // instruction, which takes a 64-bit memory address and
-                    // works on 32-bit x86 systems.
-                    break;
-                }
-#endif // TARGET_X86
-
                 op1     = impPopStack().val;
                 retNode = gtNewSimdCreateBroadcastNode(retType, op1, simdBaseJitType, simdSize);
                 break;
@@ -2266,16 +2256,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType))
-            {
-                // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                // instruction, which takes a 64-bit memory address and
-                // works on 32-bit x86 systems.
-                break;
-            }
-#endif // TARGET_X86
-
             IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
 
             // TODO-CQ: We don't handle contiguous args for anything except TYP_FLOAT today
@@ -2321,16 +2301,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
-            {
-                // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                // instruction, which takes a 64-bit memory address and
-                // works on 32-bit x86 systems.
-                break;
-            }
-#endif // TARGET_X86
-
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarNode(retType, op1, simdBaseJitType, simdSize);
             break;
@@ -2341,16 +2311,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
-            {
-                // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                // instruction, which takes a 64-bit memory address and
-                // works on 32-bit x86 systems.
-                break;
-            }
-#endif // TARGET_X86
 
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarUnsafeNode(retType, op1, simdBaseJitType, simdSize);
@@ -2376,27 +2336,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         break;
                     }
                 }
-
-                if (varTypeIsLong(simdBaseType))
-                {
-                    if (!impStackTop(0).val->OperIsConst())
-                    {
-                        // When op2 is a constant, we can skip the multiplication allowing us to always
-                        // generate better code. However, if it isn't then we need to fallback in the
-                        // cases where multiplication isn't supported.
-
-                        if ((simdSize != 64) && !canUseEvexEncoding())
-                        {
-                            // TODO-XARCH-CQ: We should support long/ulong multiplication
-                            break;
-                        }
-                    }
-
-#if defined(TARGET_X86)
-                    // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
-                    break;
-#endif // TARGET_X86
-                }
             }
 
             impSpillSideEffect(true, stackState.esStackDepth -
@@ -2417,8 +2356,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsFloating(simdBaseType))
             {
-                // We can't trivially handle division for integral types using SIMD
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+                // Check to see if it is possible to emulate the integer division
+                if (!(simdBaseType == TYP_INT &&
+                      ((simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                       (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512F)))))
+                {
+                    break;
+                }
+                impSpillSideEffect(true, stackState.esStackDepth -
+                                             2 DEBUGARG("Spilling op1 side effects for vector integer division"));
+#else
                 break;
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
@@ -2433,45 +2383,38 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1     = getArgForHWIntrinsic(argType, argClass);
 
             retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
+
             break;
         }
 
         case NI_Vector128_Dot:
         case NI_Vector256_Dot:
+        case NI_Vector512_Dot:
         {
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            if (varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))
+            if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                // TODO-XARCH-CQ: We could support dot product for 8-bit and
-                // 64-bit integers if we support multiplication for the same
+                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
                 break;
-            }
-
-            if (simdSize == 32)
-            {
-                if (!varTypeIsFloating(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
-                    break;
-                }
-            }
-            else if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // TODO-XARCH-CQ: We can support 32-bit integers if we updating multiplication
-                    // to be lowered rather than imported as the relevant operations.
-                    break;
-                }
             }
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
+            if ((simdSize == 64) || varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType) ||
+                (varTypeIsInt(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+            {
+                // The lowering for Dot doesn't handle these cases, so import as Sum(left * right)
+                retNode = gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseJitType, simdSize);
+                retNode = gtNewSimdSumNode(retType, retNode, simdBaseJitType, simdSize);
+                break;
+            }
+
             retNode = gtNewSimdDotProdNode(simdType, op1, op2, simdBaseJitType, simdSize);
-            retNode = gtNewSimdGetElementNode(retType, retNode, gtNewIconNode(0), simdBaseJitType, simdSize);
+            retNode = gtNewSimdToScalarNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2753,13 +2696,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_LONG:
                 case TYP_ULONG:
                 {
-                    bool useToScalar = op2->IsIntegralConst(0);
-
-#if defined(TARGET_X86)
-                    useToScalar &= !varTypeIsLong(simdBaseType);
-#endif // TARGET_X86
-
-                    if (!useToScalar && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                    if (!op2->IsIntegralConst(0) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
                     {
                         // Using software fallback if simdBaseType is not supported by hardware
                         return nullptr;
@@ -3337,29 +3274,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if (varTypeIsLong(simdBaseType))
-            {
-                if (TARGET_POINTER_SIZE == 4)
-                {
-                    // TODO-XARCH-CQ: 32bit support
-                    break;
-                }
-
-                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
-                }
-                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
-                }
-                else if (simdSize != 64)
-                {
-                    // Software fallback
-                    break;
-                }
-            }
-
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
             var_types               argType  = TYP_UNKNOWN;
@@ -3391,29 +3305,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
                 break;
-            }
-
-            if (varTypeIsLong(simdBaseType))
-            {
-                if (TARGET_POINTER_SIZE == 4)
-                {
-                    // TODO-XARCH-CQ: 32bit support
-                    break;
-                }
-
-                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
-                }
-                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
-                }
-                else if (simdSize != 64)
-                {
-                    // Software fallback
-                    break;
-                }
             }
 
             op3 = impSIMDPopStack();
@@ -3539,18 +3430,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_X86)
-            if ((simdBaseType == TYP_LONG) || (simdBaseType == TYP_DOUBLE))
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_EVEX) && !impStackTop(0).val->IsCnsIntOrI())
-                {
-                    // If vpsraq is available, we can use that. We can also trivially emulate arithmetic shift by const
-                    // amount. Otherwise, more work is required for long types, so we fall back to managed for now.
-                    break;
-                }
-            }
-#endif // TARGET_X86
-
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
@@ -3641,37 +3520,68 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Shuffle:
         case NI_Vector256_Shuffle:
         case NI_Vector512_Shuffle:
+        case NI_Vector128_ShuffleNative:
+        case NI_Vector256_ShuffleNative:
+        case NI_Vector512_ShuffleNative:
+        case NI_Vector128_ShuffleNativeFallback:
+        case NI_Vector256_ShuffleNativeFallback:
+        case NI_Vector512_ShuffleNativeFallback:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
 
+            // The Native variants are non-deterministic on xarch
+            bool isShuffleNative = (intrinsic != NI_Vector128_Shuffle) && (intrinsic != NI_Vector256_Shuffle) &&
+                                   (intrinsic != NI_Vector512_Shuffle);
+            if (isShuffleNative && BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsCnsVec() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
+            // Check if the required intrinsics are available to emit now (validForShuffle). If we have variable
+            // indices that might become possible to emit later (due to them becoming constant), this will be
+            // indicated in canBecomeValidForShuffle; otherwise, it's just the same as validForShuffle.
+            bool canBecomeValidForShuffle = false;
+            bool validForShuffle =
+                IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle, isShuffleNative);
+
+            // If it isn't valid for shuffle (and can't become valid later), then give up now.
+            if (!canBecomeValidForShuffle)
+            {
+                return nullptr;
+            }
+
+            // If the indices might become constant later, then we don't emit for now, delay until later.
+            if ((!validForShuffle) || (!indices->IsCnsVec()))
             {
                 assert(sig->numArgs == 2);
 
-                if (!opts.OptimizationEnabled())
+                if (opts.OptimizationEnabled())
                 {
                     // Only enable late stage rewriting if optimizations are enabled
                     // as we won't otherwise encounter a constant at the later point
-                    return nullptr;
+                    op2 = impSIMDPopStack();
+                    op1 = impSIMDPopStack();
+
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+                    retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+                    break;
                 }
 
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-
-                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
-                break;
+                // If we're not doing late stage rewriting, just return null now as it won't become valid.
+                if (!validForShuffle)
+                {
+                    return nullptr;
+                }
             }
 
             if (sig->numArgs == 2)
             {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
+                op2     = impSIMDPopStack();
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             }
             break;
         }
@@ -3806,23 +3716,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                // Vector256 requires AVX2
-                break;
-            }
-            else if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_SSE2))
-            {
-                break;
-            }
-#if defined(TARGET_X86)
-            else if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
-            {
-                // We need SSE41 to handle long, use software fallback
-                break;
-            }
-#endif // TARGET_X86
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize);
             break;
@@ -3833,14 +3726,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_ToScalar:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
-            {
-                // We need SSE41 to handle long, use software fallback
-                break;
-            }
-#endif // TARGET_X86
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdToScalarNode(retType, op1, simdBaseJitType, simdSize);
@@ -4520,6 +4405,65 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         }
                     }
 
+                    // Some normalization cases require us to swap the operands, which might require
+                    // spilling side effects. Check that here.
+                    //
+                    // cast in switch clause is needed for old gcc
+                    switch ((TernaryLogicOperKind)info.oper1)
+                    {
+                        case TernaryLogicOperKind::Not:
+                        {
+                            assert(info.oper1Use != TernaryLogicUseFlags::None);
+
+                            bool needSideEffectSpill = false;
+
+                            if (info.oper2 == TernaryLogicOperKind::And)
+                            {
+                                assert(info.oper2Use != TernaryLogicUseFlags::None);
+
+                                if ((control == static_cast<uint8_t>(~0xCC & 0xF0)) || // ~B & A
+                                    (control == static_cast<uint8_t>(~0xAA & 0xF0)) || // ~C & A
+                                    (control == static_cast<uint8_t>(~0xAA & 0xCC)))   // ~C & B
+                                {
+                                    // We're normalizing to ~B & C, so we need another swap
+                                    std::swap(val2, val3);
+                                    needSideEffectSpill = (control == static_cast<uint8_t>(~0xAA & 0xCC)); // ~C & B
+                                }
+                            }
+                            else if (info.oper2 == TernaryLogicOperKind::Or)
+                            {
+                                assert(info.oper2Use != TernaryLogicUseFlags::None);
+
+                                if ((control == static_cast<uint8_t>(~0xCC | 0xF0)) || // ~B | A
+                                    (control == static_cast<uint8_t>(~0xAA | 0xF0)) || // ~C | A
+                                    (control == static_cast<uint8_t>(~0xAA | 0xCC)))   // ~C | B
+                                {
+                                    // We're normalizing to ~B | C, so we need another swap
+                                    std::swap(val2, val3);
+                                    needSideEffectSpill = (control == static_cast<uint8_t>(~0xAA | 0xCC)); // ~C | B
+                                }
+                            }
+
+                            if (needSideEffectSpill)
+                            {
+                                // Side-effect cases:
+                                // ~B op A ; order before swap C A B
+                                //    op1 & op2 already set to be spilled; no further spilling necessary
+                                // ~C op A ; order before swap B A C
+                                //    op1 already set to be spilled; no further spilling necessary
+                                // ~C op B ; order before swap A B C
+                                //    nothing already set to be spilled; op1 & op2 need to be spilled
+
+                                spillOp1 = true;
+                                spillOp2 = true;
+                            }
+                            break;
+                        }
+
+                        default:
+                            break;
+                    }
+
                     if (spillOp1)
                     {
                         impSpillSideEffect(true, stackState.esStackDepth -
@@ -4644,8 +4588,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                     (control == static_cast<uint8_t>(~0xAA & 0xF0)) || // ~C & A
                                     (control == static_cast<uint8_t>(~0xAA & 0xCC)))   // ~C & B
                                 {
-                                    // We're normalizing to ~B & C, so we need another swap
-                                    std::swap(*val2, *val3);
+                                    // We already normalized to ~B & C above.
                                 }
                                 else
                                 {
@@ -4671,8 +4614,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                     (control == static_cast<uint8_t>(~0xAA | 0xF0)) || // ~C | A
                                     (control == static_cast<uint8_t>(~0xAA | 0xCC)))   // ~C | B
                                 {
-                                    // We're normalizing to ~B & C, so we need another swap
-                                    std::swap(*val2, *val3);
+                                    // We already normalized to ~B | C above.
                                 }
                                 else
                                 {

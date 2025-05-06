@@ -56,6 +56,11 @@ inline ReadyToRunCrossModuleInlineFlags operator &( const ReadyToRunCrossModuleI
     return static_cast<ReadyToRunCrossModuleInlineFlags>(static_cast<uint32_t>(left) & static_cast<uint32_t>(right));
 }
 
+#ifdef TARGET_WASM
+// why was it defined only for x86 before?
+typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
+#endif
+
 #ifdef TARGET_X86
 
 typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
@@ -180,6 +185,7 @@ enum EncodeMethodSigFlags
     ENCODE_METHOD_SIG_Constrained               = 0x20,
     ENCODE_METHOD_SIG_OwnerType                 = 0x40,
     ENCODE_METHOD_SIG_UpdateContext             = 0x80,
+    ENCODE_METHOD_SIG_AsyncVariant             = 0x100,
 };
 
 enum EncodeFieldSigFlags

@@ -468,9 +468,11 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 	switch (id)
 	{
 	case SN_Negate:
+	case SN_op_UnaryNegation:
 		op = OP_NEGATION;
 		break;
 	case SN_OnesComplement:
+	case SN_op_OnesComplement:
 		op = OP_WASM_ONESCOMPLEMENT;
 		break;
 	default:
@@ -1906,19 +1908,21 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 {
 	const char *cmethod_name = cmethod->name;
 
-	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
+	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
+		if (strncmp (cmethod_name + 45, "Runtime.Intrinsics.Vector", 25) == 0) {
 		// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
 		// but, they all prefix the qualified name of the interface first, so we'll check for that and
 		// skip the prefix before trying to resolve the method.
 
-		if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
-			cmethod_name += 77;
-		} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
-			cmethod_name += 79;
-		} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
-			(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
-			(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
-			cmethod_name += 80;
+			if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+				cmethod_name += 79;
+			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+				cmethod_name += 80;
+			}
+		} else if (strncmp(cmethod_name + 45, "Numerics.Vector<T>,T>.", 22) == 0) {
+			cmethod_name += 67;
 		}
 	}
 
@@ -2180,7 +2184,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Floor: {
 		if (!type_enum_is_float (arg0_type))
 			return NULL;
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
 		int ceil_or_floor = id == SN_Ceiling ? INTRINS_SIMD_CEIL : INTRINS_SIMD_FLOOR;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
 #elif defined(TARGET_AMD64)
@@ -2437,7 +2441,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 			const char *klass_name = m_class_get_name (klass);
 
-			if (!strcmp (klass_name, "Vector4")) {
+			if (strcmp (m_class_get_name_space (klass), "System.Runtime.Intrinsics") != 0) {
 				klass_name = "Vector128`1";
 			}
 			arg_class = create_class_instance ("System.Runtime.Intrinsics", klass_name, m_class_get_byval_arg (cast_class));
@@ -3371,21 +3375,23 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	const char *cmethod_name = cmethod->name;
 	bool explicitly_implemented = false;
 
-	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
-		// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
-		// but, they all prefix the qualified name of the interface first, so we'll check for that and
-		// skip the prefix before trying to resolve the method.
+	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
+		if (strncmp(cmethod_name + 45, "Runtime.Intrinsics.Vector", 25) == 0) {
+			// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+			// but, they all prefix the qualified name of the interface first, so we'll check for that and
+			// skip the prefix before trying to resolve the method.
 
-		if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
-			cmethod_name += 77;
-			explicitly_implemented = true;
-		} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
-			cmethod_name += 79;
-			explicitly_implemented = true;
-		} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
-			(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
-			(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
-			cmethod_name += 80;
+			if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+				cmethod_name += 79;
+				explicitly_implemented = true;
+			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+				cmethod_name += 80;
+				explicitly_implemented = true;
+			}
+		} else if (strncmp(cmethod_name + 45, "Numerics.Vector<T>,T>.", 22) == 0) {
+			cmethod_name += 67;
 			explicitly_implemented = true;
 		}
 	}
@@ -6148,8 +6154,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_LoadScalarVector128},
 	{SN_LoadVector128, OP_LOADX_MEMBASE},
 	{SN_LoadWideningVector128, OP_WASM_SIMD_LOAD_WIDENING},
-	{SN_Max, OP_XBINOP, OP_IMIN, OP_XBINOP, OP_IMIN_UN, OP_XBINOP, OP_FMIN},
-	{SN_Min, OP_XBINOP, OP_IMAX, OP_XBINOP, OP_IMAX_UN, OP_XBINOP, OP_FMAX},
+	{SN_Max, OP_XBINOP, OP_IMAX, OP_XBINOP, OP_IMAX_UN, OP_XBINOP, OP_FMAX},
+	{SN_Min, OP_XBINOP, OP_IMIN, OP_XBINOP, OP_IMIN_UN, OP_XBINOP, OP_FMIN},
 	{SN_Multiply},
 	{SN_MultiplyRoundedSaturateQ15, OP_XOP_X_X_X, INTRINS_WASM_Q15MULR_SAT_SIGNED},
 	{SN_MultiplyWideningLower, OP_WASM_EXTMUL_LOWER, 0, OP_WASM_EXTMUL_LOWER_U},

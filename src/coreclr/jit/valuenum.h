@@ -690,7 +690,8 @@ public:
 
     // Returns the value number for AllBitsSet of the given "typ".
     // It has an unreached() for a "typ" that has no all bits set value, such as TYP_VOID.
-    ValueNum VNAllBitsForType(var_types typ);
+    // elementCount is used for TYP_MASK and indicates how many bits should be set
+    ValueNum VNAllBitsForType(var_types typ, unsigned elementCount);
 
 #ifdef FEATURE_SIMD
     // Returns the value number broadcast of the given "simdType" and "simdBaseType".
@@ -1210,10 +1211,6 @@ public:
 
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
-
-    // Returns true if the two VNs represent the same value
-    // despite being different VNs. Useful for phi def VNs.
-    bool AreVNsEquivalent(ValueNum vn1, ValueNum vn2);
 
     enum class VN_RELATION_KIND
     {

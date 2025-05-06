@@ -133,8 +133,13 @@ class DeadCodeElimination
 
             {
                 MethodInfo mi = typeof(TestReflectionInvokeSignatures).GetMethod(nameof(Invoke2));
-                mi.Invoke(null, new object[1]);
+                var args = new object[1];
+                mi.Invoke(null, args);
                 ThrowIfNotPresent(typeof(TestReflectionInvokeSignatures), nameof(Allocated1));
+                if (args[0].GetType().Name != nameof(Allocated1))
+                    throw new Exception();
+                if (!args[0].ToString().Contains(nameof(Allocated1)))
+                    throw new Exception();
             }
         }
     }

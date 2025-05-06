@@ -89,6 +89,7 @@ set( JIT_SOURCES
   abi.cpp
   alloc.cpp
   assertionprop.cpp
+  async.cpp
   bitset.cpp
   block.cpp
   buildstring.cpp
@@ -286,6 +287,7 @@ set( JIT_HEADERS
   abi.h
   alloc.h
   arraystack.h
+  async.h
   bitset.h
   layout.h
   bitsetasshortlong.h
@@ -495,6 +497,9 @@ elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
 elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
   set(JIT_ARCH_SOURCES ${JIT_RISCV64_SOURCES})
   set(JIT_ARCH_HEADERS ${JIT_RISCV64_HEADERS})
+elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+  set(JIT_ARCH_SOURCES ${JIT_WASM32_SOURCES})
+  set(JIT_ARCH_HEADERS ${JIT_WASM32_HEADERS})
 else()
   clr_unknown_arch()
 endif()

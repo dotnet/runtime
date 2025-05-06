@@ -29,10 +29,7 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationPerson(SyndicationPerson source)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             Email = source.Email;
             Name = source.Name;

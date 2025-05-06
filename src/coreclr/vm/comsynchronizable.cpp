@@ -714,6 +714,14 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
+FCIMPL0(FC_BOOL_RET, ThreadNative::CatchAtSafePoint)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(GetThread()->CatchAtSafePoint());
+}
+FCIMPLEND
+
 // Get whether or not this is a background thread.
 extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread)
 {

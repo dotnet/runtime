@@ -12,14 +12,6 @@
          should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="$(CommonPath)System\Experimentals.cs"
-         Link="Common\Experimentals.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs"
-         Link="Common\ExperimentalAttribute.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
   </ItemGroup>

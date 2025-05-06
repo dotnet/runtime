@@ -8,6 +8,7 @@
 #include <assert.h>
 #ifdef HOST_WINDOWS
 #include <Windows.h>
+#include <objbase.h>
 #endif
 
 // See RFC-4122 section 4.4 on creation of random GUID.

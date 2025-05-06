@@ -37,9 +37,16 @@
       <AndroidBundleDir Condition="'$(AndroidBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AndroidBundleDir>
 
       <BundleDir>$(AndroidBundleDir)</BundleDir>
-      <RuntimeHeaders>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</RuntimeHeaders>
-      <RuntimeHeaders Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'">$(CoreClrProjectRoot)hosts\inc</RuntimeHeaders>
     </PropertyGroup>
+
+    <ItemGroup>
+      <RuntimeHeaders Include="$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))"
+                      Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'"/>
+      <RuntimeHeaders Include="$(CoreClrProjectRoot)hosts\inc"
+                      Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'" />
+      <RuntimeHeaders Include="$(SharedNativeRoot)"
+                      Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
       <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)" />
@@ -246,7 +253,7 @@
         ForceInterpreter="$(MonoForceInterpreter)"
         IsLibraryMode="$(_IsLibraryMode)"
         MainLibraryFileName="$(MainLibraryFileName)"
-        MonoRuntimeHeaders="$(RuntimeHeaders)"
+        RuntimeHeaders="@(RuntimeHeaders)"
         NativeDependencies="@(_NativeDependencies)"
         OutputDir="$(AndroidBundleDir)"
         ProjectName="$(AppName)"

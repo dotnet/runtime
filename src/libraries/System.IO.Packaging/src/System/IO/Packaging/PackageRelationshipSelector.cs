@@ -30,14 +30,8 @@ namespace System.IO.Packaging
         /// valid PartUri syntax</exception>
         public PackageRelationshipSelector(Uri sourceUri, PackageRelationshipSelectorType selectorType, string selectionCriteria)
         {
-            if (sourceUri is null)
-            {
-                throw new ArgumentNullException(nameof(sourceUri));
-            }
-            if (selectionCriteria is null)
-            {
-                throw new ArgumentNullException(nameof(selectionCriteria));
-            }
+            ArgumentNullException.ThrowIfNull(sourceUri);
+            ArgumentNullException.ThrowIfNull(selectionCriteria);
 
             //If the sourceUri is not equal to "/", it must be a valid part name.
             if (Uri.Compare(sourceUri, PackUriHelper.PackageRootUri, UriComponents.SerializationInfoString, UriFormat.UriEscaped, StringComparison.Ordinal) != 0)
@@ -114,10 +108,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentNullException">If package parameter is null</exception>
         public List<PackageRelationship> Select(Package package)
         {
-            if (package is null)
-            {
-                throw new ArgumentNullException(nameof(package));
-            }
+            ArgumentNullException.ThrowIfNull(package);
 
             List<PackageRelationship> relationships = new List<PackageRelationship>(0);
 

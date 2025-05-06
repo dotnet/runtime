@@ -38,6 +38,13 @@ typedef var_types RegisterType;
 #define FloatRegisterType TYP_FLOAT
 #define MaskRegisterType  TYP_MASK
 
+// NEXT_REGISTER : update reg to next active registers.
+#ifdef TARGET_AMD64
+#define NEXT_REGISTER(reg, index) index++, reg = regIndices[index]
+#else
+#define NEXT_REGISTER(reg, index) reg = REG_NEXT(reg)
+#endif
+
 //------------------------------------------------------------------------
 // regType: Return the RegisterType to use for a given type
 //
@@ -1005,8 +1012,10 @@ private:
 
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
-    void processBlockEndLocations(BasicBlock* current);
-    void resetAllRegistersState();
+
+    FORCEINLINE void handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap);
+    void             processBlockEndLocations(BasicBlock* current);
+    void             resetAllRegistersState();
 
 #ifdef TARGET_ARM
     bool       isSecondHalfReg(RegRecord* regRec, Interval* interval);
@@ -1028,7 +1037,7 @@ private:
     // insert refpositions representing prolog zero-inits which will be added later
     void insertZeroInitRefPositions();
 
-    void addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
+    RefPosition* addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
@@ -1079,9 +1088,10 @@ private:
     SingleTypeRegSet lowSIMDRegs();
     SingleTypeRegSet internalFloatRegCandidates();
 
-    void makeRegisterInactive(RegRecord* physRegRecord);
-    void freeRegister(RegRecord* physRegRecord);
-    void freeRegisters(regMaskTP regsToFree);
+    void             makeRegisterInactive(RegRecord* physRegRecord);
+    void             freeRegister(RegRecord* physRegRecord);
+    void             freeRegisters(regMaskTP regsToFree);
+    FORCEINLINE void freeRegistersSingleType(SingleTypeRegSet regsToFree, int regBase);
 
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
@@ -1193,7 +1203,12 @@ private:
     void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
     void processKills(RefPosition* killRefPosition);
-    void spillGCRefs(RefPosition* killRefPosition);
+    template <bool isLow>
+    FORCEINLINE void freeKilledRegs(RefPosition*     killRefPosition,
+                                    SingleTypeRegSet killedRegs,
+                                    RefPosition*     nextKill,
+                                    int              regBase);
+    void             spillGCRefs(RefPosition* killRefPosition);
 
     /*****************************************************************************
      * Register selection
@@ -1815,9 +1830,28 @@ private:
     }
     SingleTypeRegSet getMatchingConstants(SingleTypeRegSet mask, Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskTP    fixedRegs;
+    SingleTypeRegSet fixedRegsLow;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    SingleTypeRegSet fixedRegsHigh;
+#endif
     LsraLocation nextFixedRef[REG_COUNT];
-    void         updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+    template <bool isLow>
+    void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
+    void updateNextFixedRefDispatch(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
+    {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        if (regRecord->regNum < 64)
+        {
+            updateNextFixedRef<true>(regRecord, nextRefPosition, nextKill);
+        }
+        else
+        {
+            updateNextFixedRef<false>(regRecord, nextRefPosition, nextKill);
+        }
+#else
+        updateNextFixedRef<true>(regRecord, nextRefPosition, nextKill);
+#endif
+    }
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
     {
         LsraLocation loc = nextFixedRef[regNum];
@@ -1987,6 +2021,7 @@ private:
     int  BuildPutArgReg(GenTreeUnOp* node);
     int  BuildCall(GenTreeCall* call);
     void MarkSwiftErrorBusyForCall(GenTreeCall* call);
+    void MarkAsyncContinuationBusyForCall(GenTreeCall* call);
     int  BuildCmp(GenTree* tree);
     int  BuildCmpOperands(GenTree* tree);
     int  BuildBlockStore(GenTreeBlk* blkNode);
@@ -2105,7 +2140,8 @@ private:
     }
 #endif // TARGET_XARCH
 
-    unsigned availableRegCount;
+    unsigned   availableRegCount;
+    regNumber* regIndices;
 
     FORCEINLINE unsigned get_AVAILABLE_REG_COUNT() const
     {
