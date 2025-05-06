@@ -208,9 +208,6 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
 
     EX_TRY
     {
-        // ClassificationSizeTable is a static array of bytes used by the cDAC to lookup MethodDesc sizes
-        ReportMem((TADDR)&MethodDesc::s_ClassificationSizeTable, MethodDesc::s_ClassificationSizeTableSize);
-
         // These two static pointers are pointed to static data of byte[]
         // then run constructor in place
         //
