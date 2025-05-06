@@ -543,19 +543,14 @@ namespace Internal.IL
 
                 TypeDesc initialType = isReturnValue ? originalSignature.ReturnType : originalSignature[parameter.SequenceNumber - 1];
 
-                bool initialTypeIsByRef = initialType.IsByRef;
-
-                if (initialTypeIsByRef)
-                {
-                    // We need to strip the byref off the type to get the
-                    // underlying type for the parameter.
-                    initialType = ((ParameterizedType)initialType).ParameterType;
-                }
-
+                // Only allow 'object' and 'ref object' as initial types.
                 if (initialType != method.Context.GetWellKnownType(WellKnownType.Object))
                 {
-                    // Illegal argument type for UnsafeAccessorTypeAttribute target
-                    return SetTargetResult.Invalid;
+                    if (initialType.IsByRef
+                        && ((ByRefType)initialType).ParameterType != method.Context.GetWellKnownType(WellKnownType.Object))
+                    {
+                        return SetTargetResult.Invalid;
+                    }
                 }
 
                 CustomAttributeValue<TypeDesc> decoded = unsafeAccessorTypeAttribute.Value.DecodeValue(
@@ -616,15 +611,15 @@ namespace Internal.IL
                     return SetTargetResult.Missing;
                 }
 
-                if (replacementType.IsFunctionPointer
-                    || replacementType.IsPointer)
+                // Future versions of the runtime may support
+                // UnsafeAccessorTypeAttribute on value types.
+                if (replacementType.IsValueType)
                 {
                     return SetTargetResult.NotSupported;
                 }
 
-                // Future versions of the runtime may support
-                // UnsafeAccessorTypeAttribute on value types.
-                if (replacementType.IsValueType)
+                if (replacementType.IsFunctionPointer
+                    || replacementType.IsPointer)
                 {
                     return SetTargetResult.NotSupported;
                 }
@@ -641,7 +636,7 @@ namespace Internal.IL
                     replacementType = replacementType.MakeByRefType();
                 }
 
-                if (replacementType.IsByRef != initialTypeIsByRef)
+                if (replacementType.IsByRef != initialType.IsByRef)
                 {
                     // The replacement type must match the original type
                     // in terms of byref-ness.
