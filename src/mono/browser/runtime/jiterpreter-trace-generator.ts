@@ -3841,7 +3841,15 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
         case SimdIntrinsic3.V128_I2_SHUFFLE:
         case SimdIntrinsic3.V128_I4_SHUFFLE:
         case SimdIntrinsic3.V128_I8_SHUFFLE:
-            return emit_shuffle(builder, ip, index === SimdIntrinsic3.V128_I2_SHUFFLE ? 8 : 4);
+            let elementCount = 16;
+            if (index === SimdIntrinsic3.V128_I2_SHUFFLE)
+                elementCount = 8;
+            else if (index === SimdIntrinsic3.V128_I4_SHUFFLE)
+                elementCount = 4;
+            else if (index === SimdIntrinsic3.V128_I8_SHUFFLE)
+                elementCount = 2;
+
+            return emit_shuffle(builder, ip, elementCount);
         default:
             return false;
     }
