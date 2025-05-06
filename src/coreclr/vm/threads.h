@@ -1218,7 +1218,7 @@ public:
         {
             void* curSP;
             curSP = (void *)GetCurrentSP();
-            _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
+            _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
         }
 #endif
 

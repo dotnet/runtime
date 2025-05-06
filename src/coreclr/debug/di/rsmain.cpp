@@ -2028,11 +2028,6 @@ void Cordb::EnsureCanLaunchOrAttach(BOOL fWin32DebuggingEnabled)
     // Made it this far, we succeeded.
 }
 
-HRESULT Cordb::CreateObjectV1(REFIID id, void **object)
-{
-    return CreateObject(CorDebugVersion_1_0, ProcessDescriptor::UNINITIALIZED_PID, NULL, NULL, id, object);
-}
-
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
 // CoreCLR activates debugger objects via direct COM rather than the shim (just like V1). For now we share the
 // same debug engine version as V2, though this may change in the future.

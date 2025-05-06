@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Dsa.Tests;
 using System.Security.Cryptography.EcDsa.Tests;
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Asn1.Pkcs12;
@@ -386,6 +387,66 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.NotNull(kem);
                     Assert.Equal(algorithm, kem.Algorithm);
                     AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void ExportPkcs12_SlhDsa_Ietf_Roundtrip()
+        {
+            const string password = "PLACEHOLDER";
+            byte[] pfxBytes = SlhDsaTestData.IetfSlhDsaSha2_128sCertificatePfx;
+
+            PbeParameters pbeParameters = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, password))
+            {
+                byte[] pkcs12 = cert.ExportPkcs12(pbeParameters, password);
+                (int certs, int keys) = VerifyPkcs12(
+                    pkcs12,
+                    password,
+                    pbeParameters.IterationCount,
+                    pbeParameters.HashAlgorithm,
+                    pbeParameters.EncryptionAlgorithm);
+                Assert.Equal(1, certs);
+                Assert.Equal(1, keys);
+
+                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password))
+                using (SlhDsa slhDsa = reLoaded.GetSlhDsaPrivateKey())
+                {
+                    Assert.NotNull(slhDsa);
+                    Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
+                    AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaSecretKey());
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(SlhDsaTestData.GeneratedKeyInfosData), MemberType = typeof(SlhDsaTestData))]
+        public static void ExportPkcs12_SlhDsa_Generated_Roundtrip(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
+        {
+            string password = info.EncryptionPassword;
+            PbeParameters pbeParameters = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(info.SelfSignedCertificatePfx, password))
+            {
+                byte[] pkcs12 = cert.ExportPkcs12(pbeParameters, password);
+                (int certs, int keys) = VerifyPkcs12(
+                    pkcs12,
+                    password,
+                    pbeParameters.IterationCount,
+                    pbeParameters.HashAlgorithm,
+                    pbeParameters.EncryptionAlgorithm);
+                Assert.Equal(1, certs);
+                Assert.Equal(1, keys);
+
+                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password))
+                using (SlhDsa slhDsa = reLoaded.GetSlhDsaPrivateKey())
+                {
+                    Assert.NotNull(slhDsa);
+                    Assert.Equal(info.Algorithm, slhDsa.Algorithm);
+                    AssertExtensions.SequenceEqual(info.SecretKey, slhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(info.Certificate, reLoaded.RawData);
                 }
             }
         }

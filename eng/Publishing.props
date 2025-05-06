@@ -43,7 +43,7 @@
 
   <!-- The PGO runtime should always have External visibility, even if someone changes the default artifact visibility -->    
   <ItemGroup>    
-    <Artifact Update="$(ArtifactsShippingPackagesDir)dotnet-runtime-pgo-*" Visibility="External" />    
+    <Artifact Update="$(ArtifactsNonShippingPackagesDir)dotnet-runtime-pgo-*" Visibility="External" />    
   </ItemGroup>
 
   <!--
