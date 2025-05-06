@@ -147,8 +147,13 @@ class ObjectAllocator final : public Phase
     unsigned        m_maxPseudos;
     unsigned        m_regionsToClone;
 
-    // Struct fields
-    bool m_trackFields;
+    // Fields
+    bool            m_trackStructFields;
+    bool            m_trackObjectFields;
+    unsigned        m_firstFieldIndex;
+    unsigned        m_numFields;
+    LocalToLocalMap m_FieldIndexToLocalIndexMap;
+    LocalToLocalMap m_LocalIndexToFieldIndexMap;
 
     //===============================================================================
     // Methods
@@ -205,8 +210,11 @@ private:
                                                BasicBlock*          block,
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
-    void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
-    void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, bool retypeFields);
+    void                 AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
+    void                 UpdateAncestorTypes(GenTree*              tree,
+                                             ArrayStack<GenTree*>* parentStack,
+                                             var_types             newType,
+                                             var_types             newFieldType);
     ObjectAllocationType AllocationKind(GenTree* tree);
 
     // Conditionally escaping allocation support
@@ -239,6 +247,10 @@ private:
     ClassLayout* GetBoxedLayout(ClassLayout* structLayout);
     ClassLayout* GetNonGCLayout(ClassLayout* existingLayout);
     ClassLayout* GetByrefLayout(ClassLayout* existingLayout);
+
+    unsigned GetFieldIndexFromLocal(unsigned lclNum);
+    unsigned GetFieldIndexFromLocalIndex(unsigned lclIndex);
+    unsigned GetLocalFromFieldIndex(unsigned fieldIndex);
 
 #ifdef DEBUG
     void DumpIndex(unsigned bvIndex);
