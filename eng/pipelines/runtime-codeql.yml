@@ -41,20 +41,17 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
-          - osx_arm64
           - linux_x64
           - linux_musl_arm64
           - android_x64
           - maccatalyst_x64
-          - tvos_arm64
-          - ios_arm64
           - linux_bionic_x64
           - browser_wasm
           - wasi_wasm
           jobParameters:
             templatePath: 'templates-official'
             buildArgs: -c $(_BuildConfig) -restore -build -pack /p:DotNetBuildAllRuntimePacks=true
-            nameSuffix: AllRuntimes
+            nameSuffix: CodeQL
             isOfficialBuild: false
             timeoutInMinutes: 120
             preBuildSteps:
@@ -63,3 +60,16 @@ extends:
             postBuildSteps:
               - task: CodeQL3000Finalize@0
                 displayName: Finalize CodeQL (manually-injected)
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - osx_arm64
+          - tvos_arm64
+          - ios_arm64
+          jobParameters:
+            templatePath: 'templates-official'
+            buildArgs: -c $(_BuildConfig) -restore -build -pack /p:DotNetBuildAllRuntimePacks=true
+            isOfficialBuild: false
+            timeoutInMinutes: 120
