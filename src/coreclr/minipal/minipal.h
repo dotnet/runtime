@@ -87,7 +87,7 @@ public:
     //  Non-NULL, a pointer to the template
     static void* CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
 
-    // Indicate if the AllocateThunksFromTemplate function respects the pStart address on this platform
+    // Indicate if the AllocateThunksFromTemplate function respects the pStart address passed to AllocateThunksFromTemplate on this platform
     // Return:
     //  true if the parameter is respected, false if not
     static bool AllocateThunksFromTemplateRespectsStartAddress();

@@ -398,6 +398,10 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
             {
                 locals.data.fdImage = fd;
                 locals.data.offsetInFileOfStartOfSection = 0;
+                // We simulate the template thunk mapping data existing in mapped ram, by declaring that it exists at at
+                // an address which is not NULL, and which is naturally aligned on the largest page size supported by any
+                // architecture we support (0x10000). We do this, as the generalized logic here is designed around remapping
+                // already mapped memory, and by doing this we are able to share that logic.
                 locals.data.addrOfStartOfSection = (void*)0x10000;
                 locals.data.addrOfEndOfSection = ((uint8_t*)locals.data.addrOfStartOfSection) + maxFileSize;
                 locals.data.imageTemplates = false;
@@ -485,7 +489,7 @@ void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templa
     vm_prot_t prot, max_prot;
     kern_return_t ret;
 
-    // Allocate two contiguous ranges of memory: the first range will contain the trampolines
+    // Allocate two contiguous ranges of memory: the first range will contain the stubs
     // and the second range will contain their data.
     do
     {

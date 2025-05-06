@@ -1022,7 +1022,6 @@ void ExecutableAllocator::FreeThunksFromTemplate(void *pThunks, size_t templateS
 {
     if (IsDoubleMappingEnabled() && VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress())
     {
-        CRITSEC_Holder csh(m_CriticalSection);
         ReleaseWorker(pThunks, true /* This is a release of template allocated memory */);
     }
     else
