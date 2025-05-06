@@ -55,7 +55,7 @@ extends:
             templatePath: 'templates-official'
             buildArgs: -c $(_BuildConfig) -restore -build -pack /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
-            isOfficialBuild: true
+            isOfficialBuild: false
             timeoutInMinutes: 120
             preBuildSteps:
               - task: CodeQL3000Init@0
