@@ -2373,7 +2373,7 @@ static size_t GetDefaultReserveForJumpStubs(size_t codeHeapSize)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifdef TARGET_64BIT
     //
     // Keep a small default reserve at the end of the codeheap for jump stubs. It should reduce
     // chance that we won't be able allocate jump stub because of lack of suitable address space.
@@ -2425,7 +2425,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     bool fAllocatedFromEmergencyJumpStubReserve = false;
 
     size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     if (!pInfo->IsInterpreted())
     {
         allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
@@ -2485,7 +2485,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     // this first allocation is critical as it sets up correctly the loader heap info
     HeapList *pHp = new HeapList;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     if (pInfo->IsInterpreted())
     {
         pHp->CLRPersonalityRoutine = NULL;
@@ -2526,7 +2526,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(heapSize));
     pHp->pHdrMap         = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     if (pHp->CLRPersonalityRoutine != NULL)
     {
         ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
@@ -2655,7 +2655,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     size_t reserveSize = initialRequestSize;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     if (!pInfo->IsInterpreted())
     {
         reserveSize += JUMP_ALLOCATE_SIZE;

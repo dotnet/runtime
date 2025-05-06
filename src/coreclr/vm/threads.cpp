@@ -1330,7 +1330,7 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pGCFrame              = NULL;
+    m_pGCFrame              = GCFRAME_TOP;
 
     m_fPreemptiveGCDisabled = 0;
 

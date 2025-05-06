@@ -53,7 +53,15 @@ internal readonly struct StackWalk_1 : IStackWalk
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
         FillContextFromThread(context, threadData);
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
-        StackWalkData stackWalkData = new(context, state, new(_target, threadData));
+        FrameIterator frameIterator = new(_target, threadData);
+
+        // if the next Frame is not valid and we are not in managed code, there is nothing to return
+        if (state == StackWalkState.SW_FRAME && !frameIterator.IsValid())
+        {
+            yield break;
+        }
+
+        StackWalkData stackWalkData = new(context, state, frameIterator);
 
         yield return stackWalkData.ToDataFrame();
 
