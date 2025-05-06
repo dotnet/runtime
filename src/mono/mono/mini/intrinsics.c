@@ -755,8 +755,12 @@ MONO_RESTORE_WARNING
 				}
 			}
 		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
+#if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
 			opcode = OP_XCAST;
 			tto_stack = STACK_VTYPE;
+#else
+			return NULL;
+#endif
 		}
 
 		if (opcode == OP_LDADDR) {
