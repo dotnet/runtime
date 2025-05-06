@@ -53,7 +53,7 @@ extends:
             buildArgs: -c $(_BuildConfig) -restore -build -pack /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: CodeQL
             isOfficialBuild: false
-            timeoutInMinutes: 120
+            timeoutInMinutes: 360
             preBuildSteps:
               - task: CodeQL3000Init@0
                 displayName: Initialize CodeQL (manually-injected)
