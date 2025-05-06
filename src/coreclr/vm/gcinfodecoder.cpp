@@ -1264,6 +1264,8 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
     {
         // We have untracked stack slots left and more room to predecode
 
+        // Interpreter-TODO: Add a configurable way to skip encoding/decoding the base for the interpreter, because
+        //  all interpreter locals are at positive offsets relative to FP.
         GcStackSlotBase spBase = (GcStackSlotBase) reader.Read(2);
         UINT32 normSpOffset = (INT32) reader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE);
         INT32 spOffset = GcInfoEncoding::DENORMALIZE_STACK_SLOT(normSpOffset);
@@ -2202,6 +2204,8 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
     }
     else
     {
+        // Interpreter-TODO: Enhance GcInfoEncoder/Decoder to allow omitting the stack slot base register for interpreted
+        //  methods, since only one base (fp) is ever used for interpreter locals. See Interpreter-TODO in DecodeSlotTable.
         _ASSERTE( GC_FRAMEREG_REL == spBase );
         uint8_t* fp = (uint8_t *)GetFP(pRD->pCurrentContext);
         _ASSERTE(fp);
