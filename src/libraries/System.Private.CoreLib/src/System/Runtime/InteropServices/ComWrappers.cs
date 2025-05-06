@@ -786,6 +786,13 @@ namespace System.Runtime.InteropServices
 
         private static void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
         {
+            if (!Debugger.IsSupported)
+            {
+                // If managed debugging support is disabled, don't add to the second table.
+                // Only the debugger will ever read it.
+                return;
+            }
+
             // Record the relationship between the managed object and this wrapper.
             // This will ensure that we keep all ManagedObjectWrapperHolders alive as long as the managed object is alive,
             // even if the ComWrappers instance dies.
