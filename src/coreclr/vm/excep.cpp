@@ -5949,7 +5949,7 @@ static uintptr_t writeBarrierAVLocations[] =
 
 // Check if the passed in instruction pointer is in one of the
 // JIT helper functions.
-bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
+bool IsIPInMarkedJitHelper(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -5962,11 +5962,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
         ASSERT(*(uint8_t*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
 #endif
 
-#ifdef TARGET_ARM
-        if ((writeBarrierAVLocations[i] | THUMB_CODE) == (uControlPc | THUMB_CODE))
-#else
-        if (writeBarrierAVLocations[i] == uControlPc)
-#endif
+        if (writeBarrierAVLocations[i] == PCODEToPINSTR(uControlPc))
             return true;
     }
 
@@ -6020,7 +6016,7 @@ AdjustContextForJITHelpers(
     if (pExceptionRecord == nullptr)
     {
 #if defined(TARGET_X86)
-        if (IsIPInMarkedJitHelper((UINT_PTR)ip))
+        if (IsIPInMarkedJitHelper(ip))
         {
             DWORD* esp = (DWORD*)pContext->Esp;
 #if defined(WRITE_BARRIER_CHECK)
@@ -6040,7 +6036,7 @@ AdjustContextForJITHelpers(
             return TRUE;
         }
 #elif defined(TARGET_AMD64)
-        if (IsIPInMarkedJitHelper((UINT_PTR)ip))
+        if (IsIPInMarkedJitHelper(ip))
         {
             Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
             return TRUE;
@@ -6054,9 +6050,9 @@ AdjustContextForJITHelpers(
 #endif // FEATURE_DATABREAKPOINT
 
 #if defined(TARGET_X86) && !defined(TARGET_UNIX)
-    void* f_IP = (void *)GetIP(pContext);
+    PCODE f_IP = GetIP(pContext);
 
-    if (IsIPInMarkedJitHelper((UINT_PTR)f_IP))
+    if (IsIPInMarkedJitHelper(ip))
     {
         // set the exception IP to be the instruction that called the write barrier
         void* callsite = (void *)GetAdjustedCallAddress(*dac_cast<PTR_PCODE>(GetSP(pContext)));
@@ -6067,7 +6063,7 @@ AdjustContextForJITHelpers(
         SetSP(pContext, PCODE((BYTE*)GetSP(pContext) + sizeof(void*)));
     }
 
-    if ((f_IP >= (void *) JIT_StackProbe) && (f_IP <= (void *) JIT_StackProbe_End))
+    if ((f_IP >= (PCODE) JIT_StackProbe) && (f_IP <= (PCODE) JIT_StackProbe_End))
     {
         TADDR ebp = GetFP(pContext);
         void* callsite = (void *)*dac_cast<PTR_PCODE>(ebp + 4);
@@ -6081,12 +6077,12 @@ AdjustContextForJITHelpers(
 
     return FALSE;
 #elif defined(FEATURE_EH_FUNCLETS) // TARGET_X86 && !TARGET_UNIX
-    void* f_IP = dac_cast<PTR_VOID>(GetIP(pContext));
+    PCODE f_IP = GetIP(pContext);
 
     CONTEXT             tempContext;
     CONTEXT*            pExceptionContext = pContext;
 
-    BOOL fExcluded = IsIPInMarkedJitHelper((UINT_PTR)f_IP);
+    BOOL fExcluded = IsIPInMarkedJitHelper(f_IP);
 
     if (fExcluded)
     {

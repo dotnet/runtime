@@ -1133,7 +1133,7 @@ void InitThreadManager()
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
-        // On AMD64 the Checked/ByRef variants of the helpers jump througn an indirection
+        // On AMD64 the Checked/ByRef variants of the helpers jump through an indirection
         // to the patched barrier, but are not part of the patched set of helpers.
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, (void*)JIT_CheckedWriteBarrier);
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, (void*)JIT_ByRefWriteBarrier);
