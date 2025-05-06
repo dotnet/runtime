@@ -10911,9 +10911,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    // We need to push ebp, since it's callee-saved.
-    // We need to push the callee-saved registers. We only need to push the ones that we need, but we don't
-    // keep track of that on a per-funclet basis, so we push the same set as in the main function.
+    // We do not need to push callee-saved registers. The runtime takes care of preserving them.
     // We do not need to allocate fixed-size frame, since nothing else
     // is stored here (all temps are allocated in the parent frame).
     // We do need to allocate the outgoing argument space, in case there are calls here.
