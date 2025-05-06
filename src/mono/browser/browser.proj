@@ -116,7 +116,13 @@
       Overwrite="true"
       Lines="@(_WasmBundleTimezonesSources, ' ')"
       WriteOnlyWhenDifferent="true" />
-    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c --target=wasm64 @$(_WasmTimezonesSourcesRsp)"
+
+
+    <PropertyGroup>
+        <UseWasm64 Condition="'$(WasmEnableMemory64)' == 'true'">--target=wasm64</UseWasm64>
+    </PropertyGroup>
+    
+    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c $(UseWasm64) @$(_WasmTimezonesSourcesRsp)"
           WorkingDirectory="$(WasmObjDir)"
           EmSdkPath="$(EMSDK_PATH)"
           ConsoleToMsBuild="true"
