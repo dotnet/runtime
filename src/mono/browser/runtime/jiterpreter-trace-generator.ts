@@ -3860,7 +3860,7 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
 
 // implement shuffles on top of wasm's swizzle opcode by expanding the
 // element shuffle indices into byte indices
-function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number, check_bounds: boolean): boolean {
+function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number, checkBounds: boolean): boolean {
     const elementSize = 16 / elementCount,
         indicesOffset = getArgU16(ip, 3),
         constantIndices = get_known_constant_value(builder, indicesOffset);
@@ -3872,34 +3872,36 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
     if (typeof (constantIndices) === "object") {
         // HACK: We have a known constant shuffle vector indices. Expand it to
         //  byte indices and then embed a new constant in the trace.
-        const newShuffleVector = new Uint8Array(sizeOfV128),
-            nativeIndices = new Uint8Array(constantIndices.buffer, constantIndices.byteOffset, elementCount);
-
-        for (let i = 0, k = 0; i < elementCount; i++, k += elementSize) {
-            let elementIndex = 0;
-            for (let j = 0; j < elementSize; j++) {
-                if (j == 0)
-                    elementIndex = nativeIndices[k + j];
-                else if (nativeIndices[k + j] > 0) {
-                    // this an invalid index, set it to zero
-                    elementIndex = 0;
-                    break;
+        let nativeIndices = new Uint8Array(constantIndices.buffer, constantIndices.byteOffset, elementCount);
+        if (elementCount !== 16) {
+            const newShuffleVector = new Uint8Array(sizeOfV128);
+            for (let i = 0, k = 0; i < elementCount; i++, k += elementSize) {
+                let elementIndex = 0;
+                for (let j = 0; j < elementSize; j++) {
+                    if (j == 0)
+                        elementIndex = nativeIndices[k + j];
+                    else if (nativeIndices[k + j] > 0) {
+                        // this an invalid index, set it to zero
+                        elementIndex = 0;
+                        break;
+                    }
+                }
+                for (let j = 0; j < elementSize; j++) {
+                    newShuffleVector[k + j] = (elementIndex * elementSize) + j;
                 }
             }
-            for (let j = 0; j < elementSize; j++) {
-                newShuffleVector[k + j] = (elementIndex * elementSize) + j;
-            }
+            nativeIndices = newShuffleVector;
         }
         // console.log(`shuffle w/element size ${elementSize} with constant indices ${nativeIndices} (${constantIndices}) -> byte indices ${newShuffleVector}`);
         builder.appendSimd(WasmSimdOpcode.v128_const);
-        builder.appendBytes(newShuffleVector);
+        builder.appendBytes(nativeIndices);
     } else {
         // Load indices (in chars)
         append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
-        if (elementCount < 16) {
+        if (elementCount !== 16) {
             const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
 
-            if (check_bounds) {
+            if (checkBounds) {
                 builder.local("shuffle_indices", WasmOpcode.tee_local);
 
                 builder.appendSimd(WasmSimdOpcode.v128_const);
