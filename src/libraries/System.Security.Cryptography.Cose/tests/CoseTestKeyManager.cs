@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Cose.Tests
             else
             {
                 // we use 3 suffix because if PSS is not supported then ML-DSA will not be as well
-                action("RSA-PCS1-3", CoseTestKeyType.RSAPSS, HashAlgorithmName.SHA256);
+                action("RSA-PKCS1-3", CoseTestKeyType.RSAPkcs1, HashAlgorithmName.SHA256);
             }
 
             if (MLDsa.IsSupported)
