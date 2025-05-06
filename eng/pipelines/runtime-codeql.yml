@@ -53,7 +53,7 @@ extends:
           - wasi_wasm
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) -restore -build /p:DotNetBuildAllRuntimePacks=true
+            buildArgs: -c $(_BuildConfig) -restore -build -pack /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: true
             timeoutInMinutes: 120
