@@ -732,7 +732,7 @@ namespace ILCompiler
                 statics[i] = staticsDescs[i];
             }
 
-            LayoutInt instanceSize = defType.InstanceByteCount;
+            LayoutInt instanceSize = defType.IsValueType ? defType.InstanceFieldSize : defType.InstanceByteCount;
             int instanceSizeEmit = instanceSize.IsIndeterminate ? 0xBAAD : instanceSize.AsInt;
             ClassFieldsTypeDescriptor fieldsDescriptor = new ClassFieldsTypeDescriptor
             {
