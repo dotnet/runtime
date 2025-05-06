@@ -3965,6 +3965,7 @@ MetaSig::CompareElementType(
                 }
                 case ELEMENT_TYPE_GENERICINST:
                 case ELEMENT_TYPE_BYREF:
+                case ELEMENT_TYPE_SZARRAY:
                 {
                     // Due to how SigPointer works, we need to fiddle with the signature pointer
                     // to get the current element type back in the stream.

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
@@ -259,9 +260,13 @@ namespace System.Reflection
 
                         // At this point we expect either another '!' and then a number or a number.
                         bool isMethodParam = escapedTypeName[1] == '!';
-                        uint paramIndex = isMethodParam
-                            ? uint.Parse(escapedTypeName.AsSpan(2))  // Skip over "!!"
-                            : uint.Parse(escapedTypeName.AsSpan(1)); // Skip over "!"
+                        ReadOnlySpan<char> toParse = isMethodParam
+                            ? escapedTypeName.AsSpan(2)  // Skip over "!!"
+                            : escapedTypeName.AsSpan(1); // Skip over "!"
+                        if (!uint.TryParse(toParse, NumberStyles.None, null, out uint paramIndex))
+                        {
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, escapedTypeName), typeName: escapedTypeName);
+                        }
 
                         Debug.Assert(_unsafeAccessorMethod != IntPtr.Zero);
                         IntPtr typeHandle = ResolveGenericParamToTypeHandle(_unsafeAccessorMethod, isMethodParam, paramIndex);

@@ -52,6 +52,10 @@ class TargetClass
         oc = c;
     }
 
+    private Type M_C1Array(C1[] c) => typeof(C1[]);
+    private Type M_C1Array(C1[][] c) => typeof(C1[][]);
+    private Type M_C1Array(C1[][][] c) => typeof(C1[][][]);
+
     private class InnerClass
     {
         private InnerClass() { }
@@ -140,6 +144,10 @@ public static unsafe class UnsafeAccessorsTestsTypes
         Assert.Equal(arg, rc);
         Assert.Equal(arg, oc);
 
+        Assert.Equal(typeof(C1[]), CallM_C1Array(tgt, Array.Empty<C1>()));
+        Assert.Equal(typeof(C1[][]), CallM_C1MDArray2(tgt, new C1[0][]));
+        Assert.Equal(typeof(C1[][][]), CallM_C1MDArray3(tgt, new C1[0][][]));
+
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1")]
         [return: UnsafeAccessorType("C2")]
         extern static object CallM_C1(TargetClass tgt, [UnsafeAccessorType("C1")] object a);
@@ -162,6 +170,15 @@ public static unsafe class UnsafeAccessorsTestsTypes
             [UnsafeAccessorType("C1&")] in object ic,
             [UnsafeAccessorType("C1&")] ref object rc,
             [UnsafeAccessorType("C1&")] out object oc);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Array")]
+        extern static Type CallM_C1Array(TargetClass tgt, [UnsafeAccessorType("C1[]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Array")]
+        extern static Type CallM_C1MDArray2(TargetClass tgt, [UnsafeAccessorType("C1[][]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Array")]
+        extern static Type CallM_C1MDArray3(TargetClass tgt, [UnsafeAccessorType("C1[][][]")] object a);
     }
 
     [Fact]
@@ -254,8 +271,24 @@ public static unsafe class UnsafeAccessorsTestsTypes
         extern static ref int GetInstanceField([UnsafeAccessorType("PrivateLib.Class1, PrivateLib")] object a);
     }
 
-    class Accessors<T>
+    partial class Accessors<T>
     {
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType("PrivateLib.GenericClass`1[[!-0]], PrivateLib")]
+        public extern static object CreateGenericClass_InvalidGenericIndex1();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType("PrivateLib.GenericClass`1[[!+0]], PrivateLib")]
+        public extern static object CreateGenericClass_InvalidGenericIndex2();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType("PrivateLib.GenericClass`1[[!-1]], PrivateLib")]
+        public extern static object CreateGenericClass_InvalidGenericIndex3();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType("PrivateLib.GenericClass`1[[!1]], PrivateLib")]
+        public extern static object CreateGenericClass_InvalidGenericIndex4();
+
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")]
         public extern static object CreateGenericClass();
@@ -299,6 +332,18 @@ public static unsafe class UnsafeAccessorsTestsTypes
             List<W> c,
             [UnsafeAccessorType("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")]
             object d);
+    }
+
+    // Skip validating error cases on Mono runtime
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotMonoRuntime))]
+    public static void Verify_Type_InvalidGenericTypeString()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Type_InvalidGenericTypeString)}");
+
+        Assert.Throws<TypeLoadException>(() => Accessors<int>.CreateGenericClass_InvalidGenericIndex1());
+        Assert.Throws<TypeLoadException>(() => Accessors<int>.CreateGenericClass_InvalidGenericIndex2());
+        Assert.Throws<TypeLoadException>(() => Accessors<int>.CreateGenericClass_InvalidGenericIndex3());
+        Assert.Throws<TypeLoadException>(() => Accessors<int>.CreateGenericClass_InvalidGenericIndex4());
     }
 
     private static bool TypeNameEquals(TypeName typeName1, TypeName typeName2)
