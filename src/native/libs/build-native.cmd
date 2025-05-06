@@ -85,6 +85,7 @@ if %__useMemory64% == 1 (
     set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_USE_MEMORY64=1"
     echo "MRH_LOGGING_CMD: set -DCMAKE_USE_MEMORY64, params now: !__ExtraCmakeParams!""
 )
+:: set __ExtraCmakeParams=%__ExtraCmakeParams% "-Wno-experimental"
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 

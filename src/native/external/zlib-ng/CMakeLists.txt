@@ -1195,7 +1195,7 @@ endfunction()
 
 if (EMSCRIPTEN AND "${CMAKE_C_FLAGS}" MATCHES "MEMORY64")
     message("MRH_LOGGING: Building native ZLIB-NG with MEMORY64")    
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --target=wasm64")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --target=wasm64 -Wno-error")
 else()
     message("MRH_LOGGING: ZLIB-NG unable to set wasm64")
     dump_cmake_variables()
