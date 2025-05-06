@@ -573,7 +573,7 @@ JS_ENGINES = [NODE_JS]
       <_MonoMinimal Condition="'$(WasmEnableThreads)' != 'true'">$(_MonoMinimal),threads</_MonoMinimal>
     </PropertyGroup>
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
-      <MonoAotAbi Condition="'$(TargetArchitecture)' == 'wasm' and '$(BuildArchitecture)' == 'x64'">wasm64-unknown-none</MonoAotAbi>
+      <MonoAotAbi Condition="'$(TargetArchitecture)' == 'wasm' and '$(WasmEnableMemory64)' == 'true'">wasm64-unknown-none</MonoAotAbi>
     </PropertyGroup>
     <Message Condition="'$(TargetArchitecture)' == 'wasm' and '$(BuildArchitecture)' == 'x64'" Text="MRH_LOGGING: MonoAotAbi: $(MonoAotAbi)" Importance="high" />
     
@@ -905,7 +905,7 @@ JS_ENGINES = [NODE_JS]
     </ItemGroup>
     
     <Message Text="MRH_LOGGING: AotHostOS is set to: $(AotHostOS)" Importance="high" />
-    <Message Text="MRH_LOGGING: Set flags with wasm64 target" Importance="high" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
+    <Message Text="MRH_LOGGING: Set flags with wasm64 target" Importance="high" Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableMemory64)' == 'true'" />
 
     
     <!-- Windows specific options -->
