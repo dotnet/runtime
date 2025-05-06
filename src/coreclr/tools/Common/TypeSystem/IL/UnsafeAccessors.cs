@@ -551,6 +551,10 @@ namespace Internal.IL
                     {
                         return SetTargetResult.Invalid;
                     }
+                    else if (!initialType.IsByRef)
+                    {
+                        return SetTargetResult.Invalid;
+                    }
                 }
 
                 CustomAttributeValue<TypeDesc> decoded = unsafeAccessorTypeAttribute.Value.DecodeValue(
