@@ -319,7 +319,6 @@ namespace System
                 else if (PackedSimd.IsSupported)
                 {
                     Vector128<byte> shiftedNibbles = PackedSimd.ShiftLeft(nibbles, 4);
-                    //Vector128<byte> zipped = PackedSimd.BitwiseSelect(nibbles, shiftedNibbles, Vector128.Create((ushort)0xFF00).AsByte());
                     Vector128<byte> zipped = PackedSimd.BitwiseSelect(nibbles, shiftedNibbles, Vector128.Create((ushort)0xFF00).AsByte());
                     output = PackedSimd.AddPairwiseWidening(zipped).AsByte();
                 }
