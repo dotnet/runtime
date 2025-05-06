@@ -3891,7 +3891,6 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
         append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
         if (elementCount < 16) {
             const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
-            const stride = 16 / elementCount;
 
             builder.i32_const(shift);
             builder.appendSimd(WasmSimdOpcode.i8x16_shl);
@@ -3899,7 +3898,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             builder.appendSimd(WasmSimdOpcode.v128_const);
             for (let i = 0; i < elementCount; i++) {
                 for (let j = 0; j < elementSize; j++)
-                    builder.appendU8(i * stride);
+                    builder.appendU8(i * elementSize);
             }
             builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
 
