@@ -353,7 +353,7 @@ namespace Internal.IL
                     return false;
                 }
 
-                if (declSig.ReturnType.GetTypeDefinition() != maybeSig.ReturnType.GetTypeDefinition())
+                if (declSig.ReturnType != maybeSig.ReturnType)
                 {
                     return false;
                 }
@@ -368,7 +368,7 @@ namespace Internal.IL
                 TypeDesc maybeType = maybeSig[i];
 
                 // Compare the types
-                if (declType.GetTypeDefinition() != maybeType.GetTypeDefinition())
+                if (declType != maybeType)
                 {
                     return false;
                 }
@@ -578,9 +578,34 @@ namespace Internal.IL
 
                         bool isMethodParameter = name.StartsWith("!!", StringComparison.Ordinal);
 
-                        if (!int.TryParse(name.AsSpan(isMethodParameter ? 2 : 1), out int index))
+                        if (!int.TryParse(name.AsSpan(isMethodParameter ? 2 : 1), NumberStyles.None, CultureInfo.InvariantCulture, out int index))
                         {
                             return null;
+                        }
+
+                        if (isMethodParameter)
+                        {
+                            if (!method.HasInstantiation)
+                            {
+                                return null;
+                            }
+
+                            if (index >= method.Instantiation.Length)
+                            {
+                                return null;
+                            }
+                        }
+                        else
+                        {
+                            if (!method.OwningType.HasInstantiation)
+                            {
+                                return null;
+                            }
+
+                            if (index >= method.OwningType.Instantiation.Length)
+                            {
+                                return null;
+                            }
                         }
 
                         return module.Context.GetSignatureVariable(index, isMethodParameter);
