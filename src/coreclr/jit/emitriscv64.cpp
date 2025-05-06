@@ -5379,7 +5379,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             imm = -imm;
         }
 
-        assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori);
+        assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori ||
+               ins == INS_bseti || ins == INS_bclri || ins == INS_bexti || ins == INS_binvi);
 
         regNumber tempReg = needCheckOv ? codeGen->internalRegisters.Extract(dst) : REG_NA;
 

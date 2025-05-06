@@ -187,14 +187,15 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
+    bool isBitwiseOp = binOp->OperIs(GT_AND, GT_OR, GT_XOR);
+
+    GenTree*& op1 = binOp->gtOp1;
+    GenTree*& op2 = binOp->gtOp2;
     if (comp->opts.OptimizationEnabled())
     {
-        GenTree*& op1 = binOp->gtOp1;
-        GenTree*& op2 = binOp->gtOp2;
-
         bool isOp1Negated = op1->OperIs(GT_NOT);
         bool isOp2Negated = op2->OperIs(GT_NOT);
-        if (binOp->OperIs(GT_AND, GT_OR, GT_XOR) && (isOp1Negated || isOp2Negated))
+        if (isBitwiseOp && (isOp1Negated || isOp2Negated))
         {
             if ((isOp1Negated && isOp2Negated) || comp->compOpportunisticallyDependsOn(InstructionSet_Zbb))
             {
@@ -255,6 +256,20 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     }
 
     ContainCheckBinary(binOp);
+
+    if (comp->opts.OptimizationEnabled() && isBitwiseOp && comp->compOpportunisticallyDependsOn(InstructionSet_Zbs) &&
+        !op2->isContained())
+    {
+        if (binOp->OperIs(GT_OR, GT_XOR) && op2->IsIntegralConstUnsignedPow2())
+        {
+            genTreeOps oper = binOp->OperIs(GT_OR) ? GT_BIT_SET : GT_BIT_INVERT;
+            binOp->ChangeOper(oper);
+
+            GenTreeIntConCommon* bit = op2->AsIntConCommon();
+            bit->SetIntegralValue(BitOperations::Log2((uint64_t)bit->IntegralValue()));
+            bit->SetContained();
+        }
+    }
 
     return binOp->gtNext;
 }
