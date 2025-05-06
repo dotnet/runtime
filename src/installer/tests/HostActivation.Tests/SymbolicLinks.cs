@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -33,12 +34,23 @@ namespace HostActivation.Tests
                 var symlinkFullPath = Path.Combine(testDir.Location, symlinkRelativePath);
 
                 using var symlink = new SymLink(symlinkFullPath, sharedTestState.SelfContainedApp.AppExe);
-                Command.Create(symlinkFullPath)
+                var result = Command.Create(symlinkFullPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .Execute()
-                    .Should().Fail()
-                    .And.HaveStdErrContaining("The application to execute does not exist");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
@@ -63,12 +75,23 @@ namespace HostActivation.Tests
                 Directory.CreateDirectory(Path.GetDirectoryName(symlink1Path));
                 using var symlink1 = new SymLink(symlink1Path, symlink2Path);
 
-                Command.Create(symlink1.SrcPath)
+                var result = Command.Create(symlink1.SrcPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .Execute()
-                    .Should().Fail()
-                    .And.HaveStdErrContaining("The application to execute does not exist");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
@@ -86,13 +109,24 @@ namespace HostActivation.Tests
                 Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
 
                 using var symlink = new SymLink(Path.Combine(testDir.Location, symlinkRelativePath), sharedTestState.FrameworkDependentApp.AppExe);
-                Command.Create(symlink.SrcPath)
+                var result = Command.Create(symlink.SrcPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .DotNetRoot(TestContext.BuiltDotNet.BinPath)
-                    .Execute()
-                    .Should().Fail()
-                    .And.HaveStdErrContaining("The application to execute does not exist");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
@@ -144,12 +178,23 @@ namespace HostActivation.Tests
                 var dotnetSymlink = Path.Combine(testDir.Location, Binaries.DotNet.FileName);
 
                 using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet.DotnetExecutablePath);
-                Command.Create(symlink.SrcPath, sharedTestState.SelfContainedApp.AppDll)
+                var result = Command.Create(symlink.SrcPath, sharedTestState.SelfContainedApp.AppDll)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .Execute()
-                    .Should().Fail()
-                    .And.HaveStdErrContaining($"[{Path.Combine(testDir.Location, "host", "fxr")}] does not exist");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining($"[{Path.Combine(testDir.Location, "host", "fxr")}] does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
