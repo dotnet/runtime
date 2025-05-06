@@ -180,18 +180,41 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.StartAddress;
     }
 
-    TargetPointer IExecutionManager.GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip)
+    TargetCodePointer IExecutionManager.GetFuncletStartAddress(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
 
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, ip);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
+        if (range.Data == null)
+            throw new InvalidOperationException("Unable to get runtime function address");
+
+        JitManager jitManager = GetJitManager(range.Data);
+        TargetPointer runtimeFunctionPtr = jitManager.GetUnwindInfo(range, codeInfoHandle.Address.Value);
+
+        if (runtimeFunctionPtr == TargetPointer.Null)
+            throw new InvalidOperationException("Unable to get runtime function address");
+
+        Data.RuntimeFunction runtimeFunction = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(runtimeFunctionPtr);
+
+        // TODO(cdac): EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS, implement iterating over fragments until finding
+        // non-fragment RuntimeFunction
+
+        return range.Data.RangeBegin + runtimeFunction.BeginAddress;
+    }
+
+    TargetPointer IExecutionManager.GetUnwindInfo(CodeBlockHandle codeInfoHandle)
+    {
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
         if (range.Data == null)
             return TargetPointer.Null;
 
         JitManager jitManager = GetJitManager(range.Data);
 
-        return jitManager.GetUnwindInfo(range, ip);
+        return jitManager.GetUnwindInfo(range, codeInfoHandle.Address.Value);
     }
 
     TargetPointer IExecutionManager.GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle)
