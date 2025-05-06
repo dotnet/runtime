@@ -3909,11 +3909,11 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                     builder.appendU8(elementSize - 1);
                 }
                 if (elementSize === 2)
-                    builder.appendSimd(WasmSimdOpcode.i16x8_ge_u);
+                    builder.appendSimd(WasmSimdOpcode.i16x8_gt_u);
                 else if (elementSize === 4)
-                    builder.appendSimd(WasmSimdOpcode.i32x4_ge_u);
+                    builder.appendSimd(WasmSimdOpcode.i32x4_gt_u);
                 else if (elementSize === 8) {
-                    builder.appendSimd(WasmSimdOpcode.i64x2_ge_s);
+                    builder.appendSimd(WasmSimdOpcode.i64x2_gt_s);
                 }
 
                 builder.local("shuffle_indices");
@@ -3935,7 +3935,6 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                 for (let j = 0; j < elementSize; j++)
                     builder.appendU8(j);
             }
-
             builder.appendSimd(WasmSimdOpcode.v128_or);
         }
     }
