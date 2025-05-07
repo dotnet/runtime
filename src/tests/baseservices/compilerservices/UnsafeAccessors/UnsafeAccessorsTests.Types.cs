@@ -235,8 +235,10 @@ public static unsafe class UnsafeAccessorsTestsTypes
         C2 c2 = new();
         TargetClass tgt = CreateTargetClass(c2);
 
-        Assert.Throws<NotSupportedException>(()=> CallField1(tgt));
-        Assert.Throws<NotSupportedException>(()=> CallField2(tgt));
+        // The following calls should throw NotSupportedException.
+        // Mono throws MissingFieldException since throwing NotSupportedException is difficult to implement.
+        AssertExtensions.ThrowsAny<NotSupportedException, MissingFieldException>(()=> CallField1(tgt));
+        AssertExtensions.ThrowsAny<NotSupportedException, MissingFieldException>(()=> CallField2(tgt));
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_f1")]
         [return: UnsafeAccessorType("C2")]
