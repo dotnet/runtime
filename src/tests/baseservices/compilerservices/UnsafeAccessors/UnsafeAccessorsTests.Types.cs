@@ -53,8 +53,20 @@ class TargetClass
     }
 
     private Type M_C1Array(C1[] c) => typeof(C1[]);
+    private Type M_C1Array(C1[,] c) => typeof(C1[,]);
+    private Type M_C1Array(C1[,,] c) => typeof(C1[,,]);
     private Type M_C1Array(C1[][] c) => typeof(C1[][]);
     private Type M_C1Array(C1[][][] c) => typeof(C1[][][]);
+
+    private Type M_S1Array(S1[] c) => typeof(S1[]);
+    private Type M_S1Array(S1[,] c) => typeof(S1[,]);
+    private Type M_S1Array(S1[,,] c) => typeof(S1[,,]);
+    private Type M_S1Array(S1[][] c) => typeof(S1[][]);
+    private Type M_S1Array(S1[][][] c) => typeof(S1[][][]);
+
+#pragma warning disable CS8500
+    private unsafe void M_C1Pointer(C1* c) { }
+#pragma warning restore CS8500
 
     private class InnerClass
     {
@@ -145,8 +157,18 @@ public static unsafe class UnsafeAccessorsTestsTypes
         Assert.Equal(arg, oc);
 
         Assert.Equal(typeof(C1[]), CallM_C1Array(tgt, Array.Empty<C1>()));
-        Assert.Equal(typeof(C1[][]), CallM_C1MDArray2(tgt, new C1[0][]));
-        Assert.Equal(typeof(C1[][][]), CallM_C1MDArray3(tgt, new C1[0][][]));
+        Assert.Equal(typeof(C1[,]), CallM_C1MDArray2(tgt, new C1[1,1]));
+        Assert.Equal(typeof(C1[,,]), CallM_C1MDArray3(tgt, new C1[1,1,1]));
+        Assert.Equal(typeof(C1[][]), CallM_C1JaggedArray2(tgt, new C1[0][]));
+        Assert.Equal(typeof(C1[][][]), CallM_C1JaggedArray3(tgt, new C1[0][][]));
+
+        Assert.Equal(typeof(S1[]), CallM_S1Array(tgt, Array.Empty<S1>()));
+        Assert.Equal(typeof(S1[,]), CallM_S1MDArray2(tgt, new S1[1,1]));
+        Assert.Equal(typeof(S1[,,]), CallM_S1MDArray3(tgt, new S1[1,1,1]));
+        Assert.Equal(typeof(S1[][]), CallM_S1JaggedArray2(tgt, new S1[0][]));
+        Assert.Equal(typeof(S1[][][]), CallM_S1JaggedArray3(tgt, new S1[0][][]));
+
+        CallM_C1Pointer(tgt, null);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1")]
         [return: UnsafeAccessorType("C2")]
@@ -175,22 +197,46 @@ public static unsafe class UnsafeAccessorsTestsTypes
         extern static Type CallM_C1Array(TargetClass tgt, [UnsafeAccessorType("C1[]")] object a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Array")]
-        extern static Type CallM_C1MDArray2(TargetClass tgt, [UnsafeAccessorType("C1[][]")] object a);
+        extern static Type CallM_C1MDArray2(TargetClass tgt, [UnsafeAccessorType("C1[,]")] object a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Array")]
-        extern static Type CallM_C1MDArray3(TargetClass tgt, [UnsafeAccessorType("C1[][][]")] object a);
+        extern static Type CallM_C1MDArray3(TargetClass tgt, [UnsafeAccessorType("C1[,,]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Array")]
+        extern static Type CallM_C1JaggedArray2(TargetClass tgt, [UnsafeAccessorType("C1[][]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Array")]
+        extern static Type CallM_C1JaggedArray3(TargetClass tgt, [UnsafeAccessorType("C1[][][]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_S1Array")]
+        extern static Type CallM_S1Array(TargetClass tgt, [UnsafeAccessorType("S1[]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_S1Array")]
+        extern static Type CallM_S1MDArray2(TargetClass tgt, [UnsafeAccessorType("S1[,]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_S1Array")]
+        extern static Type CallM_S1MDArray3(TargetClass tgt, [UnsafeAccessorType("S1[,,]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_S1Array")]
+        extern static Type CallM_S1JaggedArray2(TargetClass tgt, [UnsafeAccessorType("S1[][]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_S1Array")]
+        extern static Type CallM_S1JaggedArray3(TargetClass tgt, [UnsafeAccessorType("S1[][][]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Pointer")]
+        extern static void CallM_C1Pointer(TargetClass tgt, [UnsafeAccessorType("C1*")] void* a);
     }
 
     [Fact]
-    public static void Verify_Type_GetInstanceFields()
+    public static void Verify_Type_GetInstanceFields_NotSupported()
     {
-        Console.WriteLine($"Running {nameof(Verify_Type_GetInstanceFields)}");
+        Console.WriteLine($"Running {nameof(Verify_Type_GetInstanceFields_NotSupported)}");
 
         C2 c2 = new();
         TargetClass tgt = CreateTargetClass(c2);
 
-        Assert.Equal(c2, CallField1(tgt));
-        Assert.Equal(c2, CallField2(tgt));
+        Assert.Throws<NotSupportedException>(()=> CallField1(tgt));
+        Assert.Throws<NotSupportedException>(()=> CallField2(tgt));
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_f1")]
         [return: UnsafeAccessorType("C2")]
@@ -311,6 +357,10 @@ public static unsafe class UnsafeAccessorsTestsTypes
         [return: UnsafeAccessorType("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")]
         public extern static object CallGenericClassM4([UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object a);
 
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M4")]
+        [return: UnsafeAccessorType("System.Collections.Generic.List`1[[System.Object]]")]
+        public extern static object CallGenericClassM4_InvalidReturn([UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object a);
+
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M5")]
         public extern static bool CallGenericClassM5<V, W>(
             [UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object tgt,
@@ -397,6 +447,8 @@ public static unsafe class UnsafeAccessorsTestsTypes
             object genericListClass2 = Accessors<int>.CallGenericClassM4(genericClass);
             TypeName genericListClass2Name = TypeName.Parse(genericListClass2.GetType().FullName);
             Assert.True(TypeNameEquals(genericListClass2Name, TypeName.Parse("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")));
+
+            Assert.Throws<MissingMethodException>(() => Accessors<int>.CallGenericClassM4_InvalidReturn(genericClass));
         }
 
         {
@@ -414,6 +466,8 @@ public static unsafe class UnsafeAccessorsTestsTypes
             object genericListClass2 = Accessors<string>.CallGenericClassM4(genericClass);
             TypeName genericListClass2Name = TypeName.Parse(genericListClass2.GetType().FullName);
             Assert.True(TypeNameEquals(genericListClass2Name, TypeName.Parse("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")));
+
+            Assert.Throws<MissingMethodException>(() => Accessors<string>.CallGenericClassM4_InvalidReturn(genericClass));
         }
     }
 

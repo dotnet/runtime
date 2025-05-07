@@ -202,37 +202,37 @@ namespace
             // consume the signature to move past the current type.
             IfFailThrow(origSig.SkipExactlyOne());
 
-            // Extract from the parameterized type from the current type.
-            while (currHandle.HasTypeParam())
-                currHandle = currHandle.GetTypeParam();
+            bool isValid;
+            if (newTypeMaybe.IsArray())
+            {
+                isValid = currHandle == TypeHandle{ g_pObjectClass };
+            }
+            else if (newTypeMaybe.IsPointer())
+            {
+                isValid = currHandle.IsPointer()
+                    && currHandle.GetTypeParam() == TypeHandle{ CoreLibBinder::GetClass(CLASS__VOID) };
+            }
+            else if (newTypeMaybe.IsByRef())
+            {
+                isValid = currHandle.IsByRef()
+                    && currHandle.GetTypeParam() == TypeHandle{ g_pObjectClass };
+            }
+            else
+            {
+                _ASSERTE(!newTypeMaybe.IsValueType());
+                isValid = currHandle == TypeHandle{ g_pObjectClass };
+            }
 
-            // Validate the parameter resolves correctly. There is only one acceptable mapping:
-            //     ELEMENT_TYPE_OBJECT - if new type is a reference type.
-            _ASSERTE(!newTypeMaybe.IsValueType());
-            if (currHandle != TypeHandle{ g_pObjectClass })
+            if (!isValid)
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
 
-            // Extract from the parameterized type from the new target.
+            // Extract from the parameterized type the new target.
             while (newTypeMaybe.HasTypeParam())
                 newTypeMaybe = newTypeMaybe.GetTypeParam();
 
-            //
-            // Append the new type to the signature.
-            //
-
-            // UnsafeAccessorAttribute requires the return type to be byref for any field kind.
-            // This is a deviation from the normal UnsafeAccessorTypeAttribute requirements
-            // where the type is expected to match the signature exactly. Users aren't required to
-            // state the byref for field access because that isn't in the target field signature.
-            if (i == 0 // Return type
-                && (cxt.Kind == UnsafeAccessorKind::Field
-                    || cxt.Kind == UnsafeAccessorKind::StaticField))
-            {
-                newSig.AppendElementType(ELEMENT_TYPE_BYREF);
-            }
-
             Instantiation inst = newTypeMaybe.GetInstantiation();
 
+            // Append the new type to the signature.
             // Go back to the original translated type because
             // analysis may have altered the local.
             newTypeMaybe = cxt.TranslatedParams[i].Type;
@@ -312,6 +312,17 @@ namespace
 
             if (seq >= totalParamCount)
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
+
+            // UnsafeAccessorAttribute requires the return type to be byref for any field kind.
+            // This means creates a type safety issue for the runtime. Since byrefs don't support
+            // contravariance, we can't permit returning a byref to a fully typed field as a byref to
+            // an "opaque" type (for example, "ref string" -> "ref object").
+            if (seq == 0 // Return type
+                && (cxt.Kind == UnsafeAccessorKind::Field
+                    || cxt.Kind == UnsafeAccessorKind::StaticField))
+            {
+                ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE);
+            }
 
             // Store the TypeHandle for the loaded type at the sequence number for the parameter.
             cxt.TranslatedParams[seq] = { targetType, (CorParamAttr)attr };
@@ -742,6 +753,11 @@ namespace
             localIndex = pDispatchCode->NewLocal(typedLocal);
 
             pDispatchCode->EmitLDIND_REF();
+        }
+        else if (th.IsPointer())
+        {
+            // Pointer types are not verifiable, so we skip the type check.
+            return;
         }
         _ASSERTE(!th.IsTypeDesc());
 
