@@ -3900,7 +3900,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
         builder.appendSimd(WasmSimdOpcode.v128_const);
         builder.appendBytes(nativeIndices);
     } else {
-        // Load indices (in chars)
+        // Load indices as v128
         append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
         if (elementCount !== 16) {
             const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
