@@ -190,12 +190,6 @@ public:
     virtual int IsValidCookie(UINT32 nCookie)
     { WRAPPER_NO_CONTRACT; return (IsValidOffset(nCookie)); }
 
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6387) // Suppress PREFast warning: '*pszString' might be '0': this does not adhere to the specification for the function
-        // *pszString may be NULL only if method fails, but warning 6387 doesn't respect __success(SUCCEEDED(return)) which is part of HRESULT definition
-#endif
 //*****************************************************************************
 // Return a pointer to a null terminated string given an offset previously
 // handed out by AddString or FindString.
@@ -267,9 +261,6 @@ public:
 
         return hr;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*****************************************************************************
 // Convert a string to UNICODE into the caller's buffer.

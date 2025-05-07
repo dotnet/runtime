@@ -670,11 +670,6 @@ VOID MethodTableBuilder::BuildInteropVTable_InterfaceList(
 //
 // Determine vtable placement for each member in this class
 //
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
     bmtTypeInfo* bmtType,
                            DWORD numDeclaredInterfaces,
@@ -1019,10 +1014,6 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
         }
     } /* end ... for each member */
 }
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //---------------------------------------------------------------------------------------
 // Resolve unresolved interfaces, determine an upper bound on the size of the interface map,
@@ -2287,10 +2278,6 @@ VOID    MethodTableBuilder::EnumerateMethodImpls()
 //
 // Enumerate this class's members
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 VOID    MethodTableBuilder::EnumerateClassMethods()
 {
     CONTRACTL
@@ -2920,10 +2907,6 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
     }
 #endif // FEATURE_COMINTEROP
 }
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*******************************************************************************
 //

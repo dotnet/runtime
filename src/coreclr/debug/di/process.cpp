@@ -4796,10 +4796,6 @@ void CordbProcess::DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted)
 //    A V2 shim can provide a proxy calllack that takes these events and queues them and
 //    does the real dispatch to the user to emulate V2 semantics.
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void CordbProcess::RawDispatchEvent(
     DebuggerIPCEvent *          pEvent,
     RSLockHolder *              pLockHolder,
@@ -5966,9 +5962,6 @@ void CordbProcess::RawDispatchEvent(
 
     FinishEventDispatch();
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //---------------------------------------------------------------------------------------
 // Callback for prepopulating threads.
@@ -11168,8 +11161,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // For the first step of obtaining the thread handle,
     // we have previously attempted to use ::OpenThread to get a handle to the thread.
     // However, there are situations where OpenThread can fail with an Access Denied error.
-    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
-    // Windows causes the process to have higher privileges. 
+    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in
+    // Windows causes the process to have higher privileges.
     // We are now caching the thread handle in the unmanaged thread hash table when the thread is created.
 
     UnmanagedThreadTracker * curThread = m_unmanagedThreadHashTable.Lookup(dwThreadId);
@@ -11388,7 +11381,7 @@ bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAdd
 {
     UnmanagedThreadTracker * curThread = m_unmanagedThreadHashTable.Lookup(dwThreadId);
     _ASSERTE(curThread != NULL);
-    if (curThread != NULL && 
+    if (curThread != NULL &&
         curThread->GetThreadId() == dwThreadId &&
         curThread->IsInPlaceStepping())
     {
@@ -13317,11 +13310,11 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         {
             LOG((LF_CORDB, LL_INFO100000, "W32ET::W32EL: hijack complete will restore context...\n"));
             DT_CONTEXT tempContext = { 0 };
-#if defined(DT_CONTEXT_EXTENDED_REGISTERS)            
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
             tempContext.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
 #else
             tempContext.ContextFlags = DT_CONTEXT_FULL;
-#endif            
+#endif
             HRESULT hr = pUnmanagedThread->GetThreadContext(&tempContext);
             _ASSERTE(SUCCEEDED(hr));
 

@@ -2389,10 +2389,6 @@ bool CMiniMdRW::CanHaveCustomAttribute( // Can a given table have a custom attri
 } // CMiniMdRW::CanHaveCustomAttribute
 #endif //_DEBUG
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 //---------------------------------------------------------------------------------------
 //
 // Perform any available pre-save optimizations.
@@ -2916,10 +2912,6 @@ ErrExit:
 
     return hr;
 } // CMiniMdRW::PreSaveFull
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //---------------------------------------------------------------------------------------
 //

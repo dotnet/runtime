@@ -51,7 +51,7 @@ namespace SVR {
 #else // SERVER_GC
 namespace WKS {
 #endif // SERVER_GC
-    
+
 #include "gcimpl.h"
 #include "gcpriv.h"
 
@@ -6464,9 +6464,9 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            // For a 32-bit process running on a machine with > 64 procs, 
-            // even though the process can only use up to 32 procs, the processor 
-            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0, 
+            // For a 32-bit process running on a machine with > 64 procs,
+            // even though the process can only use up to 32 procs, the processor
+            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0,
             // the GetCurrentProcessorNumber will return a number that's >= 64.
             proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS] = (uint16_t)heap_number;
         }
@@ -6490,9 +6490,9 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            // For a 32-bit process running on a machine with > 64 procs, 
-            // even though the process can only use up to 32 procs, the processor 
-            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0, 
+            // For a 32-bit process running on a machine with > 64 procs,
+            // even though the process can only use up to 32 procs, the processor
+            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0,
             // the GetCurrentProcessorNumber will return a number that's >= 64.
             int adjusted_heap = proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS];
             // with dynamic heap count, need to make sure the value is in range.
@@ -14634,11 +14634,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     if (!g_heaps)
         return E_OUTOFMEMORY;
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22011) // Suppress PREFast warning about integer underflow/overflow
-#endif // _PREFAST_
-
 #if !defined(USE_REGIONS) || defined(_DEBUG)
     g_promoted = new (nothrow) size_t [number_of_heaps*16];
     if (!g_promoted)
@@ -14653,9 +14648,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #ifdef MH_SC_MARK
     g_mark_stack_busy = new (nothrow) int[(number_of_heaps+2)*HS_CACHE_LINE_SIZE/sizeof(int)];
 #endif //MH_SC_MARK
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
 
 #ifdef MH_SC_MARK
     if (!g_mark_stack_busy)
@@ -14982,14 +14974,7 @@ gc_heap* gc_heap::make_gc_heap (
     if (!res->mark_list_piece_start)
         return 0;
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22011) // Suppress PREFast warning about integer underflow/overflow
-#endif // _PREFAST_
     res->mark_list_piece_end = new (nothrow) uint8_t**[n_heaps + 32]; // +32 is padding to reduce false sharing
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
 
     if (!res->mark_list_piece_end)
         return 0;
@@ -15029,10 +15014,6 @@ gc_heap::wait_for_gc_done(int32_t timeOut)
         wait_heap = g_heaps[heap_select::select_heap(NULL)];
         dprintf(2, ("waiting for the gc_done_event on heap %d", wait_heap->heap_number));
 #endif // MULTIPLE_HEAPS
-
-#ifdef _PREFAST_
-        PREFIX_ASSUME(wait_heap != NULL);
-#endif // _PREFAST_
 
         dwWaitResult = wait_heap->gc_done_event.Wait(timeOut, FALSE);
     }
@@ -21812,11 +21793,6 @@ size_t gc_heap::generation_unusable_fragmentation (generation* inst, int hn)
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Potential comparison of a constant with another constant" is intentional in this function.
-#endif //_PREFAST_
-
 /*
     This is called by when we are actually doing a GC, or when we are just checking whether
     we would do a full blocking GC, in which case check_only_p is TRUE.
@@ -22412,10 +22388,6 @@ exit:
 
     return n;
 }
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif //_PREFAST_
 
 inline
 size_t gc_heap::min_reclaim_fragmentation_threshold (uint32_t num_heaps)
@@ -32474,7 +32446,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
                 // later.
                 //
                 // set generation_allocation_segment to 0, we know we don't have pins so we will not be going through the while loop below
-                // 
+                //
                 generation_allocation_segment (consing_gen) = 0;
                 generation_allocation_pointer (consing_gen) = 0;
                 generation_allocation_limit (consing_gen) = 0;
@@ -33012,10 +32984,6 @@ inline void save_allocated(heap_segment* seg)
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif //_PREFAST_
 void gc_heap::plan_phase (int condemned_gen_number)
 {
     size_t old_gen2_allocated = 0;
@@ -34985,9 +34953,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
     //verify_partial();
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif //_PREFAST_
 
 /*****************************
 Called after compact phase to fix all generation gaps
@@ -42343,7 +42308,7 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
                 size_t card_last_obj = card_of (last_object_processed);
                 clear_cards(card, card_last_obj);
 
-                // We need to be careful of the accounting here because we could be in the situation where there are more set cards between end of 
+                // We need to be careful of the accounting here because we could be in the situation where there are more set cards between end of
                 // last set card batch and last_object_processed. We will be clearing all of them. But we can't count the set cards we haven't
                 // discovered yet or we can get a negative number for n_card_set. However, if last_object_processed lands before what end_card
                 // corresponds to, we can't count the whole batch because it will be handled by a later clear_cards.
@@ -47636,11 +47601,6 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
 #else //MULTIPLE_HEAPS
     {
         gc_heap* hp = NULL;
-#ifdef _PREFAST_
-        // prefix complains about us dereferencing hp in wks build even though we only access static members
-        // this way. not sure how to shut it up except for this ugly workaround:
-        PREFIX_ASSUME(hp != NULL);
-#endif // _PREFAST_
 #endif //MULTIPLE_HEAPS
 
         for (int curr_gen_number = total_generation_count-1; curr_gen_number >= 0; curr_gen_number--)
@@ -50479,11 +50439,6 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     gc_heap* hp = acontext->get_alloc_heap()->pGenGCHeap;
 #else
     gc_heap* hp = pGenGCHeap;
-#ifdef _PREFAST_
-    // prefix complains about us dereferencing hp in wks build even though we only access static members
-    // this way. not sure how to shut it up except for this ugly workaround:
-    PREFIX_ASSUME(hp != NULL);
-#endif //_PREFAST_
 #endif //MULTIPLE_HEAPS
 
     assert(size < loh_size_threshold || (flags & GC_ALLOC_LARGE_OBJECT_HEAP));

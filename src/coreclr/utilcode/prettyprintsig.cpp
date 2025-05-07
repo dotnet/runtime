@@ -554,11 +554,6 @@ static HRESULT PrettyPrintClass(
     CQuickBytes         *out,       // where to put the pretty printed string
     IMDInternalImport   *pIMDI);    // ptr to IMDInternal class with ComSig
 
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 //*****************************************************************************
 //*****************************************************************************
 // pretty prints 'type' to the buffer 'out' returns a pointer to the next type,
@@ -674,7 +669,7 @@ static HRESULT PrettyPrintTypeA(
         sprintf_s(tempBuffer, 64, "pMT: %p", pMT);
         IfFailGo(appendStrA(out, tempBuffer));
         break;
-    
+
     case ELEMENT_TYPE_CMOD_INTERNAL:
         {
             bool required = *typePtr++ != 0;
@@ -840,9 +835,6 @@ static HRESULT PrettyPrintTypeA(
  ErrExit:
     return hr;
 } // PrettyPrintTypeA
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 // pretty prints the class 'type' to the buffer 'out'
 static HRESULT PrettyPrintClass(

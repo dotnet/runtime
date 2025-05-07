@@ -322,13 +322,6 @@ static bool shouldEnterCall(PTR_BYTE ip) {
     return false;
 }
 
-
-/***************************************************************/
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
-
 /***************************************************************/
 // A fundamental requirement of managed code is that we need to be able to enumerate all GC references on the
 // stack at GC time. To do this we need to be able to 'crawl' the stack. We know how to do this in JIT
@@ -1260,9 +1253,7 @@ done:
     // state when the helper returns to its caller.
     lazyState->_esp = dac_cast<TADDR>(ESP);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
+
 #else  // !USE_EXTERNAL_UNWINDER
 
 void LazyMachState::unwindLazyState(LazyMachState* baseState,

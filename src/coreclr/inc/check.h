@@ -510,7 +510,7 @@ CHECK CheckValue(TYPENAME &val)
 // in a free build they are passed through to the compiler to use in optimization.
 //--------------------------------------------------------------------------------
 
-#if defined(_PREFAST_) || defined(__clang_analyzer__)
+#if defined(__clang_analyzer__)
 #define COMPILER_ASSUME_MSG(_condition, _message) if (!(_condition)) __UNREACHABLE();
 #define COMPILER_ASSUME_MSGF(_condition, args) if (!(_condition)) __UNREACHABLE();
 #else
@@ -532,7 +532,7 @@ CHECK CheckValue(TYPENAME &val)
 
 #endif // DACCESS_COMPILE
 
-#endif // _PREFAST_
+#endif
 
 #define COMPILER_ASSUME(_condition) \
     COMPILER_ASSUME_MSG(_condition, "")

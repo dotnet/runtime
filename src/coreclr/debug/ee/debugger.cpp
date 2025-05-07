@@ -71,7 +71,6 @@ InteropSafe interopsafe;
 
 DebuggerRCThread        *g_pRCThread = NULL;
 
-#ifndef _PREFAST_
 // Do some compile time checking on the events in DbgIpcEventTypes.h
 // No one ever calls this. But the compiler should still compile it,
 // and that should be sufficient.
@@ -184,7 +183,6 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
     static_assert_no_msg(f2);
 
 } // end checks
-#endif // _PREFAST_
 
 //-----------------------------------------------------------------------------
 // Ctor for AtSafePlaceHolder
@@ -10223,11 +10221,6 @@ BYTE* Debugger::SerializeModuleMetaData(Module * pModule, DWORD * countBytes)
 //
 //
 //---------------------------------------------------------------------------------------
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 {
     CONTRACTL
@@ -11364,9 +11357,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     // dbgLockHolder goes out of scope - implicit Release
     return fContinue;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 /*
  * GetAndSendInterceptCommand
@@ -15022,7 +15012,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         _ASSERTE(!"Should never get here with a pending activation. (Debugger::FuncEvalSetup)");
         return CORDBG_E_ILLEGAL_IN_NATIVE_CODE;
     }
-#endif    
+#endif
 
     bool fInException = pEvalInfo->evalDuringException;
 

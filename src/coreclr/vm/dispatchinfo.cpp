@@ -1226,10 +1226,6 @@ public:
     }
 };
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                                       InvokeObjects*        pObjs,
                                       int                   NumParams,
@@ -1840,9 +1836,6 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     if (pVarRes)
         MarshalReturnValueManagedToNative(pDispMemberInfo, &pObjs->RetVal, pVarRes);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void DispatchInfo::InvokeMemberDebuggerWrapper(
                                       DispatchMemberInfo*   pDispMemberInfo,

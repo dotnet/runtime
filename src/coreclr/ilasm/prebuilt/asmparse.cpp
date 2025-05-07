@@ -3583,14 +3583,7 @@ yyreduce:
   case 20: /* decl: _SUBSYSTEM int32  */
 #line 212 "asmparse.y"
                                                                                 {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22011) // Suppress PREFast warning about integer overflow/underflow
-#endif
                                                                                   PASM->m_dwSubsystem = (yyvsp[0].int32);
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
                                                                                 }
 #line 3596 "asmparse.cpp"
     break;
