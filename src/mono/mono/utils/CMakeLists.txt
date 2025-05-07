@@ -36,7 +36,7 @@ else()
     set(utils_platform_sources ${utils_unix_sources})
 endif()
 
-if(HOST_WASM)
+if(HOST_WASM AND USES_MEM64)
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -DMEMORY64 --target=wasm64")
     message(STATUS "MRH_LOGGING_UTILS: Set CMAKE_ASM_FLAGS to: '${CMAKE_ASM_FLAGS}'")
 endif()
