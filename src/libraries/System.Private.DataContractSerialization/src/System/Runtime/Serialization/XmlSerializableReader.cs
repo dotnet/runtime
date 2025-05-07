@@ -115,7 +115,7 @@ namespace System.Runtime.Serialization
 
         public override object ReadContentAsObject() { return InnerReader.ReadContentAsObject(); }
         public override bool ReadContentAsBoolean() { return InnerReader.ReadContentAsBoolean(); }
-        public override DateTime ReadContentAsDateTime() { return InnerReader.ReadContentAsDateTimeOffset().DateTime; }
+        public override DateTime ReadContentAsDateTime() { return InnerReader.ReadContentAsDateTime(); }
         public override double ReadContentAsDouble() { return InnerReader.ReadContentAsDouble(); }
         public override int ReadContentAsInt() { return InnerReader.ReadContentAsInt(); }
         public override long ReadContentAsLong() { return InnerReader.ReadContentAsLong(); }
