@@ -746,14 +746,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Emit_Foreach_Section_In_ConfigChildren_StartBlock();
 
                 ParsableFromStringSpec keyType = (ParsableFromStringSpec)_typeIndex.GetEffectiveTypeSpec(type.KeyTypeRef);
-                TypeSpec elementType = _typeIndex.GetTypeSpec(type.ElementTypeRef);
-
-                // If the element type is a NullableSpec, unwrap it to access the effective type.
-                // This is necessary for proper configuration binding of nullable enum values.
-                if (elementType is NullableSpec nullableSpec)
-                {
-                    elementType = _typeIndex.GetTypeSpec(nullableSpec.EffectiveTypeRef);
-                }
+                TypeSpec elementType = _typeIndex.GetEffectiveTypeSpec(type.ElementTypeRef);
 
                 // Parse key
                 EmitBindingLogic(

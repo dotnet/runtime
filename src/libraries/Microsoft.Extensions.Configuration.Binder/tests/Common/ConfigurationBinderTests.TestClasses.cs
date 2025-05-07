@@ -1132,10 +1132,13 @@ namespace Microsoft.Extensions
             public StringComparison? StringComparisonValue { get; set; }
         }
 
-        public class OptionsWithDictionaryWithNullableEnumValue
+        public class OptionsWithCollectionsWithNullableEnum
         {
             // uses MyValue? dictionary values
             public Dictionary<string, MyValue?> Dictionary { get; set; } = new();
+
+            // uses MyValue? List values
+            public List<MyValue?> List { get; set; } = new();
         }
 
         public enum MyValue
