@@ -1586,7 +1586,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 
 //---------------------------------------------------------------------------------------
 //
-// Wrapper for Module::GetRWImporter + QI when writing is not needed.
+// Wrapper for Module::GetImporter + QI when writing is not needed.
 //
 // Arguments:
 //      * dwOpenFlags - Combo from CorOpenFlags. Better not contain ofWrite!
@@ -1597,7 +1597,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 // Return Value:
 //      HRESULT indicating success or failure.
 //
-HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface)
+HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, bool openForWriting, LPVOID * ppvInterface)
 {
     CONTRACTL
     {
@@ -1621,7 +1621,7 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
     // Normally, we just get an RWImporter to do the QI on, and we're on our way.
     EX_TRY
     {
-        pIUnk = GetRWImporter();
+        pIUnk = GetRWImporter(openForWriting);
     }
     EX_CATCH_HRESULT_NO_ERRORINFO(hr);
 
@@ -1800,7 +1800,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             }
             if (SUCCEEDED(hr))
             {
-                hr = pBinder->GetReaderFromStream(GetRWImporter(), pIStream, &pReader);
+                hr = pBinder->GetReaderFromStream(GetRWImporter(/* openForWriting */ false), pIStream, &pReader);
             }
         }
         else
@@ -1812,7 +1812,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // trying to get a symbol reader. This has to be done once per
             // Assembly.
             ReleaseHolder<IUnknown> pUnk = NULL;
-            hr = GetReadablePublicMetaDataInterface(ofReadOnly, IID_IMetaDataImport, &pUnk);
+            hr = GetReadablePublicMetaDataInterface(ofReadOnly, IID_IMetaDataImport, /* openForWriting */ false, &pUnk);
             if (SUCCEEDED(hr))
                 hr = pBinder->GetReaderForFile(pUnk, path, NULL, &pReader);
         }
