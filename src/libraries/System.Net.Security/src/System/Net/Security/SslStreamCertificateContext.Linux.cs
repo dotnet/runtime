@@ -78,11 +78,37 @@ namespace System.Net.Security
                         KeyHandle = ecdsa.DuplicateKeyHandle();
                     }
                 }
+            }
 
-                if (KeyHandle == null)
+            if (KeyHandle == null)
+            {
+#pragma warning disable SYSLIB5006 // Post-Quantum Cryptography (PQC) types are experimental
+                using (MLDsaOpenSsl? mlDsa = (MLDsaOpenSsl?)target.GetMLDsaPrivateKey())
+#pragma warning restore SYSLIB5006
                 {
-                    throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+                    if (mlDsa != null)
+                    {
+                        KeyHandle = mlDsa.DuplicateKeyHandle();
+                    }
                 }
+            }
+
+            if (KeyHandle == null)
+            {
+#pragma warning disable SYSLIB5006 // Post-Quantum Cryptography (PQC) types are experimental
+                using (SlhDsaOpenSsl? slhDsa = (SlhDsaOpenSsl?)target.GetSlhDsaPrivateKey())
+#pragma warning restore SYSLIB5006
+                {
+                    if (slhDsa != null)
+                    {
+                        KeyHandle = slhDsa.DuplicateKeyHandle();
+                    }
+                }
+            }
+
+            if (KeyHandle == null)
+            {
+                throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
             }
 
             CertificateHandle = Interop.Crypto.X509UpRef(target.Handle);
