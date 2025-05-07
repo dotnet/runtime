@@ -783,22 +783,22 @@ namespace System.Formats.Tar
             return checksum;
         }
 
-        private int WriteAsGnuTimestamp(DateTimeOffset timestamp, Span<byte> buffer)
-        {
-            if (_typeFlag is TarEntryType.LongLink or TarEntryType.LongPath || timestamp == default)
-            {
-                buffer.Clear();
-                return 0;
-            }
-
-            return WriteAsTimestamp(timestamp, buffer);
-        }
-
         // Saves the gnu-specific fields into the specified spans.
         private int WriteGnuFields(Span<byte> buffer)
         {
-            int checksum = WriteAsGnuTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            checksum += WriteAsGnuTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+            int checksum = 0;
+
+            if (_typeFlag is not TarEntryType.LongLink and not TarEntryType.LongPath)
+            {
+                if (_aTime != default)
+                {
+                    checksum += WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+                }
+                if (_cTime != default)
+                {
+                    checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+                }
+            }
 
             if (_gnuUnusedBytes != null)
             {
