@@ -13038,14 +13038,18 @@ void Compiler::gtDispTree(GenTree*                    tree,
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            if (tree->OperIs(GT_HWINTRINSIC))
+        {
+            GenTreeHWIntrinsic* node = tree->AsHWIntrinsic();
+            printf(" %u", node->GetSimdSize());
+            if (node->GetSimdBaseType() != TYP_UNKNOWN)
             {
-                printf(" %s %s",
-                       tree->AsHWIntrinsic()->GetSimdBaseType() == TYP_UNKNOWN
-                           ? ""
-                           : varTypeName(tree->AsHWIntrinsic()->GetSimdBaseType()),
-                       HWIntrinsicInfo::lookupName(tree->AsHWIntrinsic()->GetHWIntrinsicId()));
+                printf(" %s", varTypeName(node->GetSimdBaseType()));
             }
+            if (node->GetAuxiliaryType() != TYP_UNKNOWN)
+            {
+                printf(" (aux %s)", varTypeName(node->GetAuxiliaryType()));
+            }
+            printf(" %s", HWIntrinsicInfo::lookupName(node->GetHWIntrinsicId()));
 
             gtDispCommonEndLine(tree);
 
@@ -13058,7 +13062,8 @@ void Compiler::gtDispTree(GenTree*                    tree,
                     gtDispChild(operand, indentStack, ++index < count ? IIArc : IIArcBottom, nullptr, topOnly);
                 }
             }
-            break;
+        }
+        break;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
         case GT_ARR_ELEM:
@@ -28323,9 +28328,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
-                case NI_AVX2_BroadcastVector128ToVector256:
-                case NI_AVX512F_BroadcastVector128ToVector512:
-                case NI_AVX512F_BroadcastVector256ToVector512:
                     if (GetAuxiliaryJitType() == CORINFO_TYPE_PTR)
                     {
                         addr = Op(1);

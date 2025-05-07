@@ -1420,7 +1420,7 @@ void EvaluateWithElementFloating(var_types simdBaseType, TSimd* result, const TS
 
         case TYP_DOUBLE:
         {
-            result->f64[arg1] = static_cast<float>(arg2);
+            result->f64[arg1] = arg2;
             break;
         }
 
