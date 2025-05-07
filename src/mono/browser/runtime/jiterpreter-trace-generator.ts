@@ -3889,8 +3889,11 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                 }
 
                 for (let j = 0; j < elementSize; j++) {
-                    // we use min elementCount to force invalid indices to fit in a byte which
-                    // the intrinsic will handle by zeroing the lane
+                    // The shuffle vector is lane sized but the swizzle opcode needs byte indices
+                    // so we multiply the lane index by elementSize to get the byte offset then add
+                    // the offset of the byte inside the lane. Since we are using lanes as indices
+                    // we need to check if the lane index is valid. We use min elementCount to force
+                    // invalid indices to fit in the byte sized land and let the intrinsic handle it.
                     newShuffleVector[k + j] = Math.min(elementIndex * elementSize + j, elementCount);
                 }
             }
@@ -3906,12 +3909,14 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
             // We need to convert lane indices to byte indices so we can
             // use the swizzle opcode:
-            // 1: multiply the indices by elementSize using shl to
-            // get the byte offset of the first byte in the expanded land
+            //
+            // 1: multiply the lane indices by elementSize using shl to
+            //  get the byte offset of the first byte in the 16 lanes
             builder.i32_const(shift);
             builder.appendSimd(WasmSimdOpcode.i8x16_shl);
 
-            // 2: fill all the byte elements of the lane with the shifted values
+            // 2: create a vector to swizzle the shifted first byte
+            //  of each lane into every byte of that lane.
             builder.appendSimd(WasmSimdOpcode.v128_const);
             for (let i = 0; i < elementCount; i++) {
                 for (let j = 0; j < elementSize; j++)
@@ -3919,7 +3924,8 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             }
             builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
 
-            // 3: Or the shifted values with the byte offset inside the lane
+            // 3: create a vector with the offset of each byte inside each
+            //  lane then Or it with the now shifted and swizzled indices.
             builder.appendSimd(WasmSimdOpcode.v128_const);
             for (let i = 0; i < elementCount; i++) {
                 for (let j = 0; j < elementSize; j++)
