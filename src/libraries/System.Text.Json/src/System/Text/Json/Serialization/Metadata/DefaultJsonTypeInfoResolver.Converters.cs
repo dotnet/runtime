@@ -26,6 +26,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Nullable converter should always be next since it forwards to any nullable type.
                 new NullableConverterFactory(),
                 new EnumConverterFactory(),
+                new JsonValuePrimitiveFactory(),
                 new JsonNodeConverterFactory(),
                 new FSharpTypeConverterFactory(),
                 new MemoryConverterFactory(),
