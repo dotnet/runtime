@@ -3880,9 +3880,10 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                 for (let j = 0; j < elementSize; j++) {
                     if (j == 0)
                         elementIndex = nativeIndices[k + j];
-                    else if (nativeIndices[k + j] > 0) {
-                        // this an invalid index, set it to zero
-                        elementIndex = 0;
+
+                    if (elementIndex >= elementCount || nativeIndices[k + j] != 0) {
+                        // this an invalid index make invalid in a safe way
+                        elementIndex = elementCount;
                         break;
                     }
                 }
