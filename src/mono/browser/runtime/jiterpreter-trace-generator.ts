@@ -3849,7 +3849,7 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
             else if (index === SimdIntrinsic3.V128_I8_SHUFFLE)
                 elementCount = 2;
 
-            return emit_shuffle(builder, ip, elementCount, true);
+            return emit_shuffle(builder, ip, elementCount);
         }
         default:
             return false;
@@ -3860,7 +3860,7 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
 
 // implement shuffles on top of wasm's swizzle opcode by expanding the
 // element shuffle indices into byte indices
-function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number, checkBounds: boolean): boolean {
+function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number): boolean {
     const elementSize = 16 / elementCount,
         indicesOffset = getArgU16(ip, 3),
         constantIndices = get_known_constant_value(builder, indicesOffset);
@@ -3904,30 +3904,6 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
         append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
         if (elementCount !== 16) {
             const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
-
-            // Like above the indices are lane sized but only valid when less than elementCount
-            // so we check for that and invalidate the index in that case by forcing it
-            // to an invalid value for Vecor128.Shuffle.
-            if (checkBounds) {
-                if (elementSize === 8)
-                    builder.local("shuffle_indices", WasmOpcode.tee_local);
-
-                builder.appendSimd(WasmSimdOpcode.v128_const);
-                for (let i = 0; i < elementCount; i++) {
-                    builder.appendU8(elementCount);
-                }
-
-                if (elementSize === 2)
-                    builder.appendSimd(WasmSimdOpcode.i16x8_min_u);
-                else if (elementSize === 4)
-                    builder.appendSimd(WasmSimdOpcode.i32x4_min_u);
-                else if (elementSize === 8) {
-                    builder.appendSimd(WasmSimdOpcode.i64x2_ge_s);
-                    builder.local("shuffle_indices");
-                    builder.appendSimd(WasmSimdOpcode.v128_or);
-                }
-            }
-
             // We need to convert lane indices to byte indices so we can
             // use the swizzle opcode:
             // 1: multiply the indices by elementSize using shl to
