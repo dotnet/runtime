@@ -1973,6 +1973,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_Vector256_WithElement:
         case NI_Vector512_WithElement:
         {
+            assert(!op2->OperIsConst());
+
             // Optimize the case where op2 is not a constant.
             if (!op2->OperIsConst())
             {
@@ -2014,7 +2016,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                                             offs);                                    // Offset
                 
                 // Write back the modified vector to the original location.
-                GetEmitter()->emitIns_R_S(ins_Store(simdType, compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),
+                GetEmitter()->emitIns_R_S(ins_Load(simdType, compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),
                                           emitTypeSize(simdType), targetReg, simdInitTempVarNum, 0);
 
             }
