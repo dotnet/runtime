@@ -314,9 +314,9 @@ namespace
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
 
             // UnsafeAccessorAttribute requires the return type to be byref for any field kind.
-            // This means creates a type safety issue for the runtime. Since byrefs don't support
-            // contravariance, we can't permit returning a byref to a fully typed field as a byref to
-            // an "opaque" type (for example, "ref string" -> "ref object").
+            // This creates a type safety issue for the runtime. Since byrefs don't support
+            // contravariance, we can't permit returning a byref to a fully typed field as a
+            // byref to an "opaque" type (for example, "ref string" -> "ref object").
             if (seq == 0 // Return type
                 && (cxt.Kind == UnsafeAccessorKind::Field
                     || cxt.Kind == UnsafeAccessorKind::StaticField))
@@ -778,9 +778,10 @@ namespace
         }
 
         // Perform the type check.
-        pDispatchCode->EmitCASTCLASS(tk);
+        // If the type is a reference type, unbox.any has the same semantics as castclass.
+        pDispatchCode->EmitUNBOX_ANY(tk);
 
-        // If we have a local variable, we need to store the cast result
+        // If we have a local variable, we need to store the result
         // in the local variable and load a byref to the local variable as
         // the argument to the target method. Finally, we may need to update
         // the byref on return.

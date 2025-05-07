@@ -919,7 +919,6 @@ public:
     void EmitCALL       (int token, int numInArgs, int numRetArgs);
     void EmitCALLI      (int token, int numInArgs, int numRetArgs);
     void EmitCALLVIRT   (int token, int numInArgs, int numRetArgs);
-    void EmitCASTCLASS  (int token);
     void EmitCEQ        ();
     void EmitCGT        ();
     void EmitCGT_UN     ();

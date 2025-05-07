@@ -1234,11 +1234,6 @@ void ILCodeStream::EmitCALLI(int token, int numInArgs, int numRetArgs)
     WRAPPER_NO_CONTRACT;
     Emit(CEE_CALLI, (INT16)(numRetArgs - numInArgs - 1), token);
 }
-void ILCodeStream::EmitCASTCLASS(int token)
-{
-    WRAPPER_NO_CONTRACT;
-    Emit(CEE_CASTCLASS, 0, token);
-}
 void ILCodeStream::EmitCEQ()
 {
     WRAPPER_NO_CONTRACT;
