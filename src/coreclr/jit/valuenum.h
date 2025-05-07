@@ -1056,6 +1056,9 @@ public:
     // Returns true if the VN represents a node that is never negative.
     bool IsVNNeverNegative(ValueNum vn);
 
+    // Returns true if the VN represents BitOperations.Log2 pattern
+    bool IsVNLog2(ValueNum vn, int* upperBound = nullptr);
+
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
     // Returns true if the VN is known or likely to appear as the conservative value number
@@ -1408,6 +1411,38 @@ public:
     // If "vn" represents a function application, returns "true" and set "*funcApp" to
     // the function application it represents; otherwise, return "false."
     bool GetVNFunc(ValueNum vn, VNFuncApp* funcApp);
+
+    // Returns "true" iff "vn" is a function application of the form "func(op1, op2)".
+    bool IsVNBinFunc(ValueNum vn, VNFunc func, ValueNum* op1 = nullptr, ValueNum* op2 = nullptr);
+
+    // Returns "true" iff "vn" is a function application of the form "func(op, cns)"
+    // the cns can be on the left side if the function is commutative.
+    template <typename T>
+    bool IsVNBinFuncWithConst(ValueNum vn, VNFunc func, ValueNum* op, T* cns)
+    {
+        T        opCns;
+        ValueNum op1, op2;
+        if (IsVNBinFunc(vn, func, &op1, &op2))
+        {
+            if (IsVNIntegralConstant(op2, &opCns))
+            {
+                if (op != nullptr)
+                    *op = op1;
+                if (cns != nullptr)
+                    *cns = opCns;
+                return true;
+            }
+            else if (VNFuncIsCommutative(func) && IsVNIntegralConstant(op1, &opCns))
+            {
+                if (op != nullptr)
+                    *op = op2;
+                if (cns != nullptr)
+                    *cns = opCns;
+                return true;
+            }
+        }
+        return false;
+    }
 
     // Returns "true" iff "vn" is a valid value number -- one that has been previously returned.
     bool VNIsValid(ValueNum vn);
