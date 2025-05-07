@@ -32,8 +32,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(PlatformSupportsMLDsa(), MLDsa.IsSupported);
         }
 
-        private static bool PlatformSupportsMLDsa()
-            => PlatformDetection.IsOpenSslSupported && PlatformDetection.OpenSslVersion >= new Version(3, 5);
+        private static bool PlatformSupportsMLDsa() => PlatformDetection.IsOpenSsl3_5;
 
         [Fact]
         public static void DisposeIsCalledOnImplementation()

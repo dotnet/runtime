@@ -36,19 +36,19 @@ void Compiler::lvaInitTypeRef()
 {
 
     /* x86 args look something like this:
-        [this ptr] [hidden return buffer] [declared arguments]* [generic context] [var arg cookie]
+        [this ptr] [hidden return buffer] [declared arguments]* [generic context] [async continuation] [var arg cookie]
 
        x64 is closer to the native ABI:
-        [this ptr] [hidden return buffer] [generic context] [var arg cookie] [declared arguments]*
+        [this ptr] [hidden return buffer] [generic context] [async continuation] [var arg cookie] [declared arguments]*
         (Note: prior to .NET Framework 4.5.1 for Windows 8.1 (but not .NET Framework 4.5.1 "downlevel"),
         the "hidden return buffer" came before the "this ptr". Now, the "this ptr" comes first. This
         is different from the C++ order, where the "hidden return buffer" always comes first.)
 
        ARM and ARM64 are the same as the current x64 convention:
-        [this ptr] [hidden return buffer] [generic context] [var arg cookie] [declared arguments]*
+        [this ptr] [hidden return buffer] [generic context] [async continuation] [var arg cookie] [declared arguments]*
 
        Key difference:
-           The var arg cookie and generic context are swapped with respect to the user arguments
+           The var arg cookie, generic context and async continuations are swapped with respect to the user arguments
     */
 
     /* Set compArgsCount and compLocalsCount */
@@ -159,6 +159,11 @@ void Compiler::lvaInitTypeRef()
     else
     {
         info.compTypeCtxtArg = BAD_VAR_NUM;
+    }
+
+    if (compIsAsync())
+    {
+        info.compArgsCount++;
     }
 
     lvaCount = info.compLocalsCount = info.compArgsCount + info.compMethodInfo->locals.numArgs;
@@ -371,6 +376,8 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(&varNum);
 
+    lvaInitAsyncContinuation(&varNum);
+
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(&varNum);
 #endif
@@ -383,6 +390,8 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     //@GENERICS: final instantiation-info argument for shared generic methods
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(&varNum);
+
+    lvaInitAsyncContinuation(&varNum);
 
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(&varNum);
@@ -672,6 +681,33 @@ void Compiler::lvaInitGenericsCtxt(unsigned* curVarNum)
     varDsc->lvIsParam = 1;
     varDsc->lvType    = TYP_I_IMPL;
     varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
+
+    (*curVarNum)++;
+}
+
+//-----------------------------------------------------------------------------
+// lvaInitAsyncContinuation:
+//  Initialize the async continuation parameter.
+//
+// Type parameters:
+//   curVarNum - [in, out] The current local variable number for parameters
+//
+void Compiler::lvaInitAsyncContinuation(unsigned* curVarNum)
+{
+    if (!compIsAsync())
+    {
+        return;
+    }
+
+    lvaAsyncContinuationArg = *curVarNum;
+    LclVarDsc* varDsc       = lvaGetDesc(*curVarNum);
+    varDsc->lvType          = TYP_REF;
+    varDsc->lvIsParam       = true;
+
+    // The final home for this incoming register might be our local stack frame
+    varDsc->lvOnFrame = true;
+
+    INDEBUG(varDsc->lvReason = "Async continuation arg");
 
     (*curVarNum)++;
 }
@@ -3069,13 +3105,6 @@ void Compiler::lvaSortByRefCount()
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
         }
 
-        // No benefit in tracking the PSPSym (if any)
-        //
-        if (lclNum == lvaPSPSym)
-        {
-            varDsc->lvTracked = 0;
-        }
-
         //  Are we not optimizing and we have exception handlers?
         //   if so mark all args and locals "do not enregister".
         //
@@ -4149,9 +4178,6 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |                       |
  *      ~       localloc        ~   // not in frames with EH
  *      |                       |
- *      |-----------------------|
- *      |        PSPSym         |   // only in frames with EH (thus no localloc)
- *      |                       |
  *      |-----------------------| <---- RBP in localloc frames (max 240 bytes from Initial-SP)
  *      |   Arguments for the   |
  *      ~    next function      ~
@@ -4217,8 +4243,6 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |  Pre-spill registers  |
  *      |-----------------------| <---- Virtual '0'
  *      |Callee saved registers |
- *      |-----------------------|
- *      |        PSPSym         |   // Only for frames with EH, which means FP-based frames
  *      |-----------------------|
  *      ~ possible double align ~
  *      |-----------------------|
@@ -4309,8 +4333,6 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |Callee saved registers |
  *      |   except fp/lr        |
  *      |-----------------------|
- *      |        PSPSym         | // Only for frames with EH, which requires FP-based frames
- *      |-----------------------|
  *      |   security object     |
  *      |-----------------------|
  *      |     ParamTypeArg      |
@@ -4356,8 +4378,6 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |      Saved FP         | <---- Frame pointer
  *      |-----------------------|
  *      |Callee saved registers |
- *      |-----------------------|
- *      |        PSPSym         | // Only for frames with EH, which requires FP-based frames
  *      |-----------------------|
  *      |   security object     |
  *      |-----------------------|
@@ -4502,27 +4522,6 @@ void Compiler::lvaFixVirtualFrameOffsets()
 {
     LclVarDsc* varDsc;
 
-#if defined(TARGET_AMD64)
-    if (lvaPSPSym != BAD_VAR_NUM)
-    {
-        // We need to fix the offset of the PSPSym so there is no padding between it and the outgoing argument space.
-        // Without this code, lvaAlignFrame might have put the padding lower than the PSPSym, which would be between
-        // the PSPSym and the outgoing argument space.
-        varDsc = lvaGetDesc(lvaPSPSym);
-        assert(varDsc->lvFramePointerBased); // We always access it RBP-relative.
-        assert(!varDsc->lvMustInit);         // It is never "must init".
-        varDsc->SetStackOffset(codeGen->genCallerSPtoInitialSPdelta() + lvaLclStackHomeSize(lvaOutgoingArgSpaceVar));
-
-        if (opts.IsOSR())
-        {
-            // With OSR RBP points at the base of the OSR frame, but the virtual offsets
-            // are from the base of the Tier0 frame. Adjust.
-            //
-            varDsc->SetStackOffset(varDsc->GetStackOffset() - info.compPatchpointInfo->TotalFrameSize());
-        }
-    }
-#endif
-
     // The delta to be added to virtual offset to adjust it relative to frame pointer or SP
     int delta            = 0;
     int frameLocalsDelta = 0;
@@ -4586,21 +4585,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         {
             int offset = lvaTable[lvaMonAcquired].GetStackOffset() + delta;
             lvaTable[lvaMonAcquired].SetStackOffset(offset);
-
-            if (lvaPSPSym != BAD_VAR_NUM)
-            {
-                int offset = lvaTable[lvaPSPSym].GetStackOffset() + delta;
-                lvaTable[lvaPSPSym].SetStackOffset(offset);
-                delta += TARGET_POINTER_SIZE;
-            }
-
             delta += lvaLclStackHomeSize(lvaMonAcquired);
-        }
-        else if (lvaPSPSym != BAD_VAR_NUM)
-        {
-            int offset = lvaTable[lvaPSPSym].GetStackOffset() + delta;
-            lvaTable[lvaPSPSym].SetStackOffset(offset);
-            delta += TARGET_POINTER_SIZE;
         }
 
         JITDUMP("--- delta bump %d for FP frame\n", delta);
@@ -5156,17 +5141,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         }
     }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (lvaPSPSym != BAD_VAR_NUM)
-    {
-        // On ARM/ARM64, if we need a PSPSym we allocate it early since funclets
-        // will need to have it at the same caller-SP relative offset so anything
-        // allocated before this will also leak into the funclet's frame.
-        noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
-    }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-
     if (mustDoubleAlign)
     {
         if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
@@ -5482,7 +5456,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             // These need to be located as the very first variables (highest memory address)
             // and so they have already been assigned an offset
-            if (lclNum == lvaPSPSym ||
+            if (
 #if defined(FEATURE_EH_WINDOWS_X86)
                 lclNum == lvaShadowSPslotsVar ||
 #endif // FEATURE_EH_WINDOWS_X86
@@ -5706,17 +5680,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             noway_assert(((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) == 0);
         }
     }
-
-#if defined(TARGET_AMD64)
-    if (lvaPSPSym != BAD_VAR_NUM)
-    {
-        // On AMD64, if we need a PSPSym, allocate it last, immediately above the outgoing argument
-        // space. Any padding will be higher on the stack than this
-        // (including the padding added by lvaAlignFrame()).
-        noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
-    }
-#endif // TARGET_AMD64
 
 #if FEATURE_FIXED_OUT_ARGS
     if (lvaOutgoingArgSpaceSize > 0)
@@ -6812,7 +6775,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         offset += codeGen->genCallerSPtoInitialSPdelta();
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifdef FEATURE_ON_STACK_REPLACEMENT
     if (forRootFrame && opts.IsOSR())
     {
         const PatchpointInfo* const ppInfo = info.compPatchpointInfo;
@@ -6830,9 +6793,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         // is simply TotalFrameSize plus one register.
         //
         const int adjustment = ppInfo->TotalFrameSize() + REGSIZE_BYTES;
-
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
+#else
         const int adjustment = ppInfo->TotalFrameSize();
 #endif
 

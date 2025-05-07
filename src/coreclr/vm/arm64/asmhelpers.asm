@@ -640,7 +640,7 @@ COMToCLRDispatchHelper_RegSetup
 ; ------------------------------------------------------------------
 ; Hijack function for functions which return a scalar type or a struct (value type)
     NESTED_ENTRY OnHijackTripThread
-    PROLOG_SAVE_REG_PAIR   fp, lr, #-176!
+    PROLOG_SAVE_REG_PAIR   fp, lr, #-192!
     ; Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, #16
     PROLOG_SAVE_REG_PAIR   x21, x22, #32
@@ -651,9 +651,12 @@ COMToCLRDispatchHelper_RegSetup
     ; save any integral return value(s)
     stp x0, x1, [sp, #96]
 
+    ; save async continuation return value
+    str x2, [sp, #112]
+
     ; save any FP/HFA/HVA return value(s)
-    stp q0, q1, [sp, #112]
-    stp q2, q3, [sp, #144]
+    stp q0, q1, [sp, #128]
+    stp q2, q3, [sp, #160]
 
     mov x0, sp
     bl OnHijackWorker
@@ -661,16 +664,19 @@ COMToCLRDispatchHelper_RegSetup
     ; restore any integral return value(s)
     ldp x0, x1, [sp, #96]
 
+    ; restore async continuation return value
+    ldr x2, [sp, #112]
+
     ; restore any FP/HFA/HVA return value(s)
-    ldp q0, q1, [sp, #112]
-    ldp q2, q3, [sp, #144]
+    ldp q0, q1, [sp, #128]
+    ldp q2, q3, [sp, #160]
 
     EPILOG_RESTORE_REG_PAIR   x19, x20, #16
     EPILOG_RESTORE_REG_PAIR   x21, x22, #32
     EPILOG_RESTORE_REG_PAIR   x23, x24, #48
     EPILOG_RESTORE_REG_PAIR   x25, x26, #64
     EPILOG_RESTORE_REG_PAIR   x27, x28, #80
-    EPILOG_RESTORE_REG_PAIR   fp, lr,   #176!
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #192!
     EPILOG_RETURN
     NESTED_END
 
@@ -703,7 +709,7 @@ COMToCLRDispatchHelper_RegSetup
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
 
-        ; Using below prolog instead of PROLOG_SAVE_REG_PAIR fp,lr, #-16!
+        ; Using below prolog instead of PROLOG_SAVE_REG_PAIR fp,lr, #-96!
         ; is intentional. Above statement would also emit instruction to save
         ; sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
         ; of method. However, this method needs to be able to change fp before calling funclet.
@@ -742,21 +748,23 @@ COMToCLRDispatchHelper_RegSetup
 
         NESTED_END CallEHFunclet
 
-        ; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-        ; frame pointer for accessing the locals in the parent method.
+        ; This helper enables us to call into a filter funclet after restoring Fp register
         NESTED_ENTRY CallEHFilterFunclet
 
-        PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
+        PROLOG_SAVE_REG_PAIR_NO_FP   fp, lr, #-16!
 
         ; On entry:
         ;
         ; X0 = throwable
-        ; X1 = SP of the caller of the method/funclet containing the filter
+        ; X1 = FP of the main function
         ; X2 = PC to invoke
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
         ; Save the SP of this function
+        mov fp, sp
         str fp, [x3]
+        ; Restore frame pointer
+        mov fp, x1
         ; Invoke the filter funclet
         blr x2
 
@@ -1160,7 +1168,7 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     NESTED_END
 
     // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-    LEAF_ENTRY JIT_PartialCompilationPatchpoint
+    LEAF_ENTRY JIT_PatchpointForced
         mov x1, x0
         mov x0, #0
         b JIT_Patchpoint

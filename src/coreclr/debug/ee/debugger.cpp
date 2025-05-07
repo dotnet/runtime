@@ -2774,6 +2774,13 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
     }
     CONTRACTL_END;
 
+#ifdef DACCESS_COMPILE
+    if (!HasLazyData())
+    {
+        return NULL;
+    }
+#endif // #ifdef DACCESS_COMPILE
+
     DebuggerMethodInfo *info = NULL;
 
     // When dump debugging, we don't expect to have a lock,

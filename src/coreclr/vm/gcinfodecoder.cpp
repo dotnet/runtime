@@ -169,13 +169,15 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Predecod
         return true;
     }
 
+#ifdef DECODE_OLD_FORMATS
     // Decode the offset to the PSPSym.
     // The PSPSym is relative to the caller SP on IA64 and the initial stack pointer before any stack allocation on X64 (InitialSP).
-    if (m_headerFlags & GC_INFO_HAS_PSP_SYM)
+    if (Version() < 4 && (m_headerFlags & GC_INFO_HAS_PSP_SYM))
     {
         m_PSPSymStackSlot = GcInfoEncoding::DENORMALIZE_STACK_SLOT((INT32)m_Reader.DecodeVarLengthSigned(GcInfoEncoding::PSP_SYM_STACK_SLOT_ENCBASE));
     }
     else
+#endif
     {
         m_PSPSymStackSlot = NO_PSP_SYM;
     }
@@ -456,6 +458,11 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::HasMetho
 {
     _ASSERTE( m_Flags & DECODE_GENERICS_INST_CONTEXT );
     return (m_headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) == GC_INFO_HAS_GENERICS_INST_CONTEXT_MT;
+}
+
+template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::HasStackBaseRegister()
+{
+    return (m_headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER) == GC_INFO_HAS_STACK_BASE_REGISTER;
 }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
@@ -2277,5 +2284,9 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportSt
 
 // Instantiate the decoder so other files can use it
 template class TGcInfoDecoder<TargetGcInfoEncoding>;
+
+#ifdef FEATURE_INTERPRETER
+template class TGcInfoDecoder<InterpreterGcInfoEncoding>;
+#endif // FEATURE_INTERPRETER
 
 #endif // USE_GC_INFO_DECODER

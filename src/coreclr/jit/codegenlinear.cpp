@@ -503,8 +503,13 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
+        if (compiler->compIsAsync())
+        {
+            nonVarPtrRegs &= ~RBM_ASYNC_CONTINUATION_RET;
+        }
+
         // For a tailcall arbitrary argument registers may be live into the
-        // prolog. Skip validating those.
+        // epilog. Skip validating those.
         if (block->HasFlag(BBF_HAS_JMP))
         {
             nonVarPtrRegs &= ~fullIntArgRegMask(CorInfoCallConvExtension::Managed);
@@ -2253,93 +2258,6 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
         gcInfo.gcMarkRegSetNpt(dstMask);
     }
 }
-
-// generates an ip-relative call or indirect call via reg ('call reg')
-//     pass in 'addr' for a relative call or 'base' for a indirect register call
-//     methHnd - optional, only used for pretty printing
-//     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
-//     noSafePoint - force not making this call a safe point in partially interruptible code
-//
-// clang-format off
-void CodeGen::genEmitCall(int                   callType,
-                          CORINFO_METHOD_HANDLE methHnd,
-                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                          void*                 addr
-                          X86_ARG(int argSize),
-                          emitAttr              retSize
-                          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          const DebugInfo& di,
-                          regNumber             base,
-                          bool                  isJump,
-                          bool                  noSafePoint)
-{
-#if !defined(TARGET_X86)
-    int argSize = 0;
-#endif // !defined(TARGET_X86)
-
-    // This should have been put in volatile registers to ensure it does not
-    // get overridden by epilog sequence during tailcall.
-    noway_assert(!isJump || (base == REG_NA) || ((RBM_INT_CALLEE_TRASH & genRegMask(base)) != 0));
-
-    GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
-                               methHnd,
-                               INDEBUG_LDISASM_COMMA(sigInfo)
-                               addr,
-                               argSize,
-                               retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                               gcInfo.gcVarPtrSetCur,
-                               gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur,
-                               di, base, REG_NA, 0, 0, isJump, noSafePoint);
-}
-// clang-format on
-
-// generates an indirect call via addressing mode (call []) given an indir node
-//     methHnd - optional, only used for pretty printing
-//     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
-//
-// clang-format off
-void CodeGen::genEmitCallIndir(int                   callType,
-                               CORINFO_METHOD_HANDLE methHnd,
-                               INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                               GenTreeIndir*         indir
-                               X86_ARG(int argSize),
-                               emitAttr              retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                               const DebugInfo&      di,
-                               bool                  isJump)
-{
-#if !defined(TARGET_X86)
-    int argSize = 0;
-#endif // !defined(TARGET_X86)
-
-    regNumber iReg = indir->HasBase()  ? indir->Base()->GetRegNum() : REG_NA;
-    regNumber xReg = indir->HasIndex() ? indir->Index()->GetRegNum() : REG_NA;
-
-    // These should have been put in volatile registers to ensure they do not
-    // get overridden by epilog sequence during tailcall.
-    noway_assert(!isJump || (iReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(iReg)) != 0));
-    noway_assert(!isJump || (xReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(xReg)) != 0));
-
-    GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
-                               methHnd,
-                               INDEBUG_LDISASM_COMMA(sigInfo)
-                               nullptr,
-                               argSize,
-                               retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                               gcInfo.gcVarPtrSetCur,
-                               gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur,
-                               di,
-                               iReg,
-                               xReg,
-                               indir->Scale(),
-                               indir->Offset(),
-                               isJump);
-}
-// clang-format on
 
 //------------------------------------------------------------------------
 // genCodeForCast: Generates the code for GT_CAST.

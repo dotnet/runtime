@@ -7,13 +7,13 @@
 #include "dbgutil.h"
 #include <cdac_reader.h>
 
-#define CDAC_LIB_NAME MAKEDLLNAME_W(W("cdacreader"))
+#define CDAC_LIB_NAME MAKEDLLNAME_W(W("mscordaccore_universal"))
 
 namespace
 {
     bool TryLoadCDACLibrary(HMODULE *phCDAC)
     {
-        // Load cdacreader from next to current module (DAC binary)
+        // Load cdac from next to current module (DAC binary)
         PathString path;
         if (WszGetModuleFileName((HMODULE)GetCurrentModuleBase(), path) == 0)
             return false;
