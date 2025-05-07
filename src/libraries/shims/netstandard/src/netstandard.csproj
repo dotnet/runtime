@@ -57,6 +57,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebProxy\src\System.Net.WebProxy.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebSockets\src\System.Net.WebSockets.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebSockets.Client\src\System.Net.WebSockets.Client.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Colors\src\System.Numerics.Colors.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ObjectModel\src\System.ObjectModel.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.DispatchProxy\src\System.Reflection.DispatchProxy.csproj" />
