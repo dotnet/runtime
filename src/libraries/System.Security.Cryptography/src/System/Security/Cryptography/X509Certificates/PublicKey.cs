@@ -295,14 +295,17 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
-        /// Gets the <see cref="MLKem" /> public key, or <see langword="null" />
-        /// if the key is not an ML-KEM key.
+        ///   Gets the <see cref="MLKem" /> public key, or <see langword="null" />
+        ///   if the key is not an ML-KEM key.
         /// </summary>
         /// <returns>
-        /// The public key, or <see langword="null" /> if the key is not an ML-KEM key.
+        ///   The public key, or <see langword="null" /> if the key is not an ML-KEM key.
         /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The object represents an ML-KEM public key, but the platform does not support the algorithm.
+        /// </exception>
         /// <exception cref="CryptographicException">
-        /// The key contents are corrupt or could not be read successfully.
+        ///   The key contents are corrupt or could not be read successfully.
         /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         [UnsupportedOSPlatform("browser")]
@@ -311,7 +314,30 @@ namespace System.Security.Cryptography.X509Certificates
             if (MLKemAlgorithm.FromOid(_oid.Value) is null)
                 return null;
 
-            return MLKem.ImportSubjectPublicKeyInfo(ExportSubjectPublicKeyInfo());
+            return EncodeSubjectPublicKeyInfo().Encode(MLKem.ImportSubjectPublicKeyInfo);
+        }
+
+        /// <summary>
+        ///   Gets the <see cref="MLDsa"/> public key, or <see langword="null" />
+        ///   if the key is not an ML-DSA key.
+        /// </summary>
+        /// <returns>
+        ///   The public key, or <see langword="null"/> if the key is not an ML-DSA key.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The object represents an ML-DSA public key, but the platform does not support the algorithm.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The key contents are corrupt or could not be read successfully.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [UnsupportedOSPlatform("browser")]
+        public MLDsa? GetMLDsaPublicKey()
+        {
+            if (MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(_oid.Value) is null)
+                return null;
+
+            return EncodeSubjectPublicKeyInfo().Encode(MLDsa.ImportSubjectPublicKeyInfo);
         }
 
         internal AsnWriter EncodeSubjectPublicKeyInfo()

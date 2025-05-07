@@ -311,6 +311,8 @@ namespace System.Diagnostics
       public static DistributedContextPropagator CreateDefaultPropagator() { throw null; }
       public static DistributedContextPropagator CreatePassThroughPropagator() { throw null; }
       public static DistributedContextPropagator CreateNoOutputPropagator() { throw null; }
+      public static DistributedContextPropagator CreatePreW3CPropagator() { throw null; }
+      public static DistributedContextPropagator CreateW3CPropagator() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct TagList : System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>

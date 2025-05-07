@@ -28,8 +28,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, IEnumerable<TResult>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -68,8 +68,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<IEnumerable<TResult>>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -108,8 +108,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, IAsyncEnumerable<TResult>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -149,8 +149,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, IEnumerable<TResult>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -191,8 +191,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, CancellationToken, ValueTask<IEnumerable<TResult>>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -233,8 +233,8 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, IAsyncEnumerable<TResult>> selector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(selector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(selector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -282,9 +282,9 @@ namespace System.Linq
             Func<TSource, IEnumerable<TCollection>> collectionSelector,
             Func<TSource, TCollection, TResult> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -332,9 +332,9 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<IEnumerable<TCollection>>> collectionSelector,
             Func<TSource, TCollection, CancellationToken, ValueTask<TResult>> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -382,9 +382,9 @@ namespace System.Linq
             Func<TSource, IAsyncEnumerable<TCollection>> collectionSelector,
             Func<TSource, TCollection, TResult> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -432,9 +432,9 @@ namespace System.Linq
             Func<TSource, IAsyncEnumerable<TCollection>> collectionSelector,
             Func<TSource, TCollection, CancellationToken, ValueTask<TResult>> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -481,9 +481,9 @@ namespace System.Linq
             Func<TSource, int, IEnumerable<TCollection>> collectionSelector,
             Func<TSource, TCollection, TResult> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -531,9 +531,9 @@ namespace System.Linq
             Func<TSource, int, CancellationToken, ValueTask<IEnumerable<TCollection>>> collectionSelector,
             Func<TSource, TCollection, CancellationToken, ValueTask<TResult>> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :
@@ -581,9 +581,9 @@ namespace System.Linq
             Func<TSource, int, IAsyncEnumerable<TCollection>> collectionSelector,
             Func<TSource, TCollection, CancellationToken, ValueTask<TResult>> resultSelector)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(collectionSelector);
-            ThrowHelper.ThrowIfNull(resultSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(collectionSelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :

@@ -47,6 +47,8 @@ HRESULT DynamicJitOptimizations::JITInlining(
     FunctionID calleeId,
     BOOL      *pfShouldInline)
 {
+    SHUTDOWNGUARD();
+
     if (*pfShouldInline)
     {
         // filter for testee module
@@ -83,7 +85,6 @@ HRESULT DynamicJitOptimizations::JITInlining(
 HRESULT DynamicJitOptimizations::Shutdown()
 {
     Profiler::Shutdown();
-
     gInstance = nullptr;
     return S_OK;
 }
