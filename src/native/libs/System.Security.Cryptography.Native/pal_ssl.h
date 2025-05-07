@@ -131,6 +131,9 @@ typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* session);
 // the function pointer for keylog
 typedef void (*SslCtxSetKeylogCallback)(const SSL* ssl, const char *line);
 
+// the function for remote certificate validation..
+typedef int32_t (*SslCtxCertValidationCallback)(SSL* ssl, X509_STORE_CTX* store);
+
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
@@ -363,8 +366,6 @@ Returns 1 upon success, otherwise 0.
 */
 PALEXPORT int32_t CryptoNative_SslUsePrivateKey(SSL* ssl, EVP_PKEY* pkey);
 
-
-
 /*
 Shims the SSL_CTX_use_certificate method.
 
@@ -542,3 +543,18 @@ PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
 Staples an encoded OCSP response onto the TLS session
 */
 PALEXPORT void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len);
+
+/*
+Sets the certificate verification callback for the SSL_CTX.
+*/
+PALEXPORT void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertValidationCallback callback);
+
+/*
+Shims the SSL_set_verify_result method.
+*/
+PALEXPORT void CryptoNative_SslSetVerifyResult(SSL* ssl, int64_t verifyResult);
+
+/*
+Shims the SSL_get_verify_result method.
+*/
+PALEXPORT int64_t CryptoNative_SslGetVerifyResult(SSL* ssl);

@@ -35,8 +35,18 @@ namespace System.Net
                 return null;
             }
 
+            IntPtr remoteCertificate = IntPtr.Zero;
+            {
+                using var chainStack = Interop.OpenSsl.GetPeerCertificateChain((SafeSslHandle)securityContext);
+                int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
+                if (count > 0)
+                {
+                    remoteCertificate = Interop.Crypto.GetX509StackField(chainStack, 0);
+                }
+            }
+
             X509Certificate2? result = null;
-            IntPtr remoteCertificate = Interop.OpenSsl.GetPeerCertificate((SafeSslHandle)securityContext);
+
             try
             {
                 if (remoteCertificate == IntPtr.Zero)
