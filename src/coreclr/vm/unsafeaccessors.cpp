@@ -117,7 +117,7 @@ namespace
         // Building the signature follows details defined in ECMA-335 - II.23.2.12
         //
 
-        // We have at least one generic variable, mark as ELEMENT_TYPE_GENERICINST.
+        // If we have any generic variables, mark as ELEMENT_TYPE_GENERICINST.
         BOOL hasGenericVariables = inst.ContainsGenericVariables();
         if (hasGenericVariables)
             sig.AppendElementType(ELEMENT_TYPE_GENERICINST);
@@ -158,9 +158,7 @@ namespace
         // types for the parameters that had UnsafeAccessorTypeAttribute.
         SigPointer origSig = cxt.Declaration->GetSigPointer();
 
-        // We're going to be modifying the signature and we will be inserting
-        // ELEMENT_TYPE_INTERNAL instances. This will add an additional pointer
-        // size for each discovered attribute.
+        // We're going to be modifying the signature to include the translated types.
         SigBuilder newSig;
 
         uint32_t callConvDecl;
@@ -195,7 +193,8 @@ namespace
                 continue;
             }
 
-            // We have a new type to insert. We need to update this parameter.
+            // We have a new type to insert and need to update this
+            // parameter in the signature.
             TypeHandle currHandle = origSig.GetTypeHandleThrowing(pSigModule, NULL);
 
             // SigPointer::GetTypeHandleThrowing() is non-consuming, so we need to
@@ -226,7 +225,7 @@ namespace
             if (!isValid)
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
 
-            // Extract from the parameterized type the new target.
+            // Extract the new target from the parameterized type.
             while (newTypeMaybe.HasTypeParam())
                 newTypeMaybe = newTypeMaybe.GetTypeParam();
 
@@ -264,7 +263,7 @@ namespace
         // Determine the max parameter count. +1 for the return value, which is always index 0.
         const uint32_t totalParamCount = cxt.DeclarationMetaSig.NumFixedArgs() + 1;
 
-        // Inspect all parameters to the declaration method for UnsafeAccessorTypeAttribute.
+        // Inspect all parameters on the declaration method for UnsafeAccessorTypeAttribute.
         uint32_t attrCount = 0;
         IMDInternalImport *pInternalImport = cxt.Declaration->GetModule()->GetMDImport();
         HENUMInternalHolder hEnumParams(pInternalImport);
@@ -292,7 +291,7 @@ namespace
             StackSString typeStringUtf8{ SString::Utf8, typeString, typeStringLen };
 
             // Pass the string in the attribute to similar logic as Type.GetType(String).
-            // The below API will also handle any dependency between the returned type and the
+            // The below API will handle any dependency between the returned type and the
             // requesting assembly for the purposes of lifetime tracking of collectible types.
             TypeHandle targetType = TypeName::GetTypeReferencedByCustomAttribute(
                 typeStringUtf8.GetUnicode(),
@@ -314,9 +313,9 @@ namespace
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
 
             // UnsafeAccessorAttribute requires the return type to be byref for any field kind.
-            // This creates a type safety issue for the runtime. Since byrefs don't support
-            // contravariance, we can't permit returning a byref to a fully typed field as a
-            // byref to an "opaque" type (for example, "ref string" -> "ref object").
+            // Since byrefs don't support variance, we can't allow returning a byref to a fully
+            // typed field as a byref to an "opaque" type (for example, "ref string" -> "ref object").
+            // This is blocked for type safety reasons.
             if (seq == 0 // Return type
                 && (cxt.Kind == UnsafeAccessorKind::Field
                     || cxt.Kind == UnsafeAccessorKind::StaticField))
@@ -738,7 +737,7 @@ namespace
         DWORD localIndex = MAXDWORD;
 
         // We are going to emit a type check for the UnsafeAccessorTypeAttribute
-        // scenario. We do this because the callable signature isn't going to enforce
+        // scenario. We do this because the declared signature isn't going to enforce
         // type safety, so we do it here.
         //
         // Ensuring type safety is paramount in the UnsafeAccessorTypeAttribute scenario
@@ -1141,16 +1140,10 @@ extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(Metho
 
     BEGIN_QCALL;
 
-    Instantiation genericParams;
     MethodDesc* typicalMD = unsafeAccessorMethod->LoadTypicalMethodDefinition();
-    if (isMethodParam)
-    {
-        genericParams = typicalMD->GetMethodInstantiation();
-    }
-    else
-    {
-        genericParams = typicalMD->GetMethodTable()->GetInstantiation();
-    }
+    Instantiation genericParams = isMethodParam
+        ? typicalMD->GetMethodInstantiation()
+        : typicalMD->GetMethodTable()->GetInstantiation();
 
     if (0 <= paramIndex && paramIndex < genericParams.GetNumArgs())
         ret = genericParams[paramIndex];
