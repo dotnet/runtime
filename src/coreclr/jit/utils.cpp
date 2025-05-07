@@ -687,7 +687,7 @@ const char* refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces)
     }
     else
     {
-        weight_t scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
+        weight_t scaledWeight = refCntWtd;
         weight_t intPart      = (weight_t)floor(scaledWeight);
         bool     isLarge      = intPart > 1e9;
         bool     isSmall      = (intPart < 1e-2) && (intPart != 0);
