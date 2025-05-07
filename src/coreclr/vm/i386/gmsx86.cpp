@@ -1130,12 +1130,11 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                     DebugBreak();
                     goto again;
                 }
-#ifndef _PREFIX_
+
                 *((volatile int*) 0) = 1; // If you get at this error, it is because yout
                                         // set a breakpoint in a helpermethod frame epilog
                                         // you can't do that unfortunately.  Just move it
                                         // into the interior of the method to fix it
-#endif // !_PREFIX_
                 goto done;
 #endif //!DACCESS_COMPILE
 
@@ -1247,9 +1246,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 _ASSERTE(!"Bad opcode");
                 // FIX what to do here?
 #ifndef DACCESS_COMPILE
-#ifndef _PREFIX_
                 *((volatile PTR_BYTE*) 0) = ip;  // cause an access violation (Free Build assert)
-#endif // !_PREFIX_
 #else
                 DacNotImpl();
 #endif

@@ -159,43 +159,16 @@ public:
     }
 
         // Methods for probing exactly what kind of a type handle we have
-    FORCEINLINE BOOL IsNull() const {
+    FORCEINLINE BOOL IsNull() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef _PREFIX_
-        if (m_asTAddr == 0) {
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr == NULL);
-#endif
-            return true;
-        }
-        else {
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr != NULL);
-#endif
-            return false;
-        }
-#else
         return(m_asTAddr == 0);
-#endif
     }
 
-    // Note that this returns denormalized BOOL to help the compiler with optimizations
-    FORCEINLINE BOOL IsTypeDesc() const  {
+    FORCEINLINE BOOL IsTypeDesc() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef _PREFIX_
-        if (m_asTAddr & 2) {
-            PREFIX_ASSUME(m_asTAddr != NULL);
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr   != NULL);
-#endif
-            return true;
-        }
-        else {
-            return false;
-        }
-#else
-        return(m_asTAddr & 2);
-#endif
+        return !!(m_asTAddr & 2);
     }
 
     BOOL IsEnum() const;
