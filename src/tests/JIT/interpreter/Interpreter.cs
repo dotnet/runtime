@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 public interface ITest
@@ -74,14 +75,209 @@ public struct StructWithRefs
         o1 = new MyObj(val1);
         o2 = new MyObj(val2);
     }
+public struct TestStruct
+{
+    public int a;
+    public int b;
+    public int c;
+    public int d;
+    public int e;
+    public int f;
+}
+
+public struct TestStruct2
+{
+    public int a;
+    public int b;
+}
+
+public struct TestStruct4ii
+{
+    public int a;
+    public int b;
+    public int c;
+    public int d;
+}
+
+public struct TestStruct4if
+{
+    public int a;
+    public int b;
+    public float c;
+    public float d;
+}
+
+public struct TestStruct4fi
+{
+    public float a;
+    public float b;
+    public int c;
+    public int d;
+}
+
+public struct TestStruct4ff
+{
+    public float a;
+    public float b;
+    public float c;
+    public float d;
+}
+
+
+public struct TestStruct3d
+{
+    public double a;
+    public double b;
+    public double c;
 }
 
 public class InterpreterTest
 {
+    static void TestCallingConvention0(int a, float b, int c, double d, int e, double f)
+    {
+        Console.WriteLine("TestCallingConvention0: a = {0}, b = {1}, c = {2}, d = {3}, e = {4}, f = {5}", a, b, c, d, e, f);
+    }
+
+    static void TestCallingConvention1(TestStruct s)
+    {
+        Console.WriteLine("TestCallingConvention1: a = {0}, b = {1}, c = {2}, d = {3}, e = {4}, f = {5}", s.a, s.b, s.c, s.d, s.e, s.f);
+    }
+
+    static TestStruct2 TestCallingConvention2()
+    {
+        TestStruct2 s;
+        s.a = 1;
+        s.b = 2;
+        return s;
+    }
+
+    static Vector2 TestCallingConvention3()
+    {
+        Vector2 v = new Vector2(1, 2);
+        return v;
+    }
+
+    static TestStruct TestCallingConvention4()
+    {
+        TestStruct s;
+        s.a = 1;
+        s.b = 2;
+        s.c = 3;
+        s.d = 4;
+        s.e = 5;
+        s.f = 6;
+        return s;
+    }
+
+    static TestStruct4ii TestCallingConvention5()
+    {
+        TestStruct4ii s;
+        s.a = 1;
+        s.b = 2;
+        s.c = 3;
+        s.d = 4;
+        return s;
+    }
+
+    static TestStruct4if TestCallingConvention6()
+    {
+        TestStruct4if s;
+        s.a = 1;
+        s.b = 2;
+        s.c = 3.0f;
+        s.d = 4.0f;
+        return s;
+    }
+
+    static TestStruct4fi TestCallingConvention7()
+    {
+        TestStruct4fi s;
+        s.a = 1.0f;
+        s.b = 2.0f;
+        s.c = 3;
+        s.d = 4;
+        return s;
+    }
+
+    static TestStruct4ff TestCallingConvention8()
+    {
+        TestStruct4ff s;
+        s.a = 1.0f;
+        s.b = 2.0f;
+        s.c = 3.0f;
+        s.d = 4.0f;
+        return s;
+    }
+
+    static void TestCallingConvention9(TestStruct4fi s)
+    {
+        Console.WriteLine("TestCallingConvention9: a = {0}, b = {1}, c = {2}, d = {3}", s.a, s.b, s.c, s.d);
+    }
+
+    static void TestCallingConvention10(TestStruct3d s)
+    {
+        Console.WriteLine("TestCallingConvention10: a = {0}, b = {1}, c = {2}", s.a, s.b, s.c);
+    }
+
+    static TestStruct3d TestCallingConvention11()
+    {
+        TestStruct3d s;
+        s.a = 1.0f;
+        s.b = 2.0f;
+        s.c = 3.0f;
+        return s;
+    }
+
+
     static int Main(string[] args)
     {
         jitField1 = 42;
         jitField2 = 43;
+
+        TestCallingConvention0(1, 2.0f, 3, 4.0, 5, 6.0);
+
+        TestStruct s = new TestStruct();
+        s.a = 1;
+        s.b = 2;
+        s.c = 3;
+        s.d = 4;
+        s.e = 5;
+        s.f = 6;
+        TestCallingConvention1(s);
+
+        TestStruct2 s2 = TestCallingConvention2();
+
+        Vector2 v = TestCallingConvention3();
+
+        TestStruct s4 = TestCallingConvention4();
+
+        TestStruct4ii s5 = TestCallingConvention5();
+
+        TestStruct4if s6 = TestCallingConvention6();
+
+        TestStruct4fi s7 = TestCallingConvention7();
+
+        TestStruct4ff s8 = TestCallingConvention8();
+
+        TestStruct4fi s9 = new TestStruct4fi();
+        s9.a = 1.0f;
+        s9.b = 2.0f;
+        s9.c = 3;
+        s9.d = 4;
+        TestCallingConvention9(s9);
+
+        TestStruct3d s10 = new TestStruct3d();
+        s10.a = 1.0f;
+        s10.b = 2.0f;
+        s10.c = 3.0f;
+        TestCallingConvention10(s10);
+
+        TestStruct3d s11 = TestCallingConvention11();
+        Console.WriteLine("TestCallingConvention11: s = ");
+        Console.WriteLine(s11.a);
+        Console.WriteLine(s11.b);
+        Console.WriteLine(s11.c);
+
         RunInterpreterTests();
         return 100;
     }
@@ -89,6 +285,85 @@ public class InterpreterTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void RunInterpreterTests()
     {
+        TestCallingConvention0(1, 2.0f, 3, 4.0, 5, 6.0);
+
+        TestStruct s = new TestStruct();
+        s.a = 1;
+        s.b = 2;
+        s.c = 3;
+        s.d = 4;
+        s.e = 5;
+        s.f = 6;
+        TestCallingConvention1(s);
+
+        TestStruct2 s2 = TestCallingConvention2();
+        Console.WriteLine("TestCallingConvention: s = ");
+        Console.WriteLine(s2.a);
+        Console.WriteLine(s2.b);
+
+#if VECTOR_ALIGNMENT_WORKS
+        // TODO: enable this again after fixing the alignment for the Vector2 struct and similar ones
+        Vector2 v = TestCallingConvention3();
+        Console.WriteLine("TestCallingConvention: v = ");
+        Console.WriteLine(v[0]);
+        Console.WriteLine(v[1]);
+#endif
+        TestStruct s4 = TestCallingConvention4();
+        Console.WriteLine("TestCallingConvention: s = ");
+        Console.WriteLine(s4.a);
+        Console.WriteLine(s4.b);
+        Console.WriteLine(s4.c);
+        Console.WriteLine(s4.d);
+        Console.WriteLine(s4.e);
+        Console.WriteLine(s4.f);
+
+        TestStruct4ii s5 = TestCallingConvention5();
+        Console.WriteLine("TestCallingConvention: s = ");
+        Console.WriteLine(s5.a);
+        Console.WriteLine(s5.b);
+        Console.WriteLine(s5.c);
+        Console.WriteLine(s5.d);
+
+        TestStruct4if s6 = TestCallingConvention6();
+        Console.WriteLine("TestCallingConvention: s = ");
+        Console.WriteLine(s6.a);
+        Console.WriteLine(s6.b);
+        Console.WriteLine(s6.c);
+        Console.WriteLine(s6.d);
+
+        TestStruct4fi s7 = TestCallingConvention7();
+        Console.WriteLine("TestCallingConvention: s = ");
+        Console.WriteLine(s7.a);
+        Console.WriteLine(s7.b);
+        Console.WriteLine(s7.c);
+        Console.WriteLine(s7.d);
+
+        TestStruct4ff s8 = TestCallingConvention8();
+        Console.WriteLine("TestCallingConvention: s = ");
+        Console.WriteLine(s8.a);
+        Console.WriteLine(s8.b);
+        Console.WriteLine(s8.c);
+        Console.WriteLine(s8.d);
+
+        TestStruct4fi s9 = new TestStruct4fi();
+        s9.a = 1.0f;
+        s9.b = 2.0f;
+        s9.c = 3;
+        s9.d = 4;
+        TestCallingConvention9(s9);
+
+        TestStruct3d s10 = new TestStruct3d();
+        s10.a = 1.0f;
+        s10.b = 2.0f;
+        s10.c = 3.0f;
+        TestCallingConvention10(s10);
+
+        TestStruct3d s11 = TestCallingConvention11();
+        Console.WriteLine("TestCallingConvention: s = ");
+        Console.WriteLine(s11.a);
+        Console.WriteLine(s11.b);
+        Console.WriteLine(s11.c);
+
         // Console.WriteLine("Run interp tests");
         if (SumN(50) != 1275)
             Environment.FailFast(null);
