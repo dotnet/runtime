@@ -3907,7 +3907,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
 
                 builder.appendSimd(WasmSimdOpcode.v128_const);
                 for (let i = 0; i < elementCount; i++) {
-                    builder.appendU8(elementSize - 1);
+                    builder.appendU8(elementCount - 1);
                 }
                 if (elementSize === 2)
                     builder.appendSimd(WasmSimdOpcode.i16x8_gt_u);
