@@ -10462,18 +10462,20 @@ MONO_RESTORE_WARNING
 						g_assert (LLVMIsConstant (index));
 
 						uint64_t idx = LLVMConstIntGetZExtValue (index);
+
+						// handle invalid values by making sure they stay invalid
 						if (idx >= nelems)
-							idx = 0;
+							idx = nelems;
 
 						for (int j = 0; j < stride; ++j) {
-							indices [k + j] = const_int8 (((int)idx) * stride + j);
+							indices [k + j] = const_int8 ((((int)idx) * stride) + j);
 						}
 					}
 					bidx = LLVMConstVector (indices, 16);
 				} else {
 					int shift = nelems == 8 ? 1 : (nelems == 4 ? 2 : 3);
 					LLVMValueRef fills [16];
-					LLVMValueRef offsets [16]
+					LLVMValueRef offsets [16];
 					for (int i = 0, k = 0; i < nelems; i++, k += stride) {
 						for (int j = 0; j < stride; ++j) {
 							offsets[k + j] = const_int8 (j);
