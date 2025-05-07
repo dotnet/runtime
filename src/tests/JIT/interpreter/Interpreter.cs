@@ -106,19 +106,16 @@ public class InterpreterTest
             Environment.FailFast(null);
         if (!TestStructRefFields())
             Environment.FailFast(null);
-        // FIXME: Calling TestSpecialFields causes the following System.GC.Collect to fail.
-        /*
         if (!TestSpecialFields())
             Environment.FailFast(null);
-        */
         if (!TestFloat())
             Environment.FailFast(null);
 
         if (!TestLocalloc())
             Environment.FailFast(null);
 
-//        if (!TestVirtual())
-//          Environment.FailFast(null);
+        if (!TestVirtual())
+            Environment.FailFast(null);
 
         System.GC.Collect();
     }
@@ -259,8 +256,7 @@ public class InterpreterTest
         threadStaticObj = new MyObj(1);
         threadStaticStr = new MyStruct2(2);
 
-        // FIXME: This crashes in the GC. We don't report any live GC locals and inspection of the stack shows no GC objects on it
-        // System.GC.Collect();
+        System.GC.Collect();
 
         int sum = threadStaticObj.str.a + threadStaticStr.str.a + threadStaticObj.ct + threadStaticStr.ct;
         if (sum != 33)
