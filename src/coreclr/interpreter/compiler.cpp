@@ -1046,7 +1046,7 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
     : m_pInitLocalsIns(nullptr)
-    , m_globalVarsStackTop(0)
+    , m_globalVarsWithRefsStackTop(0)
 {
     // Fill in the thread-local used for assertions
     t_InterpJitInfoTls = compHnd;
@@ -1108,12 +1108,11 @@ InterpMethod* InterpCompiler::CompileMethod()
 void InterpCompiler::PatchInitLocals(CORINFO_METHOD_INFO* methodInfo)
 {
     // We may have global vars containing managed pointers or interior pointers, so we need
-    //  to zero the region of the stack containing global vars, not just IL locals.
-    // data[0] is either the start of IL locals or the end of IL locals depending on whether local
-    //  zeroing was enabled for this method. We want to preserve that so we don't unnecessarily
-    //  zero the IL locals if the method's author didn't want them zeroed
+    //  to zero the region of the stack containing global vars, not just IL locals. Now that
+    //  offset allocation has occurred we know where the global vars end, so we can expand
+    //  the initlocals opcode that was originally generated to also zero them.
     int32_t startOffset = m_pInitLocalsIns->data[0];
-    int32_t totalSize = m_globalVarsStackTop - startOffset;
+    int32_t totalSize = m_globalVarsWithRefsStackTop - startOffset;
     if (totalSize > m_pInitLocalsIns->data[1])
     {
         INTERP_DUMP(
@@ -1128,7 +1127,7 @@ void InterpCompiler::PatchInitLocals(CORINFO_METHOD_INFO* methodInfo)
         INTERP_DUMP(
             "Not expanding initlocals from [%d-%d] for global vars stack top of %d\n",
             startOffset, startOffset + m_pInitLocalsIns->data[1],
-            m_globalVarsStackTop
+            m_globalVarsWithRefsStackTop
         );
     }
 }

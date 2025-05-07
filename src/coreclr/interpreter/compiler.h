@@ -359,7 +359,7 @@ private:
 
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
-    int32_t m_totalVarsStackSize, m_globalVarsStackTop;
+    int32_t m_totalVarsStackSize, m_globalVarsWithRefsStackTop;
     int32_t m_paramAreaOffset = 0;
     int32_t m_ILLocalsOffset, m_ILLocalsSize;
     void    AllocVarOffsetCB(int *pVar, void *pData);

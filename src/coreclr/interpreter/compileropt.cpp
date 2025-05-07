@@ -227,7 +227,7 @@ void InterpCompiler::AllocOffsets()
     INTERP_DUMP("\nAllocating var offsets\n");
 
     int finalVarsStackSize = m_totalVarsStackSize,
-        globalVarsStackTop = m_totalVarsStackSize;
+        globalVarsWithRefsStackTop = m_totalVarsStackSize;
 
     // We now have the top of stack offset. All local regs are allocated after this offset, with each basic block
     for (pBB = m_pEntryBB; pBB != NULL; pBB = pBB->pNextBB)
@@ -415,16 +415,19 @@ void InterpCompiler::AllocOffsets()
             pVar->global && (
                 (pVar->interpType == InterpTypeO) ||
                 (pVar->interpType == InterpTypeByRef) ||
-                (pVar->interpType == InterpTypeVT)
+                (
+                    (pVar->interpType == InterpTypeVT) &&
+                    (m_compHnd->getClassAttribs(pVar->clsHnd) & CORINFO_FLG_CONTAINS_GC_PTR)
+                )
             )
         )
         {
             int32_t endOfVar = pVar->offset + pVar->size;
-            if (endOfVar > globalVarsStackTop)
-                globalVarsStackTop = endOfVar;
+            if (endOfVar > globalVarsWithRefsStackTop)
+                globalVarsWithRefsStackTop = endOfVar;
         }
     }
 
-    m_globalVarsStackTop = globalVarsStackTop;
+    m_globalVarsWithRefsStackTop = globalVarsWithRefsStackTop;
     m_totalVarsStackSize = ALIGN_UP_TO(finalVarsStackSize, INTERP_STACK_ALIGNMENT);
 }
