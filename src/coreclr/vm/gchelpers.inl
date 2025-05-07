@@ -23,10 +23,7 @@
     static const int card_bundle_byte_shift = 21;
 #else
     static const int card_byte_shift        = 10;
-
-    #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        #error Manually managed card bundles are currently only implemented for AMD64.
-    #endif
+    static const int card_bundle_byte_shift = 20;
 #endif
 
 FORCEINLINE void InlinedSetCardsAfterBulkCopyHelper(Object **start, size_t len)
