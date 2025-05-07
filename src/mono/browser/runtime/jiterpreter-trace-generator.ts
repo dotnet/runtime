@@ -3893,7 +3893,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                     // so we multiply the lane index by elementSize to get the byte offset then add
                     // the offset of the byte inside the lane. Since we are using lanes as indices
                     // we need to check if the lane index is valid. We use min elementCount to force
-                    // invalid indices to fit in the byte sized land and let the intrinsic handle it.
+                    // invalid indices to fit in the byte sized lane and let the intrinsic handle it.
                     newShuffleVector[k + j] = Math.min(elementIndex * elementSize + j, elementCount);
                 }
             }
