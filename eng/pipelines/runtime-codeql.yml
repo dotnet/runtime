@@ -60,6 +60,22 @@ extends:
             postBuildSteps:
               - task: CodeQL3000Finalize@0
                 displayName: Finalize CodeQL (manually-injected)
+              - task: CopyFiles@2
+                displayName: Gather packages for publish to artifacts
+                inputs:
+                  SourceFolder: 'artifacts/packages'
+                  Contents: '**'
+                  TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/packages'
+            templateContext:
+              outputs:
+              - output: pipelineArtifacts
+                displayName: Publish artifacts
+                targetPath: '$(Build.ArtifactStagingDirectory)/artifacts/packages'
+                ArtifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                condition: always()
+                retryCountOnTaskFailure: 10 # for any logs being locked
+                continueOnError: true
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -73,3 +89,19 @@ extends:
             buildArgs: -c $(_BuildConfig) -restore -build -pack /p:DotNetBuildAllRuntimePacks=true
             isOfficialBuild: false
             timeoutInMinutes: 120
+            postBuildSteps:
+              - task: CopyFiles@2
+                displayName: Gather packages for publish to artifacts
+                inputs:
+                  SourceFolder: 'artifacts/packages'
+                  Contents: '**'
+                  TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/packages'
+            templateContext:
+              outputs:
+              - output: pipelineArtifacts
+                displayName: Publish artifacts
+                targetPath: '$(Build.ArtifactStagingDirectory)/artifacts/packages'
+                ArtifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                condition: always()
+                retryCountOnTaskFailure: 10 # for any logs being locked
+                continueOnError: true

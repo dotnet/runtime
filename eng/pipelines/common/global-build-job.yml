@@ -54,6 +54,7 @@ jobs:
     testResultsFormat: ${{ parameters.testResultsFormat }}
     enableMicrobuild: ${{ parameters.isOfficialBuild }}
     enableMicrobuildForMacAndLinux: ${{ parameters.isOfficialBuild }}
+    templateContext: ${{ parameters.templateContext }}
 
     artifacts:
       publish:
