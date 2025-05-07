@@ -154,7 +154,7 @@ namespace WebAssemblyInfo
                 var offset = ReadU32();
                 var index = ReadU32();
                 int addend = 0;
-                switch(type) {
+                switch (type) {
                     case RelocationType.MemoryAddressLEB:
                     case RelocationType.MemoryAddressSLEB:
                     case RelocationType.MemoryAddressI32:

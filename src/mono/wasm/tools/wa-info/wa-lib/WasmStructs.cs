@@ -462,7 +462,7 @@ namespace WebAssemblyInfo
         public override string ToString()
         {
             string tail = "";
-            switch(Desc)
+            switch (Desc)
             {
                 case ImportDesc.TypeIdx:
                     tail = $" typeidx: {Idx}";
@@ -557,7 +557,7 @@ namespace WebAssemblyInfo
         public override string ToString()
         {
             var tail = "";
-            switch(ExternDescription.Kind)
+            switch (ExternDescription.Kind)
             {
                 case WitExternDescriptionKind.CoreModule:
                 case WitExternDescriptionKind.Function:

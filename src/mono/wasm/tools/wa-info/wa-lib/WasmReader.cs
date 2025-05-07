@@ -1141,7 +1141,7 @@ namespace WebAssemblyInfo
 
             var remainingSize = size - (uint)(Reader.BaseStream.Position - start);
 
-            switch(name)
+            switch (name)
             {
                 case "name":
                     ReadCustomNameSection(remainingSize);
@@ -1306,7 +1306,7 @@ namespace WebAssemblyInfo
                 imports[i].Name = ReadString();
                 imports[i].Desc = (ImportDesc)Reader.ReadByte();
 
-                switch(imports[i].Desc) {
+                switch (imports[i].Desc) {
                     case ImportDesc.TypeIdx:
                         imports[i].Idx = ReadU32();
                         break;
@@ -1436,7 +1436,7 @@ namespace WebAssemblyInfo
                 if (Context.Verbose2)
                     Console.WriteLine($" extern description kind: {ed.Kind}");
 
-                switch(ed.Kind) {
+                switch (ed.Kind) {
                     case WitExternDescriptionKind.CoreModule:
                     case WitExternDescriptionKind.Function:
                     case WitExternDescriptionKind.Component:
@@ -1488,7 +1488,7 @@ namespace WebAssemblyInfo
             if (Context.Verbose2)
                 Console.WriteLine();
 
-            witImports ??= new ();
+            witImports ??= new();
 
             for (int i = 0; i < count; i++)
             {
@@ -1516,7 +1516,7 @@ namespace WebAssemblyInfo
             if (Context.Verbose2)
                 Console.WriteLine();
 
-            witExports ??= new ();
+            witExports ??= new();
 
 
             for (int i = 0; i < count; i++)
@@ -1602,7 +1602,7 @@ namespace WebAssemblyInfo
         {
             FilterFunctions(PrintFunction);
 
-            foreach(var reader in ModuleReaders) {
+            foreach (var reader in ModuleReaders) {
                 Console.WriteLine($"Module: {reader.Path}");
                 reader.PrintFunctions();
             }
