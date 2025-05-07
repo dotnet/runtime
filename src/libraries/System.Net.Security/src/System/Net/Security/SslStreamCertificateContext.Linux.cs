@@ -80,11 +80,10 @@ namespace System.Net.Security
                 }
             }
 
-            if (KeyHandle == null)
-            {
 #pragma warning disable SYSLIB5006 // Post-Quantum Cryptography (PQC) types are experimental
+            if (KeyHandle == null && MLDsa.IsSupported)
+            {
                 using (MLDsaOpenSsl? mlDsa = (MLDsaOpenSsl?)target.GetMLDsaPrivateKey())
-#pragma warning restore SYSLIB5006
                 {
                     if (mlDsa != null)
                     {
@@ -93,11 +92,9 @@ namespace System.Net.Security
                 }
             }
 
-            if (KeyHandle == null)
+            if (KeyHandle == null && SlhDsa.IsSupported)
             {
-#pragma warning disable SYSLIB5006 // Post-Quantum Cryptography (PQC) types are experimental
                 using (SlhDsaOpenSsl? slhDsa = (SlhDsaOpenSsl?)target.GetSlhDsaPrivateKey())
-#pragma warning restore SYSLIB5006
                 {
                     if (slhDsa != null)
                     {
@@ -105,6 +102,7 @@ namespace System.Net.Security
                     }
                 }
             }
+#pragma warning restore SYSLIB5006
 
             if (KeyHandle == null)
             {
