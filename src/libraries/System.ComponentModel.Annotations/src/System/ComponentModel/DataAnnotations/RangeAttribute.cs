@@ -50,7 +50,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="maximum">The maximum allowable value.</param>
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public RangeAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            [DynamicallyAccessedMembers(AssociatedMetadataTypeTypeDescriptionProvider.AllMembersAndInterfaces)] Type type,
             string minimum,
             string maximum)
             : base(populateErrorMessageResourceAccessor: false)
@@ -85,7 +85,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Gets the type of the <see cref="Minimum" /> and <see cref="Maximum" /> values (e.g. Int32, Double, or some custom
         ///     type)
         /// </summary>
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(AssociatedMetadataTypeTypeDescriptionProvider.AllMembersAndInterfaces)]
         public Type OperandType { get; }
 
         /// <summary>
