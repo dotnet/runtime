@@ -3915,7 +3915,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             builder.i32_const(shift);
             builder.appendSimd(WasmSimdOpcode.i8x16_shl);
 
-            // 2: create a vector to swizzle the shifted first byte
+            // 2: create a vector to swizzle the now shifted first byte
             //  of each lane into every byte of that lane.
             builder.appendSimd(WasmSimdOpcode.v128_const);
             for (let i = 0; i < elementCount; i++) {
@@ -3926,6 +3926,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
 
             // 3: create a vector with the offset of each byte inside each
             //  lane then Or it with the now shifted and swizzled indices.
+            //  It is safe to use Or directly thanks to the previous shift
             builder.appendSimd(WasmSimdOpcode.v128_const);
             for (let i = 0; i < elementCount; i++) {
                 for (let j = 0; j < elementSize; j++)
