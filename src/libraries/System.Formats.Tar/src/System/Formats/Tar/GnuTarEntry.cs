@@ -21,7 +21,7 @@ namespace System.Formats.Tar
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
         /// <remarks>
-        /// <para>When creating an instance of <see cref="GnuTarEntry"/> using this constructor, the <see cref="AccessTime"/> and <see cref="ChangeTime"/> properties are set to <see cref="DateTimeOffset.MinValue" />, which in the entry header <c>atime</c> and <c>ctime</c> fields is written as null bytes. This ensures compatibility with other tools that are unable to read the <c>atime</c> and <c>ctime</c> in <see cref="TarEntryFormat.Gnu"/> entries, as these two fields are not POSIX compatible because other formats expect the <c>prefix</c> field in the same header location where <see cref="TarEntryFormat.Gnu"/> writes <c>atime</c> and <c>ctime</c>.</para>
+        /// <para>When creating an instance of <see cref="GnuTarEntry"/> using this constructor, the <see cref="AccessTime"/> and <see cref="ChangeTime"/> properties are set to <see langword="default" />, which in the entry header <c>atime</c> and <c>ctime</c> fields is written as null bytes. This ensures compatibility with other tools that are unable to read the <c>atime</c> and <c>ctime</c> in <see cref="TarEntryFormat.Gnu"/> entries, as these two fields are not POSIX compatible because other formats expect the <c>prefix</c> field in the same header location where <see cref="TarEntryFormat.Gnu"/> writes <c>atime</c> and <c>ctime</c>.</para>
         /// <para>When creating an instance using the <see cref="GnuTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:</para>
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
@@ -35,15 +35,15 @@ namespace System.Formats.Tar
         public GnuTarEntry(TarEntryType entryType, string entryName)
             : base(entryType, entryName, TarEntryFormat.Gnu, isGea: false)
         {
-            _header._aTime = DateTimeOffset.MinValue;
-            _header._cTime = DateTimeOffset.MinValue;
+            _header._aTime = default;
+            _header._cTime = default;
         }
 
         /// <summary>
         /// Initializes a new <see cref="GnuTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the GNU format.
         /// </summary>
         /// <remarks>
-        /// <para>When creating an instance of <see cref="GnuTarEntry"/> using this constructor, if <paramref name="other"/> is <see cref="TarEntryFormat.Gnu"/> or <see cref="TarEntryFormat.Pax"/>, then the <see cref="AccessTime"/> and <see cref="ChangeTime"/> properties are set to the same values set in <paramref name="other"/>. But if <paramref name="other"/> is of any other format, then <see cref="AccessTime"/> and <see cref="ChangeTime"/> are set to <see cref="DateTimeOffset.MinValue" />, which in the entry header <c>atime</c> and <c>ctime</c> fields is written as null bytes. This ensures compatibility with other tools that are unable to read the <c>atime</c> and <c>ctime</c> in <see cref="TarEntryFormat.Gnu"/> entries, as these two fields are not POSIX compatible because other formats expect the <c>prefix</c> field in the same header location where <see cref="TarEntryFormat.Gnu"/> writes <c>atime</c> and <c>ctime</c>.</para>
+        /// <para>When creating an instance of <see cref="GnuTarEntry"/> using this constructor, if <paramref name="other"/> is <see cref="TarEntryFormat.Gnu"/> or <see cref="TarEntryFormat.Pax"/>, then the <see cref="AccessTime"/> and <see cref="ChangeTime"/> properties are set to the same values set in <paramref name="other"/>. But if <paramref name="other"/> is of any other format, then <see cref="AccessTime"/> and <see cref="ChangeTime"/> are set to <see langword="default" />, which in the entry header <c>atime</c> and <c>ctime</c> fields is written as null bytes. This ensures compatibility with other tools that are unable to read the <c>atime</c> and <c>ctime</c> in <see cref="TarEntryFormat.Gnu"/> entries, as these two fields are not POSIX compatible because other formats expect the <c>prefix</c> field in the same header location where <see cref="TarEntryFormat.Gnu"/> writes <c>atime</c> and <c>ctime</c>.</para>
         /// </remarks>
         /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
         /// <para>-or-</para>
@@ -64,8 +64,8 @@ namespace System.Formats.Tar
                 // to avoid creating a GNU entry that might be incompatible with other tools,
                 // we avoid setting the atime and ctime fields. The user would have to set them manually
                 // if they are really needed.
-                _header._aTime = DateTimeOffset.MinValue;
-                _header._cTime = DateTimeOffset.MinValue;
+                _header._aTime = default;
+                _header._cTime = default;
             }
         }
 
@@ -74,7 +74,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <remarks>
         /// <para>In Unix platforms, this timestamp is commonly known as <c>atime</c>.</para>
-        /// <para>Setting the value of this property to a value other than <see cref="DateTimeOffset.MinValue"/> may cause problems with other tools that read TAR files, because the <see cref="TarEntryFormat.Gnu"/> format writes the <c>atime</c> field where other formats would normally read and write the <c>prefix</c> field in the header. You should only set this property to something other than <see cref="DateTimeOffset.MinValue"/> if this entry will be read by tools that know how to correctly interpret the <c>atime</c> field of the <see cref="TarEntryFormat.Gnu"/> format.</para>
+        /// <para>Setting the value of this property to a value other than <see langword="default"/> may cause problems with other tools that read TAR files, because the <see cref="TarEntryFormat.Gnu"/> format writes the <c>atime</c> field where other formats would normally read and write the <c>prefix</c> field in the header. You should only set this property to something other than <see langword="default"/> if this entry will be read by tools that know how to correctly interpret the <c>atime</c> field of the <see cref="TarEntryFormat.Gnu"/> format.</para>
         /// </remarks>
         public DateTimeOffset AccessTime
         {
@@ -90,7 +90,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <remarks>
         /// <para>In Unix platforms, this timestamp is commonly known as <c>ctime</c>.</para>
-        /// <para>Setting the value of this property to a value other than <see cref="DateTimeOffset.MinValue"/> may cause problems with other tools that read TAR files, because the <see cref="TarEntryFormat.Gnu"/> format writes the <c>ctime</c> field where other formats would normally read and write the <c>prefix</c> field in the header. You should only set this property to something other than <see cref="DateTimeOffset.MinValue"/> if this entry will be read by tools that know how to correctly interpret the <c>ctime</c> field of the <see cref="TarEntryFormat.Gnu"/> format.</para>
+        /// <para>Setting the value of this property to a value other than <see langword="default"/> may cause problems with other tools that read TAR files, because the <see cref="TarEntryFormat.Gnu"/> format writes the <c>ctime</c> field where other formats would normally read and write the <c>prefix</c> field in the header. You should only set this property to something other than <see langword="default"/> if this entry will be read by tools that know how to correctly interpret the <c>ctime</c> field of the <see cref="TarEntryFormat.Gnu"/> format.</para>
         /// </remarks>
         public DateTimeOffset ChangeTime
         {
