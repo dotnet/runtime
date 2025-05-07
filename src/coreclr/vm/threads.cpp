@@ -952,6 +952,7 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
         m_ThreadHandleForClose = hThread;
     }
 
+    UnregisterWaitEventLinks();
     CooperativeCleanup();
 
     // We need to make sure that TLS are touched last here.
@@ -2444,16 +2445,6 @@ Thread::~Thread()
 
     _ASSERTE(IsDead() || IsUnstarted() || IsAtProcessExit());
 
-    if (m_WaitEventLink.m_Next != NULL && !IsAtProcessExit())
-    {
-        WaitEventLink *walk = &m_WaitEventLink;
-        while (walk->m_Next) {
-            ThreadQueue::RemoveThread(this, (SyncBlock*)((DWORD_PTR)walk->m_Next->m_WaitSB & ~1));
-            StoreEventToEventStore (walk->m_Next->m_EventWait);
-        }
-        m_WaitEventLink.m_Next = NULL;
-    }
-
     if (m_StateNC & TSNC_ExistInThreadStore) {
         BOOL ret;
         ret = ThreadStore::RemoveThread(this);
@@ -2735,6 +2726,24 @@ void Thread::CleanupCOMState()
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
+void Thread::UnregisterWaitEventLinks()
+{
+    _ASSERTE(this == GetThreadNULLOk());
+
+    if (m_WaitEventLink.m_Next != NULL && !IsAtProcessExit())
+    {
+        WaitEventLink *walk = &m_WaitEventLink;
+        while (walk->m_Next)
+        {
+            ThreadQueue::RemoveThread(this, (SyncBlock*)((DWORD_PTR)walk->m_Next->m_WaitSB & ~1));
+            StoreEventToEventStore(walk->m_Next->m_EventWait);
+            walk = walk->m_Next;
+        }
+
+        m_WaitEventLink.m_Next = NULL;
+    }
+}
+
 // Thread cleanup that must be run in cooperative mode before the thread is destroyed.
 void Thread::CooperativeCleanup()
 {
@@ -2830,6 +2839,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 
     if (this == GetThreadNULLOk())
     {
+        UnregisterWaitEventLinks();
         CooperativeCleanup();
     }
 
