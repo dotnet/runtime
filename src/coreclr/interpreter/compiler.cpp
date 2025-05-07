@@ -1801,6 +1801,7 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
 
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
 {
+    bool isBoxedStatic  = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
     switch (pFieldInfo->fieldAccessor)
     {
         case CORINFO_FIELD_STATIC_ADDRESS:
@@ -1862,6 +1863,25 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             // TODO
             assert(0);
             break;
+    }
+
+    if (isBoxedStatic)
+    {
+        // Obtain boxed instance ref
+        m_pStackPointer--;
+        AddIns(INTOP_LDIND_I);
+        m_pLastNewIns->data[0] = 0;
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+        PushInterpType(InterpTypeO, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+        // Skip method table word
+        m_pStackPointer--;
+        AddIns(INTOP_ADD_P_IMM);
+        m_pLastNewIns->data[0] = sizeof(void*);
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+        PushInterpType(InterpTypeByRef, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
     }
 }
 

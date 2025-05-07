@@ -872,9 +872,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         byte[] data = new byte[RandomNumberGenerator.GetInt32(97)];
                         RandomNumberGenerator.Fill(data);
 
-                        byte[] signature = new byte[pub.Algorithm.SignatureSizeInBytes];
-                        int written = priv.SignData(data, signature);
-                        Assert.Equal(signature.Length, written);
+                        byte[] signature = priv.SignData(data);
                         Assert.True(pub.VerifyData(data, signature));
                     });
             }

@@ -4296,11 +4296,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<byte> AddSaturate(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
             {
                 return Sse2.AddSaturate(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.AddSaturate(left, right);
             }
             else if (!AdvSimd.Arm64.IsSupported)
             {
@@ -4312,11 +4317,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<byte> SubtractSaturate(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
             {
                 return Sse2.SubtractSaturate(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.SubtractSaturate(left, right);
             }
             else if (!AdvSimd.Arm64.IsSupported)
             {
@@ -4328,11 +4338,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<ushort> right)
         {
             if (Sse2.IsSupported)
             {
                 return Sse2.AddSaturate(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.AddSaturate(left, right);
             }
             else if (!AdvSimd.Arm64.IsSupported)
             {

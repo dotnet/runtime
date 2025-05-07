@@ -2856,10 +2856,10 @@ namespace System.Security.Cryptography
         public byte[] ExportPkcs8PrivateKey() { throw null; }
         public string ExportPkcs8PrivateKeyPem() { throw null; }
         public byte[] ExportSlhDsaPublicKey() { throw null; }
-        public int ExportSlhDsaPublicKey(System.Span<byte> destination) { throw null; }
+        public void ExportSlhDsaPublicKey(System.Span<byte> destination) { }
         protected abstract void ExportSlhDsaPublicKeyCore(System.Span<byte> destination);
         public byte[] ExportSlhDsaSecretKey() { throw null; }
-        public int ExportSlhDsaSecretKey(System.Span<byte> destination) { throw null; }
+        public void ExportSlhDsaSecretKey(System.Span<byte> destination) { }
         protected abstract void ExportSlhDsaSecretKeyCore(System.Span<byte> destination);
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public string ExportSubjectPublicKeyInfoPem() { throw null; }
@@ -2881,7 +2881,8 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.SlhDsa ImportSlhDsaSecretKey(System.Security.Cryptography.SlhDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.SlhDsa ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
         public static System.Security.Cryptography.SlhDsa ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
-        public int SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public byte[] SignData(byte[] data, byte[]? context = null) { throw null; }
+        public void SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { }
         protected abstract void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination);
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -2889,6 +2890,7 @@ namespace System.Security.Cryptography
         public bool TryExportPkcs8PrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected virtual bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool VerifyData(byte[] data, byte[] signature, byte[]? context = null) { throw null; }
         public bool VerifyData(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature);
     }
