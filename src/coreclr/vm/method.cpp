@@ -3964,26 +3964,6 @@ PrecodeType MethodDesc::GetPrecodeType()
 
 #endif // !DACCESS_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-#ifndef DACCESS_COMPILE
-void CLRToCOMCallMethodDesc::InitRetThunk()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef TARGET_X86
-    if (m_pCLRToCOMCallInfo->m_pRetThunk != NULL)
-        return;
-
-    UINT numStackBytes = CbStackPop();
-
-    LPVOID pRetThunk = CLRToCOMCall::GetRetThunk(numStackBytes);
-
-    InterlockedCompareExchangeT<void *>(&m_pCLRToCOMCallInfo->m_pRetThunk, pRetThunk, NULL);
-#endif // TARGET_X86
-}
-#endif //!DACCESS_COMPILE
-#endif // FEATURE_COMINTEROP
-
 #ifndef DACCESS_COMPILE
 void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
 {

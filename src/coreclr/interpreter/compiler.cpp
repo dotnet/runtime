@@ -893,7 +893,9 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
     for (int i = 0; i < numDataItems; i++)
         pDataItems[i] = m_dataItems.Get(i);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems);
+    bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
+
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems, initLocals);
 
     return pMethod;
 }
@@ -1443,7 +1445,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
     }
     else
     {
-#if SIZEOF_VOID_P == 8
+#if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
             EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
@@ -1799,6 +1801,7 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
 
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
 {
+    bool isBoxedStatic  = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
     switch (pFieldInfo->fieldAccessor)
     {
         case CORINFO_FIELD_STATIC_ADDRESS:
@@ -1860,6 +1863,25 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             // TODO
             assert(0);
             break;
+    }
+
+    if (isBoxedStatic)
+    {
+        // Obtain boxed instance ref
+        m_pStackPointer--;
+        AddIns(INTOP_LDIND_I);
+        m_pLastNewIns->data[0] = 0;
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+        PushInterpType(InterpTypeO, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+        // Skip method table word
+        m_pStackPointer--;
+        AddIns(INTOP_ADD_P_IMM);
+        m_pLastNewIns->data[0] = sizeof(void*);
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+        PushInterpType(InterpTypeByRef, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
     }
 }
 
@@ -2686,6 +2708,14 @@ retry_emit:
                 EmitBinaryArithmeticOp(INTOP_MUL_I4);
                 m_ip++;
                 break;
+            case CEE_MUL_OVF:
+                EmitBinaryArithmeticOp(INTOP_MUL_OVF_I4);
+                m_ip++;
+                break;
+            case CEE_MUL_OVF_UN:
+                EmitBinaryArithmeticOp(INTOP_MUL_OVF_UN_I4);
+                m_ip++;
+                break;
             case CEE_DIV:
                 EmitBinaryArithmeticOp(INTOP_DIV_I4);
                 m_ip++;
@@ -3224,10 +3254,39 @@ retry_emit:
                         m_ip += 5;
                         break;
                     }
+                    case CEE_LOCALLOC:
+                        CHECK_STACK(1);
+#if TARGET_64BIT
+                        // Length is natural unsigned int
+                        if (m_pStackPointer[-1].type == StackTypeI4)
+                        {
+                            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_MOV_8);
+                            m_pStackPointer[-1].type = StackTypeI8;
+                        }
+#endif
+                        AddIns(INTOP_LOCALLOC);
+                        m_pStackPointer--;
+                        if (m_pStackPointer != m_pStackBase)
+                        {
+                            m_hasInvalidCode = true;
+                            goto exit_bad_code;
+                        }
+
+                        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                        PushStackType(StackTypeByRef, NULL);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_ip++;
+                        break;
                     default:
                         assert(0);
                         break;
                 }
+                break;
+
+            case CEE_THROW:
+                AddIns(INTOP_THROW);
+                m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+                m_ip += 1;
                 break;
 
             default:

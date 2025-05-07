@@ -781,6 +781,7 @@ namespace System.Text
 
         public override int GetHashCode() => Value;
 
+#if SYSTEM_PRIVATE_CORELIB
         /// <summary>
         /// Gets the <see cref="Rune"/> which begins at index <paramref name="index"/> in
         /// string <paramref name="input"/>.
@@ -799,6 +800,7 @@ namespace System.Text
 
             return UnsafeCreate((uint)runeValue);
         }
+#endif
 
         /// <summary>
         /// Returns <see langword="true"/> iff <paramref name="value"/> is a valid Unicode scalar
@@ -850,6 +852,7 @@ namespace System.Text
             return (int)returnValue;
         }
 
+#if SYSTEM_PRIVATE_CORELIB
         // returns a negative number on failure
         private static int ReadRuneFromString(string input, int index)
         {
@@ -897,6 +900,7 @@ namespace System.Text
 
             return (int)returnValue;
         }
+#endif
 
         /// <summary>
         /// Returns a <see cref="string"/> representation of this <see cref="Rune"/> instance.
@@ -1128,6 +1132,7 @@ namespace System.Text
             return false;
         }
 
+#if SYSTEM_PRIVATE_CORELIB
         /// <summary>
         /// Attempts to get the <see cref="Rune"/> which begins at index <paramref name="index"/> in
         /// string <paramref name="input"/>.
@@ -1151,6 +1156,7 @@ namespace System.Text
                 return false;
             }
         }
+#endif
 
         // Allows constructing a Unicode scalar value from an arbitrary 32-bit integer without
         // validation. It is the caller's responsibility to have performed manual validation
@@ -1490,7 +1496,11 @@ namespace System.Text
                 return this.CompareTo(other);
             }
 
+#if SYSTEM_PRIVATE_CORLIB
             throw new ArgumentException(SR.Arg_MustBeRune);
+#else
+            throw new ArgumentException();
+#endif
         }
     }
 }

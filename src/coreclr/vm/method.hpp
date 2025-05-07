@@ -3342,6 +3342,8 @@ struct CLRToCOMCallInfo
     // Size of outgoing arguments (on stack). This is currently used only
     // on x86 when we have an InlinedCallFrame representing a CLR->COM call.
     WORD        m_cbStackArgumentSize;
+    // Size of incoming arguments (on stack).
+    WORD        m_cbStackPop;
 
     void InitStackArgumentSize()
     {
@@ -3369,9 +3371,6 @@ struct CLRToCOMCallInfo
         _ASSERTE(m_cbStackArgumentSize != 0xFFFF);
         return m_cbStackArgumentSize;
     }
-
-    LPVOID      m_pRetThunk;
-
 #else // TARGET_X86
     void InitStackArgumentSize()
     {
@@ -3396,7 +3395,6 @@ class CLRToCOMCallMethodDesc : public MethodDesc
 public:
     CLRToCOMCallInfo *m_pCLRToCOMCallInfo; // initialized in code:CLRToCOMCall.PopulateCLRToCOMCallMethodDesc
 
-    void InitRetThunk();
     void InitComEventCallInfo();
 
     PCODE * GetAddrOfILStubField()
@@ -3445,6 +3443,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_pCLRToCOMCallInfo->SetStackArgumentSize(cbDstBuffer);
+    }
+
+    void InitStackPop()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pCLRToCOMCallInfo->m_cbStackPop = (WORD)CbStackPop();
     }
 #else // TARGET_X86
     void SetStackArgumentSize(WORD cbDstBuffer)

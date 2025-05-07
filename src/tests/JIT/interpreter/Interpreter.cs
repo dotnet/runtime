@@ -99,6 +99,10 @@ public class InterpreterTest
 //            Environment.FailFast(null);
         if (!TestFloat())
             Environment.FailFast(null);
+
+        if (!TestLocalloc())
+            Environment.FailFast(null);
+
 //        if (!TestVirtual())
 //          Environment.FailFast(null);
 
@@ -241,6 +245,85 @@ public class InterpreterTest
             return false;
 
         return true;
+    }
+
+    public static bool TestLocalloc()
+    {
+        // Default fragment size is 4096 bytes
+
+        // Small tests
+        if (0 != LocallocIntTests(0)) return false;
+        if (0 != LocallocIntTests(1)) return false;
+        if (2 != LocallocIntTests(2)) return false;
+
+        // Smoke tests
+        if (32 != LocallocByteTests(32)) return false;
+        if (32 != LocallocIntTests(32)) return false;
+        if (32 != LocallocLongTests(32)) return false;
+
+        // Single frame tests
+        if (1024 != LocallocIntTests(1024)) return false;
+        if (512 != LocallocLongTests(512)) return false;
+
+        // New fragment tests
+        if (1025 != LocallocIntTests(1025)) return false;
+        if (513 != LocallocLongTests(513)) return false;
+
+        // Multi-fragment tests
+        if (10240 != LocallocIntTests(10240)) return false;
+        if (5120 != LocallocLongTests(5120)) return false;
+
+        // Consecutive allocations tests
+        if ((256 + 512) != LocallocConsecutiveTests(256, 512)) return false;
+
+        // Nested frames tests
+        if (1024 != LocallocNestedTests(256, 256, 256, 256)) return false;
+        if (2560 != LocallocNestedTests(1024, 256, 256, 1024)) return false;
+
+        // Reuse fragment tests
+        if (3072 != LocallocNestedTests(1024, 512, 512, 1024)) return false;
+
+        return true;
+    }
+
+    public static unsafe int LocallocIntTests(int n)
+    {
+        int* a = stackalloc int[n];
+        for (int i = 0; i < n; i++) a[i] = i;
+        return n < 2 ? 0 : a[0] + a[1] + a[n - 1];
+    }
+
+    public static unsafe long LocallocLongTests(int n)
+    {
+        long* a = stackalloc long[n];
+        for (int i = 0; i < n; i++) a[i] = i;
+        return n < 2 ? 0 : a[0] + a[1] + a[n - 1];
+    }
+
+    public static unsafe int LocallocByteTests(int n)
+    {
+        byte* a = stackalloc byte[n];
+        for (int i = 0; i < n; i++) a[i] = (byte)(i);
+        return n < 2 ? 0 : a[0] + a[1] + a[n - 1];
+    }
+
+    public static unsafe int LocallocConsecutiveTests(int n, int m)
+    {
+        int* a = stackalloc int[n];
+        int* b = stackalloc int[m];
+        for (int i = 0; i < n; i++) a[i] = i;
+        for (int i = 0; i < m; i++) b[i] = i;
+        return a[0] + a[1] + a[n - 1] + b[0] + b[1] + b[m - 1];
+    }
+
+    public static unsafe int LocallocNestedTests(int n, int m, int p, int k)
+    {
+        int* a1 = stackalloc int[n];
+        for (int i = 0; i < n; i++) a1[i] = i;
+        int inner = LocallocConsecutiveTests(m, p);
+        int* a2 = stackalloc int[k];
+        for (int i = 0; i < k; i++) a2[i] = i;
+        return a1[0] + a1[1] + a1[n - 1] + inner + a2[0] + a2[1] + a2[k - 1];
     }
 
     public static bool TestVirtual()

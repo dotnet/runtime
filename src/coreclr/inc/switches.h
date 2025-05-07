@@ -46,10 +46,12 @@
 #if defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_BROWSER)
     #define USE_LAZY_PREFERRED_RANGE       0
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_64BIT)
+
+#define FEATURE_ON_STACK_REPLACEMENT
 
 #if defined(HOST_UNIX)
-    // In PAL we have a smechanism that reserves memory on start up that is
+    // In PAL we have a mechanism that reserves memory on start up that is
     // close to libcoreclr and intercepts calls to VirtualAlloc to serve back
     // from this area.
     #define USE_LAZY_PREFERRED_RANGE       0
