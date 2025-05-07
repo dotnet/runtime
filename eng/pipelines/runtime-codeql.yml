@@ -44,7 +44,6 @@ extends:
           - linux_x64
           - linux_musl_arm64
           - android_x64
-          - maccatalyst_x64
           - linux_bionic_x64
           - browser_wasm
           - wasi_wasm
@@ -81,6 +80,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
+          - maccatalyst_x64
           - osx_arm64
           - tvos_arm64
           - ios_arm64
