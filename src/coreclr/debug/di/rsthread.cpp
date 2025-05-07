@@ -633,7 +633,7 @@ void CordbThread::RefreshHandle(HANDLE * phThread)
     HANDLE hThread = pDAC->GetThreadHandle(m_vmThreadToken);
 
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
-    COMPILER_ASSUME(hThread != NULL);
+    _ASSERTE(hThread != NULL);
 
     // need to dup handle here
     if (hThread == m_hCachedOutOfProcThread)

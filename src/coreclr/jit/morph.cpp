@@ -11576,7 +11576,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
                 assert(tree != nullptr);
             }
         }
-        COMPILER_ASSUME(tree != nullptr);
+        assert(tree != nullptr);
     }
 
     /* Figure out what kind of a node we have */

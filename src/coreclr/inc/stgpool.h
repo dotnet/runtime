@@ -213,7 +213,7 @@ public:
             &stringData));
         _ASSERTE(hr == S_OK);
         // Raw data are always at least 1 byte long, otherwise it would be invalid offset and hr != S_OK
-        COMPILER_ASSUME(stringData.GetDataPointer() != NULL);
+        _ASSERTE(stringData.GetDataPointer() != NULL);
         // Fills output string
         *pszString = reinterpret_cast<LPSTR>(stringData.GetDataPointer());
         //_ASSERTE(stringData.GetSize() > strlen(*pszString));
@@ -249,7 +249,7 @@ public:
             &stringData));
         _ASSERTE(hr == S_OK);
         // Raw data are always at least 1 byte long, otherwise it would be invalid offset and hr != S_OK
-        COMPILER_ASSUME(stringData.GetDataPointer() != NULL);
+        _ASSERTE(stringData.GetDataPointer() != NULL);
         // Fills output string
         *pszString = reinterpret_cast<LPSTR>(stringData.GetDataPointer());
         //_ASSERTE(stringData.GetSize() > strlen(*pszString));
