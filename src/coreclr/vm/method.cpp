@@ -82,6 +82,7 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
     // This extended part of the table is used for faster MethodDesc size lookup.
     // We index using optional slot flags into it
     METHOD_DESC_SIZES(sizeof(NonVtableSlot)),
+
     METHOD_DESC_SIZES(sizeof(MethodImpl)),
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl)),
 
@@ -89,6 +90,15 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
+
+    METHOD_DESC_SIZES(sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
 };
 
 #ifndef FEATURE_COMINTEROP
@@ -123,7 +133,8 @@ SIZE_T MethodDesc::SizeOf()
         (mdfClassification
         | mdfHasNonVtableSlot
         | mdfMethodImpl
-        | mdfHasNativeCodeSlot)];
+        | mdfHasNativeCodeSlot
+        | mdfHasAsyncMethodData)];
 
     return size;
 }
@@ -423,6 +434,15 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
         }
     }
 
+    // Async variant methods have alternative signatures that do not match metadata.
+    if (IsAsyncVariantMethod())
+    {
+        Signature sig = GetAddrOfAsyncMethodData()->sig;
+        *ppSig = sig.GetRawSig();
+        *pcSig = sig.GetRawSigLen();
+        return;
+    }
+
     GetSigFromMetadata(GetMDImport(), ppSig, pcSig);
     PREFIX_ASSUME(*ppSig != NULL);
 }
@@ -450,6 +470,7 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
     }
     CONTRACTL_END
 
+    _ASSERTE(!IsAsyncVariantMethod());
     if (FAILED(importer->GetSigOfMethodDef(GetMemberDef(), pcSig, ppSig)))
     {   // Class loader already asked for signature, so this should always succeed (unless there's a
         // bug or a new code path)
@@ -722,7 +743,7 @@ BOOL MethodDesc::HasSameMethodDefAs(MethodDesc * pMD)
     if (this == pMD)
         return TRUE;
 
-    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule());
+    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule() && pMD->IsAsyncVariantMethod() == IsAsyncVariantMethod());
 }
 
 //*******************************************************************************
@@ -1079,6 +1100,18 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 }
 
 //*******************************************************************************
+PTR_AsyncMethodData MethodDesc::GetAddrOfAsyncMethodData() const
+{
+    WRAPPER_NO_CONTRACT;
+
+    _ASSERTE(HasAsyncMethodData());
+
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot |  mdfMethodImpl | mdfHasNativeCodeSlot)];
+
+    return dac_cast<PTR_AsyncMethodData>(dac_cast<TADDR>(this) + size);
+}
+
+//*******************************************************************************
 BOOL MethodDesc::IsVoid()
 {
     WRAPPER_NO_CONTRACT;
@@ -1118,6 +1151,13 @@ ULONG MethodDesc::GetRVA()
 
     // Methods without metadata don't have an RVA.  Examples are IL stubs and LCG methods.
     if (IsNoMetadata())
+    {
+        return 0;
+    }
+
+    // Between two Async variants of the same method only one represents the actual IL.
+    // It is the variant that is not a thunk.
+    if (IsAsyncThunkMethod())
     {
         return 0;
     }
@@ -1809,7 +1849,7 @@ MethodDesc* MethodDesc::StripMethodInstantiation()
 
 //*******************************************************************************
 MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDescCount,
-    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, MethodTable *pInitialMT, AllocMemTracker *pamTracker, Module *pLoaderModule)
+    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, BOOL fAsyncMethodData, MethodTable *pInitialMT, AllocMemTracker *pamTracker, Module *pLoaderModule)
 {
     CONTRACT(MethodDescChunk *)
     {
@@ -1832,6 +1872,9 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 
     if (fNativeCodeSlot)
         oneSize += sizeof(MethodDesc::NativeCodeSlot);
+
+    if (fAsyncMethodData)
+        oneSize += sizeof(AsyncMethodData);
 
     _ASSERTE((oneSize & MethodDesc::ALIGNMENT_MASK) == 0);
 
@@ -1875,6 +1918,8 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
                 pMD->SetHasNonVtableSlot();
             if (fNativeCodeSlot)
                 pMD->SetHasNativeCodeSlot();
+            if (fAsyncMethodData)
+                pMD->SetHasAsyncMethodData();
 
             _ASSERTE(pMD->SizeOf() == oneSize);
 
@@ -2000,6 +2045,39 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Type
     return pObjMT->GetRestoredSlot(GetSlot());
 }
 
+MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
+{
+    CONTRACT(MethodDesc*)
+    {
+        THROWS;
+        GC_TRIGGERS;
+
+        PRECONDITION(IsVtableMethod());
+        PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
+        POSTCONDITION(RETVAL != NULL);
+    }
+    CONTRACT_END;
+    // Method table of target (might be instantiated)
+    MethodTable *pObjMT = (*orThis)->GetMethodTable();
+
+    // This is the static method descriptor describing the call.
+    // It is not the destination of the call, which we must compute.
+    MethodDesc* pStaticMD = this;
+
+    if (pStaticMD->HasMethodInstantiation())
+    {
+        CheckRestore();
+        RETURN(ResolveGenericVirtualMethod(orThis));
+    }
+
+    if (pStaticMD->IsInterface())
+    {
+        RETURN(MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis));
+    }
+
+    RETURN(pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot()));
+}
+
 //*******************************************************************************
 // The following resolve virtual dispatch for the given method on the given
 // object down to an actual address to call, including any
@@ -2010,47 +2088,12 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
     {
         THROWS;
         GC_TRIGGERS;
-
-        PRECONDITION(IsVtableMethod());
-        PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
         POSTCONDITION(RETVAL != NULL);
     }
     CONTRACT_END;
 
-    // Method table of target (might be instantiated)
-    MethodTable *pObjMT = (*orThis)->GetMethodTable();
-
-    // This is the static method descriptor describing the call.
-    // It is not the destination of the call, which we must compute.
-    MethodDesc* pStaticMD = this;
-    MethodDesc *pTargetMD;
-
-    if (pStaticMD->HasMethodInstantiation())
-    {
-        CheckRestore();
-        pTargetMD = ResolveGenericVirtualMethod(orThis);
-
-        // If we're remoting this call we can't call directly on the returned
-        // method desc, we need to go through a stub that guarantees we end up
-        // in the remoting handler. The stub we use below is normally just for
-        // non-virtual calls on virtual methods (that have the same problem
-        // where we could end up bypassing the remoting system), but it serves
-        // our purpose here (basically pushes our correctly instantiated,
-        // resolved method desc on the stack and calls the remoting code).
-
-        RETURN(pTargetMD->GetMultiCallableAddrOfCode());
-    }
-
-    if (pStaticMD->IsInterface())
-    {
-        pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,pStaticMD,orThis);
-        RETURN(pTargetMD->GetMultiCallableAddrOfCode());
-    }
-
-
-    pTargetMD = pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot());
-
-    RETURN (pTargetMD->GetMultiCallableAddrOfCode());
+    MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, staticTH);
+    RETURN(pTargetMD->GetMultiCallableAddrOfCode());
 }
 
 //*******************************************************************************
@@ -2287,6 +2330,111 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
         return NULL;
     }
+}
+
+static void GetNameOfTypeDefOrRef(Module* pModule, mdToken tk, LPCSTR* pName, LPCSTR* pNamespace)
+{
+    *pName = "";
+    *pNamespace = "";
+    if (TypeFromToken(tk) == mdtTypeDef)
+    {
+        IfFailThrow(pModule->GetMDImport()->GetNameOfTypeDef(tk, pName, pNamespace));
+    }
+    else if (TypeFromToken(tk) == mdtTypeRef)
+    {
+        IfFailThrow(pModule->GetMDImport()->GetNameOfTypeRef(tk, pNamespace, pName));
+    }
+}
+
+bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
+{
+    if (TypeFromToken(tk) == mdtTypeDef)
+    {
+        if (pModule->IsSystem())
+        {
+            return true;
+        }
+    }
+    else if (TypeFromToken(tk) == mdtTypeRef)
+    {
+        mdToken tkTypeDef;
+        Module* pModuleOfTypeDef;
+
+        ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef);
+        if (pModuleOfTypeDef->IsSystem())
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
+{
+    // Without FEATURE_RUNTIME_ASYNC every declared method is classified as a NormalMethod.
+    // Thus code that handles runtime async scenarios becomes unreachable.
+#ifdef FEATURE_RUNTIME_ASYNC
+    PCCOR_SIGNATURE initialSig = sig.GetPtr();
+    uint32_t data;
+    IfFailThrow(sig.GetCallingConvInfo(&data));
+    if (data & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        // Skip over generic argument count
+        IfFailThrow(sig.GetData(&data));
+    }
+
+    // skip argument count
+    IfFailThrow(sig.GetData(&data));
+
+    // now look at return type
+    // NOTE: this will skip modifiers
+    CorElementType elemType;
+    IfFailThrow(sig.GetElemType(&elemType));
+
+    // can't reason about ELEMENT_TYPE_INTERNAL, but should not see it in metadata
+    if (elemType == ELEMENT_TYPE_INTERNAL)
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+
+    *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig) - 1;
+    LPCSTR name, _namespace;
+    mdToken tk;
+    if (elemType == ELEMENT_TYPE_GENERICINST)
+    {
+        IfFailThrow(sig.GetElemType(&elemType));
+        // can't reason about ELEMENT_TYPE_INTERNAL, but should not see it in metadata
+        if (elemType == ELEMENT_TYPE_INTERNAL)
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+
+        *isValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
+        IfFailThrow(sig.GetToken(&tk));
+        IfFailThrow(sig.GetData(&data));
+        if (data == 1)
+        {
+            // This might be System.Threading.Tasks.Task`1
+            GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
+            if ((strcmp(name, *isValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+            {
+                if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                    return MethodReturnKind::GenericTaskReturningMethod;
+            }
+        }
+    }
+    else if ((elemType == ELEMENT_TYPE_CLASS) || (elemType == ELEMENT_TYPE_VALUETYPE))
+    {
+        IfFailThrow(sig.GetToken(&tk));
+        *isValueTask = (elemType == ELEMENT_TYPE_VALUETYPE);
+        // This might be System.Threading.Tasks.Task or ValueTask
+        GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
+        if ((strcmp(name, *isValueTask ? "ValueTask" : "Task") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
+        {
+            if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                return MethodReturnKind::NonGenericTaskReturningMethod;
+        }
+    }
+#endif // FEATURE_RUNTIME_ASYNC
+
+    return MethodReturnKind::NormalMethod;
 }
 
 //*******************************************************************************
@@ -2845,7 +2993,11 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         !IsWrapperStub() &&
 
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
-        !IsJitOptimizationLevelRequested())
+        !IsJitOptimizationLevelRequested() &&
+
+        // Tiering the async thunk methods doesn't make sense
+        !IsAsyncThunkMethod()
+        )
     {
         InterlockedUpdateFlags3(enum_flag3_IsEligibleForTieredCompilation, TRUE);
         return true;
@@ -2888,7 +3040,7 @@ bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()
     return
         g_pConfig->JitMinOpts() ||
         g_pConfig->GenDebuggableCode() ||
-        CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
+        GetModule()->AreJITOptimizationsDisabled();
 }
 
 #ifndef DACCESS_COMPILE
@@ -3811,26 +3963,6 @@ PrecodeType MethodDesc::GetPrecodeType()
 }
 
 #endif // !DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-#ifndef DACCESS_COMPILE
-void CLRToCOMCallMethodDesc::InitRetThunk()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef TARGET_X86
-    if (m_pCLRToCOMCallInfo->m_pRetThunk != NULL)
-        return;
-
-    UINT numStackBytes = CbStackPop();
-
-    LPVOID pRetThunk = CLRToCOMCall::GetRetThunk(numStackBytes);
-
-    InterlockedCompareExchangeT<void *>(&m_pCLRToCOMCallInfo->m_pRetThunk, pRetThunk, NULL);
-#endif // TARGET_X86
-}
-#endif //!DACCESS_COMPILE
-#endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
 void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()

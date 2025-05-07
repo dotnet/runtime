@@ -120,16 +120,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<int> ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(Vector256<float> value)  { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>  VMOVD xmm1, xmm2/m32</para>
-        /// </summary>
-        public static Vector128<uint> ConvertToVector128UInt32(Vector128<uint> value)  { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>  VMOVW xmm1, xmm2/m16</para>
-        /// </summary>
-        public static Vector128<ushort> ConvertToVector128UInt16(Vector128<ushort> value)  { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         ///   <para>  VCVTDQ2PS ymm1{k1}{z}, ymm2/m256/m32bcst {er}</para>
         /// </summary>
         public static Vector256<float> ConvertToVector256Single(Vector256<int> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode)  { throw new PlatformNotSupportedException(); }
@@ -205,6 +195,26 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> ConvertToVector256Double(Vector256<long> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode)  { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        ///   <para>  VMOVD xmm1, xmm2/m32</para>
+        /// </summary>
+        public static Vector128<int> MoveScalar(Vector128<int> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VMOVD xmm1, xmm2/m32</para>
+        /// </summary>
+        public static Vector128<uint> MoveScalar(Vector128<uint> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VMOVW xmm1, xmm2/m16</para>
+        /// </summary>
+        public static Vector128<short> MoveScalar(Vector128<short> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VMOVW xmm1, xmm2/m16</para>
+        /// </summary>
+        public static Vector128<ushort> MoveScalar(Vector128<ushort> value)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         ///   <para>  VMULPD ymm1{k1}{z}, ymm2, ymm3/m256/m64bcst {er}</para>
         /// </summary>
         public static Vector256<double> Multiply(Vector256<double> left, Vector256<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode)  { throw new PlatformNotSupportedException(); }
@@ -233,6 +243,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VSQRTPS ymm1{k1}{z}, ymm2/m256/m32bcst {er}</para>
         /// </summary>
         public static Vector256<float> Sqrt(Vector256<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VMOVW xmm1/m16, xmm2</para>
+        /// </summary>
+        public static unsafe void StoreScalar(short* address, Vector128<short> source)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>  VMOVW xmm1/m16, xmm2</para>
+        /// </summary>
+        public static unsafe void StoreScalar(ushort* address, Vector128<ushort> source)  { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>  VSUBPD ymm1{k1}{z}, ymm2, ymm3/m256/m64bcst {er}</para>

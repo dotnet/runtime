@@ -211,6 +211,28 @@ struct ArrIndex
 #endif
 };
 
+// SpanIndex represents a span element access and associated bounds check.
+struct SpanIndex
+{
+    unsigned    lenLcl;   // The Span length local num
+    unsigned    indLcl;   // The index local num
+    GenTree*    bndsChk;  // The bounds check node
+    BasicBlock* useBlock; // Block where the [] occurs
+
+    SpanIndex()
+        : lenLcl(BAD_VAR_NUM)
+        , indLcl(BAD_VAR_NUM)
+        , bndsChk(nullptr)
+        , useBlock(nullptr)
+    {
+    }
+
+#ifdef DEBUG
+    void Print();
+    void PrintBoundsCheckNode();
+#endif
+};
+
 // Forward declarations
 #define LC_OPT(en) struct en##OptInfo;
 #include "loopcloningopts.h"
@@ -312,6 +334,21 @@ struct LcJaggedArrayOptInfo : public LcOptInfo
         : LcOptInfo(LcJaggedArray)
         , dim(dim)
         , arrIndex(arrIndex)
+        , stmt(stmt)
+    {
+    }
+};
+
+// Optimization info for a Span
+//
+struct LcSpanOptInfo : public LcOptInfo
+{
+    SpanIndex  spanIndex; // SpanIndex representation of the Span.
+    Statement* stmt;      // "stmt" where the optimization opportunity occurs.
+
+    LcSpanOptInfo(SpanIndex& spanIndex, Statement* stmt)
+        : LcOptInfo(LcSpan)
+        , spanIndex(spanIndex)
         , stmt(stmt)
     {
     }
@@ -481,6 +518,38 @@ struct LC_Array
     GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
 };
 
+// Symbolic representation of Span.Length
+struct LC_Span
+{
+    SpanIndex* spanIndex;
+
+#ifdef DEBUG
+    void Print()
+    {
+        spanIndex->Print();
+    }
+#endif
+
+    LC_Span()
+        : spanIndex(nullptr)
+    {
+    }
+
+    LC_Span(SpanIndex* arrIndex)
+        : spanIndex(arrIndex)
+    {
+    }
+
+    // Equality operator
+    bool operator==(const LC_Span& that) const
+    {
+        return (spanIndex->lenLcl == that.spanIndex->lenLcl) && (spanIndex->indLcl == that.spanIndex->indLcl);
+    }
+
+    // Get a tree representation for this symbolic Span.Length
+    GenTree* ToGenTree(Compiler* comp);
+};
+
 //------------------------------------------------------------------------
 // LC_Ident: symbolic representation of "a value"
 //
@@ -492,6 +561,7 @@ struct LC_Ident
         Const,
         Var,
         ArrAccess,
+        SpanAccess,
         Null,
         ClassHandle,
         IndirOfLocal,
@@ -509,6 +579,7 @@ private:
             unsigned indirOffs;
         };
         LC_Array             arrAccess;
+        LC_Span              spanAccess;
         CORINFO_CLASS_HANDLE clsHnd;
         struct
         {
@@ -553,6 +624,8 @@ public:
                 return (lclNum == that.lclNum) && (indirOffs == that.indirOffs);
             case ArrAccess:
                 return (arrAccess == that.arrAccess);
+            case SpanAccess:
+                return (spanAccess == that.spanAccess);
             case Null:
                 return true;
             case MethodAddr:
@@ -597,6 +670,9 @@ public:
                 break;
             case ArrAccess:
                 arrAccess.Print();
+                break;
+            case SpanAccess:
+                spanAccess.Print();
                 break;
             case Null:
                 printf("null");
@@ -643,6 +719,13 @@ public:
     {
         LC_Ident id(ArrAccess);
         id.arrAccess = arrLen;
+        return id;
+    }
+
+    static LC_Ident CreateSpanAccess(const LC_Span& spanLen)
+    {
+        LC_Ident id(SpanAccess);
+        id.spanAccess = spanLen;
         return id;
     }
 

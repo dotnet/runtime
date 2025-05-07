@@ -34,6 +34,8 @@ static bool AllowR2RForImage(PEImage* pOwner)
 }
 
 #ifndef DACCESS_COMPILE
+extern BOOL g_useDefaultBaseAddr;
+
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;
@@ -492,7 +494,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
         PT_RUNTIME_FUNCTION   pExceptionDir = (PT_RUNTIME_FUNCTION)GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_EXCEPTION, &cbSize);
         DWORD tableSize = cbSize / sizeof(T_RUNTIME_FUNCTION);
 
-        if (pExceptionDir != NULL)
+        if (tableSize != 0)
         {
             // the only native code that we expect here is from R2R images
             _ASSERTE(HasReadyToRunHeader());

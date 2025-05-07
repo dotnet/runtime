@@ -254,11 +254,22 @@ namespace Internal.Runtime.TypeLoader
                                 DefType interfaceImplType;
 
                                 // We found the GVM slot target for the input interface GVM call, so let's update the interface GVM slot and return success to the caller
-                                if (!RuntimeAugments.IsInterface(targetTypeHandle) || !RuntimeAugments.IsGenericTypeDefinition(targetTypeHandle))
+                                if (!RuntimeAugments.IsGenericTypeDefinition(targetTypeHandle))
                                 {
-                                    // Not a default interface method or default interface method on a non-generic type.
-                                    // We have a usable type handle.
+                                    // No genericness involved, we can use the type as-is.
                                     interfaceImplType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
+                                }
+                                else if (!isDefaultInterfaceMethodImplementation)
+                                {
+                                    // Target type is in open form. We know the concrete form is somewhere in the inheritance hierarchy of targetType.
+                                    // This covers cases like:
+                                    // interface IFoo { void Frob(); }
+                                    // class Base<T> { public void Frob() { } }
+                                    // class Derived<T> : Base<Gen<T>>, IFoo { }
+                                    // In the above case, targetTypeHandle is Base<T>, targetType is Derived<object> and we want Base<Gen<object>>.
+                                    interfaceImplType = targetType;
+                                    while (!interfaceImplType.GetTypeDefinition().RuntimeTypeHandle.Equals(targetTypeHandle))
+                                        interfaceImplType = (DefType)interfaceImplType.BaseType;
                                 }
                                 else if (currentIfaceType.HasInstantiation && currentIfaceType.GetTypeDefinition().RuntimeTypeHandle.Equals(targetTypeHandle))
                                 {

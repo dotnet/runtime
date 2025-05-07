@@ -20,7 +20,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             TSource element)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source, element, default);
 
@@ -29,7 +29,7 @@ namespace System.Linq
                 TSource element,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                await foreach (TSource item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource item in source.WithCancellation(cancellationToken))
                 {
                     yield return item;
                 }

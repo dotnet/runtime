@@ -15,9 +15,9 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
         [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new KeyedHashAlgorithm? Create(string algName) =>
-            CryptoConfigForwarder.CreateFromName<KeyedHashAlgorithm>(algName);
+            CryptoConfig.CreateFromName<KeyedHashAlgorithm>(algName);
 
         public virtual byte[] Key
         {

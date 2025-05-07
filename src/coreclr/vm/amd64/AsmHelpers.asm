@@ -203,10 +203,11 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
         push                rax ; make room for the real return address (Rip)
         push                rdx
         PUSH_CALLEE_SAVED_REGISTERS
+        push_vol_reg        rcx
         push_vol_reg        rax
         mov                 rcx, rsp
 
-        alloc_stack         38h ; make extra room for xmm0, argument home slots and align the SP
+        alloc_stack         30h ; make extra room for xmm0 and argument home slots
         save_xmm128_postrsp xmm0, 20h
 
 
@@ -216,8 +217,9 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
 
         movdqa              xmm0, [rsp + 20h]
 
-        add                 rsp, 38h
+        add                 rsp, 30h
         pop                 rax
+        pop                 rcx
         POP_CALLEE_SAVED_REGISTERS
         pop                 rdx
         ret                 ; return to the correct place, adjusted by our caller
@@ -463,11 +465,11 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT
 NESTED_END JIT_Patchpoint, _TEXT
 
 ; first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
         mov rdx, rcx
         xor rcx, rcx
         jmp JIT_Patchpoint
-LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_END JIT_PatchpointForced, _TEXT
 
 endif ; FEATURE_TIERED_COMPILATION
 
@@ -506,5 +508,58 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     mov rdx, r11
     jmp METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+; This helper enables us to call into a funclet after restoring Fp register
+NESTED_ENTRY CallEHFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = PC to invoke
+        ; R8 = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        push_nonvol_reg rbp
+        alloc_stack     20h ; argument scratch space for the call
+        END_PROLOGUE
+
+        ; Restore RBP
+        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
+        ; Save the SP of this function.
+        mov     [r9], rsp
+        ; Invoke the funclet
+        call    rdx
+
+        add     rsp, 20h
+        pop     rbp
+        ret
+NESTED_END CallEHFunclet, _TEXT
+
+; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
+; frame pointer for accessing the locals in the parent method.
+NESTED_ENTRY CallEHFilterFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = RBP of main function
+        ; R8 = PC to invoke
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        push_nonvol_reg rbp
+        alloc_stack     20h ; argument scratch space for the call
+        END_PROLOGUE
+
+        ; Save the SP of this function
+        mov     [r9], rsp
+        ; Restore RBP to match main function RBP
+        mov     rbp, rdx
+        ; Invoke the filter funclet
+        call    r8
+
+        add     rsp, 20h
+        pop     rbp
+        ret
+NESTED_END CallEHFilterFunclet, _TEXT
 
         end
