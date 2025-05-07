@@ -158,14 +158,14 @@ public:
         return(m_asTAddr != typeHnd.m_asTAddr);
     }
 
-        // Methods for probing exactly what kind of a type handle we have
-    FORCEINLINE BOOL IsNull() const
+    // Methods for probing exactly what kind of a type handle we have
+    bool IsNull() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return(m_asTAddr == 0);
+        return (m_asTAddr == 0);
     }
 
-    FORCEINLINE BOOL IsTypeDesc() const
+    bool IsTypeDesc() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return !!(m_asTAddr & 2);

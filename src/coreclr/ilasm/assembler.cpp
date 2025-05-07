@@ -57,8 +57,8 @@ void    Assembler::ClearImplList(void)
 {
     while(m_nImplList) m_crImplList[--m_nImplList] = mdTypeRefNil;
 }
-/**************************************************************************/
 
+/**************************************************************************/
 void    Assembler::AddToImplList(mdToken tk)
 {
     if(m_nImplList+1 >= m_nImplListSize)

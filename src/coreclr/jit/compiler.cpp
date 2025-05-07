@@ -7836,7 +7836,6 @@ START:
             pParam->pPrevComp = JitTls::GetCompiler();
             JitTls::SetCompiler(pParam->pComp);
 
-            // PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
             assert(pParam->pComp != nullptr);
 
 #ifdef DEBUG
