@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -48,17 +47,18 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                string? digestAlgorithmOid,
-                HashAlgorithmName digestAlgorithmName,
+                Oid digestAlgorithm,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
             {
+                HashAlgorithmName digestAlgorithmName = PkcsHelpers.GetDigestAlgorithm(digestAlgorithm.Value, forVerification: true);
+
                 if (_expectedDigest != digestAlgorithmName)
                 {
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_Cms_InvalidSignerHashForSignatureAlg,
-                            digestAlgorithmOid,
+                            digestAlgorithm.Value,
                             _signatureAlgorithm));
                 }
 
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
                 ReadOnlyMemory<byte> dataHash,
 #endif
-                HashAlgorithmName hashAlgorithmName,
+                Oid hashAlgorithm,
                 X509Certificate2 certificate,
                 object? key,
                 bool silent,
@@ -128,11 +128,14 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 string? oidValue =
-                    hashAlgorithmName == HashAlgorithmName.SHA1 ? Oids.DsaWithSha1 :
-                    hashAlgorithmName == HashAlgorithmName.SHA256 ? Oids.DsaWithSha256 :
-                    hashAlgorithmName == HashAlgorithmName.SHA384 ? Oids.DsaWithSha384 :
-                    hashAlgorithmName == HashAlgorithmName.SHA512 ? Oids.DsaWithSha512 :
-                    null;
+                    hashAlgorithm.Value switch
+                    {
+                        Oids.Sha1 => Oids.DsaWithSha1,
+                        Oids.Sha256 => Oids.DsaWithSha256,
+                        Oids.Sha384 => Oids.DsaWithSha384,
+                        Oids.Sha512 => Oids.DsaWithSha512,
+                        _ => null
+                    };
 
                 if (oidValue == null)
                 {

@@ -49,17 +49,18 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                string? digestAlgorithmOid,
-                HashAlgorithmName digestAlgorithmName,
+                Oid digestAlgorithm,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
             {
+                HashAlgorithmName digestAlgorithmName = PkcsHelpers.GetDigestAlgorithm(digestAlgorithm.Value, forVerification: true);
+
                 if (_expectedDigest != null && _expectedDigest != digestAlgorithmName)
                 {
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_Cms_InvalidSignerHashForSignatureAlg,
-                            digestAlgorithmOid,
+                            digestAlgorithm.Value,
                             _signatureAlgorithm));
                 }
 
@@ -108,7 +109,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
                 byte[] dataHash,
 #endif
-                HashAlgorithmName hashAlgorithmName,
+                Oid hashAlgorithm,
                 X509Certificate2 certificate,
                 object? certKey,
                 bool silent,
@@ -130,16 +131,19 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 string? oidValue =
-                    hashAlgorithmName == HashAlgorithmName.SHA1 ? Oids.ECDsaWithSha1 :
-                    hashAlgorithmName == HashAlgorithmName.SHA256 ? Oids.ECDsaWithSha256 :
-                    hashAlgorithmName == HashAlgorithmName.SHA384 ? Oids.ECDsaWithSha384 :
-                    hashAlgorithmName == HashAlgorithmName.SHA512 ? Oids.ECDsaWithSha512 :
+                    hashAlgorithm.Value switch
+                    {
+                        Oids.Sha1 => Oids.ECDsaWithSha1,
+                        Oids.Sha256 => Oids.ECDsaWithSha256,
+                        Oids.Sha384 => Oids.ECDsaWithSha384,
+                        Oids.Sha512 => Oids.ECDsaWithSha512,
 #if NET8_0_OR_GREATER
-                    hashAlgorithmName == HashAlgorithmName.SHA3_256 ? Oids.ECDsaWithSha3_256 :
-                    hashAlgorithmName == HashAlgorithmName.SHA3_384 ? Oids.ECDsaWithSha3_384 :
-                    hashAlgorithmName == HashAlgorithmName.SHA3_512 ? Oids.ECDsaWithSha3_512 :
+                        Oids.Sha3_256 => Oids.ECDsaWithSha3_256,
+                        Oids.Sha3_384 => Oids.ECDsaWithSha3_384,
+                        Oids.Sha3_512 => Oids.ECDsaWithSha3_512,
 #endif
-                    null;
+                        _ => null,
+                    };
 
                 if (oidValue == null)
                 {

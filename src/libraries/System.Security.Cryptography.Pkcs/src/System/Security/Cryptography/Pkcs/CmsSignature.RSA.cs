@@ -50,11 +50,13 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                string? digestAlgorithmOid,
-                HashAlgorithmName digestAlgorithmName,
+                Oid digestAlgorithm,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
             {
+                string? digestAlgorithmOid = digestAlgorithm.Value;
+                HashAlgorithmName digestAlgorithmName = PkcsHelpers.GetDigestAlgorithm(digestAlgorithmOid, forVerification: true);
+
                 if (_expectedDigest.HasValue && _expectedDigest.Value != digestAlgorithmName)
                 {
                     throw new CryptographicException(
@@ -200,7 +202,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
                 byte[] dataHash,
 #endif
-                HashAlgorithmName hashAlgorithmName,
+                Oid hashAlgorithm,
                 X509Certificate2 certificate,
                 object? key,
                 bool silent,
@@ -210,7 +212,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 bool result = SignCore(
                     dataHash,
-                    hashAlgorithmName,
+                    PkcsHelpers.GetDigestAlgorithm(hashAlgorithm.Value),
                     certificate,
                     key,
                     silent,
@@ -320,7 +322,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
                 byte[] dataHash,
 #endif
-                HashAlgorithmName hashAlgorithmName,
+                Oid hashAlgorithm,
                 X509Certificate2 certificate,
                 object? key,
                 bool silent,
@@ -328,6 +330,8 @@ namespace System.Security.Cryptography.Pkcs
                 [NotNullWhen(true)] out byte[]? signatureValue,
                 out byte[]? signatureParameters)
             {
+                HashAlgorithmName hashAlgorithmName = PkcsHelpers.GetDigestAlgorithm(hashAlgorithm.Value);
+
                 bool result = SignCore(
                     dataHash,
                     hashAlgorithmName,

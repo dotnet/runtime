@@ -21,8 +21,6 @@ namespace System.Security.Cryptography.Pkcs
         public bool HasPrivateKey { get { throw null; } }
         public System.Security.Cryptography.AsymmetricAlgorithm? PrivateKey { get { throw null; } set { } }
         public System.Security.Cryptography.RSASignaturePadding? SignaturePadding { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
-        public System.Security.Cryptography.SlhDsa? SlhDsaPrivateKey { get { throw null; } set { } }
     }
     public sealed partial class ContentInfo
     {

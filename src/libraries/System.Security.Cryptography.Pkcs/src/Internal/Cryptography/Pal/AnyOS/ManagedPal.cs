@@ -84,7 +84,6 @@ namespace Internal.Cryptography.Pal.AnyOS
             if (typeof(T) == typeof(DSA) && Internal.Cryptography.Helpers.IsDSASupported)
                 return (T?)(object?)certificate.GetDSAPrivateKey();
 #endif
-            // TODO does this need ifdef?
             if (typeof(T) == typeof(SlhDsa) && SlhDsa.IsSupported)
                 return (T?)(object?)certificate.GetSlhDsaPrivateKey();
 

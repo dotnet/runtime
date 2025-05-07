@@ -496,13 +496,16 @@ namespace System.Security.Cryptography.Pkcs
                 key: null,
                 rsaSignaturePadding: null);
 
-            // TODO I think this is related to SubjectIdentifierType.NoSignature, so see comment
-            // in Verify in CmsSigner about whether to use hash or pure. The naming of this
-            // method makes it seem like we should always hash though.
-            bool verifyPure = signatureProcessor?.NeedsHashedMessage == false;
+            // The behavior of this scenario should match Windows which currently does not
+            // implement PQC. So we do a best effort determination of whether the algorithm
+            // is a pure algorithm and throw if so. This is subject to change once Windows
+            // implements PQC.
+            if (signatureProcessor?.NeedsHashedMessage == false)
+            {
+                throw new CryptographicException(SR.Cryptography_Cms_DigestAsSignatureNotSupported);
+            }
 
-            Func<bool, VerifyCallback, bool> verifier = verifyPure ? VerifyPure : VerifyHashed;
-            return verifier(compatMode, contentToVerify => _signature.Span.SequenceEqual(contentToVerify));
+            return VerifyHashedMessage(compatMode, contentToVerify => _signature.Span.SequenceEqual(contentToVerify));
         }
 
         private X509Certificate2? FindSignerCertificate()
@@ -600,9 +603,9 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        private IncrementalHash GetContentHash(ReadOnlyMemory<byte> content, ReadOnlyMemory<byte>? additionalContent)
+        private CmsHash GetContentHash(ReadOnlyMemory<byte> content, ReadOnlyMemory<byte>? additionalContent)
         {
-            IncrementalHash hasher = Helpers.CreateIncrementalHash(GetDigestAlgorithm());
+            CmsHash hasher = CmsHash.Create(DigestAlgorithm, forVerification: true);
             if (additionalContent.HasValue)
             {
                 hasher.AppendData(additionalContent.Value.Span);
@@ -630,7 +633,7 @@ namespace System.Security.Cryptography.Pkcs
             // Windows and OpenSSL both support trying in the document order rather than
             // a sorted order.  To accomplish this we will build as a SEQUENCE OF, but feed
             // the SET OF into the hasher.
-            using (AsnWriter.Scope scope = compatMode ? writer.PushSequence() : writer.PushSetOf())
+            using (compatMode ? writer.PushSequence() : writer.PushSetOf())
             {
                 foreach (AttributeAsn attr in signedAttributes)
                 {
@@ -665,8 +668,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             // Message-digest is required when signed attributes are present.
-            if (!hasMatchingDigestAttr ||
-                needsContentAttr && !hasContentAttr)
+            if (!hasMatchingDigestAttr || (needsContentAttr && !hasContentAttr))
             {
                 throw new CryptographicException(SR.Cryptography_Cms_MissingAuthenticatedAttribute);
             }
@@ -689,11 +691,11 @@ namespace System.Security.Cryptography.Pkcs
 
         private delegate bool VerifyCallback(ReadOnlySpan<byte> contentToVerify);
 
-        private bool VerifyHashed(bool compatMode, VerifyCallback verify)
+        private bool VerifyHashedMessage(bool compatMode, VerifyCallback verify)
         {
             ReadOnlyMemory<byte> content = GetContentForVerification(out ReadOnlyMemory<byte>? additionalContent);
 
-            using (IncrementalHash hasher = GetContentHash(content, additionalContent))
+            using (CmsHash hasher = GetContentHash(content, additionalContent))
             {
 #if NET || NETSTANDARD2_1
                 // SHA-2-512 is the biggest digest type we know about.
@@ -724,7 +726,6 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 // Since there are signed attributes, we need to verify those instead.
-                // TODO if verify callback has state then it won't need closure (it'll infect all the called method).
                 return
                     VerifyAttributes(
                         contentHash,
@@ -756,7 +757,7 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        private bool VerifyPure(bool compatMode, VerifyCallback verify)
+        private bool VerifyPureMessage(bool compatMode, VerifyCallback verify)
         {
             ReadOnlyMemory<byte> content = GetContentForVerification(out ReadOnlyMemory<byte>? additionalContent);
 
@@ -790,7 +791,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             // Since there are signed attributes, we need to verify those instead.
-            using (IncrementalHash hasher = GetContentHash(content, additionalContent))
+            using (CmsHash hasher = GetContentHash(content, additionalContent))
             {
 #if NET || NETSTANDARD2_1
                 // SHA-2-512 is the biggest digest type we know about.
@@ -907,7 +908,7 @@ namespace System.Security.Cryptography.Pkcs
                 return false;
             }
 
-            Func<bool, VerifyCallback, bool> verifier = signatureProcessor.NeedsHashedMessage ? VerifyHashed : VerifyPure;
+            Func<bool, VerifyCallback, bool> verifier = signatureProcessor.NeedsHashedMessage ? VerifyHashedMessage : VerifyPureMessage;
             return verifier(compatMode, contentToVerify =>
                 signatureProcessor.VerifySignature(
 #if NET || NETSTANDARD2_1
@@ -917,15 +918,9 @@ namespace System.Security.Cryptography.Pkcs
                     contentToVerify.ToArray(),
                     _signature.ToArray(),
 #endif
-                    DigestAlgorithm.Value,
-                    GetDigestAlgorithm(),
+                    DigestAlgorithm,
                     _signatureAlgorithmParameters,
                     certificate));
-        }
-
-        private HashAlgorithmName GetDigestAlgorithm()
-        {
-            return PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm.Value!, forVerification: true);
         }
 
         private static int FindAttributeIndexByOid(AttributeAsn[] attributes, Oid oid, int startIndex = 0)

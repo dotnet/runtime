@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -32,20 +31,6 @@ namespace System.Security.Cryptography.Pkcs
 #endif
         {
             get => _privateKey as AsymmetricAlgorithm;
-            set => _privateKey = value;
-        }
-
-        // TODO not sure why PrivateKey is ifdef'd out...
-#if NET || NETSTANDARD2_1
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-        public
-#else
-        private
-#endif
-
-        SlhDsa? SlhDsaPrivateKey
-        {
-            get => _privateKey as SlhDsa;
             set => _privateKey = value;
         }
 
@@ -143,9 +128,6 @@ namespace System.Security.Cryptography.Pkcs
         CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, SlhDsa? privateKey)
             : this(signerIdentifierType, certificate, privateKey, signaturePadding: null)
         {
-            // TODO this ctor can break users if they had been passing in null for privateKey since it's now ambiguous
-            // between this and the AsymmetricAlgorithm one *BUT* if they were doing that, they should have been
-            // using the 2-argument constructor anyway, so it should be fine.
         }
 
         /// <summary>
@@ -216,9 +198,6 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             Certificate = certificate;
-            // TODO for higher security level, we can pick SHA-512. This is the
-            // default recommended for level 3 and 5 SLH-DSA in the spec.
-            // Or we can just leave it to the user to set the DigestAlgorithm property.
             DigestAlgorithm = s_defaultAlgorithm.CopyOid();
 
             Debug.Assert(privateKey is null or AsymmetricAlgorithm or SlhDsa);
@@ -271,7 +250,7 @@ namespace System.Security.Cryptography.Pkcs
                         AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
                     });
             }
-            // else: TODO if we're in pure mode we *should* add a content type according to
+            // else if we're in pure mode: we *should* add a content type according to
             // the SLH-DSA and ML-DSA spec. However, the only case when the content type is null
             // is when we're countersigning, and RFC 5652 specifically states that
             // countersignatures must not contain a content type. We'll leave it as is for now
@@ -279,13 +258,9 @@ namespace System.Security.Cryptography.Pkcs
 
             // Use the serializer/deserializer to DER-normalize the attribute order.
             SignedAttributesSet signedAttrsSet = default;
-            byte[]? attributesToSign = null;
             signedAttrsSet.SignedAttributes = PkcsHelpers.NormalizeAttributeSet(
                 signedAttrs.ToArray(),
-                encodedSignedAttrs => attributesToSign = encodedSignedAttrs);
-            Debug.Assert(
-                attributesToSign is not null,
-                $"{attributesToSign} should have been set by {nameof(PkcsHelpers.NormalizeAttributeSet)}");
+                out byte[] attributesToSign);
 
             // Since this contains user data in a context where BER is permitted, use BER.
             // There shouldn't be any observable difference here between BER and DER, though,
@@ -296,8 +271,7 @@ namespace System.Security.Cryptography.Pkcs
             return attributesToSign;
         }
 
-        internal ReadOnlyMemory<byte> GetMessageToSignPure(
-            HashAlgorithmName hashAlgorithmName,
+        internal ReadOnlyMemory<byte> GetPureMessageToSign(
             ReadOnlyMemory<byte> data,
             string? contentTypeOid,
             out ReadOnlyMemory<byte>? signedAttributesAsn)
@@ -305,7 +279,7 @@ namespace System.Security.Cryptography.Pkcs
             byte[] dataHash;
             // In pure mode we will always sign the attributes rather than the message content even
             // when signing the content is allowed. In general the attribute payload is smaller.
-            using (IncrementalHash hasher = Helpers.CreateIncrementalHash(hashAlgorithmName))
+            using (CmsHash hasher = CmsHash.Create(DigestAlgorithm, forVerification: false))
             {
                 hasher.AppendData(data.Span);
                 dataHash = hasher.GetHashAndReset();
@@ -316,13 +290,12 @@ namespace System.Security.Cryptography.Pkcs
             return contentToSign;
         }
 
-        internal ReadOnlyMemory<byte> GetMessageToSignHashed(
-            HashAlgorithmName hashAlgorithmName,
+        internal ReadOnlyMemory<byte> GetHashedMessageToSign(
             ReadOnlyMemory<byte> data,
             string? contentTypeOid,
             out ReadOnlyMemory<byte>? signedAttributesAsn)
         {
-            using (IncrementalHash hasher = Helpers.CreateIncrementalHash(hashAlgorithmName))
+            using (CmsHash hasher = CmsHash.Create(DigestAlgorithm, forVerification: false))
             {
                 hasher.AppendData(data.Span);
                 byte[] dataHash = hasher.GetHashAndReset();
@@ -344,13 +317,12 @@ namespace System.Security.Cryptography.Pkcs
 
         internal ReadOnlyMemory<byte> GetMessageToSign(
             bool shouldHash,
-            HashAlgorithmName hashAlgorithmName,
             ReadOnlyMemory<byte> data,
             string? contentTypeOid,
             out ReadOnlyMemory<byte>? signedAttributesAsn) =>
                 shouldHash
-                    ? GetMessageToSignHashed(hashAlgorithmName, data, contentTypeOid, out signedAttributesAsn)
-                    : GetMessageToSignPure(hashAlgorithmName, data, contentTypeOid, out signedAttributesAsn);
+                    ? GetHashedMessageToSign(data, contentTypeOid, out signedAttributesAsn)
+                    : GetPureMessageToSign(data, contentTypeOid, out signedAttributesAsn);
 
         internal SignerInfoAsn Sign(
             ReadOnlyMemory<byte> data,
@@ -359,7 +331,6 @@ namespace System.Security.Cryptography.Pkcs
             out X509Certificate2Collection chainCerts)
         {
             SignerInfoAsn newSignerInfo = default;
-            HashAlgorithmName hashAlgorithmName = PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm);
             newSignerInfo.DigestAlgorithm.Algorithm = DigestAlgorithm.Value!;
 
             switch (SignerIdentifierType)
@@ -405,16 +376,12 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlyMemory<byte> signatureValue;
             ReadOnlyMemory<byte> signatureParameters = default;
 
-
             if (SignerIdentifierType == SubjectIdentifierType.NoSignature)
             {
-                // TODO Not sure what the use case of this is, but if it's just for determining if a message hash
-                // been modified, we can always compute the hash. On the other hand, if it is a temporary value
-                // that will eventually be signed, then we need to keep it unhashed for SLH-DSA/ML-DSA since they
-                // are pure signing algos.
-                //
-                // In the second case, we need a processor. This code is a placeholder for now to get the processor.
-                bool shouldHash = true;
+                // The behavior of this scenario should match Windows which currently does not
+                // implement PQC. So we do a best effort determination of whether the algorithm
+                // is a pure algorithm and throw if so. This is subject to change once Windows
+                // implements PQC.
                 string? keyAlgorithm = null;
                 if (Certificate != null)
                 {
@@ -422,7 +389,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         keyAlgorithm = Certificate.GetKeyAlgorithm();
                     }
-                    catch (CryptographicException) // sad..
+                    catch (CryptographicException)
                     {
                     }
                 }
@@ -430,11 +397,14 @@ namespace System.Security.Cryptography.Pkcs
                 if (keyAlgorithm != null)
                 {
                     CmsSignature? processor = CmsSignature.ResolveAndVerifyKeyType(keyAlgorithm, _privateKey, SignaturePadding);
-                    shouldHash = processor == null || processor.NeedsHashedMessage;
+                    if (processor?.NeedsHashedMessage == false)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Cms_DigestAsSignatureNotSupported);
+                    }
                 }
 
                 ReadOnlyMemory<byte> messageToSign =
-                    GetMessageToSign(shouldHash, hashAlgorithmName, data, contentTypeOid, out newSignerInfo.SignedAttributes);
+                    GetMessageToSign(shouldHash: true, data, contentTypeOid, out newSignerInfo.SignedAttributes);
 
                 signatureAlgorithm = Oids.NoSignature;
                 signatureValue = messageToSign;
@@ -450,7 +420,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 bool shouldHash = processor.NeedsHashedMessage;
                 ReadOnlyMemory<byte> messageToSign =
-                    GetMessageToSign(shouldHash, hashAlgorithmName, data, contentTypeOid, out newSignerInfo.SignedAttributes);
+                    GetMessageToSign(shouldHash, data, contentTypeOid, out newSignerInfo.SignedAttributes);
 
                 signed = processor.Sign(
 #if NET || NETSTANDARD2_1
@@ -458,7 +428,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
                     messageToSign.ToArray(),
 #endif
-                    hashAlgorithmName,
+                    DigestAlgorithm,
                     Certificate!,
                     _privateKey,
                     silent,

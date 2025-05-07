@@ -6,10 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Numerics;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
-using Internal.Cryptography;
-using static System.Security.Cryptography.Pkcs.CmsSigner;
 
 namespace System.Security.Cryptography.Pkcs
 {
@@ -43,8 +40,7 @@ namespace System.Security.Cryptography.Pkcs
             byte[] valueHash,
             byte[] signature,
 #endif
-            string? digestAlgorithmOid,
-            HashAlgorithmName digestAlgorithmName,
+            Oid digestAlgorithm,
             ReadOnlyMemory<byte>? signatureParameters,
             X509Certificate2 certificate);
 
@@ -54,7 +50,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
             byte[] dataHash,
 #endif
-            HashAlgorithmName hashAlgorithmName,
+            Oid hashAlgorithm,
             X509Certificate2 certificate,
             object? key,
             bool silent,
@@ -123,7 +119,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
             byte[] dataHash,
 #endif
-            HashAlgorithmName hashAlgorithmName,
+            Oid hashAlgorithmName,
             X509Certificate2 certificate,
             object? key,
             bool silent,

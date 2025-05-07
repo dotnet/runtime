@@ -585,6 +585,7 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SigningCertificateV2Asn.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SigningCertificateV2Asn.xml</DependentUpon>
     </Compile>
+    <Compile Include="System\Security\Cryptography\Pkcs\CmsHash.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.RSA.cs" />

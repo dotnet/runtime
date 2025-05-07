@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
         private static CertLoader[] LoadSlhDsaCerts() =>
             SlhDsaTestData.GeneratedKeyInfosRaw
-                .Select(cert => new CertLoaderFromRawData(cert.Certificate, cert.SelfSignedCertificatePfx, cert.EncryptionPassword))
+                .Select(info => new CertLoaderFromRawData(info.Certificate, info.SelfSignedCertificatePfx, info.EncryptionPassword))
                 .ToArray();
 
         // Note: the raw data is its own (nested) class to avoid problems with static field initialization ordering.
