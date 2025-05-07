@@ -3636,7 +3636,7 @@ ClrDataMethodDefinition::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(methDef || pubMethDef);
+    COMPILER_ASSUME(methDef || pubMethDef);
 
     if (methDef)
     {
@@ -4448,7 +4448,7 @@ ClrDataMethodInstance::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(methInst || pubMethInst);
+    COMPILER_ASSUME(methInst || pubMethInst);
 
     if (methInst)
     {
@@ -4956,7 +4956,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(exception || pubException);
+    COMPILER_ASSUME(exception || pubException);
 
     if (exception)
     {

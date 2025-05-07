@@ -310,7 +310,7 @@ BOOL IsStructMarshalable(TypeHandle th)
         return FALSE;
 
     MethodTable *pMT= th.GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    COMPILER_ASSUME(pMT != NULL);
 
     return pMT->GetNativeLayoutInfo()->IsMarshalable() ? TRUE : FALSE;
 }

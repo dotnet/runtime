@@ -505,7 +505,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         //-------------------------------------------------------------------------
         // Set more flags
 
-        PREFIX_ASSUME(call != nullptr);
+        COMPILER_ASSUME(call != nullptr);
 
         if (mflags & CORINFO_FLG_NOGCCHECK)
         {

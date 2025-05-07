@@ -198,7 +198,7 @@ STDMETHODIMP RegMeta::GetExportedTypeProps(   // S_OK or error.
         LPCSTR  szTypeName;
 
         IfFailGo(pMiniMd->getTypeNamespaceOfExportedType(pRecord, &szTypeNamespace));
-        PREFIX_ASSUME(szTypeNamespace != NULL);
+        COMPILER_ASSUME(szTypeNamespace != NULL);
         MAKE_WIDEPTR_FROMUTF8_NOTHROW(wzTypeNamespace, szTypeNamespace);
         IfNullGo(wzTypeNamespace);
 

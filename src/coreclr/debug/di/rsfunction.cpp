@@ -497,7 +497,7 @@ HRESULT CordbFunction::GetCurrentVersionNumber(ULONG32 *pnCurrentVersion)
     CordbFunction* curFunc = m_pModule->LookupFunctionLatestVersion(m_MDToken);
 
     // will always find at least ourself
-    PREFIX_ASSUME(curFunc != NULL);
+    COMPILER_ASSUME(curFunc != NULL);
 
     *pnCurrentVersion = (ULONG32)(curFunc->m_dwEnCVersionNumber);
 
@@ -868,10 +868,10 @@ HRESULT CordbFunction::InitParentClassOfFunction()
             _ASSERTE(pProcess != NULL);
 
             CordbAssembly *pAssembly = m_pModule->GetCordbAssembly();
-            PREFIX_ASSUME(pAssembly != NULL);
+            COMPILER_ASSUME(pAssembly != NULL);
 
             CordbModule* pClassModule = pAssembly->GetAppDomain()->LookupOrCreateModule(vmDomainAssembly);
-            PREFIX_ASSUME(pClassModule != NULL);
+            COMPILER_ASSUME(pClassModule != NULL);
 
             CordbClass *pClass;
             hr = pClassModule->LookupOrCreateClass(classMetadataToken, &pClass);

@@ -640,7 +640,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // Lookup the module
         CordbModule* pModule = pCurrentAppDomain->LookupOrCreateModule(pFuncData->vmDomainAssembly);
-        PREFIX_ASSUME(pModule != NULL);
+        COMPILER_ASSUME(pModule != NULL);
 
         // Create or look up a CordbNativeCode.  There is one for each jitted instance of a method,
         // and we may have multiple instances because of generics.

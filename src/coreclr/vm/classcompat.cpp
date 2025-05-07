@@ -388,7 +388,7 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
     // the interfaces will be listed in the identical order).
     if (bmtParent.wNumParentInterfaces > 0)
     {
-        PREFIX_ASSUME(pParentMethodTable != NULL); // We have to have parent to have parent interfaces
+        COMPILER_ASSUME(pParentMethodTable != NULL); // We have to have parent to have parent interfaces
 
         _ASSERTE(pParentMethodTable->LookupComInteropData());
         _ASSERTE(bmtParent.wNumParentInterfaces == pParentMethodTable->LookupComInteropData()->cInterfaceMap);
@@ -2430,7 +2430,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
 
         if (IsMdRTSpecialName(dwMemberAttrs))
         {
-            PREFIX_ASSUME(strMethodName != NULL); // if we've gotten here we've called GetNameOfMethodDef
+            COMPILER_ASSUME(strMethodName != NULL); // if we've gotten here we've called GetNameOfMethodDef
 
             // The slot is special, but it might not be a vtable spacer. To
             // determine that we must look at the name.

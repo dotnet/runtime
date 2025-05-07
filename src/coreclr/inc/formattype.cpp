@@ -338,7 +338,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
     {
         if(name) // printing the arguments
         {
-            PREFIX_ASSUME(typePtr != NULL);
+            COMPILER_ASSUME(typePtr != NULL);
             if (*typePtr == ELEMENT_TYPE_SENTINEL)
             {
                 if (needComma)
@@ -555,7 +555,7 @@ PCCOR_SIGNATURE PrettyPrintType(
             case ELEMENT_TYPE_ARRAY       :
                 {
                 typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
-                PREFIX_ASSUME(typePtr != NULL);
+                COMPILER_ASSUME(typePtr != NULL);
                 unsigned rank = CorSigUncompressData(typePtr);
                     // <TODO> what is the syntax for the rank 0 case? </TODO>
                 if (rank == 0) {

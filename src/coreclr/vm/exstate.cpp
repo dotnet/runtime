@@ -122,7 +122,7 @@ void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowab
         else
         {
             AppDomain* pDomain = AppDomain::GetCurrentDomain();
-            PREFIX_ASSUME(pDomain != NULL);
+            COMPILER_ASSUME(pDomain != NULL);
             hNewThrowable = pDomain->CreateHandle(throwable);
         }
 

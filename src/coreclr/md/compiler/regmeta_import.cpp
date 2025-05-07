@@ -577,7 +577,7 @@ STDMETHODIMP RegMeta::FindTypeDefByName(// S_OK or error.
 
     if (wzTypeDef == NULL)
         IfFailGo(E_INVALIDARG);
-    PREFIX_ASSUME(wzTypeDef != NULL);
+    COMPILER_ASSUME(wzTypeDef != NULL);
     LPSTR       szTypeDef;
     UTF8STR(wzTypeDef, szTypeDef);
     LPCSTR      szNamespace;
@@ -937,7 +937,7 @@ STDMETHODIMP RegMeta::FindTypeRef(      // S_OK or error.
     LOCKREAD();
 
     // Convert the  name to UTF8.
-    PREFIX_ASSUME(wzTypeName != NULL); // caller might pass NULL, but they'll AV.
+    COMPILER_ASSUME(wzTypeName != NULL); // caller might pass NULL, but they'll AV.
     UTF8STR(wzTypeName, szFullName);
     ns::SplitInline(szFullName, szNamespace, szName);
 

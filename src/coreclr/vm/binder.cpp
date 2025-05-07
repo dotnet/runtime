@@ -152,7 +152,7 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
     }
 
 
-    PREFIX_ASSUME_MSGF(pMD != NULL, ("EE expects method to exist: %s:%s  Sig pointer: %p\n", pMT->GetDebugClassName(), d->name, d->sig));
+    COMPILER_ASSUME_MSGF(pMD != NULL, ("EE expects method to exist: %s:%s  Sig pointer: %p\n", pMT->GetDebugClassName(), d->name, d->sig));
 
     VolatileStore(&m_pMethods[id], pMD);
 
@@ -201,7 +201,7 @@ FieldDesc * CoreLibBinder::LookupFieldLocal(BinderFieldID id)
     pFD = MemberLoader::FindField(pMT, d->name, NULL, 0, NULL);
 
 #ifndef DACCESS_COMPILE
-    PREFIX_ASSUME_MSGF(pFD != NULL, ("EE expects field to exist: %s:%s\n", pMT->GetDebugClassName(), d->name));
+    COMPILER_ASSUME_MSGF(pFD != NULL, ("EE expects field to exist: %s:%s\n", pMT->GetDebugClassName(), d->name));
 
     VolatileStore(&(m_pFields[id]), pFD);
 #endif
@@ -565,7 +565,7 @@ namespace
     bool FeatureSwitchDisabled(LPCWSTR featureSwitch, bool enabledValue, bool defaultValue)
     {
         // If we don't have a feature switch, treat the switch as enabled.
-        return featureSwitch != nullptr && 
+        return featureSwitch != nullptr &&
             Configuration::GetKnobBooleanValue(featureSwitch, defaultValue) != enabledValue;
     }
 

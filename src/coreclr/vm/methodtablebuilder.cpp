@@ -2059,7 +2059,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (HasParent())
         {
             MethodTable * pParentClass = GetParentMethodTable();
-            PREFIX_ASSUME(pParentClass != NULL);
+            COMPILER_ASSUME(pParentClass != NULL);
             isTrackedReference = pParentClass->IsTrackedReferenceWithFinalizer();
         }
 
@@ -2145,7 +2145,7 @@ MethodTableBuilder::ResolveInterfaces(
     if (HasParent())
     {
         MethodTable * pParentClass = GetParentMethodTable();
-        PREFIX_ASSUME(pParentClass != NULL);
+        COMPILER_ASSUME(pParentClass != NULL);
 
         bmtParent->NumParentPointerSeries  = pParentClass->ContainsGCPointers() ?
             (DWORD)CGCDesc::GetCGCDescFromMT(pParentClass)->GetNumSeries() : 0;
@@ -8782,7 +8782,7 @@ MethodTableBuilder::HandleExplicitLayout(
     }
 
     CQuickBytes qb;
-    PREFIX_ASSUME(sizeof(bmtFieldLayoutTag) == 1);
+    COMPILER_ASSUME(sizeof(bmtFieldLayoutTag) == 1);
     bmtFieldLayoutTag *pFieldLayout = (bmtFieldLayoutTag*)qb.AllocThrows(instanceSliceSize * sizeof(bmtFieldLayoutTag));
     for (i=0; i < instanceSliceSize; i++)
     {

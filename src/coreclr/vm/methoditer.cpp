@@ -194,7 +194,7 @@ MethodDesc *LoadedMethodDescIterator::Current()
     }
 
     MethodTable *pMT = m_typeIteratorEntry->GetTypeHandle().GetMethodTable()->GetCanonicalMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    COMPILER_ASSUME(pMT != NULL);
     return pMT->GetParallelMethodDesc(m_mainMD);
 }
 

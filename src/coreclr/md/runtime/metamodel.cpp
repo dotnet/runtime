@@ -703,7 +703,7 @@ CMiniMdBase::InitColsForTable(
 
         pTemplate = GetTableDefTemplate(ixTbl);
 
-    PREFIX_ASSUME(pTemplate->m_pColDefs != NULL);
+    COMPILER_ASSUME(pTemplate->m_pColDefs != NULL);
 
     // For each column in the table...
     for (ULONG ixCol = 0; ixCol < pTable->m_cCols; ++ixCol)

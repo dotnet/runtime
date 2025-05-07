@@ -538,21 +538,12 @@ CHECK CheckValue(TYPENAME &val)
     COMPILER_ASSUME_MSG(_condition, "")
 
 //--------------------------------------------------------------------------------
-// PREFIX_ASSUME_MSG and PREFAST_ASSUME_MSG are just another name
+// COMPILER_ASSUME_MSG and PREFAST_ASSUME_MSG are just another name
 // for COMPILER_ASSUME_MSG
 // In a checked build these turn into asserts; in a free build
 // they are passed through to the compiler to use in optimization;
 //  via an __assume(_condition) optimization hint.
 //--------------------------------------------------------------------------------
-
-#define PREFIX_ASSUME_MSG(_condition, _message) \
-    COMPILER_ASSUME_MSG(_condition, _message)
-
-#define PREFIX_ASSUME_MSGF(_condition, args) \
-    COMPILER_ASSUME_MSGF(_condition, args)
-
-#define PREFIX_ASSUME(_condition) \
-    COMPILER_ASSUME_MSG(_condition, "")
 
 #define PREFAST_ASSUME_MSG(_condition, _message) \
     COMPILER_ASSUME_MSG(_condition, _message)

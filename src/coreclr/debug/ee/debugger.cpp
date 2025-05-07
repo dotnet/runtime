@@ -4963,7 +4963,7 @@ HRESULT Debugger::MapPatchToDJI(DebuggerControllerPatch *dcp, DebuggerJitInfo *d
     // If the patch has no DJI then we're doing a UnbindFunctionPatches/RebindFunctionPatches.  Either
     // way, we simply want the most recent version.  In the absence of EnC we should have djiCur == djiTo.
     DebuggerJitInfo *djiCur = dcp->HasDJI() ? dcp->GetDJI() : djiTo;
-    PREFIX_ASSUME(djiCur != NULL);
+    COMPILER_ASSUME(djiCur != NULL);
 
     // If the source and destination are the same version, then this method
     // decays into BindFunctionPatch's BindPatch function
@@ -5089,7 +5089,7 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
     pDCB = m_pRCThread->GetDCB();
     (void)pDCB; //prevent "unused variable" error from GCC
 
-    PREFIX_ASSUME(pDCB != NULL); // must have DCB by the time we're sending IPC events.
+    COMPILER_ASSUME(pDCB != NULL); // must have DCB by the time we're sending IPC events.
 #ifdef FEATURE_INTEROP_DEBUGGING
     // The synccomplete can't be the first IPC event over. That's b/c the LS needs to know
     // if we're interop-debugging and the RS needs to know special addresses for interop-debugging
@@ -9479,7 +9479,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule)
         return; // Non-PDB symbols
 
     DebuggerModule* module = LookupOrCreateModule(pRuntimeModule);
-    PREFIX_ASSUME(module != NULL);
+    COMPILER_ASSUME(module != NULL);
 
     DebuggerIPCEvent* ipce = NULL;
     ipce = m_pRCThread->GetIPCEventSendBuffer();
@@ -10711,7 +10711,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             // Just send back an HR.
             DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
 
-            PREFIX_ASSUME(pIPCResult != NULL);
+            COMPILER_ASSUME(pIPCResult != NULL);
 
             InitIPCEvent(pIPCResult, DB_IPCE_SET_DEBUG_STATE_RESULT, NULL, NULL);
 
@@ -10729,7 +10729,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
 
-            PREFIX_ASSUME(pIPCResult != NULL);
+            COMPILER_ASSUME(pIPCResult != NULL);
 
             InitIPCEvent(pIPCResult, DB_IPCE_GET_GCHANDLE_INFO_RESULT, NULL, NULL);
 
@@ -11670,7 +11670,7 @@ void Debugger::PollWaitingForHelper()
 
     DebuggerIPCControlBlock * pDCB = g_pRCThread->GetDCB();
 
-    PREFIX_ASSUME(pDCB != NULL);
+    COMPILER_ASSUME(pDCB != NULL);
 
     int nTotalMSToWait = 8 * 1000;
 
@@ -12071,7 +12071,7 @@ HRESULT Debugger::GetAndSendBuffer(DebuggerRCThread* rcThread, ULONG bufSize)
 
     // This is a synchronous event (reply required)
     DebuggerIPCEvent* event = rcThread->GetIPCEventReceiveBuffer();
-    PREFIX_ASSUME(event != NULL);
+    COMPILER_ASSUME(event != NULL);
     InitIPCEvent(event, DB_IPCE_GET_BUFFER_RESULT, NULL, NULL);
 
     // Allocate the buffer
@@ -12144,7 +12144,7 @@ HRESULT Debugger::SendReleaseBuffer(DebuggerRCThread* rcThread, void *pBuffer)
 
     // This is a synchronous event (reply required)
     DebuggerIPCEvent* event = rcThread->GetIPCEventReceiveBuffer();
-    PREFIX_ASSUME(event != NULL);
+    COMPILER_ASSUME(event != NULL);
     InitIPCEvent(event, DB_IPCE_RELEASE_BUFFER_RESULT, NULL, NULL);
 
     _ASSERTE(pBuffer != NULL);
@@ -12448,7 +12448,7 @@ void Debugger::UnrecoverableError(HRESULT errorHR,
     //
     DebuggerIPCControlBlock *pDCB = m_pRCThread->GetDCB();
 
-    PREFIX_ASSUME(pDCB != NULL);
+    COMPILER_ASSUME(pDCB != NULL);
 
     pDCB->m_errorHR = errorHR;
     pDCB->m_errorCode = errorCode;
@@ -12665,7 +12665,7 @@ void Debugger::GetVarInfo(MethodDesc *       fd,   // [IN] method of interest
     }
     _ASSERTE(fd == ji->m_nativeCodeVersion.GetMethodDesc());
 
-    PREFIX_ASSUME(ji != NULL);
+    COMPILER_ASSUME(ji != NULL);
 
     *vars = ji->GetVarNativeInfo();
     *cVars = ji->GetVarNativeInfoCount();
@@ -14253,9 +14253,9 @@ void Debugger::SendMDANotification(
     }
     CONTRACTL_END;
 
-    PREFIX_ASSUME(szName != NULL);
-    PREFIX_ASSUME(szDescription != NULL);
-    PREFIX_ASSUME(szXML != NULL);
+    COMPILER_ASSUME(szName != NULL);
+    COMPILER_ASSUME(szDescription != NULL);
+    COMPILER_ASSUME(szXML != NULL);
 
     // Note: we normally don't send events like this when there is an unrecoverable error. However,
     // if a host attempts to setup fiber mode on a thread, then we'll set an unrecoverable error

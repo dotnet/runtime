@@ -582,7 +582,7 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     MethodTable *pMT = ref->GetMethodTable();
 
-    PREFIX_ASSUME(pMT != NULL);
+    COMPILER_ASSUME(pMT != NULL);
 
     if (!pMT->HasDefaultConstructor())
     {

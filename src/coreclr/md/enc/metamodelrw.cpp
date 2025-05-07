@@ -1040,7 +1040,7 @@ CMiniMdRW::CalculateTypeRefToTypeDefMap()
     mdToken     td;
     mdToken     tkResScope;
 
-    PREFIX_ASSUME(GetTypeRefToTypeDefMap() != NULL);
+    COMPILER_ASSUME(GetTypeRefToTypeDefMap() != NULL);
 
     for (index = 1; index <= m_Schema.m_cRecs[TBL_TypeRef]; index++)
     {
@@ -2862,7 +2862,7 @@ CMiniMdRW::PreSaveFull()
     if (m_pHandler != NULL)
     {
         TOKENMAP * ptkmap = GetMemberRefToMemberDefMap();
-        PREFIX_ASSUME(ptkmap != NULL);  // RegMeta always inits this.
+        COMPILER_ASSUME(ptkmap != NULL);  // RegMeta always inits this.
         MDTOKENMAP * ptkRemap = GetTokenMovementMap();
         int     iCount = m_Schema.m_cRecs[TBL_MemberRef];
         mdToken tkTo;
@@ -6690,7 +6690,7 @@ CMiniMdRW::FindParentOfMethodHelper(
                 for (indexMd = ridStart; indexMd < ridEnd; indexMd++)
                 {
                     IfFailGo(GetMethodPtrRecord(indexMd, &pMethodPtrRec));
-                    PREFIX_ASSUME(pMethodMap->Get(getMethodOfMethodPtr(pMethodPtrRec)) != NULL);
+                    COMPILER_ASSUME(pMethodMap->Get(getMethodOfMethodPtr(pMethodPtrRec)) != NULL);
                     *(pMethodMap->Get(getMethodOfMethodPtr(pMethodPtrRec))) = indexTd;
                 }
             }
@@ -6753,7 +6753,7 @@ CMiniMdRW::FindParentOfFieldHelper(
                 for (indexFd = ridStart; indexFd < ridEnd; indexFd++)
                 {
                     IfFailGo(GetFieldPtrRecord(indexFd, &pFieldPtrRec));
-                    PREFIX_ASSUME(pFieldMap->Get(getFieldOfFieldPtr(pFieldPtrRec)) != NULL);
+                    COMPILER_ASSUME(pFieldMap->Get(getFieldOfFieldPtr(pFieldPtrRec)) != NULL);
                     *(pFieldMap->Get(getFieldOfFieldPtr(pFieldPtrRec))) = indexTd;
                 }
             }
@@ -6817,7 +6817,7 @@ CMiniMdRW::FindParentOfPropertyHelper(
                 {
                     IfFailGo(GetPropertyPtrRecord(indexPr, &pPropertyPtrRec));
                     mdToken *tok =  pPropertyMap->Get(getPropertyOfPropertyPtr(pPropertyPtrRec));
-                    PREFIX_ASSUME(tok != NULL);
+                    COMPILER_ASSUME(tok != NULL);
                     *tok = getParentOfPropertyMap(pPropertyMapRec);
                 }
             }
@@ -6886,7 +6886,7 @@ CMiniMdRW::FindParentOfEventHelper(
                 {
                     IfFailGo(GetEventPtrRecord(indexEv, &pEventPtrRec));
                     mdToken* tok = pEventMap->Get(getEventOfEventPtr(pEventPtrRec));
-                    PREFIX_ASSUME(tok != NULL);
+                    COMPILER_ASSUME(tok != NULL);
                     *tok = getParentOfEventMap(pEventMapRec);
                 }
             }
@@ -6954,7 +6954,7 @@ CMiniMdRW::FindParentOfParamHelper(
                 for (indexPd = ridStart; indexPd < ridEnd; indexPd++)
                 {
                     IfFailGo(GetParamPtrRecord(indexPd, &pParamPtrRec));
-                    PREFIX_ASSUME(pParamMap->Get(getParamOfParamPtr(pParamPtrRec)) != NULL);
+                    COMPILER_ASSUME(pParamMap->Get(getParamOfParamPtr(pParamPtrRec)) != NULL);
                     *(pParamMap->Get(getParamOfParamPtr(pParamPtrRec))) = indexMd;
                 }
             }
