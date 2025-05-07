@@ -1946,27 +1946,16 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
     InterpThreadContext *threadContext = InterpGetThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
-    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
-    // InterpMethodContextFrame. This is important for the stack walking code.
-    struct Frames
-    {
-        InterpMethodContextFrame interpMethodContextFrame = {0};
-        InterpreterFrame interpreterFrame;
+    InterpMethodContextFrame interpMethodContextFrame = {0};
+    interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
+    interpMethodContextFrame.pStack = sp;
+    interpMethodContextFrame.pRetVal = sp;
 
-        Frames(TransitionBlock* pTransitionBlock)
-        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
-        {
-        }
-    }
-    frames(pTransitionBlock);
+    InterpreterFrame interpreterFrame(pTransitionBlock, &interpMethodContextFrame);
 
-    frames.interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
-    frames.interpMethodContextFrame.pStack = sp;
-    frames.interpMethodContextFrame.pRetVal = sp;
+    InterpExecMethod(&interpreterFrame, &interpMethodContextFrame, threadContext);
 
-    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
-
-    frames.interpreterFrame.Pop();
+    interpreterFrame.Pop();
 }
 #endif // FEATURE_INTERPRETER
 

@@ -14,18 +14,21 @@ class EHClauseInfo;
 #include "exceptionhandling.h"
 #include "cdacdata.h"
 
-#ifndef FEATURE_EH_FUNCLETS
+#if !defined(FEATURE_EH_FUNCLETS)
+// ExInfo contains definitions for 32bit
 #include "exinfo.h"
-#else
-struct ExInfo;
-typedef DPTR(ExInfo) PTR_ExInfo;
-#endif
+#endif // !defined(FEATURE_EH_FUNCLETS)
 
 #if !defined(DACCESS_COMPILE)
 #define PRESERVE_WATSON_ACROSS_CONTEXTS 1
 #endif
 
 extern StackWalkAction COMPlusUnwindCallback(CrawlFrame *pCf, ThrowCallbackType *pData);
+
+#ifdef FEATURE_EH_FUNCLETS
+struct ExInfo;
+typedef DPTR(ExInfo) PTR_ExInfo;
+#endif // !FEATURE_EH_FUNCLETS
 
 //
 // This class serves as a forwarding and abstraction layer for the EH subsystem.
@@ -45,16 +48,17 @@ class ThreadExceptionState
 #endif // DACCESS_COMPILE
 
     // ProfToEEInterfaceImpl::GetNotifiedExceptionClauseInfo needs access so that it can fetch the
-    // ExInfo
+    // ExceptionTracker or the ExInfo as appropriate for the platform
     friend class ProfToEEInterfaceImpl;
 
     friend struct ::cdac_data<Thread>;
 
 #ifdef FEATURE_EH_FUNCLETS
+    friend class ExceptionTracker;
     friend struct ExInfo;
 #else
     friend class ExInfo;
-#endif
+#endif // FEATURE_EH_FUNCLETS
 
 public:
 
@@ -138,16 +142,16 @@ private:
     Thread* GetMyThread();
 
 #ifdef FEATURE_EH_FUNCLETS
-    PTR_ExInfo m_pCurrentTracker;
+    PTR_ExceptionTrackerBase m_pCurrentTracker;
 public:
-    PTR_ExInfo GetCurrentExceptionTracker()
+    PTR_ExceptionTrackerBase GetCurrentExceptionTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCurrentTracker;
     }
 
 #ifndef DACCESS_COMPILE
-    void SetCurrentExceptionTracker(PTR_ExInfo pTracker)
+    void SetCurrentExceptionTracker(ExceptionTrackerBase* pTracker)
     {
         LIMITED_METHOD_CONTRACT;
         m_pCurrentTracker = pTracker;

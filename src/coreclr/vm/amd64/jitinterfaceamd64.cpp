@@ -709,11 +709,7 @@ bool WriteBarrierManager::NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, b
             }
             else
             {
-#ifdef FEATURE_SVR_GC
                 writeBarrierType = GCHeapUtilities::IsServerHeap() ? WRITE_BARRIER_SVR64 : WRITE_BARRIER_PREGROW64;
-#else
-                writeBarrierType = WRITE_BARRIER_PREGROW64;
-#endif // FEATURE_SVR_GC
             }
             continue;
 

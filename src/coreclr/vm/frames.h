@@ -593,7 +593,7 @@ private:
     friend Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
 #endif
 #ifdef FEATURE_EH_FUNCLETS
-    friend struct ExInfo;
+    friend class ExceptionTracker;
 #endif
 #if defined(DACCESS_COMPILE)
     friend class DacDbiInterfaceImpl;

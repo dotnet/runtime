@@ -35,7 +35,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     private readonly Reader _reader;
 
     private readonly Dictionary<string, int> _contracts = [];
-    private readonly IReadOnlyDictionary<string, GlobalValue> _globals = new Dictionary<string, GlobalValue>();
+    private readonly IReadOnlyDictionary<string, (ulong Value, string? Type)> _globals = new Dictionary<string, (ulong, string?)>();
     private readonly Dictionary<DataType, Target.TypeInfo> _knownTypes = [];
     private readonly Dictionary<string, Target.TypeInfo> _types = [];
 
@@ -43,7 +43,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override DataCache ProcessedData { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
-    public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
+    public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill);
+    public delegate int GetTargetPlatformDelegate(out int platform);
 
     /// <summary>
     /// Create a new target instance from a contract descriptor embedded in the target memory.
@@ -51,15 +52,17 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="contractDescriptor">The offset of the contract descriptor in the target memory</param>
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
     /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="getTargetPlatform">A callback to fetch the target's platform</param>
     /// <param name="target">The target object.</param>
     /// <returns>If a target instance could be created, <c>true</c>; otherwise, <c>false</c>.</returns>
     public static bool TryCreate(
         ulong contractDescriptor,
         ReadFromTargetDelegate readFromTarget,
         GetTargetThreadContextDelegate getThreadContext,
-        [NotNullWhen(true)] out ContractDescriptorTarget? target)
+        GetTargetPlatformDelegate getTargetPlatform,
+        out ContractDescriptorTarget? target)
     {
-        Reader reader = new Reader(readFromTarget, getThreadContext);
+        Reader reader = new Reader(readFromTarget, getThreadContext, getTargetPlatform);
         if (TryReadContractDescriptor(
             contractDescriptor,
             reader,
@@ -82,6 +85,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="globalPointerValues">The values for any global pointers specified in the contract descriptor.</param>
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
     /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="getTargetPlatform">A callback to fetch the target's platform</param>
     /// <param name="isLittleEndian">Whether the target is little-endian</param>
     /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
     /// <returns>The target object.</returns>
@@ -90,6 +94,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         TargetPointer[] globalPointerValues,
         ReadFromTargetDelegate readFromTarget,
         GetTargetThreadContextDelegate getThreadContext,
+        GetTargetPlatformDelegate getTargetPlatform,
         bool isLittleEndian,
         int pointerSize)
     {
@@ -97,7 +102,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize },
             contractDescriptor,
             globalPointerValues,
-            new Reader(readFromTarget, getThreadContext));
+            new Reader(readFromTarget, getThreadContext, getTargetPlatform));
     }
 
     private ContractDescriptorTarget(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
@@ -147,41 +152,23 @@ public sealed unsafe class ContractDescriptorTarget : Target
         // Read globals and map indirect values to pointer data
         if (descriptor.Globals is not null)
         {
-            Dictionary<string, GlobalValue> globalValues = new(descriptor.Globals.Count);
+            Dictionary<string, (ulong Value, string? Type)> globals = [];
             foreach ((string name, ContractDescriptorParser.GlobalDescriptor global) in descriptor.Globals)
             {
+                ulong value = global.Value;
                 if (global.Indirect)
                 {
-                    if (global.NumericValue.Value >= (ulong)pointerData.Length)
-                        throw new InvalidOperationException($"Invalid pointer data index {global.NumericValue.Value}.");
+                    if (value >= (ulong)pointerData.Length)
+                        throw new InvalidOperationException($"Invalid pointer data index {value}.");
 
-                    globalValues[name] = new GlobalValue
-                    {
-                        NumericValue = pointerData[global.NumericValue.Value].Value,
-                        StringValue = global.StringValue,
-                        Type = global.Type
-                    };
+                    value = pointerData[value].Value;
                 }
-                else // direct
-                {
-                    globalValues[name] = new GlobalValue
-                    {
-                        NumericValue = global.NumericValue,
-                        StringValue = global.StringValue,
-                        Type = global.Type
-                    };
-                }
+
+                globals[name] = (value, global.Type);
             }
 
-            _globals = globalValues.AsReadOnly();
+            _globals = globals;
         }
-    }
-
-    private struct GlobalValue
-    {
-        public ulong? NumericValue;
-        public string? StringValue;
-        public string? Type;
     }
 
     // See docs/design/datacontracts/contract-descriptor.md
@@ -276,11 +263,19 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override int PointerSize => _config.PointerSize;
     public override bool IsLittleEndian => _config.IsLittleEndian;
+    public override CorDebugPlatform Platform
+    {
+        get
+        {
+            _reader.GetTargetPlatform(out int platform);
+            return (CorDebugPlatform)platform;
+        }
+    }
 
     public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
     {
         // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
-        int hr = _reader.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
+        int hr = _reader.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, (uint)buffer.Length, buffer);
         return hr == 0;
     }
 
@@ -501,8 +496,6 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override bool IsAlignedToPointerSize(TargetPointer pointer)
         => IsAligned(pointer.Value, _config.PointerSize);
 
-    #region reading globals
-
     public override bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value)
         => TryReadGlobal<T>(name, out value, out _);
 
@@ -510,13 +503,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
     {
         value = null;
         type = null;
-        if (!_globals.TryGetValue(name, out GlobalValue global) || global.NumericValue is null)
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
         {
-            // Not found or does not contain a numeric value
             return false;
         }
         type = global.Type;
-        value = T.CreateChecked(global.NumericValue.Value);
+        value = T.CreateChecked(global.Value);
         return true;
     }
 
@@ -525,10 +517,11 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public T ReadGlobal<T>(string name, out string? type) where T : struct, INumber<T>
     {
-        if (!TryReadGlobal(name, out T? value, out type))
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
             throw new InvalidOperationException($"Failed to read global {typeof(T)} '{name}'.");
 
-        return value.Value;
+        type = global.Type;
+        return T.CreateChecked(global.Value);
     }
 
     public override bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value)
@@ -537,10 +530,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value, out string? type)
     {
         value = null;
-        if (!TryReadGlobal(name, out ulong? innerValue, out type))
+        type = null;
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
             return false;
 
-        value = new TargetPointer(innerValue.Value);
+        type = global.Type;
+        value = new TargetPointer(global.Value);
         return true;
     }
 
@@ -549,41 +544,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public TargetPointer ReadGlobalPointer(string name, out string? type)
     {
-        if (!TryReadGlobalPointer(name, out TargetPointer? value, out type))
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
             throw new InvalidOperationException($"Failed to read global pointer '{name}'.");
 
-        return value.Value;
-    }
-
-    public override string ReadGlobalString(string name)
-        => ReadStringGlobal(name, out _);
-
-    public string ReadStringGlobal(string name, out string? type)
-    {
-        if (!TryReadStringGlobal(name, out string? value, out type))
-            throw new InvalidOperationException($"Failed to read string global '{name}'.");
-
-        return value;
-    }
-
-    public override bool TryReadGlobalString(string name, [NotNullWhen(true)] out string? value)
-        => TryReadStringGlobal(name, out value, out _);
-
-    public bool TryReadStringGlobal(string name, [NotNullWhen(true)] out string? value, out string? type)
-    {
-        value = null;
-        type = null;
-        if (!_globals.TryGetValue(name, out GlobalValue global) || global.StringValue is null)
-        {
-            // Not found or does not contain a string value
-            return false;
-        }
         type = global.Type;
-        value = global.StringValue;
-        return true;
+        return new TargetPointer(global.Value);
     }
-
-    #endregion
 
     public override TypeInfo GetTypeInfo(DataType type)
     {
@@ -659,7 +625,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     private readonly struct Reader(
         ReadFromTargetDelegate readFromTarget,
-        GetTargetThreadContextDelegate getThreadContext)
+        GetTargetThreadContextDelegate getThreadContext,
+        GetTargetPlatformDelegate getTargetPlatform)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
@@ -669,9 +636,14 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
             => readFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
 
-        public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
+        public int GetTargetPlatform(out int platform)
         {
-            return getThreadContext(threadId, contextFlags, buffer);
+            return getTargetPlatform(out platform);
+        }
+
+        public int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer)
+        {
+            return getThreadContext(threadId, contextFlags, contextSize, buffer);
         }
     }
 }

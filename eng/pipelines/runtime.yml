@@ -125,7 +125,7 @@ extends:
           - browser_wasm
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr.runtime -rc Release -c Release -lc $(_BuildConfig)
+            buildArgs: -s mono.emsdk+clr.runtime -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -1096,7 +1096,8 @@ extends:
           runtimeFlavor: mono
           platforms:
           - maccatalyst_x64
-          - maccatalyst_arm64
+          - ${{ if eq(variables['isRollingBuild'], true) }}:
+            - maccatalyst_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

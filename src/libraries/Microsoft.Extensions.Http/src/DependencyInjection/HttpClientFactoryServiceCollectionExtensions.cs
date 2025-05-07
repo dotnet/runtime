@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="IServiceCollection"/>.</returns>
         public static IServiceCollection AddHttpClient(this IServiceCollection services)
         {
-            ArgumentNullException.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(services);
 
             services.AddLogging();
             services.AddOptions();
@@ -79,8 +79,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="IServiceCollection"/>.</returns>
         public static IServiceCollection ConfigureHttpClientDefaults(this IServiceCollection services, Action<IHttpClientBuilder> configure)
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(configure);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(configure);
 
             AddHttpClient(services);
 
@@ -107,8 +107,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient(this IServiceCollection services, string name)
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
 
             AddHttpClient(services);
 
@@ -134,9 +134,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient(this IServiceCollection services, string name, Action<HttpClient> configureClient)
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(configureClient);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
 
@@ -164,9 +164,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient(this IServiceCollection services, string name, Action<IServiceProvider, HttpClient> configureClient)
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(configureClient);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
 
@@ -201,7 +201,7 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services)
             where TClient : class
         {
-            ArgumentNullException.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(services);
 
             AddHttpClient(services);
 
@@ -242,7 +242,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            ArgumentNullException.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(services);
 
             AddHttpClient(services);
 
@@ -281,8 +281,8 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, string name)
             where TClient : class
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
 
             AddHttpClient(services);
 
@@ -325,8 +325,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
 
             AddHttpClient(services);
 
@@ -362,8 +362,8 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, Action<HttpClient> configureClient)
             where TClient : class
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(configureClient);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
 
@@ -401,8 +401,8 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, Action<IServiceProvider, HttpClient> configureClient)
             where TClient : class
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(configureClient);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
 
@@ -445,8 +445,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(configureClient);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
 
@@ -489,8 +489,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(configureClient);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
 
@@ -531,9 +531,9 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, string name, Action<HttpClient> configureClient)
             where TClient : class
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(configureClient);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
 
@@ -573,9 +573,9 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, string name, Action<IServiceProvider, HttpClient> configureClient)
             where TClient : class
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(configureClient);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
 
@@ -620,9 +620,9 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(configureClient);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
 
@@ -667,9 +667,9 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(configureClient);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(configureClient);
 
             AddHttpClient(services);
 
@@ -708,8 +708,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(factory);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(factory);
 
             string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             return AddHttpClient<TClient, TImplementation>(services, name, factory);
@@ -747,9 +747,9 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(factory);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(factory);
 
             AddHttpClient(services);
 
@@ -787,8 +787,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(factory);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(factory);
 
             string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
             return AddHttpClient<TClient, TImplementation>(services, name, factory);
@@ -824,9 +824,9 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            ArgumentNullException.ThrowIfNull(services);
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(factory);
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(name);
+            ThrowHelper.ThrowIfNull(factory);
 
             AddHttpClient(services);
 

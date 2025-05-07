@@ -31,7 +31,10 @@ namespace System.CodeDom
 
         public void AddRange(CodeAttributeDeclaration[] value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             for (int i = 0; i < value.Length; i++)
             {
@@ -41,7 +44,10 @@ namespace System.CodeDom
 
         public void AddRange(CodeAttributeDeclarationCollection value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)

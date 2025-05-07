@@ -14,14 +14,10 @@ namespace Microsoft.NET.HostModel.ComHost
     {
         public MissingGuidException(string typeName)
         {
-#if NET
-            ArgumentNullException.ThrowIfNull(typeName);
-#else
             if (typeName is null)
             {
                 throw new ArgumentNullException(nameof(typeName));
             }
-#endif
             TypeName = typeName;
         }
 

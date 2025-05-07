@@ -163,7 +163,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
-        if (buildOptions.BootConfigFileName != null)
+        if (buildOptions.BootConfigFileName != "dotnet.boot.js")
         {
             // Omit implicit default
             buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:WasmBootConfigFileName={buildOptions.BootConfigFileName}" };
@@ -375,9 +375,6 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     public string GetBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null) =>
         _provider.GetBinFrameworkDir(config, forPublish, framework ?? DefaultTargetFramework, projectDir);
-
-    public string GetObjDir(Configuration config, string? framework = null, string? projectDir = null) =>
-        _provider.GetObjDir(config, framework ?? DefaultTargetFramework, projectDir);
 
     public BuildPaths GetBuildPaths(Configuration config, bool forPublish) =>
         _provider.GetBuildPaths(config, forPublish);

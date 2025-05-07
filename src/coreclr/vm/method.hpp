@@ -1429,7 +1429,6 @@ public:
     // indirect call via slot in this case.
     PCODE TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags);
 
-    MethodDesc* GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
     // These return an address after resolving "virtual methods" correctly, including any
     // handling of context proxies, other thunking layers and also including
     // instantiation of generic virtual methods if required.
@@ -1887,7 +1886,6 @@ private:
     PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
 
 public:
-    void GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
 #endif // DACCESS_COMPILE
 

@@ -287,10 +287,8 @@ namespace System.Net.Http
                     if (queueStartingTimestamp != 0)
                     {
                         TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
-                        if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
-                        {
-                            _pool.Settings._metrics!.RequestLeftQueue(request, Pool, duration, versionMajor: 3);
-                        }
+
+                        _pool.Settings._metrics!.RequestLeftQueue(request, Pool, duration, versionMajor: 3);
 
                         if (HttpTelemetry.Log.IsEnabled())
                         {

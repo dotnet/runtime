@@ -12,7 +12,10 @@ namespace System.Reflection.Metadata.Ecma335
 
         public MethodBodyStreamEncoder(BlobBuilder builder)
         {
-            ArgumentNullException.ThrowIfNull(builder);
+            if (builder == null)
+            {
+                Throw.BuilderArgumentNull();
+            }
 
             // Fat methods are 4-byte aligned. We calculate the alignment relative to the start of the ILStream.
             //

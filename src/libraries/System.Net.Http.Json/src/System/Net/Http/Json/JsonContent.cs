@@ -65,7 +65,7 @@ namespace System.Net.Http.Json
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(inputType);
+            ThrowHelper.ThrowIfNull(inputType);
             EnsureTypeCompatibility(inputValue, inputType);
 
             return new JsonContent(inputValue, JsonHelpers.GetJsonTypeInfo(inputType, options), mediaType);
@@ -81,7 +81,7 @@ namespace System.Net.Http.Json
         /// <returns>A <see cref="JsonContent"/> instance.</returns>
         public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            ThrowHelper.ThrowIfNull(jsonTypeInfo);
 
             return new JsonContent(inputValue, jsonTypeInfo, mediaType);
         }
@@ -95,7 +95,7 @@ namespace System.Net.Http.Json
         /// <returns>A <see cref="JsonContent"/> instance.</returns>
         public static JsonContent Create(object? inputValue, JsonTypeInfo jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            ThrowHelper.ThrowIfNull(jsonTypeInfo);
             EnsureTypeCompatibility(inputValue, jsonTypeInfo.Type);
 
             return new JsonContent(inputValue, jsonTypeInfo, mediaType);

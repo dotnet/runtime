@@ -261,15 +261,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSZ:
         case GT_ROR:
         case GT_ROL:
-        case GT_SH1ADD:
-        case GT_SH1ADD_UW:
-        case GT_SH2ADD:
-        case GT_SH2ADD_UW:
-        case GT_SH3ADD:
-        case GT_SH3ADD_UW:
-        case GT_ADD_UW:
-        case GT_SLLI_UW:
-            if (tree->OperIs(GT_ROR, GT_ROL) && !compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
+            if (tree->OperIs(GT_ROR, GT_ROL))
                 buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
             buildInternalRegisterUses();
@@ -354,53 +346,20 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_INTRINSIC:
         {
+            NamedIntrinsic name = tree->AsIntrinsic()->gtIntrinsicName;
+            noway_assert((name == NI_System_Math_Abs) || (name == NI_System_Math_Sqrt) ||
+                         (name == NI_System_Math_MinNumber) || (name == NI_System_Math_MaxNumber));
+
+            // Both operand and its result must be of the same floating point type.
             GenTree* op1 = tree->gtGetOp1();
             GenTree* op2 = tree->gtGetOp2IfPresent();
-
-            switch (tree->AsIntrinsic()->gtIntrinsicName)
-            {
-                // Both operands and its result must be of the same floating-point type.
-                case NI_System_Math_MinNumber:
-                case NI_System_Math_MaxNumber:
-                    assert(op2 != nullptr);
-                    assert(op2->TypeIs(tree->TypeGet()));
-                    FALLTHROUGH;
-                case NI_System_Math_Abs:
-                case NI_System_Math_Sqrt:
-                    assert(op1->TypeIs(tree->TypeGet()));
-                    assert(varTypeIsFloating(tree));
-                    break;
-
-                // Integer Min/Max
-                case NI_System_Math_Min:
-                case NI_System_Math_Max:
-                case NI_System_Math_MinUnsigned:
-                case NI_System_Math_MaxUnsigned:
-                    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
-                    assert(op2 != nullptr);
-                    assert(op2->TypeIs(tree->TypeGet()));
-                    assert(op1->TypeIs(tree->TypeGet()));
-                    assert(tree->TypeIs(TYP_I_IMPL));
-                    break;
-
-                // Operand and its result must be integers
-                case NI_PRIMITIVE_LeadingZeroCount:
-                case NI_PRIMITIVE_TrailingZeroCount:
-                case NI_PRIMITIVE_PopCount:
-                    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
-                    assert(op2 == nullptr);
-                    assert(varTypeIsIntegral(op1));
-                    assert(varTypeIsIntegral(tree));
-                    break;
-
-                default:
-                    NO_WAY("Unknown intrinsic");
-            }
-
+            assert(varTypeIsFloating(op1));
+            assert(op1->TypeIs(tree->TypeGet()));
             BuildUse(op1);
             srcCount = 1;
             if (op2 != nullptr)
             {
+                assert(op2->TypeIs(tree->TypeGet()));
                 BuildUse(op2);
                 srcCount++;
             }
@@ -874,10 +833,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 buildInternalIntRegisterDefForNode(indirTree);
             }
         }
-        else if (addr->OperGet() == GT_CNS_INT)
-        {
-            buildInternalIntRegisterDefForNode(indirTree);
-        }
     }
 
 #ifdef FEATURE_SIMD
@@ -965,12 +920,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
             }
             assert(ctrlExprCandidates != RBM_NONE);
         }
-
-        // In case ctrlExpr is a contained constant, we need a register to store the value.
-        if (ctrlExpr->isContainedIntOrIImmed())
-        {
-            buildInternalIntRegisterDefForNode(call);
-        }
     }
     else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
@@ -1008,7 +957,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     srcCount += BuildCallArgUses(call);
 
-    if (ctrlExpr != nullptr && !ctrlExpr->isContainedIntOrIImmed())
+    if (ctrlExpr != nullptr)
     {
         BuildUse(ctrlExpr, ctrlExprCandidates);
         srcCount++;

@@ -24,7 +24,10 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteByteString(byte[] value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             WriteByteString(value.AsSpan());
         }
@@ -105,7 +108,10 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteTextString(string value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             WriteTextString(value.AsSpan());
         }

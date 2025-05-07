@@ -104,7 +104,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static ReflectionMethod ToReflectionMethod(this MethodInfo method)
         {
-            ArgumentNullException.ThrowIfNull(method);
+            if (method == null)
+            {
+                throw new ArgumentNullException(nameof(method));
+            }
 
             return new ReflectionMethod(method);
         }

@@ -1258,23 +1258,6 @@ namespace Internal.JitInterface
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);
 
-            EcmaModule rootModule = (MethodBeingCompiled.OwningType as MetadataType)?.Module as EcmaModule;
-            EcmaModule calleeModule = (calleeMethod.OwningType as MetadataType)?.Module as EcmaModule;
-
-            // If this inline crosses module boundaries, ensure the modules agree on exception wrapping behavior.
-            if ((rootModule != calleeModule) && (rootModule != null) && (calleeModule != null))
-            {
-                if (rootModule.IsWrapNonExceptionThrows != calleeModule.IsWrapNonExceptionThrows)
-                {
-                    var calleeIL = _compilation.GetMethodIL(calleeMethod);
-                    if (calleeIL.GetExceptionRegions().Length != 0)
-                    {
-                        // Fail inlining if root method and callee have different exception wrapping behavior
-                        return CorInfoInline.INLINE_FAIL;
-                    }
-                }
-            }
-
             if (_compilation.CanInline(callerMethod, calleeMethod))
             {
                 // No restrictions on inlining
@@ -1283,10 +1266,6 @@ namespace Internal.JitInterface
             else
             {
                 // Call may not be inlined
-                //
-                // Note despite returning INLINE_NEVER here, in compilations where jitting is possible
-                // the jit may still be able to inline this method. So we rely on reportInliningDecision
-                // to not propagate this into metadata to short-circuit future inlining attempts.
                 return CorInfoInline.INLINE_NEVER;
             }
         }
@@ -2651,6 +2630,30 @@ namespace Internal.JitInterface
             var typeForBox = type.IsNullable ? type.Instantiation[0] : type;
 
             return ObjectToHandle(typeForBox);
+        }
+
+        private CORINFO_CLASS_STRUCT_* getTypeForBoxOnStack(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc clsTypeDesc = HandleToObject(cls);
+            if (clsTypeDesc.IsNullable)
+            {
+                clsTypeDesc = clsTypeDesc.Instantiation[0];
+            }
+
+            if (clsTypeDesc.RequiresAlign8())
+            {
+                // Conservatively give up on such types (32bit)
+                return null;
+            }
+
+            // Instantiate StackAllocatedBox<T> helper type with the type we're boxing
+            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System.Runtime.CompilerServices", "StackAllocatedBox`1", throwIfNotFound: false);
+            if (placeholderType == null)
+            {
+                // Give up if corelib does not have support for stackallocation
+                return null;
+            }
+            return ObjectToHandle(placeholderType.MakeInstantiatedType(clsTypeDesc));
         }
 
         private CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_STRUCT_* cls)

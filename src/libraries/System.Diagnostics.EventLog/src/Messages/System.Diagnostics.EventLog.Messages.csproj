@@ -6,7 +6,5 @@
     <!-- Override the parent Directory.Build.props -->
     <SupportedOSPlatforms />
     <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
-    <SkipIncludePolyfills>true</SkipIncludePolyfills>
-    <SkipIncludeNullableAttributes>true</SkipIncludeNullableAttributes>
   </PropertyGroup>
 </Project>

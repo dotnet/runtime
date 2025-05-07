@@ -19,10 +19,7 @@ namespace System.Net.Http
 
         public ValueTask<T> WaitForConnectionAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
         {
-            bool withTelemetry = HttpTelemetry.Log.IsEnabled()
-                                || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && pool.Settings._metrics!.RequestsQueueDuration.Enabled)
-                                || (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && Activity.Current?.Source == DiagnosticsHandler.s_activitySource);
-            return withTelemetry
+            return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled || Activity.Current?.Source == DiagnosticsHandler.s_activitySource
                 ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
                 : WaitWithCancellationAsync(async, requestCancellationToken);
         }
@@ -45,19 +42,14 @@ namespace System.Net.Http
             }
             finally
             {
-                if (HttpTelemetry.Log.IsEnabled() || GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
-                {
-                    TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
-                    int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
-                    if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
-                    {
-                        pool.Settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor);
-                    }
+                TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
+                int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
 
-                    if (HttpTelemetry.Log.IsEnabled())
-                    {
-                        HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
-                    }
+                pool.Settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor);
+
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
                 }
             }
         }

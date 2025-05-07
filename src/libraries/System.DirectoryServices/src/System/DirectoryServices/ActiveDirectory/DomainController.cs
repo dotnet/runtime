@@ -173,7 +173,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController FindOne(DirectoryContext context)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
@@ -185,21 +188,30 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController FindOne(DirectoryContext context, string siteName)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
                 throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             return FindOneWithCredentialValidation(context, siteName, 0);
         }
 
         public static DomainController FindOne(DirectoryContext context, LocatorOptions flag)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
@@ -211,21 +223,30 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController FindOne(DirectoryContext context, string siteName, LocatorOptions flag)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
                 throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             return FindOneWithCredentialValidation(context, siteName, flag);
         }
 
         public static DomainControllerCollection FindAll(DirectoryContext context)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
@@ -240,14 +261,20 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainControllerCollection FindAll(DirectoryContext context, string siteName)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
                 throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
-            ArgumentNullException.ThrowIfNull(siteName);
+            if (siteName == null)
+            {
+                throw new ArgumentNullException(nameof(siteName));
+            }
 
             //  work with copy of the context
             context = new DirectoryContext(context);

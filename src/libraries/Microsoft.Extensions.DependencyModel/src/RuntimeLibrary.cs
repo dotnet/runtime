@@ -105,9 +105,9 @@ namespace Microsoft.Extensions.DependencyModel
                   hashPath,
                   runtimeStoreManifestName)
         {
-            ArgumentNullException.ThrowIfNull(runtimeAssemblyGroups);
-            ArgumentNullException.ThrowIfNull(nativeLibraryGroups);
-            ArgumentNullException.ThrowIfNull(resourceAssemblies);
+            ThrowHelper.ThrowIfNull(runtimeAssemblyGroups);
+            ThrowHelper.ThrowIfNull(nativeLibraryGroups);
+            ThrowHelper.ThrowIfNull(resourceAssemblies);
 
             RuntimeAssemblyGroups = runtimeAssemblyGroups;
             ResourceAssemblies = resourceAssemblies.ToArray();

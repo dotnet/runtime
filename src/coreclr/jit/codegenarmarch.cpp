@@ -3457,16 +3457,17 @@ void CodeGen::genCall(GenTreeCall* call)
 void CodeGen::genCallInstruction(GenTreeCall* call)
 {
     // Determine return value size(s).
-    const ReturnTypeDesc* pRetTypeDesc = call->GetReturnTypeDesc();
-    EmitCallParams        params;
+    const ReturnTypeDesc* pRetTypeDesc  = call->GetReturnTypeDesc();
+    emitAttr              retSize       = EA_PTRSIZE;
+    emitAttr              secondRetSize = EA_UNKNOWN;
 
     // unused values are of no interest to GC.
     if (!call->IsUnusedValue())
     {
         if (call->HasMultiRegRetVal())
         {
-            params.retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
-            params.secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
+            retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
+            secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
         }
         else
         {
@@ -3474,40 +3475,38 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
             if (call->gtType == TYP_REF)
             {
-                params.retSize = EA_GCREF;
+                retSize = EA_GCREF;
             }
             else if (call->gtType == TYP_BYREF)
             {
-                params.retSize = EA_BYREF;
+                retSize = EA_BYREF;
             }
         }
     }
 
 #ifdef TARGET_ARM
     // ARM32 support multireg returns, but only to return 64bit primitives.
-    assert(params.secondRetSize != EA_GCREF);
-    assert(params.secondRetSize != EA_BYREF);
+    assert(secondRetSize != EA_GCREF);
+    assert(secondRetSize != EA_BYREF);
 #endif
 
-    params.isJump = call->IsFastTailCall();
-
+    DebugInfo di;
     // We need to propagate the debug information to the call instruction, so we can emit
     // an IL to native mapping record for the call, to support managed return value debugging.
     // We don't want tail call helper calls that were converted from normal calls to get a record,
     // so we skip this hash table lookup logic in that case.
     if (compiler->opts.compDbgInfo && compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
     {
-        DebugInfo di;
         (void)compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
     }
 
+    CORINFO_SIG_INFO* sigInfo = nullptr;
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
     // native call sites with the signatures they were generated from.
     if (!call->IsHelperCall())
     {
-        params.sigInfo = call->callSig;
+        sigInfo = call->callSig;
     }
 
     if (call->IsFastTailCall())
@@ -3537,7 +3536,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 #endif // DEBUG
-    GenTree* target = getCallTarget(call, &params.methHnd);
+    CORINFO_METHOD_HANDLE methHnd;
+    GenTree*              target = getCallTarget(call, &methHnd);
 
     if (target != nullptr)
     {
@@ -3556,6 +3556,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // We just need to emit "call reg" in this case.
         //
         assert(genIsValidIntReg(target->GetRegNum()));
+        bool noSafePoint = false;
 
 #ifdef TARGET_ARM64
         bool isTlsHandleTarget =
@@ -3565,11 +3566,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             assert(call->gtFlags & GTF_TLS_GET_ADDR);
             emitter*       emitter  = GetEmitter();
-            emitAttr       attr     = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | params.retSize);
+            emitAttr       attr     = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | retSize);
             GenTreeIntCon* iconNode = target->AsIntCon();
-            params.methHnd          = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
-            params.retSize          = EA_SET_FLG(params.retSize, EA_CNS_TLSGD_RELOC);
-            params.noSafePoint      = true;
+            methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
+            retSize                 = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC);
+            noSafePoint             = true;
 
             // For NativeAOT, linux/arm64, linker wants the following pattern, so we will generate
             // it as part of the call. Generating individual instructions is tricky to get it
@@ -3591,15 +3592,22 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // ldr
             // add
             emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(),
-                                          (ssize_t)params.methHnd DEBUGARG(iconNode->gtTargetHandle)
+                                          (ssize_t)methHnd DEBUGARG(iconNode->gtTargetHandle)
                                               DEBUGARG(iconNode->gtFlags));
         }
 #endif
 
-        params.callType = EC_INDIR_R;
-        params.ireg     = target->GetRegNum();
-
-        genEmitCallWithCurrentGC(params);
+        // clang-format off
+        genEmitCall(emitter::EC_INDIR_R,
+                    methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo)
+                    nullptr, // addr
+                    retSize
+                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    di,
+                    target->GetRegNum(),
+                    call->IsFastTailCall(),
+                    noSafePoint);
 
 #ifdef TARGET_ARM64
         if (isTlsHandleTarget)
@@ -3608,6 +3616,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R0, REG_R1, REG_R0);
         }
 #endif
+        // clang-format on
     }
     else
     {
@@ -3655,55 +3664,80 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             //
             assert(genIsValidIntReg(targetAddrReg));
 
-            params.callType = EC_INDIR_R;
-            params.ireg     = targetAddrReg;
-            genEmitCallWithCurrentGC(params);
+            // clang-format off
+            genEmitCall(emitter::EC_INDIR_R,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        nullptr, // addr
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        di,
+                        targetAddrReg,
+                        call->IsFastTailCall());
+            // clang-format on
         }
         else
         {
             // Generate a direct call to a non-virtual user defined or helper method
             assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
+            void* addr = nullptr;
 #ifdef FEATURE_READYTORUN
             if (call->gtEntryPoint.addr != NULL)
             {
                 assert(call->gtEntryPoint.accessType == IAT_VALUE);
-                params.addr = call->gtEntryPoint.addr;
+                addr = call->gtEntryPoint.addr;
             }
             else
 #endif // FEATURE_READYTORUN
                 if (call->IsHelperCall())
                 {
-                    CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
+                    CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
                     void* pAddr = nullptr;
-                    params.addr = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+                    addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
                     assert(pAddr == nullptr);
                 }
                 else
                 {
                     // Direct call to a non-virtual user function.
-                    params.addr = call->gtDirectCallAddress;
+                    addr = call->gtDirectCallAddress;
                 }
 
-            assert(params.addr != nullptr);
+            assert(addr != nullptr);
 
 // Non-virtual direct call to known addresses
 #ifdef TARGET_ARM
-            if (!validImmForBL((ssize_t)params.addr))
+            if (!validImmForBL((ssize_t)addr))
             {
                 regNumber tmpReg = internalRegisters.GetSingle(call);
-                instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)params.addr);
-                params.callType = EC_INDIR_R;
-                params.ireg     = tmpReg;
-                genEmitCallWithCurrentGC(params);
+                instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)addr);
+                // clang-format off
+                genEmitCall(emitter::EC_INDIR_R,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            NULL,
+                            retSize,
+                            di,
+                            tmpReg,
+                            call->IsFastTailCall());
+                // clang-format on
             }
             else
 #endif // TARGET_ARM
             {
-                params.callType = EC_FUNC_TOKEN;
-                genEmitCallWithCurrentGC(params);
+                // clang-format off
+                genEmitCall(emitter::EC_FUNC_TOKEN,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            addr,
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            di,
+                            REG_NA,
+                            call->IsFastTailCall());
+                // clang-format on
             }
         }
     }
@@ -4641,7 +4675,8 @@ void CodeGen::genPushCalleeSavedRegisters()
     // 5. We allocate the frame here; no further changes to SP are allowed (except in the body, for localloc).
     //
     // For functions with GS and localloc, we change the frame so the frame pointer and LR are saved at the top
-    // of the frame, just under the varargs registers (if any).
+    // of the frame, just under the varargs registers (if any). Note that the funclet frames must follow the same
+    // rule, and both main frame and funclet frames (if any) must put PSPSym in the same offset from Caller-SP.
     // Since this frame type is relatively rare, we force using it via stress modes, for additional coverage.
     //
     // The frames look like the following (simplified to only include components that matter for establishing the
@@ -4658,6 +4693,8 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
     //      |    MonitorAcquired    | // 8 bytes; for synchronized methods
+    //      |-----------------------|
+    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|
@@ -4689,6 +4726,8 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
     //      |    MonitorAcquired    | // 8 bytes; for synchronized methods
+    //      |-----------------------|
+    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|
@@ -5289,17 +5328,19 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             assert(methHnd != nullptr);
             assert(addrInfo.addr != nullptr);
 
-            EmitCallParams params;
-            params.methHnd = methHnd;
-
+#ifdef TARGET_ARMARCH
+            emitter::EmitCallType callType;
+            void*                 addr;
+            regNumber             indCallReg;
             switch (addrInfo.accessType)
             {
                 case IAT_VALUE:
                     if (validImmForBL((ssize_t)addrInfo.addr))
                     {
                         // Simple direct call
-                        params.callType = EC_FUNC_TOKEN;
-                        params.addr     = addrInfo.addr;
+                        callType   = emitter::EC_FUNC_TOKEN;
+                        addr       = addrInfo.addr;
+                        indCallReg = REG_NA;
                         break;
                     }
 
@@ -5310,13 +5351,14 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 case IAT_PVALUE:
                     // Load the address into a register, load indirect and call  through a register
                     // We have to use R12 since we assume the argument registers are in use
-                    params.callType = EC_INDIR_R;
-                    params.ireg     = REG_INDIRECT_CALL_TARGET_REG;
-                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, params.ireg, (ssize_t)addrInfo.addr);
+                    callType   = emitter::EC_INDIR_R;
+                    indCallReg = REG_INDIRECT_CALL_TARGET_REG;
+                    addr       = NULL;
+                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addrInfo.addr);
                     if (addrInfo.accessType == IAT_PVALUE)
                     {
-                        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, params.ireg, params.ireg, 0);
-                        regSet.verifyRegUsed(params.ireg);
+                        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0);
+                        regSet.verifyRegUsed(indCallReg);
                     }
                     break;
 
@@ -5326,10 +5368,11 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     // We have to use R12 since we assume the argument registers are in use
                     // LR is used as helper register right before it is restored from stack, thus,
                     // all relative address calculations are performed before LR is restored.
-                    params.callType = EC_INDIR_R;
-                    params.ireg     = REG_R12;
+                    callType   = emitter::EC_INDIR_R;
+                    indCallReg = REG_R12;
+                    addr       = NULL;
 
-                    regSet.verifyRegUsed(params.ireg);
+                    regSet.verifyRegUsed(indCallReg);
                     break;
                 }
 
@@ -5338,12 +5381,31 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     NO_WAY("Unsupported JMP indirection");
             }
 
-            // Simply emit a jump to the methodHnd. This is similar to a call so we can use
-            // the same descriptor with some minor adjustments.
-            //
+            /* Simply emit a jump to the methodHnd. This is similar to a call so we can use
+             * the same descriptor with some minor adjustments.
+             */
 
-            params.isJump = true;
-            genEmitCallWithCurrentGC(params);
+            // clang-format off
+            GetEmitter()->emitIns_Call(callType,
+                                       methHnd,
+                                       INDEBUG_LDISASM_COMMA(nullptr)
+                                       addr,
+                                       0,          // argSize
+                                       EA_UNKNOWN, // retSize
+#if defined(TARGET_ARM64)
+                                       EA_UNKNOWN, // secondRetSize
+#endif
+                                       gcInfo.gcVarPtrSetCur,
+                                       gcInfo.gcRegGCrefSetCur,
+                                       gcInfo.gcRegByrefSetCur,
+                                       DebugInfo(),
+                                       indCallReg,    // ireg
+                                       REG_NA,        // xreg
+                                       0,             // xmul
+                                       0,             // disp
+                                       true);         // isJump
+            // clang-format on
+#endif // TARGET_ARMARCH
         }
 #if FEATURE_FASTTAILCALL
         else

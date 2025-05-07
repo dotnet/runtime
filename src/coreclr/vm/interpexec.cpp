@@ -31,13 +31,6 @@ InterpThreadContext* InterpGetThreadContext()
     }
 }
 
-#ifdef DEBUG
-static void InterpBreakpoint()
-{
-
-}
-#endif
-
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 // TODO once we have basic EH support
@@ -54,7 +47,6 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     stack = pFrame->pStack;
 
     int32_t returnOffset, callArgsOffset, methodSlot;
-    const int32_t *targetIp;
 
 MAIN_LOOP:
     while (true)
@@ -68,12 +60,6 @@ MAIN_LOOP:
 
         switch (*ip)
         {
-#ifdef DEBUG
-            case INTOP_BREAKPOINT:
-                InterpBreakpoint();
-                ip++;
-                break;
-#endif
             case INTOP_INITLOCALS:
                 memset(stack + ip[1], 0, ip[2]);
                 ip += 3;
@@ -585,108 +571,6 @@ MAIN_LOOP:
                 ip += 4;
                 break;
 
-            case INTOP_DIV_I4:
-            {
-                int32_t i1 = LOCAL_VAR(ip[2], int32_t);
-                int32_t i2 = LOCAL_VAR(ip[3], int32_t);
-                if (i2 == 0)
-                    assert(0); // Interpreter-TODO: DivideByZeroException
-                if (i2 == -1 && i1 == INT32_MIN)
-                    assert(0); // Interpreter-TODO: OverflowException
-                LOCAL_VAR(ip[1], int32_t) = i1 / i2;
-                ip += 4;
-                break;
-            }
-            case INTOP_DIV_I8:
-            {
-                int64_t l1 = LOCAL_VAR(ip[2], int64_t);
-                int64_t l2 = LOCAL_VAR(ip[3], int64_t);
-                if (l2 == 0)
-                    assert(0); // Interpreter-TODO: DivideByZeroException
-                if (l2 == -1 && l1 == INT64_MIN)
-                    assert(0); // Interpreter-TODO: OverflowException
-                LOCAL_VAR(ip[1], int64_t) = l1 / l2;
-                ip += 4;
-                break;
-            }
-            case INTOP_DIV_R4:
-                LOCAL_VAR(ip[1], float) = LOCAL_VAR(ip[2], float) / LOCAL_VAR(ip[3], float);
-                ip += 4;
-                break;
-            case INTOP_DIV_R8:
-                LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) / LOCAL_VAR(ip[3], double);
-                ip += 4;
-                break;
-            case INTOP_DIV_UN_I4:
-            {
-                uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
-                if (i2 == 0)
-                    assert(0); // Interpreter-TODO: DivideByZeroException
-                LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) / i2;
-                ip += 4;
-                break;
-            }
-            case INTOP_DIV_UN_I8:
-            {
-                uint64_t l2 = LOCAL_VAR(ip[3], uint64_t);
-                if (l2 == 0)
-                    assert(0); // Interpreter-TODO: DivideByZeroException
-                LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) / l2;
-                ip += 4;
-                break;
-            }
-
-            case INTOP_REM_I4:
-            {
-                int32_t i1 = LOCAL_VAR(ip[2], int32_t);
-                int32_t i2 = LOCAL_VAR(ip[3], int32_t);
-                if (i2 == 0)
-                    assert(0); // Interpreter-TODO: DivideByZeroException
-                if (i2 == -1 && i1 == INT32_MIN)
-                    assert(0); // Interpreter-TODO: OverflowException
-                LOCAL_VAR(ip[1], int32_t) = i1 % i2;
-                ip += 4;
-                break;
-            }
-            case INTOP_REM_I8:
-            {
-                int64_t l1 = LOCAL_VAR(ip[2], int64_t);
-                int64_t l2 = LOCAL_VAR(ip[3], int64_t);
-                if (l2 == 0)
-                    assert(0); // Interpreter-TODO: DivideByZeroException
-                if (l2 == -1 && l1 == INT64_MIN)
-                    assert(0); // Interpreter-TODO: OverflowException
-                LOCAL_VAR(ip[1], int64_t) = l1 % l2;
-                ip += 4;
-                break;
-            }
-            case INTOP_REM_R4:
-                LOCAL_VAR(ip[1], float) = fmodf(LOCAL_VAR(ip[2], float), LOCAL_VAR(ip[3], float));
-                ip += 4;
-                break;
-            case INTOP_REM_R8:
-                LOCAL_VAR(ip[1], double) = fmod(LOCAL_VAR(ip[2], double), LOCAL_VAR(ip[3], double));
-                ip += 4;
-                break;
-            case INTOP_REM_UN_I4:
-            {
-                uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
-                if (i2 == 0)
-                    assert(0); // Interpreter-TODO: DivideByZeroException
-                LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) % i2;
-                ip += 4;
-                break;
-            }
-            case INTOP_REM_UN_I8:
-            {
-                uint64_t l2 = LOCAL_VAR(ip[3], uint64_t);
-                if (l2 == 0)
-                    assert(0); // Interpreter-TODO: DivideByZeroException
-                LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) % l2;
-                ip += 4;
-                break;
-            }
-
             case INTOP_SHL_I4:
                 LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) << LOCAL_VAR(ip[3], int32_t);
                 ip += 4;
@@ -880,6 +764,10 @@ MAIN_LOOP:
             case INTOP_LDIND_R8:
                 LDIND(double, double);
                 break;
+            case INTOP_LDIND_O:
+                LDIND(OBJECTREF, OBJECTREF);
+                break;
+
             case INTOP_LDIND_VT:
             {
                 char *src = LOCAL_VAR(ip[2], char*);
@@ -973,35 +861,6 @@ MAIN_LOOP:
                 ip += 5;
                 break;
             }
-            case INTOP_CALLVIRT:
-            {
-                returnOffset = ip[1];
-                callArgsOffset = ip[2];
-                methodSlot = ip[3];
-
-                MethodDesc *pMD = (MethodDesc*)pMethod->pDataItems[methodSlot];
-
-                OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset, OBJECTREF);
-                NULL_CHECK(*pThisArg);
-
-                // Interpreter-TODO
-                // This needs to be optimized, not operating at MethodDesc level, rather with ftnptr
-                // slots containing the interpreter IR pointer
-                pMD = pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
-
-                PCODE code = pMD->GetNativeCode();
-                if (!code)
-                {
-                    pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
-                    GCX_PREEMP();
-                    pMD->PrepareInitialCode(CallerGCMode::Coop);
-                    code = pMD->GetNativeCode();
-                }
-                targetIp = (const int32_t*)code;
-                ip += 4;
-                // Interpreter-TODO unbox if target method class is valuetype
-                goto CALL_TARGET_IP;
-            }
 
             case INTOP_CALL:
             {
@@ -1011,7 +870,7 @@ MAIN_LOOP:
 
                 ip += 4;
 CALL_INTERP_SLOT:
-                {
+                const int32_t *targetIp;
                 size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
                 if (targetMethod & INTERP_METHOD_DESC_TAG)
                 {
@@ -1042,8 +901,7 @@ CALL_INTERP_SLOT:
                     // for interpreter call or normal pointer for JIT/R2R call.
                     targetIp = (const int32_t*)targetMethod;
                 }
-                }
-CALL_TARGET_IP:
+
                 // Save current execution state for when we return from called method
                 pFrame->ip = ip;
 
@@ -1101,10 +959,6 @@ CALL_TARGET_IP:
                 ip += 5;
                 goto CALL_INTERP_SLOT;
             }
-            case INTOP_ZEROBLK_IMM:
-                memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
-                ip += 3;
-                break;
             case INTOP_FAILFAST:
                 assert(0);
                 break;

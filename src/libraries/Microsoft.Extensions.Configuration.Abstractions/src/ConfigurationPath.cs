@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The combined path.</returns>
         public static string Combine(params string[] pathSegments)
         {
-            ArgumentNullException.ThrowIfNull(pathSegments);
+            ThrowHelper.ThrowIfNull(pathSegments);
 
             return string.Join(KeyDelimiter, pathSegments);
         }
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The combined path.</returns>
         public static string Combine(IEnumerable<string> pathSegments)
         {
-            ArgumentNullException.ThrowIfNull(pathSegments);
+            ThrowHelper.ThrowIfNull(pathSegments);
 
             return string.Join(KeyDelimiter, pathSegments);
         }

@@ -16,7 +16,10 @@ namespace System.Text.Json.Serialization
 
         public sealed override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            ArgumentNullException.ThrowIfNull(options);
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
 
             // Bridge from resumable to value converters.
 
@@ -30,7 +33,10 @@ namespace System.Text.Json.Serialization
 
         public sealed override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
-            ArgumentNullException.ThrowIfNull(options);
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
 
             // Bridge from resumable to value converters.
             WriteStack state = default;

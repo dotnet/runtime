@@ -12,7 +12,10 @@ namespace System.Collections.ObjectModel
 #if NET8_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(array);
 #else
-            ArgumentNullException.ThrowIfNull(array);
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
 #endif
 
             if (array.Rank != 1)

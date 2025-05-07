@@ -52,6 +52,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> Redaction_MemberData()
         {
+            string[] uriTails = new string[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" };
             foreach (string uriTail in new[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" })
             {
                 foreach (string fragment in new[] { "", "#frag" })
@@ -933,16 +934,15 @@ namespace System.Net.Http.Functional.Tests
         {
             var psi = new ProcessStartInfo();
             psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", disableRedaction.ToString());
-
-            string expectedUriTail = uriTail;
+            var fragIndex = uriTail.IndexOf('#');
+            var expectedUriTail = uriTail.Substring(0, fragIndex >= 0 ? fragIndex : uriTail.Length);
             if (!disableRedaction)
             {
                 var queryIndex = expectedUriTail.IndexOf('?');
                 expectedUriTail = expectedUriTail.Substring(0, queryIndex >= 0 ? queryIndex + 1 : expectedUriTail.Length);
                 expectedUriTail = queryIndex >= 0 ? expectedUriTail + '*' : expectedUriTail;
-
-                expectedUriTail = expectedUriTail.Split('#')[0];
             }
+            expectedUriTail = fragIndex >= 0 ? expectedUriTail + uriTail.Substring(fragIndex) : expectedUriTail;
 
             await RemoteExecutor.Invoke(static async (useVersionString, uriTail, expectedUriTail) =>
             {

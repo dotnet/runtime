@@ -47,23 +47,14 @@ namespace Microsoft.NET.Sdk.WebAssembly
             return false;
         }
 
-        public void WriteConfigToFile(BootJsonData config, string outputPath, string? outputFileExtension = null, string? mergeWith = null)
+        public void WriteConfigToFile(BootJsonData config, string outputPath, string? outputFileExtension = null)
         {
             var output = JsonSerializer.Serialize(config, JsonOptions);
 
             outputFileExtension ??= Path.GetExtension(outputPath);
             Log.LogMessage($"Write config in format '{outputFileExtension}'");
-            if (mergeWith != null)
-            {
-                string existingContent = File.ReadAllText(mergeWith);
-                output = existingContent.Replace("/*! dotnetBootConfig */{}", $"/*json-start*/{output}/*json-end*/");
-                if (existingContent.Equals(output))
-                    Log.LogError($"Merging boot config into '{mergeWith}' failed to find the placeholder.");
-            }
-            else if (outputFileExtension == ".js")
-            {
+            if (outputFileExtension == ".js")
                 output = $"export const config = /*json-start*/{output}/*json-end*/;";
-            }
 
             File.WriteAllText(outputPath, output);
         }

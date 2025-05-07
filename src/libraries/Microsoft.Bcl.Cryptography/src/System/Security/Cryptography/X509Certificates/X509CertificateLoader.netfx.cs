@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public static partial X509Certificate2 LoadCertificate(byte[] data)
         {
-            ArgumentNullException.ThrowIfNull(data);
+            ThrowIfNull(data);
 
             return LoadCertificate(new ReadOnlySpan<byte>(data));
         }

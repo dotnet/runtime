@@ -281,6 +281,9 @@ CorInfoHelpFunc getSharedCCtorHelper(
 CORINFO_CLASS_HANDLE getTypeForBox(
           CORINFO_CLASS_HANDLE cls) override;
 
+CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls) override;
+
 CorInfoHelpFunc getBoxHelper(
           CORINFO_CLASS_HANDLE cls) override;
 

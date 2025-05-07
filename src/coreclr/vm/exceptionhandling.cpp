@@ -182,7 +182,7 @@ void HandleTerminationRequest(int terminationExitCode)
 
 void InitializeExceptionHandling()
 {
-    EH_LOG((LL_INFO100, "InitializeExceptionHandling(): ExInfo size: 0x%x bytes\n", sizeof(ExInfo)));
+    EH_LOG((LL_INFO100, "InitializeExceptionHandling(): ExceptionTracker size: 0x%x bytes\n", sizeof(ExceptionTracker)));
 
     CLRAddVectoredHandlers();
 
@@ -320,7 +320,7 @@ StackWalkAction UpdateObjectRefInResumeContextCallback(CrawlFrame* pCF, LPVOID p
 
 
 //static
-void ExInfo::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDISPLAY *pRegDisplay, bool fAborting)
+void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDISPLAY *pRegDisplay, bool fAborting)
 {
     CONTEXT* pAbortContext = NULL;
     if (fAborting)
@@ -433,7 +433,7 @@ void ExInfo::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDISPLAY *pRe
     UPDATEREG(Fp);
 
 #else
-    PORTABILITY_ASSERT("ExInfo::UpdateNonvolatileRegisters");
+    PORTABILITY_ASSERT("ExceptionTracker::UpdateNonvolatileRegisters");
 #endif
 
 #undef UPDATEREG
@@ -644,7 +644,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
     }
     else
     {
-        OBJECTREF oref = ExInfo::CreateThrowable(pExceptionRecord, FALSE);
+        OBJECTREF oref = ExceptionTracker::CreateThrowable(pExceptionRecord, FALSE);
         DispatchManagedException(oref, pContextRecord, pExceptionRecord);
     }
 #endif // !HOST_UNIX
@@ -700,7 +700,7 @@ BOOL NotifyDebuggerOfStub(Thread* pThread, Frame* pCurrentFrame)
 // SEH __except clause as well as a C++ catch clause.
 //
 // static
-void ExInfo::PopTrackers(
+void ExceptionTracker::PopTrackers(
     void* pStackFrameSP
     )
 {
@@ -719,7 +719,7 @@ void ExInfo::PopTrackers(
     Thread *pCurThread = GetThreadNULLOk();
     if ((pCurThread != NULL) && (pCurThread->GetExceptionState()->IsExceptionInProgress()))
     {
-        // Refer to the comment around ExInfo::HasFrameBeenUnwoundByAnyActiveException
+        // Refer to the comment around ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException
         // for details on the usage of this COOP switch.
         GCX_COOP();
 
@@ -729,14 +729,14 @@ void ExInfo::PopTrackers(
 
 //
 // static
-void ExInfo::PopTrackers(
+void ExceptionTracker::PopTrackers(
     StackFrame sfResumeFrame,
     bool fPopWhenEqual
     )
 {
     CONTRACTL
     {
-        // Refer to the comment around ExInfo::HasFrameBeenUnwoundByAnyActiveException
+        // Refer to the comment around ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException
         // for details on the mode being COOP here.
         MODE_COOPERATIVE;
         GC_NOTRIGGER;
@@ -750,7 +750,7 @@ void ExInfo::PopTrackers(
 
 //
 // static
-OBJECTREF ExInfo::CreateThrowable(
+OBJECTREF ExceptionTracker::CreateThrowable(
     PEXCEPTION_RECORD pExceptionRecord,
     BOOL bAsynchronousThreadStop
     )
@@ -838,15 +838,15 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
 #ifdef _DEBUG
 //
 // static
-UINT_PTR ExInfo::DebugComputeNestingLevel()
+UINT_PTR ExceptionTracker::DebugComputeNestingLevel()
 {
     UINT_PTR uNestingLevel = 0;
     Thread* pThread = GetThreadNULLOk();
 
     if (pThread)
     {
-        PTR_ExInfo pTracker;
-        pTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
+        ExceptionTrackerBase* pTracker;
+        pTracker = pThread->GetExceptionState()->m_pCurrentTracker;
 
         while (pTracker)
         {
@@ -908,7 +908,7 @@ static void DoEHLog(
     va_list  args;
     va_start(args, fmt);
 
-    UINT_PTR nestinglevel = ExInfo::DebugComputeNestingLevel();
+    UINT_PTR nestinglevel = ExceptionTracker::DebugComputeNestingLevel();
     if (nestinglevel)
     {
         _ASSERTE(FitsIn<UINT_PTR>(2 * nestinglevel));
@@ -1007,7 +1007,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         RtlCaptureContext(ex.GetContextRecord());
     }
     GCX_COOP();
-    OBJECTREF throwable = ExInfo::CreateThrowable(ex.GetExceptionRecord(), FALSE);
+    OBJECTREF throwable = ExceptionTracker::CreateThrowable(ex.GetExceptionRecord(), FALSE);
     DispatchManagedException(throwable, ex.GetContextRecord());
 }
 
@@ -1723,7 +1723,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     //
     // The OS will pick this up with the rest of the DispatcherContext state
     // when it processes collided unwind and thus, when our managed personality
-    // routine is invoked, ExInfo::InitializeCrawlFrame will adjust
+    // routine is invoked, ExceptionTracker::InitializeCrawlFrame will adjust
     // ControlPC correctly.
     pDispatcherContext->ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
     pDispatcherContext->ControlPcIsUnwound = FALSE;
@@ -2026,7 +2026,8 @@ UnhandledExceptionHandlerUnix(
 {
     // Unhandled exception happened, so dump the managed stack trace and terminate the process
 
-    DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/);
+    DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/,
+        FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
 
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     return _URC_FATAL_PHASE1_ERROR;
@@ -2195,7 +2196,7 @@ FixRedirectContextHandler(
 #endif // !TARGET_UNIX && !TARGET_X86
 #endif // DACCESS_COMPILE
 
-void ExInfo::StackRange::Reset()
+void ExceptionTrackerBase::StackRange::Reset()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2203,14 +2204,14 @@ void ExInfo::StackRange::Reset()
     m_sfHighBound.Clear();
 }
 
-bool ExInfo::StackRange::IsEmpty()
+bool ExceptionTrackerBase::StackRange::IsEmpty()
 {
     LIMITED_METHOD_CONTRACT;
     return (m_sfLowBound.IsMaxVal() &&
             m_sfHighBound.IsNull());
 }
 
-bool ExInfo::StackRange::IsSupersededBy(StackFrame sf)
+bool ExceptionTrackerBase::StackRange::IsSupersededBy(StackFrame sf)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -2218,7 +2219,7 @@ bool ExInfo::StackRange::IsSupersededBy(StackFrame sf)
     return (sf >= m_sfLowBound);
 }
 
-void ExInfo::StackRange::CombineWith(StackFrame sfCurrent, StackRange* pPreviousRange)
+void ExceptionTrackerBase::StackRange::CombineWith(StackFrame sfCurrent, StackRange* pPreviousRange)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2261,7 +2262,7 @@ void ExInfo::StackRange::CombineWith(StackFrame sfCurrent, StackRange* pPrevious
     }
 }
 
-bool ExInfo::StackRange::Contains(StackFrame sf)
+bool ExceptionTrackerBase::StackRange::Contains(StackFrame sf)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -2270,7 +2271,7 @@ bool ExInfo::StackRange::Contains(StackFrame sf)
                             (sf <= m_sfHighBound));
 }
 
-void ExInfo::StackRange::ExtendUpperBound(StackFrame sf)
+void ExceptionTrackerBase::StackRange::ExtendUpperBound(StackFrame sf)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -2279,7 +2280,7 @@ void ExInfo::StackRange::ExtendUpperBound(StackFrame sf)
     m_sfHighBound = sf;
 }
 
-void ExInfo::StackRange::ExtendLowerBound(StackFrame sf)
+void ExceptionTrackerBase::StackRange::ExtendLowerBound(StackFrame sf)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -2288,7 +2289,7 @@ void ExInfo::StackRange::ExtendLowerBound(StackFrame sf)
     m_sfLowBound = sf;
 }
 
-void ExInfo::StackRange::TrimLowerBound(StackFrame sf)
+void ExceptionTrackerBase::StackRange::TrimLowerBound(StackFrame sf)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -2297,7 +2298,7 @@ void ExInfo::StackRange::TrimLowerBound(StackFrame sf)
     m_sfLowBound = sf;
 }
 
-StackFrame ExInfo::StackRange::GetLowerBound()
+StackFrame ExceptionTrackerBase::StackRange::GetLowerBound()
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -2305,7 +2306,7 @@ StackFrame ExInfo::StackRange::GetLowerBound()
     return m_sfLowBound;
 }
 
-StackFrame ExInfo::StackRange::GetUpperBound()
+StackFrame ExceptionTrackerBase::StackRange::GetUpperBound()
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -2314,7 +2315,7 @@ StackFrame ExInfo::StackRange::GetUpperBound()
 }
 
 #ifdef _DEBUG
-bool ExInfo::StackRange::IsDisjointWithAndLowerThan(StackRange* pOtherRange)
+bool ExceptionTrackerBase::StackRange::IsDisjointWithAndLowerThan(StackRange* pOtherRange)
 {
     CONSISTENCY_CHECK(IsConsistent());
     CONSISTENCY_CHECK(pOtherRange->IsConsistent());
@@ -2326,7 +2327,7 @@ bool ExInfo::StackRange::IsDisjointWithAndLowerThan(StackRange* pOtherRange)
 
 
 #ifdef _DEBUG
-bool ExInfo::StackRange::IsConsistent()
+bool ExceptionTrackerBase::StackRange::IsConsistent()
 {
     LIMITED_METHOD_CONTRACT;
     if (m_sfLowBound.IsMaxVal() ||
@@ -2347,7 +2348,7 @@ bool ExInfo::StackRange::IsConsistent()
 #endif // _DEBUG
 
 
-// Determine if the given StackFrame is in the stack region unwound by the specified ExInfo.
+// Determine if the given StackFrame is in the stack region unwound by the specified ExceptionTracker.
 // This is used by the stackwalker to skip funclets.  Refer to the calls to this method in StackWalkFramesEx()
 // for more information.
 //
@@ -2355,7 +2356,7 @@ bool ExInfo::StackRange::IsConsistent()
 // containing the funclet. Details of the skipping logic are described in the method implementation.
 //
 // static
-bool ExInfo::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_ExInfo pExceptionTracker)
+bool ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_ExceptionTrackerBase pExceptionTracker)
 {
      LIMITED_METHOD_CONTRACT;
 
@@ -2446,14 +2447,14 @@ bool ExInfo::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_Ex
 }
 
 // Returns a bool indicating if the specified CrawlFrame has been unwound by the active exception.
-bool ExInfo::IsInStackRegionUnwoundByCurrentException(CrawlFrame * pCF)
+bool ExceptionTracker::IsInStackRegionUnwoundByCurrentException(CrawlFrame * pCF)
 {
     LIMITED_METHOD_CONTRACT;
 
     Thread * pThread = pCF->pThread;
 
-    PTR_ExInfo pCurrentTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
-    return ExInfo::IsInStackRegionUnwoundBySpecifiedException(pCF, pCurrentTracker);
+    PTR_ExceptionTrackerBase pCurrentTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
+    return ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(pCF, pCurrentTracker);
 }
 
 
@@ -2471,7 +2472,7 @@ bool ExInfo::IsInStackRegionUnwoundByCurrentException(CrawlFrame * pCF)
 // m_ExceptionFlags, m_ScannedStackRange, m_sfCurrentEstablisherFrame, m_sfLastUnwoundEstablisherFrame,
 // m_pInitialExplicitFrame, m_pLimitFrame, m_pPrevNestedInfo.
 //
-bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
+bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2500,7 +2501,7 @@ bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
     for (PTR_ExInfo pCurrentExInfo = pTopExInfo; pCurrentExInfo != NULL; pCurrentExInfo = dac_cast<PTR_ExInfo>(pCurrentExInfo->m_pPrevNestedInfo))
     {
         STRESS_LOG2(LF_EH|LF_GCROOTS, LL_INFO100, "Checking lower bound %p, upper bound %p\n", (void*)pCurrentExInfo->m_ScannedStackRange.GetLowerBound().SP, (void*)pCurrentExInfo->m_ScannedStackRange.GetUpperBound().SP);
-        if (ExInfo::IsInStackRegionUnwoundBySpecifiedException(pCF, pCurrentExInfo))
+        if (ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(pCF, (PTR_ExceptionTrackerBase)pCurrentExInfo))
         {
             fHasFrameBeenUnwound = true;
             break;
@@ -2518,7 +2519,7 @@ bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
 // Given the CrawlFrame of the current frame, return a StackFrame representing the current frame.
 // This StackFrame should only be used in a check to see if the current frame is the parent method frame
 // of a particular funclet.  Don't use the returned StackFrame in any other way except to pass it back to
-// ExInfo::IsUnwoundToTargetParentFrame().  The comparison logic is very platform-dependent.
+// ExceptionTracker::IsUnwoundToTargetParentFrame().  The comparison logic is very platform-dependent.
 //
 // Arguments:
 //    pCF - the CrawlFrame for the current frame
@@ -2531,7 +2532,7 @@ bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
 //
 
 //static
-StackFrame ExInfo::GetStackFrameForParentCheck(CrawlFrame * pCF)
+StackFrame ExceptionTracker::GetStackFrameForParentCheck(CrawlFrame * pCF)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -2565,7 +2566,7 @@ StackFrame ExInfo::GetStackFrameForParentCheck(CrawlFrame * pCF)
 //
 
 // static
-bool ExInfo::IsUnwoundToTargetParentFrame(CrawlFrame * pCF, StackFrame sfParent)
+bool ExceptionTracker::IsUnwoundToTargetParentFrame(CrawlFrame * pCF, StackFrame sfParent)
 {
     CONTRACTL
     {
@@ -2583,7 +2584,7 @@ bool ExInfo::IsUnwoundToTargetParentFrame(CrawlFrame * pCF, StackFrame sfParent)
 }
 
 // static
-bool ExInfo::IsUnwoundToTargetParentFrame(StackFrame sfToCheck, StackFrame sfParent)
+bool ExceptionTracker::IsUnwoundToTargetParentFrame(StackFrame sfToCheck, StackFrame sfParent)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2596,7 +2597,7 @@ bool ExInfo::IsUnwoundToTargetParentFrame(StackFrame sfToCheck, StackFrame sfPar
 // <WARNING>
 // It is not valid to call this function on an arbitrary funclet.  You have to be doing a full stackwalk from
 // the leaf frame and skipping method frames as indicated by the return value of this function.  This function
-// relies on the ExInfos, which are collapsed in the second pass when a nested exception escapes.
+// relies on the ExceptionTrackers, which are collapsed in the second pass when a nested exception escapes.
 // When this happens, we'll lose information on the funclet represented by the collapsed tracker.
 // </WARNING>
 //
@@ -2606,7 +2607,7 @@ bool ExInfo::IsUnwoundToTargetParentFrame(StackFrame sfToCheck, StackFrame sfPar
 // Anything else         - skip to the method frame indicated by the return value and ask again
 //
 // static
-StackFrame ExInfo::FindParentStackFrameForStackWalk(CrawlFrame* pCF, bool fForGCReporting /*= false */)
+StackFrame ExceptionTracker::FindParentStackFrameForStackWalk(CrawlFrame* pCF, bool fForGCReporting /*= false */)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -2641,8 +2642,8 @@ StackFrame ExInfo::FindParentStackFrameForStackWalk(CrawlFrame* pCF, bool fForGC
 // Anything else         - the StackFrame of the parent method frame
 //
 // static
-StackFrame ExInfo::FindParentStackFrameEx(CrawlFrame* pCF,
-                                          DWORD*      pParentOffset)
+StackFrame ExceptionTracker::FindParentStackFrameEx(CrawlFrame* pCF,
+                                                    DWORD*      pParentOffset)
 {
     CONTRACTL
     {
@@ -2655,7 +2656,7 @@ StackFrame ExInfo::FindParentStackFrameEx(CrawlFrame* pCF,
     CONTRACTL_END;
 
     bool fRealParent = false;
-    StackFrame sfResult = ExInfo::FindParentStackFrameHelper(pCF, &fRealParent, pParentOffset);
+    StackFrame sfResult = ExceptionTracker::FindParentStackFrameHelper(pCF, &fRealParent, pParentOffset);
 
     if (fRealParent)
     {
@@ -2666,12 +2667,12 @@ StackFrame ExInfo::FindParentStackFrameEx(CrawlFrame* pCF,
     {
         // Otherwise we need to do a full stackwalk to find the parent method frame.
         // This should only happen if we are calling a filter inside a funclet.
-        return ExInfo::RareFindParentStackFrame(pCF, pParentOffset);
+        return ExceptionTracker::RareFindParentStackFrame(pCF, pParentOffset);
     }
 }
 
 // static
-StackFrame ExInfo::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFrame *pCF)
+StackFrame ExceptionTracker::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFrame *pCF)
 {
     CONTRACTL
     {
@@ -2703,10 +2704,10 @@ StackFrame ExInfo::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFram
 }
 
 // static
-StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
-                                              bool*       pfRealParent,
-                                              DWORD*      pParentOffset,
-                                              bool        fForGCReporting /* = false */)
+StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
+                                                        bool*       pfRealParent,
+                                                        DWORD*      pParentOffset,
+                                                        bool        fForGCReporting /* = false */)
 {
     CONTRACTL
     {
@@ -2726,6 +2727,7 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
     // At this point, we need a valid caller SP and the CallerStackFrame::FromRegDisplay
     // asserts that the RegDisplay contains one.
     CallerStackFrame csfCurrent = CallerStackFrame::FromRegDisplay(pRegDisplay);
+    ExceptionTracker *pCurrentTracker = NULL;
     bool fIsFilterFunclet = pCF->IsFilterFunclet();
 
     // We can't do this on an unmanaged thread.
@@ -2745,7 +2747,7 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
             BOOL fIsCallerInVM = FALSE;
 
             // Check if the caller IP is in mscorwks.  If it is not, then it is an out-of-line finally.
-            // Normally, the caller of a finally is ExInfo::CallHandler().
+            // Normally, the caller of a finally is ExceptionTracker::CallHandler().
 #ifdef TARGET_UNIX
             fIsCallerInVM = !ExecutionManager::IsManagedCode(callerIP);
 #else
@@ -2773,7 +2775,7 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
                     // At this point, the caller context is that of the parent frame of the funclet. All we need is the CallerSP
                     // of that parent. We leverage a helper function that will perform an unwind against the caller context
                     // and return us the SP (of the caller of the funclet's parent).
-                    StackFrame sfCallerSPOfFuncletParent = ExInfo::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(pCF);
+                    StackFrame sfCallerSPOfFuncletParent = ExceptionTracker::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(pCF);
                     return sfCallerSPOfFuncletParent;
                 }
             }
@@ -2818,7 +2820,7 @@ struct RareFindParentStackFrameCallbackState
 // This is the callback for the stackwalk to get the parent stack frame for a filter funclet.
 //
 // static
-StackWalkAction ExInfo::RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID pData)
+StackWalkAction ExceptionTracker::RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID pData)
 {
     CONTRACTL
     {
@@ -2863,7 +2865,7 @@ StackWalkAction ExInfo::RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID
 
     if (pState->m_sfParent.IsNull() && pCF->IsFunclet())
     {
-        pState->m_sfParent = ExInfo::FindParentStackFrameHelper(pCF, NULL, NULL);
+        pState->m_sfParent = ExceptionTracker::FindParentStackFrameHelper(pCF, NULL, NULL);
     }
 
     // If we still need to skip, then continue the stackwalk.
@@ -2873,7 +2875,7 @@ StackWalkAction ExInfo::RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID
     }
 
     // At this point, we are done.
-    pState->m_sfParent        = ExInfo::GetStackFrameForParentCheck(pCF);
+    pState->m_sfParent        = ExceptionTracker::GetStackFrameForParentCheck(pCF);
     pState->m_dwParentOffset  = pCF->GetRelOffset();
 
     _ASSERTE(pRegDisplay->IsCallerContextValid);
@@ -2883,8 +2885,8 @@ StackWalkAction ExInfo::RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID
 }
 
 // static
-StackFrame ExInfo::RareFindParentStackFrame(CrawlFrame* pCF,
-                                            DWORD*      pParentOffset)
+StackFrame ExceptionTracker::RareFindParentStackFrame(CrawlFrame* pCF,
+                                                      DWORD*      pParentOffset)
 {
     CONTRACTL
     {
@@ -2909,7 +2911,7 @@ StackFrame ExInfo::RareFindParentStackFrame(CrawlFrame* pCF,
     REGDISPLAY rd;
     CopyRegDisplay((const PREGDISPLAY)pCF->GetRegisterSet(), &rd, &ctx);
 
-    pThread->StackWalkFramesEx(&rd, &ExInfo::RareFindParentStackFrameCallback, &state, 0, pFrame);
+    pThread->StackWalkFramesEx(&rd, &ExceptionTracker::RareFindParentStackFrameCallback, &state, 0, pFrame);
 
     if (pParentOffset != NULL)
     {
@@ -2918,7 +2920,7 @@ StackFrame ExInfo::RareFindParentStackFrame(CrawlFrame* pCF,
     return state.m_sfParent;
 }
 
-ExInfo::StackRange::StackRange()
+ExceptionTrackerBase::StackRange::StackRange()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -2928,7 +2930,7 @@ ExInfo::StackRange::StackRange()
 }
 
 #ifdef DACCESS_COMPILE
-void ExInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+void ExceptionTrackerBase::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     // ExInfo is embedded so don't enum 'this'.
     OBJECTHANDLE_EnumMemoryRegions(m_hThrowable);
@@ -3099,8 +3101,9 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 
         dwResumePC = exInfo->m_frameIter.m_crawl.GetCodeManager()->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
 
+#ifdef USE_FUNCLET_CALL_HELPER
         FixContext(pvRegDisplay->pCurrentContext);
-
+#endif
         // Profiler, debugger and ETW events
         exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
         SetIP(pvRegDisplay->pCurrentContext, dwResumePC);
@@ -3167,7 +3170,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     // Sync managed exception state, for the managed thread, based upon any active exception tracker
     pThread->SyncManagedExceptionState(false);
 
-    ExInfo::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
+    ExceptionTracker::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
     if (pHandlerIP != NULL)
     {
         UINT_PTR uAbortAddr = 0;
@@ -3183,6 +3186,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #ifdef TARGET_AMD64
 #ifdef TARGET_UNIX
             pvRegDisplay->pCurrentContext->Rdi = dwResumePC;
+            pvRegDisplay->pCurrentContext->Rsi = GetIP(pThread->GetAbortContext()); //How can this ever be different from dwResumePC?
 #else
             pvRegDisplay->pCurrentContext->Rcx = dwResumePC;
 #endif
@@ -3245,7 +3249,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #endif // HOST_WINDOWS
 
 #if defined(HOST_AMD64)
-        ULONG64* returnAddress = (ULONG64*)(targetSp - 8);
+        ULONG64* returnAddress = (ULONG64*)targetSp;
         *returnAddress = pvRegDisplay->pCurrentContext->Rip;
 #ifdef HOST_WINDOWS
         if (targetSSP != 0)
@@ -3768,7 +3772,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
     pThread->FillRegDisplay(pRD, pStackwalkCtx);
 
     new (pThis) StackFrameIterator();
-    result = pThis->Init(pThread, pFrame, pRD, THREAD_EXECUTING_MANAGED_CODE | UNWIND_FLOATS | NOTIFY_ON_U2M_TRANSITIONS) != FALSE;
+    result = pThis->Init(pThread, pFrame, pRD, THREAD_EXECUTING_MANAGED_CODE | UNWIND_FLOATS) != FALSE;
 
     if (result && (pExInfo->m_passNumber == 1))
     {
@@ -3902,7 +3906,6 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
     QCALL_CONTRACT;
 
     StackWalkAction retVal = SWA_FAILED;
-    CLR_BOOL invalidRevPInvoke = FALSE;
     Thread* pThread = GET_THREAD();
     ExInfo* pTopExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
@@ -3918,39 +3921,32 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
     ExInfo* pExInfo = pThis->GetNextExInfo();
     bool isCollided = false;
 
-    bool doingFuncletUnwind = pThis->m_crawl.IsFunclet();
-    PCODE preUnwindControlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
+    MethodDesc *pMD = pThis->m_crawl.GetFunction();
 
-    retVal = pThis->Next();
-    if (retVal == SWA_FAILED)
+    // Check for reverse pinvoke (but eliminate the case when the caller is managed) or CallDescrWorkerInternal.
+    if (!ExecutionManager::IsManagedCode(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
     {
-        EH_LOG((LL_INFO100, "SfiNext (pass=%d): failed to get next frame", pTopExInfo->m_passNumber));
-        goto Exit;
-    }
-
-    // Check for reverse pinvoke or CallDescrWorkerInternal.
-    if (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
-    {
-        EECodeInfo codeInfo(preUnwindControlPC);
+        CLR_BOOL invalidRevPInvoke;
 #ifdef USE_GC_INFO_DECODER
-        GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+        GcInfoDecoder gcInfoDecoder(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
         invalidRevPInvoke = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
 #else // USE_GC_INFO_DECODER
-        hdrInfo *hdrInfoBody;
-        codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
-        invalidRevPInvoke = hdrInfoBody->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+        hdrInfo gcHdrInfo;
+        DecodeGCHdrInfo(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), 0, &gcHdrInfo);
+        invalidRevPInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
+        bool isFilterFunclet = false;
         bool isPropagatingToExternalNativeCode = false;
 
         EH_LOG((LL_INFO100, "SfiNext: reached native frame at IP=%p, SP=%p, invalidRevPInvoke=%d\n",
-            GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext), GetSP(pThis->m_crawl.GetRegisterSet()->pCurrentContext), invalidRevPInvoke));
+            GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext), GetSP(pThis->m_crawl.GetRegisterSet()->pCallerContext), invalidRevPInvoke));
 
         if (invalidRevPInvoke)
         {
 #ifdef HOST_UNIX
             void* callbackCxt = NULL;
             Interop::ManagedToNativeExceptionCallback callback = Interop::GetPropagatingExceptionCallback(
-                &codeInfo,
+                pThis->m_crawl.GetCodeInfo(),
                 pTopExInfo->m_hThrowable,
                 &callbackCxt);
 
@@ -3967,12 +3963,12 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
         }
         else
         {
-            if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext)))
+            if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
             {
                 EH_LOG((LL_INFO100, "SfiNext: the native frame is CallDescrWorkerInternal"));
                 invalidRevPInvoke = TRUE;
             }
-            else if (doingFuncletUnwind && codeInfo.GetJitManager()->IsFilterFunclet(&codeInfo))
+            else if (pThis->m_crawl.IsFilterFunclet())
             {
                 EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet"));
                 invalidRevPInvoke = TRUE;
@@ -3983,8 +3979,18 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
             }
         }
 
+        if (fUnwoundReversePInvoke)
+        {
+            *fUnwoundReversePInvoke = invalidRevPInvoke;
+        }
+
         if (invalidRevPInvoke)
         {
+            // Unwind to the caller of the managed code
+            retVal = pThis->Next();
+            _ASSERTE(retVal != SWA_FAILED);
+            _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
+
             pFrame = pThis->m_crawl.GetFrame();
 
             // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
@@ -4016,23 +4022,34 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 #endif
                 }
             }
-
-            // Unwind to the caller of the managed code
-            retVal = pThis->Next();
-            _ASSERTE(retVal != SWA_FAILED);
-            _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
             goto Exit;
+        }
+    }
+    else
+    {
+        if (fUnwoundReversePInvoke)
+        {
+            *fUnwoundReversePInvoke = FALSE;
         }
     }
 
     do
     {
         *uExCollideClauseIdx = 0xffffffff;
+        bool doingFuncletUnwind = pThis->m_crawl.IsFunclet();
+
+        retVal = pThis->Next();
+        if (retVal == SWA_FAILED)
+        {
+            EH_LOG((LL_INFO100, "SfiNext (pass=%d): failed to get next frame", pTopExInfo->m_passNumber));
+            break;
+        }
+
         if (pThis->GetFrameState() == StackFrameIterator::SFITER_DONE)
         {
             EH_LOG((LL_INFO100, "SfiNext (pass=%d): no more managed frames found on stack", pTopExInfo->m_passNumber));
             retVal = SWA_FAILED;
-            goto Exit;
+            break;
         }
 
         if (!pThis->m_crawl.IsFrameless())
@@ -4077,47 +4094,34 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
                             pThis->SkipTo(&pPrevExInfo->m_frameIter);
                             pThis->ResetNextExInfoForSP(pThis->m_crawl.GetRegisterSet()->SP);
-                            _ASSERTE_MSG(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD, "Collided unwind should have reached a frameless method");
-                            break;
                         }
                     }
                 }
             }
-            else
+            else if (pTopExInfo->m_passNumber == 1)
             {
-                if (pTopExInfo->m_passNumber == 1)
+                pMD = pFrame->GetFunction();
+                if (pMD != NULL)
                 {
-                    MethodDesc *pMD = pFrame->GetFunction();
-                    if (pMD != NULL)
-                    {
-                        GCX_COOP();
-                        StackTraceInfo::AppendElement(pTopExInfo->m_hThrowable, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
+                    GCX_COOP();
+                    StackTraceInfo::AppendElement(pTopExInfo->m_hThrowable, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
-                        if (NotifyDebuggerOfStub(pThread, pFrame))
+                    if (NotifyDebuggerOfStub(pThread, pFrame))
+                    {
+                        if (!pTopExInfo->DeliveredFirstChanceNotification())
                         {
-                            if (!pTopExInfo->DeliveredFirstChanceNotification())
-                            {
-                                ExceptionNotifications::DeliverFirstChanceNotification();
-                            }
+                            ExceptionNotifications::DeliverFirstChanceNotification();
                         }
-#endif // DEBUGGING_SUPPORTED
                     }
+#endif // DEBUGGING_SUPPORTED
                 }
             }
-
-            retVal = pThis->Next();
-            doingFuncletUnwind = false;
         }
     }
     while (retVal != SWA_FAILED && (pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD));
 
     _ASSERTE(retVal == SWA_FAILED || pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
-
-    if (retVal == SWA_FAILED)
-    {
-        EH_LOG((LL_INFO100, "SfiNext (pass=%d): failed to get next frame", pTopExInfo->m_passNumber));
-    }
 
     if (!isCollided)
     {
@@ -4138,11 +4142,6 @@ Exit:;
         pThis->UpdateIsRuntimeWrappedExceptions();
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pTopExInfo);
-
-        if (fUnwoundReversePInvoke)
-        {
-            *fUnwoundReversePInvoke = invalidRevPInvoke;
-        }
 
         if (pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
         {

@@ -46,4 +46,3 @@ Wasm.Build.Tests.WasmTemplateTests
 Wasm.Build.Tests.WorkloadTests
 Wasm.Build.Tests.MT.Blazor.SimpleMultiThreadedTests
 Wasm.Build.Tests.DebugLevelTests
-Wasm.Build.Tests.PreloadingTests

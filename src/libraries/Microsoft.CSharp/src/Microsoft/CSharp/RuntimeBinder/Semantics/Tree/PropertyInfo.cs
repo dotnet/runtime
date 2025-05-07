@@ -23,7 +23,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public PropertyInfo PropertyInfo
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get
             {
                 // To do this, we need to construct a type array of the parameter types,

@@ -69,7 +69,10 @@ namespace System.Text.Json
         /// </remarks>
         public void WritePropertyName(string propertyName)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
             WritePropertyName(propertyName.AsSpan());
         }
 
@@ -452,7 +455,10 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(string propertyName, JsonEncodedText value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
             WriteString(propertyName.AsSpan(), value);
         }
 
@@ -481,7 +487,10 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(string propertyName, string? value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
 
             if (value == null)
             {
@@ -632,7 +641,10 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(string propertyName, ReadOnlySpan<char> value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
             WriteString(propertyName.AsSpan(), value);
         }
 
@@ -719,7 +731,10 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(string propertyName, ReadOnlySpan<byte> utf8Value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
             WriteString(propertyName.AsSpan(), utf8Value);
         }
 

@@ -9099,31 +9099,47 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
 
-void emitter::emitIns_Call(const EmitCallParams& params)
+void emitter::emitIns_Call(EmitCallType          callType,
+                           CORINFO_METHOD_HANDLE methHnd,
+                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
+                           void*            addr,
+                           ssize_t          argSize,
+                           emitAttr         retSize,
+                           emitAttr         secondRetSize,
+                           VARSET_VALARG_TP ptrVars,
+                           regMaskTP        gcrefRegs,
+                           regMaskTP        byrefRegs,
+                           const DebugInfo& di /* = DebugInfo() */,
+                           regNumber        ireg /* = REG_NA */,
+                           regNumber        xreg /* = REG_NA */,
+                           unsigned         xmul /* = 0     */,
+                           ssize_t          disp /* = 0     */,
+                           bool             isJump /* = false */,
+                           bool             noSafePoint /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
-    assert(params.callType < EC_COUNT);
-    assert((params.callType != EC_FUNC_TOKEN) || (params.addr != nullptr && params.ireg == REG_NA));
-    assert(params.callType != EC_INDIR_R || (params.addr == nullptr && params.ireg < REG_COUNT));
+    assert(callType < EC_COUNT);
+    assert((callType != EC_FUNC_TOKEN) || (addr != nullptr && ireg == REG_NA));
+    assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT));
 
     // ARM never uses these
-    assert(params.xreg == REG_NA && params.xmul == 0 && params.disp == 0);
+    assert(xreg == REG_NA && xmul == 0 && disp == 0);
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
-    assert((unsigned)std::abs(params.argSize) <= codeGen->genStackLevel);
+    assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskTP savedSet  = emitGetGCRegsSavedOrModified(params.methHnd);
-    regMaskTP gcrefRegs = params.gcrefRegs & savedSet;
-    regMaskTP byrefRegs = params.byrefRegs & savedSet;
+    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    gcrefRegs &= savedSet;
+    byrefRegs &= savedSet;
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
     {
-        printf("Call: GCvars=%s ", VarSetOps::ToString(emitComp, params.ptrVars));
-        dumpConvertedVarSet(emitComp, params.ptrVars);
+        printf("Call: GCvars=%s ", VarSetOps::ToString(emitComp, ptrVars));
+        dumpConvertedVarSet(emitComp, ptrVars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
         emitDispRegSet(gcrefRegs);
@@ -9135,9 +9151,9 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
+    if (emitComp->opts.compDbgInfo && di.GetLocation().IsValid())
     {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
     }
 
     /*
@@ -9147,54 +9163,53 @@ void emitter::emitIns_Call(const EmitCallParams& params)
      */
     instrDesc* id;
 
-    assert(params.argSize % REGSIZE_BYTES == 0);
-    int argCnt = (int)(params.argSize / (int)REGSIZE_BYTES);
+    assert(argSize % REGSIZE_BYTES == 0);
+    int argCnt = (int)(argSize / (int)REGSIZE_BYTES);
 
-    if (params.callType == EC_INDIR_R)
+    if (callType == EC_INDIR_R)
     {
         /* Indirect call, virtual calls */
 
-        id = emitNewInstrCallInd(argCnt, 0 /* disp */, params.ptrVars, gcrefRegs, byrefRegs, params.retSize,
-                                 params.secondRetSize);
+        id = emitNewInstrCallInd(argCnt, 0 /* disp */, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
     }
     else
     {
         /* Helper/static/nonvirtual/function calls (direct or through handle),
            and calls to an absolute addr. */
 
-        assert(params.callType == EC_FUNC_TOKEN);
+        assert(callType == EC_FUNC_TOKEN);
 
-        id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs, params.retSize, params.secondRetSize);
+        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
     }
 
     /* Update the emitter's live GC ref sets */
 
     // If the method returns a GC ref, mark RBM_INTRET appropriately
-    if (params.retSize == EA_GCREF)
+    if (retSize == EA_GCREF)
     {
         gcrefRegs |= RBM_INTRET;
     }
-    else if (params.retSize == EA_BYREF)
+    else if (retSize == EA_BYREF)
     {
         byrefRegs |= RBM_INTRET;
     }
 
     // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
-    if (params.secondRetSize == EA_GCREF)
+    if (secondRetSize == EA_GCREF)
     {
         gcrefRegs |= RBM_INTRET_1;
     }
-    else if (params.secondRetSize == EA_BYREF)
+    else if (secondRetSize == EA_BYREF)
     {
         byrefRegs |= RBM_INTRET_1;
     }
 
-    VarSetOps::Assign(emitComp, emitThisGCrefVars, params.ptrVars);
+    VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
     // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(params.isJump || params.noSafePoint || emitNoGChelper(params.methHnd));
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -9202,11 +9217,11 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     /* Record the address: method, indirection, or funcptr */
 
-    if (params.callType == EC_INDIR_R)
+    if (callType == EC_INDIR_R)
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
 
-        if (params.isJump)
+        if (isJump)
         {
             ins = INS_br_tail; // INS_br_tail  Reg
         }
@@ -9219,8 +9234,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         id->idIns(ins);
         id->idInsFmt(fmt);
 
-        assert(params.xreg == REG_NA);
-        if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_TLSGD_RELOC(params.retSize))
+        assert(xreg == REG_NA);
+        if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_TLSGD_RELOC(retSize))
         {
             // For NativeAOT linux/arm64, we need to also record the relocation of methHnd.
             // Since we do not have space to embed it in instrDesc, we use the `iiaAddr` to
@@ -9229,24 +9244,24 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             // We cannot use reg1 and reg2 fields of instrDesc because they contain the gc
             // registers (emitEncodeCallGCregs()) that are live across the call.
 
-            assert(params.ireg == REG_R2);
+            assert(ireg == REG_R2);
             id->idSetTlsGD();
-            id->idAddr()->iiaAddr = (BYTE*)params.methHnd;
+            id->idAddr()->iiaAddr = (BYTE*)methHnd;
         }
         else
         {
-            id->idReg3(params.ireg);
+            id->idReg3(ireg);
         }
     }
     else
     {
         /* This is a simple direct call: "call helper/method/addr" */
 
-        assert(params.callType == EC_FUNC_TOKEN);
+        assert(callType == EC_FUNC_TOKEN);
 
-        assert(params.addr != NULL);
+        assert(addr != NULL);
 
-        if (params.isJump)
+        if (isJump)
         {
             ins = INS_b_tail; // INS_b_tail imm28
         }
@@ -9259,7 +9274,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         id->idIns(ins);
         id->idInsFmt(fmt);
 
-        id->idAddr()->iiaAddr = (BYTE*)params.addr;
+        id->idAddr()->iiaAddr = (BYTE*)addr;
 
         if (emitComp->opts.compReloc)
         {
@@ -9280,14 +9295,14 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     if (m_debugInfoSize > 0)
     {
-        INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
-        id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
     }
 
 #ifdef LATE_DISASM
-    if (params.addr != nullptr)
+    if (addr != nullptr)
     {
-        codeGen->getDisAssembler().disSetMethod((size_t)params.addr, params.methHnd);
+        codeGen->getDisAssembler().disSetMethod((size_t)addr, methHnd);
     }
 #endif // LATE_DISASM
 
@@ -17388,12 +17403,6 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
 
     if ((emitLastIns->idInsFmt() != IF_LS_2A) || emitLastIns->idIsTlsGD())
     {
-        return false;
-    }
-
-    if (emitComp->compGeneratingUnwindProlog || emitComp->compGeneratingUnwindEpilog)
-    {
-        // Don't remove instructions while generating "unwind" part of prologs or epilogs
         return false;
     }
 

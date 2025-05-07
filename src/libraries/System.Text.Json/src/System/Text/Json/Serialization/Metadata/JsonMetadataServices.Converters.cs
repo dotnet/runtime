@@ -282,7 +282,10 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<T> GetEnumConverter<T>(JsonSerializerOptions options) where T : struct, Enum
         {
-            ArgumentNullException.ThrowIfNull(options);
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
 
             return EnumConverterFactory.Helpers.Create<T>(EnumConverterOptions.AllowNumbers, options);
         }
@@ -296,7 +299,10 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<T?> GetNullableConverter<T>(JsonTypeInfo<T> underlyingTypeInfo) where T : struct
         {
-            ArgumentNullException.ThrowIfNull(underlyingTypeInfo);
+            if (underlyingTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(underlyingTypeInfo));
+            }
 
             JsonConverter<T> underlyingConverter = GetTypedConverter<T>(underlyingTypeInfo.Converter);
 
@@ -312,7 +318,10 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<T?> GetNullableConverter<T>(JsonSerializerOptions options) where T : struct
         {
-            ArgumentNullException.ThrowIfNull(options);
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
 
             JsonConverter<T> underlyingConverter = GetTypedConverter<T>(options.GetConverterInternal(typeof(T)));
 

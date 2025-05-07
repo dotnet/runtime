@@ -366,7 +366,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             dict[Path.GetFileName(file)] = (file, unchanged);
 
         // those files do not change on re-link
-        dict["dotnet.js"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.js"), false); // Inline boot config
+        dict["dotnet.js"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.js"), true);
         dict["dotnet.js.map"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.js.map"), true);
         dict["dotnet.runtime.js"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.runtime.js"), true);
         dict["dotnet.runtime.js.map"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.runtime.js.map"), true);
@@ -374,9 +374,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (IsFingerprintingEnabled)
         {
             string bootJsonPath = Path.Combine(paths.BinFrameworkDir, "dotnet.boot.js");
-            if (!File.Exists(bootJsonPath))
-                bootJsonPath = Path.Combine(paths.BinFrameworkDir, "dotnet.js"); // inline boot config
-
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             var keysToUpdate = new List<string>();
             var updates = new List<(string oldKey, string newKey, (string fullPath, bool unchanged) value)>();
@@ -496,7 +493,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
         EnsureProjectDirIsSet();
-        string bootJsonPath = Path.Combine(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName ?? "dotnet.js");
+        string bootJsonPath = Path.Combine(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
@@ -624,12 +621,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public virtual string GetBinFrameworkDir(Configuration config, bool forPublish, string framework, string? projectDir = null)
     {
         throw new NotImplementedException();
-    }
-
-    public string GetObjDir(Configuration config, string framework, string? projectDir = null)
-    {
-        EnsureProjectDirIsSet();
-        return Path.Combine(projectDir ?? ProjectDir!, "obj", config.ToString(), framework);
     }
 
     [MemberNotNull(nameof(ProjectDir))]

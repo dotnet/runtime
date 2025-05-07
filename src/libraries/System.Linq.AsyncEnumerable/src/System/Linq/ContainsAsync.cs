@@ -24,7 +24,7 @@ namespace System.Linq
             IEqualityComparer<TSource>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken), value, comparer ?? EqualityComparer<TSource>.Default);
 

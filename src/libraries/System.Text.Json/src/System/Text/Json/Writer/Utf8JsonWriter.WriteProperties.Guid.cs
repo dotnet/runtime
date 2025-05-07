@@ -51,7 +51,10 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(string propertyName, Guid value)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
             WriteString(propertyName.AsSpan(), value);
         }
 

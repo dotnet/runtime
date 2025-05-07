@@ -8,11 +8,11 @@ using System.IO;
 
 namespace R2RTest
 {
-    public class R2RTestRootCommand : RootCommand
+    public class R2RTestRootCommand : CliRootCommand
     {
-        void CreateCommand(string name, string description, Option[] options, Func<BuildOptions, int> action)
+        void CreateCommand(string name, string description, CliOption[] options, Func<BuildOptions, int> action)
         {
-            Command command = new(name, description);
+            CliCommand command = new(name, description);
             foreach (var option in GetCommonOptions())
                 command.Options.Add(option);
             foreach (var option in options)
@@ -21,14 +21,14 @@ namespace R2RTest
             Subcommands.Add(command);
         }
 
-        Option[] GetCommonOptions() => new Option[] { CoreRootDirectory, DotNetCli };
+        CliOption[] GetCommonOptions() => new CliOption[] { CoreRootDirectory, DotNetCli };
 
         R2RTestRootCommand()
         {
             OutputDirectory.AcceptLegalFilePathsOnly();
 
             CreateCommand("compile-directory", "Compile all assemblies in directory",
-                new Option[]
+                new CliOption[]
                 {
                     InputDirectory,
                     OutputDirectory,
@@ -67,7 +67,7 @@ namespace R2RTest
                 CompileDirectoryCommand.CompileDirectory);
 
             CreateCommand("compile-subtree", "Build each directory in a given subtree containing any managed assemblies as a separate app",
-                new Option[]
+                new CliOption[]
                 {
                     InputDirectory,
                     OutputDirectory,
@@ -105,7 +105,7 @@ namespace R2RTest
                 CompileSubtreeCommand.CompileSubtree);
 
             CreateCommand("compile-framework", "Compile managed framework assemblies in Core_Root",
-                new Option[]
+                new CliOption[]
                 {
                     Crossgen2Path,
                     TargetArch,
@@ -136,7 +136,7 @@ namespace R2RTest
                 CompileFrameworkCommand.CompileFramework);
 
             CreateCommand("compile-nuget", "Restore a list of Nuget packages into an empty console app, publish, and optimize with Crossgen / CPAOT",
-                new Option[]
+                new CliOption[]
                 {
                     R2RDumpPath,
                     InputDirectory,
@@ -155,7 +155,7 @@ namespace R2RTest
                 CompileNugetCommand.CompileNuget);
 
             CreateCommand("compile-serp", "Compile existing application",
-                new Option[]
+                new CliOption[]
                 {
                     InputDirectory,
                     DegreeOfParallelism,
@@ -178,128 +178,128 @@ namespace R2RTest
 
         // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
         // https://github.com/dotnet/command-line-api/issues/297
-        public Option<DirectoryInfo> InputDirectory { get; } =
-            new Option<DirectoryInfo>("--input-directory", "-in") { Description = "Folder containing assemblies to optimize" }.AcceptExistingOnly();
+        public CliOption<DirectoryInfo> InputDirectory { get; } =
+            new CliOption<DirectoryInfo>("--input-directory", "-in") { Description = "Folder containing assemblies to optimize" }.AcceptExistingOnly();
 
-        public Option<DirectoryInfo> OutputDirectory { get; } =
-            new Option<DirectoryInfo>("--output-directory", "-out") { Description = "Folder to emit compiled assemblies" };
+        public CliOption<DirectoryInfo> OutputDirectory { get; } =
+            new CliOption<DirectoryInfo>("--output-directory", "-out") { Description = "Folder to emit compiled assemblies" };
 
-        public Option<DirectoryInfo> CoreRootDirectory { get; } =
-            new Option<DirectoryInfo>("--core-root-directory", "-cr") { Description = "Location of the CoreCLR CORE_ROOT folder", Arity = ArgumentArity.ExactlyOne }.AcceptExistingOnly();
+        public CliOption<DirectoryInfo> CoreRootDirectory { get; } =
+            new CliOption<DirectoryInfo>("--core-root-directory", "-cr") { Description = "Location of the CoreCLR CORE_ROOT folder", Arity = ArgumentArity.ExactlyOne }.AcceptExistingOnly();
 
-        public Option<DirectoryInfo[]> ReferencePath { get; } =
-            new Option<DirectoryInfo[]>("--reference-path", "-r") { Description = "Folder containing assemblies to reference during compilation", Arity = ArgumentArity.ZeroOrMore }.AcceptExistingOnly();
+        public CliOption<DirectoryInfo[]> ReferencePath { get; } =
+            new CliOption<DirectoryInfo[]>("--reference-path", "-r") { Description = "Folder containing assemblies to reference during compilation", Arity = ArgumentArity.ZeroOrMore }.AcceptExistingOnly();
 
-        public Option<FileInfo[]> MibcPath { get; } =
-            new Option<FileInfo[]>("--mibc-path", "-m") { Description = "Mibc files to use in compilation", Arity = ArgumentArity.ZeroOrMore }.AcceptExistingOnly();
+        public CliOption<FileInfo[]> MibcPath { get; } =
+            new CliOption<FileInfo[]>("--mibc-path", "-m") { Description = "Mibc files to use in compilation", Arity = ArgumentArity.ZeroOrMore }.AcceptExistingOnly();
 
-        public Option<FileInfo> Crossgen2Path { get; } =
-            new Option<FileInfo>("--crossgen2-path", "-c2p") { Description = "Explicit Crossgen2 path (useful for cross-targeting)" }.AcceptExistingOnly();
+        public CliOption<FileInfo> Crossgen2Path { get; } =
+            new CliOption<FileInfo>("--crossgen2-path", "-c2p") { Description = "Explicit Crossgen2 path (useful for cross-targeting)" }.AcceptExistingOnly();
 
-        public Option<bool> VerifyTypeAndFieldLayout { get; } =
+        public CliOption<bool> VerifyTypeAndFieldLayout { get; } =
             new("--verify-type-and-field-layout") { Description = "Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes." };
 
-        public Option<bool> NoJit { get; } =
+        public CliOption<bool> NoJit { get; } =
             new("--nojit") { Description = "Don't run tests in JITted mode" };
 
-        public Option<bool> NoCrossgen2 { get; } =
+        public CliOption<bool> NoCrossgen2 { get; } =
             new("--nocrossgen2") { Description = "Don't run tests in Crossgen2 mode" };
 
-        public Option<bool> Exe { get; } =
+        public CliOption<bool> Exe { get; } =
             new("--exe") { Description = "Don't compile tests, just execute them" };
 
-        public Option<bool> NoExe { get; } =
+        public CliOption<bool> NoExe { get; } =
             new("--noexe") { Description = "Compilation-only mode (don't execute the built apps)" };
 
-        public Option<bool> NoEtw { get; } =
+        public CliOption<bool> NoEtw { get; } =
             new("--noetw") { Description = "Don't capture jitted methods using ETW" };
 
-        public Option<bool> NoCleanup { get; } =
+        public CliOption<bool> NoCleanup { get; } =
             new("--nocleanup") { Description = "Don't clean up compilation artifacts after test runs" };
 
-        public Option<bool> Map { get; } =
+        public CliOption<bool> Map { get; } =
             new("--map") { Description = "Generate a map file (Crossgen2)" };
 
-        public Option<bool> Pdb { get; } =
+        public CliOption<bool> Pdb { get; } =
             new("--pdb") { Description = "Generate PDB symbol information (Crossgen2 / Windows only)" };
 
-        public Option<bool> Perfmap { get; } =
+        public CliOption<bool> Perfmap { get; } =
             new("--perfmap") { Description = "Generate perfmap symbol information" };
 
-        public Option<int> PerfmapFormatVersion { get; } =
+        public CliOption<int> PerfmapFormatVersion { get; } =
             new("--perfmap-format-version") { DefaultValueFactory = _ => 1, Description = "Perfmap format version to generate" };
 
-        public Option<int> DegreeOfParallelism { get; } =
+        public CliOption<int> DegreeOfParallelism { get; } =
             new("--degree-of-parallelism", "-dop") { Description = "Override default compilation / execution DOP (default = logical processor count)" };
 
-        public Option<bool> Sequential { get; } =
+        public CliOption<bool> Sequential { get; } =
             new("--sequential") { Description = "Run tests sequentially" };
 
-        public Option<int> Iterations { get; } =
+        public CliOption<int> Iterations { get; } =
             new("--iterations") { DefaultValueFactory = _ => 1, Description = "Number of iterations for each test execution" };
 
-        public Option<bool> Framework { get; } =
+        public CliOption<bool> Framework { get; } =
             new("--framework") { Description = "Precompile and use native framework" };
 
-        public Option<bool> UseFramework { get; } =
+        public CliOption<bool> UseFramework { get; } =
             new("--use-framework") { Description = "Use native framework (don't precompile, assume previously compiled)" };
 
-        public Option<bool> Release { get; } =
+        public CliOption<bool> Release { get; } =
             new("--release") { Description = "Build the tests in release mode" };
 
-        public Option<bool> LargeBubble { get; } =
+        public CliOption<bool> LargeBubble { get; } =
             new("--large-bubble") { Description = "Assume all input files as part of one version bubble" };
 
-        public Option<bool> Composite { get; } =
+        public CliOption<bool> Composite { get; } =
             new("--composite") { Description = "Compile tests in composite R2R mode" };
 
-        public Option<int> Crossgen2Parallelism { get; } =
+        public CliOption<int> Crossgen2Parallelism { get; } =
             new("--crossgen2-parallelism") { Description = "Max number of threads to use in Crossgen2 (default = logical processor count)" };
 
-        public Option<FileInfo> Crossgen2JitPath { get; } =
+        public CliOption<FileInfo> Crossgen2JitPath { get; } =
             new("--crossgen2-jitpath") { Description = "Jit path to use for crossgen2" };
 
-        public Option<FileInfo[]> IssuesPath { get; } =
+        public CliOption<FileInfo[]> IssuesPath { get; } =
             new("--issues-path", "-ip") { Description = "Path to issues.targets", Arity = ArgumentArity.ZeroOrMore };
 
-        public Option<int> CompilationTimeoutMinutes { get; } =
+        public CliOption<int> CompilationTimeoutMinutes { get; } =
             new("--compilation-timeout-minutes", "-ct") { Description = "Compilation timeout (minutes)" };
 
-        public Option<int> ExecutionTimeoutMinutes { get; } =
+        public CliOption<int> ExecutionTimeoutMinutes { get; } =
             new("--execution-timeout-minutes", "-et") { Description = "Execution timeout (minutes)" };
 
-        public Option<FileInfo> R2RDumpPath { get; } =
-            new Option<FileInfo>("--r2r-dump-path") { Description = "Path to R2RDump.exe/dll" }.AcceptExistingOnly();
+        public CliOption<FileInfo> R2RDumpPath { get; } =
+            new CliOption<FileInfo>("--r2r-dump-path") { Description = "Path to R2RDump.exe/dll" }.AcceptExistingOnly();
 
-        public Option<bool> MeasurePerf { get; } =
+        public CliOption<bool> MeasurePerf { get; } =
             new("--measure-perf") { Description = "Print out compilation time" };
 
-        public Option<string> InputFileSearchString { get; } =
+        public CliOption<string> InputFileSearchString { get; } =
             new("--input-file-search-string", "-input-file") { Description = "Search string for input files in the input directory" };
 
-        public Option<string> GCStress { get; } =
+        public CliOption<string> GCStress { get; } =
             new("--gcstress") { Description = "Run tests with the specified GC stress level enabled (the argument value is in hex)" };
 
-        public Option<string> DotNetCli { get; } =
+        public CliOption<string> DotNetCli { get; } =
             new("--dotnet-cli", "-cli") { Description = "For dev box testing, point at .NET 5 dotnet.exe or <repo>/dotnet.cmd." };
 
-        public Option<string> TargetArch { get; } =
+        public CliOption<string> TargetArch { get; } =
             new("--target-arch") { Description = "Target architecture for crossgen2" };
 
         //
         // compile-nuget specific options
         //
-        public Option<FileInfo> PackageList { get; } =
-            new Option<FileInfo>("--package-list", "-pl") { Description = "Text file containing a package name on each line" }.AcceptExistingOnly();
+        public CliOption<FileInfo> PackageList { get; } =
+            new CliOption<FileInfo>("--package-list", "-pl") { Description = "Text file containing a package name on each line" }.AcceptExistingOnly();
 
         //
         // compile-serp specific options
         //
-        public Option<DirectoryInfo> AspNetPath { get; } =
-            new Option<DirectoryInfo>("--asp-net-path", "-asp") { Description = "Path to SERP's ASP.NET Core folder" }.AcceptExistingOnly();
+        public CliOption<DirectoryInfo> AspNetPath { get; } =
+            new CliOption<DirectoryInfo>("--asp-net-path", "-asp") { Description = "Path to SERP's ASP.NET Core folder" }.AcceptExistingOnly();
 
         private static int Main(string[] args) =>
-            new CommandLineConfiguration(new R2RTestRootCommand().UseVersion()).Invoke(args);
+            new CliConfiguration(new R2RTestRootCommand().UseVersion()).Invoke(args);
     }
 
     public partial class BuildOptions

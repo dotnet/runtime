@@ -200,7 +200,10 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            ArgumentNullException.ThrowIfNull(request);
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
 
             if (request is DsmlAuthRequest)
             {
@@ -270,7 +273,10 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            ArgumentNullException.ThrowIfNull(request);
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
 
             if (partialMode < PartialResultProcessing.NoPartialResultSupport || partialMode > PartialResultProcessing.ReturnPartialResultsAndNotifyCallback)
             {
@@ -387,7 +393,10 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            ArgumentNullException.ThrowIfNull(asyncResult);
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
 
             if (!(asyncResult is LdapAsyncResult))
             {
@@ -432,7 +441,10 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            ArgumentNullException.ThrowIfNull(asyncResult);
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
 
             if (!(asyncResult is LdapAsyncResult))
             {
@@ -454,7 +466,10 @@ namespace System.DirectoryServices.Protocols
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            ArgumentNullException.ThrowIfNull(asyncResult);
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
 
             if (!(asyncResult is LdapAsyncResult))
             {

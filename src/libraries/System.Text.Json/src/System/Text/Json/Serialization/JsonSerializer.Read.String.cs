@@ -46,7 +46,10 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>([StringSyntax(StringSyntaxAttribute.Json)] string json, JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(json);
+            if (json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
+            }
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return ReadFromSpan(json.AsSpan(), jsonTypeInfo);
@@ -115,8 +118,14 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] string json, Type returnType, JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(json);
-            ArgumentNullException.ThrowIfNull(returnType);
+            if (json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
+            }
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadFromSpanAsObject(json.AsSpan(), jsonTypeInfo);
@@ -153,7 +162,10 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, Type returnType, JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(returnType);
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
 
             // default/null span is treated as empty
 
@@ -190,8 +202,14 @@ namespace System.Text.Json
         /// </remarks>
         public static TValue? Deserialize<TValue>([StringSyntax(StringSyntaxAttribute.Json)] string json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(json);
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromSpan(json.AsSpan(), jsonTypeInfo);
@@ -226,7 +244,10 @@ namespace System.Text.Json
         /// </remarks>
         public static TValue? Deserialize<TValue>([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromSpan(json, jsonTypeInfo);
@@ -256,8 +277,14 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] string json, JsonTypeInfo jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(json);
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromSpanAsObject(json.AsSpan(), jsonTypeInfo);
@@ -283,7 +310,10 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromSpanAsObject(json, jsonTypeInfo);
@@ -326,9 +356,18 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] string json, Type returnType, JsonSerializerContext context)
         {
-            ArgumentNullException.ThrowIfNull(json);
-            ArgumentNullException.ThrowIfNull(returnType);
-            ArgumentNullException.ThrowIfNull(context);
+            if (json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
+            }
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return ReadFromSpanAsObject(json.AsSpan(), jsonTypeInfo);
@@ -371,8 +410,14 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, Type returnType, JsonSerializerContext context)
         {
-            ArgumentNullException.ThrowIfNull(returnType);
-            ArgumentNullException.ThrowIfNull(context);
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return ReadFromSpanAsObject(json, jsonTypeInfo);

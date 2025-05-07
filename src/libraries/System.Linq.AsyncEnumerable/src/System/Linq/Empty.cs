@@ -35,13 +35,13 @@ namespace System.Linq
 
             public IOrderedAsyncEnumerable<TResult> CreateOrderedAsyncEnumerable<TKey>(Func<TResult, TKey> keySelector, IComparer<TKey>? comparer, bool descending)
             {
-                ArgumentNullException.ThrowIfNull(keySelector);
+                ThrowHelper.ThrowIfNull(keySelector);
                 return this;
             }
 
             public IOrderedAsyncEnumerable<TResult> CreateOrderedAsyncEnumerable<TKey>(Func<TResult, CancellationToken, ValueTask<TKey>> keySelector, IComparer<TKey>? comparer, bool descending)
             {
-                ArgumentNullException.ThrowIfNull(keySelector);
+                ThrowHelper.ThrowIfNull(keySelector);
                 return this;
             }
         }

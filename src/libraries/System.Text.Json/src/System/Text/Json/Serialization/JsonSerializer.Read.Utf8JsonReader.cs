@@ -111,7 +111,10 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(returnType);
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadAsObject(ref reader, jsonTypeInfo);
@@ -158,7 +161,10 @@ namespace System.Text.Json
         /// </remarks>
         public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return Read(ref reader, jsonTypeInfo);
@@ -204,7 +210,10 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return ReadAsObject(ref reader, jsonTypeInfo);
@@ -261,8 +270,14 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerContext context)
         {
-            ArgumentNullException.ThrowIfNull(returnType);
-            ArgumentNullException.ThrowIfNull(context);
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
 
             return ReadAsObject(ref reader, GetTypeInfo(context, returnType));
         }

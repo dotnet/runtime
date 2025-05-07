@@ -37,8 +37,7 @@ namespace System.Threading.Tasks.Tests
 
         protected override void QueueTask(Task task)
         {
-            ArgumentNullException.ThrowIfNull(task);
-
+            if (task == null) throw new ArgumentNullException("When requesting to QueueTask, the input task can not be null");
             Task.Factory.StartNew(() =>
             {
                 lock (_lockObj) //Locking so that if multiple threads in threadpool does not incorrectly increment the counter.

@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Http
 
         public DefaultTypedHttpClientFactory(Cache cache, IServiceProvider services)
         {
-            ArgumentNullException.ThrowIfNull(cache);
+            ThrowHelper.ThrowIfNull(cache);
 
             _cache = cache;
             _services = services;
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Http
 
         public TClient CreateClient(HttpClient httpClient)
         {
-            ArgumentNullException.ThrowIfNull(httpClient);
+            ThrowHelper.ThrowIfNull(httpClient);
 
             return (TClient)_cache.Activator(_services, new object[] { httpClient });
         }

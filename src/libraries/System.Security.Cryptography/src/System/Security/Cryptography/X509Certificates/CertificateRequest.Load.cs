@@ -36,9 +36,7 @@ namespace System.Security.Cryptography.X509Certificates
             CertificateRequestLoadOptions options = CertificateRequestLoadOptions.Default,
             RSASignaturePadding? signerSignaturePadding = null)
         {
-            // Since ML-DSA (and others) don't require a hash algorithm, but we don't
-            // know what signature algorithm is being used until the call to Create,
-            // we can't check here.
+            ArgumentException.ThrowIfNullOrEmpty(signerHashAlgorithm.Name, nameof(signerHashAlgorithm));
 
             if ((options & ~AllOptions) != 0)
             {
@@ -120,9 +118,7 @@ namespace System.Security.Cryptography.X509Certificates
             CertificateRequestLoadOptions options,
             RSASignaturePadding? signerSignaturePadding)
         {
-            // Since ML-DSA (and others) don't require a hash algorithm, but we don't
-            // know what signature algorithm is being used until the call to Create,
-            // we can't check here.
+            ArgumentException.ThrowIfNullOrEmpty(signerHashAlgorithm.Name, nameof(signerHashAlgorithm));
 
             if ((options & ~AllOptions) != 0)
             {
@@ -298,7 +294,6 @@ namespace System.Security.Cryptography.X509Certificates
         {
             RSA? rsa = publicKey.GetRSAPublicKey();
             ECDsa? ecdsa = publicKey.GetECDsaPublicKey();
-            MLDsa? mldsa = publicKey.GetMLDsaPublicKey();
 
             try
             {
@@ -343,11 +338,6 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.ECDsaWithSha1:
                         hashAlg = HashAlgorithmName.SHA1;
                         break;
-                    case Oids.MLDsa44:
-                    case Oids.MLDsa65:
-                    case Oids.MLDsa87:
-                        hashAlg = default;
-                        break;
                     default:
                         throw new NotSupportedException(
                             SR.Format(SR.Cryptography_UnknownKeyAlgorithm, algorithmIdentifier.Algorithm));
@@ -381,15 +371,6 @@ namespace System.Security.Cryptography.X509Certificates
                         }
 
                         return ecdsa.VerifyData(toBeSigned, signature, hashAlg, DSASignatureFormat.Rfc3279DerSequence);
-                    case Oids.MLDsa44:
-                    case Oids.MLDsa65:
-                    case Oids.MLDsa87:
-                        if (mldsa is null)
-                        {
-                            return false;
-                        }
-
-                        return mldsa.VerifyData(toBeSigned, signature);
                     default:
                         Debug.Fail(
                             $"Algorithm ID {algorithmIdentifier.Algorithm} was in the first switch, but not the second");
@@ -408,7 +389,6 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 rsa?.Dispose();
                 ecdsa?.Dispose();
-                mldsa?.Dispose();
             }
         }
     }

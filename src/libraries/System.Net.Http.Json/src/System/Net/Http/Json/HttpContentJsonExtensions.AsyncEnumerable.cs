@@ -52,7 +52,10 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(content);
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
 
             return ReadFromJsonAsAsyncEnumerableCore<TValue>(content, options, cancellationToken);
         }
@@ -74,7 +77,10 @@ namespace System.Net.Http.Json
             JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(content);
+            if (content is null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
 
             return ReadFromJsonAsAsyncEnumerableCore(content, jsonTypeInfo, cancellationToken);
         }

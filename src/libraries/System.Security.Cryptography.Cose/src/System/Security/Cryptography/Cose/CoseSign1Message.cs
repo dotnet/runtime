@@ -50,8 +50,11 @@ namespace System.Security.Cryptography.Cose
         /// </exception>
         public static byte[] SignDetached(byte[] detachedContent, CoseSigner signer, byte[]? associatedData = null)
         {
-            ArgumentNullException.ThrowIfNull(detachedContent);
-            ArgumentNullException.ThrowIfNull(signer);
+            if (detachedContent is null)
+                throw new ArgumentNullException(nameof(detachedContent));
+
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
 
             return SignCore(detachedContent.AsSpan(), null, signer, associatedData, isDetached: true);
         }
@@ -75,8 +78,11 @@ namespace System.Security.Cryptography.Cose
         /// </exception>
         public static byte[] SignEmbedded(byte[] embeddedContent, CoseSigner signer, byte[]? associatedData = null)
         {
-            ArgumentNullException.ThrowIfNull(embeddedContent);
-            ArgumentNullException.ThrowIfNull(signer);
+            if (embeddedContent is null)
+                throw new ArgumentNullException(nameof(embeddedContent));
+
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
 
             return SignCore(embeddedContent.AsSpan(), null, signer, associatedData, isDetached: false);
         }
@@ -100,7 +106,8 @@ namespace System.Security.Cryptography.Cose
         /// </exception>
         public static byte[] SignDetached(ReadOnlySpan<byte> detachedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
         {
-            ArgumentNullException.ThrowIfNull(signer);
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
 
             return SignCore(detachedContent, null, signer, associatedData, isDetached: true);
         }
@@ -124,7 +131,8 @@ namespace System.Security.Cryptography.Cose
         /// </exception>
         public static byte[] SignEmbedded(ReadOnlySpan<byte> embeddedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
         {
-            ArgumentNullException.ThrowIfNull(signer);
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
 
             return SignCore(embeddedContent, null, signer, associatedData, isDetached: false);
         }
@@ -152,8 +160,11 @@ namespace System.Security.Cryptography.Cose
         /// </exception>
         public static byte[] SignDetached(Stream detachedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
         {
-            ArgumentNullException.ThrowIfNull(detachedContent);
-            ArgumentNullException.ThrowIfNull(signer);
+            if (detachedContent is null)
+                throw new ArgumentNullException(nameof(detachedContent));
+
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
 
             if (!detachedContent.CanRead)
                 throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
@@ -203,8 +214,11 @@ namespace System.Security.Cryptography.Cose
         /// </exception>
         public static Task<byte[]> SignDetachedAsync(Stream detachedContent, CoseSigner signer, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(detachedContent);
-            ArgumentNullException.ThrowIfNull(signer);
+            if (detachedContent is null)
+                throw new ArgumentNullException(nameof(detachedContent));
+
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
 
             if (!detachedContent.CanRead)
                 throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
@@ -273,7 +287,8 @@ namespace System.Security.Cryptography.Cose
 
         private static bool TrySign(ReadOnlySpan<byte> content, Span<byte> destination, CoseSigner signer, out int bytesWritten, ReadOnlySpan<byte> associatedData, bool isDetached)
         {
-            ArgumentNullException.ThrowIfNull(signer);
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
 
             ValidateBeforeSign(signer);
 
@@ -378,7 +393,10 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyEmbedded(AsymmetricAlgorithm key, byte[]? associatedData = null)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
             if (IsDetached)
             {
@@ -417,7 +435,10 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyEmbedded(AsymmetricAlgorithm key, ReadOnlySpan<byte> associatedData)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
             if (IsDetached)
             {
@@ -458,8 +479,14 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyDetached(AsymmetricAlgorithm key, byte[] detachedContent, byte[]? associatedData = null)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
 
             if (!IsDetached)
             {
@@ -500,7 +527,10 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyDetached(AsymmetricAlgorithm key, ReadOnlySpan<byte> detachedContent, ReadOnlySpan<byte> associatedData = default)
         {
-            ArgumentNullException.ThrowIfNull(key);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
             if (!IsDetached)
             {
@@ -549,8 +579,14 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public bool VerifyDetached(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlySpan<byte> associatedData = default)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
 
             if (!detachedContent.CanRead)
             {
@@ -644,8 +680,14 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="CoseMessage.Content"/>
         public Task<bool> VerifyDetachedAsync(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
 
             if (!detachedContent.CanRead)
             {

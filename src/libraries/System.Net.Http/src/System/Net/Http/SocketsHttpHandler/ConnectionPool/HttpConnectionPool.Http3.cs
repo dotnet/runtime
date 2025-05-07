@@ -87,9 +87,7 @@ namespace System.Net.Http
                         ThrowGetVersionException(request, 3, reasonException);
                     }
 
-                    long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && Settings._metrics!.RequestsQueueDuration.Enabled)
-                        ? Stopwatch.GetTimestamp()
-                        : 0;
+                    long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
                     Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(authority);
 
                     if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out http3ConnectionWaiter))
@@ -665,54 +663,43 @@ namespace System.Net.Http
 
                 if (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue))
                 {
-                    Debug.Assert(parsedValue is not null);
-
-                    var value = (AltSvcHeaderValue)parsedValue;
+                    var value = (AltSvcHeaderValue?)parsedValue;
 
                     // 'clear' should be the only value present.
-                    if (ReferenceEquals(AltSvcHeaderValue.Clear, value))
+                    if (value == AltSvcHeaderValue.Clear)
                     {
                         lock (SyncObj)
                         {
-                            // Clear invalidates all Alt-Svc including the current response ones.
-                            // https://httpwg.org/specs/rfc7838.html#alt-svc
                             ExpireAltSvcAuthority();
                             Debug.Assert(_authorityExpireTimer != null || _disposed);
                             _authorityExpireTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-                            return;
+                            break;
                         }
                     }
 
-                    // Do not process the Alt-Svc header if we've already found a valid h3 authority before, but continue looking for potential "clear".
-                    if (nextAuthority is not null || value.AlpnProtocolName != "h3")
+                    if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
                     {
-                        continue;
+                        var authority = new HttpAuthority(value.Host ?? _originAuthority.IdnHost, value.Port);
+                        if (IsAltSvcBlocked(authority, out _))
+                        {
+                            // Skip authorities in our blocklist.
+                            continue;
+                        }
+
+                        TimeSpan authorityMaxAge = value.MaxAge;
+
+                        if (responseAge != null)
+                        {
+                            authorityMaxAge -= responseAge.GetValueOrDefault();
+                        }
+
+                        if (authorityMaxAge > TimeSpan.Zero)
+                        {
+                            nextAuthority = authority;
+                            nextAuthorityMaxAge = authorityMaxAge;
+                            nextAuthorityPersist = value.Persist;
+                        }
                     }
-
-                    var authority = new HttpAuthority(value.Host ?? _originAuthority.IdnHost, value.Port);
-                    if (IsAltSvcBlocked(authority, out _))
-                    {
-                        // Skip authorities in our blocklist.
-                        continue;
-                    }
-
-                    TimeSpan authorityMaxAge = value.MaxAge;
-
-                    if (responseAge != null)
-                    {
-                        authorityMaxAge -= responseAge.GetValueOrDefault();
-                    }
-
-                    // It's already out of date, skip it.
-                    if (authorityMaxAge <= TimeSpan.Zero)
-                    {
-                        continue;
-                    }
-
-                    // We found an h3 authority that is not blocked and has not aged out.
-                    nextAuthority = authority;
-                    nextAuthorityMaxAge = authorityMaxAge;
-                    nextAuthorityPersist = value.Persist;
                 }
             }
 

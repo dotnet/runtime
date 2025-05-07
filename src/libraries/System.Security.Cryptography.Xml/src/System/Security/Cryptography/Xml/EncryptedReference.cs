@@ -106,7 +106,10 @@ namespace System.Security.Cryptography.Xml
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public virtual void LoadXml(XmlElement value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             ReferenceType = value.LocalName;
 

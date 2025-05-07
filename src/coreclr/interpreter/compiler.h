@@ -266,10 +266,7 @@ private:
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
-#ifdef DEBUG
-    const char *m_methodName;
     bool m_verbose;
-#endif
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
@@ -291,7 +288,6 @@ private:
 
     void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
-    CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
 
     void* AllocMethodData(size_t numBytes);
     // FIXME Mempool allocation currently leaks. We need to add an allocator and then
@@ -427,7 +423,7 @@ private:
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, bool verbose);
 
     InterpMethod* CompileMethod();
 

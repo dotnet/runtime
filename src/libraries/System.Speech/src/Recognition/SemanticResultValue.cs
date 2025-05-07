@@ -13,21 +13,21 @@ namespace System.Speech.Recognition
         #region Constructors
         public SemanticResultValue(object value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            Helpers.ThrowIfNull(value, nameof(value));
 
             _tag = new TagElement(value);
         }
         public SemanticResultValue(string phrase, object value)
         {
             Helpers.ThrowIfEmptyOrNull(phrase, nameof(phrase));
-            ArgumentNullException.ThrowIfNull(value);
+            Helpers.ThrowIfNull(value, nameof(value));
 
             _tag = new TagElement(new GrammarBuilderPhrase(phrase), value);
         }
         public SemanticResultValue(GrammarBuilder builder, object value)
         {
-            ArgumentNullException.ThrowIfNull(builder);
-            ArgumentNullException.ThrowIfNull(value);
+            Helpers.ThrowIfNull(builder, nameof(builder));
+            Helpers.ThrowIfNull(value, nameof(value));
 
             _tag = new TagElement(builder.Clone(), value);
         }

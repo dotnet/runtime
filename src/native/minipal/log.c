@@ -3,7 +3,6 @@
 
 #include "minipalconfig.h"
 #include "log.h"
-#include <stddef.h>
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
@@ -221,9 +220,6 @@ void minipal_log_flush_all(void)
 #ifdef HOST_WINDOWS
 #include <Windows.h>
 #include <io.h>
-
-typedef ptrdiff_t ssize_t;
-
 static int sync_file(minipal_log_flags flags)
 {
     switch(flags)
@@ -243,16 +239,9 @@ static int sync_file(minipal_log_flags flags)
 
     return 0;
 }
-
-static ssize_t write_file(int fd, const char* msg, size_t bytes_to_write)
-{
-    assert(bytes_to_write < INT_MAX);
-    return _write(fd, msg, (unsigned int)bytes_to_write);
-}
-
 #define fileno _fileno
-#else
-#if defined(__APPLE__)
+#define write _write
+#elif defined(__APPLE__)
 #include <fcntl.h>
 #include <unistd.h>
 static int sync_file(minipal_log_flags flags)
@@ -280,13 +269,16 @@ static int sync_file(minipal_log_flags flags)
 }
 #endif
 
-static ssize_t write_file(int fd, const char* msg, size_t bytes_to_write)
+static int write_file(int fd, const char* msg, size_t bytes_to_write)
 {
-    ssize_t ret = 0;
-    while ((ret = write(fd, msg, bytes_to_write)) < 0 && errno == EINTR);
-    return ret;
+    if (fd == -1)
+        return 0;
+
+    assert(msg != NULL && msg[0] != '\0');
+    assert(bytes_to_write < INT_MAX);
+
+    return write(fd, msg, (int)bytes_to_write);
 }
-#endif
 
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
@@ -298,11 +290,11 @@ int minipal_log_write(minipal_log_flags flags, const char* msg)
     int fd = fileno(get_std_file(flags));
     while (bytes_to_write > 0)
     {
-        ssize_t chunk_written = write_file(fd, msg, bytes_to_write < MINIPAL_LOG_MAX_PAYLOAD ? bytes_to_write : MINIPAL_LOG_MAX_PAYLOAD);
-        if (chunk_written <= 0)
-            break;
+        size_t chunk_to_write = bytes_to_write < MINIPAL_LOG_MAX_PAYLOAD ? bytes_to_write : MINIPAL_LOG_MAX_PAYLOAD;
+        size_t chunk_written = write_file(fd, msg, chunk_to_write);
 
-        assert ((size_t)chunk_written <= bytes_to_write);
+        if (chunk_written == 0)
+            break;
 
         msg = msg + chunk_written;
         bytes_to_write -= chunk_written;

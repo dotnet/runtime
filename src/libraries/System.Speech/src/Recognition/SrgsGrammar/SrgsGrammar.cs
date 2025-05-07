@@ -303,7 +303,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
+                Helpers.ThrowIfNull(value, nameof(value));
 
                 _culture = value;
             }

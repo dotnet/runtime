@@ -18,7 +18,7 @@ namespace System.Linq
         public static IAsyncEnumerable<(int Index, TSource Item)> Index<TSource>(
             this IAsyncEnumerable<TSource> source)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() ? Empty<(int Index, TSource Item)>() :

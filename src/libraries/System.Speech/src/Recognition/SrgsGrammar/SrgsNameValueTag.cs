@@ -20,7 +20,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
         public SrgsNameValueTag(object value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            Helpers.ThrowIfNull(value, nameof(value));
 
             Value = value;
         }
@@ -54,7 +54,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             get { return _value; }
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
+                Helpers.ThrowIfNull(value, nameof(value));
 
                 if ((value is string) ||
                 (value is bool) ||

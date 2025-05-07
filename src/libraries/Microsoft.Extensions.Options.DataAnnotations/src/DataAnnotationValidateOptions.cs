@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Options
             }
 
             // Ensure options are provided to validate against
-            ArgumentNullException.ThrowIfNull(options);
+            ThrowHelper.ThrowIfNull(options);
 
             var validationResults = new List<ValidationResult>();
             HashSet<object>? visited = null;

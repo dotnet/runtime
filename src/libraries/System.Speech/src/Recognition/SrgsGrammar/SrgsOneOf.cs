@@ -22,7 +22,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsOneOf(params string[] items)
             : this()
         {
-            ArgumentNullException.ThrowIfNull(items);
+            Helpers.ThrowIfNull(items, nameof(items));
 
             for (int i = 0; i < items.Length; i++)
             {
@@ -37,7 +37,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsOneOf(params SrgsItem[] items)
             : this()
         {
-            ArgumentNullException.ThrowIfNull(items);
+            Helpers.ThrowIfNull(items, nameof(items));
 
             for (int i = 0; i < items.Length; i++)
             {
@@ -56,7 +56,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region public Method
         public void Add(SrgsItem item)
         {
-            ArgumentNullException.ThrowIfNull(item);
+            Helpers.ThrowIfNull(item, nameof(item));
 
             Items.Add(item);
         }

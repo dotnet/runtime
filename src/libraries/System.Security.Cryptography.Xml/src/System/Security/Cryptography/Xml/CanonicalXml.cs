@@ -14,7 +14,10 @@ namespace System.Security.Cryptography.Xml
 
         internal CanonicalXml(Stream inputStream, bool includeComments, XmlResolver? resolver, string strBaseUri)
         {
-            ArgumentNullException.ThrowIfNull(inputStream);
+            if (inputStream is null)
+            {
+                throw new ArgumentNullException(nameof(inputStream));
+            }
 
             _c14nDoc = new CanonicalXmlDocument(true, includeComments);
             _c14nDoc.XmlResolver = resolver;
@@ -25,7 +28,10 @@ namespace System.Security.Cryptography.Xml
         internal CanonicalXml(XmlDocument document, XmlResolver? resolver) : this(document, resolver, false) { }
         internal CanonicalXml(XmlDocument document, XmlResolver? resolver, bool includeComments)
         {
-            ArgumentNullException.ThrowIfNull(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
 
             _c14nDoc = new CanonicalXmlDocument(true, includeComments);
             _c14nDoc.XmlResolver = resolver;
@@ -35,7 +41,10 @@ namespace System.Security.Cryptography.Xml
 
         internal CanonicalXml(XmlNodeList nodeList, XmlResolver? resolver, bool includeComments)
         {
-            ArgumentNullException.ThrowIfNull(nodeList);
+            if (nodeList is null)
+            {
+                throw new ArgumentNullException(nameof(nodeList));
+            }
 
             XmlDocument? doc = Utils.GetOwnerDocument(nodeList);
             if (doc == null)

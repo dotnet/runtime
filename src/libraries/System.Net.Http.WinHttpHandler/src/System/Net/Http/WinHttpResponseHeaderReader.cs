@@ -31,7 +31,9 @@ namespace System.Net.Http
         /// <returns>true if the next header was read successfully, or false if all characters have been read.</returns>
         public bool ReadHeader([NotNullWhen(true)] out string? name, [NotNullWhen(true)] out string? value)
         {
-            while (ReadLine(out int startIndex, out int length))
+            int startIndex;
+            int length;
+            while (ReadLine(out startIndex, out length))
             {
                 // Skip empty lines.
                 if (length == 0)
@@ -49,12 +51,10 @@ namespace System.Net.Http
 
                 int nameLength = colonIndex - startIndex;
 
-                ReadOnlySpan<char> nameSpan = _buffer.AsSpan(startIndex, nameLength);
-
                 // If it's a known header name, use the known name instead of allocating a new string.
-                if (!HttpKnownHeaderNames.TryGetHeaderName(nameSpan, out name))
+                if (!HttpKnownHeaderNames.TryGetHeaderName(_buffer, startIndex, nameLength, out name))
                 {
-                    name = nameSpan.ToString();
+                    name = new string(_buffer, startIndex, nameLength);
                 }
 
                 // Normalize header value by trimming whitespace.

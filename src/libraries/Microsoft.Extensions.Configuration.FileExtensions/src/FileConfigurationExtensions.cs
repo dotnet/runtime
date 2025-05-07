@@ -22,8 +22,8 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder SetFileProvider(this IConfigurationBuilder builder, IFileProvider fileProvider)
         {
-            ArgumentNullException.ThrowIfNull(builder);
-            ArgumentNullException.ThrowIfNull(fileProvider);
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(fileProvider);
 
             builder.Properties[FileProviderKey] = fileProvider;
             return builder;
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The default <see cref="IFileProvider"/>.</returns>
         public static IFileProvider GetFileProvider(this IConfigurationBuilder builder)
         {
-            ArgumentNullException.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(builder);
 
             if (builder.Properties.TryGetValue(FileProviderKey, out object? provider))
             {
@@ -54,8 +54,8 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder SetBasePath(this IConfigurationBuilder builder, string basePath)
         {
-            ArgumentNullException.ThrowIfNull(builder);
-            ArgumentNullException.ThrowIfNull(basePath);
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(basePath);
 
             return builder.SetFileProvider(new PhysicalFileProvider(basePath));
         }
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder SetFileLoadExceptionHandler(this IConfigurationBuilder builder, Action<FileLoadExceptionContext> handler)
         {
-            ArgumentNullException.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(builder);
 
             builder.Properties[FileLoadExceptionHandlerKey] = handler;
             return builder;
@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The The Action to be invoked on a file load exception, if set.</returns>
         public static Action<FileLoadExceptionContext>? GetFileLoadExceptionHandler(this IConfigurationBuilder builder)
         {
-            ArgumentNullException.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(builder);
 
             if (builder.Properties.TryGetValue(FileLoadExceptionHandlerKey, out object? handler))
             {

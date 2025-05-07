@@ -103,7 +103,10 @@ namespace System.IO.Hashing
         /// </exception>
         public static byte[] Hash(byte[] source)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
 
             return Hash(new ReadOnlySpan<byte>(source));
         }

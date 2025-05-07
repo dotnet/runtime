@@ -107,7 +107,10 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Version value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
 
 #if NET
 #if NET8_0_OR_GREATER

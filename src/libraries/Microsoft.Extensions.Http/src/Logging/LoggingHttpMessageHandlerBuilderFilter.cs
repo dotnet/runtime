@@ -22,8 +22,8 @@ namespace Microsoft.Extensions.Http
 
         public LoggingHttpMessageHandlerBuilderFilter(IServiceProvider serviceProvider, IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor)
         {
-            ArgumentNullException.ThrowIfNull(serviceProvider);
-            ArgumentNullException.ThrowIfNull(optionsMonitor);
+            ThrowHelper.ThrowIfNull(serviceProvider);
+            ThrowHelper.ThrowIfNull(optionsMonitor);
 
             _serviceProvider = serviceProvider;
             _optionsMonitor = optionsMonitor;
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Http
 
         public Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next)
         {
-            ArgumentNullException.ThrowIfNull(next);
+            ThrowHelper.ThrowIfNull(next);
 
             return (builder) =>
             {

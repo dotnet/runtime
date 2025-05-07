@@ -15,94 +15,94 @@ namespace Microsoft.Extensions.DependencyModel
 
         public static IEnumerable<string> GetDefaultNativeAssets(this DependencyContext self)
         {
-            ArgumentNullException.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(self);
 
             return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context) => library.GetDefaultNativeAssets(context), self);
         }
 
         public static IEnumerable<RuntimeFile> GetDefaultNativeRuntimeFileAssets(this DependencyContext self)
         {
-            ArgumentNullException.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(self);
 
             return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context) => library.GetDefaultNativeRuntimeFileAssets(context), self);
         }
 
         public static IEnumerable<string> GetRuntimeNativeAssets(this DependencyContext self, string runtimeIdentifier)
         {
-            ArgumentNullException.ThrowIfNull(self);
-            ArgumentNullException.ThrowIfNull(runtimeIdentifier);
+            ThrowHelper.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(runtimeIdentifier);
 
             return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context, id) => library.GetRuntimeNativeAssets(context, id), self, runtimeIdentifier);
         }
 
         public static IEnumerable<RuntimeFile> GetRuntimeNativeRuntimeFileAssets(this DependencyContext self, string runtimeIdentifier)
         {
-            ArgumentNullException.ThrowIfNull(self);
-            ArgumentNullException.ThrowIfNull(runtimeIdentifier);
+            ThrowHelper.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(runtimeIdentifier);
 
             return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context, id) => library.GetRuntimeNativeRuntimeFileAssets(context, id), self, runtimeIdentifier);
         }
 
         public static IEnumerable<string> GetDefaultNativeAssets(this RuntimeLibrary self, DependencyContext context)
         {
-            ArgumentNullException.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(self);
 
             return ResolveAssets(context, string.Empty, self.NativeLibraryGroups);
         }
 
         public static IEnumerable<RuntimeFile> GetDefaultNativeRuntimeFileAssets(this RuntimeLibrary self, DependencyContext context)
         {
-            ArgumentNullException.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(self);
 
             return ResolveRuntimeFiles(context, string.Empty, self.NativeLibraryGroups);
         }
 
         public static IEnumerable<string> GetRuntimeNativeAssets(this RuntimeLibrary self, DependencyContext context, string runtimeIdentifier)
         {
-            ArgumentNullException.ThrowIfNull(self);
-            ArgumentNullException.ThrowIfNull(context);
-            ArgumentNullException.ThrowIfNull(runtimeIdentifier);
+            ThrowHelper.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(context);
+            ThrowHelper.ThrowIfNull(runtimeIdentifier);
 
             return ResolveAssets(context, runtimeIdentifier, self.NativeLibraryGroups);
         }
 
         public static IEnumerable<RuntimeFile> GetRuntimeNativeRuntimeFileAssets(this RuntimeLibrary self, DependencyContext context, string runtimeIdentifier)
         {
-            ArgumentNullException.ThrowIfNull(self);
-            ArgumentNullException.ThrowIfNull(context);
-            ArgumentNullException.ThrowIfNull(runtimeIdentifier);
+            ThrowHelper.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(context);
+            ThrowHelper.ThrowIfNull(runtimeIdentifier);
 
             return ResolveRuntimeFiles(context, runtimeIdentifier, self.NativeLibraryGroups);
         }
 
         public static IEnumerable<AssemblyName> GetDefaultAssemblyNames(this DependencyContext self)
         {
-            ArgumentNullException.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(self);
 
             return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context) => library.GetDefaultAssemblyNames(context), self);
         }
 
         public static IEnumerable<AssemblyName> GetRuntimeAssemblyNames(this DependencyContext self, string runtimeIdentifier)
         {
-            ArgumentNullException.ThrowIfNull(self);
-            ArgumentNullException.ThrowIfNull(runtimeIdentifier);
+            ThrowHelper.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(runtimeIdentifier);
 
             return LinqHelpers.SelectMany(self.RuntimeLibraries, static (library, context, id) => library.GetRuntimeAssemblyNames(context, id), self, runtimeIdentifier);
         }
 
         public static IEnumerable<AssemblyName> GetDefaultAssemblyNames(this RuntimeLibrary self, DependencyContext context)
         {
-            ArgumentNullException.ThrowIfNull(self);
-            ArgumentNullException.ThrowIfNull(context);
+            ThrowHelper.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(context);
 
             return ResolveAssets(context, string.Empty, self.RuntimeAssemblyGroups).Select(GetAssemblyName);
         }
 
         public static IEnumerable<AssemblyName> GetRuntimeAssemblyNames(this RuntimeLibrary self, DependencyContext context, string runtimeIdentifier)
         {
-            ArgumentNullException.ThrowIfNull(self);
-            ArgumentNullException.ThrowIfNull(context);
-            ArgumentNullException.ThrowIfNull(runtimeIdentifier);
+            ThrowHelper.ThrowIfNull(self);
+            ThrowHelper.ThrowIfNull(context);
+            ThrowHelper.ThrowIfNull(runtimeIdentifier);
 
             return ResolveAssets(context, runtimeIdentifier, self.RuntimeAssemblyGroups).Select(GetAssemblyName);
         }

@@ -9,7 +9,9 @@
     <NoWarn>$(NoWarn);SYSLIB1103,SYSLIB1104</NoWarn>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
-    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
+
+    <!-- Avoid conflict with Microsoft.Extensions.Configuration.Binder (via InternalsVisibleTo) -->
+    <SkipIncludeNullableAttributes>true</SkipIncludeNullableAttributes>
   </PropertyGroup>
 
   <PropertyGroup>

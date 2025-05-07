@@ -71,7 +71,11 @@ const char * GetDebugCodeName(DWORD dwCode)
 // Per-thread state for Debug builds...
 //-----------------------------------------------------------------------------
 #ifdef RSCONTRACTS
-thread_local DbgRSThread* DbgRSThread::t_pCurrent;
+#ifndef __GNUC__
+__declspec(thread) DbgRSThread* DbgRSThread::t_pCurrent;
+#else // !__GNUC__
+__thread DbgRSThread* DbgRSThread::t_pCurrent;
+#endif // !__GNUC__
 
 LONG DbgRSThread::s_Total = 0;
 

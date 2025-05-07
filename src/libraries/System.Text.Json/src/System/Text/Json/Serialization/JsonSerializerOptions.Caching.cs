@@ -54,7 +54,10 @@ namespace System.Text.Json
         /// </remarks>
         public JsonTypeInfo GetTypeInfo(Type type)
         {
-            ArgumentNullException.ThrowIfNull(type);
+            if (type is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(type));
+            }
 
             if (JsonTypeInfo.IsInvalidForSerialization(type))
             {
@@ -79,7 +82,10 @@ namespace System.Text.Json
         /// </remarks>
         public bool TryGetTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
-            ArgumentNullException.ThrowIfNull(type);
+            if (type is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(type));
+            }
 
             if (JsonTypeInfo.IsInvalidForSerialization(type))
             {

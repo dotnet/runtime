@@ -53,9 +53,12 @@ namespace System.CodeDom.Compiler
             {
                 ValidateCodeDirective((CodeDirective)e);
             }
+            else if (e == null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
             else
             {
-                ArgumentNullException.ThrowIfNull(e);
                 throw new ArgumentException(SR.Format(SR.InvalidElementType, e.GetType().FullName), nameof(e));
             }
         }
@@ -389,7 +392,10 @@ namespace System.CodeDom.Compiler
 
         private void ValidateStatement(CodeStatement e)
         {
-            ArgumentNullException.ThrowIfNull(e);
+            if (e is null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
 
             ValidateCodeDirectives(e.StartDirectives);
             ValidateCodeDirectives(e.EndDirectives);
@@ -764,8 +770,14 @@ namespace System.CodeDom.Compiler
             }
             else
             {
-                ArgumentNullException.ThrowIfNull(e);
-                throw new ArgumentException(SR.Format(SR.InvalidElementType, e.GetType().FullName), nameof(e));
+                if (e == null)
+                {
+                    throw new ArgumentNullException(nameof(e));
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Format(SR.InvalidElementType, e.GetType().FullName), nameof(e));
+                }
             }
         }
 

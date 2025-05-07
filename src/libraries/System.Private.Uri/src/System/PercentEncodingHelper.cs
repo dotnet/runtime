@@ -93,7 +93,7 @@ namespace System
                 {
                     if (charsToCopy != 0)
                     {
-                        dest.Append(new ReadOnlySpan<char>(input + totalCharsConsumed - charsToCopy, charsToCopy));
+                        dest.Append(input + totalCharsConsumed - charsToCopy, charsToCopy);
                         charsToCopy = 0;
                     }
 
@@ -167,7 +167,7 @@ namespace System
                 return totalCharsConsumed;
 
             bytesLeftInBuffer *= 3;
-            dest.Append(new ReadOnlySpan<char>(input + totalCharsConsumed - charsToCopy, charsToCopy + bytesLeftInBuffer));
+            dest.Append(input + totalCharsConsumed - charsToCopy, charsToCopy + bytesLeftInBuffer);
             return totalCharsConsumed + bytesLeftInBuffer;
         }
     }

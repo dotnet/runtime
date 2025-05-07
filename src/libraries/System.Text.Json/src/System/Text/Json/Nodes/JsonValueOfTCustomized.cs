@@ -28,7 +28,10 @@ namespace System.Text.Json.Nodes
 
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(writer);
+            if (writer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
+            }
 
             JsonTypeInfo<TValue> jsonTypeInfo = _jsonTypeInfo;
 

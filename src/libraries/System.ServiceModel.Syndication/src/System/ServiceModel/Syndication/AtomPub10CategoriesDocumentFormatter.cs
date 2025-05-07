@@ -21,12 +21,18 @@ namespace System.ServiceModel.Syndication
 
         public AtomPub10CategoriesDocumentFormatter(Type inlineDocumentType, Type referencedDocumentType) : base()
         {
-            ArgumentNullException.ThrowIfNull(inlineDocumentType);
+            if (inlineDocumentType == null)
+            {
+                throw new ArgumentNullException(nameof(inlineDocumentType));
+            }
             if (!typeof(InlineCategoriesDocument).IsAssignableFrom(inlineDocumentType))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(inlineDocumentType), nameof(InlineCategoriesDocument)), nameof(inlineDocumentType));
             }
-            ArgumentNullException.ThrowIfNull(referencedDocumentType);
+            if (referencedDocumentType == null)
+            {
+                throw new ArgumentNullException(nameof(referencedDocumentType));
+            }
             if (!typeof(ReferencedCategoriesDocument).IsAssignableFrom(referencedDocumentType))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(referencedDocumentType), nameof(ReferencedCategoriesDocument)), nameof(referencedDocumentType));
@@ -56,7 +62,10 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            ArgumentNullException.ThrowIfNull(reader);
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
 
             return reader.IsStartElement(App10Constants.Categories, App10Constants.Namespace);
         }
@@ -65,14 +74,20 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            ArgumentNullException.ThrowIfNull(reader);
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
 
             ReadDocument(reader);
         }
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            ArgumentNullException.ThrowIfNull(writer);
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
 
             if (Document == null)
             {
@@ -84,7 +99,10 @@ namespace System.ServiceModel.Syndication
 
         public override void ReadFrom(XmlReader reader)
         {
-            ArgumentNullException.ThrowIfNull(reader);
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
 
             if (!CanRead(reader))
             {
@@ -96,7 +114,10 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            ArgumentNullException.ThrowIfNull(writer);
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
 
             if (Document == null)
             {

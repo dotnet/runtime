@@ -44,7 +44,10 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(utf8Json);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
@@ -71,7 +74,10 @@ namespace System.Text.Json
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(utf8Json);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             jsonTypeInfo.Serialize(utf8Json, value);
@@ -105,7 +111,10 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(utf8Json);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
@@ -137,7 +146,10 @@ namespace System.Text.Json
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            ArgumentNullException.ThrowIfNull(utf8Json);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
@@ -162,8 +174,14 @@ namespace System.Text.Json
             JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(utf8Json);
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
@@ -184,8 +202,14 @@ namespace System.Text.Json
             TValue value,
             JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(utf8Json);
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             jsonTypeInfo.Serialize(utf8Json, value);
@@ -211,8 +235,14 @@ namespace System.Text.Json
             JsonTypeInfo jsonTypeInfo,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(utf8Json);
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
@@ -235,8 +265,14 @@ namespace System.Text.Json
             object? value,
             JsonTypeInfo jsonTypeInfo)
         {
-            ArgumentNullException.ThrowIfNull(utf8Json);
-            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
 
             jsonTypeInfo.EnsureConfigured();
             jsonTypeInfo.SerializeAsObject(utf8Json, value);
@@ -268,8 +304,14 @@ namespace System.Text.Json
             JsonSerializerContext context,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(utf8Json);
-            ArgumentNullException.ThrowIfNull(context);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
@@ -299,8 +341,14 @@ namespace System.Text.Json
             Type inputType,
             JsonSerializerContext context)
         {
-            ArgumentNullException.ThrowIfNull(utf8Json);
-            ArgumentNullException.ThrowIfNull(context);
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);

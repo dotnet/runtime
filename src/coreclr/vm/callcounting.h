@@ -261,7 +261,7 @@ private:
     private:
         // LoaderHeap cannot be constructed when DACCESS_COMPILE is defined (at the time, its destructor was private). Working
         // around that by controlling creation/destruction using a pointer.
-        InterleavedLoaderHeap *m_heap;
+        LoaderHeap *m_heap;
         RangeList m_heapRangeList;
 
     public:
@@ -273,7 +273,7 @@ private:
         void Reset();
         const CallCountingStub *AllocateStub(CallCount *remainingCallCountCell, PCODE targetForMethod);
     private:
-        InterleavedLoaderHeap *AllocateHeap();
+        LoaderHeap *AllocateHeap();
     #endif // !DACCESS_COMPILE
 
     public:

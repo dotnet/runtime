@@ -84,7 +84,10 @@ namespace System.Text.Json.Serialization.Metadata
             where TCollection : IReadOnlyDictionary<TKey, TValue>
             where TKey : notnull
         {
-            ArgumentNullException.ThrowIfNull(createRangeFunc);
+            if (createRangeFunc is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(createRangeFunc));
+            }
 
             return CreateCore(
                 options,
@@ -149,7 +152,10 @@ namespace System.Text.Json.Serialization.Metadata
             Func<IEnumerable<TElement>, TCollection> createRangeFunc)
             where TCollection : IEnumerable<TElement>
         {
-            ArgumentNullException.ThrowIfNull(createRangeFunc);
+            if (createRangeFunc is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(createRangeFunc));
+            }
 
             return CreateCore(
                 options,
@@ -396,7 +402,10 @@ namespace System.Text.Json.Serialization.Metadata
             Action<TCollection, object?> addFunc)
             where TCollection : IEnumerable
         {
-            ArgumentNullException.ThrowIfNull(addFunc);
+            if (addFunc is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(addFunc));
+            }
 
             return CreateCore(
                 options,

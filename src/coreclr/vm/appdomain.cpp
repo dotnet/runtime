@@ -998,12 +998,6 @@ extern "C" PCODE g_pGetNonGCStaticBase;
 PCODE g_pGetNonGCStaticBase;
 extern "C" PCODE g_pPollGC;
 PCODE g_pPollGC;
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-extern "C" PCODE g_pThrowOverflowException;
-PCODE g_pThrowOverflowException;
-extern "C" PCODE g_pThrowDivideByZeroException;
-PCODE g_pThrowDivideByZeroException;
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 void SystemDomain::LoadBaseSystemClasses()
 {
@@ -1139,10 +1133,6 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pGetGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_GC_STATIC)->GetMultiCallableAddrOfCode();
         g_pGetNonGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_NONGC_STATIC)->GetMultiCallableAddrOfCode();
         g_pPollGC = CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC)->GetMultiCallableAddrOfCode();
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-        g_pThrowOverflowException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWOVERFLOWEXCEPTION)->GetMultiCallableAddrOfCode();
-        g_pThrowDivideByZeroException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWDIVIDEBYZEROEXCEPTION)->GetMultiCallableAddrOfCode();
-#endif // TARGET_32BIT
 
     #ifdef PROFILING_SUPPORTED
         // Note that g_profControlBlock.fBaseSystemClassesLoaded must be set to TRUE only after
@@ -3407,30 +3397,26 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
+BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pThrowable != NULL);
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    BOOL retVal = FALSE;
+
+    GCX_COOP();
 
     EX_TRY
     {
-        MethodDescCallSite raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION);
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(*pThrowable)
-        };
-        raiseEvent.Call(args);
+        retVal = GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable);
     }
     EX_CATCH
     {
     }
     EX_END_CATCH(SwallowAllExceptions)  // Swallow any errors.
+
+    return retVal;
 }
 
 void AppDomain::RaiseExitProcessEvent()
@@ -3450,6 +3436,41 @@ void AppDomain::RaiseExitProcessEvent()
     MethodDescCallSite onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
     onProcessExit.Call(NULL);
 }
+
+BOOL
+AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pThrowable != NULL && IsProtectedByGCFrame(pThrowable));
+
+    OBJECTREF orDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__UNHANDLED_EXCEPTION)->GetStaticOBJECTREF();
+    if (orDelegate == NULL)
+        return FALSE;
+
+    struct {
+        OBJECTREF Delegate;
+        OBJECTREF Sender;
+    } gc;
+    gc.Delegate = orDelegate;
+    gc.Sender = NULL;
+
+    GCPROTECT_BEGIN(gc);
+    if (orDelegate != NULL)
+    {
+        DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable);
+    }
+    GCPROTECT_END();
+    return TRUE;
+}
+
 
 DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
 {

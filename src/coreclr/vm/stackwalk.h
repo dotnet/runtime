@@ -29,9 +29,6 @@ class ICodeManager;
 class IJitManager;
 struct EE_ILEXCEPTION;
 class AppDomain;
-#ifdef FEATURE_EH_FUNCLETS
-struct ExInfo;
-#endif
 
 // This define controls handling of faults in managed code.  If it is defined,
 //  the exception is handled (retried, actually), with a FaultingExceptionFrame
@@ -49,7 +46,6 @@ struct ExInfo;
 
 #if defined(FEATURE_EH_FUNCLETS)
 #define RECORD_RESUMABLE_FRAME_SP
-#define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 #endif
 
 //************************************************************************
@@ -141,6 +137,7 @@ public:
      */
     PTR_VOID GetExactGenericArgsToken();
 
+    inline CodeManState * GetCodeManState() { LIMITED_METHOD_DAC_CONTRACT; return & codeManState; }
     /*
        IF YOU USE ANY OF THE SUBSEQUENT FUNCTIONS, YOU NEED TO REALLY UNDERSTAND THE
        STACK-WALKER (INCLUDING UNWINDING OF METHODS IN MANAGED NATIVE CODE)!
@@ -443,9 +440,11 @@ private:
     friend class EECodeManager;
     friend class StackFrameIterator;
 #ifdef FEATURE_EH_FUNCLETS
-    friend struct ExInfo;
+    friend class ExceptionTracker;
     friend void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 #endif // FEATURE_EH_FUNCLETS
+
+    CodeManState      codeManState;
 
     bool              isFrameless;
     bool              isFirst;

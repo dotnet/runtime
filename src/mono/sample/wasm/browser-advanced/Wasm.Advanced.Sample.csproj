@@ -18,7 +18,6 @@
 
     <!-- Put "framework" (dotnet.js, dlls, etc) files directly into the AppBundle -->
     <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
-    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
 
     <!-- 
     <RunAOTCompilation>true</RunAOTCompilation>

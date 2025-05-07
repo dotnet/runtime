@@ -68,8 +68,14 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         private ActionBlock(Delegate action, ExecutionDataflowBlockOptions dataflowBlockOptions)
         {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(dataflowBlockOptions);
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+            if (dataflowBlockOptions is null)
+            {
+                throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            }
 
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
@@ -231,7 +237,10 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            ArgumentNullException.ThrowIfNull(exception);
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
 
             if (_defaultTarget != null)
             {

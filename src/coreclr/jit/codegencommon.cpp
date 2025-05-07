@@ -1506,21 +1506,6 @@ FOUND_AM:
     return true;
 }
 
-//------------------------------------------------------------------------
-// genEmitCallWithCurrentGC:
-//   Emit a call with GC information captured from current GC information.
-//
-// Parameters:
-//   params - Call emission parameters
-//
-void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
-{
-    params.ptrVars   = gcInfo.gcVarPtrSetCur;
-    params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
-    params.byrefRegs = gcInfo.gcRegByrefSetCur;
-    GetEmitter()->emitIns_Call(params);
-}
-
 /*****************************************************************************
  *
  *  Generate an exit sequence for a return from a method (note: when compiling
@@ -5187,6 +5172,18 @@ void CodeGen::genFnProlog()
     }
 #endif // DEBUG
 
+#if defined(DEBUG)
+
+    // We cannot force 0-initialization of the PSPSym
+    // as it will overwrite the real value
+    if (compiler->lvaPSPSym != BAD_VAR_NUM)
+    {
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->lvaPSPSym);
+        assert(!varDsc->lvMustInit);
+    }
+
+#endif // DEBUG
+
     /*-------------------------------------------------------------------------
      *
      *  Record the stack frame ranges that will cover all of the tracked
@@ -5676,9 +5673,13 @@ void CodeGen::genFnProlog()
 
     genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!compiler->UsesFunclets())
+    if (compiler->UsesFunclets())
     {
+        genSetPSPSym(initReg, &initRegZeroed);
+    }
+    else
+    {
+#if defined(FEATURE_EH_WINDOWS_X86)
         // when compInitMem is true the genZeroInitFrame will zero out the shadow SP slots
         if (compiler->ehNeedsShadowSPslots() && !compiler->info.compInitMem)
         {
@@ -5698,8 +5699,8 @@ void CodeGen::genFnProlog()
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, initReg, compiler->lvaShadowSPslotsVar,
                                       firstSlotOffs);
         }
-    }
 #endif // FEATURE_EH_WINDOWS_X86
+    }
 
     genReportGenericContextArg(initReg, &initRegZeroed);
 

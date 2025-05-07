@@ -21,7 +21,10 @@ namespace System.ServiceModel.Syndication
 
         public Atom10ItemFormatter(Type itemTypeToCreate) : base()
         {
-            ArgumentNullException.ThrowIfNull(itemTypeToCreate);
+            if (itemTypeToCreate is null)
+            {
+                throw new ArgumentNullException(nameof(itemTypeToCreate));
+            }
 
             if (!typeof(SyndicationItem).IsAssignableFrom(itemTypeToCreate))
             {
@@ -62,7 +65,10 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            ArgumentNullException.ThrowIfNull(reader);
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
 
             return reader.IsStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
         }
@@ -71,14 +77,20 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            ArgumentNullException.ThrowIfNull(reader);
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
 
             ReadItem(reader);
         }
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            ArgumentNullException.ThrowIfNull(writer);
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
 
             WriteItem(writer);
         }
@@ -95,7 +107,10 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            ArgumentNullException.ThrowIfNull(writer);
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
 
             writer.WriteStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
             WriteItem(writer);

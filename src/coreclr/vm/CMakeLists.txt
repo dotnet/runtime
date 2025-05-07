@@ -340,7 +340,6 @@ set(VM_SOURCES_WKS
     hosting.cpp
     hostinformation.cpp
     ilmarshalers.cpp
-    instancecalli.cpp
     interopconverter.cpp
     interoputil.cpp
     interpexec.cpp

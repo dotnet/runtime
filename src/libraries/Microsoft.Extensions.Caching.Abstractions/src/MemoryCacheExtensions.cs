@@ -33,8 +33,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The value associated with this key, or <c>default(TItem)</c> if the key is not present.</returns>
         public static TItem? Get<TItem>(this IMemoryCache cache, object key)
         {
-            cache.TryGetValue(key, out object? value);
-            return value is null ? default : (TItem)value;
+            return (TItem?)(cache.Get(key) ?? default(TItem));
         }
 
         /// <summary>
@@ -76,9 +75,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The value that was set.</returns>
         public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value)
         {
-            ICacheEntry entry = cache.CreateEntry(key);
+            using ICacheEntry entry = cache.CreateEntry(key);
             entry.Value = value;
-            entry.Dispose();
 
             return value;
         }

@@ -130,6 +130,10 @@ extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandl
 void DistributeEvent(OBJECTREF *pDelegate,
                      OBJECTREF *pDomain);
 
+void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
+                                          OBJECTREF *pDomain,
+                                          OBJECTREF *pThrowable);
+
 // Want no unused bits in ShuffleEntry since unused bits can make
 // equivalent ShuffleEntry arrays look unequivalent and deoptimize our
 // hashing.

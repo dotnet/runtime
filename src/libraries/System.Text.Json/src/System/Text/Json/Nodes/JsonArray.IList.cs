@@ -124,7 +124,10 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public int RemoveAll(Func<JsonNode?, bool> match)
         {
-            ArgumentNullException.ThrowIfNull(match);
+            if (match == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(match));
+            }
 
             return List.RemoveAll(node =>
             {

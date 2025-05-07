@@ -50,7 +50,10 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadXml(XmlElement value)
         {
-            ArgumentNullException.ThrowIfNull(value);
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             XmlElement nameElement = value;
             _keyName = nameElement.InnerText.Trim();

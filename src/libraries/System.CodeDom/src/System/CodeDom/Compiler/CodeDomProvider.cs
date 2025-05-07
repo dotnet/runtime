@@ -88,7 +88,10 @@ namespace System.CodeDom.Compiler
 
         private static CompilerInfo GetCompilerInfoForLanguageNoThrow(string language)
         {
-            ArgumentNullException.ThrowIfNull(language);
+            if (language is null)
+            {
+                throw new ArgumentNullException(nameof(language));
+            }
 
             CompilerInfo value;
             s_compilerLanguages.TryGetValue(language.Trim(), out value);
@@ -97,7 +100,10 @@ namespace System.CodeDom.Compiler
 
         private static CompilerInfo GetCompilerInfoForExtensionNoThrow(string extension)
         {
-            ArgumentNullException.ThrowIfNull(extension);
+            if (extension is null)
+            {
+                throw new ArgumentNullException(nameof(extension));
+            }
 
             CompilerInfo value;
             s_compilerExtensions.TryGetValue(extension.Trim(), out value);

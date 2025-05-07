@@ -84,7 +84,10 @@ namespace System.IO.Hashing
         /// </exception>
         public void Append(byte[] source)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
 
             Append(new ReadOnlySpan<byte>(source));
         }
@@ -100,7 +103,10 @@ namespace System.IO.Hashing
         /// <seealso cref="AppendAsync(Stream, CancellationToken)"/>
         public void Append(Stream stream)
         {
-            ArgumentNullException.ThrowIfNull(stream);
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
 
             stream.CopyTo(new CopyToDestinationStream(this));
         }
@@ -123,7 +129,10 @@ namespace System.IO.Hashing
         /// </exception>
         public Task AppendAsync(Stream stream, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(stream);
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
 
             return stream.CopyToAsync(
                 new CopyToDestinationStream(this),

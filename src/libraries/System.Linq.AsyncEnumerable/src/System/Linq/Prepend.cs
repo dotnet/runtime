@@ -20,7 +20,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             TSource element)
         {
-            ArgumentNullException.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(source);
 
             return Impl(source, element, default);
 

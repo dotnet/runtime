@@ -17,7 +17,7 @@ namespace System.Speech.Synthesis
         }
         public Prompt(PromptBuilder promptBuilder)
         {
-            ArgumentNullException.ThrowIfNull(promptBuilder);
+            Helpers.ThrowIfNull(promptBuilder, nameof(promptBuilder));
 
             _text = promptBuilder.ToXml();
             _media = SynthesisMediaType.Ssml;
@@ -26,7 +26,7 @@ namespace System.Speech.Synthesis
         // Disable parameter validation check for empty strings
         public Prompt(string textToSpeak, SynthesisTextFormat media)
         {
-            ArgumentNullException.ThrowIfNull(textToSpeak);
+            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
 
             switch (_media = (SynthesisMediaType)media)
             {
@@ -41,7 +41,7 @@ namespace System.Speech.Synthesis
         }
         internal Prompt(Uri promptFile, SynthesisMediaType media)
         {
-            ArgumentNullException.ThrowIfNull(promptFile);
+            Helpers.ThrowIfNull(promptFile, nameof(promptFile));
 
             switch (_media = media)
             {

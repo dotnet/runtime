@@ -19,7 +19,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
         public SrgsSemanticInterpretationTag(string script)
         {
-            ArgumentNullException.ThrowIfNull(script);
+            Helpers.ThrowIfNull(script, nameof(script));
 
             _script = script;
         }
@@ -35,7 +35,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
+                Helpers.ThrowIfNull(value, nameof(value));
 
                 _script = value;
             }

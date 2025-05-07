@@ -156,7 +156,6 @@ RhpTrapThreads                              equ _RhpTrapThreads
 RhpStressGc                                 equ @RhpStressGc@0
 RhpGcPoll2                                  equ @RhpGcPoll2@4
 RhHandleGet                                 equ @RhHandleGet@4
-DivInt64Internal                            equ @DivInt64Internal_FCall@16
 RhpGcSafeZeroMemory                         equ @RhpGcSafeZeroMemory@8
 RhpGetNumThunkBlocksPerMapping              equ @RhpGetNumThunkBlocksPerMapping@0
 
@@ -185,7 +184,6 @@ EXTERN RhpGcPoll2                               : PROC
 EXTERN RhHandleGet                              : PROC
 EXTERN RhpGcSafeZeroMemory                      : PROC
 EXTERN RhpGetNumThunkBlocksPerMapping           : PROC
-EXTERN DivInt64Internal                         : PROC
 
 ifdef FEATURE_GC_STRESS
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC

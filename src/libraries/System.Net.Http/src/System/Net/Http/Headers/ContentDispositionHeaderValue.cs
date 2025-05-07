@@ -188,7 +188,8 @@ namespace System.Net.Http.Headers
         public static ContentDispositionHeaderValue Parse(string input)
         {
             int index = 0;
-            return (ContentDispositionHeaderValue)GenericHeaderParser.ContentDispositionParser.ParseValue(input, null, ref index);
+            return (ContentDispositionHeaderValue)GenericHeaderParser.ContentDispositionParser.ParseValue(input,
+                null, ref index);
         }
 
         public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out ContentDispositionHeaderValue? parsedValue)
@@ -348,7 +349,7 @@ namespace System.Net.Http.Headers
                     return result;
                 }
                 // May not have been encoded.
-                return IsQuoted(nameParameter.Value) ? nameParameter.Value!.Substring(1, nameParameter.Value.Length - 2) : nameParameter.Value;
+                return nameParameter.Value;
             }
             return null;
         }

@@ -330,7 +330,8 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
         mov     [rax], rcx
 #endif
 
-        mov     rdi, [rsp + locArg0]                                // rsi <- exception object
+        mov     rdi, [rdx + OFFSETOF__REGDISPLAY__SP]               // rdi <- establisher frame
+        mov     rsi, [rsp + locArg0]                                // rsi <- exception object
         call    qword ptr [rsp + locArg1]                           // call handler funclet
 
 ALTERNATE_ENTRY RhpCallCatchFunclet2
@@ -469,6 +470,7 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
         mov     [rax], rcx
 #endif
 
+        mov     rdi, [rsi + OFFSETOF__REGDISPLAY__SP]                // rdi <- establisher frame
         call    qword ptr [rsp + locArg0]                            // handler funclet address
 
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
@@ -516,7 +518,10 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
         mov     rbp, [rax]
 
-        call    rsi
+        mov     rax, rsi                                            // rax <- handler funclet address
+        mov     rsi, rdi                                            // rsi <- exception object
+        mov     rdi, [rdx + OFFSETOF__REGDISPLAY__SP]               // rdi <- establisher frame
+        call    rax
 
 ALTERNATE_ENTRY RhpCallFilterFunclet2
 

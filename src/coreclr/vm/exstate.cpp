@@ -345,7 +345,7 @@ PEXCEPTION_REGISTRATION_RECORD GetClrSEHRecordServicingStackPointer(Thread *pThr
 //    natOffset     - the native offset at which we are going to resume execution
 //    sfDebuggerInterceptFramePointer
 //                  - the frame pointer of the interception method frame
-//    pFlags        - flags on the current exception (ExInfo);
+//    pFlags        - flags on the current exception (ExInfo on x86 and ExceptionTracker on WIN64);
 //                    to be set by this function to indicate that an interception is going on
 //
 // Return Value:
@@ -504,7 +504,7 @@ void
 ThreadExceptionState::EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
 #ifdef FEATURE_EH_FUNCLETS
-    ExInfo*           head = m_pCurrentTracker;
+    ExceptionTrackerBase* head = m_pCurrentTracker;
 
     if (head == NULL)
     {

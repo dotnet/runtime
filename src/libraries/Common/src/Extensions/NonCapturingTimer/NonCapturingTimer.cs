@@ -13,7 +13,10 @@ namespace Microsoft.Extensions.Internal
     {
         public static Timer Create(TimerCallback callback, object state, TimeSpan dueTime, TimeSpan period)
         {
-            ArgumentNullException.ThrowIfNull(callback);
+            if (callback is null)
+            {
+                throw new ArgumentNullException(nameof(callback));
+            }
 
             // Don't capture the current ExecutionContext and its AsyncLocals onto the timer
             bool restoreFlow = false;

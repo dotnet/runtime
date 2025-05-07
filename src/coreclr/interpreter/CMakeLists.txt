@@ -3,7 +3,6 @@ set(INTERPRETER_SOURCES
   compiler.cpp
   compileropt.cpp
   intops.cpp
-  interpconfig.cpp
   eeinterp.cpp)
 
 set(INTERPRETER_LINK_LIBRARIES

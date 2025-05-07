@@ -72,7 +72,10 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If the contentType string invalid CR-LF characters</exception>
         internal ContentType(string contentType)
         {
-            ArgumentNullException.ThrowIfNull(contentType);
+            if (contentType is null)
+            {
+                throw new ArgumentNullException(nameof(contentType));
+            }
 
             if (contentType.Length == 0)
             {

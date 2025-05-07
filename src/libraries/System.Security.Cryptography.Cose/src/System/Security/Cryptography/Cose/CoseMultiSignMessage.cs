@@ -66,7 +66,8 @@ namespace System.Security.Cryptography.Cose
         /// </exception>
         public static byte[] SignDetached(byte[] detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
         {
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (detachedContent is null)
+                throw new ArgumentNullException(nameof(detachedContent));
 
             return SignCore(detachedContent, null, signer, protectedHeaders, unprotectedHeaders, associatedData, isDetached: true);
         }
@@ -96,7 +97,8 @@ namespace System.Security.Cryptography.Cose
         /// </exception>
         public static byte[] SignEmbedded(byte[] embeddedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
         {
-            ArgumentNullException.ThrowIfNull(embeddedContent);
+            if (embeddedContent is null)
+                throw new ArgumentNullException(nameof(embeddedContent));
 
             return SignCore(embeddedContent, null, signer, protectedHeaders, unprotectedHeaders, associatedData, isDetached: false);
         }
@@ -184,7 +186,8 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="SignDetachedAsync"/>
         public static byte[] SignDetached(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, ReadOnlySpan<byte> associatedData = default)
         {
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (detachedContent is null)
+                throw new ArgumentNullException(nameof(detachedContent));
 
             if (!detachedContent.CanRead)
                 throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
@@ -204,7 +207,8 @@ namespace System.Security.Cryptography.Cose
             ReadOnlySpan<byte> associatedData,
             bool isDetached)
         {
-            ArgumentNullException.ThrowIfNull(signer);
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
 
             ValidateBeforeSign(signer, protectedHeaders, unprotectedHeaders);
 
@@ -253,8 +257,11 @@ namespace System.Security.Cryptography.Cose
             ReadOnlyMemory<byte> associatedData = default,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(detachedContent);
-            ArgumentNullException.ThrowIfNull(signer);
+            if (detachedContent is null)
+                throw new ArgumentNullException(nameof(detachedContent));
+
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
 
             if (!detachedContent.CanRead)
                 throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
@@ -342,7 +349,8 @@ namespace System.Security.Cryptography.Cose
 
         private static bool TrySign(ReadOnlySpan<byte> content, Span<byte> destination, CoseSigner signer, CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders, out int bytesWritten, ReadOnlySpan<byte> associatedData, bool isDetached)
         {
-            ArgumentNullException.ThrowIfNull(signer);
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
 
             ValidateBeforeSign(signer, protectedHeaders, unprotectedHeaders);
 
@@ -659,7 +667,10 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is detached from this message, use an overload that accepts a detached content.</exception>
         public void AddSignatureForEmbedded(CoseSigner signer, ReadOnlySpan<byte> associatedData)
         {
-            ArgumentNullException.ThrowIfNull(signer);
+            if (signer == null)
+            {
+                throw new ArgumentNullException(nameof(signer));
+            }
 
             if (IsDetached)
             {
@@ -688,7 +699,10 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
         public void AddSignatureForDetached(byte[] detachedContent, CoseSigner signer, byte[]? associatedData = null)
         {
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (detachedContent == null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
 
             AddSignatureForDetached(detachedContent.AsSpan(), signer, associatedData);
         }
@@ -712,7 +726,10 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
         public void AddSignatureForDetached(ReadOnlySpan<byte> detachedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
         {
-            ArgumentNullException.ThrowIfNull(signer);
+            if (signer == null)
+            {
+                throw new ArgumentNullException(nameof(signer));
+            }
 
             if (!IsDetached)
             {
@@ -745,7 +762,10 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
         public void AddSignatureForDetached(Stream detachedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
         {
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (detachedContent == null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
 
             if (!IsDetached)
             {
@@ -818,7 +838,10 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
         public Task AddSignatureForDetachedAsync(Stream detachedContent, CoseSigner signer, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(detachedContent);
+            if (detachedContent == null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
 
             if (!IsDetached)
             {
@@ -868,7 +891,10 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="Signatures"/>
         public void RemoveSignature(CoseSignature signature)
         {
-            ArgumentNullException.ThrowIfNull(signature);
+            if (signature == null)
+            {
+                throw new ArgumentNullException(nameof(signature));
+            }
 
             _signatures.Remove(signature);
         }

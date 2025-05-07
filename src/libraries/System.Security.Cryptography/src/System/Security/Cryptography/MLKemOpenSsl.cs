@@ -66,9 +66,9 @@ namespace System.Security.Cryptography
             out bool hasDecapsulationKey);
 
         /// <summary>
-        /// Gets a <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.
+        /// Creates a duplicate handle.
         /// </summary>
-        /// <returns>A <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.</returns>
+        /// <returns>A SafeHandle for the ML-KEM key in OpenSSL.</returns>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public partial SafeEvpPKeyHandle DuplicateKeyHandle();
     }

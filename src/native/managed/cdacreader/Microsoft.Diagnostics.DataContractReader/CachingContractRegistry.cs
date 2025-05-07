@@ -38,7 +38,6 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IPrecodeStubs)] = new PrecodeStubsFactory(),
             [typeof(IReJIT)] = new ReJITFactory(),
             [typeof(IStackWalk)] = new StackWalkFactory(),
-            [typeof(IRuntimeInfo)] = new RuntimeInfoFactory(),
         };
         configureFactories?.Invoke(_factories);
     }
@@ -56,7 +55,6 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
     public override IReJIT ReJIT => GetContract<IReJIT>();
     public override IStackWalk StackWalk => GetContract<IStackWalk>();
-    public override IRuntimeInfo RuntimeInfo => GetContract<IRuntimeInfo>();
 
     private TContract GetContract<TContract>() where TContract : IContract
     {
