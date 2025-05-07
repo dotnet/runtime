@@ -1036,7 +1036,14 @@ namespace System.Formats.Tar
 
             Span<byte> converted = stackalloc byte[FieldLengths.Checksum];
             converted.Clear();
-            FormatOctal(checksum, converted);
+            FormatOctal(checksum, converted, shouldTrimTrailingNullBytes: true);
+
+            int length = converted.IndexOf((byte)'\0');
+            if (length != -1)
+            {
+                // Trim the nulls at the end
+                converted = converted.Slice(0, length);
+            }
 
             Span<byte> destination = buffer.Slice(FieldLocations.Checksum, FieldLengths.Checksum);
 
@@ -1078,13 +1085,20 @@ namespace System.Formats.Tar
         }
 
         // Writes the specified bytes aligned to the right, filling all the leading bytes with the zero char 0x30,
-        // ensuring a null terminator is included at the end of the specified span.
-        private static int WriteRightAlignedBytesAndGetChecksum(ReadOnlySpan<byte> bytesToWrite, Span<byte> destination)
+        // ensuring a null terminator is included at the end of the specified span if shouldTrimNullBytes is false.
+        private static int WriteRightAlignedBytesAndGetChecksum(ReadOnlySpan<byte> bytesToWrite, Span<byte> destination, bool shouldTrimTrailingNullBytes)
         {
             Debug.Assert(destination.Length > 1);
 
             // Null terminated
-            destination[^1] = (byte)'\0';
+            if (shouldTrimTrailingNullBytes)
+            {
+                destination = destination.Slice(0, destination.Length - 1);
+            }
+            else
+            {
+                destination[^1] = (byte)'\0';
+            }
 
             // Copy as many input bytes as will fit
             int numToCopy = Math.Min(bytesToWrite.Length, destination.Length - 1);
@@ -1115,7 +1129,7 @@ namespace System.Formats.Tar
 
             if (isOctalRange || _format == TarEntryFormat.Pax)
             {
-                return FormatOctal(value, destination);
+                return FormatOctal(value, destination, shouldTrimTrailingNullBytes: false);
             }
             else if (_format == TarEntryFormat.Gnu)
             {
@@ -1141,7 +1155,7 @@ namespace System.Formats.Tar
 
             if (isOctalRange || _format == TarEntryFormat.Pax)
             {
-                return FormatOctal(value, destination);
+                return FormatOctal(value, destination, shouldTrimTrailingNullBytes: false);
             }
             else if (_format == TarEntryFormat.Gnu)
             {
@@ -1158,7 +1172,7 @@ namespace System.Formats.Tar
         }
 
         // Writes the specified decimal number as a right-aligned octal number and returns its checksum.
-        private static int FormatOctal(long value, Span<byte> destination)
+        private static int FormatOctal(long value, Span<byte> destination, bool shouldTrimTrailingNullBytes)
         {
             ulong remaining = (ulong)value;
             Span<byte> digits = stackalloc byte[32]; // longer than any possible octal formatting of a ulong
@@ -1173,7 +1187,7 @@ namespace System.Formats.Tar
                 i--;
             }
 
-            return WriteRightAlignedBytesAndGetChecksum(digits.Slice(i), destination);
+            return WriteRightAlignedBytesAndGetChecksum(digits.Slice(i), destination, shouldTrimTrailingNullBytes: shouldTrimTrailingNullBytes);
         }
 
         // Writes the specified DateTimeOffset's Unix time seconds, and returns its checksum.
