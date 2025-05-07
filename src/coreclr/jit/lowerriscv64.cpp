@@ -263,7 +263,47 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             GenTreeIntConCommon* constant = op2->AsIntConCommon();
             UINT64               value    = (UINT64)constant->IntegralValue();
             if (binOp->OperIs(GT_AND))
-                value = ~value;
+            {
+                if (isPow2(value))
+                {
+                    LIR::Use use;
+                    if (BlockRange().TryGetUse(binOp, &use))
+                    {
+                        GenTree* user    = use.User();
+                        GenTree* userOp2 = user->gtGetOp2();
+                        if ((user->OperIs(GT_NE) && userOp2->IsIntegralConst(0)) ||   // a & bit != 0
+                            (user->OperIs(GT_EQ) && userOp2->IsIntegralConst(value))) // a & bit == bit
+                        {
+                            JITDUMP("DUPA bit extract parent node:\n  ");
+                            DISPNODE(user);
+                            binOp->ChangeOper(GT_BIT_EXTRACT);
+                            value = BitOperations::Log2(value);
+                            assert(value >= 11); // smaller immediates should have been contained into or/xor/and
+                            constant->SetIntegralValue(value);
+                            constant->SetContained();
+
+                            use = LIR::Use();
+                            if (BlockRange().TryGetUse(user, &use))
+                            {
+                                use.ReplaceWith(binOp);
+                            }
+                            else
+                            {
+                                user->SetUnusedValue();
+                            }
+                            BlockRange().Remove(userOp2);
+                            BlockRange().Remove(user);
+                        }
+                    }
+                    else
+                    {
+                        binOp->SetUnusedValue();
+                    }
+                    return binOp->gtNext;
+                }
+
+                value = ~value; // check below if it's single-bit clear
+            }
 
             if (isPow2(value))
             {

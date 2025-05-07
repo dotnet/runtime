@@ -60,16 +60,16 @@ public static class SingleBit
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool ExtractCast(int a, int b) => (a & (1 << b)) != 0;
+    static bool ExtractNotEqual(int a, int b) => (a & (1 << b)) != 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool ExtractPow2Cast(int a, int b) => (a & (0b100 << b)) != 0;
+    static bool ExtractPow2NotEqual(int a, int b) => (a & (0b100 << b)) != 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract10Cast(int a) => (a & (1 << 10)) != 0;
+    static bool Extract10NotEqual(int a) => (a & (1 << 10)) != 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract11Cast(int a) => (a & (1 << 11)) != 0;
+    static bool Extract11NotEqual(int a) => (a & (1 << 11)) != 0;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -129,12 +129,12 @@ public static class SingleBit
         Assert.False(Extract10DoubleShift(0x12345878));
         Assert.True (Extract11DoubleShift(0x12345878));
 
-        Assert.False(ExtractCast(0x12345878, 10));
-        Assert.True (ExtractCast(0x12345878, 11));
-        Assert.False(ExtractPow2Cast(0x12345878, 8));
-        Assert.True (ExtractPow2Cast(0x12345878, 9));
-        Assert.False(Extract10Cast(0x12345878));
-        Assert.True (Extract11Cast(0x12345878));
+        Assert.False(ExtractNotEqual(0x12345878, 10));
+        Assert.True (ExtractNotEqual(0x12345878, 11));
+        Assert.False(ExtractPow2NotEqual(0x12345878, 8));
+        Assert.True (ExtractPow2NotEqual(0x12345878, 9));
+        Assert.False(Extract10NotEqual(0x12345878));
+        Assert.True (Extract11NotEqual(0x12345878));
 
         Assert.False(ExtractEqual(0x12345878, 10));
         Assert.True (ExtractEqual(0x12345878, 11));
