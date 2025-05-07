@@ -353,7 +353,7 @@ namespace Internal.IL
                     return false;
                 }
 
-                if (declSig.ReturnType.GetTypeDefinition() != maybeSig.ReturnType.GetTypeDefinition())
+                if (declSig.ReturnType != maybeSig.ReturnType)
                 {
                     return false;
                 }
@@ -368,7 +368,7 @@ namespace Internal.IL
                 TypeDesc maybeType = maybeSig[i];
 
                 // Compare the types
-                if (declType.GetTypeDefinition() != maybeType.GetTypeDefinition())
+                if (declType != maybeType)
                 {
                     return false;
                 }
@@ -543,19 +543,18 @@ namespace Internal.IL
 
                 TypeDesc initialType = isReturnValue ? originalSignature.ReturnType : originalSignature[parameter.SequenceNumber - 1];
 
-                bool initialTypeIsByRef = initialType.IsByRef;
-
-                if (initialTypeIsByRef)
-                {
-                    // We need to strip the byref off the type to get the
-                    // underlying type for the parameter.
-                    initialType = ((ParameterizedType)initialType).ParameterType;
-                }
-
+                // Only allow 'object' and 'ref object' as initial types.
                 if (initialType != method.Context.GetWellKnownType(WellKnownType.Object))
                 {
-                    // Illegal argument type for UnsafeAccessorTypeAttribute target
-                    return SetTargetResult.Invalid;
+                    if (initialType.IsByRef
+                        && ((ByRefType)initialType).ParameterType != method.Context.GetWellKnownType(WellKnownType.Object))
+                    {
+                        return SetTargetResult.Invalid;
+                    }
+                    else if (!initialType.IsByRef)
+                    {
+                        return SetTargetResult.Invalid;
+                    }
                 }
 
                 CustomAttributeValue<TypeDesc> decoded = unsafeAccessorTypeAttribute.Value.DecodeValue(
@@ -578,9 +577,34 @@ namespace Internal.IL
 
                         bool isMethodParameter = name.StartsWith("!!", StringComparison.Ordinal);
 
-                        if (!int.TryParse(name.AsSpan(isMethodParameter ? 2 : 1), out int index))
+                        if (!int.TryParse(name.AsSpan(isMethodParameter ? 2 : 1), NumberStyles.None, CultureInfo.InvariantCulture, out int index))
                         {
                             return null;
+                        }
+
+                        if (isMethodParameter)
+                        {
+                            if (!method.HasInstantiation)
+                            {
+                                return null;
+                            }
+
+                            if (index >= method.Instantiation.Length)
+                            {
+                                return null;
+                            }
+                        }
+                        else
+                        {
+                            if (!method.OwningType.HasInstantiation)
+                            {
+                                return null;
+                            }
+
+                            if (index >= method.OwningType.Instantiation.Length)
+                            {
+                                return null;
+                            }
                         }
 
                         return module.Context.GetSignatureVariable(index, isMethodParameter);
@@ -591,15 +615,15 @@ namespace Internal.IL
                     return SetTargetResult.Missing;
                 }
 
-                if (replacementType.IsFunctionPointer
-                    || replacementType.IsPointer)
+                // Future versions of the runtime may support
+                // UnsafeAccessorTypeAttribute on value types.
+                if (replacementType.IsValueType)
                 {
                     return SetTargetResult.NotSupported;
                 }
 
-                // Future versions of the runtime may support
-                // UnsafeAccessorTypeAttribute on value types.
-                if (replacementType.IsValueType)
+                if (replacementType.IsFunctionPointer
+                    || replacementType.IsPointer)
                 {
                     return SetTargetResult.NotSupported;
                 }
@@ -616,7 +640,7 @@ namespace Internal.IL
                     replacementType = replacementType.MakeByRefType();
                 }
 
-                if (replacementType.IsByRef != initialTypeIsByRef)
+                if (replacementType.IsByRef != initialType.IsByRef)
                 {
                     // The replacement type must match the original type
                     // in terms of byref-ness.
