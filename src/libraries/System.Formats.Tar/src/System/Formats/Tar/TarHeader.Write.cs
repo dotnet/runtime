@@ -361,9 +361,9 @@ namespace System.Formats.Tar
         // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
         private bool IsLinkNameTooLongForRegularField() => _linkName != null && (Encoding.UTF8.GetByteCount(_linkName) + 1) > FieldLengths.LinkName;
 
-        // Checks if the name string is too long to fit in the regular header field.
+        // Checks if the name string is too long to fit in the regular header field (excluding null char).
         // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
-        private bool IsNameTooLongForRegularField() => (Encoding.UTF8.GetByteCount(_name) + 1) > FieldLengths.Name;
+        private bool IsNameTooLongForRegularField() => (Encoding.UTF8.GetByteCount(_name)) > FieldLengths.Name;
 
         // Writes the current header as a Gnu entry into the archive stream.
         // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
