@@ -67,7 +67,7 @@ enum RiscV64IntrinsicConstants
 {
     RiscV64IntrinsicConstants_Zba = 0x0001,
     RiscV64IntrinsicConstants_Zbb = 0x0002,
-    RiscV64IntrinsicConstants_Zbs = 0x0003,
+    RiscV64IntrinsicConstants_Zbs = 0x0004,
 };
 #endif // HOST_RISCV64
 

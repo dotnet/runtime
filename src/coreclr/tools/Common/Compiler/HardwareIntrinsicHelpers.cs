@@ -339,7 +339,7 @@ namespace ILCompiler
         {
             public const int Zba = 0x0001;
             public const int Zbb = 0x0002;
-            public const int Zbs = 0x0003;
+            public const int Zbs = 0x0004;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
