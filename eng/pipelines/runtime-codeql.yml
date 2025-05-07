@@ -98,7 +98,7 @@ extends:
                   TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/packages'
             templateContext:
               outputs:
-              - output: pipelineArtifacts
+              - output: pipelineArtifact
                 displayName: Publish artifacts
                 targetPath: '$(Build.ArtifactStagingDirectory)/artifacts/packages'
                 ArtifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
