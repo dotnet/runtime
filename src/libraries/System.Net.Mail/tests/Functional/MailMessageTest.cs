@@ -261,17 +261,14 @@ blah blah
                                 culture: null,
                                 activationAttributes: null);
 
-            // var syncSendAdapterType = typeof(MailMessage).Assembly.GetTypes()
-            //     .FirstOrDefault(t => t.Name == "SyncReadWriteAdapter");
+            var syncSendAdapterType = typeof(MailMessage).Assembly.GetTypes()
+                .FirstOrDefault(t => t.Name == "SyncReadWriteAdapter");
 
             // Send the message.
-            // typeof(MailMessage)
-            //     .GetMethod("SendAsync", BindingFlags.Instance | BindingFlags.NonPublic)
-            //     .MakeGenericMethod(syncSendAdapterType)
-            //     .Invoke(mail, new object[] { mailWriter, true, true, CancellationToken.None });
             typeof(MailMessage)
-                .GetMethod("Send", BindingFlags.Instance | BindingFlags.NonPublic)
-                .Invoke(mail, new object[] { mailWriter, true, true });
+                .GetMethod("SendAsync", BindingFlags.Instance | BindingFlags.NonPublic)
+                .MakeGenericMethod(syncSendAdapterType)
+                .Invoke(mail, new object[] { mailWriter, true, true, CancellationToken.None });
 
             // Decode contents.
             string result = Encoding.UTF8.GetString(stream.ToArray());
