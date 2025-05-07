@@ -192,6 +192,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
     <!-- gRPC tests should be run only manually -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
@@ -234,7 +235,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\InvariantTimezone\System.Runtime.InvariantTimezone.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\System.Runtime.Loader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Text.Encoding.Tests\System.Text.Encoding.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/62547 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
   </ItemGroup>
