@@ -13809,7 +13809,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
         // further references to the argument working off of the
         // bashed copy.
         op1 = gtCloneExpr(argNode);
-        COMPILER_ASSUME(op1 != nullptr);
+        assert(op1 != nullptr);
         argInfo.argTmpNum = BAD_VAR_NUM;
 
         // We may need to retype to ensure we match the callee's view of the type.

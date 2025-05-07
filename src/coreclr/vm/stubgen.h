@@ -111,7 +111,7 @@ struct LocalDesc
     void ChangeType(CorElementType elemType)
     {
         LIMITED_METHOD_CONTRACT;
-        COMPILER_ASSUME((MAX_LOCALDESC_ELEMENTS-1) >= cbType);
+        _ASSERTE((MAX_LOCALDESC_ELEMENTS-1) >= cbType);
 
         for (size_t i = cbType; i >= 1; i--)
         {

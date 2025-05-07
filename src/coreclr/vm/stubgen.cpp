@@ -610,7 +610,7 @@ ILStubLinker::LogILStubWorker(
         //
         // calculate the code size
         //
-        COMPILER_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+        _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
         *pcbCode += s_rgbOpcodeSizes[instr];
 
         //
@@ -733,7 +733,7 @@ bool ILStubLinker::FirstPassLink(ILInstruction* pInstrBuffer, UINT numInstr, siz
         //
         // calculate the code size
         //
-        COMPILER_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+        _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
         *pcbCode += s_rgbOpcodeSizes[instr];
 
         //
@@ -931,7 +931,7 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
         {
             const ILOpcode* pOpcode = &s_rgOpcodes[instr];
 
-            COMPILER_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+            _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
             int     opSize = s_rgbOpcodeSizes[instr];
             bool    twoByteOp = (pOpcode->byte1 != 0xFF);
             int     argSize = opSize - (twoByteOp ? 2 : 1);

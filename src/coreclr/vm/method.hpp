@@ -377,7 +377,7 @@ public:
 
         PRECONDITION(HasPrecode());
         Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(GetStableEntryPoint());
-        COMPILER_ASSUME(pPrecode != NULL);
+        _ASSERTE(pPrecode != NULL);
         return pPrecode;
     }
 
@@ -762,7 +762,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        COMPILER_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->IsEditAndContinueEnabled();
     }
 
@@ -921,7 +921,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        COMPILER_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->GetMDImport();
     }
 
@@ -931,7 +931,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        COMPILER_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->GetCustomAttribute(GetMemberDef(), attribute, ppData, pcbData);
     }
 
@@ -940,7 +940,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        COMPILER_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->GetEmitter();
     }
 
@@ -948,7 +948,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        COMPILER_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->GetRWImporter();
     }
 #endif // !DACCESS_COMPILE
@@ -1077,7 +1077,7 @@ public:
         WRAPPER_NO_CONTRACT;
         MethodTable *pMT = GetMethodTable();
         EEClass *pClass = pMT->GetClass();
-        COMPILER_ASSUME(pClass != NULL);
+        _ASSERTE(pClass != NULL);
         return pClass;
     }
 
@@ -1097,7 +1097,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        COMPILER_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->GetAssembly();
     }
 
@@ -3680,7 +3680,7 @@ inline PTR_MethodTable MethodDesc::GetMethodTable() const
     LIMITED_METHOD_DAC_CONTRACT;
 
     MethodDescChunk *pChunk = GetMethodDescChunk();
-    COMPILER_ASSUME(pChunk != NULL);
+    _ASSERTE(pChunk != NULL);
     return pChunk->GetMethodTable();
 }
 
@@ -3696,7 +3696,7 @@ inline mdMethodDef MethodDesc::GetMemberDef() const
     LIMITED_METHOD_DAC_CONTRACT;
 
     MethodDescChunk *pChunk = GetMethodDescChunk();
-    COMPILER_ASSUME(pChunk != NULL);
+    _ASSERTE(pChunk != NULL);
     UINT16   tokrange = pChunk->GetTokRange();
 
     UINT16 tokremainder = m_wFlags3AndTokenRemainder & enum_flag3_TokenRemainderMask;

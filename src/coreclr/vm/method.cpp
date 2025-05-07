@@ -428,7 +428,7 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
         if (pSMD->HasStoredMethodSig() || GetClassification()==mcDynamic)
         {
             *ppSig = pSMD->GetStoredMethodSig(pcSig);
-            COMPILER_ASSUME(*ppSig != NULL);
+            _ASSERTE(*ppSig != NULL);
 
             return;
         }
@@ -444,7 +444,7 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
     }
 
     GetSigFromMetadata(GetMDImport(), ppSig, pcSig);
-    COMPILER_ASSUME(*ppSig != NULL);
+    _ASSERTE(*ppSig != NULL);
 }
 
 //*******************************************************************************
@@ -492,7 +492,7 @@ Signature MethodDesc::GetSignature()
 
     GetSig(&pSig, &cSig);
 
-    COMPILER_ASSUME(pSig != NULL);
+    _ASSERTE(pSig != NULL);
 
     return Signature(pSig, cSig);
 }
@@ -1133,7 +1133,7 @@ ULONG MethodDesc::GetRVA()
     if (GetMemberDef() & 0x00FFFFFF)
     {
         Module *pModule = GetModule();
-        COMPILER_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
 
         DWORD dwDescrOffset;
         DWORD dwImplFlags;
@@ -1708,7 +1708,7 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
         }
         CONSISTENCY_CHECK(TypeHandle(pMT).CheckFullyLoaded());
         MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
-        COMPILER_ASSUME(resultMD != NULL);
+        _ASSERTE(resultMD != NULL);
         resultMD->CheckRestore();
         RETURN (resultMD);
     }
@@ -2692,7 +2692,7 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     // Otherwise this must be some kind of precode
     //
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
-    COMPILER_ASSUME(fSpeculative || (pPrecode != NULL));
+    _ASSERTE(fSpeculative || (pPrecode != NULL));
     if (pPrecode != NULL)
     {
         pMD = pPrecode->GetMethodDesc(fSpeculative);

@@ -304,7 +304,7 @@ static PCCOR_SIGNATURE PrettyPrintType(
         {
             typePtr = PrettyPrintType(typePtr, (typeEnd - typePtr), out, pIMDI);
             unsigned rank = CorSigUncompressData(typePtr);
-            COMPILER_ASSUME(rank <= 0xffffff);
+            _ASSERTE(rank <= 0xffffff);
 
             // <TODO>TODO what is the syntax for the rank 0 case? </TODO>
             if (rank == 0)
@@ -719,7 +719,7 @@ static HRESULT PrettyPrintTypeA(
         {
             IfFailGo(PrettyPrintTypeA(typePtr, (typeEnd - typePtr), out, pIMDI));
             unsigned rank = CorSigUncompressData(typePtr);
-            COMPILER_ASSUME(rank <= 0xffffff);
+            _ASSERTE(rank <= 0xffffff);
             // <TODO>TODO what is the syntax for the rank 0 case? </TODO>
             if (rank == 0)
             {

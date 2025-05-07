@@ -1765,7 +1765,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
-    COMPILER_ASSUME(pMgr != NULL);
+    _ASSERTE(pMgr != NULL);
 
 #ifndef TARGET_X86
     // Have we failed the dispatch stub too many times?
@@ -1810,7 +1810,7 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
 
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget);
-    COMPILER_ASSUME(pMgr != NULL);
+    _ASSERTE(pMgr != NULL);
 
     pMgr->BackPatchWorker(&callSite);
 }
@@ -2534,7 +2534,7 @@ MethodDesc *VirtualCallStubManager::GetInterfaceMethodDescFromToken(DispatchToke
 #ifndef DACCESS_COMPILE
 
     MethodTable * pMT = GetTypeFromToken(token);
-    COMPILER_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
     CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
 

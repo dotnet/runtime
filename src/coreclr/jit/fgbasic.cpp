@@ -5112,7 +5112,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     if (unreachable)
     {
-        COMPILER_ASSUME(bPrev != nullptr);
+        assert(bPrev != nullptr);
 
         fgUnreachableBlock(block);
 
@@ -6321,8 +6321,8 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
     else
     {
         noway_assert(tryIndex > 0 || hndIndex > 0);
-        COMPILER_ASSUME(tryIndex <= compHndBBtabCount);
-        COMPILER_ASSUME(hndIndex <= compHndBBtabCount);
+        assert(tryIndex <= compHndBBtabCount);
+        assert(hndIndex <= compHndBBtabCount);
 
         // Decide which region to put in, the "try" region or the "handler" region.
         if (tryIndex == 0)

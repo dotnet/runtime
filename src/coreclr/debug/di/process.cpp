@@ -4959,7 +4959,7 @@ void CordbProcess::RawDispatchEvent(
             STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: step complete.\n",
                  GetCurrentThreadId());
 
-            COMPILER_ASSUME(pThread != NULL);
+            _ASSERTE(pThread != NULL);
 
             CordbStepper * pStepper = m_steppers.GetBase(LsPtrToCookie(pEvent->StepData.stepperToken));
 
@@ -5134,7 +5134,7 @@ void CordbProcess::RawDispatchEvent(
                  VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain));
 
-            COMPILER_ASSUME (pAppDomain != NULL);
+            _ASSERTE (pAppDomain != NULL);
 
             CordbModule *module = pAppDomain->LookupOrCreateModule(pEvent->UnloadModuleData.vmDomainAssembly);
 
@@ -5661,7 +5661,7 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE(NULL != pAppDomain);
 
             CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmDomainAssembly);
-            COMPILER_ASSUME(pModule != NULL);
+            _ASSERTE(pModule != NULL);
 
             CordbFunction * pCurFunction    = NULL;
             CordbFunction * pResumeFunction = NULL;
@@ -5717,12 +5717,12 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE(NULL != pAppDomain);
 
             CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmDomainAssembly);
-            COMPILER_ASSUME(pModule != NULL);
+            _ASSERTE(pModule != NULL);
 
             // Find the function we're remapping to, which must be the latest version
             CordbFunction *pRemapFunction=
                 pModule->LookupFunctionLatestVersion(pEvent->EnCRemapComplete.funcMetadataToken);
-            COMPILER_ASSUME(pRemapFunction != NULL);
+            _ASSERTE(pRemapFunction != NULL);
 
             // Dispatch the FunctionRemapComplete callback
             RSSmartPtr<CordbFunction> pRef(pRemapFunction);
@@ -11911,7 +11911,7 @@ void CordbWin32EventThread::Win32EventLoop()
             // Once we detach, we don't need to continue any outstanding event.
             // So act like we never got the event.
             fEventAvailable = false;
-            COMPILER_ASSUME(m_pProcess == NULL); // W32 cleared process pointer
+            _ASSERTE(m_pProcess == NULL); // W32 cleared process pointer
         }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -11936,7 +11936,7 @@ void CordbWin32EventThread::Win32EventLoop()
         // But since the CordbProcess is our parent object, we know it won't go away until
         // it neuters us, so we can safely proceed.
         // Find the process this event is for.
-        COMPILER_ASSUME(m_pProcess != NULL);
+        _ASSERTE(m_pProcess != NULL);
         _ASSERTE(m_pProcess->m_id == GetProcessId(&event)); // should only get events for our proc
         g_pRSDebuggingInfo->m_MRUprocess = m_pProcess;
 

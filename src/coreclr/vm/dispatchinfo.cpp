@@ -1551,7 +1551,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
 
     if (!m_bInvokeUsingInvokeMember)
     {
-        COMPILER_ASSUME(pDispMemberInfo != NULL);
+        _ASSERTE(pDispMemberInfo != NULL);
 
         if (pDispMemberInfo->IsCultureAware())
         {

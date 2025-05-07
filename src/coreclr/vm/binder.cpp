@@ -151,8 +151,7 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
         pMD = MemberLoader::FindMethodByName(pMT, d->name);
     }
 
-
-    COMPILER_ASSUME_MSGF(pMD != NULL, ("EE expects method to exist: %s:%s  Sig pointer: %p\n", pMT->GetDebugClassName(), d->name, d->sig));
+    _ASSERTE(pMD != NULL && ("EE expects method to exist"));
 
     VolatileStore(&m_pMethods[id], pMD);
 
@@ -201,7 +200,7 @@ FieldDesc * CoreLibBinder::LookupFieldLocal(BinderFieldID id)
     pFD = MemberLoader::FindField(pMT, d->name, NULL, 0, NULL);
 
 #ifndef DACCESS_COMPILE
-    COMPILER_ASSUME_MSGF(pFD != NULL, ("EE expects field to exist: %s:%s\n", pMT->GetDebugClassName(), d->name));
+    _ASSERTE(pFD != NULL && ("EE expects field to exist"));
 
     VolatileStore(&(m_pFields[id]), pFD);
 #endif

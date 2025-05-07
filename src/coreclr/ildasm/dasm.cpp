@@ -7047,7 +7047,7 @@ void DumpSummary()
             }
             qbMemberSig.Shrink(0);
             pcSig = cComSig ? PrettyPrintSig(pComSig, cComSig, "", &qbMemberSig, g_pImport,NULL) : "NO SIGNATURE";
-            COMPILER_ASSUME(ProperName((char*)pcMember) != 0);
+            _ASSERTE(ProperName((char*)pcMember) != 0);
             sprintf_s(szString,SZSTRING_SIZE,"// %08X [GLM] %s : %s", tkMember,ProperName((char*)pcMember),pcSig);
             printLine(g_pFile,szString);
         }
@@ -7066,7 +7066,7 @@ void DumpSummary()
             }
             qbMemberSig.Shrink(0);
             pcSig = cComSig ? PrettyPrintSig(pComSig, cComSig, "", &qbMemberSig, g_pImport,NULL) : "NO SIGNATURE";
-            COMPILER_ASSUME(ProperName((char*)pcMember) != 0);
+            _ASSERTE(ProperName((char*)pcMember) != 0);
             sprintf_s(szString,SZSTRING_SIZE,"// %08X [GLF] %s : %s", tkMember,ProperName((char*)pcMember),pcSig);
             printLine(g_pFile,szString);
         }
@@ -7081,7 +7081,7 @@ void DumpSummary()
             printLine(g_pFile, szString);
             continue;
         }
-        COMPILER_ASSUME(ProperName((char*)pcClass) != 0);
+        _ASSERTE(ProperName((char*)pcClass) != 0);
         if(*pcNS) sprintf_s(szFQN,4096,"%s.%s", ProperName((char*)pcNS),ProperName((char*)pcClass));
         else strcpy_s(szFQN,4096,ProperName((char*)pcClass));
         sprintf_s(szString,SZSTRING_SIZE,"// %08X [CLS] %s", g_cl_list[i],szFQN);
@@ -7099,7 +7099,7 @@ void DumpSummary()
                 }
                 qbMemberSig.Shrink(0);
                 pcSig = cComSig ? PrettyPrintSig(pComSig, cComSig, "", &qbMemberSig, g_pImport,NULL) : "NO SIGNATURE";
-                COMPILER_ASSUME(ProperName((char*)pcMember) != 0);
+                _ASSERTE(ProperName((char*)pcMember) != 0);
                 sprintf_s(szString,SZSTRING_SIZE,"// %08X [MET] %s::%s : %s", tkMember,szFQN,ProperName((char*)pcMember),pcSig);
                 printLine(g_pFile,szString);
             }
@@ -7118,7 +7118,7 @@ void DumpSummary()
                 }
                 qbMemberSig.Shrink(0);
                 pcSig = cComSig ? PrettyPrintSig(pComSig, cComSig, "", &qbMemberSig, g_pImport,NULL) : "NO SIGNATURE";
-                COMPILER_ASSUME(ProperName((char*)pcMember) != 0);
+                _ASSERTE(ProperName((char*)pcMember) != 0);
                 sprintf_s(szString,SZSTRING_SIZE,"// %08X [FLD] %s::%s : %s", tkMember,szFQN,ProperName((char*)pcMember),pcSig);
                 printLine(g_pFile,szString);
             }
@@ -7149,7 +7149,7 @@ void DumpSummary()
                                     break;
                         }
                 }
-                COMPILER_ASSUME(ProperName((char*)pcMember) != 0);
+                _ASSERTE(ProperName((char*)pcMember) != 0);
                 sprintf_s(szString,SZSTRING_SIZE,"// %08X [EVT] %s::%s : %s", tkMember,szFQN,ProperName((char*)pcMember),pcSig);
                 printLine(g_pFile,szString);
             }
@@ -7167,7 +7167,7 @@ void DumpSummary()
                 }
                 qbMemberSig.Shrink(0);
                 pcSig = cComSig ? PrettyPrintSig(pComSig, cComSig, "", &qbMemberSig, g_pImport,NULL) : "NO SIGNATURE";
-                COMPILER_ASSUME(ProperName((char*)pcMember) != 0);
+                _ASSERTE(ProperName((char*)pcMember) != 0);
                 sprintf_s(szString,SZSTRING_SIZE,"// %08X [PRO] %s::%s : %s", tkMember,szFQN,ProperName((char*)pcMember),pcSig);
                 printLine(g_pFile,szString);
             }
