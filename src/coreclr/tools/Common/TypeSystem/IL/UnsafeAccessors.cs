@@ -503,6 +503,28 @@ namespace Internal.IL
             return SetTargetResult.Missing;
         }
 
+        private static bool IsValidInitialTypeForReplacementType(TypeDesc initialType, TypeDesc replacementType)
+        {
+            if (replacementType.IsByRef)
+            {
+                if (!initialType.IsByRef)
+                {
+                    return false;
+                }
+
+                return IsValidInitialTypeForReplacementType(((ByRefType)initialType).ParameterType, ((ByRefType)replacementType).ParameterType);
+            }
+
+            if (replacementType.IsPointer)
+            {
+                return initialType is PointerType { ParameterType.IsVoid: true };
+            }
+
+            Debug.Assert(!replacementType.IsValueType);
+
+            return initialType.IsObject;
+        }
+
         private static SetTargetResult TrySetTargetMethodSignature(ref GenerationContext context)
         {
             EcmaMethod method = context.Declaration;
@@ -541,21 +563,14 @@ namespace Internal.IL
 
                 bool isReturnValue = parameter.SequenceNumber == 0;
 
-                TypeDesc initialType = isReturnValue ? originalSignature.ReturnType : originalSignature[parameter.SequenceNumber - 1];
-
-                // Only allow 'object' and 'ref object' as initial types.
-                if (initialType != method.Context.GetWellKnownType(WellKnownType.Object))
+                if (isReturnValue && context.Kind is UnsafeAccessorKind.Field or UnsafeAccessorKind.StaticField)
                 {
-                    if (initialType.IsByRef
-                        && ((ByRefType)initialType).ParameterType != method.Context.GetWellKnownType(WellKnownType.Object))
-                    {
-                        return SetTargetResult.Invalid;
-                    }
-                    else if (!initialType.IsByRef)
-                    {
-                        return SetTargetResult.Invalid;
-                    }
+                    // We can't support UnsafeAccessorTypeAttribute on fields
+                    // today as it would create a type-safety hole.
+                    return SetTargetResult.NotSupported;
                 }
+
+                TypeDesc initialType = isReturnValue ? originalSignature.ReturnType : originalSignature[parameter.SequenceNumber - 1];
 
                 CustomAttributeValue<TypeDesc> decoded = unsafeAccessorTypeAttribute.Value.DecodeValue(
                     new CustomAttributeTypeProvider(method.Module));
@@ -622,22 +637,9 @@ namespace Internal.IL
                     return SetTargetResult.NotSupported;
                 }
 
-                if (replacementType.IsFunctionPointer
-                    || replacementType.IsPointer)
+                if (!IsValidInitialTypeForReplacementType(initialType, replacementType))
                 {
-                    return SetTargetResult.NotSupported;
-                }
-
-                bool isUnsafeAccessorFieldReturn = isReturnValue
-                    && context.Kind is UnsafeAccessorKind.Field or UnsafeAccessorKind.StaticField;
-
-                if (isUnsafeAccessorFieldReturn)
-                {
-                    // UnsafeAccessorAttribute requires the return type to be byref for any field kind.
-                    // This is a deviation from the normal UnsafeAccessorTypeAttribute requirements
-                    // where the type is expected to match the signature exactly. Users aren't required to
-                    // state the byref for field access because that isn't in the target field signature.
-                    replacementType = replacementType.MakeByRefType();
+                    return SetTargetResult.Invalid;
                 }
 
                 if (replacementType.IsByRef != initialType.IsByRef)
