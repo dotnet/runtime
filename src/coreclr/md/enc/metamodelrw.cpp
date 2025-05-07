@@ -598,7 +598,7 @@ protected:
             return S_OK;
         }
 
-        PREFAST_ASSUME_MSG(m_iElemSize <= (int) sizeof(m_buf), "The MetaData table row has to fit into buffer for swapping.");
+        COMPILER_ASSUME_MSG(m_iElemSize <= (int) sizeof(m_buf), "The MetaData table row has to fit into buffer for swapping.");
 
         IfFailRet(getRow(iFirst, &pFirst));
         IfFailRet(getRow(iSecond, &pSecond));

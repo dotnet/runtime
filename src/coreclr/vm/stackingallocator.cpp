@@ -345,7 +345,7 @@ void StackingAllocator::Clear(StackBlock *ToBlock)
 
     while (p != ToBlock)
     {
-        PREFAST_ASSUME(p != NULL);
+        COMPILER_ASSUME(p != NULL);
 
         q = p;
         p = p->m_Next;

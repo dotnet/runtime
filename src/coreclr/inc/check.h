@@ -538,23 +538,6 @@ CHECK CheckValue(TYPENAME &val)
     COMPILER_ASSUME_MSG(_condition, "")
 
 //--------------------------------------------------------------------------------
-// COMPILER_ASSUME_MSG and PREFAST_ASSUME_MSG are just another name
-// for COMPILER_ASSUME_MSG
-// In a checked build these turn into asserts; in a free build
-// they are passed through to the compiler to use in optimization;
-//  via an __assume(_condition) optimization hint.
-//--------------------------------------------------------------------------------
-
-#define PREFAST_ASSUME_MSG(_condition, _message) \
-    COMPILER_ASSUME_MSG(_condition, _message)
-
-#define PREFAST_ASSUME_MSGF(_condition, args) \
-    COMPILER_ASSUME_MSGF(_condition, args)
-
-#define PREFAST_ASSUME(_condition) \
-    COMPILER_ASSUME_MSG(_condition, "")
-
-//--------------------------------------------------------------------------------
 // UNREACHABLE points are locations in the code which should not be able to be
 // reached under any circumstances (e.g. a default in a switch which is supposed to
 // cover all cases.).  This macro tells the compiler this, and also embeds a check
