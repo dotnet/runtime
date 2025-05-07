@@ -1230,7 +1230,7 @@ namespace System.Runtime.InteropServices
         private sealed class RcwCache
         {
             private readonly Lock _lock = new Lock(useTrivialWaits: true);
-            private readonly Dictionary<object, GCHandle> _cache = [];
+            private readonly Dictionary<IntPtr, GCHandle> _cache = [];
 
             /// <summary>
             /// Gets the current RCW proxy object for <paramref name="comPointer"/> if it exists in the cache or inserts a new entry with <paramref name="comProxy"/>.

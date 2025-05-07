@@ -2480,7 +2480,7 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     // TODO: (async) revisit and examine if this needs to be supported somehow
     if (pMD->IsAsyncMethod())
         return false;
-        
+
     mdMethodDef md = pMD->GetMemberDef();
 
     // See if there is property information for this member.
