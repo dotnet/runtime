@@ -5241,7 +5241,7 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 	return res;
 }
 
-static void process_unsafe_accessor_type (MonoMethod *accessor_method, MonoMethodSignature *tgt_sig)
+static void process_unsafe_accessor_type (MonoUnsafeAccessorKind kind, MonoMethod *accessor_method, MonoMethodSignature *tgt_sig)
 {
 	g_assert (accessor_method);
 	g_assert (tgt_sig);
@@ -5270,6 +5270,11 @@ static void process_unsafe_accessor_type (MonoMethod *accessor_method, MonoMetho
 		// Future versions of the runtime may support
 		// UnsafeAccessorTypeAttribute on value types.
 		g_assert (type->type != MONO_TYPE_VALUETYPE);
+
+		if (seq == 0 && (kind == MONO_UNSAFE_ACCESSOR_FIELD || kind == MONO_UNSAFE_ACCESSOR_STATIC_FIELD)) {
+			// [FIXME] UnsafeAccessorType is not supported on return values for any field access.
+			return;
+		}
 
 		// Check the target signature for attribute, byref and cmods state. This information
 		// is not contained with in the type name itself, so we may need to check the target
@@ -5440,8 +5445,8 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	}
 	sig->pinvoke = 0;
 
-    // Parse the signature and check for instances of UnsafeAccessorTypeAttribute.
-	process_unsafe_accessor_type (accessor_method, sig);
+	// Parse the signature and check for instances of UnsafeAccessorTypeAttribute.
+	process_unsafe_accessor_type (kind, accessor_method, sig);
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
