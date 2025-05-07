@@ -187,15 +187,13 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    bool isBitwiseOp = binOp->OperIs(GT_AND, GT_OR, GT_XOR);
-
     GenTree*& op1 = binOp->gtOp1;
     GenTree*& op2 = binOp->gtOp2;
     if (comp->opts.OptimizationEnabled())
     {
         bool isOp1Negated = op1->OperIs(GT_NOT);
         bool isOp2Negated = op2->OperIs(GT_NOT);
-        if (isBitwiseOp && (isOp1Negated || isOp2Negated))
+        if (binOp->OperIs(GT_AND, GT_OR, GT_XOR) && (isOp1Negated || isOp2Negated))
         {
             if ((isOp1Negated && isOp2Negated) || comp->compOpportunisticallyDependsOn(InstructionSet_Zbb))
             {
@@ -257,17 +255,28 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     ContainCheckBinary(binOp);
 
-    if (comp->opts.OptimizationEnabled() && isBitwiseOp && comp->compOpportunisticallyDependsOn(InstructionSet_Zbs) &&
-        !op2->isContained())
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_OR, GT_XOR, GT_AND) &&
+        comp->compOpportunisticallyDependsOn(InstructionSet_Zbs) && !op2->isContained())
     {
-        if (binOp->OperIs(GT_OR, GT_XOR) && op2->IsIntegralConstUnsignedPow2())
+        if (op2->IsIntegralConst())
         {
-            genTreeOps oper = binOp->OperIs(GT_OR) ? GT_BIT_SET : GT_BIT_INVERT;
-            binOp->ChangeOper(oper);
+            GenTreeIntConCommon* constant = op2->AsIntConCommon();
+            UINT64               value    = (UINT64)constant->IntegralValue();
+            if (binOp->OperIs(GT_AND))
+                value = ~value;
 
-            GenTreeIntConCommon* bit = op2->AsIntConCommon();
-            bit->SetIntegralValue(BitOperations::Log2((uint64_t)bit->IntegralValue()));
-            bit->SetContained();
+            if (isPow2(value))
+            {
+                assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
+                static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
+                constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
+                binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
+
+                value = BitOperations::Log2(value);
+                assert(value >= 11); // smaller immediates should have been contained into or/xor/and
+                constant->SetIntegralValue(value);
+                constant->SetContained();
+            }
         }
     }
 
