@@ -10,9 +10,6 @@ namespace System.Reflection
     /// <summary>
     /// Shared functionality for MethodBaseInvoker, MethodInvoker and ConstructorInvoker.
     /// </summary>
-    /// <remarks>
-    /// This class is known by the runtime in order to ignore reflection frames during stack walks.
-    /// </remarks>
     internal static partial class MethodInvokerCommon
     {
         internal static void Initialize(

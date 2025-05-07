@@ -58,7 +58,7 @@ namespace System.Reflection
         private static InvokeFunc_Obj1Arg InvokeFuncObj1_long => field ??= new InvokeFunc_Obj1Arg((fn, o, arg1) => { InstanceCalliHelper.Call((delegate*<object, long, void>)fn, o!, (long)arg1!); return null; });
         private static InvokeFunc_Obj1Arg InvokeFuncObj1_nint => field ??= new InvokeFunc_Obj1Arg((fn, o, arg1) => { InstanceCalliHelper.Call((delegate*<object, nint, void>)fn, o!, (nint)arg1!); return null; });
         private static InvokeFunc_Obj1Arg InvokeFuncObj1_nuint => field ??= new InvokeFunc_Obj1Arg((fn, o, arg1) => { InstanceCalliHelper.Call((delegate*<object, nuint, void>)fn, o!, (nuint)arg1!); return null; });
-        private static InvokeFunc_Obj1Arg InvokeFuncObj1_object => field ??= new InvokeFunc_Obj1Arg((fn, o, arg1) => { InstanceCalliHelper.Call((delegate*<object, object?, void>)fn, o!, (object?)arg1); return null; });
+        private static InvokeFunc_Obj1Arg InvokeFuncObj1_object => field ??= new InvokeFunc_Obj1Arg((fn, o, arg1) => { InstanceCalliHelper.Call((delegate*<object, object?, void>)fn, o!, arg1); return null; });
         private static InvokeFunc_Obj1Arg InvokeFuncObj1_sbyte => field ??= new InvokeFunc_Obj1Arg((fn, o, arg1) => { InstanceCalliHelper.Call((delegate*<object, sbyte, void>)fn, o!, (sbyte)arg1!); return null; });
         private static InvokeFunc_Obj1Arg InvokeFuncObj1_ushort => field ??= new InvokeFunc_Obj1Arg((fn, o, arg1) => { InstanceCalliHelper.Call((delegate*<object, ushort, void>)fn, o!, (ushort)arg1!); return null; });
         private static InvokeFunc_Obj1Arg InvokeFuncObj1_uint => field ??= new InvokeFunc_Obj1Arg((fn, o, arg1) => { InstanceCalliHelper.Call((delegate*<object, uint, void>)fn, o!, (uint)arg1!); return null; });
@@ -112,47 +112,42 @@ namespace System.Reflection
                     return true;
                 }
             }
-
-            if (strategy == InvokerStrategy.Obj1 && returnType == typeof(void))
+            else if (strategy == InvokerStrategy.Obj1)
             {
-                invokeFunc = GetWellKnownSignatureFor1Arg(parameterTypes[0]);
-                if (invokeFunc is not null)
+                if (returnType == typeof(void))
                 {
-                    return true;
+                    invokeFunc = GetWellKnownSignatureFor1Arg(parameterTypes[0]);
+                    if (invokeFunc is not null)
+                    {
+                        return true;
+                    }
+                }
+            }
+            // At this point, we only support void return types and reference type parameters.
+            else if (returnType == typeof(void) && AreAllParametersReferenceTypes(parameterTypes, returnType))
+            {
+                switch (parameterTypes.Length)
+                {
+                    case 2:
+                        invokeFunc = InvokeFunc_Obj4Args_2;
+                        return true;
+                    case 3:
+                        invokeFunc = InvokeFunc_Obj4Args_3;
+                        return true;
+                    case 4:
+                        invokeFunc = InvokeFunc_Obj4Args_4;
+                        return true;
+                    case 5:
+                        invokeFunc = InvokeFunc_ObjSpanArgs_5;
+                        return true;
+                    case 6:
+                        invokeFunc = InvokeFunc_ObjSpanArgs_6;
+                        return true;
                 }
             }
 
-            // We only support void return types and reference type parameters from here primarily to support common constructor patterns.
-            if (returnType != typeof(void) || !AreAllParametersReferenceTypes(parameterTypes, returnType))
-            {
-
-                invokeFunc = null;
-                return false;
-            }
-
-            switch (parameterTypes.Length)
-            {
-                case 2:
-                    invokeFunc = InvokeFunc_Obj4Args_2;
-                    break;
-                case 3:
-                    invokeFunc = InvokeFunc_Obj4Args_3;
-                    break;
-                case 4:
-                    invokeFunc = InvokeFunc_Obj4Args_4;
-                    break;
-                case 5:
-                    invokeFunc = InvokeFunc_ObjSpanArgs_5;
-                    break;
-                case 6:
-                    invokeFunc = InvokeFunc_ObjSpanArgs_6;
-                    break;
-                default:
-                    invokeFunc  = null;
-                    return false;
-            }
-
-            return true;
+            invokeFunc = null;
+            return false;
 
             static bool AreAllParametersReferenceTypes(RuntimeType[] parameterTypes, RuntimeType returnType)
             {
@@ -165,7 +160,7 @@ namespace System.Reflection
                     }
                 }
 
-                return returnType == typeof(object);
+                return NormalizeType(returnType) == typeof(object);
             }
         }
 
@@ -174,11 +169,10 @@ namespace System.Reflection
         /// </summary>
         public static unsafe Delegate? GetWellKnownSignatureFor0Args(RuntimeType returnType)
         {
-            //In the checks below, the more common types are first to improve perf.
-
             // Enums require a return transform to convert from the underlying type to the enum type.
             if (returnType.IsEnum)
             {
+                // The more common types are first.
                 Type underlyingType = (RuntimeType)returnType.GetEnumUnderlyingType()!;
                 if (underlyingType == typeof(int)) return CreateInvokeFuncObj0_int_enum(returnType);
                 if (underlyingType == typeof(byte)) return CreateInvokeFuncObj0_byte_enum(returnType);
@@ -187,18 +181,19 @@ namespace System.Reflection
                 if (underlyingType == typeof(uint)) return CreateInvokeFuncObj0_uint_enum(returnType);
                 if (underlyingType == typeof(sbyte)) return CreateInvokeFuncObj0_sbyte_enum(returnType);
                 if (underlyingType == typeof(ushort)) return CreateInvokeFuncObj0_ushort_enum(returnType);
-                Debug.Assert(underlyingType == typeof(ulong));
-                return CreateInvokeFuncObj0_ulong_enum(underlyingType);
+                if (underlyingType == typeof(ulong)) return CreateInvokeFuncObj0_ulong_enum(returnType);
+
+                return null; // We may have a rare enum type.
             }
 
             returnType = NormalizeType(returnType);
-
             if (returnType.Assembly != typeof(object).Assembly)
             {
                 // We can only hard-code types in this assembly.
                 return null;
             }
 
+            // The more common types are first.
             if (returnType == typeof(object)) return InvokeFuncObj0_object;
             if (returnType == typeof(void)) return InvokeFuncObj0_void;
             if (returnType == typeof(int)) return InvokeFuncObj0_int;
@@ -244,6 +239,7 @@ namespace System.Reflection
                 }
             }
 
+            // The more common types are first.
             if (argType == typeof(object)) return InvokeFuncObj1_object;
             if (argType == typeof(int)) return InvokeFuncObj1_int;
             if (argType == typeof(bool)) return InvokeFuncObj1_bool;
@@ -269,7 +265,7 @@ namespace System.Reflection
 
         private static RuntimeType NormalizeType(RuntimeType type)
         {
-            if (type.IsClass || type.IsInterface)
+            if ((type.IsClass && !type.IsByRef && !type.IsPointer) || type.IsInterface)
             {
                 type = (RuntimeType)typeof(object);
             }
@@ -317,22 +313,6 @@ namespace System.Reflection
             }
 
             return true;
-        }
-
-        private static bool SupportsParameterTypes(RuntimeType[] parameterTypes, RuntimeType returnType)
-        {
-            for (int i = 0; i < parameterTypes.Length; i++)
-            {
-                // We already checked the strategy that would tell us if the method has ref parameters.
-                Debug.Assert(!parameterTypes[i].IsByRef);
-
-                if (parameterTypes[i].IsPointer)
-                {
-                    return false;
-                }
-            }
-
-            return !returnType.IsPointer && !returnType.IsByRef;
         }
     }
 }

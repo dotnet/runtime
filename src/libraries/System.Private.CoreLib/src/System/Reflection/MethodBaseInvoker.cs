@@ -16,11 +16,6 @@ namespace System.Reflection
     /// <summary>
     /// Provides the implementation of the Invoke() methods on MethodInfo, ConstructorInfo and DynamicMethod.
     /// </summary>
-    /// <remarks>
-    /// This class is known by the runtime in order to ignore reflection frames during stack walks.
-    /// </remarks>
-    [StackTraceHidden]
-    [DebuggerStepThrough]
     internal sealed unsafe partial class MethodBaseInvoker
     {
         internal const int MaxStackAllocArgCount = 4;
@@ -328,11 +323,11 @@ namespace System.Reflection
         {
             Debug.Assert(_parameterTypes.Length <= MaxStackAllocArgCount);
 
-            if (_strategy == InvokerStrategy.Ref4)
+            if (_parameterTypes.Length == 0)
             {
                 // This method may be called from the interpreted path for a property getter.
                 Debug.Assert(UseInterpretedPath);
-                Debug.Assert(_parameterTypes.Length == 0);
+                Debug.Assert(_strategy == InvokerStrategy.Ref4);
                 try
                 {
                     return ((InvokeFunc_RefArgs)_invokeFunc)(_functionPointer, obj, refArguments: null);
