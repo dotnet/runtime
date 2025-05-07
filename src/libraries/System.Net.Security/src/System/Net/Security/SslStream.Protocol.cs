@@ -11,6 +11,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -813,9 +814,10 @@ namespace System.Net.Security
         }
 
         //
-        internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer, out int consumed)
+        internal async Task<(ProtocolToken, int)> NextMessage(ReadOnlyMemory<byte> incomingBuffer)
         {
-            ProtocolToken token = GenerateToken(incomingBuffer, out consumed);
+            (ProtocolToken token, int consumed) = await GenerateToken(incomingBuffer).ConfigureAwait(false);
+
             if (NetEventSource.Log.IsEnabled())
             {
                 if (token.Failed)
@@ -824,7 +826,7 @@ namespace System.Net.Security
                 }
             }
 
-            return token;
+            return (token, consumed);
         }
 
         /*++
@@ -840,7 +842,7 @@ namespace System.Net.Security
             Return:
                 token - ProtocolToken with status and optionally buffer.
         --*/
-        private ProtocolToken GenerateToken(ReadOnlySpan<byte> inputBuffer, out int consumed)
+        private async Task<(ProtocolToken, int)> GenerateToken(ReadOnlyMemory<byte> inputBuffer)
         {
             bool cachedCreds = false;
             bool sendTrustList = false;
@@ -848,6 +850,9 @@ namespace System.Net.Security
 
             ProtocolToken token = default;
             token.RentBuffer = true;
+
+            int consumed = 0;
+            int tmpConsumed;
 
             // We need to try get credentials at the beginning.
             // _credentialsHandle may be always null on some platforms but
@@ -861,6 +866,7 @@ namespace System.Net.Security
             {
                 do
                 {
+                retry:
                     thumbPrint = null;
                     if (refreshCredentialNeeded)
                     {
@@ -876,8 +882,8 @@ namespace System.Net.Security
                         token = SslStreamPal.AcceptSecurityContext(
                                       ref _credentialsHandle!,
                                       ref _securityContext,
-                                      inputBuffer,
-                                      out consumed,
+                                      inputBuffer.Span,
+                                      out tmpConsumed,
                                       _sslAuthenticationOptions);
                         if (token.Status.ErrorCode == SecurityStatusPalErrorCode.HandshakeStarted)
                         {
@@ -905,8 +911,8 @@ namespace System.Net.Security
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        hostName,
-                                       inputBuffer,
-                                       out consumed,
+                                       inputBuffer.Span,
+                                       out tmpConsumed,
                                        _sslAuthenticationOptions);
 
                         if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
@@ -925,6 +931,20 @@ namespace System.Net.Security
                                        out _,
                                        _sslAuthenticationOptions);
                         }
+                    }
+                    consumed += tmpConsumed;
+                    inputBuffer = inputBuffer.Slice(tmpConsumed);
+
+                    if (token.Status.ErrorCode == SecurityStatusPalErrorCode.PeerCertVerifyRequired)
+                    {
+                        await Task.Yield();
+                        if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref token, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+                        {
+                            ProcessFailedCertificateValidation(_sslAuthenticationOptions, ref token, sslPolicyErrors, chainStatus);
+                        }
+
+                        goto retry;
+
                     }
                 } while (cachedCreds && _credentialsHandle == null);
             }
@@ -957,7 +977,7 @@ namespace System.Net.Security
                 }
             }
 
-            return token;
+            return (token, consumed);
         }
 
         internal ProtocolToken Renegotiate()
@@ -1216,12 +1236,12 @@ namespace System.Net.Security
                 return default;
             }
 
-            return GenerateToken(default, out _);
+            return GenerateToken(default).GetAwaiter().GetResult().Item1;
         }
 
         private ProtocolToken GenerateAlertToken()
         {
-            return GenerateToken(default, out _);
+            return GenerateToken(default).GetAwaiter().GetResult().Item1;
         }
 
         private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
