@@ -1035,8 +1035,6 @@ struct cdac_data<FaultingExceptionFrame>
 #endif // FEATURE_EH_FUNCLETS
 };
 
-#ifdef FEATURE_EH_FUNCLETS
-
 typedef DPTR(class SoftwareExceptionFrame) PTR_SoftwareExceptionFrame;
 
 class SoftwareExceptionFrame : public Frame
@@ -1108,7 +1106,6 @@ struct cdac_data<SoftwareExceptionFrame>
     static constexpr size_t TargetContext = offsetof(SoftwareExceptionFrame, m_Context);
     static constexpr size_t ReturnAddress = offsetof(SoftwareExceptionFrame, m_ReturnAddress);
 };
-#endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------
 // Frame for debugger function evaluation
