@@ -74,17 +74,28 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 		exit (1);
 }
 
+#ifndef SIZEOF_VOID_P
+#pragma message ("MRH_LOGGING_DRIVER: SIZEOF_VOID_P is undefined in driver.c")
+#define SIZEOF_VOID_P @SIZEOF_VOID_P@
+#endif 
+
 #if SIZEOF_VOID_P == 4
+#pragma message ("MRH_LOGGING_DRIVER: SIZEOF_VOID_P is 4 in driver.c.")
 typedef uint32_t target_mword;
 typedef int32_t d_handle;
-#else
+#elif SIZEOF_VOID_P == 8
+#pragma message ("MRH_LOGGING_DRIVER: SIZEOF_VOID_P is 8 in driver.c")
 typedef uint64_t target_mword;
 typedef int64_t d_handle;
+#else
+#pragma message ("MRH_LOGGING_DRIVER: SIZEOF_VOID_P is still undefined in driver.c")
+typedef uint32_t target_mword;
+typedef int32_t d_handle;
 #endif
 
 typedef target_mword SgenDescriptor;
 typedef SgenDescriptor MonoGCDescriptor;
-MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
+MONO_API int mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
 void  mono_gc_deregister_root (char* addr);
 
 EMSCRIPTEN_KEEPALIVE int

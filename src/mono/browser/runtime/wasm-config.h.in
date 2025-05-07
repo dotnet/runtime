@@ -10,4 +10,6 @@
 /* Support for JS interop without pointers to managed objects */
 #cmakedefine ENABLE_JS_INTEROP_BY_VALUE
 
+#define SIZEOF_VOID_P @SIZEOF_VOID_P@
+
 #endif/*__MONO_WASM_CONFIG_H__*/

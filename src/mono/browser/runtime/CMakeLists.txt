@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(mono-wasm-runtime C)
+include (CheckTypeSize)
 
 option(DISABLE_THREADS "defined if the build does NOT support multithreading" ON)
 option(ENABLE_JS_INTEROP_BY_VALUE "defined when JS interop without pointers to managed objects" OFF)
@@ -50,4 +51,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
                         COMMENT "Stripping debug symbols from dotnet.native.wasm using wasm-opt")
 endif()
 
+
+check_type_size("void*" SIZEOF_VOID_P)
 configure_file(wasm-config.h.in include/wasm/wasm-config.h)
