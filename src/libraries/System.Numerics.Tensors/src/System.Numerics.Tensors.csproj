@@ -8,6 +8,7 @@
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
     <!-- SYSLIB5001: Tensor<T> and related APIs in System.Numerics.Tensors are experimental in .NET 9 -->
     <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
+    <ApiCompatValidateAssemblies>false</ApiCompatValidateAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,6 +41,8 @@
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorOperation.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorDimensionView_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorDimensionView_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Abs.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acos.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acosh.cs" />

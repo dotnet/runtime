@@ -447,5 +447,13 @@ namespace System.Numerics.Tensors
 
             readonly T IEnumerator<T>.Current => Current;
         }
+
+        /// <summary>
+        /// Slices the tensor along the specified dimension.
+        /// </summary>
+        /// <param name="dimension">The dimension to slice along.</param>
+        /// <returns>The tensor sliced to the given <paramref name="dimension"/></returns>
+        public TensorDimensionView<T> GetDimension(int dimension) => new TensorDimensionView<T>(this, dimension);
+
     }
 }

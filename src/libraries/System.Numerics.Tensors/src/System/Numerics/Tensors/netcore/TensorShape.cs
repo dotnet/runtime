@@ -587,6 +587,24 @@ namespace System.Numerics.Tensors
             return 0;
         }
 
+        public static bool AdjustToNextIndex(Span<NRange> ranges, int dimension, ReadOnlySpan<nint> lengths)
+        {
+            NRange curRange = ranges[dimension];
+            ranges[dimension] = new NRange(curRange.Start.Value + 1, curRange.End.Value + 1);
+
+            for (int i = dimension; i >= 0; i--)
+            {
+                if (ranges[i].Start.Value >= lengths[i])
+                {
+                    ranges[i] = 0..1;
+                    if (i == 0)
+                        return false;
+                    ranges[i - 1] = new NRange(ranges[i - 1].Start.Value + 1, ranges[i - 1].End.Value + 1);
+                }
+            }
+            return true;
+        }
+
         // Answer the question: Can shape2 turn into shape1 or vice-versa if allowBidirectional?
         public static bool AreCompatible(in TensorShape shape1, in TensorShape shape2, bool allowBidirectional)
         {

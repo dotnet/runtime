@@ -272,29 +272,12 @@ namespace System.Numerics.Tensors
                         TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(slice, dstSpan);
                         dstSpan = dstSpan.Slice((int)slice.FlattenedLength);
                     }
-                    hasMore = IncrementIndexes(ranges, dimension, destination.Lengths);
+                    // We do dimension - 1 because we want to include the dimension we concatenated on.
+                    hasMore = TensorShape.AdjustToNextIndex(ranges, dimension - 1, destination.Lengths);
                 }
                 rentedBuffer.Dispose();
             }
             return ref destination;
-        }
-
-        private static bool IncrementIndexes(Span<NRange> ranges, int dimension, ReadOnlySpan<nint> lengths)
-        {
-            NRange curRange = ranges[dimension - 1];
-            ranges[dimension - 1] = new NRange(curRange.Start.Value + 1, curRange.End.Value + 1);
-
-            for (int i = dimension - 1; i >= 0; i--)
-            {
-                if (ranges[i].Start.Value >= lengths[i])
-                {
-                    ranges[i] = 0..1;
-                    if (i == 0)
-                        return false;
-                    ranges[i - 1] = new NRange(ranges[i - 1].Start.Value + 1, ranges[i - 1].End.Value + 1);
-                }
-            }
-            return true;
         }
 
         private static nint CalculateCopyLength(ReadOnlySpan<nint> lengths, int startingAxis)
