@@ -161,14 +161,10 @@ LOCAL_LABEL(StringSizeOverflow):
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
 LOCAL_LABEL(RhNewString_RarePath):
-        mov         r3, r0
         mov         r0, r4
         mov         r1, r5
-        mov         r2, r6
         // r0 == MethodTable
         // r1 == element count
-        // r2 == string size + Thread::m_alloc_context::alloc_ptr
-        // r3 == Thread
         EPILOG_POP  "{r4-r6,lr}"
         b           C_FUNC(RhpNewArray)
 
@@ -267,14 +263,10 @@ LOCAL_LABEL(ArraySizeOverflow):
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
 LOCAL_LABEL(RhpNewArrayFast_RarePath):
-        mov         r3, r0
         mov         r0, r4
         mov         r1, r5
-        mov         r2, r6
         // r0 == MethodTable
         // r1 == element count
-        // r2 == array size + Thread::m_alloc_context::alloc_ptr
-        // r3 == Thread
         EPILOG_POP  "{r4-r6,lr}"
         b           C_FUNC(RhpNewArray)
 
