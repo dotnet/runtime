@@ -10,7 +10,7 @@
 
 struct LayoutRawFieldInfo final
 {
-    mdFieldDef  m_MD;             // mdMemberDefNil for end of array
+    mdFieldDef  m_token;             // mdMemberDefNil for end of array
     RawFieldPlacementInfo m_placement;
     NativeFieldDescriptor m_nfd;
 };
@@ -137,10 +137,10 @@ namespace
 
                 corElemType = typeHandleMaybe.AsMethodTable()->GetInternalCorElementType();
                 if (corElemType != ELEMENT_TYPE_VALUETYPE)
-                    typeHandleMaybe = TypeHandle();
+                    typeHandleMaybe = TypeHandle{};
             }
 
-            pInfoArray[i].m_MD = pField->GetMemberDef();
+            pInfoArray[i].m_token = pField->GetMemberDef();
             pInfoArray[i].m_placement = GetFieldPlacementInfo(corElemType, typeHandleMaybe);
 
             BYTE fieldAlignmentRequirement = (BYTE)pInfoArray[i].m_placement.m_alignment;
@@ -221,12 +221,12 @@ namespace
             fd != mdFieldDefNil)
         {
             // watch for the last entry: must be mdFieldDefNil
-            while ((mdFieldDefNil != pfwalk->m_MD) && (pfwalk->m_MD < fd))
+            while ((mdFieldDefNil != pfwalk->m_token) && (pfwalk->m_token < fd))
                 pfwalk++;
 
             // if we haven't found a matching token, either we have invalid metadata
             // or the field doesn't have an entry. We'll error out in the next loop.
-            if (pfwalk->m_MD != fd) continue;
+            if (pfwalk->m_token != fd) continue;
 
             // ulOffset is the explicit offset
             pfwalk->m_placement.m_offset = ulOffset;
@@ -247,12 +247,12 @@ namespace
 
         for (ULONG i = 0; i < cInstanceFields; i++)
         {
-            if (pFieldInfoArray[i].m_MD != mdFieldDefNil)
+            if (pFieldInfoArray[i].m_token != mdFieldDefNil)
             {
                 if (pFieldInfoArray[i].m_placement.m_offset == (UINT32)-1)
                 {
                     LPCUTF8 szFieldName;
-                    if (FAILED(pInternalImport->GetNameOfFieldDef(pFieldInfoArray[i].m_MD, &szFieldName)))
+                    if (FAILED(pInternalImport->GetNameOfFieldDef(pFieldInfoArray[i].m_token, &szFieldName)))
                     {
                         szFieldName = "Invalid FieldDef record";
                     }
@@ -261,10 +261,10 @@ namespace
                         szFieldName,
                         IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET);
                 }
-                else if ((INT)pFieldInfoArray[i].m_placement.m_offset < 0)
+                else if (pFieldInfoArray[i].m_placement.m_offset > INT32_MAX)
                 {
                     LPCUTF8 szFieldName;
-                    if (FAILED(pInternalImport->GetNameOfFieldDef(pFieldInfoArray[i].m_MD, &szFieldName)))
+                    if (FAILED(pInternalImport->GetNameOfFieldDef(pFieldInfoArray[i].m_token, &szFieldName)))
                     {
                         szFieldName = "Invalid FieldDef record";
                     }
@@ -694,7 +694,7 @@ namespace
             pFieldDesc->GetSig(&pCOMSignature, &cbCOMSignature);
 
             // fill the appropriate entry in pInfoArray
-            pFieldInfoArrayOut->m_MD = fd;
+            pFieldInfoArrayOut->m_token = fd;
             pFieldInfoArrayOut->m_placement.m_offset = (UINT32)-1;
 
     #ifdef _DEBUG
@@ -723,7 +723,7 @@ namespace
         }
 
         // NULL out the last entry
-        pFieldInfoArrayOut->m_MD = mdFieldDefNil;
+        pFieldInfoArrayOut->m_token = mdFieldDefNil;
     }
 
 #ifdef FEATURE_HFA
@@ -899,7 +899,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
     BYTE fieldAlignmentRequirement = 0;
     // Now compute the native size of each field
-    for (LayoutRawFieldInfo* pfwalk = pInfoArray; pfwalk->m_MD != mdFieldDefNil; pfwalk++)
+    for (LayoutRawFieldInfo* pfwalk = pInfoArray; pfwalk->m_token != mdFieldDefNil; pfwalk++)
     {
         pfwalk->m_placement.m_size = pfwalk->m_nfd.NativeSize();
         pfwalk->m_placement.m_alignment = pfwalk->m_nfd.AlignmentRequirement();
@@ -1052,10 +1052,10 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
         LOG((LF_INTEROP, LL_INFO100000, "Packsize      = %lu\n", (ULONG)pEEClassLayoutInfo->GetPackingSize()));
         LOG((LF_INTEROP, LL_INFO100000, "Max align req = %lu\n", (ULONG)(pNativeLayoutInfo->GetLargestAlignmentRequirement())));
         LOG((LF_INTEROP, LL_INFO100000, "----------------------------\n"));
-        for (LayoutRawFieldInfo* pfwalk = pInfoArray; pfwalk->m_MD != mdFieldDefNil; pfwalk++)
+        for (LayoutRawFieldInfo* pfwalk = pInfoArray; pfwalk->m_token != mdFieldDefNil; pfwalk++)
         {
             LPCUTF8 fieldname;
-            if (FAILED(pInternalImport->GetNameOfFieldDef(pfwalk->m_MD, &fieldname)))
+            if (FAILED(pInternalImport->GetNameOfFieldDef(pfwalk->m_token, &fieldname)))
             {
                 fieldname = "??";
             }

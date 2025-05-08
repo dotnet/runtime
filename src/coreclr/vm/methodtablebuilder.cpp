@@ -8004,7 +8004,7 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     // interop).
     // We don't do this for types that are marked as sequential but end up with auto-layout due to containing pointers,
     // as auto-layout ignores any Pack directives.
-    if (bmtLayout->packingSize <= 8)
+    if (bmtLayout->packingSize < 8)
     {
         isAlign8 = false;
     }
