@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public interface ITest
 {
@@ -383,6 +384,9 @@ public class InterpreterTest
 //        if (!TestVirtual())
 //          Environment.FailFast(null);
 
+        if (!TestPInvoke())
+            Environment.FailFast(null);
+
         // For stackwalking validation
         System.GC.Collect();
     }
@@ -622,6 +626,31 @@ public class InterpreterTest
             return false;
         if (itest.VirtualMethod() != 0xbebe)
             return false;
+        return true;
+    }
+
+    [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr realloc(IntPtr p, IntPtr bytes);
+    [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void free(IntPtr p);
+
+    public static bool TestPInvoke()
+    {
+        IntPtr buf = realloc(IntPtr.Zero, 4);
+        Console.WriteLine("TestPInvoke: realloc returned:");
+        Console.WriteLine(buf.ToInt64());
+        if (buf == IntPtr.Zero)
+            return false;
+
+        IntPtr buf2 = realloc(buf, 128);
+        Console.WriteLine("TestPInvoke: realloc returned:");
+        Console.WriteLine(buf2.ToInt64());
+        if (buf2 == buf)
+            return false;
+        if (buf2 == IntPtr.Zero)
+            return false;
+
+        free(buf2);
         return true;
     }
 }
