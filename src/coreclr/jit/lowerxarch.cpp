@@ -10825,6 +10825,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             case NI_BMI2_MultiplyNoFlags:
                             case NI_BMI2_X64_MultiplyNoFlags:
+                            case NI_X86Base_Multiply:
+                            case NI_X86Base_X64_Multiply:
                             {
                                 bool supportsOp1RegOptional = false;
                                 bool supportsOp2RegOptional = false;

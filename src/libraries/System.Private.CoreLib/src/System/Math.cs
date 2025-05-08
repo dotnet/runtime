@@ -171,7 +171,7 @@ namespace System
             return ((long)a) * b;
         }
 
-#if !TARGET_ARM64
+#if !TARGET_ARM64 && !TARGET_AMD64
         /// <summary>
         /// Perform multiplication between 64 and 32 bit numbers, returning lower 64 bits in <paramref name="low"/>
         /// </summary>
@@ -180,13 +180,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ulong BigMul(ulong a, uint b, out ulong low)
         {
-            if (Bmi2.X64.IsSupported)
-            {
-                // Ideally, we should do a single multiply for low and high. Doing this efficiently would mean making BigMul an intrinsic (would work on all x64 targets) or fixing https://github.com/dotnet/runtime/issues/11782
-                low = a * b;
-                return Bmi2.X64.MultiplyNoFlags(a, b);
-            }
-
             ulong prodL = ((ulong)(uint)a) * b;
             ulong prodH = (prodL >> 32) + (((ulong)(uint)(a >> 32)) * b);
 
@@ -209,11 +202,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong BigMul(ulong a, ulong b, out ulong low)
         {
-            if (Bmi2.X64.IsSupported)
+            if (X86Base.X64.IsSupported)
             {
-                // Ideally, we should do a single multiply for low and high. Doing this efficiently would mean making BigMul an intrinsic (would work on all x64 targets) or fixing https://github.com/dotnet/runtime/issues/11782
-                low = a * b;
-                return Bmi2.X64.MultiplyNoFlags(a, b);
+                (low, ulong hi) = X86Base.X64.Multiply(a, b);
+                return hi;
             }
             else if (ArmBase.Arm64.IsSupported)
             {
@@ -258,6 +250,12 @@ namespace System
             {
                 low = a * b;
                 return ArmBase.Arm64.MultiplyHigh(a, b);
+            }
+            else if (X86Base.X64.IsSupported)
+            {
+                // Ideally, we should do a single multiply for low and high. Doing this efficiently would mean making BigMul an intrinsic (would work on all x64 targets) or fixing https://github.com/dotnet/runtime/issues/11782
+                (low, long hi) = X86Base.X64.Multiply(a, b);
+                return hi;
             }
 
             ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
