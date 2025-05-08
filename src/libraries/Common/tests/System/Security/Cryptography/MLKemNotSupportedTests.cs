@@ -33,10 +33,10 @@ namespace System.Security.Cryptography.Tests
         public static void ImportSubjectPublicKeyInfo_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() =>
-                MLKem.ImportSubjectPublicKeyInfo(Array.Empty<byte>()));
+                MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki));
 
             Assert.Throws<PlatformNotSupportedException>(() =>
-                MLKem.ImportSubjectPublicKeyInfo(ReadOnlySpan<byte>.Empty));
+                MLKem.ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(MLKemTestData.IetfMlKem512Spki)));
         }
 
         [Theory]
@@ -63,6 +63,41 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportDecapsulationKey(
                 algorithm,
                 new Span<byte>(new byte[algorithm.DecapsulationKeySizeInBytes])));
+        }
+
+        [Fact]
+        public static void ImportPkcs8PrivateKey_NotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportPkcs8PrivateKey(
+                MLKemTestData.IetfMlKem512PrivateKeySeed));
+
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportPkcs8PrivateKey(
+                new ReadOnlySpan<byte>(MLKemTestData.IetfMlKem512PrivateKeySeed)));
+        }
+
+        [Fact]
+        public static void ImportEncryptedPkcs8PrivateKey_NotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
+
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(), MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
+
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPasswordBytes, MLKemTestData.IetfMlKem512EncryptedPrivateKeySeed));
+        }
+
+        [Fact]
+        public static void ImportFromPem_NotSupported()
+        {
+            string pem = """
+            -----BEGIN THING-----
+            Should throw before even attempting to read the PEM
+            -----END THING-----
+            """;
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportFromPem(pem));
+            Assert.Throws<PlatformNotSupportedException>(() => MLKem.ImportFromPem(pem.AsSpan()));
         }
     }
 }

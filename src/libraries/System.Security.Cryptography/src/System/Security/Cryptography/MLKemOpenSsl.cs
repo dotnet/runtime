@@ -23,6 +23,10 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
     public sealed partial class MLKemOpenSsl : MLKem
     {
+        private readonly SafeEvpPKeyHandle _key;
+        private readonly bool _hasSeed;
+        private readonly bool _hasDecapsulationKey;
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="MLKemOpenSsl" /> class from an existing OpenSSL key
         ///   represented as an <c>EVP_PKEY*</c>.
@@ -47,20 +51,24 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("osx")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
-        public MLKemOpenSsl(SafeEvpPKeyHandle pkeyHandle) : base(AlgorithmFromHandle(pkeyHandle, out SafeEvpPKeyHandle upRefHandle))
+        public MLKemOpenSsl(SafeEvpPKeyHandle pkeyHandle) : base(
+            AlgorithmFromHandle(pkeyHandle, out SafeEvpPKeyHandle upRefHandle, out bool hasSeed, out bool hasDecapsulationKey))
         {
-            Initialize(upRefHandle);
+            _key = upRefHandle;
+            _hasSeed = hasSeed;
+            _hasDecapsulationKey = hasDecapsulationKey;
         }
 
-        // This partial can go away if partial constructors are available.
-        // https://github.com/dotnet/csharplang/issues/9058
-        private partial void Initialize(SafeEvpPKeyHandle upRefHandle);
-        private static partial MLKemAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle);
+        private static partial MLKemAlgorithm AlgorithmFromHandle(
+            SafeEvpPKeyHandle pkeyHandle,
+            out SafeEvpPKeyHandle upRefHandle,
+            out bool hasSeed,
+            out bool hasDecapsulationKey);
 
         /// <summary>
-        /// Creates a duplicate handle.
+        /// Gets a <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.
         /// </summary>
-        /// <returns>A SafeHandle for the ML-KEM key in OpenSSL.</returns>
+        /// <returns>A <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.</returns>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public partial SafeEvpPKeyHandle DuplicateKeyHandle();
     }

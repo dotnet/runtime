@@ -98,6 +98,17 @@ namespace System.Net.Http.Tests
                 }
             };
 
+            yield return new object[]
+            {
+                "=\":443\"; ma=2592000, h3=\":443\"; ma=2592000, h3-29=\":443\"; ma=2592000, quic=\":443\"; ma=2592000; v=\"43,46\"", new[]
+                {
+                    new AltSvcHeaderValue("", host: null, port: 443, TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 2592000), persist: false),
+                    new AltSvcHeaderValue("h3", host: null, port: 443, TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 2592000), persist: false),
+                    new AltSvcHeaderValue("h3-29", host: null, port: 443, TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 2592000), persist: false),
+                    new AltSvcHeaderValue("quic", host: null, port: 443, TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 2592000), persist: false),
+                }
+            };
+
             // "clear".
             yield return new object[]
             {

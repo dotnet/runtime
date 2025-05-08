@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
@@ -10,25 +9,33 @@ namespace System.Security.Cryptography
 {
     public sealed partial class MLKemOpenSsl
     {
-        private SafeEvpPKeyHandle _key;
-
-        [MemberNotNull(nameof(_key))]
-        private partial void Initialize(SafeEvpPKeyHandle upRefHandle) => _key = upRefHandle;
-
         public partial SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             ThrowIfDisposed();
             return _key.DuplicateHandle();
         }
 
-        private static partial MLKemAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle)
+        private static partial MLKemAlgorithm AlgorithmFromHandle(
+            SafeEvpPKeyHandle pkeyHandle,
+            out SafeEvpPKeyHandle upRefHandle,
+            out bool hasSeed,
+            out bool hasDecapsulationKey)
         {
             ArgumentNullException.ThrowIfNull(pkeyHandle);
+
+            if (pkeyHandle.IsInvalid)
+            {
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
+            }
+
             upRefHandle = pkeyHandle.DuplicateHandle();
 
             try
             {
-                Interop.Crypto.PalKemAlgorithmId kemId = Interop.Crypto.EvpKemGetKemIdentifier(upRefHandle);
+                Interop.Crypto.PalKemAlgorithmId kemId = Interop.Crypto.EvpKemGetKemIdentifier(
+                    upRefHandle,
+                    out hasSeed,
+                    out hasDecapsulationKey);
 
                 switch (kemId)
                 {
@@ -88,6 +95,17 @@ namespace System.Security.Cryptography
         protected override void ExportEncapsulationKeyCore(Span<byte> destination)
         {
             Interop.Crypto.EvpKemExportEncapsulationKey(_key, destination);
+        }
+
+        /// <inheritdoc />
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            return MLKemPkcs8.TryExportPkcs8PrivateKey(
+                this,
+                _hasSeed,
+                _hasDecapsulationKey,
+                destination,
+                out bytesWritten);
         }
     }
 }

@@ -10,13 +10,15 @@ namespace Microsoft.DotNet.Cli.Build.Framework
     public struct CommandResult
     {
         public ProcessStartInfo StartInfo { get; }
+        public int ProcessId { get; }
         public int ExitCode { get; }
         public string StdOut { get; }
         public string StdErr { get; }
 
-        public CommandResult(ProcessStartInfo startInfo, int exitCode, string stdOut, string stdErr)
+        public CommandResult(ProcessStartInfo startInfo, int pid, int exitCode, string stdOut, string stdErr)
         {
             StartInfo = startInfo;
+            ProcessId = pid;
             ExitCode = exitCode;
             StdOut = stdOut;
             StdErr = stdErr;

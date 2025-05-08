@@ -16,6 +16,10 @@
 #include "dbginterface.h"
 #include <minipal/time.h>
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif
+
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -959,7 +963,7 @@ BOOL Thread::ReadyForAsyncException()
     }
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && IsAbortPrevented())
+    if (IsAbortPrevented())
     {
         return FALSE;
     }
@@ -1179,10 +1183,6 @@ bool UseActivationInjection()
 #endif
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 HRESULT
 Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 {
@@ -1678,9 +1678,6 @@ LPrepareRetry:
 
     return S_OK;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void Thread::SetRudeAbortEndTimeFromEEPolicy()
 {
@@ -2267,8 +2264,6 @@ void Thread::HandleThreadAbort ()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
-    // @TODO: we should consider treating this function as an FCALL or HCALL and use FCThrow instead of COMPlusThrow
-
     // Sometimes we call this without any CLR SEH in place.  An example is UMThunkStubRareDisableWorker.
     // That's okay since COMPlusThrow will eventually erect SEH around the RaiseException. It prevents
     // us from stating CONTRACT here.
@@ -2309,15 +2304,10 @@ void Thread::HandleThreadAbort ()
         }
 
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled)
-        {
-            DispatchManagedException(exceptObj);
-        }
-        else
+        DispatchManagedException(exceptObj);
+#else // FEATURE_EH_FUNCLETS
+        RaiseTheExceptionInternalOnly(exceptObj, FALSE);
 #endif // FEATURE_EH_FUNCLETS
-        {
-            RaiseTheExceptionInternalOnly(exceptObj, FALSE);
-        }
     }
 
     ::SetLastError(lastError);
@@ -3785,27 +3775,23 @@ ThrowControlForThread(
     STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread Aborting\n");
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        GCX_COOP();
 
-        EXCEPTION_RECORD exceptionRecord = {0};
-        exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation);
-        exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
-        exceptionRecord.ExceptionFlags = 0;
+    GCX_COOP();
 
-        OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
-        pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
-        DispatchManagedException(throwable, pfef->GetExceptionContext());
-    }
-    else
+    EXCEPTION_RECORD exceptionRecord = {0};
+    exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation);
+    exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
+    exceptionRecord.ExceptionFlags = 0;
+
+    OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
+    pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    DispatchManagedException(throwable, pfef->GetExceptionContext());
+#else // FEATURE_EH_FUNCLETS
+    // Here we raise an exception.
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER
+    RaiseComPlusException();
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
 #endif // FEATURE_EH_FUNCLETS
-    {
-        // Here we raise an exception.
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER
-        RaiseComPlusException();
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-    }
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -4224,6 +4210,18 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
         if ((thread->m_State & TS_DebugWillSync) == 0)
             continue;
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+        if (thread->m_State & Thread::TS_SSToExitApcCallDone)
+        {
+            thread->ResetThreadState(Thread::TS_SSToExitApcCallDone);
+            goto Label_MarkThreadAsSynced;
+        }
+        if (thread->m_State & Thread::TS_SSToExitApcCall)
+        {
+            continue;
+        }
+#endif
+
         if (!UseContextBasedThreadRedirection())
         {
             // On platforms that do not support safe thread suspension we either
@@ -4546,7 +4544,7 @@ struct ExecutionState
 };
 
 // Client is responsible for suspending the thread before calling
-void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
+void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet))
 {
     CONTRACTL {
         NOTHROW;
@@ -4571,7 +4569,7 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
         pvHijackAddr = reinterpret_cast<VOID *>(OnHijackFPTripThread);
     }
 
-    SetHijackReturnKind(returnKind);
+    SetHijackReturnKind(returnKind, hasAsyncRet);
 #endif // TARGET_X86
 
     // Don't hijack if are in the first level of running a filter/finally/catch.
@@ -4804,7 +4802,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
         else
         {
 #ifdef TARGET_X86
-            STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", GetControlPC(pCF->GetRegisterSet()), pCF->GetRegisterSet()->PCTAddr);
+            STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", GetControlPC(pCF->GetRegisterSet()), GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
 #else
             STRESS_LOG1(LF_SYNC, LL_INFO1000, "Not in Jitted code at pc = %p\n", GetControlPC(pCF->GetRegisterSet()));
 #endif
@@ -4834,7 +4832,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
         {
             // pPC points to the return address sitting on the stack, as our
             // current EIP for the penultimate stack frame.
-            pES->m_ppvRetAddrPtr = (void **) pRDT->PCTAddr;
+            pES->m_ppvRetAddrPtr = (void **) GetRegdisplayPCTAddr(pRDT);
 
             STRESS_LOG2(LF_SYNC, LL_INFO1000, "Partially Int case hijack address = 0x%x val = 0x%x\n", pES->m_ppvRetAddrPtr, *pES->m_ppvRetAddrPtr);
         }
@@ -4911,10 +4909,17 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind))
+static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
+    X86_ONLY(*hasAsyncRet = false);
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    return pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind));
+    if (!pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind)))
+        return false;
+
+    MethodDesc* pMD = pCodeInfo->GetMethodDesc();
+    X86_ONLY(*hasAsyncRet = pMD->IsAsyncMethod());
+
+    return true;
 }
 
 #ifndef TARGET_UNIX
@@ -5315,9 +5320,10 @@ BOOL Thread::HandledJITCase()
             EECodeInfo codeInfo(ip);
 
             X86_ONLY(ReturnKind returnKind;)
-            if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind)))
+            X86_ONLY(bool hasAsyncRet;)
+            if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
             {
-                HijackThread(&esb X86_ARG(returnKind));
+                HijackThread(&esb X86_ARG(returnKind) X86_ARG(hasAsyncRet));
             }
         }
     }
@@ -5340,6 +5346,19 @@ BOOL Thread::HandledJITCase()
 #endif // FEATURE_HIJACK
 
 // Some simple helpers to keep track of the threads we are waiting for
+void Thread::MarkForSuspensionAndWait(ULONG bit)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+    m_DebugSuspendEvent.Reset();
+    InterlockedOr((LONG*)&m_State, bit);
+    ThreadStore::IncrementTrapReturningThreads();
+    m_DebugSuspendEvent.Wait(INFINITE,FALSE);
+}
+
 void Thread::MarkForSuspension(ULONG bit)
 {
     CONTRACTL {
@@ -5762,7 +5781,8 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
 //       address to take the thread to the appropriate stub (based on the return
 //       type of the method) which will then handle preparing the thread for GC.
 //
-void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
+
+void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger)
 {
     struct AutoClearPendingThreadActivation
     {
@@ -5797,6 +5817,18 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     EECodeInfo codeInfo(ip);
     if (!codeInfo.IsValid())
         return;
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    // It's not allowed to change the IP while paused in an APC Callback for security reasons if CET is turned on
+    // So we enable the single step in the thread that is running the APC Callback
+    // and then it will be paused using single step exception after exiting the APC callback
+    // this will allow the debugger to setIp to execute FuncEvalHijack.
+    if (suspendForDebugger)
+    {
+        g_pDebugInterface->SingleStepToExitApcCall(pThread, interruptedContext);
+        return;
+    }
+#endif
 
     DWORD addrOffset = codeInfo.GetRelOffset();
 
@@ -5854,7 +5886,8 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
             return;
 
         X86_ONLY(ReturnKind returnKind;)
-        if (!GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind)))
+        X86_ONLY(bool hasAsyncRet;)
+        if (!GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
         {
             return;
         }
@@ -5868,8 +5901,13 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        pThread->HijackThread(&executionState X86_ARG(returnKind));
+        pThread->HijackThread(&executionState X86_ARG(returnKind) X86_ARG(hasAsyncRet));
     }
+}
+
+void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
+{
+    HandleSuspensionForInterruptedThread(interruptedContext, false);
 }
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
@@ -5898,10 +5936,10 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
 
     switch (reason)
     {
-        case ActivationReason::SuspendForGC:
         case ActivationReason::SuspendForDebugger:
+        case ActivationReason::SuspendForGC:
         case ActivationReason::ThreadAbort:
-            HandleSuspensionForInterruptedThread(pContext);
+            HandleSuspensionForInterruptedThread(pContext, reason == ActivationReason::SuspendForDebugger);
             break;
 
         default:

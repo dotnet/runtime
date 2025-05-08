@@ -2,14 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
+using System.Security.Cryptography.Asn1;
+using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
     public abstract class MLKemBaseTests
     {
+        private static readonly PbeParameters s_aes128Pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 2);
+
         public abstract MLKem GenerateKey(MLKemAlgorithm algorithm);
         public abstract MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> seed);
         public abstract MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source);
@@ -154,12 +160,6 @@ namespace System.Security.Cryptography.Tests
                 kem.Decapsulate(ciphertextBytes, sharedSecretBuffer);
                 AssertExtensions.SequenceEqual(expectedSharedSecret, sharedSecretBuffer);
 
-                // Large enough buffers
-                sharedSecretBuffer.AsSpan().Clear();
-                kem.Decapsulate(ciphertextBytes, sharedSecretBuffer, out int sharedSecretWritten);
-                AssertExtensions.SequenceEqual(expectedSharedSecret, sharedSecretBuffer);
-                Assert.Equal(vector.Algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
-
                 // Allocating return
                 byte[] sharedSecret = kem.Decapsulate(ciphertextBytes);
                 AssertExtensions.SequenceEqual(expectedSharedSecret, sharedSecret);
@@ -188,27 +188,6 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void DecapsulateVectors_OverlappingBuffers_LargeEnoughBuffers(bool partial)
-        {
-            foreach (MLKemTestDecapsulationVector vector in MLKemDecapsulationTestVectors)
-            {
-                byte[] decapsulationKeyBytes = vector.DecapsulationKey.HexToByteArray();
-                byte[] ciphertextBytes = vector.Ciphertext.HexToByteArray();
-                using MLKem kem = ImportDecapsulationKey(vector.Algorithm, decapsulationKeyBytes);
-
-                Span<byte> sharedSecretBuffer = ciphertextBytes.AsSpan(partial ? 1 : 0);
-
-                ReadOnlySpan<byte> expectedSharedSecret = vector.SharedSecret.HexToByteArray();
-
-                kem.Decapsulate(ciphertextBytes, sharedSecretBuffer, out int sharedSecretWritten);
-                Assert.Equal(vector.Algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
-                AssertExtensions.SequenceEqual(expectedSharedSecret, sharedSecretBuffer.Slice(0, sharedSecretWritten));
-            }
-        }
-
         [Fact]
         public void Decapsulate_OnlyEncapsulationKey()
         {
@@ -222,12 +201,6 @@ namespace System.Security.Cryptography.Tests
                 Assert.ThrowsAny<CryptographicException>(() => kem.Decapsulate(
                     vector.Ciphertext.HexToByteArray(),
                     sharedSecretBuffer));
-
-                // Large enough buffer
-                Assert.ThrowsAny<CryptographicException>(() => kem.Decapsulate(
-                    vector.Ciphertext.HexToByteArray(),
-                    sharedSecretBuffer,
-                    out _));
 
                 // Allocating
                 Assert.ThrowsAny<CryptographicException>(() => kem.Decapsulate(vector.Ciphertext.HexToByteArray()));
@@ -253,12 +226,6 @@ namespace System.Security.Cryptography.Tests
                 kem.Decapsulate(ciphertext, sharedSecretExact);
                 AssertExtensions.SequenceNotEqual(expectedSharedSecret, sharedSecretExact);
 
-                // Large enough buffer
-                sharedSecretBuffer.AsSpan().Clear();
-                kem.Decapsulate(ciphertext, sharedSecretBuffer, out int sharedSecretWritten);
-                Assert.Equal(vector.Algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
-                AssertExtensions.SequenceNotEqual(expectedSharedSecret, sharedSecretBuffer.AsSpan(0, sharedSecretWritten));
-
                 // Allocating
                 byte[] sharedSecret = kem.Decapsulate(ciphertext);
                 AssertExtensions.SequenceNotEqual(expectedSharedSecret, sharedSecret);
@@ -283,48 +250,12 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void Encapsulate_NonDeterministic_LargeEnough(MLKemAlgorithm algorithm)
-        {
-            using MLKem kem = GenerateKey(algorithm);
-
-            byte[] ciphertext1 = new byte[algorithm.CiphertextSizeInBytes + 10];
-            byte[] sharedSecret1 = new byte[algorithm.SharedSecretSizeInBytes + 10];
-            byte[] ciphertext2 = new byte[algorithm.CiphertextSizeInBytes + 10];
-            byte[] sharedSecret2 = new byte[algorithm.SharedSecretSizeInBytes + 10];
-            kem.Encapsulate(ciphertext1, sharedSecret1, out int ciphertext1Written, out int sharedSecret1Written);
-            kem.Encapsulate(ciphertext2, sharedSecret2, out int ciphertext2Written, out int sharedSecret2Written);
-
-            AssertExtensions.SequenceNotEqual(
-                ciphertext1.AsSpan(0, ciphertext1Written),
-                ciphertext2.AsSpan(0, ciphertext2Written));
-
-            AssertExtensions.SequenceNotEqual(
-                sharedSecret1.AsSpan(0, sharedSecret1Written),
-                sharedSecret2.AsSpan(0, sharedSecret2Written));
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void Encapsulate_NonDeterministic_Allocating(MLKemAlgorithm algorithm)
         {
             using MLKem kem = GenerateKey(algorithm);
 
-            byte[] ciphertext1 = kem.Encapsulate(out byte[] sharedSecret1);
-            byte[] ciphertext2 = kem.Encapsulate(out byte[] sharedSecret2);
-            AssertExtensions.SequenceNotEqual(ciphertext1, ciphertext2);
-            AssertExtensions.SequenceNotEqual(sharedSecret1, sharedSecret2);
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void Encapsulate_NonDeterministic_WriteSharedSecretReturnCiphertext(MLKemAlgorithm algorithm)
-        {
-            using MLKem kem = GenerateKey(algorithm);
-            Span<byte> sharedSecret1 = new byte[algorithm.SharedSecretSizeInBytes];
-            Span<byte> sharedSecret2 = new byte[algorithm.SharedSecretSizeInBytes];
-
-            byte[] ciphertext1 = kem.Encapsulate(sharedSecret1);
-            byte[] ciphertext2 = kem.Encapsulate(sharedSecret2);
+            kem.Encapsulate(out byte[] ciphertext1, out byte[] sharedSecret1);
+            kem.Encapsulate(out byte[] ciphertext2, out byte[] sharedSecret2);
             AssertExtensions.SequenceNotEqual(ciphertext1, ciphertext2);
             AssertExtensions.SequenceNotEqual(sharedSecret1, sharedSecret2);
         }
@@ -347,52 +278,15 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void Encapsulate_Roundtrip_LargeBuffers(MLKemAlgorithm algorithm)
-        {
-            using MLKem kem1 = GenerateKey(algorithm);
-            using MLKem kem2 = ImportEncapsulationKey(algorithm, kem1.ExportEncapsulationKey());
-
-            Span<byte> ciphertext = new byte[algorithm.CiphertextSizeInBytes + 10];
-            Span<byte> sharedSecret = new byte[algorithm.SharedSecretSizeInBytes + 10];
-            kem2.Encapsulate(ciphertext, sharedSecret, out int ciphertextWritten, out int sharedSecretWritten);
-
-            Span<byte> decapsulatedSharedSecret = new byte[algorithm.SharedSecretSizeInBytes + 10];
-
-            kem1.Decapsulate(
-                ciphertext.Slice(0, ciphertextWritten),
-                decapsulatedSharedSecret,
-                out int decapsulatedSharedSecretWritten);
-
-            AssertExtensions.SequenceEqual(
-                sharedSecret.Slice(0, sharedSecretWritten),
-                decapsulatedSharedSecret.Slice(0, decapsulatedSharedSecretWritten));
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public void Encapsulate_Roundtrip_Allocating(MLKemAlgorithm algorithm)
         {
             using MLKem kem1 = GenerateKey(algorithm);
             using MLKem kem2 = ImportEncapsulationKey(algorithm, kem1.ExportEncapsulationKey());
 
-            byte[] ciphertext = kem2.Encapsulate(out byte[] sharedSecret);
+            kem2.Encapsulate(out byte[] ciphertext, out byte[] sharedSecret);
             byte[] decapsulatedSharedSecret = kem1.Decapsulate(ciphertext);
 
             AssertExtensions.SequenceEqual(sharedSecret, decapsulatedSharedSecret);
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public void Encapsulate_Roundtrip_WriteSharedSecretReturnCiphertext(MLKemAlgorithm algorithm)
-        {
-            using MLKem kem1 = GenerateKey(algorithm);
-            using MLKem kem2 = ImportEncapsulationKey(algorithm, kem1.ExportEncapsulationKey());
-
-            Span<byte> sharedSecret = new byte[algorithm.SharedSecretSizeInBytes];
-            byte[] ciphertext = kem2.Encapsulate(sharedSecret);
-            byte[] decapsulatedSharedSecret = kem1.Decapsulate(ciphertext);
-
-            AssertExtensions.SequenceEqual(sharedSecret, new ReadOnlySpan<byte>(decapsulatedSharedSecret));
         }
 
         [Theory]
@@ -409,13 +303,6 @@ namespace System.Security.Cryptography.Tests
                 Span<byte> ciphertext = buffer.AsSpan(0, MLKemAlgorithm.MLKem512.CiphertextSizeInBytes);
                 kem.Encapsulate(ciphertext, sharedSecret);
             });
-
-            Assert.Throws<CryptographicException>(() =>
-            {
-                Span<byte> sharedSecret = buffer.AsSpan(partial ? 1 : 0, MLKemAlgorithm.MLKem512.SharedSecretSizeInBytes);
-                Span<byte> ciphertext = buffer.AsSpan(0, MLKemAlgorithm.MLKem512.CiphertextSizeInBytes);
-                kem.Encapsulate(ciphertext, sharedSecret, out _, out _);
-            });
         }
 
         [Fact]
@@ -427,9 +314,7 @@ namespace System.Security.Cryptography.Tests
             Span<byte> sharedSecret = buffer.AsSpan(0, algorithm.SharedSecretSizeInBytes);
             Span<byte> ciphertext = buffer.AsSpan(algorithm.SharedSecretSizeInBytes);
 
-            kem.Encapsulate(ciphertext, sharedSecret, out int ciphertextWritten, out int sharedSecretWritten);
-            Assert.Equal(algorithm.CiphertextSizeInBytes, ciphertextWritten);
-            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
+            kem.Encapsulate(ciphertext, sharedSecret);
 
             Span<byte> decapsulated = new byte[algorithm.SharedSecretSizeInBytes];
             kem.Decapsulate(ciphertext, decapsulated);
@@ -437,27 +322,210 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Encapsulate_Overlaps_WhenTrimmed_Works()
+        public void TryExportPkcs8PrivateKey_Seed_Roundtrip()
         {
-            MLKemAlgorithm algorithm = MLKemAlgorithm.MLKem512;
-            using MLKem kem = GenerateKey(algorithm);
+            using MLKem kem = ImportPrivateSeed(MLKemAlgorithm.MLKem512, MLKemTestData.IncrementalSeed);
 
-            // sharedSecret does overlap ciphertext in this test. However, the part that overlaps will never
-            // be written to because it is trimmed to the exact size, which ends up with the buffers beside each
-            // other, which should work.
-            byte[] buffer = new byte[algorithm.SharedSecretSizeInBytes + algorithm.CiphertextSizeInBytes + 10];
-            Span<byte> sharedSecret = buffer.AsSpan(0, algorithm.SharedSecretSizeInBytes + 10);
-            Span<byte> ciphertext = buffer.AsSpan(algorithm.SharedSecretSizeInBytes);
-            Assert.True(sharedSecret.Overlaps(ciphertext), "sharedSecret.Overlaps(ciphertext)");
-
-            kem.Encapsulate(ciphertext, sharedSecret, out int ciphertextWritten, out int sharedSecretWritten);
-            Assert.Equal(algorithm.CiphertextSizeInBytes, ciphertextWritten);
-            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
-
-            Span<byte> decapsulated = new byte[algorithm.SharedSecretSizeInBytes];
-            kem.Decapsulate(ciphertext.Slice(0, ciphertextWritten), decapsulated);
-            AssertExtensions.SequenceEqual(sharedSecret.Slice(0, sharedSecretWritten), decapsulated);
+            AssertExportPkcs8PrivateKey(kem, pkcs8 =>
+            {
+                using MLKem imported = MLKem.ImportPkcs8PrivateKey(pkcs8);
+                Assert.Equal(MLKemAlgorithm.MLKem512, imported.Algorithm);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            });
         }
+
+        [Fact]
+        public void ExportPkcs8PrivateKey_DecapsulationKey_Roundtrip()
+        {
+            using MLKem kem = ImportDecapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512DecapsulationKey);
+
+            AssertExportPkcs8PrivateKey(kem, pkcs8 =>
+            {
+                using MLKem imported = MLKem.ImportPkcs8PrivateKey(pkcs8);
+                Assert.Equal(MLKemAlgorithm.MLKem512, imported.Algorithm);
+
+                Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(MLKemTestData.MLKem512DecapsulationKey, kem.ExportDecapsulationKey());
+            });
+        }
+
+        [Fact]
+        public void TryExportPkcs8PrivateKey_EncapsulationKey_Fails()
+        {
+            using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
+            Assert.Throws<CryptographicException>(() => DoTryUntilDone(kem.TryExportPkcs8PrivateKey));
+            Assert.Throws<CryptographicException>(() => kem.ExportPkcs8PrivateKey());
+        }
+
+        [Fact]
+        public void ExportEncryptedPkcs8PrivateKey_DecapsulationKey_Roundtrip()
+        {
+            using MLKem kem = ImportDecapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512DecapsulationKey);
+            AssertEncryptedExportPkcs8PrivateKey(kem, MLKemTestData.EncryptedPrivateKeyPassword, s_aes128Pbe, pkcs8 =>
+            {
+                using MLKem imported = MLKem.ImportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword,
+                    pkcs8);
+
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.MLKem512DecapsulationKey,
+                    imported.ExportDecapsulationKey());
+                Assert.Throws<CryptographicException>(() => imported.ExportPrivateSeed());
+            });
+        }
+
+        [Fact]
+        public void ExportEncryptedPkcs8PrivateKey_Seed_Roundtrip()
+        {
+            using MLKem kem = ImportPrivateSeed(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512PrivateSeed);
+            AssertEncryptedExportPkcs8PrivateKey(kem, MLKemTestData.EncryptedPrivateKeyPassword, s_aes128Pbe, pkcs8 =>
+            {
+                using MLKem imported = MLKem.ImportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword,
+                    pkcs8);
+
+                AssertExtensions.SequenceEqual(MLKemTestData.MLKem512PrivateSeed, imported.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.MLKem512DecapsulationKey,
+                    imported.ExportDecapsulationKey());
+            });
+        }
+
+        [Fact]
+        public void ExportEncryptedPkcs8PrivateKey_EncapsulationKey_Fails()
+        {
+            using MLKem kem = ImportEncapsulationKey(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512EncapsulationKey);
+
+            Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+                kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                    s_aes128Pbe,
+                    destination,
+                    out bytesWritten)));
+
+            Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+                kem.TryExportEncryptedPkcs8PrivateKey(
+                    MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                    s_aes128Pbe,
+                    destination,
+                    out bytesWritten)));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword,
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKey(
+                MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
+                MLKemTestData.EncryptedPrivateKeyPasswordBytes,
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
+                MLKemTestData.EncryptedPrivateKeyPassword,
+                s_aes128Pbe));
+
+            Assert.Throws<CryptographicException>(() => kem.ExportEncryptedPkcs8PrivateKeyPem(
+                MLKemTestData.EncryptedPrivateKeyPassword.AsSpan(),
+                s_aes128Pbe));
+        }
+
+        [Theory]
+        [MemberData(nameof(ExportPkcs8Parameters))]
+        public void ExportEncryptedPkcs8PrivateKey_PbeParameters(PbeParameters pbeParameters)
+        {
+            using MLKem kem = ImportPrivateSeed(MLKemAlgorithm.MLKem512, MLKemTestData.MLKem512PrivateSeed);
+            AssertEncryptedExportPkcs8PrivateKey(kem, MLKemTestData.EncryptedPrivateKeyPassword, pbeParameters, pkcs8 =>
+            {
+                AssertEncryptedPkcs8PrivateKeyContents(pbeParameters, pkcs8);
+            });
+        }
+
+        public static IEnumerable<object[]> ExportPkcs8Parameters
+        {
+            get
+            {
+                yield return new[] { new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 42) };
+                yield return new[] { new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA512, 43) };
+                yield return new[] { new PbeParameters(PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA384, 44) };
+                yield return new[] { new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 24) };
+            }
+        }
+
+        private static void AssertExportPkcs8PrivateKey(MLKem kem, Action<byte[]> callback)
+        {
+            callback(DoTryUntilDone(kem.TryExportPkcs8PrivateKey));
+            callback(kem.ExportPkcs8PrivateKey());
+        }
+
+        private static void AssertEncryptedExportPkcs8PrivateKey(
+            MLKem kem,
+            string password,
+            PbeParameters pbeParameters,
+            Action<byte[]> callback)
+        {
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+
+            callback(DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+            {
+                return kem.TryExportEncryptedPkcs8PrivateKey(
+                    password.AsSpan(),
+                    pbeParameters,
+                    destination,
+                    out bytesWritten);
+            }));
+
+            callback(kem.ExportEncryptedPkcs8PrivateKey(password, pbeParameters));
+            callback(kem.ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters));
+            callback(DecodePem(kem.ExportEncryptedPkcs8PrivateKeyPem(password, pbeParameters)));
+            callback(DecodePem(kem.ExportEncryptedPkcs8PrivateKeyPem(password.AsSpan(), pbeParameters)));
+
+            // PKCS12 PBE requires char-passwords, so don't run byte-password callbacks.
+            if (pbeParameters.EncryptionAlgorithm != PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)
+            {
+                callback(DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+                {
+                    return kem.TryExportEncryptedPkcs8PrivateKey(
+                        new ReadOnlySpan<byte>(passwordBytes),
+                        pbeParameters,
+                        destination,
+                        out bytesWritten);
+                }));
+
+                callback(kem.ExportEncryptedPkcs8PrivateKey(new ReadOnlySpan<byte>(passwordBytes), pbeParameters));
+                callback(DecodePem(kem.ExportEncryptedPkcs8PrivateKeyPem(new ReadOnlySpan<byte>(passwordBytes), pbeParameters)));
+            }
+
+            static byte[] DecodePem(string pem)
+            {
+                PemFields fields = PemEncoding.Find(pem.AsSpan());
+                Assert.Equal(Index.FromStart(0), fields.Location.Start);
+                Assert.Equal(Index.FromStart(pem.Length), fields.Location.End);
+                Assert.Equal("ENCRYPTED PRIVATE KEY", pem.AsSpan()[fields.Label].ToString());
+                return Convert.FromBase64String(pem.AsSpan()[fields.Base64Data].ToString());
+            }
+        }
+
+        private delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
+
+        private static byte[] DoTryUntilDone(TryExportFunc func)
+        {
+            byte[] buffer = new byte[512];
+            int written;
+
+            while (!func(buffer, out written))
+            {
+                Array.Resize(ref buffer, buffer.Length * 2);
+            }
+
+            return buffer.AsSpan(0, written).ToArray();
+        }
+
 
         private static void Tamper(Span<byte> buffer)
         {
@@ -484,9 +552,56 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(expectedSpki, encodedSpki);
 
             using MLKem encapsulator = MLKem.ImportSubjectPublicKeyInfo(encodedSpki);
-            byte[] ciphertext = encapsulator.Encapsulate(out byte[] encapsulatorSharedSecret);
+            encapsulator.Encapsulate(out byte[] ciphertext, out byte[] encapsulatorSharedSecret);
             byte[] decapsulatedSharedSecret = kem.Decapsulate(ciphertext);
             AssertExtensions.SequenceEqual(encapsulatorSharedSecret, decapsulatedSharedSecret);
+        }
+
+        private static void AssertEncryptedPkcs8PrivateKeyContents(PbeParameters pbeParameters, ReadOnlyMemory<byte> contents)
+        {
+            EncryptedPrivateKeyInfoAsn epki = EncryptedPrivateKeyInfoAsn.Decode(contents, AsnEncodingRules.BER);
+            AlgorithmIdentifierAsn algorithmIdentifier = epki.EncryptionAlgorithm;
+
+            if (pbeParameters.EncryptionAlgorithm == PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)
+            {
+                // pbeWithSHA1And3-KeyTripleDES-CBC
+                Assert.Equal("1.2.840.113549.1.12.1.3", algorithmIdentifier.Algorithm);
+                PBEParameter pbeParameterAsn = PBEParameter.Decode(algorithmIdentifier.Parameters.Value, AsnEncodingRules.BER);
+
+                Assert.Equal(pbeParameters.IterationCount, pbeParameterAsn.IterationCount);
+            }
+            else
+            {
+                Assert.Equal("1.2.840.113549.1.5.13", algorithmIdentifier.Algorithm); // PBES2
+                PBES2Params pbes2Params = PBES2Params.Decode(algorithmIdentifier.Parameters.Value, AsnEncodingRules.BER);
+                Assert.Equal("1.2.840.113549.1.5.12", pbes2Params.KeyDerivationFunc.Algorithm); // PBKDF2
+                Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(
+                    pbes2Params.KeyDerivationFunc.Parameters.Value,
+                    AsnEncodingRules.BER);
+                string expectedEncryptionOid = pbeParameters.EncryptionAlgorithm switch
+                {
+                    PbeEncryptionAlgorithm.Aes128Cbc => "2.16.840.1.101.3.4.1.2",
+                    PbeEncryptionAlgorithm.Aes192Cbc => "2.16.840.1.101.3.4.1.22",
+                    PbeEncryptionAlgorithm.Aes256Cbc => "2.16.840.1.101.3.4.1.42",
+                    _ => throw new CryptographicException(),
+                };
+
+                Assert.Equal(pbeParameters.IterationCount, pbkdf2Params.IterationCount);
+                Assert.Equal(pbeParameters.HashAlgorithm, GetHashAlgorithmFromPbkdf2Params(pbkdf2Params));
+                Assert.Equal(expectedEncryptionOid, pbes2Params.EncryptionScheme.Algorithm);
+            }
+        }
+
+        private static HashAlgorithmName GetHashAlgorithmFromPbkdf2Params(Pbkdf2Params pbkdf2Params)
+        {
+            return pbkdf2Params.Prf.Algorithm switch
+            {
+                "1.2.840.113549.2.7" => HashAlgorithmName.SHA1,
+                "1.2.840.113549.2.9" => HashAlgorithmName.SHA256,
+                "1.2.840.113549.2.10" => HashAlgorithmName.SHA384,
+                "1.2.840.113549.2.11" => HashAlgorithmName.SHA512,
+                string other => throw new XunitException($"Unknown hash algorithm OID '{other}'."),
+            };
         }
 
         public record MLKemTestDecapsulationVector(MLKemAlgorithm Algorithm, string EncapsulationKey, string DecapsulationKey, string Ciphertext, string SharedSecret);

@@ -25,6 +25,10 @@
 #include "ecall.h"
 #include "threadsuspend.h"
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 // target write barriers
 EXTERN_C void JIT_WriteBarrier(Object **dst, Object *ref);
 EXTERN_C void JIT_WriteBarrier_End();
@@ -1588,10 +1592,17 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
      pRD->IsCallerSPValid      = FALSE;
 
      pRD->pCurrentContext->Pc = m_ReturnAddress;
-     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + sizeof(struct HijackArgs);
+     size_t s = sizeof(struct HijackArgs);
+     _ASSERTE(s%4 == 0); // HijackArgs contains register values and hence will be a multiple of 4
+     // stack must be multiple of 8. So if s is not multiple of 8 then there must be padding of 4 bytes
+     s = s + s%8;
+     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
 
      pRD->pCurrentContext->R0 = m_Args->R0;
+     pRD->pCurrentContext->R2 = m_Args->R2;
+
      pRD->volatileCurrContextPointers.R0 = &m_Args->R0;
+     pRD->volatileCurrContextPointers.R2 = &m_Args->R2;
 
      pRD->pCurrentContext->R4 = m_Args->R4;
      pRD->pCurrentContext->R5 = m_Args->R5;
@@ -1641,7 +1652,6 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
-        SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
         ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
     }
@@ -1676,7 +1686,7 @@ void MovRegImm(BYTE* p, int reg, TADDR imm)
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+#define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
@@ -1684,6 +1694,15 @@ void MovRegImm(BYTE* p, int reg, TADDR imm)
     BYTE * pStart = startWriterHolder.GetRW(); \
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
+
+#ifdef FEATURE_PERFMAP
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
+#else
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
+#endif
+
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \

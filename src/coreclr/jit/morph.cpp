@@ -299,21 +299,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // This goes through helper and hence src needs to be converted to double.
             && tree->gtOverflow()
 #elif defined(TARGET_AMD64)
-            // Amd64: src = float, dst = uint64 or overflow conversion.
-            // src needs to be converted to double except for the following cases
-            //       dstType = int/uint/ulong for AVX512F
-            //       dstType = int for SSE41
-            // For pre-SSE41, the all src is converted to TYP_DOUBLE
-            // and goes through helpers.
-            &&
-            (tree->gtOverflow() || (dstType == TYP_LONG && !compOpportunisticallyDependsOn(InstructionSet_AVX10v2)) ||
-             !(canUseEvexEncoding() || (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
+            // Amd64: src = float, dst = overflow conversion or SSE2 is not enabled
+            && (tree->gtOverflow() || !IsBaselineSimdIsaSupported())
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
 #else
-            // x86: src = float, dst = uint32/int64/uint64 or overflow conversion.
-            && (tree->gtOverflow() || varTypeIsIntegral(dstType))
+            // x86: src = float, dst = int64/uint64 or overflow conversion or SSE2 is not enabled
+            && (tree->gtOverflow() || varTypeIsLong(dstType) || !IsBaselineSimdIsaSupported())
 #endif
         )
         {
@@ -339,25 +332,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                 return nullptr;
 #else
-#if defined(TARGET_AMD64)
-                // Following nodes are handled when lowering the nodes
-                //     float  -> ulong/uint/int/long for AVX10.2
-                //     double -> ulong/uint/int/long for AVX10.2
-                //     float  -> ulong/uint/int for AVX512F
-                //     double -> ulong/uint/long/int for AVX512F
-                //     float  -> int for SSE41
-                //     double -> int/uint/long for SSE41
-                // For all other conversions, we use helper functions.
-                if (canUseEvexEncoding() ||
-                    ((dstType != TYP_ULONG) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+#if defined(TARGET_XARCH)
+                if (IsBaselineSimdIsaSupported() && (!varTypeIsLong(dstType) || TargetArchitecture::Is64Bit))
                 {
-                    if (tree->CastOp() != oper)
-                    {
-                        tree->CastOp() = oper;
-                    }
                     return nullptr;
                 }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
                 switch (dstType)
                 {
                     case TYP_INT:
@@ -417,11 +397,16 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // Because there is no IL instruction conv.r4.un, uint/ulong -> float
     // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
     // We can usually eliminate the redundant intermediate cast as an optimization.
+    //
     // AArch and xarch+EVEX have instructions that can cast directly from
-    // all integers (except for longs on 32-bit of course) to floats.
+    // all integers (except for longs on ARM32) to floats.
     // On x64, we also have the option of widening uint -> long and
     // using the signed conversion instructions, and ulong -> float/double
     // is handled directly in codegen, so we can allow all casts.
+    //
+    // This logic will also catch CAST(float <- CAST(double <- float))
+    // and reduce it to CAST(float <- float), which is handled in codegen as
+    // an optional mov.
     else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
 #ifndef TARGET_64BIT
              && !varTypeIsLong(oper->AsCast()->CastOp())
@@ -481,6 +466,15 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #endif // TARGET_AMD64
 
 #ifdef TARGET_X86
+#ifdef FEATURE_HW_INTRINSICS
+    else if (varTypeIsLong(srcType) && varTypeIsFloating(dstType) && canUseEvexEncoding())
+    {
+        // We can handle these casts directly using SIMD instructions.
+        // The transform to SIMD is done in DecomposeLongs.
+        return nullptr;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     // Do we have to do two step U4/8 -> R4/8 ?
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
@@ -494,7 +488,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->gtFlags &= ~GTF_UNSIGNED;
+            tree->ClearUnsigned();
             return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
         }
     }
@@ -709,6 +703,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "VarArgsCookie";
         case WellKnownArg::InstParam:
             return "InstParam";
+        case WellKnownArg::AsyncContinuation:
+            return "AsyncContinuation";
         case WellKnownArg::RetBuffer:
             return "RetBuffer";
         case WellKnownArg::PInvokeFrame:
@@ -2091,10 +2087,6 @@ unsigned CallArgs::CountUserArgs()
 //    argument and replaced in the "early" arg list with a placeholder node.
 //    Also see `CallArgs::EvalArgsToTemps`.
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 {
     GenTreeFlags flagsSummary = GTF_EMPTY;
@@ -2238,9 +2230,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #endif
     return call;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //-----------------------------------------------------------------------------
 // fgTryMorphStructArg:
@@ -3156,16 +3145,21 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     // the partial byref will not point within the object, and thus not get updated correctly during a GC.
     // This is mostly a risk in fully-interruptible code regions.
 
-    // We can generate two types of trees for "addr":
+    // We can generate three types of trees for "addr":
     //
     //  1) "arrRef + (index + elemOffset)"
     //  2) "(arrRef + elemOffset) + index"
+    //  3) "(arrRef + index) + elemOffset"
     //
     // XArch has powerful addressing modes such as [base + index*scale + offset] so it's fine with 1),
     // while for Arm we better try to make an invariant sub-tree as large as possible, which is usually
     // "(arrRef + elemOffset)" and is CSE/LoopHoisting friendly => produces better codegen.
     // 2) should still be safe from GC's point of view since both ADD operations are byref and point to
     // within the object so GC will be able to correctly track and update them.
+    //
+    // RISC-V has very minimal addressing mode: [base + offset] which won't benefit much from CSE/LoopHoisting. However,
+    // RISC-V has the SH(X)ADD_(UW) instruction that represents [base + index] well. Therefore, 3) lends itself more
+    // naturally to RISC-V addressing mode.
 
     bool groupArrayRefWithElemOffset = false;
 #ifdef TARGET_ARMARCH
@@ -3180,6 +3174,16 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         groupArrayRefWithElemOffset = false;
     }
 #endif
+    bool groupArrayRefWithIndex = false;
+#if defined(TARGET_RISCV64)
+    groupArrayRefWithIndex = true;
+
+    // Don't use 3) for structs to reduce number of size regressions
+    if (varTypeIsStruct(elemTyp))
+    {
+        groupArrayRefWithIndex = false;
+    }
+#endif
 
     // Note the array reference may now be TYP_I_IMPL, TYP_BYREF, or TYP_REF
     //
@@ -3191,6 +3195,11 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     {
         GenTree* basePlusOffset = gtNewOperNode(GT_ADD, arrPtrType, arrRef, elemOffset);
         addr                    = gtNewOperNode(GT_ADD, arrPtrType, basePlusOffset, addr);
+    }
+    else if (groupArrayRefWithIndex)
+    {
+        addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
+        addr = gtNewOperNode(GT_ADD, TYP_BYREF, addr, elemOffset);
     }
     else
     {
@@ -4489,6 +4498,12 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 #endif
+
+    if (compIsAsync() != call->IsAsync())
+    {
+        failTailCall("Caller and callee do not agree on async-ness");
+        return nullptr;
+    }
 
     // We have to ensure to pass the incoming retValBuf as the
     // outgoing one. Using a temp will not do as this function will
@@ -7011,10 +7026,6 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
 // Returns:
 //    Tree, possibly updated
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone)
 {
     assert(tree->OperKind() & GTK_SMPOP);
@@ -10495,9 +10506,6 @@ GenTree* Compiler::fgMorphRetInd(GenTreeOp* ret)
     return lclFld;
 }
 
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 //-------------------------------------------------------------
 // fgMorphSmpOpOptional: optional post-order morping of some SMP trees
 //
@@ -11579,7 +11587,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
                 assert(tree != nullptr);
             }
         }
-        PREFAST_ASSUME(tree != nullptr);
+        assert(tree != nullptr);
     }
 
     /* Figure out what kind of a node we have */
@@ -12248,6 +12256,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 //    block                       - block containing the statement
 //    stmt                        - statement to morph
 //    msg                         - string to identify caller in a dump
+//    allowFGChange               - whether or not the flow graph can be changed
 //    invalidateDFSTreeOnFGChange - whether or not the DFS tree should be invalidated
 //                                  by this function if it makes a flow graph change
 //
@@ -12260,6 +12269,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 //
 bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
                                 Statement* stmt DEBUGARG(const char* msg),
+                                bool            allowFGChange,
                                 bool            invalidateDFSTreeOnFGChange)
 {
     assert(block != nullptr);
@@ -12309,7 +12319,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
     bool removedStmt = fgCheckRemoveStmt(block, stmt);
 
     // Or this is the last statement of a conditional branch that was just folded?
-    if (!removedStmt && (stmt->GetNextStmt() == nullptr) && !fgRemoveRestOfBlock)
+    if (allowFGChange && !removedStmt && (stmt->GetNextStmt() == nullptr) && !fgRemoveRestOfBlock)
     {
         FoldResult const fr = fgFoldConditional(block);
         if (invalidateDFSTreeOnFGChange && (fr != FoldResult::FOLD_DID_NOTHING))
@@ -12352,7 +12362,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
         //
         // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_ALWAYS.
         // We should not convert it to a ThrowBB.
-        if ((block != fgFirstBB) || !fgFirstBB->HasFlag(BBF_INTERNAL))
+        if (allowFGChange && ((block != fgFirstBB) || !fgFirstBB->HasFlag(BBF_INTERNAL)))
         {
             // Convert block to a throw bb, or make it rarely run if already a throw.
             //

@@ -227,49 +227,74 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
     }
     CONTRACTL_END
 
-    _ASSERTE(IsStatic());
+    LOG((LF_CORDB, LL_INFO1000, "FD::GSAH: this=%p, token=0x%08x, base=%p\n", this, GetMemberDef(), (void*)base));
+
+    PTR_VOID retVal = NULL;
+
 #ifdef FEATURE_METADATA_UPDATER
     if (IsEnCNew())
     {
-        EnCFieldDesc * pFD = dac_cast<PTR_EnCFieldDesc>(this);
-        _ASSERTE_IMPL(pFD->GetApproxEnclosingMethodTable()->SanityCheck());
-        _ASSERTE(pFD->GetModule()->IsEditAndContinueEnabled());
-
-        EditAndContinueModule *pModule = (EditAndContinueModule*)pFD->GetModule();
-        _ASSERTE(pModule->IsEditAndContinueEnabled());
-
-        PTR_VOID retVal = NULL;
+        LOG((LF_ENC, LL_INFO1000, "FD::GSAH: EnC field\n"));
 
 #ifdef DACCESS_COMPILE
         DacNotImpl();
 #else
+        EnCFieldDesc * pFD = dac_cast<PTR_EnCFieldDesc>(this);
+        _ASSERTE_IMPL(pFD->GetApproxEnclosingMethodTable()->SanityCheck());
+        _ASSERTE(pFD->GetModule()->IsEditAndContinueEnabled());
+
+        EditAndContinueModule *pEnCModule = (EditAndContinueModule*)pFD->GetModule();
+        if (IsRVA())
+        {
+            LOG((LF_ENC, LL_INFO1000, "FD::GSAH: EnC - RVA\n"));
+            retVal = (void*)pEnCModule->GetDynamicRvaField(pFD->GetMemberDef());
+        }
+        else
         {
             GCX_COOP();
             // This routine doesn't have a failure semantic - but Resolve*Field(...) does.
             // Something needs to be rethought here and I think it's E&C.
             CONTRACT_VIOLATION(ThrowsViolation|FaultViolation|GCViolation);   //B#25680 (Fix Enc violations)
-            retVal = (void *)(pModule->ResolveOrAllocateField(NULL, pFD));
+            retVal = (void*)(pEnCModule->ResolveOrAllocateField(NULL, pFD));
         }
 #endif // !DACCESS_COMPILE
+
+        LOG((LF_ENC, LL_INFO1000, "FD::GSAH: EnC - retVal=%p\n", (void*)retVal));
         return retVal;
     }
 #endif // FEATURE_METADATA_UPDATER
 
-    if (IsRVA())
+    DWORD offset = GetOffset();
+    LOG((LF_CORDB, LL_INFO1000, "FD::GSAH: Offset=0x%x\n", offset));
+
+    if (!IsRVA())
     {
+        CONSISTENCY_CHECK(CheckPointer(base));
+        retVal = PTR_VOID(dac_cast<PTR_BYTE>(base) + offset);
+    }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO1000, "FD::GSAH: RVA field\n"));
+
         Module* pModule = GetModule();
-        PTR_VOID ret = pModule->GetRvaField(GetOffset());
-
-        _ASSERTE(pModule->IsReflectionEmit() || !pModule->IsRvaFieldTls(GetOffset()));
-
-        return(ret);
+        if (offset == FIELD_OFFSET_DYNAMIC_RVA)
+        {
+#ifdef FEATURE_METADATA_UPDATER
+            _ASSERTE(!IsEnCNew());
+            _ASSERTE(pModule->IsEditAndContinueEnabled());
+            LOG((LF_ENC, LL_INFO1000, "FD::GSAH: Dynamic (EnC) - RVA\n"));
+            retVal = PTR_VOID(pModule->GetDynamicRvaField(GetMemberDef()));
+#endif // FEATURE_METADATA_UPDATER
+        }
+        else
+        {
+            _ASSERTE(pModule->IsReflectionEmit() || !pModule->IsRvaFieldTls(offset));
+            retVal = pModule->GetRvaField(offset);
+        }
     }
 
-    CONSISTENCY_CHECK(CheckPointer(base));
-
-    PTR_VOID ret = PTR_VOID(dac_cast<PTR_BYTE>(base) + GetOffset());
-
-    return ret;
+    LOG((LF_CORDB, LL_INFO1000, "FD::GSAH: retVal=%p\n", (void*)retVal));
+    return retVal;
 }
 
 
@@ -288,7 +313,7 @@ void    FieldDesc::GetInstanceField(OBJECTREF o, VOID * pOutVal)
     CONTRACTL_END
 
       // We know that it isn't going to be null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(o != NULL);
+    _ASSERTE(o != NULL);
 
     // Check whether we are getting a field value on a proxy. If so, then ask
     // remoting services to extract the value from the instance.
@@ -710,14 +735,14 @@ Instantiation FieldDesc::GetExactClassInstantiation(TypeHandle possibleObjType)
     WRAPPER_NO_CONTRACT;
 
     // We know that it isn't going to be null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(GetApproxEnclosingMethodTable()!=NULL);
+    _ASSERTE(GetApproxEnclosingMethodTable()!=NULL);
     if (possibleObjType.IsNull())
     {
         return GetApproxEnclosingMethodTable()->GetInstantiation();
     }
     else
     {
-        PREFIX_ASSUME(GetApproxEnclosingMethodTable()!=NULL);
+        _ASSERTE(GetApproxEnclosingMethodTable()!=NULL);
         return possibleObjType.GetInstantiationOfParentClass(GetApproxEnclosingMethodTable());
     }
 }

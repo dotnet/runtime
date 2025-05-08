@@ -340,9 +340,11 @@ set(VM_SOURCES_WKS
     hosting.cpp
     hostinformation.cpp
     ilmarshalers.cpp
+    instancecalli.cpp
     interopconverter.cpp
     interoputil.cpp
     interpexec.cpp
+    interpframeallocator.cpp
     invokeutil.cpp
     jithelpers.cpp
     managedmdimport.cpp
@@ -379,6 +381,7 @@ set(VM_SOURCES_WKS
     threadsuspend.cpp
     typeparse.cpp
     unsafeaccessors.cpp
+    asyncthunks.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
@@ -443,6 +446,7 @@ set(VM_HEADERS_WKS
     interoputil.h
     interoputil.inl
     interpexec.h
+    interpframeallocator.h
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h
@@ -652,6 +656,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
     set(VM_SOURCES_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
         ${ARCH_SOURCES_DIR}/asmhelpers.asm
+        ${ARCH_SOURCES_DIR}/ehhelpers.asm
         ${ARCH_SOURCES_DIR}/gmsasm.asm
         ${ARCH_SOURCES_DIR}/jithelp.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm

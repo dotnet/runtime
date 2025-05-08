@@ -908,7 +908,7 @@ HRESULT RegMeta::_DefineTypeRef(
     {
         szUTF8FullQualName = (LPUTF8)szName;
     }
-    PREFIX_ASSUME(szUTF8FullQualName != NULL);
+    _ASSERTE(szUTF8FullQualName != NULL);
 
     ulStringLen = (ULONG)(strlen(szUTF8FullQualName) + 1);
     IfFailGo(qbNamespace.ReSizeNoThrow(ulStringLen));
@@ -1276,7 +1276,7 @@ HRESULT RegMeta::_DefineEvent(          // Return hresult.
     mdEvent     mdEv;
     LPUTF8      szUTF8Event;
     UTF8STR(szEvent, szUTF8Event);
-    PREFIX_ASSUME(szUTF8Event != NULL);
+    _ASSERTE(szUTF8Event != NULL);
 
 
 
@@ -1835,7 +1835,7 @@ HRESULT RegMeta::_DefineTypeDef(        // S_OK or error.
     _ASSERTE(IsNilToken(tdEncloser) || IsTdNested(dwTypeDefFlags));
 
     UTF8STR(szTypeDef, szTypeDefUTF8);
-    PREFIX_ASSUME(szTypeDefUTF8 != NULL);
+    _ASSERTE(szTypeDefUTF8 != NULL);
 
     ulStringLen = (ULONG)(strlen(szTypeDefUTF8) + 1);
     IfFailGo(qbNamespace.ReSizeNoThrow(ulStringLen));

@@ -85,7 +85,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
 EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
-EXTERN_C FCDECL1(void, JIT_PartialCompilationPatchpoint, int ilOffset);
+EXTERN_C FCDECL1(void, JIT_PatchpointForced, int ilOffset);
 
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
@@ -472,6 +472,9 @@ public:
     TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
+    // Get method info for a transient method
+    void getTransientMethodInfo(MethodDesc* pMD, CORINFO_METHOD_INFO* methInfo);
+
 protected:
     SArray<OBJECTHANDLE>*   m_pJitHandles;          // GC handles used by JIT
     MethodDesc*             m_pMethodBeingCompiled; // Top-level method being compiled
@@ -608,7 +611,7 @@ public:
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars) override final;
-    void CompressDebugInfo();
+    void CompressDebugInfo(PCODE nativeEntry);
     virtual void SetDebugInfo(PTR_BYTE pDebugInfo) = 0;
 
     virtual PatchpointInfo* GetPatchpointInfo()
@@ -630,6 +633,15 @@ public:
     void reportMetadata(const char* key, const void* value, size_t length) override final;
 
     virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
+
+    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
+                       void **            ppIndirection) override;  /* OUT */
+    static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
+
+    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
+    InfoAccessType emptyStringLiteral(void ** ppValue) override;
+    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
+    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
 
 protected:
 
@@ -865,6 +877,8 @@ public:
     }
 #endif
 
+    void PublishFinalCodeAddress(PCODE addr);
+
     CEEJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
                EECodeGenManager* jm, bool allowInlining = true)
         : CEECodeGenInfo(fd, header, jm, allowInlining)
@@ -888,6 +902,7 @@ public:
           m_pPatchpointInfoFromRuntime(NULL),
           m_ilOffset(0)
 #endif
+        , m_finalCodeAddressSlot(NULL)
     {
         CONTRACTL
         {
@@ -924,10 +939,6 @@ public:
 #endif
     }
 
-    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
-                       void **            ppIndirection) override;  /* OUT */
-    static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
-
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a
     // method desc, it calls through to CEEInfo::GetProfilingHandle and caches the
     // result in CEEJitInfo::GetProfilingHandleCache.  Thereafter, this wrapper regurgitates the cached values
@@ -939,13 +950,10 @@ public:
                     bool                      *pbIndirectedHandles
                     ) override;
 
-    InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
-    InfoAccessType emptyStringLiteral(void ** ppValue) override;
-    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
-    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
-
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;
+
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() override final;
 
 protected :
 
@@ -991,6 +999,7 @@ protected :
     PatchpointInfo        * m_pPatchpointInfoFromRuntime;
     unsigned                m_ilOffset;
 #endif
+    PCODE* m_finalCodeAddressSlot;
 
 };
 
@@ -1082,9 +1091,6 @@ void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 // the pointer to the pinned string is returned in *ppPinnedPointer. ppPinnedPointer == nullptr
 // means that the caller does not care whether the string is pinned or not.
 STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString = nullptr);
-
-FCDECL2(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* data);
-FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 

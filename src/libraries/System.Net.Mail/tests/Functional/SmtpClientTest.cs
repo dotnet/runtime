@@ -18,7 +18,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
-using Systen.Net.Mail.Tests;
 using System.Net.Test.Common;
 using Xunit;
 
@@ -28,8 +27,6 @@ namespace System.Net.Mail.Tests
     public class SmtpClientTest : FileCleanupTestBase
     {
         private SmtpClient _smtp;
-
-        public static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
 
         private SmtpClient Smtp
         {
@@ -196,68 +193,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void Send_Message_Null()
-        {
-            Assert.Throws<ArgumentNullException>(() => Smtp.Send(null));
-        }
-
-        [Fact]
         public void Send_Network_Host_Null()
         {
             Assert.Throws<InvalidOperationException>(() => Smtp.Send("mono@novell.com", "everyone@novell.com", "introduction", "hello"));
-        }
-
-        [Fact]
-        public void Send_Network_Host_Whitespace()
-        {
-            Smtp.Host = " \r\n ";
-            Assert.Throws<InvalidOperationException>(() => Smtp.Send("mono@novell.com", "everyone@novell.com", "introduction", "hello"));
-        }
-
-        [Fact]
-        public void Send_SpecifiedPickupDirectory()
-        {
-            Smtp.DeliveryMethod = SmtpDeliveryMethod.SpecifiedPickupDirectory;
-            Smtp.PickupDirectoryLocation = TempFolder;
-            Smtp.Send("mono@novell.com", "everyone@novell.com", "introduction", "hello");
-
-            string[] files = Directory.GetFiles(TempFolder, "*");
-            Assert.Equal(1, files.Length);
-            Assert.Equal(".eml", Path.GetExtension(files[0]));
-        }
-
-        [Fact]
-        public void Send_SpecifiedPickupDirectory_MessageBodyDoesNotEncodeForTransport()
-        {
-            // This test verifies that a line fold which results in a dot appearing as the first character of
-            // a new line does not get dot-stuffed when the delivery method is pickup. To do so, it relies on
-            // folding happening at a precise location. If folding implementation details change, this test will
-            // likely fail and need to be updated accordingly.
-
-            string padding = new string('a', 65);
-
-            Smtp.DeliveryMethod = SmtpDeliveryMethod.SpecifiedPickupDirectory;
-            Smtp.PickupDirectoryLocation = TempFolder;
-            Smtp.Send("mono@novell.com", "everyone@novell.com", "introduction", padding + ".");
-
-            string[] files = Directory.GetFiles(TempFolder, "*");
-            Assert.Equal(1, files.Length);
-            Assert.Equal(".eml", Path.GetExtension(files[0]));
-
-            string message = File.ReadAllText(files[0]);
-            Assert.EndsWith($"{padding}=\r\n.\r\n", message);
-        }
-
-        [Theory]
-        [InlineData("some_path_not_exist")]
-        [InlineData("")]
-        [InlineData(null)]
-        [InlineData("\0abc")]
-        public void Send_SpecifiedPickupDirectoryInvalid(string location)
-        {
-            Smtp.DeliveryMethod = SmtpDeliveryMethod.SpecifiedPickupDirectory;
-            Smtp.PickupDirectoryLocation = location;
-            Assert.Throws<SmtpException>(() => Smtp.Send("mono@novell.com", "everyone@novell.com", "introduction", "hello"));
         }
 
         [Theory]
@@ -307,7 +245,7 @@ namespace System.Net.Mail.Tests
             client.Send(msg);
 
             Assert.Equal("<foo@example.com>", server.MailFrom);
-            Assert.Equal("<bar@example.com>", server.MailTo);
+            Assert.Equal("<bar@example.com>", Assert.Single(server.MailTo));
             Assert.Equal("hello", server.Message.Subject);
             Assert.Equal("howdydoo", server.Message.Body);
             Assert.Equal(GetClientDomain(), server.ClientDomain);
@@ -338,106 +276,6 @@ namespace System.Net.Mail.Tests
             if (!testTask.Wait(TimeSpan.FromMinutes(5)))
             {
                 Environment.FailFast(nameof(TestZeroTimeout));
-            }
-        }
-
-        [Theory]
-        [InlineData("howdydoo")]
-        [InlineData("")]
-        [InlineData(null)]
-        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", ~RuntimeConfiguration.Release)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/131", TestRuntimes.Mono)] // System.Net.Tests are flaky and/or long running
-        public async Task TestMailDeliveryAsync(string body)
-        {
-            using var server = new LoopbackSmtpServer();
-            using SmtpClient client = server.CreateClient();
-            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", body);
-
-            await client.SendMailAsync(msg).WaitAsync(TimeSpan.FromSeconds(30));
-
-            Assert.Equal("<foo@example.com>", server.MailFrom);
-            Assert.Equal("<bar@example.com>", server.MailTo);
-            Assert.Equal("hello", server.Message.Subject);
-            Assert.Equal(body ?? "", server.Message.Body);
-            Assert.Equal(GetClientDomain(), server.ClientDomain);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // NTLM support required, see https://github.com/dotnet/runtime/issues/25827
-        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", ~RuntimeConfiguration.Release)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/131", TestRuntimes.Mono)] // System.Net.Tests are flaky and/or long running
-        public async Task TestCredentialsCopyInAsyncContext()
-        {
-            using var server = new LoopbackSmtpServer();
-            using SmtpClient client = server.CreateClient();
-            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
-
-            CredentialCache cache = new CredentialCache();
-            cache.Add("localhost", server.Port, "NTLM", CredentialCache.DefaultNetworkCredentials);
-
-            client.Credentials = cache;
-
-            // The mock server doesn't actually understand NTLM, but still advertises support for it
-            server.AdvertiseNtlmAuthSupport = true;
-            await Assert.ThrowsAsync<SmtpException>(async () => await client.SendMailAsync(msg));
-
-            Assert.Equal("NTLM", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
-        }
-
-
-        [Theory]
-        [InlineData(false, false, false)]
-        [InlineData(false, false, true)] // Received subjectText.
-        [InlineData(false, true, false)]
-        [InlineData(false, true, true)]
-        [InlineData(true, false, false)]
-        [InlineData(true, false, true)] // Received subjectText.
-        [InlineData(true, true, false)]
-        [InlineData(true, true, true)] // Received subjectBase64. If subjectText is received, the test fails, and the results are inconsistent with those of synchronous methods.
-        public void SendMail_DeliveryFormat_SubjectEncoded(bool useAsyncSend, bool useSevenBit, bool useSmtpUTF8)
-        {
-            // If the server support `SMTPUTF8` and use `SmtpDeliveryFormat.International`, the server should received this subject.
-            const string subjectText = "Test \u6d4b\u8bd5 Contain \u5305\u542b UTF8";
-
-            // If the server does not support `SMTPUTF8` or use `SmtpDeliveryFormat.SevenBit`, the server should received this subject.
-            const string subjectBase64 = "=?utf-8?B?VGVzdCDmtYvor5UgQ29udGFpbiDljIXlkKsgVVRGOA==?=";
-
-            using var server = new LoopbackSmtpServer();
-            using SmtpClient client = server.CreateClient();
-
-            // Setting up Server Support for `SMTPUTF8`.
-            server.SupportSmtpUTF8 = useSmtpUTF8;
-
-            if (useSevenBit)
-            {
-                // Subject will be encoded by Base64.
-                client.DeliveryFormat = SmtpDeliveryFormat.SevenBit;
-            }
-            else
-            {
-                // If the server supports `SMTPUTF8`, subject will not be encoded. Otherwise, subject will be encoded by Base64.
-                client.DeliveryFormat = SmtpDeliveryFormat.International;
-            }
-
-            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", subjectText, "hello \u9ad8\u575a\u679c");
-            msg.HeadersEncoding = msg.BodyEncoding = msg.SubjectEncoding = System.Text.Encoding.UTF8;
-
-            if (useAsyncSend)
-            {
-                client.SendMailAsync(msg).Wait();
-            }
-            else
-            {
-                client.Send(msg);
-            }
-
-            if (useSevenBit || !useSmtpUTF8)
-            {
-                Assert.Equal(subjectBase64, server.Message.Subject);
-            }
-            else
-            {
-                Assert.Equal(subjectText, server.Message.Subject);
             }
         }
 
@@ -486,132 +324,12 @@ namespace System.Net.Mail.Tests
             await Task.Run(() => client.SendMailAsync(message)).WaitAsync(TestHelper.PassingTestTimeout);
 
             Assert.Equal("<foo@internet.com>", server.MailFrom);
-            Assert.Equal("<bar@internet.com>", server.MailTo);
+            Assert.Equal("<bar@internet.com>", Assert.Single(server.MailTo));
             Assert.Equal("Foo", server.Message.Subject);
             Assert.Equal("Bar", server.Message.Body);
             Assert.Equal(GetClientDomain(), server.ClientDomain);
         }
 
         private static string GetClientDomain() => IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task SendMail_SendQUITOnDispose(bool asyncSend)
-        {
-            bool quitMessageReceived = false;
-            using ManualResetEventSlim quitReceived = new ManualResetEventSlim();
-            using var server = new LoopbackSmtpServer();
-            server.OnQuitReceived += _ =>
-            {
-                quitMessageReceived = true;
-                quitReceived.Set();
-            };
-
-            using (SmtpClient client = server.CreateClient())
-            {
-                client.Credentials = new NetworkCredential("Foo", "Bar");
-                MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
-                if (asyncSend)
-                {
-                    await client.SendMailAsync(msg).WaitAsync(TimeSpan.FromSeconds(30));
-                }
-                else
-                {
-                    client.Send(msg);
-                }
-                Assert.False(quitMessageReceived, "QUIT received");
-            }
-
-            // There is a latency between send/receive.
-            quitReceived.Wait(TimeSpan.FromSeconds(30));
-            Assert.True(quitMessageReceived, "QUIT message not received");
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task TestMultipleMailDelivery(bool asyncSend)
-        {
-            using var server = new LoopbackSmtpServer();
-            using SmtpClient client = server.CreateClient();
-            client.Timeout = 10000;
-            client.Credentials = new NetworkCredential("foo", "bar");
-            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
-
-            for (var i = 0; i < 5; i++)
-            {
-                if (asyncSend)
-                {
-                    using var cts = new CancellationTokenSource(10000);
-                    await client.SendMailAsync(msg, cts.Token);
-                }
-                else
-                {
-                    client.Send(msg);
-                }
-
-                Assert.Equal("<foo@example.com>", server.MailFrom);
-                Assert.Equal("<bar@example.com>", server.MailTo);
-                Assert.Equal("hello", server.Message.Subject);
-                Assert.Equal("howdydoo", server.Message.Body);
-                Assert.Equal(GetClientDomain(), server.ClientDomain);
-                Assert.Equal("foo", server.Username);
-                Assert.Equal("bar", server.Password);
-                Assert.Equal("LOGIN", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
-            }
-        }
-
-        [ConditionalFact(nameof(IsNtlmInstalled))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
-        public void TestGssapiAuthentication()
-        {
-            using var server = new LoopbackSmtpServer();
-            server.AdvertiseGssapiAuthSupport = true;
-            server.ExpectedGssapiCredential = new NetworkCredential("foo", "bar");
-            using SmtpClient client = server.CreateClient();
-            client.Credentials = server.ExpectedGssapiCredential;
-            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
-
-            client.Send(msg);
-
-            Assert.Equal("GSSAPI", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
-        }
-
-        [Theory]
-        [MemberData(nameof(SendMail_MultiLineDomainLiterals_Data))]
-        public async Task SendMail_MultiLineDomainLiterals_Disabled_Throws(string from, string to, bool asyncSend)
-        {
-            using var server = new LoopbackSmtpServer();
-
-            using SmtpClient client = server.CreateClient();
-            client.Credentials = new NetworkCredential("Foo", "Bar");
-
-            using var msg = new MailMessage(@from, @to, "subject", "body");
-
-            await Assert.ThrowsAsync<SmtpException>(async () =>
-            {
-                if (asyncSend)
-                {
-                    await client.SendMailAsync(msg).WaitAsync(TimeSpan.FromSeconds(30));
-                }
-                else
-                {
-                    client.Send(msg);
-                }
-            });
-        }
-
-        public static IEnumerable<object[]> SendMail_MultiLineDomainLiterals_Data()
-        {
-            foreach (bool async in new[] { true, false })
-            {
-                foreach (string address in new[] { "foo@[\r\n bar]", "foo@[bar\r\n ]", "foo@[bar\r\n baz]" })
-                {
-                    yield return new object[] { address, "foo@example.com", async };
-                    yield return new object[] { "foo@example.com", address, async };
-                }
-            }
-        }
     }
 }
