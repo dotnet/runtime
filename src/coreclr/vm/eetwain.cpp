@@ -2122,34 +2122,43 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
 
     /* Extract the necessary information from the info block header */
 
+    PTR_CBYTE table = nullptr;
     hdrInfo hdrInfoBody = { 0 };
-    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody, dwRelOffset);
+    hdrInfo *pCodeInfoBody = &hdrInfoBody;
+    if (pCodeInfo->GetRelOffset() == dwRelOffset)
+    {
+        table = pCodeInfo->DecodeGCHdrInfo(&pCodeInfoBody);
+    }
+    else
+    {
+        table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody, dwRelOffset);
+    }
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     if (trFixContext)
     {
         minipal_log_print_info("GetAmbientSP [%s][%s] for %s.%s: ",
-               hdrInfoBody.ebpFrame?"ebp":"   ",
-               hdrInfoBody.interruptible?"int":"   ",
+               pCodeInfoBody->ebpFrame?"ebp":"   ",
+               pCodeInfoBody->interruptible?"int":"   ",
                "UnknownClass","UnknownMethod");
         minipal_log_flush_info();
     }
 #endif // _DEBUG && !DACCESS_COMPILE
 
-    if ((hdrInfoBody.prologOffs != hdrInfo::NOT_IN_PROLOG) ||
-        (hdrInfoBody.epilogOffs != hdrInfo::NOT_IN_EPILOG))
+    if ((pCodeInfoBody->prologOffs != hdrInfo::NOT_IN_PROLOG) ||
+        (pCodeInfoBody->epilogOffs != hdrInfo::NOT_IN_EPILOG))
     {
         return NULL;
     }
 
     /* make sure that we have an ebp stack frame */
 
-    if (hdrInfoBody.handlers)
+    if (pCodeInfoBody->handlers)
     {
-        _ASSERTE(hdrInfoBody.ebpFrame);
+        _ASSERTE(pCodeInfoBody->ebpFrame);
 
         TADDR      baseSP;
-        GetHandlerFrameInfo(&hdrInfoBody,
+        GetHandlerFrameInfo(pCodeInfoBody,
                             GetRegdisplayFP(pContext),
                             (DWORD) IGNORE_VAL,
                             nestingLevel,
@@ -2162,24 +2171,24 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
 
     _ASSERTE(nestingLevel == 0);
 
-    if (hdrInfoBody.ebpFrame)
+    if (pCodeInfoBody->ebpFrame)
     {
-        return GetOutermostBaseFP(GetRegdisplayFP(pContext), &hdrInfoBody);
+        return GetOutermostBaseFP(GetRegdisplayFP(pContext), pCodeInfoBody);
     }
 
     TADDR baseSP = GetRegdisplaySP(pContext);
-    if  (hdrInfoBody.interruptible)
+    if  (pCodeInfoBody->interruptible)
     {
-        baseSP += scanArgRegTableI(skipToArgReg(hdrInfoBody, table),
+        baseSP += scanArgRegTableI(skipToArgReg(*pCodeInfoBody, table),
                                    dwRelOffset,
                                    dwRelOffset,
-                                   &hdrInfoBody);
+                                   pCodeInfoBody);
     }
     else
     {
-        baseSP += scanArgRegTable(skipToArgReg(hdrInfoBody, table),
+        baseSP += scanArgRegTable(skipToArgReg(*pCodeInfoBody, table),
                                   dwRelOffset,
-                                  &hdrInfoBody);
+                                  pCodeInfoBody);
     }
 
     return baseSP;
