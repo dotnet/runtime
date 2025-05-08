@@ -6060,16 +6060,10 @@ DWORD StatisticsBase::GetTime()
 
     if (divisor == 0)
     {
-        if (QueryPerformanceFrequency(&large) && (large.QuadPart != 0))
-            divisor = (DWORD)(large.QuadPart / (1000 * 1000));        // microseconds
-        else
-            divisor = 1;
+        divisor = minipal_hires_tick_frequency() / (1000 * 1000);        // microseconds
     }
 
-    if (QueryPerformanceCounter(&large))
-        return (DWORD) (large.QuadPart / divisor);
-    else
-        return 0;
+    return (DWORD) (minipal_hires_ticks() / divisor);
 }
 
 DWORD StatisticsBase::GetElapsed(DWORD start, DWORD stop)

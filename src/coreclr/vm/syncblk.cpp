@@ -28,6 +28,7 @@
 #include "corhost.h"
 #include "comdelegate.h"
 #include "finalizerthread.h"
+#include "minipal/time.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -2526,15 +2527,15 @@ inline void LogContention()
 #define LogContention()
 #endif
 
-double ComputeElapsedTimeInNanosecond(LARGE_INTEGER startTicks, LARGE_INTEGER endTicks)
+double ComputeElapsedTimeInNanosecond(int64_t startTicks, int64_t endTicks)
 {
-    static LARGE_INTEGER freq;
-    if (freq.QuadPart == 0)
-        QueryPerformanceFrequency(&freq);
+    static int64_t freq;
+    if (freq == 0)
+        freq = minipal_hires_tick_frequency();
 
     const double NsPerSecond = 1000 * 1000 * 1000;
-    LONGLONG elapsedTicks = endTicks.QuadPart - startTicks.QuadPart;
-    return (elapsedTicks * NsPerSecond) / freq.QuadPart;
+    LONGLONG elapsedTicks = endTicks - startTicks;
+    return (elapsedTicks * NsPerSecond) / freq;
 }
 
 BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
@@ -2559,12 +2560,12 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     OBJECTREF obj = GetOwningObject();
 
-    LARGE_INTEGER startTicks = { {0} };
+    int64_t startTicks = 0;
     bool isContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
 
     if (isContentionKeywordEnabled)
     {
-        QueryPerformanceCounter(&startTicks);
+        startTicks = minipal_hires_ticks();
 
         if (InterlockedCompareExchangeT(&m_emittedLockCreatedEvent, 1, 0) == 0)
         {
@@ -2709,8 +2710,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     if (isContentionKeywordEnabled)
     {
-        LARGE_INTEGER endTicks;
-        QueryPerformanceCounter(&endTicks);
+        int64_t endTicks = minipal_hires_ticks();
 
         double elapsedTimeInNanosecond = ComputeElapsedTimeInNanosecond(startTicks, endTicks);
 

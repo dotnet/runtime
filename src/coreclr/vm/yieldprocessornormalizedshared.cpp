@@ -16,7 +16,7 @@ static const unsigned int NsPerS = 1000 * 1000 * 1000;
 static NormalizationState s_normalizationState = NormalizationState::Uninitialized;
 static unsigned int s_previousNormalizationTimeMs;
 
-static uint64_t s_performanceCounterTicksPerS;
+static int64_t s_performanceCounterTicksPerS;
 static double s_nsPerYieldMeasurements[NsPerYieldMeasurementCount];
 static int s_nextMeasurementIndex;
 static double s_establishedNsPerYield = YieldProcessorNormalization::TargetNsPerNormalizedYield;
@@ -29,17 +29,6 @@ inline unsigned int GetTickCountPortable()
     return (unsigned int)PalGetTickCount64();
 #else
     return GetTickCount();
-#endif
-}
-
-static uint64_t GetPerformanceCounter()
-{
-#ifdef FEATURE_NATIVEAOT
-    return PalQueryPerformanceCounter();
-#else
-    LARGE_INTEGER li;
-    QueryPerformanceCounter(&li);
-    return li.QuadPart;
 #endif
 }
 
@@ -60,8 +49,8 @@ static unsigned int DetermineMeasureDurationUs()
     // On some systems, querying the high performance counter has relatively significant overhead. Increase the measure duration
     // if the overhead seems high relative to the measure duration.
     unsigned int measureDurationUs = 1;
-    uint64_t startTicks = GetPerformanceCounter();
-    uint64_t elapsedTicks = GetPerformanceCounter() - startTicks;
+    int64_t startTicks = minipal_hires_ticks();
+    int64_t elapsedTicks = minipal_hires_ticks() - startTicks;
     if (elapsedTicks >= s_performanceCounterTicksPerS * measureDurationUs * (1000 / 4) / NsPerS) // elapsed >= 1/4 of the measure duration
     {
         measureDurationUs *= 4;
@@ -84,17 +73,17 @@ static double MeasureNsPerYield(unsigned int measureDurationUs)
     _ASSERTE(s_normalizationState != NormalizationState::Failed);
 
     int yieldCount = (int)(measureDurationUs * 1000 / s_establishedNsPerYield) + 1;
-    uint64_t ticksPerS = s_performanceCounterTicksPerS;
-    uint64_t measureDurationTicks = ticksPerS * measureDurationUs / (1000 * 1000);
+    int64_t ticksPerS = s_performanceCounterTicksPerS;
+    int64_t measureDurationTicks = ticksPerS * measureDurationUs / (1000 * 1000);
 
-    uint64_t startTicks = GetPerformanceCounter();
+    int64_t startTicks = minipal_hires_ticks();
 
     for (int i = 0; i < yieldCount; ++i)
     {
         System_YieldProcessor();
     }
 
-    uint64_t elapsedTicks = GetPerformanceCounter() - startTicks;
+    int64_t elapsedTicks = minipal_hires_ticks() - startTicks;
     while (elapsedTicks < measureDurationTicks)
     {
         int nextYieldCount =
@@ -107,7 +96,7 @@ static double MeasureNsPerYield(unsigned int measureDurationUs)
             System_YieldProcessor();
         }
 
-        elapsedTicks = GetPerformanceCounter() - startTicks;
+        elapsedTicks = minipal_hires_ticks() - startTicks;
         yieldCount += nextYieldCount;
     }
 
@@ -155,10 +144,10 @@ void YieldProcessorNormalization::PerformMeasurement()
     else if (s_normalizationState == NormalizationState::Uninitialized)
     {
 #ifdef FEATURE_NATIVEAOT
-        if ((s_performanceCounterTicksPerS = PalQueryPerformanceFrequency()) < 1000 * 1000)
+        if ((s_performanceCounterTicksPerS = minipal_hires_tick_frequency()) < 1000 * 1000)
 #else
-        LARGE_INTEGER li;
-        if (!QueryPerformanceFrequency(&li) || li.QuadPart < 1000 * 1000)
+        int64_t freq = minipal_hires_tick_frequency();
+        if (freq < 1000 * 1000)
 #endif
         {
             // High precision clock not available or clock resolution is too low, resort to defaults
@@ -167,7 +156,7 @@ void YieldProcessorNormalization::PerformMeasurement()
         }
 
 #ifndef FEATURE_NATIVEAOT
-        s_performanceCounterTicksPerS = li.QuadPart;
+        s_performanceCounterTicksPerS = freq;
 #endif
 
         unsigned int measureDurationUs = DetermineMeasureDurationUs();
