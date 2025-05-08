@@ -56,6 +56,10 @@
 #include "exinfo.h"
 #endif
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -110,7 +114,7 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
     return m_argBuffer;
 }
 
-#if defined (_DEBUG_IMPL) || defined(_PREFAST_)
+#if defined (_DEBUG_IMPL)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
 
@@ -1326,7 +1330,7 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pGCFrame              = NULL;
+    m_pGCFrame              = GCFRAME_TOP;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -1538,6 +1542,7 @@ Thread::Thread()
 
 #ifdef TARGET_X86
     m_HijackReturnKind = RT_Illegal;
+    m_HijackHasAsyncRet = false;
 #endif
 
     m_currentPrepareCodeConfig = nullptr;
@@ -1549,6 +1554,10 @@ Thread::Thread()
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
 #endif // _DEBUG
+
+#ifdef FEATURE_INTERPRETER
+    m_pInterpThreadContext = nullptr;
+#endif // FEATURE_INTERPRETER
 }
 
 //--------------------------------------------------------------------
@@ -2802,6 +2811,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
 
+#ifdef FEATURE_INTERPRETER
+    if (m_pInterpThreadContext != nullptr)
+    {
+        delete m_pInterpThreadContext;
+    }
+#endif // FEATURE_INTERPRETER
+
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // If the currently running thread is the thread that died and it is an STA thread, then we
     // need to release all the RCW's in the current context. However, we cannot do this if we
@@ -2894,6 +2910,12 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             LOG((LF_SYNC, INFO3, "OnThreadTerminate obtain lock\n"));
             ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 
+        }
+
+        if (m_State & TS_DebugWillSync)
+        {
+            ResetThreadState(TS_DebugWillSync);
+            InterlockedDecrement(&m_DebugWillSyncCount);
         }
 
         SetThreadState(TS_Dead);
@@ -7787,6 +7809,20 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
     RtlRestoreContext(ContextRecord, NULL);
 #endif
 }
+
+#ifdef FEATURE_INTERPRETER
+InterpThreadContext* Thread::GetInterpThreadContext()
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (m_pInterpThreadContext == nullptr)
+    {
+        m_pInterpThreadContext = new (nothrow) InterpThreadContext();
+    }
+
+    return m_pInterpThreadContext;
+}
+#endif // FEATURE_INTERPRETER
 
 #endif // #ifndef DACCESS_COMPILE
 

@@ -3356,6 +3356,11 @@ namespace Internal.JitInterface
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
         }
 
+        private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
+        {
+            throw new NotImplementedException();
+        }
+
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
         {
             MethodDesc method = HandleToObject(hMethod);
@@ -3681,6 +3686,13 @@ namespace Internal.JitInterface
 #else
             return false;
 #endif
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
+#pragma warning restore CA1822 // Mark members as static
+        {
+            return null;
         }
 
         private byte[] _code;

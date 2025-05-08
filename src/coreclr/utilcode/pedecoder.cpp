@@ -1274,7 +1274,7 @@ const void *PEDecoder::GetResource(COUNT_T offset, COUNT_T *pSize) const
 
     void * resourceBlob = (void *)GetRvaData(VAL32(pDir->VirtualAddress) + offset);
     // Holds if CheckResource(offset) == TRUE
-    PREFIX_ASSUME(resourceBlob != NULL);
+    _ASSERTE(resourceBlob != NULL);
 
      if (pSize != NULL)
         *pSize = GET_UNALIGNED_VAL32(resourceBlob);
@@ -1461,7 +1461,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
     // Get the import directory entry
     PIMAGE_DATA_DIRECTORY pDirEntryImport = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_IMPORT);
     CHECK(pDirEntryImport != NULL);
-    PREFIX_ASSUME(pDirEntryImport != NULL);
+    _ASSERTE(pDirEntryImport != NULL);
 
     // There should be space for 2 entries. (mscoree and NULL)
     CHECK(VAL32(pDirEntryImport->Size) >= (2 * sizeof(IMAGE_IMPORT_DESCRIPTOR)));
@@ -1469,7 +1469,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
     // Get the import data
     PIMAGE_IMPORT_DESCRIPTOR pID = (PIMAGE_IMPORT_DESCRIPTOR) GetDirectoryData(pDirEntryImport);
     CHECK(pID != NULL);
-    PREFIX_ASSUME(pID != NULL);
+    _ASSERTE(pID != NULL);
 
     // Entry 0: ILT, Name, IAT must be be non-null.  Forwarder, DateTime should be NULL.
     CHECK( IMAGE_IMPORT_DESC_FIELD(pID[0], Characteristics) != 0
@@ -1631,7 +1631,7 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
         static const BYTE s_DllOrExeMain[] = JMP_DWORD_PTR_DS_OPCODE;
 
         // 403570: prefix complained about stub being possibly NULL.
-        // Unsure here. PREFIX_ASSUME might be also correct as indices are
+        // Unsure here. _ASSERTE might be also correct as indices are
         // verified in the above CHECK statement.
         CHECK(stub != NULL);
         CHECK(memcmp(stub, s_DllOrExeMain, JMP_DWORD_PTR_DS_OPCODE_SIZE) == 0);

@@ -527,6 +527,7 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_ALIGN, "has-align"},
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
+        {BBF_ASYNC_RESUMPTION, "resume"},
     };
 
     bool first = true;

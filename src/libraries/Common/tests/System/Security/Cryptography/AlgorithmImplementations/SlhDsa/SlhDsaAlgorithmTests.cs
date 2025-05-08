@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
-    public class SlhDsaAlgorithmTests
+    public static class SlhDsaAlgorithmTests
     {
         [Fact]
         public static void AlgorithmsHaveExpectedParameters()

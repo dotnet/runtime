@@ -616,13 +616,13 @@ public:
         CONTRACTL
         {
             MODE_ANY;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
             NOTHROW;
         }
         CONTRACTL_END
 
 #if defined(FEATURE_EH_FUNCLETS) && !defined(DACCESS_COMPILE)
-        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptions();
+        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptionsDuringEH();
 #endif // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE
     }
 
@@ -770,6 +770,13 @@ private:
     bool          m_fFoundFirstFunclet;
 #ifdef FEATURE_INTERPRETER
     bool          m_walkingInterpreterFrames;
+    // Saved registers of the context of the InterpExecMethod. These registers are reused for interpreter frames,
+    // but we need to restore the original values after we are done with all the interpreted frames belonging to
+    // that InterpExecMethod.
+    TADDR         m_interpExecMethodIP;
+    TADDR         m_interpExecMethodSP;
+    TADDR         m_interpExecMethodFP;
+    TADDR         m_interpExecMethodFirstArgReg;
 #endif // FEATURE_INTERPRETER
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)

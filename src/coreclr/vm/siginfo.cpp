@@ -137,7 +137,7 @@ unsigned GetSizeForCorElementType(CorElementType etyp)
 
 #ifndef DACCESS_COMPILE
 
-void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
 {
     CONTRACTL
     {
@@ -345,7 +345,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
     }
 }
 
-void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalSignature(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
 {
     CONTRACTL
     {
@@ -699,6 +699,8 @@ MetaSig::MetaSig(MethodDesc *pMD, Instantiation classInst, Instantiation methodI
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
+    if (pMD->IsAsyncMethod())
+        SetIsAsyncCall();
 }
 
 MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
@@ -720,6 +722,8 @@ MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
+    if (pMD->IsAsyncMethod())
+        SetIsAsyncCall();
 }
 
 #ifdef _DEBUG
@@ -1042,11 +1046,6 @@ static uint32_t NormalizeFnPtrCallingConvention(uint32_t callConv)
 
     return callConv;
 }
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 
 // Method: TypeHandle SigPointer::GetTypeHandleThrowing()
 // pZapSigContext is only set when decoding zapsigs
@@ -1897,9 +1896,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
     RETURN thRet;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 TypeHandle SigPointer::GetGenericInstType(ModuleBase *        pModule,
                                     ClassLoader::LoadTypesFlag  fLoadTypes/*=LoadTypes*/,
@@ -3715,11 +3711,6 @@ void MetaSig::ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEnd
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
-
 //---------------------------------------------------------------------------------------
 //
 // Compare the next elements in two sigs.
@@ -4333,10 +4324,6 @@ MetaSig::CompareElementType(
     // Unreachable
     UNREACHABLE();
 } // MetaSig::CompareElementType
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -5287,6 +5274,13 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
 #endif // UNIX_AMD64_ABI
 
     ReportPointersFromValueType(fn, sc, pMT, pSrc->GetDestinationAddress());
+}
+
+BOOL MetaSig::HasAsyncContinuation()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return IsAsyncCall();
 }
 
 //------------------------------------------------------------------

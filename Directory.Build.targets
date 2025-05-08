@@ -7,9 +7,22 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+
+  <PropertyGroup Condition="'$(UseBootstrapLayout)' == 'true'">
+    <!-- Keep in sync with outputs defined in Microsoft.NETCore.Platforms.csproj. -->
+    <BundledRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(BootstrapRidGraphDir)', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+    <!-- If our bootstrap build didn't add a new RID to the graph, fall back to the frozen graph. -->
+    <BundledRuntimeIdentifierGraphFile Condition="!Exists('$(BundledRuntimeIdentifierGraphFile)')">$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(UseBootstrapLayout)' != 'true'">
+    <!-- Keep in sync with outputs defined in Microsoft.NETCore.Platforms.csproj. -->
+    <BundledRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Microsoft.NETCore.Platforms', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+    <BundledRuntimeIdentifierGraphFile Condition="!Exists('$(BundledRuntimeIdentifierGraphFile)')">$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)Analyzers.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
   <Import Project="$(RepositoryEngineeringDir)python.targets" />
