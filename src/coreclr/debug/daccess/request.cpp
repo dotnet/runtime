@@ -5301,7 +5301,7 @@ namespace
         if ((rcw & 1) == 0)
         {
             // We use the low bit of the RCW address to indicate that it is a ComWrappers RCW.
-            return NULL;
+            return (TADDR)NULL;
         }
 
         NATIVEOBJECTWRAPPERREF pNativeObjectWrapper = NATIVEOBJECTWRAPPERREF(TO_TADDR(rcw & ~1));
