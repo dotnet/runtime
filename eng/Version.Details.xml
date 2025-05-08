@@ -90,13 +90,13 @@
       <Sha>45dd3a73dd5b64b010c4251303b3664bb30df029</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100" Version="8.0.16">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100" Version="8.0.17">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>adc0d6e7d3abb9c4ecee2420c51ae99c57dc9755</Sha>
+      <Sha>2b0cca8ad3a88e02fe0878139009ffffde071f1f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="8.0.16-servicing.25211.4">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="8.0.17-servicing.25258.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>adc0d6e7d3abb9c4ecee2420c51ae99c57dc9755</Sha>
+      <Sha>2b0cca8ad3a88e02fe0878139009ffffde071f1f</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.25081.5">
