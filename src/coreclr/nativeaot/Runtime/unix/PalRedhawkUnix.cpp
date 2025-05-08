@@ -1207,16 +1207,6 @@ extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
     lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
-extern "C" uint64_t PalQueryPerformanceCounter()
-{
-    return GCToOSInterface::QueryPerformanceCounter();
-}
-
-extern "C" uint64_t PalQueryPerformanceFrequency()
-{
-    return GCToOSInterface::QueryPerformanceFrequency();
-}
-
 extern "C" uint64_t PalGetCurrentOSThreadId()
 {
     return (uint64_t)minipal_get_current_thread_id();

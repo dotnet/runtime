@@ -325,9 +325,6 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
 
 REDHAWK_PALIMPORT uint64_t PalGetCurrentOSThreadId();
 
-REDHAWK_PALIMPORT uint64_t PalQueryPerformanceCounter();
-REDHAWK_PALIMPORT uint64_t PalQueryPerformanceFrequency();
-
 REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 
 REDHAWK_PALIMPORT char* PalCopyTCharAsChar(const TCHAR* toCopy);
