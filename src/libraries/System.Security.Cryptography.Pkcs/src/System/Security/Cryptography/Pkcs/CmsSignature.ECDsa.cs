@@ -49,18 +49,18 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                Oid digestAlgorithm,
+                string? digestAlgorithmOid,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
             {
-                HashAlgorithmName digestAlgorithmName = PkcsHelpers.GetDigestAlgorithm(digestAlgorithm.Value, forVerification: true);
+                HashAlgorithmName digestAlgorithmName = PkcsHelpers.GetDigestAlgorithm(digestAlgorithmOid, forVerification: true);
 
                 if (_expectedDigest != null && _expectedDigest != digestAlgorithmName)
                 {
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_Cms_InvalidSignerHashForSignatureAlg,
-                            digestAlgorithm.Value,
+                            digestAlgorithmOid,
                             _signatureAlgorithm));
                 }
 
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
                 byte[] dataHash,
 #endif
-                Oid hashAlgorithm,
+                string? hashAlgorithmOid,
                 X509Certificate2 certificate,
                 object? certKey,
                 bool silent,
@@ -131,7 +131,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 string? oidValue =
-                    hashAlgorithm.Value switch
+                    hashAlgorithmOid switch
                     {
                         Oids.Sha1 => Oids.ECDsaWithSha1,
                         Oids.Sha256 => Oids.ECDsaWithSha256,

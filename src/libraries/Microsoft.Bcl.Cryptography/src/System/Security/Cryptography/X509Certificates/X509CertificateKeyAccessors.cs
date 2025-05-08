@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.X509Certificates
         [ExperimentalAttribute("SYSLIB5006")]
         public static SlhDsa? GetSlhDsaPublicKey(this X509Certificate2 certificate) =>
 #if NET10_0_OR_GREATER
-            certificate.GetSlhDsaPrivateKey();
+            certificate.GetSlhDsaPublicKey();
 #else
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
 #endif

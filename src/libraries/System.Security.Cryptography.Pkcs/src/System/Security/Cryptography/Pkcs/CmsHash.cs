@@ -41,6 +41,7 @@ namespace System.Security.Cryptography.Pkcs
             public override void Dispose() => _shake256.Dispose();
             internal override void AppendData(ReadOnlySpan<byte> data) => _shake256.AppendData(data);
             internal override byte[] GetHashAndReset() => _shake256.GetHashAndReset(OutputSizeBytes);
+
             internal override bool TryGetHashAndReset(Span<byte> destination, out int bytesWritten)
             {
                 if (destination.Length < OutputSizeBytes)
@@ -70,6 +71,7 @@ namespace System.Security.Cryptography.Pkcs
             public override void Dispose() => _shake128.Dispose();
             internal override void AppendData(ReadOnlySpan<byte> data) => _shake128.AppendData(data);
             internal override byte[] GetHashAndReset() => _shake128.GetHashAndReset(OutputSizeBytes);
+
             internal override bool TryGetHashAndReset(Span<byte> destination, out int bytesWritten)
             {
                 if (destination.Length < OutputSizeBytes)

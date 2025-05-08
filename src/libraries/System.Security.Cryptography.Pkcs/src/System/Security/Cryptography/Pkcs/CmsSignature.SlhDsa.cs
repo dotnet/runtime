@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                Oid digestAlgorithm,
+                string? digestAlgorithmOid,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
             {
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
                 byte[] dataHash,
 #endif
-                Oid hashAlgorithm,
+                string? hashAlgorithmOid,
                 X509Certificate2 certificate,
                 object? key,
                 bool silent,

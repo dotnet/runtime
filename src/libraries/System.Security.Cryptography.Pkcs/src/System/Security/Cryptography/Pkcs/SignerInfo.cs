@@ -918,7 +918,7 @@ namespace System.Security.Cryptography.Pkcs
                     contentToVerify.ToArray(),
                     _signature.ToArray(),
 #endif
-                    DigestAlgorithm,
+                    DigestAlgorithm.Value,
                     _signatureAlgorithmParameters,
                     certificate));
         }

@@ -428,7 +428,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
                     messageToSign.ToArray(),
 #endif
-                    DigestAlgorithm,
+                    DigestAlgorithm.Value,
                     Certificate!,
                     _privateKey,
                     silent,
