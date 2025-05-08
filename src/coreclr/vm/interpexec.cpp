@@ -44,7 +44,10 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY)); // The method to call
+    if (overrideTarget)
+        pHeader->SetTarget(overrideTarget);
+    else
+        pHeader->SetTarget(pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY)); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -329,7 +332,7 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
 void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
 {
     // TODO! If this becomes a performance bottleneck, we could expand out the various permutations of this
-    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only 
+    // so that we have 24 versions of lookup (or 48 is we allow for avoiding the null check), do the only
     // if check to figure out which one to use, and then have the rest of the logic be straight-line code.
     MethodTable *pMT = nullptr;
     MethodDesc* pMD = nullptr;
@@ -1820,6 +1823,28 @@ MAIN_LOOP:
                     ip += 5;
 
                     InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), pCallStub, stack + callArgsOffset, stack + returnOffset);
+                    break;
+                }
+
+                case INTOP_CALL_PINVOKE:
+                {
+                    // This opcode handles p/invokes that don't use a managed wrapper for marshaling. These
+                    //  calls are special in that they need an InlinedCallFrame in order for proper EH to happen
+
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+                    int32_t targetAddrSlot = ip[4];
+
+                    ip += 5;
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+                    PCODE callTarget = *(PCODE*)pMethod->pDataItems[targetAddrSlot];
+
+                    {
+                        // Interpreter-FIXME: Create InlinedCallFrame.
+                        GCX_PREEMP();
+                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                    }
                     break;
                 }
 
