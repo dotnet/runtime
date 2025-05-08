@@ -70,7 +70,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// A timestamp that represents the last time the file represented by this entry was accessed.
+        /// A timestamp that represents the last time the file represented by this entry was accessed. Setting a value for this property is not recommended because most TAR reading tools do not support it.
         /// </summary>
         /// <remarks>
         /// <para>In Unix platforms, this timestamp is commonly known as <c>atime</c>.</para>
@@ -86,7 +86,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// A timestamp that represents the last time the metadata of the file represented by this entry was changed.
+        /// A timestamp that represents the last time the metadata of the file represented by this entry was changed. Setting a value for this property is not recommended because most TAR reading tools do not support it.
         /// </summary>
         /// <remarks>
         /// <para>In Unix platforms, this timestamp is commonly known as <c>ctime</c>.</para>

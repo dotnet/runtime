@@ -553,7 +553,7 @@ namespace System.Formats.Tar
             }
 
             // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
-            }
+        }
 
         // Reads the ustar prefix attribute.
         // Throws if a conversion to an expected data type fails.
