@@ -255,8 +255,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     ContainCheckBinary(binOp);
 
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_OR, GT_XOR, GT_AND) &&
-        comp->compOpportunisticallyDependsOn(InstructionSet_Zbs) && !op2->isContained())
+    if (comp->opts.OptimizationEnabled() && comp->compOpportunisticallyDependsOn(InstructionSet_Zbs) &&
+        binOp->OperIs(GT_OR, GT_XOR, GT_AND))
     {
         if (op2->IsIntegralConst())
         {
@@ -276,9 +276,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                         {
                             binOp->ChangeOper(GT_BIT_EXTRACT);
                             binOp->gtType = TYP_INT;
-                            value = BitOperations::Log2(value);
-                            assert(value >= 11); // smaller immediates should have been contained into or/xor/and
-                            constant->SetIntegralValue(value);
+                            constant->SetIntegralValue(BitOperations::Log2(value));
                             constant->SetContained();
 
                             use = LIR::Use();
@@ -304,7 +302,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 value = ~value; // check below if it's single-bit clear
             }
 
-            if (isPow2(value))
+            if (!op2->isContained() && isPow2(value))
             {
                 assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
                 static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
@@ -312,7 +310,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
 
                 value = BitOperations::Log2(value);
-                assert(value >= 11); // smaller immediates should have been contained into or/xor/and
+                assert(value >= 11); // smaller single-bit masks fit into ori/xori/andi
                 constant->SetIntegralValue(value);
                 constant->SetContained();
             }
