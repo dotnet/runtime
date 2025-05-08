@@ -1324,6 +1324,31 @@ namespace System
                 return 0;
             }
 
+            public UInt128 ToUInt128()
+            {
+                if (_length > 3)
+                {
+                    return new UInt128(((ulong)(_blocks[3]) << 96) + ((ulong)_blocks[2] << 64), ((ulong)(_blocks[1]) << 32) + _blocks[0]);
+                }
+
+                if (_length > 2)
+                {
+                    return new UInt128(((ulong)_blocks[2] << 64), ((ulong)(_blocks[1]) << 32) + _blocks[0]);
+                }
+
+                if (_length > 1)
+                {
+                    return ((ulong)(_blocks[1]) << 32) + _blocks[0];
+                }
+
+                if (_length > 0)
+                {
+                    return _blocks[0];
+                }
+
+                return 0;
+            }
+
             private void Clear(uint length) =>
                 NativeMemory.Clear(
                     (byte*)Unsafe.AsPointer(ref _blocks[0]), // This is safe to do since we are a ref struct
