@@ -2804,6 +2804,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
 
         GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), dataReg, tree);
+
+        // If store was to a variable, update variable liveness after instruction was emitted.
+        genUpdateLife(tree);
     }
 }
 
