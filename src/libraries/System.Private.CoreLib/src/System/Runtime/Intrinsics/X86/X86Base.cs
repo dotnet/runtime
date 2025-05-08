@@ -66,6 +66,18 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
             public static (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) => DivRem(lower, upper, divisor);
+
+            /// <summary>
+            ///   <para>unsigned _umul128(unsigned __int64 Multiplier, unsigned __int64  Multiplicand, unsigned __int64 * HighProduct)</para>
+            ///   <para>  MUL reg/m64</para>
+            /// </summary>
+            //TODO: Make internal
+            public static (ulong Lower, ulong Upper) Multiply(ulong left, ulong right) => Multiply(left, right);
+
+            /// <summary>
+            ///   <para>  IMUL reg/m64</para>
+            /// </summary>
+            public static (long Lower, long Upper) Multiply(long left, long right) => Multiply(left, right);
         }
 
         /// <summary>
@@ -122,6 +134,22 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>  IDIV reg/m</summary>
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) => DivRem(lower, upper, divisor);
+
+        /// <summary>
+        ///   <para>  MUL reg/m32</para>
+        /// </summary>
+        public static (uint Lower, uint Upper) Multiply(uint left, uint right) => Multiply(left, right);
+
+        /// <summary>
+        ///   <para>  IMUL reg/m32</para>
+        /// </summary>
+        public static (int Lower, int Upper) Multiply(int left, int right) => Multiply(left, right);
+
+        /// <summary>  MUL reg/m</summary>
+        public static (nuint Lower, nuint Upper) Multiply(nuint left, nuint right) => Multiply(left, right);
+
+        /// <summary>  IMUL reg/m</summary>
+        public static (nint Lower, nint Upper) Multiply(nint left, nint right) => Multiply(left, right);
 
         /// <summary>
         ///   <para>void _mm_pause (void);</para>

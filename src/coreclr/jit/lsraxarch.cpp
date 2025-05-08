@@ -2481,6 +2481,27 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_X86Base_Multiply:
+            case NI_X86Base_X64_Multiply:
+            {
+                assert(numArgs == 2);
+                assert(dstCount == 2);
+                assert(isRMW);
+
+                // MUL implicitly put op1 to EAX with op2
+                srcCount += BuildOperandUses(op1, SRBM_EAX);
+
+                // TODO: DOes it need to handle contained ??
+                srcCount += BuildOperandUses(op2);
+
+                // result put in EAX and EDX
+                BuildDef(intrinsicTree, SRBM_EAX, 0);
+                BuildDef(intrinsicTree, SRBM_EDX, 1);
+
+                buildUses = false;
+                break;
+            }
+
             case NI_BMI2_MultiplyNoFlags:
             case NI_BMI2_X64_MultiplyNoFlags:
             {
@@ -3002,9 +3023,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // Currently dstCount = 2 is only used for DivRem, which has special constraints and is handled above
+        // Currently dstCount = 2 is only used for DivRem and Multiply, which has special constraints and is handled above
         assert((dstCount == 0) ||
-               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))));
+               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) || (intrinsicId == NI_X86Base_Multiply) || (intrinsicId == NI_X86Base_X64_Multiply))));
     }
 
     *pDstCount = dstCount;

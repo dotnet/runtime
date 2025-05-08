@@ -28761,8 +28761,10 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
     {
 #ifdef TARGET_XARCH
         case NI_X86Base_DivRem:
+        case NI_X86Base_Multiply:
             return compiler->typGetBlkLayout(genTypeSize(GetSimdBaseType()) * 2);
         case NI_X86Base_X64_DivRem:
+        case NI_X86Base_X64_Multiply:
             return compiler->typGetBlkLayout(16);
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
