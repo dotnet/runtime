@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -509,10 +510,16 @@ namespace Internal.IL
             {
                 if (!initialType.IsByRef)
                 {
+                    // We can't replace a non-byref with a byref.
                     return false;
                 }
 
                 return IsValidInitialTypeForReplacementType(((ByRefType)initialType).ParameterType, ((ByRefType)replacementType).ParameterType);
+            }
+            else if (initialType.IsByRef)
+            {
+                // We can't replace a byref with a non-byref.
+                return false;
             }
 
             if (replacementType.IsPointer)
@@ -539,95 +546,35 @@ namespace Internal.IL
             foreach (ParameterHandle parameterHandle in parameters)
             {
                 Parameter parameter = reader.GetParameter(parameterHandle);
-                CustomAttribute? unsafeAccessorTypeAttribute = null;
-                foreach (CustomAttributeHandle customAttributeHandle in parameter.GetCustomAttributes())
+
+                if (parameter.SequenceNumber > originalSignature.Length)
                 {
-                    reader.GetAttributeNamespaceAndName(customAttributeHandle, out StringHandle namespaceName, out StringHandle name);
-                    if (reader.StringComparer.Equals(namespaceName, "System.Runtime.CompilerServices")
-                        && reader.StringComparer.Equals(name, "UnsafeAccessorTypeAttribute"))
-                    {
-                        unsafeAccessorTypeAttribute = reader.GetCustomAttribute(customAttributeHandle);
-                        break;
-                    }
+                    // This is invalid metadata (parameter metadata for a parameter that doesn't exist in the signature).
+                    return SetTargetResult.Invalid;
                 }
 
-                if (unsafeAccessorTypeAttribute is null)
+                CustomAttributeHandle unsafeAccessorTypeAttributeHandle = FindUnsafeAccessorTypeAttribute(reader, parameter);
+
+                if (unsafeAccessorTypeAttributeHandle.IsNil)
                 {
                     continue;
                 }
 
-                if (parameter.SequenceNumber > originalSignature.Length)
-                {
-                    return SetTargetResult.Invalid;
-                }
-
                 bool isReturnValue = parameter.SequenceNumber == 0;
 
-                if (isReturnValue && context.Kind is UnsafeAccessorKind.Field or UnsafeAccessorKind.StaticField)
+                TypeDesc initialType = isReturnValue ? originalSignature.ReturnType : originalSignature[parameter.SequenceNumber - 1];
+
+                if (isReturnValue && initialType.IsByRef)
                 {
-                    // We can't support UnsafeAccessorTypeAttribute on fields
+                    // We can't support UnsafeAccessorTypeAttribute on by-ref returns
                     // today as it would create a type-safety hole.
                     return SetTargetResult.NotSupported;
                 }
 
-                TypeDesc initialType = isReturnValue ? originalSignature.ReturnType : originalSignature[parameter.SequenceNumber - 1];
-
-                CustomAttributeValue<TypeDesc> decoded = unsafeAccessorTypeAttribute.Value.DecodeValue(
-                    new CustomAttributeTypeProvider(method.Module));
-
-                if (decoded.FixedArguments[0].Value is not string replacementTypeName)
+                SetTargetResult decodeResult = DecodeUnsafeAccessorType(method, reader.GetCustomAttribute(unsafeAccessorTypeAttributeHandle), out TypeDesc replacementType);
+                if (decodeResult != SetTargetResult.Success)
                 {
-                    return SetTargetResult.Invalid;
-                }
-
-                TypeDesc replacementType = method.Module.GetTypeByCustomAttributeTypeName(
-                    replacementTypeName,
-                    throwIfNotFound: false,
-                    canonGenericResolver: (module, name) =>
-                    {
-                        if (!name.StartsWith('!'))
-                        {
-                            return null;
-                        }
-
-                        bool isMethodParameter = name.StartsWith("!!", StringComparison.Ordinal);
-
-                        if (!int.TryParse(name.AsSpan(isMethodParameter ? 2 : 1), NumberStyles.None, CultureInfo.InvariantCulture, out int index))
-                        {
-                            return null;
-                        }
-
-                        if (isMethodParameter)
-                        {
-                            if (!method.HasInstantiation)
-                            {
-                                return null;
-                            }
-
-                            if (index >= method.Instantiation.Length)
-                            {
-                                return null;
-                            }
-                        }
-                        else
-                        {
-                            if (!method.OwningType.HasInstantiation)
-                            {
-                                return null;
-                            }
-
-                            if (index >= method.OwningType.Instantiation.Length)
-                            {
-                                return null;
-                            }
-                        }
-
-                        return module.Context.GetSignatureVariable(index, isMethodParameter);
-                    });
-
-                if (replacementType is null)
-                {
-                    return SetTargetResult.Missing;
+                    return decodeResult;
                 }
 
                 // Future versions of the runtime may support
@@ -639,13 +586,6 @@ namespace Internal.IL
 
                 if (!IsValidInitialTypeForReplacementType(initialType, replacementType))
                 {
-                    return SetTargetResult.Invalid;
-                }
-
-                if (replacementType.IsByRef != initialType.IsByRef)
-                {
-                    // The replacement type must match the original type
-                    // in terms of byref-ness.
                     return SetTargetResult.Invalid;
                 }
 
@@ -663,10 +603,108 @@ namespace Internal.IL
             return SetTargetResult.Success;
         }
 
+        private static SetTargetResult DecodeUnsafeAccessorType(EcmaMethod method, CustomAttribute unsafeAccessorTypeAttribute, out TypeDesc replacementType)
+        {
+            replacementType = null;
+            CustomAttributeValue<TypeDesc> decoded = unsafeAccessorTypeAttribute.DecodeValue(
+                new CustomAttributeTypeProvider(method.Module));
+
+            if (decoded.FixedArguments[0].Value is not string replacementTypeName)
+            {
+                return SetTargetResult.Invalid;
+            }
+
+            replacementType = method.Module.GetTypeByCustomAttributeTypeName(
+                replacementTypeName,
+                throwIfNotFound: false,
+                canonGenericResolver: (module, name) =>
+                {
+                    if (!name.StartsWith('!'))
+                    {
+                        return null;
+                    }
+
+                    bool isMethodParameter = name.StartsWith("!!", StringComparison.Ordinal);
+
+                    if (!int.TryParse(name.AsSpan(isMethodParameter ? 2 : 1), NumberStyles.None, CultureInfo.InvariantCulture, out int index))
+                    {
+                        return null;
+                    }
+
+                    if (isMethodParameter)
+                    {
+                        if (index >= method.Instantiation.Length)
+                        {
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        if (index >= method.OwningType.Instantiation.Length)
+                        {
+                            return null;
+                        }
+                    }
+
+                    return module.Context.GetSignatureVariable(index, isMethodParameter);
+                });
+
+            return replacementType is null
+                ? SetTargetResult.Missing
+                : SetTargetResult.Success;
+        }
+
+        private static CustomAttributeHandle FindUnsafeAccessorTypeAttribute(MetadataReader reader, Parameter parameter)
+        {
+            foreach (CustomAttributeHandle customAttributeHandle in parameter.GetCustomAttributes())
+            {
+                reader.GetAttributeNamespaceAndName(customAttributeHandle, out StringHandle namespaceName, out StringHandle name);
+                if (reader.StringComparer.Equals(namespaceName, "System.Runtime.CompilerServices")
+                    && reader.StringComparer.Equals(name, "UnsafeAccessorTypeAttribute"))
+                {
+                    return customAttributeHandle;
+                }
+            }
+
+            return default;
+        }
+
+        private static ParameterHandle FindParameterForSequenceNumber(MetadataReader reader, ref ParameterHandleCollection.Enumerator parameterEnumerator, int sequenceNumber)
+        {
+            Parameter currentParameter = reader.GetParameter(parameterEnumerator.Current);
+            if (currentParameter.SequenceNumber == sequenceNumber)
+            {
+                return parameterEnumerator.Current;
+            }
+
+            // Scan until we are either at this parameter or at the first one after it (if there is no Parameter row in the table)
+            while (parameterEnumerator.MoveNext())
+            {
+                Parameter thisParameterMaybe = reader.GetParameter(parameterEnumerator.Current);
+                if (thisParameterMaybe.SequenceNumber > sequenceNumber)
+                {
+                    // We've passed where it should be.
+                    return default;
+                }
+
+                if (thisParameterMaybe.SequenceNumber == sequenceNumber)
+                {
+                    // We found it.
+                    return parameterEnumerator.Current;
+                }
+            }
+
+            return default;
+        }
+
         private static MethodIL GenerateAccessor(ref GenerationContext context)
         {
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
+
+            MetadataReader reader = context.Declaration.MetadataReader;
+            ParameterHandleCollection.Enumerator parameterEnumerator = reader.GetMethodDefinition(context.Declaration.Handle).GetParameters().GetEnumerator();
+            parameterEnumerator.MoveNext();
 
             // Load stub arguments.
             // When the target is static, the first argument is only
@@ -675,35 +713,44 @@ namespace Internal.IL
             int beginIndex = context.IsTargetStatic ? 1 : 0;
             int stubArgCount = context.DeclarationSignature.Length;
             Stubs.ILLocalVariable?[] localsToRestore = null;
+
             for (int i = beginIndex; i < stubArgCount; ++i)
             {
+                codeStream.EmitLdArg(i);
                 if (context.Declaration.Signature[i] != context.DeclarationSignature[i])
                 {
                     if (context.DeclarationSignature[i] is { Category: TypeFlags.Class } classType)
                     {
-                        codeStream.EmitLdArg(i);
-                        codeStream.Emit(ILOpcode.castclass, emit.NewToken(classType));
+                        codeStream.Emit(ILOpcode.unbox_any, emit.NewToken(classType));
                     }
                     else if (context.DeclarationSignature[i] is ByRefType { ParameterType.Category: TypeFlags.Class } byrefType)
                     {
                         localsToRestore ??= new Stubs.ILLocalVariable?[stubArgCount];
 
                         TypeDesc targetType = byrefType.ParameterType;
-                        codeStream.EmitLdArg(i);
-                        localsToRestore[i] = emit.NewLocal(targetType);
+                        Stubs.ILLocalVariable local = emit.NewLocal(targetType);
                         codeStream.EmitLdInd(targetType);
-                        codeStream.Emit(ILOpcode.castclass, emit.NewToken(targetType));
-                        codeStream.EmitStLoc(localsToRestore[i].Value);
-                        codeStream.EmitLdLoca(localsToRestore[i].Value);
+                        codeStream.Emit(ILOpcode.unbox_any, emit.NewToken(targetType));
+                        codeStream.EmitStLoc(local);
+                        codeStream.EmitLdLoca(local);
+
+                        // Only mark the local to be restored after the call
+                        // if the parameter is not marked as "in".
+                        // The "sequence number" for parameters is 1-based, whereas the parameter index is 0-based.
+                        ParameterHandle paramHandle = FindParameterForSequenceNumber(reader, ref parameterEnumerator, i + 1);
+                        if (!paramHandle.IsNil)
+                        {
+                            if (!reader.GetParameter(paramHandle).Attributes.HasFlag(ParameterAttributes.In))
+                            {
+                                localsToRestore[i] = local;
+                            }
+                        }
+                        else
+                        {
+                            // If there's no metadata for the parameter, it definitely doesn't have the [In] attribute.
+                            localsToRestore[i] = local;
+                        }
                     }
-                    else
-                    {
-                        codeStream.EmitLdArg(i);
-                    }
-                }
-                else
-                {
-                    codeStream.EmitLdArg(i);
                 }
             }
 
