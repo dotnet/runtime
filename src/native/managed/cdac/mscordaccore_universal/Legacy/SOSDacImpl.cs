@@ -133,7 +133,92 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetAssemblyData(ulong baseDomainPtr, ulong assembly, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyData(baseDomainPtr, assembly, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAssemblyList(ulong appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ulong[] values, int* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetAssemblyList(appDomain, count, values, pNeeded) : HResults.E_NOTIMPL;
+    {
+        if (appDomain == 0)
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        int hr = HResults.S_OK;
+
+        try
+        {
+            TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+            TargetPointer systemDomain = _target.ReadPointer(systemDomainPtr);
+            if (appDomain == systemDomain)
+            {
+                // We shouldn't be asking for the assemblies in SystemDomain
+                hr = HResults.E_INVALIDARG;
+            }
+            else
+            {
+                ILoader loader = _target.Contracts.Loader;
+                List<Contracts.ModuleHandle> modules = loader.GetModules(
+                    appDomain,
+                    AssemblyIterationFlags.IncludeLoading |
+                    AssemblyIterationFlags.IncludeLoaded |
+                    AssemblyIterationFlags.IncludeExecution).ToList();
+
+                int n = 0; // number of Assemblies that will be returned
+                if (values is not null)
+                {
+                    for (int i = 0; i < modules.Count && n < count; i++)
+                    {
+                        Contracts.ModuleHandle module = modules[i];
+                        if (loader.IsAssemblyLoaded(module))
+                        {
+                            values[n++] = loader.GetAssembly(module);
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < modules.Count && n < count; i++)
+                    {
+                        Contracts.ModuleHandle module = modules[i];
+                        if (loader.IsAssemblyLoaded(module))
+                        {
+                            n++;
+                        }
+                    }
+                }
+
+                if (pNeeded is not null)
+                {
+                    *pNeeded = n;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong[] valuesLocal = new ulong[count];
+            int neededLocal;
+            int hrLocal = _legacyImpl.GetAssemblyList(appDomain, count, valuesLocal, &neededLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                if (values is not null)
+                {
+                    // in theory, these don't need to be in the same order, but for consistency it is
+                    // easiest for consumers and verification if the DAC and cDAC return the same order
+                    for (int i = 0; i < neededLocal; i++)
+                    {
+                        Debug.Assert(values[i] == valuesLocal[i], $"cDAC: {values[i]:x}, DAC: {valuesLocal[i]:x}");
+                    }
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetAssemblyLocation(ulong assembly, int count, char* location, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAssemblyModuleList(ulong assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ulong[] modules, uint* pNeeded)

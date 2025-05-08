@@ -3012,11 +3012,6 @@ private:
 
 #ifndef DACCESS_COMPILE
 
-#ifdef _PREFAST_
-// Suppress prefast warning #6384: Dividing sizeof a pointer by another value
-#pragma warning(disable:6384)
-#endif /*_PREFAST_ */
-
 #define GCPROTECT_BEGIN(ObjRefStruct)                           do {    \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefStruct),                    \

@@ -4837,11 +4837,6 @@ static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool*
  *      2. GetCostSz() to the code size estimate
  *      3. Sometimes sets GTF_ADDRMODE_NO_CSE on nodes in the tree.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 {
     assert(tree);
@@ -6192,9 +6187,6 @@ DONE:
 
     return level;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //------------------------------------------------------------------------
 // gtSetEvalOrderMinOpts: A MinOpts specific version of gtSetEvalOrder. We don't
@@ -15456,11 +15448,6 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
  *
  *  Fold the given constant tree.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 {
     SSIZE_T   i1, i2, itemp;
@@ -16602,9 +16589,6 @@ INTEGRAL_OVF:
 
     return tree;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //------------------------------------------------------------------------
 // gtFoldIndirConst: Attempt to fold an "IND(addr)" expression to a constant.

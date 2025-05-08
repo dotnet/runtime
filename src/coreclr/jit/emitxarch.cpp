@@ -18222,11 +18222,6 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
  *  point past the generated code, and returns the size of the instruction
  *  descriptor in bytes.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     assert(emitIssuing);
@@ -20042,9 +20037,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     return sz;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 emitter::insFormat emitter::getMemoryOperation(instrDesc* id) const
 {
