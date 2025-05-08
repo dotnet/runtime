@@ -27870,13 +27870,7 @@ GenTree* Compiler::gtNewSimdWithElementNode(
     var_types      simdBaseType  = JitType2PreciseVarType(simdBaseJitType);
 
     assert(varTypeIsArithmetic(simdBaseType));
-    assert(op2->IsCnsIntOrI());
     assert(varTypeIsArithmetic(op3));
-
-    ssize_t imm8  = op2->AsIntCon()->IconValue();
-    ssize_t count = simdSize / genTypeSize(simdBaseType);
-
-    assert((0 <= imm8) && (imm8 < count));
 
 #if defined(TARGET_XARCH)
     switch (simdBaseType)
@@ -27942,6 +27936,20 @@ GenTree* Compiler::gtNewSimdWithElementNode(
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
+
+    int  immUpperBound    = getSIMDVectorLength(simdSize, simdBaseType) - 1;
+    bool rangeCheckNeeded = !op2->OperIsConst();
+
+    if (!rangeCheckNeeded)
+    {
+        ssize_t imm8     = op2->AsIntCon()->IconValue();
+        rangeCheckNeeded = (imm8 < 0) || (imm8 > immUpperBound);
+    }
+
+    if (rangeCheckNeeded)
+    {
+        op2 = addRangeCheckForHWIntrinsic(op2, 0, immUpperBound);
+    }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize);
 }
