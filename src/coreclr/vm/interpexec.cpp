@@ -1475,7 +1475,11 @@ CALL_INTERP_METHOD:
                             pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                             GCX_PREEMP();
                             // Attempt to setup the interpreter code for the target method.
-                            if (!(targetMethod->IsFCall() || (targetMethod->IsCtor() && targetMethod->GetMethodTable()->IsString())))
+                            if (!(
+                                targetMethod->IsFCall() ||
+                                targetMethod->IsNDirect() ||
+                                (targetMethod->IsCtor() && targetMethod->GetMethodTable()->IsString())
+                            ))
                             {
                                 targetMethod->PrepareInitialCode(CallerGCMode::Coop);
                             }
@@ -1645,11 +1649,14 @@ CALL_INTERP_METHOD:
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_BOX_UNBOX helper = GetPossiblyIndirectHelper<HELPER_FTN_BOX_UNBOX>(pMethod->pDataItems[ip[4]]);
 
-                    if (opcode == INTOP_BOX) {
+                    if (opcode == INTOP_BOX)
+                    {
                         // internal static object Box(MethodTable* typeMT, ref byte unboxedData)
                         void *unboxedData = LOCAL_VAR_ADDR(sreg, void);
                         LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, unboxedData);
-                    } else {
+                    }
+                    else
+                    {
                         // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
                         Object *src = LOCAL_VAR(sreg, Object*);
                         void *unboxedData = helper(pMT, src);

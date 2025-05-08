@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public interface ITest
 {
@@ -860,6 +861,11 @@ public class InterpreterTest
         if (!TestSharedGenerics())
             Environment.FailFast(null);
 
+        Console.WriteLine("TestPInvoke");
+        if (!TestPInvoke())
+            Environment.FailFast(null);
+
+        // For stackwalking validation
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
@@ -1876,6 +1882,50 @@ public class InterpreterTest
     static object BoxedSubtraction(object lhs, object rhs)
     {
         return (int)lhs - (int)rhs;
+    }
+
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern int sumTwoInts(int x, int y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern double sumTwoDoubles(double x, double y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    public static extern int writeToStdout(string s);
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvoke();
+
+    public static bool TestPInvoke()
+    {
+        if (sumTwoInts(1, 2) != 3)
+            return false;
+
+        double summed = sumTwoDoubles(1, 2);
+        if (summed != 3)
+            return false;
+
+        // This asserts at compile time because we do not have a way to get the IL stub for the marshaling
+        //  in order to invoke it from the interpreter.
+        // writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+
+        // This currently asserts in PreStubWorker in a way that isn't handled correctly:
+        /*
+            Assert failure(PID 43968 [0x0000abc0], Thread: 64548 [0xfc24]): ohThrowable
+            CORECLR! PreStubWorker$catch$10 + 0x9E (0x00007ffc`8696308e)
+            CORECLR! CallSettingFrame_LookupContinuationIndex + 0x20 (0x00007ffc`867fed40)
+            CORECLR! _FrameHandler4::CxxCallCatchBlock + 0x1DE (0x00007ffc`867ea68e)
+            NTDLL! RtlCaptureContext2 + 0x4A6 (0x00007ffd`45ac6c56)
+            CORECLR! PreStubWorker + 0x503 (0x00007ffc`861568b3)
+            CORECLR! ThePreStub + 0x55 (0x00007ffc`8678dcb5)
+        */
+        /*
+        try {
+            Console.WriteLine("missingPInvoke");
+            missingPInvoke();
+            return false;
+        } catch (DllNotFoundException) {
+        }
+        */
+
+        return true;
     }
 
     public static bool TestArray()
