@@ -20,13 +20,6 @@
 
 #ifdef HOST_64BIT
 
-// These are the single-processor-optimized versions of the allocation helpers.
-//EXTERN_C Object* JIT_TrialAllocSFastSP(CORINFO_CLASS_HANDLE typeHnd_);
-//EXTERN_C Object* AllocateStringFastUP (CLR_I4 cch);
-
-//EXTERN_C Object* JIT_NewArr1OBJ_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-//EXTERN_C Object* JIT_NewArr1VC_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-
 #ifdef TARGET_AMD64
 extern WriteBarrierManager g_WriteBarrierManager;
 #endif // TARGET_AMD64
