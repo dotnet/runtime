@@ -106,6 +106,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       ResolveWasmOutputs;
       _GenerateBuildWasmBootJson;
       _AddWasmStaticWebAssets;
+      _AddWasmPreloadBuildProperties;
     </ResolveCompressedFilesDependsOn>
     <ResolveCompressedFilesForPublishDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(ResolveCompressedFilesForPublishDependsOn);
@@ -113,6 +114,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       ComputeWasmExtensions;
       GeneratePublishWasmBootJson;
       _AddPublishWasmBootJsonToStaticWebAssets;
+      _AddWasmPreloadPublishProperties;
     </ResolveCompressedFilesForPublishDependsOn>
     <CompressFilesForPublishDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(CompressFilesForPublishDependsOn);

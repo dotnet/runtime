@@ -1198,16 +1198,19 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 
 	mono_class_setup_supertypes (klass);
 
-	// NOTE: this is probably too aggressive if eclass is not a valuetype.  It looks like we
-	// only need the size info in order to set MonoClass:has_references for this array type -
-	// and for that we only need to setup the fields of the element type if it's not a reference
-	// type.
-	if (!eclass->size_inited)
+	// It looks like we only need the size info in order to set MonoClass:has_references
+	// for this array type and for that we only need to setup the fields of the element
+	// type if it's not a reference type.
+	gboolean is_eclass_valuetype = m_class_is_valuetype (eclass);
+	if (is_eclass_valuetype && !eclass->size_inited)
 		mono_class_setup_fields (eclass);
 	mono_class_set_type_load_failure_causedby_class (klass, eclass, "Could not load array element type");
 	/*FIXME we fail the array type, but we have to let other fields be set.*/
 
-	klass->has_references = MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (eclass)) || m_class_has_references (eclass)? TRUE: FALSE;
+	if (is_eclass_valuetype)
+		klass->has_references = m_class_has_references (eclass) ? TRUE : FALSE;
+	else
+		klass->has_references = TRUE;
 
 	if (eclass->enumtype)
 		klass->cast_class = eclass->element_class;

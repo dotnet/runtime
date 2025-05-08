@@ -4725,7 +4725,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         /* Indirect call, virtual calls */
 
-        id = emitNewInstrCallInd(argCnt, 0 /* disp */, params.ptrVars, gcrefRegs, byrefRegs, params.retSize);
+        id = emitNewInstrCallInd(argCnt, 0 /* disp */, params.ptrVars, gcrefRegs, byrefRegs, params.retSize,
+                                 params.hasAsyncRet);
     }
     else
     {
@@ -4734,7 +4735,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
         assert(params.callType == EC_FUNC_TOKEN);
 
-        id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs, params.retSize);
+        id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs, params.retSize, params.hasAsyncRet);
     }
 
     /* Update the emitter's live GC ref sets */
@@ -6530,6 +6531,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 gcrefRegs |= RBM_R0;
             else if (id->idGCref() == GCT_BYREF)
                 byrefRegs |= RBM_R0;
+
+            if (id->idIsLargeCall() && ((instrDescCGCA*)id)->hasAsyncContinuationRet())
+                gcrefRegs |= RBM_ASYNC_CONTINUATION_RET;
 
             // If the GC register set has changed, report the new set.
             if (gcrefRegs != emitThisGCrefRegs)

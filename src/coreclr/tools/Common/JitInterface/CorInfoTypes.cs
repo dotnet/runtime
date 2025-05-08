@@ -872,6 +872,18 @@ namespace Internal.JitInterface
         public CORINFO_OS osType;
     }
 
+    public unsafe struct CORINFO_ASYNC_INFO
+    {
+        // Class handle for System.Runtime.CompilerServices.Continuation
+        public CORINFO_CLASS_STRUCT_* continuationClsHnd;
+        // 'Next' field
+        public CORINFO_FIELD_STRUCT_* continuationNextFldHnd;
+        // 'Data' field
+        public CORINFO_FIELD_STRUCT_* continuationDataFldHnd;
+        // 'GCData' field
+        public CORINFO_FIELD_STRUCT_* continuationGCDataFldHnd;
+    }
+
     // Flags passed from JIT to runtime.
     public enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
     {
