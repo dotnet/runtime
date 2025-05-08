@@ -3958,7 +3958,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             // check if any bits are still set and if so, invalidate those lanes
             if (elementCount == 2) {
                 append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
-                builder.i32_const(32);
+                builder.i32_const(shift);
                 builder.appendSimd(WasmSimdOpcode.i64x2_shr_u);
                 builder.v128_const(0);
                 builder.appendSimd(WasmSimdOpcode.i64x2_ne);
