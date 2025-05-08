@@ -969,6 +969,11 @@ public class InterpreterTest
 
         Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
 
+        Console.WriteLine("TestPInvoke");
+        if (!TestPInvoke())
+            Environment.FailFast(null);
+
+        // For stackwalking validation
         System.GC.Collect();
 
         Console.WriteLine("All tests passed successfully!");
@@ -2381,6 +2386,81 @@ public class InterpreterTest
     static object BoxedSubtraction(object lhs, object rhs)
     {
         return (int)lhs - (int)rhs;
+    }
+
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern int sumTwoInts(int x, int y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern double sumTwoDoubles(double x, double y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    public static extern int writeToStdout(string s);
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvoke();
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvokeWithMarshaling(string s);
+
+    public static bool TestPInvoke()
+    {
+        if (sumTwoInts(1, 2) != 3)
+            return false;
+
+        double summed = sumTwoDoubles(1, 2);
+        if (summed != 3)
+            return false;
+
+        // Test marshaling wrappers
+        writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+
+        bool caught = false;
+        try {
+            Console.WriteLine("calling missingPInvoke");
+            missingPInvoke();
+            return false;
+        } catch (DllNotFoundException) {
+            Console.WriteLine("caught #1");
+            caught = true;
+        }
+
+        if (!caught)
+            return false;
+
+        /* fails, with output:
+calling missingPInvokeWithMarshaling
+caught #2
+
+Assert failure(PID 74448 [0x000122d0], Thread: 61928 [0xf1e8]): ohThrowable
+
+CORECLR! PreStubWorker$catch$10 + 0x9E (0x00007ffc`5a0e31fe)
+CORECLR! CallSettingFrame_LookupContinuationIndex + 0x20 (0x00007ffc`59f7eeb0)
+CORECLR! _FrameHandler4::CxxCallCatchBlock + 0x1DE (0x00007ffc`59f6a7fe)
+NTDLL! RtlCaptureContext2 + 0x4A6 (0x00007ffd`45ac6c56)
+CORECLR! PreStubWorker + 0x503 (0x00007ffc`598d68b3)
+CORECLR! ThePreStub + 0x55 (0x00007ffc`59f0de25)
+CORECLR! CallJittedMethodRetVoid + 0x14 (0x00007ffc`59f0c394)
+CORECLR! InvokeCompiledMethod + 0x5CD (0x00007ffc`59b376fd)
+CORECLR! InterpExecMethod + 0x7286 (0x00007ffc`59b33056)
+CORECLR! ExecuteInterpretedMethod + 0x11B (0x00007ffc`598d528b)
+    File: Z:\runtime\src\coreclr\vm\prestub.cpp:1972
+    Image: Z:\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\corerun.exe
+
+Interpreted App returned -1073740286
+        */
+        /*
+        bool caught2 = false;
+        try {
+            Console.WriteLine("calling missingPInvokeWithMarshaling");
+            missingPInvokeWithMarshaling("test");
+            return false;
+        } catch (DllNotFoundException) {
+            Console.WriteLine("caught #2");
+            caught2 = true;
+        }
+
+        if (!caught2)
+            return false;
+        */
+
+        return true;
     }
 
     public static bool TestArray()
