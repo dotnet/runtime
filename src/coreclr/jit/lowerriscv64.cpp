@@ -269,27 +269,44 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                     LIR::Use use;
                     if (BlockRange().TryGetUse(binOp, &use))
                     {
-                        GenTree* user    = use.User();
-                        GenTree* userOp2 = user->gtGetOp2();
-                        if ((user->OperIs(GT_NE) && userOp2->IsIntegralConst(0)) ||   // a & bit != 0
-                            (user->OperIs(GT_EQ) && userOp2->IsIntegralConst(value))) // a & bit == bit
+                        bool isOp1ShiftRight = (op1->OperIs(GT_RSZ, GT_RSH) && op1->gtGetOp2()->IsIntegralConst());
+
+                        GenTree* user = use.User();
+                        if ((user->OperIs(GT_NE) && user->gtGetOp2()->IsIntegralConst(0)) ||     // (a >> N) & bit != 0
+                            (user->OperIs(GT_EQ) && user->gtGetOp2()->IsIntegralConst(value)) || // (a >> N) & bit ==
+                                                                                                 // bit
+                            (isOp1ShiftRight && value == 1))                                     // (a >> N) & 1
                         {
                             binOp->ChangeOper(GT_BIT_EXTRACT);
                             binOp->gtType = TYP_INT;
-                            constant->SetIntegralValue(BitOperations::Log2(value));
+
+                            uint32_t log2 = BitOperations::Log2(value);
+                            if (isOp1ShiftRight)
+                            {
+                                GenTreeIntConCommon* shiftAmount = op1->gtGetOp2()->AsIntConCommon();
+                                log2 += shiftAmount->IntegralValue();
+
+                                BlockRange().Remove(shiftAmount);
+                                BlockRange().Remove(op1);
+                                op1 = op1->gtGetOp1();
+                            }
+                            constant->SetIntegralValue(log2);
                             constant->SetContained();
 
-                            use = LIR::Use();
-                            if (BlockRange().TryGetUse(user, &use))
+                            if (user->OperIs(GT_EQ, GT_NE))
                             {
-                                use.ReplaceWith(binOp);
+                                use = LIR::Use();
+                                if (BlockRange().TryGetUse(user, &use))
+                                {
+                                    use.ReplaceWith(binOp);
+                                }
+                                else
+                                {
+                                    user->SetUnusedValue();
+                                }
+                                BlockRange().Remove(user->gtGetOp2());
+                                BlockRange().Remove(user);
                             }
-                            else
-                            {
-                                user->SetUnusedValue();
-                            }
-                            BlockRange().Remove(userOp2);
-                            BlockRange().Remove(user);
                         }
                     }
                     else
