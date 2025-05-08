@@ -10580,7 +10580,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 //
                                 // The managed API surface we expose doesn't directly support TYP_MASK
                                 // and we don't directly expose overloads for APIs like `vaddps` which
-                                // support embedded masking. Instead, we have decide to do pattern
+                                // support embedded masking. Instead, we have decided to do pattern
                                 // recognition over the relevant ternary select APIs which functionally
                                 // execute `cond ? selectTrue : selectFalse` on a per element basis.
                                 //
@@ -10605,14 +10605,37 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                         // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
                                         isEmbeddedMask = false;
                                     }
+                                    else
+                                    {
+                                        uint32_t  maskSize        = genTypeSize(simdBaseType);
+                                        var_types op2SimdBaseType = op2->AsHWIntrinsic()->GetSimdBaseType();
+                                        uint32_t  operSize        = genTypeSize(op2SimdBaseType);
+
+                                        if (maskSize != operSize)
+                                        {
+                                            isEmbeddedMask = false;
+                                        }
+                                        else
+                                        {
+                                            // Check the op2 instruction input size to see if it's the same as the
+                                            // mask size.
+
+                                            NamedIntrinsic op2IntrinsicId = op2->AsHWIntrinsic()->GetHWIntrinsicId();
+                                            instruction    ins =
+                                                HWIntrinsicInfo::lookupIns(op2IntrinsicId, op2SimdBaseType);
+                                            assert(ins != INS_invalid);
+                                            unsigned inputSize = CodeGenInterface::instInputSize(ins);
+                                            if (maskSize != inputSize)
+                                            {
+                                                isEmbeddedMask = false;
+                                            }
+                                        }
+                                    }
                                 }
 
                                 if (isEmbeddedMask)
                                 {
-                                    uint32_t maskSize = genTypeSize(simdBaseType);
-                                    uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
-
-                                    if ((maskSize == operSize) && IsInvariantInRange(op2, node))
+                                    if (IsInvariantInRange(op2, node))
                                     {
                                         MakeSrcContained(node, op2);
                                         op2->MakeEmbMaskOp();
