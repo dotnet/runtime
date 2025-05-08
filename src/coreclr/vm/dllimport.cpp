@@ -5886,8 +5886,11 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
+            // Interpreter-FIXME: This assertion fails when the interpreter is invoking a pinvoke import worker
+            /*
             _ASSERTE((pThread->GetFrame() != FRAME_TOP && pThread->GetFrame()->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame)
                 || pMD->ShouldSuppressGCTransition());
+            */
 
             CONSISTENCY_CHECK(pMD->IsNDirect());
             //

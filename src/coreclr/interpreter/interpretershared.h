@@ -11,7 +11,8 @@
 #define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
 #define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
 
-#define INTERP_METHOD_DESC_TAG 4 // Tag of a MethodDesc in the interp method dataItems
+#define INTERP_METHOD_DESC_TAG 4    // Tag of a MethodDesc in the interp method dataItems
+#define INTERP_PVALUE_TAG      1    // Tag of a PVALUE indirect pinvoke target in interp method dataItems
 
 struct InterpMethod
 {

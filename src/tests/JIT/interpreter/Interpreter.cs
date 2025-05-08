@@ -642,7 +642,7 @@ public class InterpreterTest
         if (buf == IntPtr.Zero)
             return false;
 
-        IntPtr buf2 = realloc(buf, 128);
+        IntPtr buf2 = realloc(buf, 1024);
         Console.WriteLine("TestPInvoke: realloc returned:");
         Console.WriteLine(buf2.ToInt64());
         if (buf2 == buf)
