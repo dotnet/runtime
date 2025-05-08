@@ -62,7 +62,7 @@ static inline bool InterpOpIsEmitNop(int32_t opcode)
 
 static inline bool InterpOpIsUncondBranch(int32_t opcode)
 {
-    return opcode == INTOP_BR;
+    return opcode == INTOP_BR || opcode == INTOP_CALL_FINALLY;
 }
 
 static inline bool InterpOpIsCondBranch(int32_t opcode)

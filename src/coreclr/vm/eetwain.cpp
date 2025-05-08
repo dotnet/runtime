@@ -2144,9 +2144,8 @@ void EECodeManager::UpdateSSP(PREGDISPLAY pRD)
 #ifdef FEATURE_INTERPRETER
 DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
 {
-    // Interpreter-TODO: implement calling the funclet in the intepreted code
-    _ASSERTE(FALSE);
-    return 0;
+    InterpMethodContextFrame* faultingFrame = (InterpMethodContextFrame*)pRD->SP;
+    return ExecuteInterpretedCode(nullptr, 0, throwable, pHandler, faultingFrame, isFilter);
 }
 
 void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted)

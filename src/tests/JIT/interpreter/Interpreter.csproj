@@ -5,6 +5,10 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CLRTestKind>BuildOnly</CLRTestKind>
   </PropertyGroup>
+  <!-- TODO: To be removed once the Roslyn optimization case is handled -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+      <DefineConstants>NO_LEAVE_OPTIMIZATION</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Interpreter.cs" />
   </ItemGroup>

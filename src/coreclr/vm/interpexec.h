@@ -61,6 +61,18 @@ struct InterpThreadContext
     ~InterpThreadContext();
 };
 
-void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext);
+//
+// This overloaded function serves two purposes:
+//
+// It could be used to call a function, where throwable, pHandler and handlerFrame is null, or
+// It could be used to call a funclet, where throwable should be the exception object, ip is the bytecode offset of the handler,
+//
+// In the case of calling a function, it will return nullptr
+// In the case of catch, it will return the bytecode address where the execution should resume, or
+// In the case of filter, it will return the decision to either execute on the current handler or continue searching for another handler.
+//
+DWORD_PTR ExecuteInterpretedCode(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, OBJECTREF throwable, void* pHandler, InterpMethodContextFrame* handlerFrame, bool isFilter);
+
+void* InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, OBJECTREF throwable, const int32_t* ip, int8_t *frame, InterpThreadContext *pThreadContext);
 
 #endif
