@@ -746,7 +746,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Emit_Foreach_Section_In_ConfigChildren_StartBlock();
 
                 ParsableFromStringSpec keyType = (ParsableFromStringSpec)_typeIndex.GetEffectiveTypeSpec(type.KeyTypeRef);
-                TypeSpec elementType = _typeIndex.GetTypeSpec(type.ElementTypeRef);
+                TypeSpec elementType = _typeIndex.GetEffectiveTypeSpec(type.ElementTypeRef);
 
                 // Parse key
                 EmitBindingLogic(
