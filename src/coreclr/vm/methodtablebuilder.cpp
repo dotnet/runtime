@@ -8140,18 +8140,6 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
 //
 VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
 {
-#ifdef _DEBUG
-    LPCUTF8 szName;
-    LPCUTF8 szNamespace;
-    if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &szName, &szNamespace)))
-    {
-        szName = szNamespace = "Invalid TypeDef record";
-    }
-
-    if (g_pConfig->ShouldBreakOnStructMarshalSetup(szName))
-        CONSISTENCY_CHECK_MSGF(false, ("BreakOnStructMarshalSetup: '%s' ", szName));
-#endif // _DEBUG
-
     MethodTable* pParentMT = GetParentMethodTable();
     bool hasNonTrivialParent = pParentMT && !pParentMT->IsObjectClass() && !pParentMT->IsValueTypeClass();
 
