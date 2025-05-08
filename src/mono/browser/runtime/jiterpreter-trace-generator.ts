@@ -3882,9 +3882,8 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                 let elementIndex = nativeIndices[k];
 
                 // if any of the remaining bytes in the lane are != 0 it was an invalid index
-                // so we set the elementIndex to elementCount to force it to be invalid
                 for (let j = 1; j < elementSize && elementIndex < elementCount; j++)
-                    elementIndex = nativeIndices[k + j] === 0 ? elementIndex : elementCount;
+                    elementIndex = nativeIndices[k + j] === 0 ? elementIndex : 0xff;
 
                 for (let j = 0; j < elementSize; j++) {
                     // The shuffle vector is lane sized but the swizzle opcode needs byte indices
@@ -3892,7 +3891,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                     // the offset of the byte inside the lane. Since we are using lanes as indices
                     // we need to check if the lane index is valid. We use min elementCount to force
                     // invalid indices to fit in the byte sized lane and let the intrinsic handle it.
-                    newShuffleVector[k + j] = Math.min(elementIndex * elementSize + j, elementCount);
+                    newShuffleVector[k + j] = Math.min(elementIndex, elementCount) * elementSize + j;
                 }
             }
             nativeIndices = newShuffleVector;
@@ -3904,9 +3903,10 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
         append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
         if (elementCount !== 16) {
             const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
-            // clamp indices to the first invalid index value which is elementCount
-            // this ensures that the multiply + add will not overflow the lane size
-            // but the lane index will remain invalid for the intrinsic
+            // for i32x4 and i64x2 clamp indices to the first invalid index value which
+            // is elementCount this ensures that the multiply + add will not overflow
+            // the lane size but the lane index will remain invalid for the intrinsic to
+            // handle.
             if (elementCount === 4) {
                 builder.i32_const(elementCount);
                 builder.appendSimd(WasmSimdOpcode.i32x4_splat);
@@ -3918,8 +3918,8 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             }
 
             // We need to convert lane indices to byte indices so we can
-            // use the swizzle opcode, The operations is the same as above but vectorized:
-            // for example:
+            // use the swizzle opcode, The operations is the same as above
+            // but vectorized. for example:
             // i32x4{3, 2, 1, 0} => i8x16{12,13,14,15, 8,9,10,11, 4,5,6,7, 0,1,2,3}
             //
             // 1: multiply the lane indices by elementSize using shl to
@@ -3955,8 +3955,8 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             builder.appendSimd(WasmSimdOpcode.v128_or);
 
             // for i64x2 we don't have a min so reload the original indices
-            // divide by 2 and check if any bits are still set. If so, invalidate
-            // those lanes
+            // divide by 2 and check if any bits are still set. If so,
+            // invalidate those lanes
             if (elementCount == 2) {
                 append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
                 builder.i32_const(1);
