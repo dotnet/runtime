@@ -3877,16 +3877,14 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             const newShuffleVector = new Uint8Array(sizeOfV128);
             for (let i = 0, k = 0; i < elementCount; i++, k += elementSize) {
                 // The indices are lane sized but are only valid when less than
-                // elementCount so we load them as bytes, read the first byte for
-                // the value then invalidate the value if any of the other bytes are != 0.
+                // elementCount. To avoid some complications we load them as bytes, read the
+                // first byte of the lane for the lane index then make sure remaining bytes are 0.
                 let elementIndex = nativeIndices[k];
 
-                // check the remaining bytes of the element for > 0 which also invalidates the index
-                for (let j = 1; j < elementSize && elementIndex < elementCount; j++) {
-                    if (nativeIndices[k + j] > 0) {
-                        elementIndex = elementCount;
-                    }
-                }
+                // if any of the remaining bytes in the lane are != 0 it was an invalid index
+                // so we set the elementIndex to elementCount to force it to be invalid
+                for (let j = 1; j < elementSize && elementIndex < elementCount; j++)
+                    elementIndex = nativeIndices[k + j] === 0 ? elementIndex : elementCount;
 
                 for (let j = 0; j < elementSize; j++) {
                     // The shuffle vector is lane sized but the swizzle opcode needs byte indices
@@ -3899,7 +3897,6 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             }
             nativeIndices = newShuffleVector;
         }
-        // console.log(`shuffle w/element size ${elementSize} with constant indices ${nativeIndices} (${constantIndices}) -> byte indices ${newShuffleVector}`);
         builder.appendSimd(WasmSimdOpcode.v128_const);
         builder.appendBytes(nativeIndices);
     } else {
@@ -3907,9 +3904,9 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
         append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
         if (elementCount !== 16) {
             const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
-            // clamp indices to the first invalid index which is elementCount
+            // clamp indices to the first invalid index value which is elementCount
             // this ensures that the multiply + add will not overflow the lane size
-            // but the indices will remain invalid for the intrinsic
+            // but the lane index will remain invalid for the intrinsic
             if (elementCount === 4) {
                 builder.i32_const(elementCount);
                 builder.appendSimd(WasmSimdOpcode.i32x4_splat);
@@ -3918,9 +3915,6 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                 builder.i32_const(elementCount);
                 builder.appendSimd(WasmSimdOpcode.i16x8_splat);
                 builder.appendSimd(WasmSimdOpcode.i16x8_min_u);
-            } else {
-                // i64x2 can fall back the the interpreter implementation
-                return false;
             }
 
             // We need to convert lane indices to byte indices so we can
@@ -3959,6 +3953,17 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                     builder.appendU8(j);
             }
             builder.appendSimd(WasmSimdOpcode.v128_or);
+
+            // for i64x2 we don't have a min so we divide by 8
+            // check if any bits are still set and if so, invalidate those lanes
+            if (elementCount == 2) {
+                append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+                builder.i32_const(32);
+                builder.appendSimd(WasmSimdOpcode.i64x2_shr_u);
+                builder.v128_const(0);
+                builder.appendSimd(WasmSimdOpcode.i64x2_ne);
+                builder.appendSimd(WasmSimdOpcode.v128_or);
+            }
         }
     }
     // we now have two vectors on the stack, the values and the byte indices
