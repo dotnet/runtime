@@ -617,7 +617,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckHash();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         public static void ReadSlhDsaDocument()
         {
             SignedCms cms = new SignedCms();
