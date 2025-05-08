@@ -28652,21 +28652,6 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX10v1_MultiplyScalar:
         case NI_AVX10v1_SubtractScalar:
         case NI_AVX10v1_SqrtScalar:
-        case NI_AVX10v2_Add:
-        case NI_AVX10v2_ConvertToVector128Int32:
-        case NI_AVX10v2_ConvertToVector128Single:
-        case NI_AVX10v2_ConvertToVector128UInt32:
-        case NI_AVX10v2_ConvertToVector256Double:
-        case NI_AVX10v2_ConvertToVector256Int32:
-        case NI_AVX10v2_ConvertToVector256Int64:
-        case NI_AVX10v2_ConvertToVector256Single:
-        case NI_AVX10v2_ConvertToVector256UInt32:
-        case NI_AVX10v2_ConvertToVector256UInt64:
-        case NI_AVX10v2_Divide:
-        case NI_AVX10v2_Multiply:
-        case NI_AVX10v2_Scale:
-        case NI_AVX10v2_Sqrt:
-        case NI_AVX10v2_Subtract:
         {
             return true;
         }
@@ -28735,8 +28720,6 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX10v1_V512_ConvertToVector512Double:
         case NI_AVX10v1_V512_ConvertToVector512Int64:
         case NI_AVX10v1_V512_ConvertToVector512UInt64:
-        case NI_AVX10v2_ConvertToSByteWithSaturationAndZeroExtendToInt32:
-        case NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32:
         case NI_AVX10v2_V512_ConvertToSByteWithSaturationAndZeroExtendToInt32:
         case NI_AVX10v2_V512_ConvertToByteWithSaturationAndZeroExtendToInt32:
         {
@@ -29121,7 +29104,6 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX_Add:
         case NI_AVX2_Add:
         case NI_AVX512F_Add:
-        case NI_AVX10v2_Add:
         case NI_AVX512BW_Add:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Add:
@@ -29158,7 +29140,6 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE2_Divide:
         case NI_AVX_Divide:
         case NI_AVX512F_Divide:
-        case NI_AVX10v2_Divide:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Arm64_Divide:
 #endif
@@ -29211,7 +29192,6 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #if defined(TARGET_XARCH)
         case NI_SSE2_Multiply:
         case NI_AVX512F_Multiply:
-        case NI_AVX10v2_Multiply:
         {
             if (varTypeIsFloating(simdBaseType))
             {
@@ -29377,7 +29357,6 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX2_Subtract:
         case NI_AVX512F_Subtract:
         case NI_AVX512BW_Subtract:
-        case NI_AVX10v2_Subtract:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Subtract:
         case NI_AdvSimd_Arm64_Subtract:
