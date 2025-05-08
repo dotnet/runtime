@@ -1639,6 +1639,7 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
     m_compHnd->getMethodSig(targetMethod, &targetSignature);
 
     uint32_t mflags = m_compHnd->getMethodAttribs(targetMethod);
+    bool isPInvoke = mflags & CORINFO_FLG_PINVOKE;
 
     if (isVirtual && (!(mflags & CORINFO_FLG_VIRTUAL) || (mflags & CORINFO_FLG_FINAL)))
         isVirtual = false;
@@ -1690,6 +1691,28 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
     {
         AddIns(INTOP_CALLVIRT);
         m_pLastNewIns->data[0] = GetDataItemIndex(targetMethod);
+    }
+    else if (isPInvoke)
+    {
+        void *addressOfAddress;
+        CORINFO_CONST_LOOKUP lookup;
+        m_compHnd->getAddressOfPInvokeTarget(targetMethod, &lookup);
+        switch (lookup.accessType) {
+            case IAT_VALUE:
+                addressOfAddress = lookup.addr;
+                assert(!((size_t)lookup.addr & INTERP_PVALUE_TAG));
+                break;
+            case IAT_PVALUE:
+                addressOfAddress = (void *)(((size_t)lookup.addr) | INTERP_PVALUE_TAG);
+                break;
+            default:
+                addressOfAddress = nullptr;
+                assert(!"PInvoke target access type not implemented");
+                break;
+        }
+        AddIns(INTOP_CALL_PINVOKE);
+        m_pLastNewIns->data[0] = GetMethodDataItemIndex(targetMethod);
+        m_pLastNewIns->data[1] = GetDataItemIndex(addressOfAddress);
     }
     else
     {
@@ -1885,8 +1908,32 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
     }
 }
 
+void InterpCompiler::EmitStaticFieldIntrinsic(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
+{
+    switch (pFieldInfo->fieldAccessor)
+    {
+        case CORINFO_FIELD_INTRINSIC_ZERO:
+            AddIns(INTOP_LDNULL);
+            PushInterpType(InterpTypeI, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return;
+        default:
+            assert(!"Static field intrinsic not implemented");
+            return;
+    }
+}
+
 void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad)
 {
+    switch (pFieldInfo->fieldAccessor)
+    {
+        case CORINFO_FIELD_INTRINSIC_ZERO:
+        case CORINFO_FIELD_INTRINSIC_EMPTY_STRING:
+        case CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN:
+            EmitStaticFieldIntrinsic(interpFieldType, pFieldInfo, pResolvedToken);
+            return;
+    }
+
     EmitStaticFieldAddress(pFieldInfo, pResolvedToken);
     if (isLoad)
         EmitLdind(interpFieldType, pFieldInfo->structType, 0);
