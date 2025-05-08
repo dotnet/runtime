@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract class MLKem : IDisposable
     {
         private static readonly string[] s_knownOids = [Oids.MlKem512, Oids.MlKem768, Oids.MlKem1024];
