@@ -1674,8 +1674,11 @@ void InitJITHelpers1()
         _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
 
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast);
+        SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, RhpNewFastAlign8);
+        SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8_VC, RhpNewFastMisalign);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, RhpNewArrayFast);
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFastAlign8);
 
         ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString), ECall::FastAllocateString);
     }

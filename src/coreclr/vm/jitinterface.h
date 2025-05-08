@@ -150,7 +150,7 @@ EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, DWORD stri
 #ifdef FEATURE_64BIT_ALIGNMENT
 EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewArrayAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 #endif // FEATURE_64BIT_ALIGNMENT
 
 #if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))

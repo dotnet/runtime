@@ -139,7 +139,7 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object RhpNewFinalizableAlign8(MethodTable* pEEType);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpNewArrayAlign8")]
+        [RuntimeImport(Redhawk.BaseName, "RhpNewArrayFastAlign8")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object RhpNewArrayFastAlign8(MethodTable* pEEType, int length);
 
