@@ -15301,6 +15301,15 @@ PTR_CBYTE EECodeInfo::DecodeGCHdrInfoHelper(hdrInfo ** infoPtr)
     return m_hdrInfoTable;
 }
 
+PTR_CBYTE EECodeInfo::DecodeGCHdrInfo(hdrInfo * infoPtr, DWORD relOffset)
+{
+    _ASSERTE(infoPtr != NULL);
+    GCInfoToken gcInfoToken = GetGCInfoToken();
+    DWORD hdrInfoSize = (DWORD)::DecodeGCHdrInfo(gcInfoToken, relOffset, infoPtr);
+    _ASSERTE(hdrInfoSize != 0);
+    return (PTR_CBYTE)gcInfoToken.Info + hdrInfoSize;
+}
+
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64)
