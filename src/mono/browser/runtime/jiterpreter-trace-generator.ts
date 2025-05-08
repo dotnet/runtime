@@ -3909,7 +3909,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
             // clamp indices to the first invalid index which is elementCount
             // this ensures that the multiply + add will not overflow the lane size
-            // but the indices will be invalid for the intrinsic
+            // but the indices will remain invalid for the intrinsic
             if (elementCount === 4) {
                 builder.i32_const(elementCount);
                 builder.appendSimd(WasmSimdOpcode.i32x4_splat);
@@ -3925,18 +3925,21 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
 
             // We need to convert lane indices to byte indices so we can
             // use the swizzle opcode, The operations is the same as above but vectorized:
+            // for example:
             // i32x4{3, 2, 1, 0} => i8x16{12,13,14,15, 8,9,10,11, 4,5,6,7, 0,1,2,3}
             //
             // 1: multiply the lane indices by elementSize using shl to
             //  get the byte offset of the first byte in the 16 lanes
-            // {3,0,0,0, 2,0,0,0, 1,0,0,0, 0,0,0,0} 2 i16x8.shl
+            // i32x4{3, 2, 1, 0}
+            // -----------------------------------------
+            // 2 i16x8.shl
             // => {12,0,0,0, 8,0,0,0, 4,0,0,0, 0,0,0,0}
             builder.i32_const(shift);
             builder.appendSimd(WasmSimdOpcode.i8x16_shl);
 
             // 2: create a vector to swizzle the now shifted first byte
             //  of each lane into every byte of that lane.
-            // {12,0,0,0, 8,0,0,0, 4,0,0,0, 0,0,0,0} {0,0,0,0, 1,1,1,1, 2,2,2,2, 3,3,3,3} i8x16.swizzle
+            // {0,0,0,0, 4,4,4,4, 8,8,8,8, 12,12,12,12} i8x16.swizzle
             // => {12,12,12,12, 8,8,8,8, 4,4,4,4, 0,0,0,0}
             builder.appendSimd(WasmSimdOpcode.v128_const);
             for (let i = 0; i < elementCount; i++) {
@@ -3948,7 +3951,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             // 3: create a vector with the offset of each byte inside each
             //  lane then Or it with the now shifted and swizzled indices.
             //  It is safe to use Or directly thanks to the previous shift
-            // {12,12,12,12, 8,8,8,8, 4,4,4,4, 0,0,0,0} {0,1,2,3, 0,1,2,3, 0,1,2,3, 0,1,2,3} i8x16.or
+            // {0,1,2,3, 0,1,2,3, 0,1,2,3, 0,1,2,3} i8x16.or
             // => {12,13,14,15, 8,9,10,11, 4,5,6,7, 0,1,2,3}
             builder.appendSimd(WasmSimdOpcode.v128_const);
             for (let i = 0; i < elementCount; i++) {
