@@ -170,8 +170,8 @@ namespace System
         {
             return ((long)a) * b;
         }
-
-#if !TARGET_ARM64 && !TARGET_AMD64
+        
+#if !TARGET_ARM64 && !(TARGET_AMD64 && CORECLR)
         /// <summary>
         /// Perform multiplication between 64 and 32 bit numbers, returning lower 64 bits in <paramref name="low"/>
         /// </summary>
@@ -202,11 +202,19 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong BigMul(ulong a, ulong b, out ulong low)
         {
+#if MONO // Multiply is not yet implemented in MONO
+            if (Bmi2.X64.IsSupported)
+            {
+                low = a * b;
+                return Bmi2.X64.MultiplyNoFlags(a, b);
+            }
+#else
             if (X86Base.X64.IsSupported)
             {
                 (low, ulong hi) = X86Base.X64.Multiply(a, b);
                 return hi;
             }
+#endif
             else if (ArmBase.Arm64.IsSupported)
             {
                 low = a * b;
@@ -251,12 +259,13 @@ namespace System
                 low = a * b;
                 return ArmBase.Arm64.MultiplyHigh(a, b);
             }
+#if !MONO // Multiply is not yet implemented
             else if (X86Base.X64.IsSupported)
             {
-                // Ideally, we should do a single multiply for low and high. Doing this efficiently would mean making BigMul an intrinsic (would work on all x64 targets) or fixing https://github.com/dotnet/runtime/issues/11782
                 (low, long hi) = X86Base.X64.Multiply(a, b);
                 return hi;
             }
+#endif
 
             ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
             low = (long)ulow;
