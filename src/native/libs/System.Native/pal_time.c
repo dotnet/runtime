@@ -12,9 +12,7 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-#include <time.h>
-#endif
+#include <minipal/time.h>
 
 enum
 {
@@ -83,17 +81,7 @@ int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times)
 
 uint64_t SystemNative_GetTimestamp(void)
 {
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#else
-    struct timespec ts;
-
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
-    assert(result == 0); // only possible errors are if MONOTONIC isn't supported or &ts is an invalid address
-    (void)result; // suppress unused parameter warning in release builds
-
-    return ((uint64_t)(ts.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(ts.tv_nsec);
-#endif
+    return (uint64_t)minipal_hires_ticks();
 }
 
 int64_t SystemNative_GetBootTimeTicks(void)
