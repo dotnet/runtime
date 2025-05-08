@@ -24,6 +24,7 @@
 #include "gcconfig.h"
 #include "numasupport.h"
 #include <minipal/thread.h>
+#include <minipal/time.h>
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -1449,22 +1450,7 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 //  The counter value
 int64_t GCToOSInterface::QueryPerformanceCounter()
 {
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#elif HAVE_CLOCK_MONOTONIC
-    struct timespec ts;
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    if (result != 0)
-    {
-        assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
-        __UNREACHABLE();
-    }
-
-    return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
-#else
-#error " clock_gettime(CLOCK_MONOTONIC) or clock_gettime_nsec_np() must be supported."
-#endif
+    return minipal_hires_ticks();
 }
 
 // Get a frequency of the high precision performance counter
@@ -1473,7 +1459,7 @@ int64_t GCToOSInterface::QueryPerformanceCounter()
 int64_t GCToOSInterface::QueryPerformanceFrequency()
 {
     // The counter frequency of gettimeofday is in microseconds.
-    return tccSecondsToNanoSeconds;
+    return minipal_hires_tick_frequency();
 }
 
 // Get a time stamp with a low precision
