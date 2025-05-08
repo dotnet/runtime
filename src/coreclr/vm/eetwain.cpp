@@ -68,14 +68,14 @@ void EECodeManager::FixContext( ContextType     ctxType,
     _ASSERTE((ctxType == FINALLY_CONTEXT) == (thrownObject == NULL));
 
     /* Extract the necessary information from the info block header */
-    hdrInfo *hdrInfoBody;
-    pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
+    hdrInfo hdrInfoBody = { 0 };
+    pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody, dwRelOffset);
 
 #ifdef  _DEBUG
     if (trFixContext) {
         minipal_log_print_info("FixContext [%s][%s] for %s.%s: ",
-               hdrInfoBody->ebpFrame?"ebp":"   ",
-               hdrInfoBody->interruptible?"int":"   ",
+               hdrInfoBody.ebpFrame?"ebp":"   ",
+               hdrInfoBody.interruptible?"int":"   ",
                "UnknownClass","UnknownMethod");
         minipal_log_flush_info();
     }
@@ -83,11 +83,11 @@ void EECodeManager::FixContext( ContextType     ctxType,
 
     /* make sure that we have an ebp stack frame */
 
-    _ASSERTE(hdrInfoBody->ebpFrame);
-    _ASSERTE(hdrInfoBody->handlers); // <TODO>@TODO : This will always be set. Remove it</TODO>
+    _ASSERTE(hdrInfoBody.ebpFrame);
+    _ASSERTE(hdrInfoBody.handlers); // <TODO>@TODO : This will always be set. Remove it</TODO>
 
     TADDR      baseSP;
-    GetHandlerFrameInfo(hdrInfoBody, ctx->Ebp,
+    GetHandlerFrameInfo(&hdrInfoBody, ctx->Ebp,
                                 ctxType == FILTER_CONTEXT ? ctx->Esp : IGNORE_VAL,
                                 ctxType == FILTER_CONTEXT ? (DWORD) IGNORE_VAL : nestingLevel,
                                 &baseSP,
@@ -101,7 +101,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
     // EE will write Esp to **pShadowSP before jumping to handler
 
     PTR_TADDR pBaseSPslots =
-        GetFirstBaseSPslotPtr(ctx->Ebp, hdrInfoBody);
+        GetFirstBaseSPslotPtr(ctx->Ebp, &hdrInfoBody);
     *ppShadowSP = (size_t *)&pBaseSPslots[-(int) nestingLevel   ];
                    pBaseSPslots[-(int)(nestingLevel+1)] = 0; // Zero out the next slot
 
@@ -850,18 +850,18 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    hdrInfo         *info;
+    hdrInfo         info = { 0 };
 
     /* Extract the necessary information from the info block header */
 
-    pCodeInfo->DecodeGCHdrInfo(&info);
+    pCodeInfo->DecodeGCHdrInfo(&info, dwRelOffset);
 
     /* workaround: prevent interruption within prolog/epilog */
 
-    if  (info->prologOffs != hdrInfo::NOT_IN_PROLOG || info->epilogOffs != hdrInfo::NOT_IN_EPILOG)
+    if  (info.prologOffs != hdrInfo::NOT_IN_PROLOG || info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
         return false;
 
-    return (info->interruptible);
+    return (info.interruptible);
 }
 
 #endif // !USE_GC_INFO_DECODER
@@ -2122,34 +2122,34 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
 
     /* Extract the necessary information from the info block header */
 
-    hdrInfo *hdrInfoBody;
-    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
+    hdrInfo hdrInfoBody = { 0 };
+    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody, dwRelOffset);
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     if (trFixContext)
     {
         minipal_log_print_info("GetAmbientSP [%s][%s] for %s.%s: ",
-               hdrInfoBody->ebpFrame?"ebp":"   ",
-               hdrInfoBody->interruptible?"int":"   ",
+               hdrInfoBody.ebpFrame?"ebp":"   ",
+               hdrInfoBody.interruptible?"int":"   ",
                "UnknownClass","UnknownMethod");
         minipal_log_flush_info();
     }
 #endif // _DEBUG && !DACCESS_COMPILE
 
-    if ((hdrInfoBody->prologOffs != hdrInfo::NOT_IN_PROLOG) ||
-        (hdrInfoBody->epilogOffs != hdrInfo::NOT_IN_EPILOG))
+    if ((hdrInfoBody.prologOffs != hdrInfo::NOT_IN_PROLOG) ||
+        (hdrInfoBody.epilogOffs != hdrInfo::NOT_IN_EPILOG))
     {
         return NULL;
     }
 
     /* make sure that we have an ebp stack frame */
 
-    if (hdrInfoBody->handlers)
+    if (hdrInfoBody.handlers)
     {
-        _ASSERTE(hdrInfoBody->ebpFrame);
+        _ASSERTE(hdrInfoBody.ebpFrame);
 
         TADDR      baseSP;
-        GetHandlerFrameInfo(hdrInfoBody,
+        GetHandlerFrameInfo(&hdrInfoBody,
                             GetRegdisplayFP(pContext),
                             (DWORD) IGNORE_VAL,
                             nestingLevel,
@@ -2162,24 +2162,24 @@ TADDR EECodeManager::GetAmbientSP(PREGDISPLAY     pContext,
 
     _ASSERTE(nestingLevel == 0);
 
-    if (hdrInfoBody->ebpFrame)
+    if (hdrInfoBody.ebpFrame)
     {
-        return GetOutermostBaseFP(GetRegdisplayFP(pContext), hdrInfoBody);
+        return GetOutermostBaseFP(GetRegdisplayFP(pContext), &hdrInfoBody);
     }
 
     TADDR baseSP = GetRegdisplaySP(pContext);
-    if  (hdrInfoBody->interruptible)
+    if  (hdrInfoBody.interruptible)
     {
-        baseSP += scanArgRegTableI(skipToArgReg(*hdrInfoBody, table),
+        baseSP += scanArgRegTableI(skipToArgReg(hdrInfoBody, table),
                                    dwRelOffset,
                                    dwRelOffset,
-                                   hdrInfoBody);
+                                   &hdrInfoBody);
     }
     else
     {
-        baseSP += scanArgRegTable(skipToArgReg(*hdrInfoBody, table),
+        baseSP += scanArgRegTable(skipToArgReg(hdrInfoBody, table),
                                   dwRelOffset,
-                                  hdrInfoBody);
+                                  &hdrInfoBody);
     }
 
     return baseSP;
