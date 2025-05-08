@@ -70,7 +70,7 @@ extends:
               - output: pipelineArtifact
                 displayName: Publish artifacts
                 targetPath: '$(Build.ArtifactStagingDirectory)/artifacts/packages'
-                ArtifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                 condition: always()
                 retryCountOnTaskFailure: 10 # for any logs being locked
                 continueOnError: true
@@ -101,7 +101,7 @@ extends:
               - output: pipelineArtifact
                 displayName: Publish artifacts
                 targetPath: '$(Build.ArtifactStagingDirectory)/artifacts/packages'
-                ArtifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
                 condition: always()
                 retryCountOnTaskFailure: 10 # for any logs being locked
                 continueOnError: true
