@@ -113,8 +113,7 @@ namespace System.Security.Cryptography.Pkcs
                 // Don't pool because we will likely return this buffer to the caller.
                 int signatureSizeInBytes = signingKey.Algorithm.SignatureSizeInBytes;
                 byte[] signature = new byte[signatureSizeInBytes];
-                int size = signingKey.SignData(dataHash, signature);
-                Debug.Assert(size == signatureSizeInBytes, "Unexpected signature size.");
+                signingKey.SignData(dataHash, signature);
 
                 if (key != null && !certificate.GetSlhDsaPublicKey()!.VerifyData(dataHash, signature))
                 {
