@@ -74,8 +74,7 @@ public:
     void Init()
     {
         LIMITED_METHOD_CONTRACT;
-        uint64_t time = minipal_hires_ticks();
-        Init((int)time ^ GetCurrentThreadId() ^ GetCurrentProcessId());
+        Init((int)minipal_hires_ticks() ^ GetCurrentThreadId() ^ GetCurrentProcessId());
     }
 
     void Init(int Seed)
