@@ -3909,6 +3909,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
             const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
             // clamp indices to the first invalid index which is elementCount
             // this ensures that the multiply + add will not overflow the lane size
+            // but the indices will be invalid for the intrinsic
             if (elementCount === 4) {
                 builder.i32_const(elementCount);
                 builder.appendSimd(WasmSimdOpcode.i32x4_splat);
