@@ -95,7 +95,7 @@ bool fxr_resolver::try_get_path(
     bool search_global = (search & search_location_global) != 0;
     pal::string_t default_install_location;
     pal::string_t dotnet_root_env_var_name;
-    if (search_app_relative && pal::realpath(app_relative_dotnet_root))
+    if (search_app_relative && pal::fullpath(app_relative_dotnet_root))
     {
         trace::info(_X("Using app-relative location [%s] as runtime location."), app_relative_dotnet_root->c_str());
         out_dotnet_root->assign(*app_relative_dotnet_root);
