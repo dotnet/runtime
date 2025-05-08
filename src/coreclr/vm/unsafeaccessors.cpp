@@ -252,15 +252,9 @@ namespace
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
 
             // Extract the new target from the parameterized type.
-            while (newTypeMaybe.HasTypeParam())
-                newTypeMaybe = newTypeMaybe.GetTypeParam();
-
-            Instantiation inst = newTypeMaybe.GetInstantiation();
+            Instantiation inst = newTypeMaybe.GetMethodTableOfRootTypeParam()->GetInstantiation();
 
             // Append the new type to the signature.
-            // Go back to the original translated type because
-            // analysis may have altered the local.
-            newTypeMaybe = cxt.TranslatedParams[i].Type;
             AppendTypeToSignature(newSig, newTypeMaybe, inst);
         }
 
