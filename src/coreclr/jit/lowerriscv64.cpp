@@ -275,6 +275,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                             (user->OperIs(GT_EQ) && userOp2->IsIntegralConst(value))) // a & bit == bit
                         {
                             binOp->ChangeOper(GT_BIT_EXTRACT);
+                            binOp->gtType = TYP_INT;
                             value = BitOperations::Log2(value);
                             assert(value >= 11); // smaller immediates should have been contained into or/xor/and
                             constant->SetIntegralValue(value);

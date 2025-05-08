@@ -273,6 +273,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BIT_CLEAR:
         case GT_BIT_EXTRACT:
         case GT_BIT_INVERT:
+            assert(!tree->OperIs(GT_BIT_EXTRACT) || tree->TypeIs(TYP_INT));
             if (tree->OperIs(GT_ROR, GT_ROL) && !compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
                 buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
