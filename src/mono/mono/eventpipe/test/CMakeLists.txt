@@ -41,12 +41,7 @@ if(ENABLE_PERFTRACING)
         target_sources(ep-test PRIVATE "${mono-components-objects}")
         
         set(EPTEST_LINKABLE_LIBS "")
-        list(APPEND EPTEST_LINKABLE_LIBS eglib_api monosgen-static ${OS_LIBS} ${LLVM_LIBS} monoapi)
-        if (CLR_CMAKE_USE_SYSTEM_ZLIB)
-            list(APPEND EPTEST_LINKABLE_LIBS ${EPTEST_LINKABLE_LIBS} ${Z_LIBS})
-        else()
-            list(APPEND EPTEST_LINKABLE_LIBS ${EPTEST_LINKABLE_LIBS} zlib)
-        endif()
+        list(APPEND EPTEST_LINKABLE_LIBS eglib_api monosgen-static ${OS_LIBS} ${LLVM_LIBS} monoapi ${Z_LIBS})
         target_link_libraries(ep-test PRIVATE ${EPTEST_LINKABLE_LIBS})
         
         install_with_stripped_symbols(ep-test TARGETS bin)

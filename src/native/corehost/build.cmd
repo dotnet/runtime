@@ -46,6 +46,7 @@ if /i [%1] == [rootDir]     (set __rootDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [msbuild] (set __Ninja=0)
 if /i [%1] == [runtimeflavor]  (set __RuntimeFlavor=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [runtimeconfiguration]  (set __RuntimeConfiguration=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [-cmakeargs] (set __ExtraCmakeParams=%__ExtraCmakeParams% %2&shift&shift&goto Arg_Loop)
 if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&&shift&&shift&goto Arg_Loop)
 
 shift

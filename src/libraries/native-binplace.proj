@@ -31,6 +31,24 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="GetNoIPODependencies" BeforeTargets="GetBinPlaceItems">
+    <ItemGroup>
+      <NoIPOLib Include="$(VendoredLibraryRootPath)\NOIPO\lib\$(LibPrefix)brotlienc$(StaticLibSuffix);
+              $(VendoredLibraryRootPath)\NOIPO\lib\$(LibPrefix)brotlidec$(StaticLibSuffix);
+              $(VendoredLibraryRootPath)\NOIPO\lib\$(LibPrefix)brotlicommon$(StaticLibSuffix)" />
+      <NoIPOLib Condition="'$(TargetsWindows)' != 'true'" Include="$(VendoredLibraryRootPath)\NOIPO\lib\$(LibPrefix)z$(StaticLibSuffix)" />
+      <NoIPOLib Condition="'$(TargetsWindows)' == 'true'" Include="$(VendoredLibraryRootPath)\NOIPO\lib\$(LibPrefix)zlibstatic$(StaticLibSuffix)" />
+      <NoIPOLib Condition="'$(TargetsWindows)' == 'true'"
+                 Include="$(VendoredLibraryRootPath)\NOIPO\lib\$(LibPrefix)zlibstaticd$(StaticLibSuffix)"
+                 TargetPath="$(RuntimeBinDir)\aotsdk\$(LibPrefix)zlibstatic$(StaticLibSuffix)" />
+    </ItemGroup>
+    <!-- Some of the libraries above may not be produced depending on what system libs (as compared to vendored libs) the build has requested. -->
+    <ItemGroup>
+      <BinPlaceItem Include="@(NoIPOLib)"
+                 Condition="Exists('%(NoIPOLib.Identity)')" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="Build" DependsOnTargets="BinPlace" />
   <Target Name="CreateManifestResourceNames" />
 </Project>

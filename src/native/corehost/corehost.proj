@@ -14,7 +14,12 @@
     <!-- Global location for version files -->
     <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows)) or '$(TargetsAndroid)' == 'true'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <PrefixPathArg>-cmakeargs "-DCMAKE_PREFIX_PATH=$(VendoredLibraryRootPath.TrimEnd('\\'))"</PrefixPathArg>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)/src/native/external/vendored-libs.proj" />
+  </ItemGroup>
 
   <Target Name="CopySingleFileHost" AfterTargets="Build">
 
@@ -54,7 +59,7 @@
 
       <_CoreHostUnixTargetOS>$(TargetOS)</_CoreHostUnixTargetOS>
       <_CoreHostUnixTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_CoreHostUnixTargetOS>
-      <BuildArgs>$(Configuration) $(TargetArchitecture) -commithash "$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))" -os $(_CoreHostUnixTargetOS)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) -commithash "$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))" -os $(_CoreHostUnixTargetOS) $(PrefixPathArg)</BuildArgs>
       <BuildArgs>$(BuildArgs) -cmakeargs "-DVERSION_FILE_PATH=$(NativeVersionFile)"</BuildArgs>
     </PropertyGroup>
     <PropertyGroup Condition="'$(CxxStandardLibrary)' != ''">
@@ -91,8 +96,8 @@
     <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
-  <!-- 
-    This is a workaround when cross-compiling on Windows for Android. 
+  <!--
+    This is a workaround when cross-compiling on Windows for Android.
 
     https://github.com/dotnet/arcade/issues/15496
   -->
@@ -106,7 +111,7 @@
       <NativeVersionFile>$(ArtifactsObjDir)_version.c</NativeVersionFile>
     </PropertyGroup>
   </Target>
-  
+
   <Target Name="BuildCoreHostWindows"
           Condition="'$(TargetOS)' == 'windows'"
           AfterTargets="Build"
@@ -147,7 +152,7 @@
     <PropertyGroup>
       <BuildScript>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'build.cmd'))</BuildScript>
 
-      <BuildArgs>$(Configuration) $(TargetArchitecture) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) outputrid $(OutputRID)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) outputrid $(OutputRID) $(PrefixPathArg)</BuildArgs>
       <BuildArgs Condition="'$(ConfigureOnly)' == 'true'">$(BuildArgs) configureonly</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
