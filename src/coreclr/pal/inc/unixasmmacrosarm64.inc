@@ -114,6 +114,13 @@ C_FUNC(\Name\()_End):
         .endif
 .endm
 
+.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ofs
+        stp \reg1, \reg2, [sp, \ofs]!
+        .cfi_adjust_cfa_offset -\ofs
+        .cfi_rel_offset \reg1, 0
+        .cfi_rel_offset \reg2, 8
+.endm
+
 .macro EPILOG_RESTORE_REG reg, ofs
         ldr \reg, [sp, \ofs]
         .cfi_restore \reg

@@ -4,16 +4,6 @@
 project(singlefilehost)
 set(DOTNET_PROJECT_NAME "singlefilehost")
 
-# Add RPATH to the apphost binary that allows using local copies of shared libraries
-# dotnet core depends on for special scenarios when system wide installation of such
-# dependencies is not possible for some reason.
-# This cannot be enabled for MacOS (Darwin) since its RPATH works in a different way,
-# doesn't apply to libraries loaded via dlopen and most importantly, it is not transitive.
-if (NOT CLR_CMAKE_TARGET_APPLE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
-endif()
-
 include_directories(..)
 include_directories(../..)
 include_directories(../../hostmisc)
@@ -195,7 +185,7 @@ else()
         LIST(APPEND NATIVE_LIBS
             eventprovider
         )
-    endif(FEATURE_EVENT_TRACE) 
+    endif(FEATURE_EVENT_TRACE)
     LIST(APPEND NATIVE_LIBS
         nativeresourcestring
     )
@@ -223,6 +213,10 @@ else()
     set(RUNTIMEINFO_LIB runtimeinfo)
 
 endif()
+
+LIST(APPEND NATIVE_LIBS
+    gcinfo
+)
 
 if(CLR_CMAKE_TARGET_APPLE)
     LIST(APPEND NATIVE_LIBS

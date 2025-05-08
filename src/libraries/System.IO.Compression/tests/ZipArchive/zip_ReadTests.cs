@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.IO.Compression.Tests.Utilities;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
@@ -11,55 +12,149 @@ namespace System.IO.Compression.Tests
 {
     public class zip_ReadTests : ZipFileTestBase
     {
-        [Theory]
-        [InlineData("normal.zip", "normal")]
-        [InlineData("fake64.zip", "small")]
-        [InlineData("empty.zip", "empty")]
-        [InlineData("appended.zip", "small")]
-        [InlineData("prepended.zip", "small")]
-        [InlineData("emptydir.zip", "emptydir")]
-        [InlineData("small.zip", "small")]
-        [InlineData("unicode.zip", "unicode")]
-        public static async Task ReadNormal(string zipFile, string zipFolder)
+        public static IEnumerable<object[]> Get_ReadNormal_Data()
         {
-            await IsZipSameAsDirAsync(zfile(zipFile), zfolder(zipFolder), ZipArchiveMode.Read);
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { "normal.zip", "normal", async };
+                yield return new object[] { "fake64.zip", "small", async };
+                yield return new object[] { "empty.zip", "empty", async };
+                yield return new object[] { "appended.zip", "small", async };
+                yield return new object[] { "prepended.zip", "small", async };
+                yield return new object[] { "emptydir.zip", "emptydir", async };
+                yield return new object[] { "small.zip", "small", async };
+                yield return new object[] { "unicode.zip", "unicode", async };
+            }
         }
 
         [Theory]
-        [InlineData("normal.zip", "normal")]
-        [InlineData("fake64.zip", "small")]
-        [InlineData("empty.zip", "empty")]
-        [InlineData("appended.zip", "small")]
-        [InlineData("prepended.zip", "small")]
-        [InlineData("emptydir.zip", "emptydir")]
-        [InlineData("small.zip", "small")]
-        [InlineData("unicode.zip", "unicode")]
-        public static async Task TestStreamingRead(string zipFile, string zipFolder)
+        [MemberData(nameof(Get_ReadNormal_Data))]
+        public static Task ReadNormal(string zipFile, string zipFolder, bool async) => IsZipSameAsDir(zfile(zipFile), zfolder(zipFolder), ZipArchiveMode.Read, async);
+
+        [Theory]
+        [MemberData(nameof(Get_ReadNormal_Data))]
+        public static async Task TestStreamingRead(string zipFile, string zipFolder, bool async)
         {
             using (var stream = await StreamHelpers.CreateTempCopyStream(zfile(zipFile)))
             {
                 Stream wrapped = new WrappedStream(stream, true, false, false, null);
-                IsZipSameAsDir(wrapped, zfolder(zipFolder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
+                await IsZipSameAsDir(wrapped, zfolder(zipFolder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true, async);
                 Assert.False(wrapped.CanRead, "Wrapped stream should be closed at this point"); //check that it was closed
             }
         }
 
-        [Fact]
-        public static async Task ReadStreamOps()
+        public static IEnumerable<object[]> Get_TestPartialReads_Data()
         {
-            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Read))
+            foreach (bool async in _bools)
             {
-                foreach (ZipArchiveEntry e in archive.Entries)
+                yield return new object[] { "normal.zip", "normal", async };
+                yield return new object[] { "fake64.zip", "small", async };
+                yield return new object[] { "empty.zip", "empty", async };
+                yield return new object[] { "appended.zip", "small", async };
+                yield return new object[] { "prepended.zip", "small", async };
+                yield return new object[] { "emptydir.zip", "emptydir", async };
+                yield return new object[] { "small.zip", "small", async };
+                yield return new object[] { "unicode.zip", "unicode", async };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_TestPartialReads_Data))]
+        public static async Task TestPartialReads(string zipFile, string zipFolder, bool async)
+        {
+            using (MemoryStream stream = await StreamHelpers.CreateTempCopyStream(zfile(zipFile)))
+            {
+                Stream clamped = new ClampedReadStream(stream, readSizeLimit: 1);
+                await IsZipSameAsDir(clamped, zfolder(zipFolder), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true, async);
+            }
+        }
+
+        [Fact]
+        public static async Task ReadInterleavedAsync()
+        {
+            ZipArchive archive = await ZipArchive.CreateAsync(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+
+            ZipArchiveEntry e1 = archive.GetEntry("first.txt");
+            ZipArchiveEntry e2 = archive.GetEntry("notempty/second.txt");
+
+            //read all of e1 and e2's contents
+            byte[] e1readnormal = new byte[e1.Length];
+            byte[] e2readnormal = new byte[e2.Length];
+            byte[] e1interleaved = new byte[e1.Length];
+            byte[] e2interleaved = new byte[e2.Length];
+
+            await using (Stream e1s = await e1.OpenAsync())
+            {
+                await ReadBytes(e1s, e1readnormal, e1.Length, async: true);
+            }
+            await using (Stream e2s = await e2.OpenAsync())
+            {
+                await ReadBytes(e2s, e2readnormal, e2.Length, async: true);
+            }
+
+            //now read interleaved, assume we are working with < 4gb files
+            const int bytesAtATime = 15;
+
+            await using (Stream e1s = await e1.OpenAsync(), e2s = await e2.OpenAsync())
+            {
+                int e1pos = 0;
+                int e2pos = 0;
+
+                while (e1pos < e1.Length || e2pos < e2.Length)
                 {
-                    using (Stream s = e.Open())
+                    if (e1pos < e1.Length)
                     {
-                        Assert.True(s.CanRead, "Can read to read archive");
-                        Assert.False(s.CanWrite, "Can't write to read archive");
-                        Assert.False(s.CanSeek, "Can't seek on archive");
-                        Assert.Equal(LengthOfUnseekableStream(s), e.Length); //"Length is not correct on unseekable stream"
+                        int e1bytesRead = await e1s.ReadAsync(e1interleaved, e1pos,
+                            bytesAtATime + e1pos > e1.Length ? (int)e1.Length - e1pos : bytesAtATime);
+                        e1pos += e1bytesRead;
+                    }
+
+                    if (e2pos < e2.Length)
+                    {
+                        int e2bytesRead = await e2s.ReadAsync(e2interleaved, e2pos,
+                            bytesAtATime + e2pos > e2.Length ? (int)e2.Length - e2pos : bytesAtATime);
+                        e2pos += e2bytesRead;
                     }
                 }
             }
+
+            //now compare to original read
+            ArraysEqual<byte>(e1readnormal, e1interleaved, e1readnormal.Length);
+            ArraysEqual<byte>(e2readnormal, e2interleaved, e2readnormal.Length);
+
+            //now read one entry interleaved
+            byte[] e1selfInterleaved1 = new byte[e1.Length];
+            byte[] e1selfInterleaved2 = new byte[e2.Length];
+
+
+            await using (Stream s1 = await e1.OpenAsync(), s2 = await e1.OpenAsync())
+            {
+                int s1pos = 0;
+                int s2pos = 0;
+
+                while (s1pos < e1.Length || s2pos < e1.Length)
+                {
+                    if (s1pos < e1.Length)
+                    {
+                        int s1bytesRead = s1.Read(e1interleaved, s1pos,
+                            bytesAtATime + s1pos > e1.Length ? (int)e1.Length - s1pos : bytesAtATime);
+                        s1pos += s1bytesRead;
+                    }
+
+                    if (s2pos < e1.Length)
+                    {
+                        int s2bytesRead = s2.Read(e2interleaved, s2pos,
+                            bytesAtATime + s2pos > e1.Length ? (int)e1.Length - s2pos : bytesAtATime);
+                        s2pos += s2bytesRead;
+                    }
+                }
+            }
+
+            //now compare to original read
+            ArraysEqual<byte>(e1readnormal, e1selfInterleaved1, e1readnormal.Length);
+            ArraysEqual<byte>(e1readnormal, e1selfInterleaved2, e1readnormal.Length);
+
+            await archive.DisposeAsync();
         }
 
         [Fact]
@@ -78,11 +173,11 @@ namespace System.IO.Compression.Tests
 
                 using (Stream e1s = e1.Open())
                 {
-                    ReadBytes(e1s, e1readnormal, e1.Length);
+                    await ReadBytes(e1s, e1readnormal, e1.Length, async: false);
                 }
                 using (Stream e2s = e2.Open())
                 {
-                    ReadBytes(e2s, e2readnormal, e2.Length);
+                    await ReadBytes(e2s, e2readnormal, e2.Length, async: false);
                 }
 
                 //now read interleaved, assume we are working with < 4gb files
@@ -148,10 +243,14 @@ namespace System.IO.Compression.Tests
                 ArraysEqual<byte>(e1readnormal, e1selfInterleaved2, e1readnormal.Length);
             }
         }
-        [Fact]
-        public static async Task ReadModeInvalidOpsTest()
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ReadModeInvalidOpsTest(bool async)
         {
-            ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Read);
+            await using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
             ZipArchiveEntry e = archive.GetEntry("first.txt");
 
             //should also do it on deflated stream
@@ -165,39 +264,39 @@ namespace System.IO.Compression.Tests
             Assert.Throws<NotSupportedException>(() => e.LastWriteTime = new DateTimeOffset()); //"Should not be able to update time"
 
             //on stream
-            Stream s = e.Open();
+            Stream s = await OpenEntryStream(async, e);
             Assert.Throws<NotSupportedException>(() => s.Flush()); //"Should not be able to flush on read stream"
             Assert.Throws<NotSupportedException>(() => s.WriteByte(25)); //"should not be able to write to read stream"
             Assert.Throws<NotSupportedException>(() => s.Position = 4); //"should not be able to seek on read stream"
             Assert.Throws<NotSupportedException>(() => s.Seek(0, SeekOrigin.Begin)); //"should not be able to seek on read stream"
             Assert.Throws<NotSupportedException>(() => s.SetLength(0)); //"should not be able to resize read stream"
 
-            archive.Dispose();
+            await DisposeZipArchive(async, archive);
 
             //after disposed
             Assert.Throws<ObjectDisposedException>(() => { var x = archive.Entries; }); //"Should not be able to get entries on disposed archive"
             Assert.Throws<NotSupportedException>(() => archive.CreateEntry("dirka")); //"should not be able to create on disposed archive"
 
-            Assert.Throws<ObjectDisposedException>(() => e.Open()); //"should not be able to open on disposed archive"
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => OpenEntryStream(async, e)); //"should not be able to open on disposed archive"
             Assert.Throws<NotSupportedException>(() => e.Delete()); //"should not be able to delete on disposed archive"
             Assert.Throws<ObjectDisposedException>(() => { e.LastWriteTime = new DateTimeOffset(); }); //"Should not be able to update on disposed archive"
 
             Assert.Throws<NotSupportedException>(() => s.ReadByte()); //"should not be able to read on disposed archive"
 
-            s.Dispose();
+            await DisposeStream(async, s);
         }
 
-        [Fact]
-        public static void TestEmptyLastModifiedEntryValueNotThrowingInternalException()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task TestEmptyLastModifiedEntryValueNotThrowingInternalException(bool async)
         {
             var emptyDateIndicator = new DateTimeOffset(new DateTime(1980, 1, 1, 0, 0, 0));
             var buffer = new byte[100];//empty archive we will make will have exact this size
             using var memoryStream = new MemoryStream(buffer);
 
-            using (var singleEntryArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
-            {
-                singleEntryArchive.CreateEntry("1");
-            }
+            ZipArchive singleEntryArchive = await CreateZipArchive(async, memoryStream, ZipArchiveMode.Create, true);
+            singleEntryArchive.CreateEntry("1");
+            await DisposeZipArchive(async, singleEntryArchive);
 
             //set LastWriteTime bits to 0 in this trivial archive
             const int lastWritePosition = 43;
@@ -207,39 +306,48 @@ namespace System.IO.Compression.Tests
             buffer[lastWritePosition + 3] = 0;
             memoryStream.Seek(0, SeekOrigin.Begin);
 
-            using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read, true);
+            ZipArchive archive = await CreateZipArchive(async, memoryStream, ZipArchiveMode.Read, true);
             Assert.Equal(archive.Entries[0].LastWriteTime, emptyDateIndicator);
+            await DisposeZipArchive(async, archive);
         }
 
         [Theory]
-        [InlineData("normal.zip")]
-        [InlineData("small.zip")]
-        public static async Task EntriesNotEncryptedByDefault(string zipFile)
+        [InlineData("normal.zip", false)]
+        [InlineData("normal.zip", true)]
+        [InlineData("small.zip", false)]
+        [InlineData("small.zip", true)]
+        public static async Task EntriesNotEncryptedByDefault(string zipFile, bool async)
         {
-            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile(zipFile)), ZipArchiveMode.Read))
+            ZipArchive archive = await CreateZipArchive(async, await StreamHelpers.CreateTempCopyStream(zfile(zipFile)), ZipArchiveMode.Read);
+            foreach (ZipArchiveEntry entry in archive.Entries)
             {
-                foreach (ZipArchiveEntry entry in archive.Entries)
-                {
-                    Assert.False(entry.IsEncrypted);
-                }
+                Assert.False(entry.IsEncrypted);
+            }
+            await DisposeZipArchive(async, archive);
+        }
+
+        public static IEnumerable<object[]> Get_IdentifyEncryptedEntries_Data()
+        {
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { "encrypted_entries_weak.zip", async };
+                yield return new object[] { "encrypted_entries_aes256.zip", async };
+                yield return new object[] { "encrypted_entries_mixed.zip", async };
             }
         }
 
         [Theory]
-        [InlineData("encrypted_entries_weak.zip")]
-        [InlineData("encrypted_entries_aes256.zip")]
-        [InlineData("encrypted_entries_mixed.zip")]
-        public static async Task IdentifyEncryptedEntries(string zipFile)
+        [MemberData(nameof(Get_IdentifyEncryptedEntries_Data))]
+        public static async Task IdentifyEncryptedEntries(string zipFile, bool async)
         {
             var entriesEncrypted = new Dictionary<string, bool>();
 
-            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile(zipFile)), ZipArchiveMode.Read))
+            ZipArchive archive = await CreateZipArchive(async, await StreamHelpers.CreateTempCopyStream(zfile(zipFile)), ZipArchiveMode.Read);
+            foreach (ZipArchiveEntry entry in archive.Entries)
             {
-                foreach (ZipArchiveEntry entry in archive.Entries)
-                {
-                    entriesEncrypted.Add(entry.Name, entry.IsEncrypted);
-                }
+                entriesEncrypted.Add(entry.Name, entry.IsEncrypted);
             }
+            await DisposeZipArchive(async, archive);
 
             var expectedEntries = new Dictionary<string, bool>()
             {
@@ -252,10 +360,19 @@ namespace System.IO.Compression.Tests
             Assert.Equal(expectedEntries, entriesEncrypted);
         }
 
+        public static IEnumerable<object[]> Get_EnsureDisposeIsCalledAsExpectedOnTheUnderlyingStream_Data()
+        {
+            foreach (bool async in _bools)
+            {
+                // leaveOpen, expectedDisposeCalls, async
+                yield return new object[] { true, 0, async };
+                yield return new object[] { false, 1, async };
+            }
+        }
+
         [Theory]
-        [InlineData(true, 0)]
-        [InlineData(false, 1)]
-        public static async Task EnsureDisposeIsCalledAsExpectedOnTheUnderlyingStream(bool leaveOpen, int expectedDisposeCalls)
+        [MemberData(nameof(Get_EnsureDisposeIsCalledAsExpectedOnTheUnderlyingStream_Data))]
+        public static async Task EnsureDisposeIsCalledAsExpectedOnTheUnderlyingStream(bool leaveOpen, int expectedDisposeCalls, bool async)
         {
             var disposeCallCountingStream = new DisposeCallCountingStream();
             using (var tempStream = await StreamHelpers.CreateTempCopyStream(zfile("small.zip")))
@@ -263,20 +380,20 @@ namespace System.IO.Compression.Tests
                 tempStream.CopyTo(disposeCallCountingStream);
             }
 
-            using (ZipArchive archive = new ZipArchive(disposeCallCountingStream, ZipArchiveMode.Read, leaveOpen))
+            ZipArchive archive = await CreateZipArchive(async, disposeCallCountingStream, ZipArchiveMode.Read, leaveOpen);
+            // Iterate through entries to ensure read of zip file
+            foreach (ZipArchiveEntry entry in archive.Entries)
             {
-                // Iterate through entries to ensure read of zip file
-                foreach (ZipArchiveEntry entry in archive.Entries)
-                {
-                    Assert.False(entry.IsEncrypted);
-                }
+                Assert.False(entry.IsEncrypted);
             }
+            await DisposeZipArchive(async, archive);
 
             Assert.Equal(expectedDisposeCalls, disposeCallCountingStream.NumberOfDisposeCalls);
         }
 
-        [Fact]
-        public static void CanReadLargeCentralDirectoryHeader()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CanReadLargeCentralDirectoryHeader(bool async)
         {
             // A 19-character filename will result in a 65-byte central directory header. 64 of these will make the central directory
             // read process stretch into two 4KB buffers.
@@ -285,127 +402,149 @@ namespace System.IO.Compression.Tests
 
             using (MemoryStream archiveStream = new MemoryStream())
             {
-                using (ZipArchive creationArchive = new ZipArchive(archiveStream, ZipArchiveMode.Create, true))
+                ZipArchive creationArchive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Create, true);
+                for (int i = 0; i < count; i++)
                 {
-                    for (int i = 0; i < count; i++)
-                    {
-                        creationArchive.CreateEntry(string.Format(entryNameFormat, i));
-                    }
+                    creationArchive.CreateEntry(string.Format(entryNameFormat, i));
                 }
+                await DisposeZipArchive(async, creationArchive);
 
                 archiveStream.Seek(0, SeekOrigin.Begin);
 
-                using (ZipArchive readArchive = new ZipArchive(archiveStream, ZipArchiveMode.Read))
+                ZipArchive readArchive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+                Assert.Equal(count, readArchive.Entries.Count);
+                for (int i = 0; i < count; i++)
                 {
-                    Assert.Equal(count, readArchive.Entries.Count);
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        Assert.Equal(string.Format(entryNameFormat, i), readArchive.Entries[i].FullName);
-                        Assert.Equal(0, readArchive.Entries[i].CompressedLength);
-                        Assert.Equal(0, readArchive.Entries[i].Length);
-                    }
+                    Assert.Equal(string.Format(entryNameFormat, i), readArchive.Entries[i].FullName);
+                    Assert.Equal(0, readArchive.Entries[i].CompressedLength);
+                    Assert.Equal(0, readArchive.Entries[i].Length);
                 }
+                await DisposeZipArchive(async, readArchive);
             }
         }
 
-        [Fact]
-        public static void ArchivesInOffsetOrder_UpdateMode()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ArchivesInOffsetOrder_UpdateMode(bool async)
         {
             // When the ZipArchive which has been opened in Update mode is disposed of, its entries will be rewritten in order of their offset within the file.
             // This requires the entries to be sorted when the file is opened.
             byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-            byte[] sampleZipFile = ReverseCentralDirectoryEntries(CreateZipFile(50, sampleEntryContents));
+            byte[] sampleZipFile = ReverseCentralDirectoryEntries(await CreateZipFile(50, sampleEntryContents, async));
 
-            using (MemoryStream ms = new MemoryStream())
+            using MemoryStream ms = new MemoryStream();
+
+            ms.Write(sampleZipFile);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            ZipArchive source = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+
+            long previousOffset = long.MinValue;
+            FieldInfo offsetOfLocalHeader = typeof(ZipArchiveEntry).GetField("_offsetOfLocalHeader", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            for (int i = 0; i < source.Entries.Count; i++)
             {
-                ms.Write(sampleZipFile);
-                ms.Seek(0, SeekOrigin.Begin);
+                ZipArchiveEntry entry = source.Entries[i];
+                long offset = (long)offsetOfLocalHeader.GetValue(entry);
 
-                ZipArchive source = new ZipArchive(ms, ZipArchiveMode.Update, leaveOpen: true);
-                long previousOffset = long.MinValue;
-                System.Reflection.FieldInfo offsetOfLocalHeader = typeof(ZipArchiveEntry).GetField("_offsetOfLocalHeader", System.Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
-
-                for (int i = 0; i < source.Entries.Count; i++)
-                {
-                    ZipArchiveEntry entry = source.Entries[i];
-                    long offset = (long)offsetOfLocalHeader.GetValue(entry);
-
-                    Assert.True(offset > previousOffset);
-                    previousOffset = offset;
-                }
-
-                source.Dispose();
+                Assert.True(offset > previousOffset);
+                previousOffset = offset;
             }
+
+            await DisposeZipArchive(async, source);
         }
 
-        [Fact]
-        public static void ArchivesInCentralDirectoryOrder_ReadMode()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ArchivesInCentralDirectoryOrder_ReadMode(bool async)
         {
             // When the ZipArchive is opened in Read mode, no sort is necessary. The entries will be added to the ZipArchive in the order
             // that they appear in the central directory (in this case, sorted by offset descending.)
             byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-            byte[] sampleZipFile = ReverseCentralDirectoryEntries(CreateZipFile(50, sampleEntryContents));
+            byte[] sampleZipFile = ReverseCentralDirectoryEntries(await CreateZipFile(50, sampleEntryContents, async));
 
-            using (MemoryStream ms = new MemoryStream())
+            using MemoryStream ms = new MemoryStream();
+
+            ms.Write(sampleZipFile);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            ZipArchive source = await CreateZipArchive(async, ms, ZipArchiveMode.Read, true);
+
+            long previousOffset = long.MaxValue;
+            FieldInfo offsetOfLocalHeader = typeof(ZipArchiveEntry).GetField("_offsetOfLocalHeader", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            for (int i = 0; i < source.Entries.Count; i++)
             {
-                ms.Write(sampleZipFile);
-                ms.Seek(0, SeekOrigin.Begin);
+                ZipArchiveEntry entry = source.Entries[i];
+                long offset = (long)offsetOfLocalHeader.GetValue(entry);
 
-                ZipArchive source = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true);
-                long previousOffset = long.MaxValue;
-                System.Reflection.FieldInfo offsetOfLocalHeader = typeof(ZipArchiveEntry).GetField("_offsetOfLocalHeader", System.Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
-
-                for (int i = 0; i < source.Entries.Count; i++)
-                {
-                    ZipArchiveEntry entry = source.Entries[i];
-                    long offset = (long)offsetOfLocalHeader.GetValue(entry);
-
-                    Assert.True(offset < previousOffset);
-                    previousOffset = offset;
-                }
-
-                source.Dispose();
+                Assert.True(offset < previousOffset);
+                previousOffset = offset;
             }
+
+            await DisposeZipArchive(async, source);
         }
 
-        [Fact]
-        public static void EntriesMalformed_InvalidDataException()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task EntriesMalformed_InvalidDataException(bool async)
         {
             string entryName = "entry.txt";
 
             var stream = new MemoryStream();
-            using (var archiveWrite = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
-            {
-                archiveWrite.CreateEntry(entryName);
-            }
+            ZipArchive archiveWrite = await CreateZipArchive(async, stream, ZipArchiveMode.Create, true);
+            archiveWrite.CreateEntry(entryName);
+            await DisposeZipArchive(async, archiveWrite);
 
             stream.Position = 0;
 
             // Malform the archive
-            using (var archiveRead = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
-            {
-                var unused = archiveRead.Entries;
+            ZipArchive archiveRead = await CreateZipArchive(async, stream, ZipArchiveMode.Read, true);
 
-                // Read the last 22 bytes of stream to get the EOCD.
-                byte[] buffer = new byte[22];
-                stream.Seek(-22, SeekOrigin.End);
-                stream.ReadExactly(buffer);
+            var unused = archiveRead.Entries;
 
-                var startCentralDir = (long)typeof(ZipArchive).GetField("_centralDirectoryStart", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(archiveRead);
-                // Truncate to exactly 46 bytes after start.
-                stream.SetLength(startCentralDir + 46);
+            // Read the last 22 bytes of stream to get the EOCD.
+            byte[] buffer = new byte[22];
+            stream.Seek(-22, SeekOrigin.End);
+            stream.ReadExactly(buffer);
 
-                // Write the EOCD back.
-                stream.Seek(-22, SeekOrigin.End);
-                stream.Write(buffer);
-            }
+            var startCentralDir = (long)typeof(ZipArchive).GetField("_centralDirectoryStart", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(archiveRead);
+            // Truncate to exactly 46 bytes after start.
+            stream.SetLength(startCentralDir + 46);
+
+            // Write the EOCD back.
+            stream.Seek(-22, SeekOrigin.End);
+            stream.Write(buffer);
+
+            await DisposeZipArchive(async, archiveRead);
 
             stream.Position = 0;
 
             ZipArchive archive = new ZipArchive(stream);
 
             Assert.Throws<InvalidDataException>(() => _ = archive.Entries);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ReadStreamOps(bool async)
+        {
+            MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+
+            foreach (ZipArchiveEntry e in archive.Entries)
+            {
+                Stream s = await OpenEntryStream(async, e);
+
+                Assert.True(s.CanRead, "Can read to read archive");
+                Assert.False(s.CanWrite, "Can't write to read archive");
+                Assert.False(s.CanSeek, "Can't seek on archive");
+                Assert.Equal(await LengthOfUnseekableStream(s), e.Length); //"Length is not correct on unseekable stream"
+
+                await DisposeStream(async, s);
+            }
+
+            await DisposeZipArchive(async, archive);
         }
 
         private static byte[] ReverseCentralDirectoryEntries(byte[] zipFile)

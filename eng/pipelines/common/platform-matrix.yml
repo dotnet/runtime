@@ -45,27 +45,6 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux armv6
-
-- ${{ if containsValue(parameters.platforms, 'linux_armv6') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: linux
-      archType: armv6
-      targetRid: linux-armv6
-      platform: linux_armv6
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_armv6
-      jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        buildConfig: ${{ parameters.buildConfig }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        crossBuild: true
-        ${{ insert }}: ${{ parameters.jobParameters }}
-
 # Linux arm64
 
 - ${{ if or(containsValue(parameters.platforms, 'linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
@@ -348,7 +327,7 @@ jobs:
       targetRid: linux-x64
       platform: linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: debian-12-gcc14-amd64
+      container: debian-12-gcc15-amd64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}

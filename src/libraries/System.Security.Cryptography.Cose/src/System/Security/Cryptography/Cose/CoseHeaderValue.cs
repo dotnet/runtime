@@ -48,10 +48,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="ArgumentNullException"><paramref name="encodedValue"/> is <see langword="null"/>.</exception>
         public static CoseHeaderValue FromEncodedValue(byte[] encodedValue)
         {
-            if (encodedValue == null)
-            {
-                throw new ArgumentNullException(nameof(encodedValue));
-            }
+            ArgumentNullException.ThrowIfNull(encodedValue);
 
             return FromEncodedValue(encodedValue.AsSpan());
         }
@@ -85,10 +82,7 @@ namespace System.Security.Cryptography.Cose
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
         public static CoseHeaderValue FromString(string value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             var writer = new CborWriter();
             writer.WriteTextString(value);
@@ -119,10 +113,7 @@ namespace System.Security.Cryptography.Cose
         /// <seealso cref="FromEncodedValue(byte[])"/>
         public static CoseHeaderValue FromBytes(byte[] value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             return FromBytes(value.AsSpan());
         }

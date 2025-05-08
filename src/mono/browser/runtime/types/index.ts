@@ -403,7 +403,7 @@ export type DotnetModuleConfig = {
     exports?: string[];
 } & Partial<EmscriptenModule>
 
-export type APIType = {
+export type RunAPIType = {
     /**
      * Runs the Main() method of the application.
      * Note: this will keep the .NET runtime alive and the APIs will be available for further calls.
@@ -453,6 +453,9 @@ export type APIType = {
      * You can register the scripts using MonoConfig.resources.modulesAfterConfigLoaded and MonoConfig.resources.modulesAfterRuntimeReady.
      */
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>;
+}
+
+export type MemoryAPIType = {
     /**
      * Writes to the WASM linear memory
      */
@@ -594,6 +597,47 @@ export type APIType = {
      */
     localHeapViewF64: () => Float64Array;
 }
+
+export type DiagnosticsAPIType = {
+    /**
+     * creates diagnostic trace file. Default is 60 seconds.
+     * It could be opened in PerfView or Visual Studio as is.
+     */
+    collectCpuSamples: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * creates diagnostic trace file. Default is 60 seconds.
+     * It could be opened in PerfView or Visual Studio as is.
+     * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
+     */
+    collectPerfCounters: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * creates diagnostic trace file.
+     * It could be opened in PerfView as is.
+     * It could be converted for Visual Studio using `dotnet-gcdump convert`.
+     */
+    collectGcDump: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
+     */
+    connectDSRouter (url: string): void;
+}
+
+export type DiagnosticCommandProviderV2 = {
+    keywords: [ number, number ],
+    logLevel: number,
+    provider_name: string,
+    arguments: string|null
+}
+
+export type DiagnosticCommandOptions = {
+    durationSeconds?:number,
+    intervalSeconds?:number,
+    skipDownload?:boolean,
+    circularBufferMB?:number,
+    extraProviders?:DiagnosticCommandProviderV2[],
+}
+
+export type APIType = RunAPIType & MemoryAPIType & DiagnosticsAPIType;
 
 export type RuntimeAPI = {
     INTERNAL: any,
