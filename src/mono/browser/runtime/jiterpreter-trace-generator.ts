@@ -3872,7 +3872,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
     if (typeof (constantIndices) === "object") {
         // HACK: We have a known constant shuffle vector indices. Expand it to
         //  byte indices and then embed a new constant in the trace.
-        let nativeIndices = new Uint8Array(constantIndices.buffer, constantIndices.byteOffset, elementCount);
+        let nativeIndices = new Uint8Array(constantIndices.buffer, constantIndices.byteOffset, 16);
         if (elementCount !== 16) {
             const newShuffleVector = new Uint8Array(sizeOfV128);
             for (let i = 0, k = 0; i < elementCount; i++, k += elementSize) {
@@ -3920,7 +3920,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                 builder.appendSimd(WasmSimdOpcode.i16x8_min_u);
             } else {
                 // i64x2 can fall back the the interpreter implementation
-                false;
+                return false;
             }
 
             // We need to convert lane indices to byte indices so we can
