@@ -14,9 +14,7 @@ FRAME_TYPE_NAME(ResumableFrame)
 FRAME_TYPE_NAME(RedirectedThreadFrame)
 #endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(FaultingExceptionFrame)
-#ifdef FEATURE_EH_FUNCLETS
 FRAME_TYPE_NAME(SoftwareExceptionFrame)
-#endif // FEATURE_EH_FUNCLETS
 #ifdef DEBUGGING_SUPPORTED
 FRAME_TYPE_NAME(FuncEvalFrame)
 #endif // DEBUGGING_SUPPORTED

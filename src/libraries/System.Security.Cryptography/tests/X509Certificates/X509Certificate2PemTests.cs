@@ -269,6 +269,54 @@ MII
             }
         }
 
+        [Fact]
+        public static void CreateFromPem_EC_Pkcs8_Success()
+        {
+            // ecPublicKey certificates that have no key usage restrictions should be allowed to be used as both
+            // an ECDsa key and an ECDiffieHellman key.
+
+            // For purposes of creating the certificate, it doesn't matter if we use an ECDSA or ECDH key, but starting
+            // with ECDSA means we can make a self-signed cert.
+            using ECDsa key = ECDsa.Create();
+            key.ImportFromPem(TestData.EcDhPkcs8Key);
+            CertificateRequest req = new("CN=radish", key, HashAlgorithmName.SHA256);
+            using X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
+            string pemAggregate = $"{cert.ExportCertificatePem()}\n{TestData.EcDhPkcs8Key}";
+            using X509Certificate2 reLoaded = X509Certificate2.CreateFromPem(pemAggregate, pemAggregate);
+
+            AssertKeysMatch(TestData.EcDhPkcs8Key, reLoaded.GetECDiffieHellmanPrivateKey);
+            AssertKeysMatch(TestData.EcDhPkcs8Key, reLoaded.GetECDsaPrivateKey);
+            AssertExtensions.SequenceEqual(cert.SerialNumberBytes.Span, reLoaded.SerialNumberBytes.Span);
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPem_EC_Pkcs8_Success()
+        {
+            // ecPublicKey certificates that have no key usage restrictions should be allowed to be used as both
+            // an ECDsa key and an ECDiffieHellman key.
+
+            // For purposes of creating the certificate, it doesn't matter if we use an ECDSA or ECDH key, but starting
+            // with ECDSA means we can make a self-signed cert.
+            using ECDsa key = ECDsa.Create();
+            key.ImportFromPem(TestData.EcDhPkcs8Key);
+            CertificateRequest req = new("CN=radish", key, HashAlgorithmName.SHA256);
+            using X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
+
+            PbeParameters pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA1, 32);
+            const string Password = "PLACEHOLDER";
+
+            string encryptedPrivateKey = PemEncoding.WriteString(
+                "ENCRYPTED PRIVATE KEY",
+                key.ExportEncryptedPkcs8PrivateKey(Password, pbe));
+
+            string pemAggregate = $"{cert.ExportCertificatePem()}\n{encryptedPrivateKey}";
+            using X509Certificate2 reLoaded = X509Certificate2.CreateFromEncryptedPem(pemAggregate, pemAggregate, Password);
+
+            AssertKeysMatch(encryptedPrivateKey, reLoaded.GetECDiffieHellmanPrivateKey, Password);
+            AssertKeysMatch(encryptedPrivateKey, reLoaded.GetECDsaPrivateKey, Password);
+            AssertExtensions.SequenceEqual(cert.SerialNumberBytes.Span, reLoaded.SerialNumberBytes.Span);
+        }
+
         [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
         public static void CreateFromPem_MLKem_Pkcs8_Success()
         {
@@ -738,9 +786,7 @@ MII
                         AssertExtensions.SequenceEqual(sharedSecret1, sharedSecret2);
                         break;
                     case (SlhDsa slhDsa, SlhDsa slhDsaPem):
-
-                        byte[] slhDsaSignature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
-                        Assert.Equal(slhDsaSignature.Length, slhDsa.SignData(data, slhDsaSignature));
+                        byte[] slhDsaSignature = slhDsa.SignData(data);
                         Assert.True(slhDsaPem.VerifyData(data, slhDsaSignature));
                         break;
                     default:
