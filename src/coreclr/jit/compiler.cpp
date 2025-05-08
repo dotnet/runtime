@@ -9272,7 +9272,7 @@ void Compiler::RecordStateAtEndOfCompilation()
     if (lpCycles > m_compCyclesAtEndOfInlining)
     {
         int64_t lpFreq = minipal_hires_tick_frequency();
-        m_compCycles = lpCycles - m_compCyclesAtEndOfInlining;
+        m_compCycles   = lpCycles - m_compCyclesAtEndOfInlining;
         m_compCycles *= 1000000;
         m_compCycles /= lpFreq;
     }
