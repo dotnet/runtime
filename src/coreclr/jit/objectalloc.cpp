@@ -2103,7 +2103,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                         {
                             const unsigned fieldIndex = GetFieldIndexFromLocalIndex(lclIndex);
 
-                            if (fieldIndex)
+                            if (fieldIndex != BAD_VAR_NUM)
                             {
                                 JITDUMP("Delegate fields...\n");
                                 MarkIndexAsEscaping(fieldIndex);
