@@ -341,7 +341,7 @@ trace_prefix(const char* format, va_list args)
     {
         fprintf(g_stdout, "[createdump] ");
     }
-    fprintf(g_stdout, "%08" PRIx64 " ", GetTimeStamp());
+    fprintf(g_stdout, "%08" PRIx64 " ", minipal_hires_ticks() / g_ticksPerMS);
     vfprintf(g_stdout, format, args);
     fflush(g_stdout);
 }

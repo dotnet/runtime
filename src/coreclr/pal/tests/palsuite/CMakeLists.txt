@@ -378,8 +378,6 @@ add_executable_clr(paltests
   #miscellaneous/IsBadWritePtr/test1/test.cpp
   #miscellaneous/IsBadWritePtr/test2/test2.cpp
   #miscellaneous/IsBadWritePtr/test3/test3.cpp
-  miscellaneous/queryperformancecounter/test1/test1.cpp
-  miscellaneous/queryperformancefrequency/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test2/test2.cpp
   miscellaneous/SetEnvironmentVariableA/test3/test3.cpp

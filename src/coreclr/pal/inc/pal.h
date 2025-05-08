@@ -3158,20 +3158,6 @@ GetTickCount64();
 PALIMPORT
 BOOL
 PALAPI
-QueryPerformanceCounter(
-    OUT LARGE_INTEGER *lpPerformanceCount
-    );
-
-PALIMPORT
-BOOL
-PALAPI
-QueryPerformanceFrequency(
-    OUT LARGE_INTEGER *lpFrequency
-    );
-
-PALIMPORT
-BOOL
-PALAPI
 QueryThreadCycleTime(
     IN HANDLE ThreadHandle,
     OUT PULONG64 CycleTime);
