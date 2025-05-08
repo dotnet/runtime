@@ -843,7 +843,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
             where info.Algorithm == algorithms.signAlgorithm // Find the matching test data for the algorithm
             select new object[] { sit, algorithms.hashAlgorithm, info };
 
-        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static bool SlhDsaAndRsaSha1SignaturesSupported =>
+            SignatureSupport.SupportsRsaSha1Signatures && SlhDsa.IsSupported;
+
+        [ConditionalTheory(nameof(SlhDsaAndRsaSha1SignaturesSupported))]
         [MemberData(nameof(AddCounterSignerSlhDsaTestData))]
         public static void AddCounterSigner_SlhDsa(SubjectIdentifierType identifierType, string digestOid, SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
