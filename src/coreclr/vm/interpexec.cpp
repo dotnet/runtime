@@ -8,7 +8,7 @@
 #include "interpexec.h"
 #include "callstubgenerator.h"
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE pCode)
 {
     CONTRACTL
     {
@@ -41,7 +41,8 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetNativeCode()); // The method to call
+    _ASSERTE(pCode);
+    pHeader->SetTarget(pCode); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -1103,6 +1104,28 @@ MAIN_LOOP:
                     goto CALL_TARGET_IP;
                 }
 
+                case INTOP_CALL_PINVOKE:
+                {
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+                    size_t possiblyIndirectAddress = (size_t)pMethod->pDataItems[ip[4]];
+                    ip += 5;
+
+                    size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
+                    MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
+                    PCODE actualCallTarget = (possiblyIndirectAddress & INTERP_PVALUE_TAG)
+                        ? *(PCODE *)(possiblyIndirectAddress & ~INTERP_PVALUE_TAG)
+                        : (PCODE)possiblyIndirectAddress;
+
+                    {
+                        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+                        GCX_PREEMP();
+                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, actualCallTarget);
+                    }
+                    break;
+                }
+
                 case INTOP_CALL:
                 {
                     returnOffset = ip[1];
@@ -1151,7 +1174,7 @@ CALL_TARGET_IP:
                     else if (codeInfo.GetCodeManager() != ExecutionManager::GetInterpreterCodeManager())
                     {
                         MethodDesc *pMD = codeInfo.GetMethodDesc();
-                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset);
+                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, pMD->GetNativeCode());
                         break;
                     }
 
