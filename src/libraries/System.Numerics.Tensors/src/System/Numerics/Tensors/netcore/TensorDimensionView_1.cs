@@ -142,12 +142,12 @@ namespace System.Numerics.Tensors
             {
                 get
                 {
-                    scoped TensorSpan<T> slice = _tensor[_indexes];
-                    for (Int128 i = 0; i < _dimension; i++)
+                    TensorSpan<T> slice = _tensor[_indexes];
+                    for (int i = 0; i < _dimension; i++)
                     {
                         slice = slice.SqueezeDimension(0);
                     }
-                    if ( _dimension == 0)
+                    if (_dimension == 0)
                     {
                         slice = slice.SqueezeDimension(0);
                     }

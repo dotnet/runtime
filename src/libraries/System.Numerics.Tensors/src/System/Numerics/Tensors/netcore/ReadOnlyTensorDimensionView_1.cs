@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using static System.Numerics.Tensors.TensorOperation;
 
 namespace System.Numerics.Tensors
@@ -32,7 +33,9 @@ namespace System.Numerics.Tensors
 
             _tensor = tensor;
             _dimension = dimension;
-            _count = TensorPrimitives.Product(tensor.Lengths.Slice(0, tensor.Rank - dimension));
+            // Span.Slice is based on length (so 1 based) and the dimension is an index (so 0 based)
+            // So we need to add 1 to the dimension to reconcile this.
+            _count = TensorPrimitives.Product(tensor.Lengths.Slice(0, dimension + 1));
         }
 
         /// <summary>
@@ -47,15 +50,21 @@ namespace System.Numerics.Tensors
         /// <returns></returns>
         public ReadOnlyTensorSpan<T> GetSlice(int index)
         {
+            if (index < 0 || index >= _count)
+            {
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            }
+
             // This is not optimized, but it is a correct one.
             scoped Span<NRange> indexes = RentedBuffer.CreateUninitialized(_tensor.Rank, out RentedBuffer<NRange> rentedBuffer);
 
             indexes.Fill(NRange.All);
-            for (int i = 0; i < _dimension; i++)
+            for (int i = 0; i <= _dimension; i++)
             {
                 indexes[i] = 0..1;
             }
-            indexes[_dimension] = -1..0;
+
+            // Starting at 0..1 so our loop is strictly less than the index since index is a valid index and we are already on the first one.
             for (int i = 0; i < index; i++)
             {
                 TensorShape.AdjustToNextIndex(indexes, _dimension, _tensor.Lengths);
@@ -115,7 +124,7 @@ namespace System.Numerics.Tensors
                 {
                     _indexes[i] = 0..1;
                 }
-                _indexes[_dimension] = -1..0;
+                _indexes[_dimension] = 0..0;
             }
 
             /// <summary>
@@ -129,7 +138,23 @@ namespace System.Numerics.Tensors
             /// <summary>
             /// Current <see cref="Tensor{T}"/> value of the <see cref="IEnumerator{T}"/>
             /// </summary>
-            public ReadOnlyTensorSpan<T> Current => _tensor[_indexes];
+            public ReadOnlyTensorSpan<T> Current
+            {
+                get
+                {
+                    ReadOnlyTensorSpan<T> slice = _tensor[_indexes];
+                    for (int i = 0; i < _dimension; i++)
+                    {
+                        slice = slice.SqueezeDimension(0);
+                    }
+                    if (_dimension == 0)
+                    {
+                        slice = slice.SqueezeDimension(0);
+                    }
+
+                    return slice;
+                }
+            }
 
 #if NET9_0_OR_GREATER
             // This will always just throw but needs to be here.

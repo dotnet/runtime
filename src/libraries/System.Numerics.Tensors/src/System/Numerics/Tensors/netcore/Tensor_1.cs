@@ -454,6 +454,5 @@ namespace System.Numerics.Tensors
         /// <param name="dimension">The dimension to slice along.</param>
         /// <returns>The tensor sliced to the given <paramref name="dimension"/></returns>
         public TensorDimensionView<T> GetDimension(int dimension) => new TensorDimensionView<T>(this, dimension);
-
     }
 }
