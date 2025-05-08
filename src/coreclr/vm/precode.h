@@ -645,13 +645,6 @@ private:
 #ifdef DACCESS_COMPILE
         DacError(E_UNEXPECTED);
 #else
-#ifdef _PREFIX_
-        // We only use __UNREACHABLE here since otherwise it would be a hint
-        // for the compiler to fold this case with the other cases in a switch
-        // statement. However, we would rather have this case be a separate
-        // code path so that we will get a clean crash sooner.
-        __UNREACHABLE("Unexpected precode type");
-#endif
         CONSISTENCY_CHECK_MSGF(false, ("%s: Unexpected precode type: 0x%02x.", originator, precodeType));
 #endif
     }

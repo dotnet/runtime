@@ -3574,7 +3574,7 @@ TypeHandle EECodeGenManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
 
     MethodDesc* pMD = pCf->GetFunction();
     Module* pModule = pMD->GetModule();
-    PREFIX_ASSUME(pModule != NULL);
+    _ASSERTE(pModule != NULL);
 
     SigTypeContext typeContext(pMD);
     return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
@@ -4432,7 +4432,7 @@ TADDR EECodeGenManager::FindMethodCode(RangeSection * pRangeSection, PCODE curre
     pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
 
     // #1 look up DWORD represnting current PC
-    PREFIX_ASSUME(pMap != NULL);
+    _ASSERTE(pMap != NULL);
     dword = VolatileLoadWithoutBarrier<DWORD>(pMap);
 
     // #2 if DWORD is a pointer, then we can return
@@ -6245,7 +6245,7 @@ TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClaus
     _ASSERTE(pMD != NULL);
 
     Module* pModule = pMD->GetModule();
-    PREFIX_ASSUME(pModule != NULL);
+    _ASSERTE(pModule != NULL);
 
     SigTypeContext typeContext(pMD);
     mdToken typeTok = pEHClause->ClassToken;
