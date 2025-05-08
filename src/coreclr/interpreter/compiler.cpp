@@ -2383,6 +2383,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         doCallInsteadOfNew = true;
     }
 
+    bool isPInvoke = callInfo.methodFlags & CORINFO_FLG_PINVOKE;
+    bool isMarshaledPInvoke = isPInvoke && m_compHnd->pInvokeMarshalingRequired(callInfo.hMethod, &callInfo.sig);
+
     // Process sVars
     int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasThis());
     int newObjThisArgLocation = newObj && !doCallInsteadOfNew ? 0 : INT_MAX;
@@ -2599,8 +2602,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     // before the call.
                     // TODO: Add null checking behavior somewhere here!
                 }
-                AddIns(INTOP_CALL);
+                AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
                 m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
+                if (isPInvoke && !isMarshaledPInvoke)
+                {
+                    CORINFO_CONST_LOOKUP lookup;
+                    m_compHnd->getAddressOfPInvokeTarget(callInfo.hMethod, &lookup);
+                    assert(lookup.accessType == IAT_PVALUE);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(lookup.addr);
+                }
             }
             break;
 
@@ -4632,7 +4642,7 @@ retry_emit:
                         {
                             goto DO_LDFTN;
                         }
-                        
+
                         EmitPushLdvirtftn(thisVar, &resolvedToken, &callInfo);
                         m_ip += 5;
                         break;
@@ -4643,7 +4653,7 @@ retry_emit:
                             CORINFO_RESOLVED_TOKEN resolvedToken;
                             uint32_t token = getU4LittleEndian(m_ip + 1);
                             ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
-                            
+
                             memset(&callInfo, 0, sizeof(callInfo));
                             m_compHnd->getCallInfo(&resolvedToken, pConstrainedToken, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_SECURITYCHECKS| CORINFO_CALLINFO_LDFTN), &callInfo);
                         }
