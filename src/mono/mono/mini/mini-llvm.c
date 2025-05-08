@@ -10454,28 +10454,17 @@ MONO_RESTORE_WARNING
 			int stride = 16 / nelems;
 
 			if (nelems != 16) {
-				if (LLVMIsConstant(rhs)) {
-					bidx = LLVMBuildBitCast (builder, rhs, LLVMVectorType (i1_t, 16), "");
-					LLVMValueRef indices [16];
-					for (int i = 0, k = 0; i < nelems; i++, k += stride) {
-						LLVMValueRef index = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
-						g_assert (LLVMIsConstant (index));
+				if (LLVMIsConstant(rhs) && nelems == 2) {
+					LLVMValueRef indexes [16];
+					for (int i = 0; i < nelems; ++i)
+						indexes [i] = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
 
-						// since the indices are constant we can get the values directly
-						// and use them to build a const lanewise swizzle mask
-						uint64_t idx = LLVMConstIntGetZExtValue (index);
+					LLVMValueRef shuffle_val = LLVMConstNull (LLVMVectorType (i4_t, nelems));
 
-						// clamp each index to the lowest invalid value (nelems)
-						// so it will remain invalid but won't overflow to a valid
-						// value during the multiply and add below
-						if (idx >= nelems)
-							idx = nelems;
-
-						for (int j = 0; j < stride; ++j) {
-							indices [k + j] = const_int8 ((((int)idx) * stride) + j);
-						}
-					}
-					bidx = LLVMConstVector (indices, 16);
+					for (int i = 0; i < nelems; ++i)
+						shuffle_val = LLVMBuildInsertElement (builder, shuffle_val, convert (ctx, indexes [i], i4_t), const_int32 (i), "");
+					values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (LLVMTypeOf (lhs)), shuffle_val, "");
+					break;
 				} else {
 					// clamp each index to the lowest invalid value (nelems)
 					// so it will remain invalid but won't overflow to a valid
@@ -10484,7 +10473,7 @@ MONO_RESTORE_WARNING
 					LLVMTypeRef elem_t = LLVMGetElementType (idx_t);
 					LLVMValueRef minv = broadcast_constant (nelems, elem_t, nelems);
 					LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntULT, bidx, minv, "");
-					cmp = LLVMBuildSelect (builder, cmp, bidx, minv, "");
+					bidx = LLVMBuildSelect (builder, cmp, bidx, minv, "");
 
 					// cast indices to i8x16
 					bidx = LLVMBuildBitCast (builder, bidx, LLVMVectorType (i1_t, 16), "");
