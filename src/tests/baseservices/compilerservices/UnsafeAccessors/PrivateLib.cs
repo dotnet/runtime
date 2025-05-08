@@ -37,6 +37,10 @@ namespace PrivateLib
 
         List<Class2> M4() => new List<Class2>();
 
-        bool M5<V, S>(List<T> a, List<V> b, List<S> c, List<Class2> d) where S : T => true;
+        bool M5<V, W>(List<T> a, List<V> b, List<W> c, List<Class2> d) where W : T => true;
+
+        Type M6<X>(Dictionary<X, int> a) => typeof(X);
+
+        Type M7<Y>(Dictionary<int, Y> a) => typeof(Y);
     }
 }

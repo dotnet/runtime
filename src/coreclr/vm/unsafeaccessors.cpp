@@ -118,9 +118,15 @@ namespace
         //
 
         // If we have any generic variables, mark as ELEMENT_TYPE_GENERICINST.
-        BOOL hasGenericVariables = inst.ContainsGenericVariables();
+        BOOL hasGenericVariables = !inst.IsEmpty();
         if (hasGenericVariables)
+        {
             sig.AppendElementType(ELEMENT_TYPE_GENERICINST);
+
+            // Embed the generic type definition in the signature.
+            th = TypeHandle{ th.GetMethodTableOfRootTypeParam()->GetTypicalMethodTable() };
+            _ASSERTE(th.IsGenericTypeDefinition());
+        }
 
         // Append the new type to the signature.
         sig.AppendElementType(ELEMENT_TYPE_INTERNAL);
@@ -129,15 +135,26 @@ namespace
         // Append the instantiation types to the signature.
         if (hasGenericVariables)
         {
+            _ASSERTE(inst.GetNumArgs() > 0);
             sig.AppendData(inst.GetNumArgs());
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
-                if (!inst[i].IsGenericVariable())
-                    continue;
-
-                TypeVarTypeDesc* typeVar = inst[i].AsGenericVariable();
-                sig.AppendElementType(typeVar->GetInternalCorElementType());
-                sig.AppendData(typeVar->GetIndex());
+                TypeHandle& instTh = inst[i];
+                if (instTh.IsGenericVariable())
+                {
+                    TypeVarTypeDesc* typeVar = instTh.AsGenericVariable();
+                    sig.AppendElementType(typeVar->GetInternalCorElementType());
+                    sig.AppendData(typeVar->GetIndex());
+                }
+                else if (CorIsPrimitiveType(instTh.GetSignatureCorElementType()))
+                {
+                    sig.AppendElementType(instTh.GetSignatureCorElementType());
+                }
+                else
+                {
+                    sig.AppendElementType(ELEMENT_TYPE_INTERNAL);
+                    sig.AppendPointer(instTh.AsPtr());
+                }
             }
         }
     }
@@ -196,6 +213,15 @@ namespace
             // We have a new type to insert and need to update this
             // parameter in the signature.
             TypeHandle currHandle = origSig.GetTypeHandleThrowing(pSigModule, NULL);
+
+            // Since byrefs don't support variance, we can't allow returning a byref to a fully
+            // typed field as a byref to an "opaque" type (for example, "ref string" -> "ref object").
+            // This is blocked for type safety reasons.
+            if (i == 0 // Return type
+                && currHandle.IsByRef())
+            {
+                ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE);
+            }
 
             // SigPointer::GetTypeHandleThrowing() is non-consuming, so we need to
             // consume the signature to move past the current type.
@@ -311,17 +337,6 @@ namespace
 
             if (seq >= totalParamCount)
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
-
-            // UnsafeAccessorAttribute requires the return type to be byref for any field kind.
-            // Since byrefs don't support variance, we can't allow returning a byref to a fully
-            // typed field as a byref to an "opaque" type (for example, "ref string" -> "ref object").
-            // This is blocked for type safety reasons.
-            if (seq == 0 // Return type
-                && (cxt.Kind == UnsafeAccessorKind::Field
-                    || cxt.Kind == UnsafeAccessorKind::StaticField))
-            {
-                ThrowHR(COR_E_NOTSUPPORTED, BFA_INVALID_UNSAFEACCESSORTYPE);
-            }
 
             // Store the TypeHandle for the loaded type at the sequence number for the parameter.
             cxt.TranslatedParams[seq] = { targetType, (CorParamAttr)attr };

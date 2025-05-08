@@ -3924,7 +3924,6 @@ MetaSig::CompareElementType(
                 pOtherModule = pModule1;
             }
 
-            // Internal types can only correspond to types or value types.
             switch (eOtherType)
             {
                 case ELEMENT_TYPE_OBJECT:
@@ -3953,13 +3952,6 @@ MetaSig::CompareElementType(
                         tkOther,
                         ClassLoader::ReturnNullIfNotFound,
                         ClassLoader::PermitUninstDefOrRef);
-
-                    // If the return type is a generic type definition, we need to
-                    // compare it to the typical method table of the internal type.
-                    if (!hOtherType.IsNull() && hOtherType.IsGenericTypeDefinition())
-                    {
-                        hInternal = TypeHandle{ hInternal.AsMethodTable()->GetTypicalMethodTable() };
-                    }
 
                     return (hInternal == hOtherType);
                 }
@@ -5808,15 +5800,7 @@ TokenPairList TokenPairList::AdjustForTypeSpec(TokenPairList *pTemplate, ModuleB
     {
         TypeHandle typeHandle;
         IfFailThrow(sig.GetPointer((void**)&typeHandle));
-
-        if (typeHandle.IsTypeDesc())
-        {
-            result.m_bInTypeEquivalenceForbiddenScope = TRUE;
-        }
-        else
-        {
-            result.m_bInTypeEquivalenceForbiddenScope = !typeHandle.AsMethodTable()->IsInterface();
-        }
+        result.m_bInTypeEquivalenceForbiddenScope = !typeHandle.IsInterface();
     }
     else
     {

@@ -146,7 +146,7 @@ public static unsafe class UnsafeAccessorsTestsTypes
         Assert.Equal(c2, CallM_C1(tgt, arg));
         Assert.Equal(c2, CallM_RC1(tgt, ref arg));
         Assert.Equal(c2, CallM_RROC1(tgt, ref arg));
-        Assert.Equal(c2, CallM_C1_RC2(tgt, arg));
+        AssertExtensions.ThrowsAny<NotSupportedException, MissingFieldException>(()=> CallM_C1_RC2(tgt, arg));
 
         object ic = null;
         object rc = null;
@@ -384,6 +384,18 @@ public static unsafe class UnsafeAccessorsTestsTypes
             List<W> c,
             [UnsafeAccessorType("System.Collections.Generic.List`1[[PrivateLib.Class2, PrivateLib]]")]
             object d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M6")]
+        public extern static Type CallGenericClassM6<X>(
+            [UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object tgt,
+            [UnsafeAccessorType("System.Collections.Generic.Dictionary`2[[!!0],[System.Int32]]")]
+            object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M7")]
+        public extern static Type CallGenericClassM7<X>(
+            [UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object tgt,
+            [UnsafeAccessorType("System.Collections.Generic.Dictionary`2[[System.Int32],[!!0]]")]
+            object a);
     }
 
     // Skip validating error cases on Mono runtime
@@ -493,6 +505,8 @@ public static unsafe class UnsafeAccessorsTestsTypes
             Assert.True(TypeNameEquals(genericListStringName, TypeName.Parse("System.Collections.Generic.List`1[[System.String]]")));
 
             Assert.True(Accessors<int>.CallGenericClassM5<string, int>(genericClass, null, null, null, null));
+            Assert.Equal(typeof(int), Accessors<int>.CallGenericClassM6<int>(genericClass, null));
+            Assert.Equal(typeof(int), Accessors<int>.CallGenericClassM7<int>(genericClass, null));
         }
 
         {
@@ -509,6 +523,8 @@ public static unsafe class UnsafeAccessorsTestsTypes
             Assert.True(TypeNameEquals(genericListStringName, TypeName.Parse("System.Collections.Generic.List`1[[System.String]]")));
 
             Assert.True(Accessors<string>.CallGenericClassM5<int, string>(genericClass, null, null, null, null));
+            Assert.Equal(typeof(string), Accessors<string>.CallGenericClassM6<string>(genericClass, null));
+            Assert.Equal(typeof(string), Accessors<string>.CallGenericClassM7<string>(genericClass, null));
         }
     }
 

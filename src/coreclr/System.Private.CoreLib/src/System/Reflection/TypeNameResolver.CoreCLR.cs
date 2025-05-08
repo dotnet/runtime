@@ -26,7 +26,7 @@ namespace System.Reflection
         private Assembly? _requestingAssembly;
         private Assembly? _topLevelAssembly;
 
-        private bool SupportUnboundGenerics { get => _unsafeAccessorMethod != IntPtr.Zero; }
+        private bool SupportsUnboundGenerics { get => _unsafeAccessorMethod != IntPtr.Zero; }
 
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
@@ -242,7 +242,7 @@ namespace System.Reflection
             {
                 if (assembly is null)
                 {
-                    if (SupportUnboundGenerics
+                    if (SupportsUnboundGenerics
                         && !string.IsNullOrEmpty(escapedTypeName)
                         && escapedTypeName[0] == '!')
                     {
