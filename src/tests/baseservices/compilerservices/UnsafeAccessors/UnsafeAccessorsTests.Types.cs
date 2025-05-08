@@ -146,7 +146,7 @@ public static unsafe class UnsafeAccessorsTestsTypes
         Assert.Equal(c2, CallM_C1(tgt, arg));
         Assert.Equal(c2, CallM_RC1(tgt, ref arg));
         Assert.Equal(c2, CallM_RROC1(tgt, ref arg));
-        AssertExtensions.ThrowsAny<NotSupportedException, MissingFieldException>(()=> CallM_C1_RC2(tgt, arg));
+        AssertExtensions.ThrowsAny<NotSupportedException, MissingMethodException>(()=> CallM_C1_RC2(tgt, arg));
 
         object ic = null;
         object rc = null;

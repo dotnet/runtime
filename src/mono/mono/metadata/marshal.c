@@ -5271,8 +5271,8 @@ static void process_unsafe_accessor_type (MonoUnsafeAccessorKind kind, MonoMetho
 		// UnsafeAccessorTypeAttribute on value types.
 		g_assert (type->type != MONO_TYPE_VALUETYPE);
 
-		if (seq == 0 && (kind == MONO_UNSAFE_ACCESSOR_FIELD || kind == MONO_UNSAFE_ACCESSOR_STATIC_FIELD)) {
-			// [FIXME] UnsafeAccessorType is not supported on return values for any field access.
+		if (seq == 0 && m_type_is_byref (tgt_sig->ret)) {
+			// [FIXME] UnsafeAccessorType is not supported on return that are byref, type safety issue.
 			return;
 		}
 
