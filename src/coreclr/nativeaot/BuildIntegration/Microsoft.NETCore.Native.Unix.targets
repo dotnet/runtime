@@ -222,7 +222,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeSystemLibrary Include="icucore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="m" />
       <!-- See the comment in PalInterlockedCompareExchange128 for details. -->
-      <NativeSystemLibrary Include="atomic" Condition="'$(_targetArchitecture)' == 'riscv64'" />
+      <NativeSystemLibrary Include="atomic" Condition="'$(_targetArchitecture)' == 'riscv64' or '$(_targetArchitecture)' == 'loongarch64'" />
     </ItemGroup>
 
     <ItemGroup>

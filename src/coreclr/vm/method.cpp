@@ -428,7 +428,7 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
         if (pSMD->HasStoredMethodSig() || GetClassification()==mcDynamic)
         {
             *ppSig = pSMD->GetStoredMethodSig(pcSig);
-            PREFIX_ASSUME(*ppSig != NULL);
+            _ASSERTE(*ppSig != NULL);
 
             return;
         }
@@ -444,7 +444,7 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
     }
 
     GetSigFromMetadata(GetMDImport(), ppSig, pcSig);
-    PREFIX_ASSUME(*ppSig != NULL);
+    _ASSERTE(*ppSig != NULL);
 }
 
 //*******************************************************************************
@@ -492,7 +492,7 @@ Signature MethodDesc::GetSignature()
 
     GetSig(&pSig, &cSig);
 
-    PREFIX_ASSUME(pSig != NULL);
+    _ASSERTE(pSig != NULL);
 
     return Signature(pSig, cSig);
 }
@@ -867,11 +867,6 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags - (offsetof(MethodDesc, m_wFlags) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDesc, m_wFlags) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -880,9 +875,6 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
         static_assert_no_msg(sizeof(m_wFlags) == 2);
         dwMask <<= 16;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -905,11 +897,6 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
     // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags3AndTokenRemainder - (offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -918,9 +905,6 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
         static_assert_no_msg(sizeof(m_wFlags3AndTokenRemainder) == 2);
         dwMask <<= 16;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -943,11 +927,6 @@ BYTE MethodDesc::InterlockedUpdateFlags4(BYTE bMask, BOOL fSet)
     // only have four possibilities: the field already lies on a dword boundary or it's 1, 2 or 3 bytes out
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_bFlags4 - (offsetof(MethodDesc, m_bFlags4) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -969,9 +948,6 @@ BYTE MethodDesc::InterlockedUpdateFlags4(BYTE bMask, BOOL fSet)
 #endif // !BIGENDIAN
         dwMask <<= 8;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -994,11 +970,6 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_flagsAndTokenRange - (offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -1007,9 +978,6 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
         static_assert_no_msg(sizeof(m_flagsAndTokenRange) == 2);
         dwMask <<= 16;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -1165,7 +1133,7 @@ ULONG MethodDesc::GetRVA()
     if (GetMemberDef() & 0x00FFFFFF)
     {
         Module *pModule = GetModule();
-        PREFIX_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
 
         DWORD dwDescrOffset;
         DWORD dwImplFlags;
@@ -1740,7 +1708,7 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
         }
         CONSISTENCY_CHECK(TypeHandle(pMT).CheckFullyLoaded());
         MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
-        PREFIX_ASSUME(resultMD != NULL);
+        _ASSERTE(resultMD != NULL);
         resultMD->CheckRestore();
         RETURN (resultMD);
     }
@@ -2724,7 +2692,7 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     // Otherwise this must be some kind of precode
     //
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
-    PREFIX_ASSUME(fSpeculative || (pPrecode != NULL));
+    _ASSERTE(fSpeculative || (pPrecode != NULL));
     if (pPrecode != NULL)
     {
         pMD = pPrecode->GetMethodDesc(fSpeculative);

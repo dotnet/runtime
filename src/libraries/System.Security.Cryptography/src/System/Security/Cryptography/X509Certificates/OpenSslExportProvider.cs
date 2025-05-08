@@ -56,6 +56,14 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
+            if (evpAlgId == Interop.Crypto.EvpAlgorithmFamilyId.SlhDsa)
+            {
+                using (SlhDsaOpenSsl slhDsa = new SlhDsaOpenSsl(privateKey))
+                {
+                    return slhDsa.ExportEncryptedPkcs8PrivateKey(password, pbeParameters);
+                }
+            }
+
             throw new CryptographicException(SR.Cryptography_InvalidHandle);
         }
 

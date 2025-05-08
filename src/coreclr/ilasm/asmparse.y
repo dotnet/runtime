@@ -210,14 +210,7 @@ decl                    : classHead '{' classDecls '}'                          
                         | secDecl
                         | customAttrDecl
                         | _SUBSYSTEM int32                                      {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22011) // Suppress PREFast warning about integer overflow/underflow
-#endif
                                                                                   PASM->m_dwSubsystem = $2;
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
                                                                                 }
                         | _CORFLAGS int32                                       { PASM->m_dwComImageFlags = $2; }
                         | _FILE ALIGNMENT_ int32                                { PASM->m_dwFileAlignment = $3;

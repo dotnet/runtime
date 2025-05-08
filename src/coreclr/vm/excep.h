@@ -807,6 +807,10 @@ X86_ONLY(EXCEPTION_REGISTRATION_RECORD* GetNextCOMPlusSEHRecord(EXCEPTION_REGIST
 VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind();
 #endif // FEATURE_EH_FUNCLETS
 
+#ifdef FEATURE_INTERPRETER
+void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP);
+#endif // FEATURE_INTERPRETER
+
 #endif // !DACCESS_COMPILE
 
 #endif // __excep_h__

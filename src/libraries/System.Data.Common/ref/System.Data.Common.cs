@@ -1727,6 +1727,7 @@ namespace System.Data
         DateTime2 = 33,
         DateTimeOffset = 34,
         Json = 35,
+        Vector = 36,
     }
     public sealed partial class StateChangeEventArgs : System.EventArgs
     {

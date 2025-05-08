@@ -770,6 +770,13 @@ private:
     bool          m_fFoundFirstFunclet;
 #ifdef FEATURE_INTERPRETER
     bool          m_walkingInterpreterFrames;
+    // Saved registers of the context of the InterpExecMethod. These registers are reused for interpreter frames,
+    // but we need to restore the original values after we are done with all the interpreted frames belonging to
+    // that InterpExecMethod.
+    TADDR         m_interpExecMethodIP;
+    TADDR         m_interpExecMethodSP;
+    TADDR         m_interpExecMethodFP;
+    TADDR         m_interpExecMethodFirstArgReg;
 #endif // FEATURE_INTERPRETER
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)

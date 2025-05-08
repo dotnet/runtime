@@ -550,13 +550,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return nextNode;
             }
 
-            nextNode = LowerCast(node);
-            if (nextNode != nullptr)
-            {
-                return nextNode;
-            }
+            LowerCast(node);
+            break;
         }
-        break;
 
         case GT_BITCAST:
         {
@@ -9694,7 +9690,7 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
 //
 void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 {
-// LA, RISC-V and ARM32 more likely to recieve a terrible performance hit from
+// LA, RISC-V and ARM32 more likely to receive a terrible performance hit from
 // unaligned accesses making this optimization questionable.
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if (!comp->opts.OptimizationEnabled())
@@ -10162,7 +10158,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 #endif
 
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
-        // address containment in some cases so we end up creating trivial (reg + offfset)
+        // address containment in some cases so we end up creating trivial (reg + offset)
         // or (reg + reg) LEAs that are not necessary.
 
 #if defined(TARGET_ARM64)

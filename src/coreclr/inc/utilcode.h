@@ -3221,13 +3221,6 @@ HRESULT validateTokenSig(
     IMDInternalImport*  pImport);               // [IN] Internal MD Import interface ptr
 
 //*****************************************************************************
-// Determine the version number of the runtime that was used to build the
-// specified image. The pMetadata pointer passed in is the pointer to the
-// metadata contained in the image.
-//*****************************************************************************
-HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString);
-
-//*****************************************************************************
 // The registry keys and values that contain the information regarding
 // the default registered unmanaged debugger.
 //*****************************************************************************

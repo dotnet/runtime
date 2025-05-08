@@ -346,7 +346,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     }
     CONTRACTL_END
 
-    PREFIX_ASSUME(m_pAssembly != NULL);
+    _ASSERTE(m_pAssembly != NULL);
 
     m_loaderAllocator = NULL;
     m_pDynamicMetadata = (TADDR)NULL;
@@ -591,7 +591,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
         pModule = new (pMemory) Module(pAssembly, pPEAssembly);
     }
 
-    PREFIX_ASSUME(pModule != NULL);
+    _ASSERTE(pModule != NULL);
     ModuleHolder pModuleSafe(pModule);
     pModuleSafe->DoInit(pamTracker, NULL);
 
@@ -4490,7 +4490,7 @@ CHECK Module::CheckActivated()
 #ifndef DACCESS_COMPILE
     Assembly *pAssembly = GetAssembly();
     CHECK(pAssembly != NULL);
-    PREFIX_ASSUME(pAssembly != NULL);
+    _ASSERTE(pAssembly != NULL);
     CHECK(pAssembly->CheckActivated());
 #endif
     CHECK_OK;

@@ -395,7 +395,7 @@ extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t)
     // if we don't have an internal Thread object associated with this exposed object,
     // now is our first opportunity to create one.
     Thread* unstarted = SetupUnstartedThread();
-    PREFIX_ASSUME(unstarted != NULL);
+    _ASSERTE(unstarted != NULL);
 
     threadRef->SetInternal(unstarted);
     threadRef->SetManagedThreadId(unstarted->GetThreadId());

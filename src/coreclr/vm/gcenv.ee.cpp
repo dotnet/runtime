@@ -207,7 +207,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame != NULL)
+    while (pGCFrame != GCFRAME_TOP)
     {
         pGCFrame->GcScanRoots(fn, sc);
         pGCFrame = pGCFrame->PtrNextFrame();

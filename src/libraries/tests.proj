@@ -578,6 +578,11 @@
     <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
+  <!-- browser smoke tests -->
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
+  </ItemGroup>
+
   <!-- wasi/interp smoke tests -->
   <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RunAOTCompilation)' != 'true'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
@@ -774,6 +779,8 @@
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Test.csproj"
+      BuildInParallel="false" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Static.Test.csproj"
       BuildInParallel="false" />
   </ItemGroup>
 

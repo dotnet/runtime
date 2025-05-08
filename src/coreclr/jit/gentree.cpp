@@ -4837,11 +4837,6 @@ static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool*
  *      2. GetCostSz() to the code size estimate
  *      3. Sometimes sets GTF_ADDRMODE_NO_CSE on nodes in the tree.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 {
     assert(tree);
@@ -6192,9 +6187,6 @@ DONE:
 
     return level;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //------------------------------------------------------------------------
 // gtSetEvalOrderMinOpts: A MinOpts specific version of gtSetEvalOrder. We don't
@@ -13038,14 +13030,18 @@ void Compiler::gtDispTree(GenTree*                    tree,
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            if (tree->OperIs(GT_HWINTRINSIC))
+        {
+            GenTreeHWIntrinsic* node = tree->AsHWIntrinsic();
+            printf(" %u", node->GetSimdSize());
+            if (node->GetSimdBaseType() != TYP_UNKNOWN)
             {
-                printf(" %s %s",
-                       tree->AsHWIntrinsic()->GetSimdBaseType() == TYP_UNKNOWN
-                           ? ""
-                           : varTypeName(tree->AsHWIntrinsic()->GetSimdBaseType()),
-                       HWIntrinsicInfo::lookupName(tree->AsHWIntrinsic()->GetHWIntrinsicId()));
+                printf(" %s", varTypeName(node->GetSimdBaseType()));
             }
+            if (node->GetAuxiliaryType() != TYP_UNKNOWN)
+            {
+                printf(" (aux %s)", varTypeName(node->GetAuxiliaryType()));
+            }
+            printf(" %s", HWIntrinsicInfo::lookupName(node->GetHWIntrinsicId()));
 
             gtDispCommonEndLine(tree);
 
@@ -13058,7 +13054,8 @@ void Compiler::gtDispTree(GenTree*                    tree,
                     gtDispChild(operand, indentStack, ++index < count ? IIArc : IIArcBottom, nullptr, topOnly);
                 }
             }
-            break;
+        }
+        break;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
         case GT_ARR_ELEM:
@@ -15451,11 +15448,6 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
  *
  *  Fold the given constant tree.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 {
     SSIZE_T   i1, i2, itemp;
@@ -16597,9 +16589,6 @@ INTEGRAL_OVF:
 
     return tree;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //------------------------------------------------------------------------
 // gtFoldIndirConst: Attempt to fold an "IND(addr)" expression to a constant.
@@ -28323,9 +28312,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
-                case NI_AVX2_BroadcastVector128ToVector256:
-                case NI_AVX512F_BroadcastVector128ToVector512:
-                case NI_AVX512F_BroadcastVector256ToVector512:
                     if (GetAuxiliaryJitType() == CORINFO_TYPE_PTR)
                     {
                         addr = Op(1);

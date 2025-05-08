@@ -445,8 +445,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="data">A reference to the data to box.</param>
         /// <returns>A boxed instance of the value at <paramref name="data"/>.</returns>
         /// <remarks>This method includes proper handling for nullable value types as well.</remarks>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
+        internal static unsafe object? Box(MethodTable* methodTable, ref byte data) =>
+            methodTable->IsNullable ? CastHelpers.Box_Nullable(methodTable, ref data) : CastHelpers.Box(methodTable, ref data);
 
         // Given an object reference, returns its MethodTable*.
         //

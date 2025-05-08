@@ -262,7 +262,7 @@ void HashMap::Init(DWORD cbInitialSize, Compare* pCompare, BOOL fAsyncMode, Lock
 
     m_iPrimeIndex = GetNearestIndex(cbInitialSize);
     DWORD size = g_rgPrimes[m_iPrimeIndex];
-    PREFIX_ASSUME(size < 0x7fffffff);
+    _ASSERTE(size < 0x7fffffff);
 
     m_rgBuckets = new Bucket[size+1];
 

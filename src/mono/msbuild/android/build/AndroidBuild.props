@@ -14,6 +14,8 @@
     <_IsLibraryMode Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
     <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
 
+    <StaticLinkedRuntime Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(StaticLinkedRuntime)' == ''">false</StaticLinkedRuntime>
+
     <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
     <AndroidBuildDependsOn Condition="'$(UseMonoRuntime)' == 'true'">
         $(_ReadRuntimeComponentsManifestTargetName);

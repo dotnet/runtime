@@ -2,12 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Loader_1 : ILoader
 {
+    private const uint ASSEMBLY_LEVEL_LOADED = 4; // Assembly Level required to be considered Loaded
+    private const uint ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED = 0x1; // Assembly Notify Flag for profiler notification
+
+    private enum ModuleFlags_1 : uint
+    {
+        Tenured = 0x00000001,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
+        EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
+        ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+    }
+
     private readonly Target _target;
 
     internal Loader_1(Target target)
@@ -21,6 +32,77 @@ internal readonly struct Loader_1 : ILoader
             throw new ArgumentNullException(nameof(modulePointer));
 
         return new ModuleHandle(modulePointer);
+    }
+
+    IEnumerable<ModuleHandle> ILoader.GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
+    {
+        if (appDomain == TargetPointer.Null)
+            throw new ArgumentNullException(nameof(appDomain));
+
+        Data.AppDomain domain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(appDomain);
+        ArrayListBase arrayList = _target.ProcessedData.GetOrAdd<ArrayListBase>(domain.DomainAssemblyList);
+
+        foreach (TargetPointer domainAssembly in arrayList.Elements)
+        {
+            TargetPointer pAssembly = _target.ReadPointer(domainAssembly);
+            Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(pAssembly);
+
+            // following logic is based on AppDomain::AssemblyIterator::Next_Unlocked in appdomain.cpp
+
+            if (assembly.IsError)
+            {
+                // assembly is in an error state, return if we are supposed to include it
+                // otherwise we skip it and continue to the next assembly
+                if (iterationFlags.HasFlag(AssemblyIterationFlags.IncludeFailedToLoad))
+                {
+                    yield return new ModuleHandle(assembly.Module);
+                }
+                continue;
+            }
+
+            if ((assembly.NotifyFlags & ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED) != 0 && !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
+            {
+                // The assembly has reached the state at which we would notify profilers,
+                // and we're supposed to include such assemblies in the enumeration. So
+                // don't reject it (i.e., noop here, and don't bother with the rest of
+                // the load status checks). Check for this first, since
+                // IncludeAvailableToProfilers contains some loaded AND loading
+                // assemblies.
+            }
+            else if (assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */)
+            {
+                if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoaded))
+                    continue; // skip loaded assemblies
+            }
+            else
+            {
+                if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoading))
+                    continue; // skip loading assemblies
+            }
+
+            // Next, reject assemblies whose execution status is
+            // not to be included in the enumeration
+
+            if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeExecution))
+                continue; // skip assemblies with execution status
+
+            if (assembly.IsCollectible != 0)
+            {
+                if (iterationFlags.HasFlag(AssemblyIterationFlags.ExcludeCollectible))
+                    continue; // skip collectible assemblies
+
+                Module module = _target.ProcessedData.GetOrAdd<Data.Module>(assembly.Module);
+                if (!GetFlags(module).HasFlag(ModuleFlags.Tenured))
+                    continue; // skip un-tenured modules
+
+                LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(module.LoaderAllocator);
+                if (!loaderAllocator.IsAlive && !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeCollected))
+                    continue; // skip collected assemblies
+            }
+
+            yield return new ModuleHandle(assembly.Module);
+        }
+
     }
 
     TargetPointer ILoader.GetRootAssembly()
@@ -107,10 +189,24 @@ internal readonly struct Loader_1 : ILoader
         return peImage.ProbeExtensionResult.Type != 0;
     }
 
+    private static ModuleFlags GetFlags(Data.Module module)
+    {
+        // currently these flags are the same, but could diverge in the future
+        ModuleFlags_1 runtimeFlags = (ModuleFlags_1)module.Flags;
+        ModuleFlags flags = default;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.Tenured))
+            flags |= ModuleFlags.Tenured;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.EditAndContinue))
+            flags |= ModuleFlags.EditAndContinue;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
+            flags |= ModuleFlags.ReflectionEmit;
+        return flags;
+    }
+
     ModuleFlags ILoader.GetFlags(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        return (ModuleFlags)module.Flags;
+        return GetFlags(module);
     }
 
     string ILoader.GetPath(ModuleHandle handle)
@@ -191,5 +287,12 @@ internal readonly struct Loader_1 : ILoader
         TargetPointer assembly = module.Assembly;
         Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
         return la.IsCollectible != 0;
+    }
+
+    bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
+        return assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */;
     }
 }

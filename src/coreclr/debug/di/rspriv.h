@@ -2222,7 +2222,6 @@ public:
     // CorDebug
     //-----------------------------------------------------------
 
-    static COM_METHOD CreateObjectV1(REFIID id, void **object);
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     static COM_METHOD CreateObjectTelesto(REFIID id, void ** pObject);
 #endif // FEATURE_DBGIPC_TRANSPORT_DI

@@ -10747,11 +10747,6 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
     size_t dynamicFtnNum = ((size_t)pfnHelper - 1);
     if (dynamicFtnNum < DYNAMIC_CORINFO_HELP_COUNT)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:26001) // "Bounds checked above using the underflow trick"
-#endif /*_PREFAST_ */
-
 #if defined(TARGET_AMD64)
         // To avoid using a jump stub we always call certain helpers using an indirect call.
         // Because when using a direct call and the target is father away than 2^31 bytes,
@@ -10835,10 +10830,6 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         }
 
         pfnHelper = LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum).pfnHelper;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif /*_PREFAST_*/
     }
 
     _ASSERTE(pfnHelper != NULL);

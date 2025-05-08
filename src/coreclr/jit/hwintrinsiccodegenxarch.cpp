@@ -1076,7 +1076,7 @@ void CodeGen::genHWIntrinsic_R_RM(
         instOptions = AddEmbBroadcastMode(instOptions);
     }
 
-    OperandDesc rmOpDesc = genOperandDesc(rmOp);
+    OperandDesc rmOpDesc = genOperandDesc(ins, rmOp);
 
     if (((instOptions & INS_OPTS_EVEX_b_MASK) != 0) && (rmOpDesc.GetKind() == OperandKind::Reg))
     {
@@ -1361,7 +1361,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
         instOptions = AddEmbBroadcastMode(instOptions);
     }
 
-    OperandDesc op2Desc = genOperandDesc(op2);
+    OperandDesc op2Desc = genOperandDesc(ins, op2);
 
     if (op2Desc.IsContained())
     {
@@ -1431,7 +1431,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(instruction ins,
         instOptions = AddEmbBroadcastMode(instOptions);
     }
 
-    OperandDesc op3Desc = genOperandDesc(op3);
+    OperandDesc op3Desc = genOperandDesc(ins, op3);
 
     if (((instOptions & INS_OPTS_EVEX_b_MASK) != 0) && (op3Desc.GetKind() == OperandKind::Reg))
     {
@@ -1547,7 +1547,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
         instOptions = AddEmbBroadcastMode(instOptions);
     }
 
-    OperandDesc op3Desc = genOperandDesc(op3);
+    OperandDesc op3Desc = genOperandDesc(ins, op3);
 
     switch (op3Desc.GetKind())
     {
@@ -1898,10 +1898,14 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                         op1 = loPart;
                     }
 
-                    ins      = INS_movq;
                     baseAttr = EA_8BYTE;
                 }
 #endif // TARGET_X86
+
+                if (op1->isUsedFromMemory() && (baseAttr == EA_8BYTE))
+                {
+                    ins = INS_movq;
+                }
 
                 genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, op1, instOptions);
             }
@@ -1952,7 +1956,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                         else
                         {
                             // `movq xmm xmm` zeroes the upper 64 bits.
-                            genHWIntrinsic_R_RM(node, INS_movq, attr, targetReg, op1, instOptions);
+                            emit->emitIns_Mov(INS_movq, attr, targetReg, op1Reg, /* canSkip */ false);
                         }
                         break;
                     }
@@ -2281,10 +2285,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             {
                 minValueInt.i32[i] = INT_MIN;
             }
-            CORINFO_FIELD_HANDLE minValueFld = typeSize == EA_16BYTE ? emit->emitSimd16Const(minValueInt.v128[0])
-                                                                     : emit->emitSimd32Const(minValueInt.v256[0]);
-            CORINFO_FIELD_HANDLE negOneFld   = typeSize == EA_16BYTE ? emit->emitSimd16Const(negOneIntVec.v128[0])
-                                                                     : emit->emitSimd32Const(negOneIntVec.v256[0]);
+            CORINFO_FIELD_HANDLE minValueFld = emit->emitSimdConst(&minValueInt, typeSize);
+            CORINFO_FIELD_HANDLE negOneFld   = emit->emitSimdConst(&negOneIntVec, typeSize);
 
             // div-by-zero check
             emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg1, tmpReg1, tmpReg1, instOptions);

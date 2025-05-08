@@ -459,6 +459,12 @@ namespace System.Security.Cryptography.X509Certificates
             return null;
         }
 
+        public SlhDsa? GetSlhDsaPrivateKey()
+        {
+            // SlhDsa is not supported on Android
+            return null;
+        }
+
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
             DSAImplementation.DSAAndroid? typedKey = privateKey as DSAImplementation.DSAAndroid;
@@ -519,6 +525,11 @@ namespace System.Security.Cryptography.X509Certificates
         public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
         {
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
+        }
+
+        public ICertificatePal CopyWithPrivateKey(SlhDsa privateKey)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
         }
 
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)

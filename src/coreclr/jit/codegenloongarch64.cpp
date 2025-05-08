@@ -2804,6 +2804,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
 
         GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), dataReg, tree);
+
+        // If store was to a variable, update variable liveness after instruction was emitted.
+        genUpdateLife(tree);
     }
 }
 
@@ -6679,7 +6682,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
         {
             // Find the helper-block which raises the exception.
             Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
-            PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS

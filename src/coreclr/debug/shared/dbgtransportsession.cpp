@@ -1251,10 +1251,6 @@ DWORD WINAPI DbgTransportSession::TransportWorkerStatic(LPVOID pvContext)
     goto Shutdown;                              \
 } while (false)
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void DbgTransportSession::TransportWorker()
 {
     _ASSERTE(m_eState == SS_Opening_NC);
@@ -2518,9 +2514,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     return cbBaseSize + cbAdditionalSize;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 #ifdef _DEBUG
 // Debug helper which returns the name associated with a MessageType.

@@ -61,13 +61,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             using SlhDsa slhDsa = GenerateKey(algorithm);
             byte[] data = [1, 2, 3, 4, 5];
-            byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
-
-            Assert.Equal(signature.Length, slhDsa.SignData(data, signature));
+            byte[] signature = slhDsa.SignData(data);
             ExerciseSuccessfulVerify(slhDsa, data, signature, []);
 
             signature.AsSpan().Clear();
-            Assert.Equal(signature.Length, slhDsa.SignData(data, signature, Array.Empty<byte>()));
+            slhDsa.SignData(data, signature, Array.Empty<byte>());
             ExerciseSuccessfulVerify(slhDsa, data, signature, Array.Empty<byte>());
         }
 
@@ -78,9 +76,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = GenerateKey(algorithm);
             byte[] context = [1, 1, 3, 5, 6];
             byte[] data = [1, 2, 3, 4, 5];
-            byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
 
-            Assert.Equal(signature.Length, slhDsa.SignData(data, signature, context));
+            byte[] signature = slhDsa.SignData(data, context);
             ExerciseSuccessfulVerify(slhDsa, data, signature, context);
         }
 
@@ -89,13 +86,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public void GenerateSignVerifyEmptyMessageNoContext(SlhDsaAlgorithm algorithm)
         {
             using SlhDsa slhDsa = GenerateKey(algorithm);
-            byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
-
-            Assert.Equal(signature.Length, slhDsa.SignData([], signature));
+            byte[] signature = slhDsa.SignData([]);
             ExerciseSuccessfulVerify(slhDsa, [], signature, []);
 
             signature.AsSpan().Clear();
-            Assert.Equal(signature.Length, slhDsa.SignData(Array.Empty<byte>(), signature, Array.Empty<byte>()));
+            slhDsa.SignData(Array.Empty<byte>(), signature, Array.Empty<byte>());
             ExerciseSuccessfulVerify(slhDsa, [], signature, []);
         }
 
@@ -105,13 +100,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             using SlhDsa slhDsa = GenerateKey(algorithm);
             byte[] context = [1, 1, 3, 5, 6];
-            byte[] signature = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
-
-            Assert.Equal(signature.Length, slhDsa.SignData([], signature, context));
+            byte[] signature = slhDsa.SignData([], context);
             ExerciseSuccessfulVerify(slhDsa, [], signature, context);
 
             signature.AsSpan().Clear();
-            Assert.Equal(signature.Length, slhDsa.SignData(Array.Empty<byte>(), signature, context));
+            slhDsa.SignData(Array.Empty<byte>(), signature, context);
             ExerciseSuccessfulVerify(slhDsa, [], signature, context);
         }
 
@@ -125,12 +118,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             using (SlhDsa slhDsa = GenerateKey(algorithm))
             {
-                signature = new byte[algorithm.SignatureSizeInBytes];
-                Assert.Equal(signature.Length, slhDsa.SignData(data, signature));
+                signature = slhDsa.SignData(data);
                 AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature));
 
-                publicKey = new byte[algorithm.PublicKeySizeInBytes];
-                Assert.Equal(publicKey.Length, slhDsa.ExportSlhDsaPublicKey(publicKey));
+                publicKey = slhDsa.ExportSlhDsaPublicKey();
             }
 
             using (SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(algorithm, publicKey))
@@ -149,11 +140,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             using (SlhDsa slhDsa = GenerateKey(algorithm))
             {
-                signature = new byte[algorithm.SignatureSizeInBytes];
-                Assert.Equal(signature.Length, slhDsa.SignData(data, signature));
-
-                secretKey = new byte[algorithm.SecretKeySizeInBytes];
-                Assert.Equal(secretKey.Length, slhDsa.ExportSlhDsaSecretKey(secretKey));
+                signature = slhDsa.SignData(data);
+                secretKey = slhDsa.ExportSlhDsaSecretKey();
             }
 
             using (SlhDsa slhDsa = ImportSlhDsaSecretKey(algorithm, secretKey))
@@ -161,7 +149,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 ExerciseSuccessfulVerify(slhDsa, data, signature, []);
 
                 signature.AsSpan().Clear();
-                Assert.Equal(signature.Length, slhDsa.SignData(data, signature));
+                slhDsa.SignData(data, signature, []);
 
                 ExerciseSuccessfulVerify(slhDsa, data, signature, []);
             }
@@ -181,6 +169,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         protected static void ExerciseSuccessfulVerify(SlhDsa slhDsa, byte[] data, byte[] signature, byte[] context)
         {
+            ReadOnlySpan<byte> buffer = [0, 1, 2, 3];
             AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, context));
 
             if (data.Length > 0)
@@ -197,8 +186,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertExtensions.TrueExpression(slhDsa.VerifyData(Array.Empty<byte>(), signature, context));
                 AssertExtensions.TrueExpression(slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, signature, context));
 
-                AssertExtensions.FalseExpression(slhDsa.VerifyData([0], signature, context));
-                AssertExtensions.FalseExpression(slhDsa.VerifyData([1, 2, 3], signature, context));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(buffer.Slice(0, 1), signature, context));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(buffer.Slice(1), signature, context));
             }
 
             signature[0] ^= 1;
@@ -219,8 +208,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, Array.Empty<byte>()));
                 AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, ReadOnlySpan<byte>.Empty));
 
-                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, [0]));
-                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, [1, 2, 3]));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, buffer.Slice(0, 1)));
+                AssertExtensions.FalseExpression(slhDsa.VerifyData(data, signature, buffer.Slice(1)));
             }
 
             AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, context));

@@ -299,24 +299,26 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAlloc")]
         private static unsafe partial void InternalAlloc(MethodTable* pMT, ObjectHandleOnStack result);
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static object InternalAllocNoChecks(MethodTable* pMT)
         {
-            object? result = null;
-            InternalAllocNoChecks(pMT, ObjectHandleOnStack.Create(ref result));
-            return result!;
-        }
+            return InternalAllocNoChecks_FastPath(pMT) ?? InternalAllocNoChecksWorker(pMT);
 
-        internal static object InternalAllocNoChecks(RuntimeType type)
-        {
-            Debug.Assert(!type.GetNativeTypeHandle().IsTypeDesc);
-            object? result = null;
-            InternalAllocNoChecks(type.GetNativeTypeHandle().AsMethodTable(), ObjectHandleOnStack.Create(ref result));
-            GC.KeepAlive(type);
-            return result!;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object InternalAllocNoChecksWorker(MethodTable* pMT)
+            {
+                object? result = null;
+                InternalAllocNoChecks(pMT, ObjectHandleOnStack.Create(ref result));
+                return result!;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAllocNoChecks")]
         private static unsafe partial void InternalAllocNoChecks(MethodTable* pMT, ObjectHandleOnStack result);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object? InternalAllocNoChecks_FastPath(MethodTable* pMT);
 
         /// <summary>
         /// Given a RuntimeType, returns information about how to activate it via calli

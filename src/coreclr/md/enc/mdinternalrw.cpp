@@ -942,11 +942,6 @@ HRESULT MDInternalRW::EnumGlobalFieldsInit( // return hresult
     return EnumInit(mdtFieldDef, m_tdModule, phEnum);
 } // MDInternalRW::EnumGlobalFieldsInit
 
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 //*****************************************
 // Enumerator initializer
 //*****************************************
@@ -1363,9 +1358,6 @@ ErrExit:
 
     return hr;
 } // MDInternalRW::EnumInit
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*****************************************
 // Enumerator initializer

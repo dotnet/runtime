@@ -1060,7 +1060,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
             pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress);
         }
 
-        PREFIX_ASSUME(pPrecode != NULL);
+        _ASSERTE(pPrecode != NULL);
 
         switch (pPrecode->GetType())
         {
@@ -1118,7 +1118,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
         pMD = pPrecode->GetMethodDesc();
     }
 
-    PREFIX_ASSUME(pMD != NULL);
+    _ASSERTE(pMD != NULL);
 
     // If the method is not IL, then we patch the prestub because no one will ever change the call here at the
     // MethodDesc. If, however, this is an IL method, then we are at risk to have another thread backpatch the call

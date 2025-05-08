@@ -521,10 +521,10 @@ SIZE_T GetStringizedItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef)
     CONTRACTL_END;
 
     MethodTable* pIntfMT = InterfaceType.GetMethodTable();
-    PREFIX_ASSUME(pIntfMT != NULL);
+    _ASSERTE(pIntfMT != NULL);
 
     IMDInternalImport* pMDImport = pIntfMT->GetMDImport();
-    PREFIX_ASSUME(pMDImport != NULL);
+    _ASSERTE(pMDImport != NULL);
 
     LPCWSTR             szName;
     ULONG               cchName;
@@ -1767,7 +1767,7 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
     CorClassIfaceAttr   ClassItfType;
     BOOL                bComVisible;
 
-    PREFIX_ASSUME(pClassMT != NULL);
+    _ASSERTE(pClassMT != NULL);
 
     if (pClassMT->IsComImport())
     {
@@ -2228,7 +2228,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
     LPCWSTR             szName;
     ULONG               cchName;
     MethodTable*        pIntfMT = InterfaceType.GetMethodTable();
-    PREFIX_ASSUME(pIntfMT != NULL);
+    _ASSERTE(pIntfMT != NULL);
 
     MethodTable*        pDeclaringMT = NULL;
     DWORD               nSlots;                 // Slots on the pseudo interface.
@@ -2497,7 +2497,7 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     // TODO: (async) revisit and examine if this needs to be supported somehow
     if (pMD->IsAsyncMethod())
         return false;
-        
+
     mdMethodDef md = pMD->GetMemberDef();
 
     // See if there is property information for this member.
@@ -2654,7 +2654,7 @@ BOOL IsComTargetValidForType(REFLECTCLASSBASEREF* pRefClassObj, OBJECTREF* pTarg
 
     MethodTable* pTargetMT = (*pTarget)->GetMethodTable();
     _ASSERTE(pTargetMT);
-    PREFIX_ASSUME(pInvokedMT != NULL);
+    _ASSERTE(pInvokedMT != NULL);
 
     // If the target class and the invoke class are identical then the invoke is valid.
     if (pTargetMT == pInvokedMT)
@@ -3066,7 +3066,7 @@ void IUInvokeDispMethod(
     PTRARRAYREF* pArrByrefModifiers = (PTRARRAYREF*) pByrefModifiers;
     PTRARRAYREF* pArrNamedArgs = (PTRARRAYREF*) pNamedArgs;
     MethodTable* pInvokedMT = (*pRefClassObj)->GetType().GetMethodTable();
-    PREFIX_ASSUME(pInvokedMT != NULL);
+    _ASSERTE(pInvokedMT != NULL);
 
     // Retrieve the total count of arguments.
     if (*pArrArgs != NULL)

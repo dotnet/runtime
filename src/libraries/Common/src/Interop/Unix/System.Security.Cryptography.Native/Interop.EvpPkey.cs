@@ -338,6 +338,7 @@ internal static partial class Interop
             DSA = 2,
             ECC = 3,
             MLKem = 4,
+            SlhDsa = 5,
         }
     }
 }

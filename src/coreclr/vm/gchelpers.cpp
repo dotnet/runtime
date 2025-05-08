@@ -697,7 +697,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     GC_ALLOC_FLAGS flagsOriginal = flags;
 
    _ASSERTE(pArrayMT->CheckInstanceActivated());
-    PREFIX_ASSUME(pArrayMT != NULL);
+    _ASSERTE(pArrayMT != NULL);
     CorElementType kind = pArrayMT->GetInternalCorElementType();
     _ASSERTE(kind == ELEMENT_TYPE_ARRAY || kind == ELEMENT_TYPE_SZARRAY);
 

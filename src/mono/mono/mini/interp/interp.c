@@ -27,6 +27,7 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-tls-inline.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-memory-model.h>
 
 #ifdef HAVE_ALLOCA_H
@@ -1739,6 +1740,7 @@ ves_pinvoke_method (
 	frame.retval = ret_sp;
 
 	MonoLMFExt ext;
+	gpointer gc_safe_cookie = NULL;
 	gpointer args;
 
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -1808,9 +1810,10 @@ ves_pinvoke_method (
 	INTERP_PUSH_LMF_WITH_CTX (&frame, ext, exit_pinvoke);
 
 	if (*gc_transitions) {
-		MONO_ENTER_GC_SAFE;
+		MONO_STACKDATA (stack_data);
+		gc_safe_cookie = mono_threads_enter_gc_safe_region_internal (&stack_data);
 		entry_func ((gpointer) addr, args);
-		MONO_EXIT_GC_SAFE;
+		mono_threads_exit_gc_safe_region_internal (gc_safe_cookie, &stack_data);
 		*gc_transitions = FALSE;
 	} else {
 		entry_func ((gpointer) addr, args);
@@ -1852,7 +1855,13 @@ ves_pinvoke_method (
 		g_free (margs.fargs);
 #endif
 	goto exit_pinvoke; // prevent unused label warning in some configurations
+
+/* If an exception is thrown from native code, execution will continue here */
 exit_pinvoke:
+	if (*gc_transitions) {
+		mono_threads_abort_gc_safe_region_internal (gc_safe_cookie);
+		*gc_transitions = FALSE;
+	}
 	return NULL;
 }
 #ifdef _MSC_VER
@@ -2460,12 +2469,15 @@ static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE gpointer
 do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error, gboolean *gc_transitions)
 {
 	MonoLMFExt ext;
+	gpointer gc_safe_cookie = NULL;
+
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
 
 	if (*gc_transitions) {
-		MONO_ENTER_GC_SAFE;
+		MONO_STACKDATA (stack_data);
+		gc_safe_cookie = mono_threads_enter_gc_safe_region_internal (&stack_data);
 		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
-		MONO_EXIT_GC_SAFE;
+		mono_threads_exit_gc_safe_region_internal (gc_safe_cookie, &stack_data);
 		*gc_transitions = FALSE;
 	} else {
 		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
@@ -2474,8 +2486,14 @@ do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, MintICallSig op,
 	interp_pop_lmf (&ext);
 
 	goto exit_icall; // prevent unused label warning in some configurations
-	/* If an exception is thrown from native code, execution will continue here */
+
+/* If an exception is thrown from native code, execution will continue here */
 exit_icall:
+	if (*gc_transitions) {
+		mono_threads_abort_gc_safe_region_internal (gc_safe_cookie);
+		*gc_transitions = FALSE;
+	}
+
 	return NULL;
 }
 #ifdef _MSC_VER

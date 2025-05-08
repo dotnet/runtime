@@ -5887,7 +5887,7 @@ BasicBlock* CodeGen::genGetThrowHelper(SpecialCodeKind codeKind)
         // For code with throw helper blocks, find and use the helper block for
         // raising the exception. The block may be shared by other trees too.
         Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
-        PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+        assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
         assert(add->acdUsed);
         excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS

@@ -1,34 +1,9 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <Import Project="../Directory.Build.props" />
-
+<Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)/build/</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="*.*" Exclude="$(MSBuildProjectFile)" />
+    <Content Include="*.*" Exclude="$(MSBuildProjectFile)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-
-  <Target Name="Build">
-    <Copy SourceFiles="@(Content)" DestinationFolder="$(OutputPath)" />
-
-    <!-- Create breadcrumb to disable dynamic linking of release crt for debug runtime -->
-    <WriteLinesToFile
-      File="$(RuntimeBinDir)/aotsdk/debugucrt.txt"
-      Overwrite="true"
-      Condition="'$(TargetsWindows)'=='true' and '$(Configuration)' != 'Release'" />
-
-    <!-- Create breadcrumb to add additional libraries for non-portable builds -->
-    <WriteLinesToFile
-      File="$(RuntimeBinDir)/aotsdk/nonportable.txt"
-      Overwrite="true"
-      Condition="'$(TargetsWindows)'!='true' and '$(PortableBuild)' != 'true'" />
-    <Delete
-      Files="$(RuntimeBinDir)/aotsdk/nonportable.txt"
-      Condition="'$(TargetsWindows)'=='true' or '$(PortableBuild)' == 'true'" />
-
-  </Target>
-
-  <Target Name="Restore" />
-  <Target Name="Pack" />
 </Project>

@@ -53,11 +53,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 byte[] data = [1, 1, 2, 3, 5, 8];
                 byte[] context = [13, 21];
-                byte[] oneSignature = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SignatureSizeInBytes];
+                byte[] oneSignature;
 
                 using (one)
                 {
-                    Assert.Equal(oneSignature.Length, one.SignData(data, oneSignature, context));
+                    oneSignature = one.SignData(data, context);
                     VerifyInstanceIsUsable(one);
                     VerifyInstanceIsUsable(two);
                 }
@@ -75,14 +75,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         private static void VerifyInstanceIsUsable(SlhDsaOpenSsl slhDsa)
         {
-            byte[] secretKey = new byte[slhDsa.Algorithm.SecretKeySizeInBytes];
-            Assert.Equal(slhDsa.Algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey)); // does not throw
+            _ = slhDsa.ExportSlhDsaSecretKey(); // does not throw
 
             // usable
             byte[] data = [1, 2, 3];
             byte[] context = [4];
-            byte[] signature = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SignatureSizeInBytes];
-            slhDsa.SignData(data, signature, context);
+            byte[] signature = slhDsa.SignData(data, context);
 
             ExerciseSuccessfulVerify(slhDsa, data, signature, context);
         }

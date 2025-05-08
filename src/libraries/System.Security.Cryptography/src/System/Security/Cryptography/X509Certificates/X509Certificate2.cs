@@ -983,6 +983,98 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
+        ///   Gets the <see cref="SlhDsa"/> public key from this certificate.
+        /// </summary>
+        /// <returns>
+        ///   The public key, or <see langword="null"/> if this certificate does not have an SLH-DSA public key.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The certificate has an SLH-DSA public key, but the platform does not support SLH-DSA.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The public key was invalid, or otherwise could not be imported.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public SlhDsa? GetSlhDsaPublicKey()
+        {
+            if (!Helpers.IsSlhDsaOid(GetKeyAlgorithm()))
+            {
+                return null;
+            }
+
+            Debug.Assert(!OperatingSystem.IsBrowser());
+            return PublicKey.GetSlhDsaPublicKey();
+        }
+
+        /// <summary>
+        ///   Gets the <see cref="SlhDsa"/> private key from this certificate.
+        /// </summary>
+        /// <returns>
+        ///   The private key, or <see langword="null"/> if this certificate does not have an SLH-DSA private key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred accessing the private key.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public SlhDsa? GetSlhDsaPrivateKey() =>
+            Helpers.IsSlhDsaOid(GetKeyAlgorithm())
+                ? Pal.GetSlhDsaPrivateKey()
+                : null;
+
+        /// <summary>
+        ///   Combines a private key with a certificate containing the associated public key into a
+        ///   new instance that can access the private key.
+        /// </summary>
+        /// <param name="privateKey">
+        ///   The SLH-DSA private key that corresponds to the SLH-DSA public key in this certificate.
+        /// </param>
+        /// <returns>
+        ///   A new certificate with the <see cref="HasPrivateKey" /> property set to <see langword="true"/>.
+        ///   The current certificate isn't modified.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="privateKey"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The specified private key doesn't match the public key for this certificate.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   The certificate already has an associated private key.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public X509Certificate2 CopyWithPrivateKey(SlhDsa privateKey)
+        {
+            ArgumentNullException.ThrowIfNull(privateKey);
+
+            if (HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            using (SlhDsa? publicKey = GetSlhDsaPublicKey())
+            {
+                if (publicKey is null)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+                }
+
+                if (publicKey.Algorithm != privateKey.Algorithm)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+
+                byte[] pk1 = publicKey.ExportSlhDsaPublicKey();
+                byte[] pk2 = privateKey.ExportSlhDsaPublicKey();
+
+                if (!pk1.AsSpan().SequenceEqual(pk2))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+            }
+
+            ICertificatePal pal = Pal.CopyWithPrivateKey(privateKey);
+            return new X509Certificate2(pal);
+        }
+
+        /// <summary>
         /// Creates a new X509 certificate from the file contents of an RFC 7468 PEM-encoded
         /// certificate and private key.
         /// </summary>
@@ -1172,23 +1264,29 @@ namespace System.Security.Cryptography.X509Certificates
                         s_DsaPublicKeyPrivateKeyLabels,
                         static keyPem => CreateAndImport(keyPem, DSA.Create),
                         certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey when IsECDsa(certificate) =>
-                        ExtractKeyFromPem<ECDsa>(
-                            keyPem,
-                            s_EcPublicKeyPrivateKeyLabels,
-                            static keyPem => CreateAndImport(keyPem, ECDsa.Create),
-                            certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
                         ExtractKeyFromPem<ECDiffieHellman>(
                             keyPem,
                             s_EcPublicKeyPrivateKeyLabels,
                             static keyPem => CreateAndImport(keyPem, ECDiffieHellman.Create),
                             certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDsa(certificate) =>
+                        ExtractKeyFromPem<ECDsa>(
+                            keyPem,
+                            s_EcPublicKeyPrivateKeyLabels,
+                            static keyPem => CreateAndImport(keyPem, ECDsa.Create),
+                            certificate.CopyWithPrivateKey),
                     Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 =>
                         ExtractKeyFromPem<MLKem>(
                             keyPem,
                             [PemLabels.Pkcs8PrivateKey],
                             MLKem.ImportFromPem,
+                            certificate.CopyWithPrivateKey),
+                    _ when Helpers.IsSlhDsaOid(keyAlgorithm) =>
+                        ExtractKeyFromPem<SlhDsa>(
+                            keyPem,
+                            [PemLabels.Pkcs8PrivateKey],
+                            SlhDsa.ImportFromPem,
                             certificate.CopyWithPrivateKey),
                     _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
                 };
@@ -1259,23 +1357,29 @@ namespace System.Security.Cryptography.X509Certificates
                             password,
                             static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, DSA.Create),
                             certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey when IsECDsa(certificate) =>
-                        ExtractKeyFromEncryptedPem<ECDsa>(
-                            keyPem,
-                            password,
-                            static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, ECDsa.Create),
-                            certificate.CopyWithPrivateKey),
                     Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
                         ExtractKeyFromEncryptedPem<ECDiffieHellman>(
                             keyPem,
                             password,
                             static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, ECDiffieHellman.Create),
                             certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDsa(certificate) =>
+                        ExtractKeyFromEncryptedPem<ECDsa>(
+                            keyPem,
+                            password,
+                            static (keyPem, password) => CreateAndImportEncrypted(keyPem, password, ECDsa.Create),
+                            certificate.CopyWithPrivateKey),
                     Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 =>
                         ExtractKeyFromEncryptedPem<MLKem>(
                             keyPem,
                             password,
                             MLKem.ImportFromEncryptedPem,
+                            certificate.CopyWithPrivateKey),
+                    _ when Helpers.IsSlhDsaOid(keyAlgorithm) =>
+                        ExtractKeyFromEncryptedPem<SlhDsa>(
+                            keyPem,
+                            password,
+                            SlhDsa.ImportFromEncryptedPem,
                             certificate.CopyWithPrivateKey),
                     _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
                 };

@@ -1131,5 +1131,21 @@ namespace Microsoft.Extensions
             public Guid? GuidValue { get; set; }
             public StringComparison? StringComparisonValue { get; set; }
         }
+
+        public class OptionsWithCollectionsWithNullableEnum
+        {
+            // uses MyValue? dictionary values
+            public Dictionary<string, MyValue?> Dictionary { get; set; } = new();
+
+            // uses MyValue? List values
+            public List<MyValue?> List { get; set; } = new();
+        }
+
+        public enum MyValue
+        {
+            Value1,
+            Value2,
+            Value3
+        }
     }
 }

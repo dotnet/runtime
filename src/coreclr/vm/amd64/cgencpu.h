@@ -450,6 +450,46 @@ inline TADDR GetFP(const CONTEXT * context)
     return (TADDR)(context->Rbp);
 }
 
+inline void SetFirstArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    context->Rdi = (DWORD64)value;
+#else
+    context->Rcx = (DWORD64)value;
+#endif
+}
+
+inline TADDR GetFirstArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    return (TADDR)(context->Rdi);
+#else
+    return (TADDR)(context->Rcx);
+#endif
+}
+
+inline void SetSecondArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    context->Rsi = (DWORD64)value;
+#else
+    context->Rdx = (DWORD64)value;
+#endif
+}
+
+inline TADDR GetSecondArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    return (TADDR)(context->Rsi);
+#else
+    return (TADDR)(context->Rdx);
+#endif
+}
+
 extern "C" TADDR GetCurrentSP();
 
 // Emits:

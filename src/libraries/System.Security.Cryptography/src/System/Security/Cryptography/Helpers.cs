@@ -465,5 +465,8 @@ namespace Internal.Cryptography
 
             return array;
         }
+
+        internal static bool IsSlhDsaOid(string? oid) =>
+            SlhDsaAlgorithm.GetAlgorithmFromOid(oid) is not null;
     }
 }

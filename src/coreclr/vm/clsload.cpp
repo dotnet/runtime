@@ -260,7 +260,7 @@ BOOL ClassLoader::IsTypicalInstantiation(Module *pModule, mdToken token, Instant
         {
             TypeVarTypeDesc* tyvar = thArg.AsGenericVariable();
 
-            PREFIX_ASSUME(tyvar!=NULL);
+            _ASSERTE(tyvar!=NULL);
             if ((tyvar->GetTypeOrMethodDef() != token) ||
                 (tyvar->GetModule() != dac_cast<PTR_Module>(pModule)) ||
                 (tyvar->GetIndex() != i))
@@ -866,7 +866,7 @@ TypeHandle ClassLoader::LookupInLoaderModule(const TypeKey *pKey)
     } CONTRACTL_END;
 
     Module *pLoaderModule = ComputeLoaderModule(pKey);
-    PREFIX_ASSUME(pLoaderModule!=NULL);
+    _ASSERTE(pLoaderModule!=NULL);
 
     return LookupTypeKey(pKey, pLoaderModule->GetAvailableParamTypes());
 }
@@ -2667,7 +2667,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
-        PREFIX_ASSUME(pLoaderModule != NULL);
+        _ASSERTE(pLoaderModule != NULL);
         pLoaderModule->GetLoaderAllocator()->EnsureInstantiation(NULL, Instantiation(pKey->GetRetAndArgTypes(), pKey->GetNumArgs() + 1));
 
         DWORD numArgs = pKey->GetNumArgs();
@@ -2678,7 +2678,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
     else
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
-        PREFIX_ASSUME(pLoaderModule!=NULL);
+        _ASSERTE(pLoaderModule!=NULL);
 
         CorElementType kind = pKey->GetKind();
         TypeHandle paramType = pKey->GetElementType();
@@ -2924,7 +2924,7 @@ void ClassLoader::NotifyUnload(MethodTable* pMT, bool unloadStarted)
                 // See ClassLoadStarted callback for more details.
                 return;
             }
-        
+
             // Calls to the profiler callback may throw, or otherwise fail, if
             // the profiler AVs/throws an unhandled exception/etc. We don't want
             // those failures to affect the runtime, so we'll ignore them.

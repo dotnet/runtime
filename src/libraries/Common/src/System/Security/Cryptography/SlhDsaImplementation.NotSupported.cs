@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
         private SlhDsaImplementation(SlhDsaAlgorithm algorithm) : base(algorithm) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa GenerateKeyCore(SlhDsaAlgorithm algorithm) =>
+        internal static partial SlhDsaImplementation GenerateKeyCore(SlhDsaAlgorithm algorithm) =>
             throw new PlatformNotSupportedException();
 
         // The instance override methods are unreachable, as the constructor will always throw.
@@ -32,13 +32,13 @@ namespace System.Security.Cryptography
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsaImplementation ImportPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsaImplementation ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsaImplementation ImportSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
     }
 }
