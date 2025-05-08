@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
@@ -41,11 +43,14 @@ namespace System.Net.Http
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersion30 = new Version(3, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
+        internal static bool CertificateCachingAppContextSwitchEnabled { get; } = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool enabled) && enabled;
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
         private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue("gzip");
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue("deflate");
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(CheckTls13Support);
+        private static readonly TimeSpan s_cleanCachedCertificateTimeout = TimeSpan.FromMilliseconds((int?)AppDomain.CurrentDomain.GetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval") ?? 60_000);
+        private static readonly long s_staleTimeout = (long)(s_cleanCachedCertificateTimeout.TotalSeconds * Stopwatch.Frequency);
 
         [ThreadStatic]
         private static StringBuilder? t_requestHeadersBuilder;
@@ -93,9 +98,44 @@ namespace System.Net.Http
         private volatile bool _disposed;
         private SafeWinHttpHandle? _sessionHandle;
         private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
+        private readonly Timer? _certificateCleanupTimer;
+        private bool _isTimerRunning;
+        private readonly ConcurrentDictionary<CachedCertificateKey, CachedCertificateValue> _cachedCertificates = new();
 
         public WinHttpHandler()
         {
+            if (CertificateCachingAppContextSwitchEnabled)
+            {
+                WeakReference<WinHttpHandler> thisRef = new(this);
+                bool restoreFlow = false;
+                try
+                {
+                    if (!ExecutionContext.IsFlowSuppressed())
+                    {
+                        ExecutionContext.SuppressFlow();
+                        restoreFlow = true;
+                    }
+
+                    _certificateCleanupTimer = new Timer(
+                    static s =>
+                    {
+                        if (((WeakReference<WinHttpHandler>)s!).TryGetTarget(out WinHttpHandler? thisRef))
+                        {
+                            thisRef.ClearStaleCertificates();
+                        }
+                    },
+                    thisRef,
+                    Timeout.Infinite,
+                    Timeout.Infinite);
+                }
+                finally
+                {
+                    if (restoreFlow)
+                    {
+                        ExecutionContext.RestoreFlow();
+                    }
+                }
+            }
         }
 
         #region Properties
@@ -543,9 +583,12 @@ namespace System.Net.Http
             {
                 _disposed = true;
 
-                if (disposing && _sessionHandle != null)
+                if (disposing)
                 {
-                    SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
+                    if (_sessionHandle is not null) {
+                        SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
+                    }
+                    _certificateCleanupTimer?.Dispose();
                 }
             }
 
@@ -1644,7 +1687,8 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_ALL_COMPLETIONS |
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_HANDLES |
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_REDIRECT |
-                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SEND_REQUEST;
+                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SEND_REQUEST |
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTED_TO_SERVER;
 
             IntPtr oldCallback = Interop.WinHttp.WinHttpSetStatusCallback(
                 requestHandle,
@@ -1729,6 +1773,91 @@ namespace System.Net.Http
             }
 
             return state.LifecycleAwaitable;
+        }
+
+        internal bool GetCertificateFromCache(CachedCertificateKey key, [NotNullWhen(true)] out byte[]? rawCertificateBytes)
+        {
+            if (_cachedCertificates.TryGetValue(key, out CachedCertificateValue? cachedValue))
+            {
+                cachedValue.LastUsedTime = Stopwatch.GetTimestamp();
+                rawCertificateBytes = cachedValue.RawCertificateData;
+                return true;
+            }
+
+            rawCertificateBytes = null;
+            return false;
+        }
+
+        internal void AddCertificateToCache(CachedCertificateKey key, byte[] rawCertificateData)
+        {
+            if (_cachedCertificates.TryAdd(key, new CachedCertificateValue(rawCertificateData, Stopwatch.GetTimestamp())))
+            {
+                EnsureCleanupTimerRunning();
+            }
+        }
+
+        internal bool TryRemoveCertificateFromCache(CachedCertificateKey key)
+        {
+            bool result = _cachedCertificates.TryRemove(key, out _);
+            if (result)
+            {
+                StopCleanupTimerIfEmpty();
+            }
+            return result;
+        }
+
+        private void ChangeCleanerTimer(TimeSpan timeout)
+        {
+            Debug.Assert(Monitor.IsEntered(_lockObject));
+            Debug.Assert(_certificateCleanupTimer != null);
+            if (_certificateCleanupTimer!.Change(timeout, Timeout.InfiniteTimeSpan))
+            {
+                _isTimerRunning = timeout != Timeout.InfiniteTimeSpan;
+            }
+        }
+
+        private void ClearStaleCertificates()
+        {
+            foreach (KeyValuePair<CachedCertificateKey, CachedCertificateValue> kvPair in _cachedCertificates)
+            {
+                if (IsStale(kvPair.Value.LastUsedTime))
+                {
+                    _cachedCertificates.TryRemove(kvPair.Key, out _);
+                }
+            }
+
+            lock (_lockObject)
+            {
+                ChangeCleanerTimer(_cachedCertificates.IsEmpty ? Timeout.InfiniteTimeSpan : s_cleanCachedCertificateTimeout);
+            }
+
+            static bool IsStale(long lastUsedTime)
+            {
+                long now = Stopwatch.GetTimestamp();
+                return (now - lastUsedTime) > s_staleTimeout;
+            }
+        }
+
+        private void EnsureCleanupTimerRunning()
+        {
+            lock (_lockObject)
+            {
+                if (!_cachedCertificates.IsEmpty && !_isTimerRunning)
+                {
+                    ChangeCleanerTimer(s_cleanCachedCertificateTimeout);
+                }
+            }
+        }
+
+        private void StopCleanupTimerIfEmpty()
+        {
+            lock (_lockObject)
+            {
+                if (_cachedCertificates.IsEmpty && _isTimerRunning)
+                {
+                    ChangeCleanerTimer(Timeout.InfiniteTimeSpan);
+                }
+            }
         }
     }
 }

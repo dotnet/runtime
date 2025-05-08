@@ -13,6 +13,12 @@ namespace System.Globalization.Tests
             ValidDomainName = validDomainName;
         }
 
+        public ConformanceIdnaUnicodeTestResult(string entry, string fallbackValue, string statusValue, string statusFallbackValue, string? source, bool validDomainName = true)
+            : base(entry, fallbackValue, statusValue, statusFallbackValue, source, IdnaTestResultType.ToUnicode)
+        {
+            ValidDomainName = validDomainName;
+        }
+
         public ConformanceIdnaUnicodeTestResult(string entry, string fallbackValue, string statusValue, string statusFallbackValue, bool validDomainName = true)
             : base(entry, fallbackValue, statusValue, statusFallbackValue, IdnaTestResultType.ToUnicode)
         {
