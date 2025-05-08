@@ -35,7 +35,11 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         [ExperimentalAttribute("SYSLIB5006")]
         public static SlhDsa? GetSlhDsaPublicKey(this X509Certificate2 certificate) =>
+#if NET10_0_OR_GREATER
+            certificate.GetSlhDsaPrivateKey();
+#else
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
+#endif
 
         /// <summary>
         ///   Gets the <see cref="SlhDsa"/> private key from this certificate.
@@ -51,7 +55,11 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         [ExperimentalAttribute("SYSLIB5006")]
         public static SlhDsa? GetSlhDsaPrivateKey(this X509Certificate2 certificate) =>
+#if NET10_0_OR_GREATER
+            certificate.GetSlhDsaPrivateKey();
+#else
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
+#endif
 
         /// <summary>
         ///   Combines a private key with a certificate containing the associated public key into a
@@ -81,6 +89,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         [ExperimentalAttribute("SYSLIB5006")]
         public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, SlhDsa privateKey) =>
+#if NET10_0_OR_GREATER
+            certificate.CopyWithPrivateKey(privateKey);
+#else
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
+#endif
     }
 }
