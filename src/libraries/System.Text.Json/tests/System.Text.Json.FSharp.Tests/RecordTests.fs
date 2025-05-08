@@ -76,3 +76,22 @@ let ``Recursive struct records are supported``() =
     Assert.Equal("""{"Next":[{"Next":[null]}]}""", json)
     let deserializedValue = JsonSerializer.Deserialize<RecursiveStructRecord>(json)
     Assert.Equal(value, deserializedValue)
+
+
+[<JsonDerivedType(typeof<DerivedClass>, "derived")>]
+type BaseClass(x : int) =
+    member _.X = x
+
+and DerivedClass(x : int, y : bool) = 
+    inherit BaseClass(x)
+    member _.Y = y
+
+[<Fact>]
+let ``Support F# class hierarchies`` () =
+    let value = DerivedClass(42, true) :> BaseClass
+    let json = JsonSerializer.Serialize(value)
+    Assert.Equal("""{"$type":"derived","Y":true,"X":42}""", json)
+    let deserializedValue = JsonSerializer.Deserialize<BaseClass>(json)
+    let derived = Assert.IsType<DerivedClass>(deserializedValue)
+    Assert.Equal(42, deserializedValue.X)
+    Assert.Equal(true, derived.Y)
