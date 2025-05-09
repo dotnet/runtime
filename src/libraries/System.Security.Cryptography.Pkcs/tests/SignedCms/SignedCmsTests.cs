@@ -1687,6 +1687,21 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(verifySignatureOnly: true);
         }
 
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void ComputeSignature_SlhDsa_NoSignature()
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, false);
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
+            {
+                CmsSigner cmsSigner = new CmsSigner(SubjectIdentifierType.NoSignature, cert);
+
+                AssertExtensions.ThrowsContains<CryptographicException>(
+                    () => cms.ComputeSignature(cmsSigner),
+                    "SignatureIdentifierType.NoSignature is not valid with the provided certificate.");
+            }
+        }
+
         private static void CheckNoSignature(byte[] encoded, bool badOid=false)
         {
             SignedCms cms = new SignedCms();

@@ -490,21 +490,9 @@ namespace System.Security.Cryptography.Pkcs
                 return false;
             }
 
-            // SignatureAlgorithm always 'wins' so we don't need to pass in an rsaSignaturePadding
-            CmsSignature? signatureProcessor = CmsSignature.ResolveAndVerifyKeyType(
-                SignatureAlgorithm.Value!,
-                key: null,
-                rsaSignaturePadding: null);
+            Debug.Assert(_signatureAlgorithm == Oids.NoSignature);
 
-            // The behavior of this scenario should match Windows which currently does not
-            // implement PQC. So we do a best effort determination of whether the algorithm
-            // is a pure algorithm and throw if so. This is subject to change once Windows
-            // implements PQC.
-            if (signatureProcessor?.NeedsHashedMessage == false)
-            {
-                throw new CryptographicException(SR.Cryptography_Cms_DigestAsSignatureNotSupported);
-            }
-
+            // The signature is a hash of the message or signed attributes.
             return VerifyHashedMessage(compatMode, contentToVerify => _signature.Span.SequenceEqual(contentToVerify));
         }
 

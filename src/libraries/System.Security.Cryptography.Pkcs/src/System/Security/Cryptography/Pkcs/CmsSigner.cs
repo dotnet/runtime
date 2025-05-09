@@ -399,7 +399,7 @@ namespace System.Security.Cryptography.Pkcs
                     CmsSignature? processor = CmsSignature.ResolveAndVerifyKeyType(keyAlgorithm, _privateKey, SignaturePadding);
                     if (processor?.NeedsHashedMessage == false)
                     {
-                        throw new CryptographicException(SR.Cryptography_Cms_DigestAsSignatureNotSupported);
+                        throw new CryptographicException(SR.Cryptography_Cms_CertificateDoesNotSupportNoSignature);
                     }
                 }
 
