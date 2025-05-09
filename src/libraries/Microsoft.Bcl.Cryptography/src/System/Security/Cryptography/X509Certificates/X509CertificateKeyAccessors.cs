@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [ExperimentalAttribute("SYSLIB5006")]
+        [ExperimentalAttribute(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static SlhDsa? GetSlhDsaPublicKey(this X509Certificate2 certificate) =>
 #if NET10_0_OR_GREATER
             certificate.GetSlhDsaPublicKey();
@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [ExperimentalAttribute("SYSLIB5006")]
+        [ExperimentalAttribute(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static SlhDsa? GetSlhDsaPrivateKey(this X509Certificate2 certificate) =>
 #if NET10_0_OR_GREATER
             certificate.GetSlhDsaPrivateKey();
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="InvalidOperationException">
         ///   The certificate already has an associated private key.
         /// </exception>
-        [ExperimentalAttribute("SYSLIB5006")]
+        [ExperimentalAttribute(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, SlhDsa privateKey) =>
 #if NET10_0_OR_GREATER
             certificate.CopyWithPrivateKey(privateKey);

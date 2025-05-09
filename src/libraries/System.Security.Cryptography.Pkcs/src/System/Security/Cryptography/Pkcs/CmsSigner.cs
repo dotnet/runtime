@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.Pkcs
 
 
 #if NET || NETSTANDARD2_1
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public
 #else
         private

@@ -268,6 +268,27 @@ namespace System
             }
         }
 
+        public static T ThrowsExceptionAssignableTo<T>(Action action)
+            where T : Exception
+        {
+            try
+            {
+                action();
+            }
+            catch (T ex)
+            {
+                return ex;
+            }
+            catch (Exception e)
+            {
+                throw new XunitException(
+                    $"{nameof(ThrowsExceptionAssignableTo)}() Failure: Exception type was not assignable to expected type{Environment.NewLine}Expected: {typeof(T)}{Environment.NewLine}Actual:   {e.GetType()}");
+            }
+
+            throw new XunitException(
+                $"{nameof(ThrowsExceptionAssignableTo)}() Failure: No exception was thrown{Environment.NewLine}Expected: {typeof(T)}");
+        }
+
         public static void Canceled(CancellationToken cancellationToken, Action testCode)
         {
             OperationCanceledException oce = Assert.ThrowsAny<OperationCanceledException>(testCode);

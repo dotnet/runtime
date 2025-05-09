@@ -179,8 +179,6 @@ namespace Internal.Cryptography.Pal.Windows
                     return (T)(object)new RSACryptoServiceProvider(cspParams);
                 if (typeof(T) == typeof(DSA))
                     return (T)(object)new DSACryptoServiceProvider(cspParams);
-                if (typeof(T) == typeof(SlhDsa))
-                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
 
                 Debug.Fail($"Unknown CAPI key type request: {typeof(T).FullName}");
                 return null;

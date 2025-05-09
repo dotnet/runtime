@@ -69,14 +69,17 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                return publicKey.VerifyData(
-                    valueHash,
+                using (publicKey)
+                {
+                    return publicKey.VerifyData(
+                        valueHash,
 #if NET || NETSTANDARD2_1
-                    signature.Span
+                        signature.Span
 #else
                     signature
 #endif
-                );
+                    );
+                }
             }
 
             protected override bool Sign(
@@ -93,38 +96,51 @@ namespace System.Security.Cryptography.Pkcs
                 [NotNullWhen(true)] out byte[]? signatureValue,
                 out byte[]? signatureParameters)
             {
+                // The spec (as of May 5, 2025) has strength requirements on the hash, but we will
+                // not enforce them here. It is up to the caller to choose an appropriate hash.
+
                 signatureParameters = null;
 
-                // If there's no private key, fall back to the public key for a "no private key" exception.
-                SlhDsa? signingKey = key as SlhDsa ??
-                    PkcsPal.Instance.GetPrivateKeyForSigning<SlhDsa>(certificate, silent) ??
-                    certificate.GetSlhDsaPublicKey();
+                SlhDsa? signingKey = key as SlhDsa;
+                IDisposable? signingKeyResources = null;
 
                 if (signingKey is null)
                 {
-                    signatureAlgorithm = null;
-                    signatureValue = null;
-                    return false;
+                    // If there's no private key, fall back to the public key for a "no private key" exception.
+                    signingKeyResources = signingKey =
+                        PkcsPal.Instance.GetPrivateKeyForSigning<SlhDsa>(certificate, silent) ?? certificate.GetSlhDsaPublicKey();
+
+                    if (signingKey is null)
+                    {
+                        signatureAlgorithm = null;
+                        signatureValue = null;
+                        return false;
+                    }
                 }
 
-                // The spec (as of May 5, 2025) has strength requirements on the hash, but we will
-                // not enforce them here. It is up to the caller to choose an appropriate hash for them.
-
-                // Don't pool because we will likely return this buffer to the caller.
-                int signatureSizeInBytes = signingKey.Algorithm.SignatureSizeInBytes;
-                byte[] signature = new byte[signatureSizeInBytes];
-                signingKey.SignData(dataHash, signature);
-
-                if (key != null && !certificate.GetSlhDsaPublicKey()!.VerifyData(dataHash, signature))
+                using (signingKeyResources)
                 {
-                    signatureAlgorithm = null;
-                    signatureValue = null;
-                    return false;
-                }
+                    // Don't pool because we will likely return this buffer to the caller.
+                    byte[] signature = new byte[signingKey.Algorithm.SignatureSizeInBytes];
+                    signingKey.SignData(dataHash, signature);
 
-                signatureValue = signature;
-                signatureAlgorithm = _signatureAlgorithm;
-                return true;
+                    if (key != null)
+                    {
+                        using (SlhDsa certKey = certificate.GetSlhDsaPublicKey()!)
+                        {
+                            if (!certKey.VerifyData(dataHash, signature))
+                            {
+                                signatureAlgorithm = null;
+                                signatureValue = null;
+                                return false;
+                            }
+                        }
+                    }
+
+                    signatureValue = signature;
+                    signatureAlgorithm = _signatureAlgorithm;
+                    return true;
+                }
             }
         }
     }
