@@ -3806,34 +3806,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
 
-            if (!indexOp->OperIsConst())
-            {
-                if (!opts.OptimizationEnabled())
-                {
-                    // Only enable late stage rewriting if optimizations are enabled
-                    // as we won't otherwise encounter a constant at the later point
-                    return nullptr;
-                }
-
-                op3 = impPopStack().val;
-                op2 = impPopStack().val;
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
-
-                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
-                break;
-            }
-
-            ssize_t imm8  = indexOp->AsIntCon()->IconValue();
-            ssize_t count = simdSize / genTypeSize(simdBaseType);
-
-            if ((imm8 >= count) || (imm8 < 0))
-            {
-                // Using software fallback if index is out of range (throw exception)
-                return nullptr;
-            }
-
             switch (simdBaseType)
             {
                 // Using software fallback if simdBaseType is not supported by hardware
@@ -4405,6 +4377,65 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         }
                     }
 
+                    // Some normalization cases require us to swap the operands, which might require
+                    // spilling side effects. Check that here.
+                    //
+                    // cast in switch clause is needed for old gcc
+                    switch ((TernaryLogicOperKind)info.oper1)
+                    {
+                        case TernaryLogicOperKind::Not:
+                        {
+                            assert(info.oper1Use != TernaryLogicUseFlags::None);
+
+                            bool needSideEffectSpill = false;
+
+                            if (info.oper2 == TernaryLogicOperKind::And)
+                            {
+                                assert(info.oper2Use != TernaryLogicUseFlags::None);
+
+                                if ((control == static_cast<uint8_t>(~0xCC & 0xF0)) || // ~B & A
+                                    (control == static_cast<uint8_t>(~0xAA & 0xF0)) || // ~C & A
+                                    (control == static_cast<uint8_t>(~0xAA & 0xCC)))   // ~C & B
+                                {
+                                    // We're normalizing to ~B & C, so we need another swap
+                                    std::swap(val2, val3);
+                                    needSideEffectSpill = (control == static_cast<uint8_t>(~0xAA & 0xCC)); // ~C & B
+                                }
+                            }
+                            else if (info.oper2 == TernaryLogicOperKind::Or)
+                            {
+                                assert(info.oper2Use != TernaryLogicUseFlags::None);
+
+                                if ((control == static_cast<uint8_t>(~0xCC | 0xF0)) || // ~B | A
+                                    (control == static_cast<uint8_t>(~0xAA | 0xF0)) || // ~C | A
+                                    (control == static_cast<uint8_t>(~0xAA | 0xCC)))   // ~C | B
+                                {
+                                    // We're normalizing to ~B | C, so we need another swap
+                                    std::swap(val2, val3);
+                                    needSideEffectSpill = (control == static_cast<uint8_t>(~0xAA | 0xCC)); // ~C | B
+                                }
+                            }
+
+                            if (needSideEffectSpill)
+                            {
+                                // Side-effect cases:
+                                // ~B op A ; order before swap C A B
+                                //    op1 & op2 already set to be spilled; no further spilling necessary
+                                // ~C op A ; order before swap B A C
+                                //    op1 already set to be spilled; no further spilling necessary
+                                // ~C op B ; order before swap A B C
+                                //    nothing already set to be spilled; op1 & op2 need to be spilled
+
+                                spillOp1 = true;
+                                spillOp2 = true;
+                            }
+                            break;
+                        }
+
+                        default:
+                            break;
+                    }
+
                     if (spillOp1)
                     {
                         impSpillSideEffect(true, stackState.esStackDepth -
@@ -4529,8 +4560,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                     (control == static_cast<uint8_t>(~0xAA & 0xF0)) || // ~C & A
                                     (control == static_cast<uint8_t>(~0xAA & 0xCC)))   // ~C & B
                                 {
-                                    // We're normalizing to ~B & C, so we need another swap
-                                    std::swap(*val2, *val3);
+                                    // We already normalized to ~B & C above.
                                 }
                                 else
                                 {
@@ -4556,8 +4586,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                     (control == static_cast<uint8_t>(~0xAA | 0xF0)) || // ~C | A
                                     (control == static_cast<uint8_t>(~0xAA | 0xCC)))   // ~C | B
                                 {
-                                    // We're normalizing to ~B & C, so we need another swap
-                                    std::swap(*val2, *val3);
+                                    // We already normalized to ~B | C above.
                                 }
                                 else
                                 {

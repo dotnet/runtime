@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal sealed partial class MLDsaImplementation : MLDsa
     {
         private MLDsaImplementation(MLDsaAlgorithm algorithm)

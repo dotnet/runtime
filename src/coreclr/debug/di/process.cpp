@@ -4796,10 +4796,6 @@ void CordbProcess::DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted)
 //    A V2 shim can provide a proxy calllack that takes these events and queues them and
 //    does the real dispatch to the user to emulate V2 semantics.
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void CordbProcess::RawDispatchEvent(
     DebuggerIPCEvent *          pEvent,
     RSLockHolder *              pLockHolder,
@@ -4963,7 +4959,7 @@ void CordbProcess::RawDispatchEvent(
             STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: step complete.\n",
                  GetCurrentThreadId());
 
-            PREFIX_ASSUME(pThread != NULL);
+            _ASSERTE(pThread != NULL);
 
             CordbStepper * pStepper = m_steppers.GetBase(LsPtrToCookie(pEvent->StepData.stepperToken));
 
@@ -5138,7 +5134,7 @@ void CordbProcess::RawDispatchEvent(
                  VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain));
 
-            PREFIX_ASSUME (pAppDomain != NULL);
+            _ASSERTE (pAppDomain != NULL);
 
             CordbModule *module = pAppDomain->LookupOrCreateModule(pEvent->UnloadModuleData.vmDomainAssembly);
 
@@ -5665,7 +5661,7 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE(NULL != pAppDomain);
 
             CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmDomainAssembly);
-            PREFIX_ASSUME(pModule != NULL);
+            _ASSERTE(pModule != NULL);
 
             CordbFunction * pCurFunction    = NULL;
             CordbFunction * pResumeFunction = NULL;
@@ -5721,12 +5717,12 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE(NULL != pAppDomain);
 
             CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmDomainAssembly);
-            PREFIX_ASSUME(pModule != NULL);
+            _ASSERTE(pModule != NULL);
 
             // Find the function we're remapping to, which must be the latest version
             CordbFunction *pRemapFunction=
                 pModule->LookupFunctionLatestVersion(pEvent->EnCRemapComplete.funcMetadataToken);
-            PREFIX_ASSUME(pRemapFunction != NULL);
+            _ASSERTE(pRemapFunction != NULL);
 
             // Dispatch the FunctionRemapComplete callback
             RSSmartPtr<CordbFunction> pRef(pRemapFunction);
@@ -5966,9 +5962,6 @@ void CordbProcess::RawDispatchEvent(
 
     FinishEventDispatch();
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //---------------------------------------------------------------------------------------
 // Callback for prepopulating threads.
@@ -11168,8 +11161,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // For the first step of obtaining the thread handle,
     // we have previously attempted to use ::OpenThread to get a handle to the thread.
     // However, there are situations where OpenThread can fail with an Access Denied error.
-    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
-    // Windows causes the process to have higher privileges. 
+    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in
+    // Windows causes the process to have higher privileges.
     // We are now caching the thread handle in the unmanaged thread hash table when the thread is created.
 
     UnmanagedThreadTracker * curThread = m_unmanagedThreadHashTable.Lookup(dwThreadId);
@@ -11388,7 +11381,7 @@ bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAdd
 {
     UnmanagedThreadTracker * curThread = m_unmanagedThreadHashTable.Lookup(dwThreadId);
     _ASSERTE(curThread != NULL);
-    if (curThread != NULL && 
+    if (curThread != NULL &&
         curThread->GetThreadId() == dwThreadId &&
         curThread->IsInPlaceStepping())
     {
@@ -11918,7 +11911,7 @@ void CordbWin32EventThread::Win32EventLoop()
             // Once we detach, we don't need to continue any outstanding event.
             // So act like we never got the event.
             fEventAvailable = false;
-            PREFIX_ASSUME(m_pProcess == NULL); // W32 cleared process pointer
+            _ASSERTE(m_pProcess == NULL); // W32 cleared process pointer
         }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -11943,7 +11936,7 @@ void CordbWin32EventThread::Win32EventLoop()
         // But since the CordbProcess is our parent object, we know it won't go away until
         // it neuters us, so we can safely proceed.
         // Find the process this event is for.
-        PREFIX_ASSUME(m_pProcess != NULL);
+        _ASSERTE(m_pProcess != NULL);
         _ASSERTE(m_pProcess->m_id == GetProcessId(&event)); // should only get events for our proc
         g_pRSDebuggingInfo->m_MRUprocess = m_pProcess;
 
@@ -13317,11 +13310,11 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         {
             LOG((LF_CORDB, LL_INFO100000, "W32ET::W32EL: hijack complete will restore context...\n"));
             DT_CONTEXT tempContext = { 0 };
-#if defined(DT_CONTEXT_EXTENDED_REGISTERS)            
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
             tempContext.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
 #else
             tempContext.ContextFlags = DT_CONTEXT_FULL;
-#endif            
+#endif
             HRESULT hr = pUnmanagedThread->GetThreadContext(&tempContext);
             _ASSERTE(SUCCEEDED(hr));
 

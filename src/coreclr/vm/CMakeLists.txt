@@ -344,6 +344,7 @@ set(VM_SOURCES_WKS
     interopconverter.cpp
     interoputil.cpp
     interpexec.cpp
+    interpframeallocator.cpp
     invokeutil.cpp
     jithelpers.cpp
     managedmdimport.cpp
@@ -380,6 +381,7 @@ set(VM_SOURCES_WKS
     threadsuspend.cpp
     typeparse.cpp
     unsafeaccessors.cpp
+    asyncthunks.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
@@ -444,6 +446,7 @@ set(VM_HEADERS_WKS
     interoputil.h
     interoputil.inl
     interpexec.h
+    interpframeallocator.h
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h

@@ -38,6 +38,8 @@ Ensure you have all of the prerequisites installed from the [Linux Requirements]
 
 Once that is done, refer to the [Linux section of the cross-building doc](/docs/workflow/building/coreclr/cross-building.md#linux-cross-building). There are detailed instructions on how to cross-compile using your Linux environment, including a section dedicated to FreeBSD building.
 
+You'll also need to use the `--bootstrap` option as documented in the [cross-building doc](/docs/workflow/building/coreclr/cross-building.md#building-coreclr-with-bootstrapping) to build the cross-compilation toolchain.
+
 ## Build directly on FreeBSD
 
 Ensure you have all of the prerequisites installed from the [FreeBSD Requirements](/docs/workflow/requirements/freebsd-requirements.md).

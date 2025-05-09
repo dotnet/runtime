@@ -10,9 +10,9 @@
 //
 // Given any config knob below that looks like this example:
 //    RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogEnable, W("LogEnable"), 0, "Turns on the traditional CLR log.")
-//                                                                  ---------
-//                                                                     |
-//                                                 --------------------
+//                                                    ---------
+//                                                        |
+//                                                 -------
 //                                                 |
 //                                                 V
 // You can set an environment variable DOTNET_LogEnable=1 to enable it.
@@ -487,11 +487,11 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ProcessorCount, W("PROCESSOR_COUNT"), 0, "S
 #endif // _DEBUG
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredCompilation, W("TieredCompilation"), 1, "Enables tiered compilation")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_QuickJit, W("TC_QuickJit"), 1, "For methods that would be jitted, enable using quick JIT when appropriate.")
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifdef FEATURE_ON_STACK_REPLACEMENT
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_QuickJitForLoops, W("TC_QuickJitForLoops"), 1, "When quick JIT is enabled, quick JIT may also be used for methods that contain loops.")
-#else // !(defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)) || defined(TARGET_RISCV64)
+#else // FEATURE_ON_STACK_REPLACEMENT
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_QuickJitForLoops, W("TC_QuickJitForLoops"), 0, "When quick JIT is enabled, quick JIT may also be used for methods that contain loops.")
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#endif // FEATURE_ON_STACK_REPLACEMENT
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_AggressiveTiering, W("TC_AggressiveTiering"), 0, "Transition through tiers aggressively.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_CallCountThreshold, W("TC_CallCountThreshold"), TC_CallCountThreshold, "Number of times a method must be called in tier 0 after which it is promoted to the next tier.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_CallCountingDelayMs, W("TC_CallCountingDelayMs"), TC_CallCountingDelayMs, "A perpetual delay in milliseconds that is applied to call counting in tier 0 and jitting at higher tiers, while there is startup-like activity.")
@@ -725,6 +725,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,            W("EnableArm64Sh
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc,              W("EnableArm64Rcpc"),           1, "Allows Arm64 Rcpc+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc2,             W("EnableArm64Rcpc2"),          1, "Allows Arm64 Rcpc2+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve,               W("EnableArm64Sve"),            1, "Allows Arm64 SVE hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve2,              W("EnableArm64Sve2"),           1, "Allows Arm64 SVE2 hardware intrinsics to be disabled")
 #elif defined(TARGET_RISCV64)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zba,             W("EnableRiscV64Zba"),          1, "Allows RiscV64 Zba hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbb,             W("EnableRiscV64Zbb"),          1, "Allows RiscV64 Zbb hardware intrinsics to be disabled")
