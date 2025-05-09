@@ -243,7 +243,6 @@ PhaseStatus ObjectAllocator::DoPhase()
 
     if (didStackAllocate)
     {
-        printf("*** Stack allocations in 0x%08X\n", comp->info.compMethodHash());
         assert(enabled);
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
@@ -851,6 +850,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         }
     }
 
+#ifdef DEBUG
     // Print the connection graph
 
     if (JitConfig.JitObjectStackAllocationDumpConnGraph() > 0)
@@ -870,6 +870,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         }
         JITDUMP("}\n");
     }
+#endif
 }
 
 //------------------------------------------------------------------------------
