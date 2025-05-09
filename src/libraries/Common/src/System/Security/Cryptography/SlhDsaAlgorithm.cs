@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
     ///   Represents a specific algorithm within the SHL-DSA family.
     /// </summary>
     [DebuggerDisplay("{Name,nq}")]
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class SlhDsaAlgorithm
     {
         /// <summary>
