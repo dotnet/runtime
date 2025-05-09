@@ -8605,7 +8605,7 @@ int MethodTable::GetFieldAlignmentRequirement()
 {
     if (HasLayout())
     {
-        return GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+        return GetLayoutInfo()->GetAlignmentRequirement();
     }
     else if (GetClass()->HasCustomFieldAlignment())
     {
@@ -8629,7 +8629,7 @@ UINT32 MethodTable::GetNativeSize()
     CONTRACTL_END;
     if (IsBlittable())
     {
-        return GetClass()->GetLayoutInfo()->GetManagedSize();
+        return GetNumInstanceFieldBytes();
     }
     return GetNativeLayoutInfo()->GetSize();
 }
