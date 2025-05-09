@@ -8,7 +8,9 @@ using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+#if NET
 using System.Text.Unicode;
+#endif
 
 namespace System.Reflection
 {
@@ -117,6 +119,7 @@ namespace System.Reflection
 #endif
         }
 
+#if NET
         public static void WriteUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool allowUnpairedSurrogates)
         {
             int sourceLength = source.Length;
@@ -153,6 +156,82 @@ namespace System.Reflection
             charsRead = sourceLength - source.Length;
             bytesWritten = destinationLength - destination.Length;
         }
+#else
+        public static void WriteUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool allowUnpairedSurrogates)
+        {
+            const char ReplacementCharacter = '\uFFFD';
+
+            int sourceLength = source.Length;
+            int destinationLength = destination.Length;
+
+            while (!source.IsEmpty)
+            {
+                char c = source[0];
+                if (c < 0x80)
+                {
+                    if (destination.Length < 1)
+                    {
+                        break;
+                    }
+                    destination[0] = (byte)c;
+                    destination = destination.Slice(1);
+                    source = source.Slice(1);
+                }
+                else if (c < 0x7FF)
+                {
+                    if (destination.Length < 2)
+                    {
+                        break;
+                    }
+                    destination[0] = (byte)((c >> 6) | 0xC0);
+                    destination[1] = (byte)((c & 0x3F) | 0x80);
+                    destination = destination.Slice(2);
+                    source = source.Slice(1);
+                }
+                else
+                {
+                    if (char.IsSurrogate(c))
+                    {
+                        // surrogate pair
+                        if (char.IsHighSurrogate(c) && source.Length > 1 && source[1] is char cLow && char.IsLowSurrogate(cLow))
+                        {
+                            if (destination.Length < 4)
+                            {
+                                break;
+                            }
+                            int codepoint = ((c - 0xd800) << 10) + cLow - 0xdc00 + 0x10000;
+                            destination[0] = (byte)((codepoint >> 18) | 0xF0);
+                            destination[1] = (byte)(((codepoint >> 12) & 0x3F) | 0x80);
+                            destination[2] = (byte)(((codepoint >> 6) & 0x3F) | 0x80);
+                            destination[3] = (byte)((codepoint & 0x3F) | 0x80);
+                            destination = destination.Slice(4);
+                            source = source.Slice(2);
+                            continue;
+                        }
+
+                        // unpaired high/low surrogate
+                        if (!allowUnpairedSurrogates)
+                        {
+                            c = ReplacementCharacter;
+                        }
+                    }
+
+                    if (destination.Length < 3)
+                    {
+                        break;
+                    }
+                    destination[0] = (byte)((c >> 12) | 0xE0);
+                    destination[1] = (byte)(((c >> 6) & 0x3F) | 0x80);
+                    destination[2] = (byte)((c & 0x3F) | 0x80);
+                    destination = destination.Slice(3);
+                    source = source.Slice(1);
+                }
+            }
+
+            charsRead = sourceLength - source.Length;
+            bytesWritten = destinationLength - destination.Length;
+        }
+#endif
 
 #if !NET
         internal static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> str)
