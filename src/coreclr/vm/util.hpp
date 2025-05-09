@@ -861,7 +861,7 @@ public:
         _ASSERTE(!isRunning);
         _ASSERTE(startTimestamp > 0);
         _ASSERTE(stopTimestamp > 0);
-        return ((stopTimestamp - startTimestamp) / s_frequency);
+        return static_cast<int64_t>((stopTimestamp - startTimestamp) / s_frequency);
     }
 };
 
