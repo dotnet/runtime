@@ -2002,23 +2002,22 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
             // Store the vector to the temp location.
             GetEmitter()->emitIns_S_R(ins_Store(simdType, compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),
-                                        emitTypeSize(simdType), op1Reg, simdInitTempVarNum, 0);
+                                      emitTypeSize(simdType), op1Reg, simdInitTempVarNum, 0);
 
             // Set the desired element.
-            GetEmitter()->emitIns_ARX_R(ins_Move_Extend(op3->TypeGet(), false),   // Store
-                                        emitTypeSize(baseType),                   // Of the vector baseType
-                                        valueReg,                                 // From valueReg
-                                        (isEBPbased) ? REG_EBP : REG_ESP,         // Stack-based
-                                        indexReg,                                 // Indexed
-                                        genTypeSize(baseType),                    // by the size of the baseType
-                                        offs);                                    // Offset
-            
+            GetEmitter()->emitIns_ARX_R(ins_Move_Extend(op3->TypeGet(), false), // Store
+                                        emitTypeSize(baseType),                 // Of the vector baseType
+                                        valueReg,                               // From valueReg
+                                        (isEBPbased) ? REG_EBP : REG_ESP,       // Stack-based
+                                        indexReg,                               // Indexed
+                                        genTypeSize(baseType),                  // by the size of the baseType
+                                        offs);                                  // Offset
+
             // Write back the modified vector to the original location.
             GetEmitter()->emitIns_R_S(ins_Load(simdType, compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),
-                                        emitTypeSize(simdType), targetReg, simdInitTempVarNum, 0);
+                                      emitTypeSize(simdType), targetReg, simdInitTempVarNum, 0);
             break;
         }
-
 
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
