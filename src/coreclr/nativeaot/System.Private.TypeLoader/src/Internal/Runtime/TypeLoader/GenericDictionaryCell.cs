@@ -141,9 +141,40 @@ namespace Internal.Runtime.TypeLoader
         }
 
         /// <summary>
+        /// Used for non-generic instance constrained Methods
+        /// </summary>
+        private class NonGenericInstanceConstrainedMethodCell : GenericDictionaryCell
+        {
+            internal TypeDesc ConstraintType;
+            internal TypeDesc ConstrainedMethodType;
+            internal int ConstrainedMethodSlot;
+
+            internal override void Prepare(TypeBuilder builder)
+            {
+                if (ConstraintType.IsCanonicalSubtype(CanonicalFormKind.Any) || ConstrainedMethodType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    Environment.FailFast("Unable to compute call information for a canonical type/method.");
+
+                builder.RegisterForPreparation(ConstraintType);
+                builder.RegisterForPreparation(ConstrainedMethodType);
+            }
+
+            internal override IntPtr Create(TypeBuilder builder)
+            {
+                IntPtr result = RuntimeAugments.ResolveDispatchOnType(
+                    builder.GetRuntimeTypeHandle(ConstraintType),
+                    builder.GetRuntimeTypeHandle(ConstrainedMethodType),
+                    ConstrainedMethodSlot);
+
+                Debug.Assert(result != IntPtr.Zero);
+
+                return result;
+            }
+        }
+
+        /// <summary>
         /// Used for generic static constrained Methods
         /// </summary>
-        private class GenericStaticConstrainedMethodCell : GenericDictionaryCell
+        private class GenericConstrainedMethodCell : GenericDictionaryCell
         {
             internal DefType ConstraintType;
             internal InstantiatedMethod ConstrainedMethod;
@@ -512,29 +543,45 @@ namespace Internal.Runtime.TypeLoader
                     break;
 
                 case FixupSignatureKind.NonGenericStaticConstrainedMethod:
-                    {
+                case FixupSignatureKind.NonGenericInstanceConstrainedMethod:
+                {
                         var constraintType = nativeLayoutInfoLoadContext.GetType(ref parser);
                         var constrainedMethodType = nativeLayoutInfoLoadContext.GetType(ref parser);
                         var constrainedMethodSlot = parser.GetUnsigned();
-                        TypeLoaderLogger.WriteLine("NonGenericStaticConstrainedMethod: " + constraintType.ToString() + " Method " + constrainedMethodType.ToString() + ", slot #" + constrainedMethodSlot.LowLevelToString());
 
-                        cell = new NonGenericStaticConstrainedMethodCell()
+                        string kindString = kind == FixupSignatureKind.NonGenericStaticConstrainedMethod ? "NonGenericStaticConstrainedMethod: " : "NonGenericInstanceConstrainedMethod: ";
+
+                        TypeLoaderLogger.WriteLine(kindString + constraintType.ToString() + " Method " + constrainedMethodType.ToString() + ", slot #" + constrainedMethodSlot.LowLevelToString());
+
+                        if (kind == FixupSignatureKind.NonGenericStaticConstrainedMethod)
                         {
-                            ConstraintType = constraintType,
-                            ConstrainedMethodType = constrainedMethodType,
-                            ConstrainedMethodSlot = (int)constrainedMethodSlot
-                        };
+                            cell = new NonGenericStaticConstrainedMethodCell()
+                            {
+                                ConstraintType = constraintType,
+                                ConstrainedMethodType = constrainedMethodType,
+                                ConstrainedMethodSlot = (int)constrainedMethodSlot
+                            };
+                        }
+                        else
+                        {
+                            cell = new NonGenericInstanceConstrainedMethodCell()
+                            {
+                                ConstraintType = constraintType,
+                                ConstrainedMethodType = constrainedMethodType,
+                                ConstrainedMethodSlot = (int)constrainedMethodSlot
+                            };
+                        }
                     }
                     break;
 
-                case FixupSignatureKind.GenericStaticConstrainedMethod:
-                    {
+                case FixupSignatureKind.GenericConstrainedMethod:
+                {
                         TypeDesc constraintType = nativeLayoutInfoLoadContext.GetType(ref parser);
                         MethodDesc constrainedMethod = nativeLayoutInfoLoadContext.GetMethod(ref parser);
 
-                        TypeLoaderLogger.WriteLine("GenericStaticConstrainedMethod: " + constraintType.ToString() + " Method " + constrainedMethod.ToString());
+                        TypeLoaderLogger.WriteLine("GenericConstrainedMethod: " + constraintType.ToString() + " Method " + constrainedMethod.ToString());
 
-                        cell = new GenericStaticConstrainedMethodCell()
+                        cell = new GenericConstrainedMethodCell()
                         {
                             ConstraintType = (DefType)constraintType,
                             ConstrainedMethod = (InstantiatedMethod)constrainedMethod,
