@@ -30,7 +30,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool PossiblyComObject(object target)
         {
+#if FEATURE_COMINTEROP
             return target is __ComObject || PossiblyComWrappersObject(target);
+#else // !FEATURE_COMINTEROP
+            // If we are not using built-in COM, then we can only be a ComWrappers object.
+            return PossiblyComWrappersObject(target);
+#endif // FEATURE_COMINTEROP
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectToComWeakRef")]
