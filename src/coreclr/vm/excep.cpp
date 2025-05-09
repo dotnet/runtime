@@ -11341,7 +11341,7 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 #elif defined(TARGET_X86)
-#define CALLEE_SAVED_REGISTER(regname) pRD->Set##regname##Location(m_ContextPointers.regname);
+#define CALLEE_SAVED_REGISTER(regname) pRD->Set##regname##Location(&m_Context.regname);
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
@@ -11366,6 +11366,7 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_Context.Eax = 0;    
     m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
     m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
+#ifdef FEATURE_EH_FUNCLETS
     m_ContextPointers.Ecx = &m_Context.Ecx;
     m_ContextPointers.Edx = &m_Context.Edx;
 
@@ -11374,6 +11375,12 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_ContextPointers.reg = &m_Context.reg;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+#else // FEATURE_EH_FUNCLETS
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // FEATURE_EH_FUNCLETS
 
     m_Context.Esp = (UINT_PTR)(pTransitionBlock + 1);
     m_Context.Eip = pTransitionBlock->m_ReturnAddress;

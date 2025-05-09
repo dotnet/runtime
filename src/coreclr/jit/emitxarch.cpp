@@ -1980,9 +1980,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 // - V'- bit to extend vvvv
 // - aaa - specifies mask register
 //    Rest    - reserved for future use and usage of them will uresult in Undefined instruction exception.
-// - u - Bit to indicate YMM Embedded rounding.
-//   Set to 1 for isas Avx10.1 and below
-//   Needs to be set to 0 for AVX10.2 and above to indicate YMM embedded rounding
 // - B' - reserved as of now
 //   set to 0 for future compatibility.
 //
@@ -1993,7 +1990,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 #define LBIT_IN_BYTE_EVEX_PREFIX      0x0000002000000000ULL
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
 #define ZBIT_IN_BYTE_EVEX_PREFIX      0x0000008000000000ULL
-#define uBIT_IN_BYTE_EVEX_PREFIX      0x0000040000000000ULL
 
 #define MAP4_IN_BYTE_EVEX_PREFIX   0x4000000000000ULL
 #define ND_BIT_IN_BYTE_EVEX_PREFIX 0x1000000000ULL
@@ -2100,13 +2096,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         if (!id->idHasMem())
         {
-            // ymm embedded rounding case.
-            if (attr == EA_32BYTE)
-            {
-                assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
-                code &= ~(uBIT_IN_BYTE_EVEX_PREFIX);
-            }
-
             unsigned roundingMode = id->idGetEvexbContext();
             if (roundingMode == 1)
             {
