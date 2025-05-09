@@ -1877,6 +1877,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTickCount64.cs">
+      <Link>Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs</Link>
     </Compile>

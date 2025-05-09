@@ -41,5 +41,9 @@ namespace System
             // Consider to use /proc/self/cmdline to get command line
             return Array.Empty<string>();
         }
+
+        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
+        /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
+        public static long TickCount64 => Interop.Sys.GetTickCount64();
     }
 }

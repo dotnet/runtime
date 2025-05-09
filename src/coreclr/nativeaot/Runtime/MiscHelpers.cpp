@@ -419,11 +419,6 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
 }
 FCIMPLEND
 
-EXTERN_C uint64_t QCALLTYPE RhpGetTickCount64()
-{
-    return minipal_lowres_ticks();
-}
-
 EXTERN_C int32_t QCALLTYPE RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
 
 EXTERN_C int32_t QCALLTYPE RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)

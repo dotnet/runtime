@@ -32,7 +32,8 @@ int64_t minipal_lowres_ticks()
 
 #include "minipalconfig.h"
 
-#include <time.h> // nanosleep
+#include <time.h>
+#include <sys/time.h>
 #include <errno.h>
 
 inline static void YieldProcessor(void);
@@ -85,10 +86,8 @@ int64_t minipal_hires_ticks(void)
 #endif
 }
 
-int64_t minipal_lowres_tick()
+int64_t minipal_lowres_ticks()
 {
-    LONGLONG retval = 0;
-
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMillieSecondsToNanoSeconds);
 #elif HAVE_CLOCK_MONOTONIC
@@ -125,6 +124,8 @@ int64_t minipal_lowres_tick()
     {
         assert(!"gettimeofday() failed\n");
     }
+
+    // TODO: adapt more platforms from mono_msec_boottime
 #endif
 }
 

@@ -40,6 +40,11 @@ PALEXPORT int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times);
 PALEXPORT uint64_t SystemNative_GetTimestamp(void);
 
 /**
+ * Gets a low-resolution timestamp in milliseconds.
+ */
+ PALEXPORT int64_t SystemNative_GetTickCount64(void);
+
+/**
  * Gets system boot time ticks. (Linux only)
  */
 PALEXPORT int64_t SystemNative_GetBootTimeTicks(void);

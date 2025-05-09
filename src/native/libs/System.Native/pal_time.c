@@ -84,6 +84,11 @@ uint64_t SystemNative_GetTimestamp(void)
     return (uint64_t)minipal_hires_ticks();
 }
 
+int64_t SystemNative_GetTickCount64(void)
+{
+    return minipal_lowres_ticks();
+}
+
 int64_t SystemNative_GetBootTimeTicks(void)
 {
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
