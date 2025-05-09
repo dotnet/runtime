@@ -166,7 +166,7 @@ void ObjectAllocator::DumpIndex(unsigned bvIndex)
     if ((m_numFields > 0) && (bvIndex < m_firstFieldIndex + m_numFields))
     {
         const unsigned lclNum = GetLocalFromFieldIndex(bvIndex);
-        printf(" V%02u.f", lclNum);
+        printf(" V%02uf", lclNum);
         return;
     }
 
@@ -243,6 +243,7 @@ PhaseStatus ObjectAllocator::DoPhase()
 
     if (didStackAllocate)
     {
+        printf("*** Stack allocations in 0x%08X\n", comp->info.compMethodHash());
         assert(enabled);
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
@@ -682,13 +683,6 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
             const unsigned lclIndex = m_allocator->LocalToIndex(lclNum);
 
-            // If this local already escapes, no need to look further.
-            //
-            if (m_allocator->CanIndexEscape(lclIndex))
-            {
-                return Compiler::fgWalkResult::WALK_CONTINUE;
-            }
-
             if (tree->OperIsLocalStore())
             {
                 m_allocator->CheckForGuardedAllocationOrCopy(m_block, m_stmt, use, lclNum);
@@ -855,6 +849,26 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             BuildConnGraphVisitor buildConnGraphVisitor(this, block, stmt);
             buildConnGraphVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
+    }
+
+    // Print the connection graph
+
+    if (JitConfig.JitObjectStackAllocationDumpConnGraph() > 0)
+    {
+        JITDUMP("digraph ConnectionGraph {\n");
+        for (unsigned int i = 0; i < m_bvCount; i++)
+        {
+            BitVecOps::Iter iterator(&m_bitVecTraits, m_ConnGraphAdjacencyMatrix[i]);
+            unsigned int    lclIndex;
+            while (iterator.NextElem(&lclIndex))
+            {
+                JITDUMPEXEC(DumpIndex(lclIndex));
+                JITDUMP(" -> ");
+                JITDUMPEXEC(DumpIndex(i));
+                JITDUMP(";\n");
+            }
+        }
+        JITDUMP("}\n");
     }
 }
 
@@ -1729,13 +1743,16 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
 //
 // Arguments:
 //    parentStack     - Parent stack of the current visit
-//    lclIndex        - Index for a tracked, unescaped local referenced at the top of the stack
+//    lclIndex        - Index for a tracked referenced at the top of the stack
 //    block           - basic block holding the trees
+//
+// Notes:
+//    We may already know that lclIndex escapes, but we have to still build connections
+//    in case it causes other resources to escape.
 //
 void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclIndex, BasicBlock* block)
 {
     assert(parentStack != nullptr);
-    assert(!CanIndexEscape(lclIndex));
 
     int              parentIndex = 1;
     const unsigned   lclNum      = IndexToLocal(lclIndex);
