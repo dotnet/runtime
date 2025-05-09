@@ -1,10 +1,17 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# So simdhash will build correctly without a dn-config.h
+add_compile_definitions(NO_CONFIG_H)
+
 set(INTERPRETER_SOURCES
   compiler.cpp
   compileropt.cpp
   intops.cpp
   interpconfig.cpp
-  eeinterp.cpp)
+  eeinterp.cpp
+  stackmap.cpp
+  ../../native/containers/dn-simdhash.c
+  ../../native/containers/dn-simdhash-ptr-ptr.c)
 
 set(INTERPRETER_LINK_LIBRARIES
   gcinfo

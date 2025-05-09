@@ -384,7 +384,7 @@ BOOL TypeHandle::IsInterface() const
 BOOL TypeHandle::IsAbstract() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsAbstract();
 }
 
@@ -475,42 +475,42 @@ BOOL TypeHandle::HasLayout() const
 TypeHandle TypeHandle::GetCoClassForInterface() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->GetCoClassForInterface();
 }
 
 DWORD TypeHandle::IsComClassInterface() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsComClassInterface();
 }
 
 BOOL TypeHandle::IsComObjectType() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsComObjectType();
 }
 
 BOOL TypeHandle::IsComEventItfType() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsComEventItfType();
 }
 
 CorIfaceAttr TypeHandle::GetComInterfaceType() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->GetComInterfaceType();
 }
 
 TypeHandle TypeHandle::GetDefItfForComClassItf() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->GetDefItfForComClassItf();
 }
 

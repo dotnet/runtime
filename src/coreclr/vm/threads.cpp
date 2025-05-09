@@ -114,7 +114,7 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
     return m_argBuffer;
 }
 
-#if defined (_DEBUG_IMPL) || defined(_PREFAST_)
+#if defined (_DEBUG_IMPL)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
 
@@ -2915,7 +2915,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         if (m_State & TS_DebugWillSync)
         {
             ResetThreadState(TS_DebugWillSync);
-            InterlockedDecrement(&m_DebugWillSyncCount);    
+            InterlockedDecrement(&m_DebugWillSyncCount);
         }
 
         SetThreadState(TS_Dead);

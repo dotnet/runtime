@@ -1702,7 +1702,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
 
         UnlockProcessList();
 
-        PREFIX_ASSUME(pProcess != NULL);
+        _ASSERTE(pProcess != NULL);
 
         pProcess->ExternalAddRef();
         *ppProcess = (ICorDebugProcess *)pProcess;
@@ -2487,7 +2487,7 @@ HRESULT CordbEnumFilter::Init (ICorDebugModuleEnum * pModEnum, CordbAssembly *pA
             }
             else
             {
-                PREFIX_ASSUME(pPrevious != NULL);
+                _ASSERTE(pPrevious != NULL);
                 pPrevious->SetNext (pElement);
             }
             pPrevious = pElement;
@@ -2591,7 +2591,7 @@ HRESULT CordbEnumFilter::Init (ICorDebugThreadEnum *pThreadEnum, CordbAppDomain 
             }
             else
             {
-                PREFIX_ASSUME(pPrevious != NULL);
+                _ASSERTE(pPrevious != NULL);
                 pPrevious->SetNext (pElement);
             }
 

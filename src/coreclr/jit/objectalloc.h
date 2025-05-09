@@ -173,6 +173,7 @@ private:
     unsigned     LocalToIndex(unsigned lclNum);
     unsigned     IndexToLocal(unsigned bvIndex);
     bool         CanLclVarEscape(unsigned int lclNum);
+    bool         CanIndexEscape(unsigned int index);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkIndexAsPossiblyStackPointing(unsigned int index);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
@@ -204,7 +205,7 @@ private:
                                                BasicBlock*          block,
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
-    bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
+    void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, bool retypeFields);
     ObjectAllocationType AllocationKind(GenTree* tree);
 
@@ -264,6 +265,21 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 }
 
 //------------------------------------------------------------------------
+// CanIndexEscape:          Returns true iff resource described by index can
+//                           potentially escape from the method
+//
+// Arguments:
+//    index   - bv index
+//
+// Return Value:
+//    Returns true if so
+
+inline bool ObjectAllocator::CanIndexEscape(unsigned int index)
+{
+    return BitVecOps::IsMember(&m_bitVecTraits, m_EscapingPointers, index);
+}
+
+//------------------------------------------------------------------------
 // CanLclVarEscape:          Returns true iff local variable can
 //                           potentially escape from the method
 //
@@ -280,8 +296,7 @@ inline bool ObjectAllocator::CanLclVarEscape(unsigned int lclNum)
         return true;
     }
 
-    const unsigned bvIndex = LocalToIndex(lclNum);
-    return BitVecOps::IsMember(&m_bitVecTraits, m_EscapingPointers, bvIndex);
+    return CanIndexEscape(LocalToIndex(lclNum));
 }
 
 //------------------------------------------------------------------------

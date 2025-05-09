@@ -51,7 +51,7 @@ namespace SVR {
 #else // SERVER_GC
 namespace WKS {
 #endif // SERVER_GC
-    
+
 #include "gcimpl.h"
 #include "gcpriv.h"
 
@@ -5923,7 +5923,7 @@ gc_heap::soh_get_segment_to_expand()
         // tend to be more compact than the later ones.
         heap_segment* fseg = heap_segment_rw (generation_start_segment (generation_of (max_generation)));
 
-        PREFIX_ASSUME(fseg != NULL);
+        _ASSERTE(fseg != NULL);
 
 #ifdef SEG_REUSE_STATS
         int try_reuse = 0;
@@ -6464,9 +6464,9 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            // For a 32-bit process running on a machine with > 64 procs, 
-            // even though the process can only use up to 32 procs, the processor 
-            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0, 
+            // For a 32-bit process running on a machine with > 64 procs,
+            // even though the process can only use up to 32 procs, the processor
+            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0,
             // the GetCurrentProcessorNumber will return a number that's >= 64.
             proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS] = (uint16_t)heap_number;
         }
@@ -6490,9 +6490,9 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            // For a 32-bit process running on a machine with > 64 procs, 
-            // even though the process can only use up to 32 procs, the processor 
-            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0, 
+            // For a 32-bit process running on a machine with > 64 procs,
+            // even though the process can only use up to 32 procs, the processor
+            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0,
             // the GetCurrentProcessorNumber will return a number that's >= 64.
             int adjusted_heap = proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS];
             // with dynamic heap count, need to make sure the value is in range.
@@ -8138,12 +8138,12 @@ void gc_heap::set_allocation_heap_segment (generation* gen)
     {
         seg = heap_segment_rw (generation_start_segment (gen));
 
-        PREFIX_ASSUME(seg != NULL);
+        _ASSERTE(seg != NULL);
 
         while (!in_range_for_segment (p, seg))
         {
             seg = heap_segment_next_rw (seg);
-            PREFIX_ASSUME(seg != NULL);
+            _ASSERTE(seg != NULL);
         }
     }
 #endif //USE_REGIONS
@@ -14634,11 +14634,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     if (!g_heaps)
         return E_OUTOFMEMORY;
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22011) // Suppress PREFast warning about integer underflow/overflow
-#endif // _PREFAST_
-
 #if !defined(USE_REGIONS) || defined(_DEBUG)
     g_promoted = new (nothrow) size_t [number_of_heaps*16];
     if (!g_promoted)
@@ -14653,9 +14648,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #ifdef MH_SC_MARK
     g_mark_stack_busy = new (nothrow) int[(number_of_heaps+2)*HS_CACHE_LINE_SIZE/sizeof(int)];
 #endif //MH_SC_MARK
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
 
 #ifdef MH_SC_MARK
     if (!g_mark_stack_busy)
@@ -14982,14 +14974,7 @@ gc_heap* gc_heap::make_gc_heap (
     if (!res->mark_list_piece_start)
         return 0;
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22011) // Suppress PREFast warning about integer underflow/overflow
-#endif // _PREFAST_
     res->mark_list_piece_end = new (nothrow) uint8_t**[n_heaps + 32]; // +32 is padding to reduce false sharing
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
 
     if (!res->mark_list_piece_end)
         return 0;
@@ -15029,10 +15014,6 @@ gc_heap::wait_for_gc_done(int32_t timeOut)
         wait_heap = g_heaps[heap_select::select_heap(NULL)];
         dprintf(2, ("waiting for the gc_done_event on heap %d", wait_heap->heap_number));
 #endif // MULTIPLE_HEAPS
-
-#ifdef _PREFAST_
-        PREFIX_ASSUME(wait_heap != NULL);
-#endif // _PREFAST_
 
         dwWaitResult = wait_heap->gc_done_event.Wait(timeOut, FALSE);
     }
@@ -15653,7 +15634,7 @@ gc_heap::self_destroy()
     for (int i = get_start_generation_index(); i < total_generation_count; i++)
     {
         heap_segment* seg = heap_segment_rw (generation_start_segment (generation_of (i)));
-        PREFIX_ASSUME(seg != NULL);
+        _ASSERTE(seg != NULL);
 
         while (seg)
         {
@@ -21812,11 +21793,6 @@ size_t gc_heap::generation_unusable_fragmentation (generation* inst, int hn)
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Potential comparison of a constant with another constant" is intentional in this function.
-#endif //_PREFAST_
-
 /*
     This is called by when we are actually doing a GC, or when we are just checking whether
     we would do a full blocking GC, in which case check_only_p is TRUE.
@@ -22413,10 +22389,6 @@ exit:
     return n;
 }
 
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif //_PREFAST_
-
 inline
 size_t gc_heap::min_reclaim_fragmentation_threshold (uint32_t num_heaps)
 {
@@ -22454,7 +22426,7 @@ void gc_heap::init_background_gc ()
     generation_allocation_limit (gen) = 0;
     generation_allocation_segment (gen) = heap_segment_rw (generation_start_segment (gen));
 
-    PREFIX_ASSUME(generation_allocation_segment(gen) != NULL);
+    _ASSERTE(generation_allocation_segment(gen) != NULL);
 
 #ifdef DOUBLY_LINKED_FL
     generation_set_bgc_mark_bit_p (gen) = FALSE;
@@ -28366,7 +28338,7 @@ gc_heap::ha_mark_object_simple (uint8_t** po THREAD_NUMBER_DCL)
 
     if (heap_analyze_success)
     {
-        PREFIX_ASSUME(internal_root_array_index < internal_root_array_length);
+        _ASSERTE(internal_root_array_index < internal_root_array_length);
 
         uint8_t* ref = (uint8_t*)po;
         if (!current_obj ||
@@ -29058,7 +29030,7 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
             int align_const = get_alignment_constant (small_object_segments);
             generation* gen = hp->generation_of (i);
             heap_segment* seg = heap_segment_in_range (generation_start_segment (gen));
-            PREFIX_ASSUME(seg != NULL);
+            _ASSERTE(seg != NULL);
 
             uint8_t* current_min_add = min_add;
             uint8_t* current_max_add = max_add;
@@ -29631,7 +29603,7 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
             heap_segment* seg = heap_segment_in_range (generation_start_segment (gen));
             int align_const = get_alignment_constant (i < uoh_start_generation);
 
-            PREFIX_ASSUME(seg != NULL);
+            _ASSERTE(seg != NULL);
 
             while (seg)
             {
@@ -31284,7 +31256,7 @@ retry:
                 // be the ephemeral segment.
                 heap_segment* nseg = heap_segment_in_range (generation_allocation_segment (consing_gen));
 
-                PREFIX_ASSUME(nseg != NULL);
+                _ASSERTE(nseg != NULL);
 
                 while (!((plug >= generation_allocation_pointer (consing_gen))&&
                         (plug < heap_segment_allocated (nseg))))
@@ -31709,7 +31681,7 @@ BOOL gc_heap::plan_loh()
 
     generation* gen        = large_object_generation;
     heap_segment* start_seg = heap_segment_rw (generation_start_segment (gen));
-    PREFIX_ASSUME(start_seg != NULL);
+    _ASSERTE(start_seg != NULL);
     heap_segment* seg      = start_seg;
     uint8_t* o             = get_uoh_start_object (seg, gen);
 
@@ -31857,7 +31829,7 @@ void gc_heap::compact_loh()
 
     generation* gen        = large_object_generation;
     heap_segment* start_seg = heap_segment_rw (generation_start_segment (gen));
-    PREFIX_ASSUME(start_seg != NULL);
+    _ASSERTE(start_seg != NULL);
     heap_segment* seg      = start_seg;
     heap_segment* prev_seg = 0;
     uint8_t* o             = get_uoh_start_object (seg, gen);
@@ -32474,7 +32446,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
                 // later.
                 //
                 // set generation_allocation_segment to 0, we know we don't have pins so we will not be going through the while loop below
-                // 
+                //
                 generation_allocation_segment (consing_gen) = 0;
                 generation_allocation_pointer (consing_gen) = 0;
                 generation_allocation_limit (consing_gen) = 0;
@@ -33012,10 +32984,6 @@ inline void save_allocated(heap_segment* seg)
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif //_PREFAST_
 void gc_heap::plan_phase (int condemned_gen_number)
 {
     size_t old_gen2_allocated = 0;
@@ -33084,7 +33052,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (shigh != (uint8_t*)0)
         {
             heap_segment* seg = heap_segment_rw (generation_start_segment (current_gen));
-            PREFIX_ASSUME(seg != NULL);
+            _ASSERTE(seg != NULL);
 
             heap_segment* fseg = seg;
             do
@@ -33167,7 +33135,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         {
             heap_segment* seg = heap_segment_rw (generation_start_segment (current_gen));
 
-            PREFIX_ASSUME(seg != NULL);
+            _ASSERTE(seg != NULL);
 
             heap_segment* sseg = seg;
             do
@@ -33202,7 +33170,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
     heap_segment*  seg1 = heap_segment_rw (generation_start_segment (condemned_gen1));
 
-    PREFIX_ASSUME(seg1 != NULL);
+    _ASSERTE(seg1 != NULL);
 
     uint8_t*  end = heap_segment_allocated (seg1);
     uint8_t*  first_condemned_address = get_soh_start_object (seg1, condemned_gen1);
@@ -33287,7 +33255,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
         heap_segment* start_seg = heap_segment_rw (generation_start_segment (older_gen));
 
-        PREFIX_ASSUME(start_seg != NULL);
+        _ASSERTE(start_seg != NULL);
 
 #ifdef USE_REGIONS
         heap_segment* skip_seg = 0;
@@ -33323,7 +33291,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         {
             generation* current_gen = generation_of (condemned_gen_index1);
             heap_segment*  seg2 = heap_segment_rw (generation_start_segment (current_gen));
-            PREFIX_ASSUME(seg2 != NULL);
+            _ASSERTE(seg2 != NULL);
 
             while (seg2)
             {
@@ -33373,7 +33341,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         generation_allocation_segment (condemned_gen2) =
             heap_segment_rw (generation_start_segment (condemned_gen2));
 
-        PREFIX_ASSUME(generation_allocation_segment(condemned_gen2) != NULL);
+        _ASSERTE(generation_allocation_segment(condemned_gen2) != NULL);
 
 #ifdef USE_REGIONS
         generation_allocation_pointer (condemned_gen2) =
@@ -34985,9 +34953,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
     //verify_partial();
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif //_PREFAST_
 
 /*****************************
 Called after compact phase to fix all generation gaps
@@ -35960,7 +35925,7 @@ void gc_heap::make_free_lists (int condemned_gen_number)
         uint8_t* start_address = get_soh_start_object (current_heap_segment, condemned_gen);
         size_t current_brick = brick_of (start_address);
 
-        PREFIX_ASSUME(current_heap_segment != NULL);
+        _ASSERTE(current_heap_segment != NULL);
 
         uint8_t* end_address = heap_segment_allocated (current_heap_segment);
         size_t  end_brick = brick_of (end_address - 1);
@@ -36002,7 +35967,7 @@ void gc_heap::make_free_lists (int condemned_gen_number)
 
                     heap_segment* start_seg = heap_segment_rw (generation_start_segment (gen));
 
-                    PREFIX_ASSUME(start_seg != NULL);
+                    _ASSERTE(start_seg != NULL);
 
                     uint8_t* gap = heap_segment_mem (start_seg);
 
@@ -36080,7 +36045,7 @@ void gc_heap::make_free_lists (int condemned_gen_number)
             reset_allocation_pointers (gen2, gap);
             dprintf(3,("Fixing generation start of %d to: %zx",
                        args.free_list_gen_number, (size_t)gap));
-            PREFIX_ASSUME(gap != NULL);
+            _ASSERTE(gap != NULL);
             make_unused_array (gap, Align (min_obj_size));
 
             args.free_list_gen_number--;
@@ -36995,7 +36960,7 @@ void gc_heap::relocate_survivors (int condemned_gen_number,
         uint8_t*  start_address = get_soh_start_object (current_heap_segment, condemned_gen);
         size_t  current_brick = brick_of (start_address);
 
-        PREFIX_ASSUME(current_heap_segment != NULL);
+        _ASSERTE(current_heap_segment != NULL);
 
         uint8_t*  end_address = heap_segment_allocated (current_heap_segment);
 
@@ -37169,7 +37134,7 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
         uint8_t*  start_address = get_soh_start_object (current_heap_segment, condemned_gen);
         size_t  current_brick = brick_of (start_address);
 
-        PREFIX_ASSUME(current_heap_segment != NULL);
+        _ASSERTE(current_heap_segment != NULL);
         size_t end_brick = brick_of (heap_segment_allocated (current_heap_segment)-1);
         walk_relocate_args args;
         args.is_shortened = FALSE;
@@ -39333,7 +39298,7 @@ void gc_heap::background_mark_phase ()
     for (int i = get_start_generation_index(); i < uoh_start_generation; i++)
     {
         heap_segment* seg = heap_segment_rw (generation_start_segment (generation_of (i)));
-        PREFIX_ASSUME(seg != NULL);
+        _ASSERTE(seg != NULL);
 
         while (seg)
         {
@@ -39619,7 +39584,7 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
     for (int i = start_gen_idx; i < total_generation_count; i++)
     {
         heap_segment* seg = heap_segment_rw (generation_start_segment (generation_of (i)));
-        PREFIX_ASSUME(seg != NULL);
+        _ASSERTE(seg != NULL);
 
         while (seg)
         {
@@ -42257,7 +42222,7 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
     for (int i = get_start_generation_index(); i < max_generation; i++)
     {
         heap_segment* soh_seg = heap_segment_rw (generation_start_segment (generation_of (i)));
-        PREFIX_ASSUME(soh_seg != NULL);
+        _ASSERTE(soh_seg != NULL);
 
         while (soh_seg)
         {
@@ -42294,7 +42259,7 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
                                        heap_segment_plan_allocated (ephemeral_heap_segment) : high);
 #endif //USE_REGIONS
     heap_segment* seg               = heap_segment_rw (generation_start_segment (oldest_gen));
-    PREFIX_ASSUME(seg != NULL);
+    _ASSERTE(seg != NULL);
 
     uint8_t*      beg               = get_soh_start_object (seg, oldest_gen);
     uint8_t*      end               = compute_next_end (seg, low);
@@ -42343,7 +42308,7 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
                 size_t card_last_obj = card_of (last_object_processed);
                 clear_cards(card, card_last_obj);
 
-                // We need to be careful of the accounting here because we could be in the situation where there are more set cards between end of 
+                // We need to be careful of the accounting here because we could be in the situation where there are more set cards between end of
                 // last set card batch and last_object_processed. We will be clearing all of them. But we can't count the set cards we haven't
                 // discovered yet or we can get a negative number for n_card_set. However, if last_object_processed lands before what end_card
                 // corresponds to, we can't count the whole batch because it will be handled by a later clear_cards.
@@ -44507,7 +44472,7 @@ size_t gc_heap::generation_plan_size (int gen_number)
             size_t gensize = 0;
             heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
 
-            PREFIX_ASSUME(seg != NULL);
+            _ASSERTE(seg != NULL);
 
             while (seg && (seg != ephemeral_heap_segment))
             {
@@ -44558,7 +44523,7 @@ size_t gc_heap::generation_size (int gen_number)
             size_t gensize = 0;
             heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
 
-            PREFIX_ASSUME(seg != NULL);
+            _ASSERTE(seg != NULL);
 
             while (seg && (seg != ephemeral_heap_segment))
             {
@@ -44701,8 +44666,8 @@ gc_history_per_heap* gc_heap::get_gc_data_per_heap()
 
 void gc_heap::compute_new_dynamic_data (int gen_number)
 {
-    PREFIX_ASSUME(gen_number >= 0);
-    PREFIX_ASSUME(gen_number <= max_generation);
+    _ASSERTE(gen_number >= 0);
+    _ASSERTE(gen_number <= max_generation);
 
     dynamic_data* dd = dynamic_data_of (gen_number);
     generation*   gen = generation_of (gen_number);
@@ -44762,7 +44727,7 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
             size_t final_promoted = 0;
             final_promoted = min (finalization_promoted_bytes, out);
             // Prefast: this is clear from above but prefast needs to be told explicitly
-            PREFIX_ASSUME(final_promoted <= out);
+            _ASSERTE(final_promoted <= out);
 
             dprintf (2, ("gen: %d final promoted: %zd", gen_number, final_promoted));
             dd_freach_previous_promotion (dd) = final_promoted;
@@ -45278,7 +45243,7 @@ size_t gc_heap::generation_fragmentation (generation* gen,
                 heap_segment_mem (ephemeral_heap_segment));
     heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
 
-    PREFIX_ASSUME(seg != NULL);
+    _ASSERTE(seg != NULL);
 
     while (seg != ephemeral_heap_segment)
     {
@@ -45339,7 +45304,7 @@ size_t gc_heap::generation_sizes (generation* gen, bool use_saved_p)
     {
         heap_segment* seg = heap_segment_in_range (generation_start_segment (gen));
 
-        PREFIX_ASSUME(seg != NULL);
+        _ASSERTE(seg != NULL);
 
         while (seg)
         {
@@ -46055,7 +46020,7 @@ void gc_heap::walk_survivors_for_uoh (void* profiling_context, record_surv_fn fn
     generation* gen        = generation_of (gen_number);
     heap_segment* seg      = heap_segment_rw (generation_start_segment (gen));;
 
-    PREFIX_ASSUME(seg != NULL);
+    _ASSERTE(seg != NULL);
 
     uint8_t* o                = get_uoh_start_object (seg, gen);
     uint8_t* plug_end         = o;
@@ -46716,7 +46681,7 @@ void gc_heap::background_sweep()
     for (int i = uoh_start_generation; i < total_generation_count; i++)
     {
         heap_segment* uoh_seg = heap_segment_rw (generation_start_segment (generation_of (i)));
-        PREFIX_ASSUME(uoh_seg  != NULL);
+        _ASSERTE(uoh_seg  != NULL);
         while (uoh_seg)
         {
             uoh_seg->flags &= ~heap_segment_flags_swept;
@@ -46826,7 +46791,7 @@ void gc_heap::background_sweep()
             }
         }
 
-        PREFIX_ASSUME(start_seg != NULL);
+        _ASSERTE(start_seg != NULL);
         heap_segment* seg = start_seg;
         dprintf (2, ("bgs: sweeping gen %d seg %p->%p(%p)", gen->gen_num,
             heap_segment_mem (seg),
@@ -47057,7 +47022,7 @@ void gc_heap::background_sweep()
         }
 
         generation_allocation_segment (gen) = heap_segment_rw (generation_start_segment (gen));
-        PREFIX_ASSUME(generation_allocation_segment(gen) != NULL);
+        _ASSERTE(generation_allocation_segment(gen) != NULL);
 
         if (i == max_generation)
         {
@@ -47106,7 +47071,7 @@ void gc_heap::background_sweep()
     concurrent_print_time_delta ("background sweep");
 
     heap_segment* reset_seg = heap_segment_rw (generation_start_segment (generation_of (max_generation)));
-    PREFIX_ASSUME(reset_seg != NULL);
+    _ASSERTE(reset_seg != NULL);
 
     while (reset_seg)
     {
@@ -47188,7 +47153,7 @@ void gc_heap::sweep_uoh_objects (int gen_num)
     generation* gen        = generation_of (gen_num);
     heap_segment* start_seg = heap_segment_rw (generation_start_segment (gen));
 
-    PREFIX_ASSUME(start_seg != NULL);
+    _ASSERTE(start_seg != NULL);
 
     heap_segment* seg      = start_seg;
     heap_segment* prev_seg = 0;
@@ -47285,7 +47250,7 @@ void gc_heap::sweep_uoh_objects (int gen_num)
 
     generation_allocation_segment (gen) = heap_segment_rw (generation_start_segment (gen));
 
-    PREFIX_ASSUME(generation_allocation_segment(gen) != NULL);
+    _ASSERTE(generation_allocation_segment(gen) != NULL);
 }
 
 void gc_heap::relocate_in_uoh_objects (int gen_num)
@@ -47294,7 +47259,7 @@ void gc_heap::relocate_in_uoh_objects (int gen_num)
 
     heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
 
-    PREFIX_ASSUME(seg != NULL);
+    _ASSERTE(seg != NULL);
 
     uint8_t* o = get_uoh_start_object (seg, gen);
 
@@ -47340,7 +47305,7 @@ void gc_heap::mark_through_cards_for_uoh_objects (card_fn fn,
     generation*   oldest_gen        = generation_of (gen_num);
     heap_segment* seg               = heap_segment_rw (generation_start_segment (oldest_gen));
 
-    PREFIX_ASSUME(seg != NULL);
+    _ASSERTE(seg != NULL);
 
     uint8_t*      beg               = get_uoh_start_object (seg, oldest_gen);
     uint8_t*      end               = heap_segment_allocated (seg);
@@ -47636,11 +47601,6 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
 #else //MULTIPLE_HEAPS
     {
         gc_heap* hp = NULL;
-#ifdef _PREFAST_
-        // prefix complains about us dereferencing hp in wks build even though we only access static members
-        // this way. not sure how to shut it up except for this ugly workaround:
-        PREFIX_ASSUME(hp != NULL);
-#endif // _PREFAST_
 #endif //MULTIPLE_HEAPS
 
         for (int curr_gen_number = total_generation_count-1; curr_gen_number >= 0; curr_gen_number--)
@@ -50479,11 +50439,6 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     gc_heap* hp = acontext->get_alloc_heap()->pGenGCHeap;
 #else
     gc_heap* hp = pGenGCHeap;
-#ifdef _PREFAST_
-    // prefix complains about us dereferencing hp in wks build even though we only access static members
-    // this way. not sure how to shut it up except for this ugly workaround:
-    PREFIX_ASSUME(hp != NULL);
-#endif //_PREFAST_
 #endif //MULTIPLE_HEAPS
 
     assert(size < loh_size_threshold || (flags & GC_ALLOC_LARGE_OBJECT_HEAP));
@@ -53421,7 +53376,7 @@ void checkGCWriteBarrier()
             generation* gen = gc_heap::generation_of (i);
             heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
 
-            PREFIX_ASSUME(seg != NULL);
+            _ASSERTE(seg != NULL);
 
             while(seg)
             {

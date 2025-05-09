@@ -40,7 +40,7 @@ struct LocalDesc
     TypeHandle InternalToken;  // only valid with ELEMENT_TYPE_INTERNAL
 
     // only valid with ELEMENT_TYPE_CMOD_INTERNAL
-    bool InternalModifierRequired; 
+    bool InternalModifierRequired;
     TypeHandle InternalModifierToken;
 
     // used only for E_T_FNPTR and E_T_ARRAY
@@ -111,7 +111,7 @@ struct LocalDesc
     void ChangeType(CorElementType elemType)
     {
         LIMITED_METHOD_CONTRACT;
-        PREFIX_ASSUME((MAX_LOCALDESC_ELEMENTS-1) >= cbType);
+        _ASSERTE((MAX_LOCALDESC_ELEMENTS-1) >= cbType);
 
         for (size_t i = cbType; i >= 1; i--)
         {

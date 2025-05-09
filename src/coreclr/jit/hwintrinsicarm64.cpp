@@ -36,6 +36,8 @@ static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_Rdm_Arm64;
         case InstructionSet_Sve:
             return InstructionSet_Sve_Arm64;
+        case InstructionSet_Sve2:
+            return InstructionSet_Sve2_Arm64;
         default:
             return InstructionSet_NONE;
     }
@@ -98,6 +100,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         if (strcmp(className, "Sha256") == 0)
         {
             return InstructionSet_Sha256;
+        }
+        if (strcmp(className, "Sve2") == 0)
+        {
+            return InstructionSet_Sve2;
         }
         if (strcmp(className, "Sve") == 0)
         {
@@ -212,6 +218,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_Sha256_Arm64:
         case InstructionSet_Sve:
         case InstructionSet_Sve_Arm64:
+        case InstructionSet_Sve2:
+        case InstructionSet_Sve2_Arm64:
         case InstructionSet_Vector64:
         case InstructionSet_Vector128:
             return true;

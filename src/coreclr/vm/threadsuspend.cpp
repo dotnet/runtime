@@ -1183,10 +1183,6 @@ bool UseActivationInjection()
 #endif
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 HRESULT
 Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 {
@@ -1682,9 +1678,6 @@ LPrepareRetry:
 
     return S_OK;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void Thread::SetRudeAbortEndTimeFromEEPolicy()
 {
@@ -3798,7 +3791,7 @@ ThrowControlForThread(
     INSTALL_MANAGED_EXCEPTION_DISPATCHER
     RaiseComPlusException();
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-#endif // FEATURE_EH_FUNCLETS    
+#endif // FEATURE_EH_FUNCLETS
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -5835,7 +5828,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
         g_pDebugInterface->SingleStepToExitApcCall(pThread, interruptedContext);
         return;
     }
-#endif        
+#endif
 
     DWORD addrOffset = codeInfo.GetRelOffset();
 

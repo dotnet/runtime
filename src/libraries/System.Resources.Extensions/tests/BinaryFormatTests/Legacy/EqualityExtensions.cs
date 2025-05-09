@@ -1220,7 +1220,7 @@ public static class EqualityExtensions
         @this.InnerExceptions.CheckSequenceEquals(other.InnerExceptions, isSamePlatform);
     }
 
-#if NETCOREAPP
+#if NET
     public static void IsEqual(this JsonException? @this, JsonException? other, bool isSamePlatform = true)
     {
         if (@this is null && other is null)

@@ -1949,7 +1949,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
         // accessed via the varargs cookie. Discard generated info,
         // and just find its position relative to the varargs handle
 
-        PREFIX_ASSUME(compiler->lvaVarargsHandleArg < compiler->info.compArgsCount);
+        assert(compiler->lvaVarargsHandleArg < compiler->info.compArgsCount);
         if (!compiler->lvaGetDesc(compiler->lvaVarargsHandleArg)->lvOnFrame)
         {
             noway_assert(!compiler->opts.compDbgCode);

@@ -44,10 +44,7 @@ namespace System.Security.Cryptography.X509Certificates
             // This generator only supports SLH-DSA "Pure" signatures, but the overall design of
             // CertificateRequest makes it easy for a hashAlgorithm value to get here.
 
-            byte[] signature = new byte[_key.Algorithm.SignatureSizeInBytes];
-            int written = _key.SignData(data, signature);
-            Debug.Assert(written == signature.Length);
-            return signature;
+            return _key.SignData(data);
         }
 
         protected override PublicKey BuildPublicKey()

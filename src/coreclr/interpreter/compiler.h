@@ -264,6 +264,7 @@ class InterpIAllocator;
 class InterpCompiler
 {
     friend class InterpIAllocator;
+    friend class InterpGcSlotAllocator;
 
 private:
     CORINFO_METHOD_HANDLE m_methodHnd;
@@ -281,6 +282,7 @@ private:
     uint8_t* m_pILCode;
     int32_t m_ILCodeSize;
     int32_t m_currentILOffset;
+    InterpInst* m_pInitLocalsIns;
 
     // This represents a mapping from indexes to pointer sized data. During compilation, an
     // instruction can request an index for some data (like a MethodDesc pointer), that it
@@ -292,6 +294,7 @@ private:
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
 
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
+    void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
     void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
@@ -356,7 +359,7 @@ private:
 
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
-    int32_t m_totalVarsStackSize;
+    int32_t m_totalVarsStackSize, m_globalVarsWithRefsStackTop;
     int32_t m_paramAreaOffset = 0;
     int32_t m_ILLocalsOffset, m_ILLocalsSize;
     void    AllocVarOffsetCB(int *pVar, void *pData);

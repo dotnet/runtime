@@ -3919,11 +3919,6 @@ ClrDataAccess::GetJumpThunkTarget(T_CONTEXT *ctx, CLRDATA_ADDRESS *targetIP, CLR
 #endif // TARGET_AMD64
 }
 
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 STDMETHODIMP
 ClrDataAccess::Request(IN ULONG32 reqCode,
                        IN ULONG32 inBufferSize,
@@ -3970,9 +3965,6 @@ ClrDataAccess::Request(IN ULONG32 reqCode,
     DAC_LEAVE();
     return status;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void
 ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)

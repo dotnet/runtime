@@ -1270,10 +1270,6 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
     m_pImplTable = pST;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
 //---------------------------------------------------------------------------------------
 //
 // Builds the method table, allocates MethodDesc, handles overloaded members, attempts to compress
@@ -2063,7 +2059,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (HasParent())
         {
             MethodTable * pParentClass = GetParentMethodTable();
-            PREFIX_ASSUME(pParentClass != NULL);
+            _ASSERTE(pParentClass != NULL);
             isTrackedReference = pParentClass->IsTrackedReferenceWithFinalizer();
         }
 
@@ -2118,10 +2114,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     return GetHalfBakedMethodTable();
 } // MethodTableBuilder::BuildMethodTableThrowing
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -2153,7 +2145,7 @@ MethodTableBuilder::ResolveInterfaces(
     if (HasParent())
     {
         MethodTable * pParentClass = GetParentMethodTable();
-        PREFIX_ASSUME(pParentClass != NULL);
+        _ASSERTE(pParentClass != NULL);
 
         bmtParent->NumParentPointerSeries  = pParentClass->ContainsGCPointers() ?
             (DWORD)CGCDesc::GetCGCDescFromMT(pParentClass)->GetNumSeries() : 0;
@@ -2685,11 +2677,6 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
     }
     return hr;
 }
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
 
 //---------------------------------------------------------------------------------------
 //
@@ -3387,7 +3374,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 {
                     // ordinary Task-returning method:
                     //    Declare a TaskReturning method and add an Async variant that is a thunk to the TaskReturing one.
-                    // 
+                    //
                     // IsMiAsync Task-returning method:
                     //    Declare a RuntimeAsync method and add an Async variant with the actual implementation.
                     //    The RuntimeAsync method becomes a thunk to the implementation helper.
@@ -3560,9 +3547,6 @@ MethodTableBuilder::EnumerateClassMethods()
     }
 #endif // FEATURE_COMINTEROP
 } // MethodTableBuilder::EnumerateClassMethods
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*******************************************************************************
 //
@@ -3955,11 +3939,6 @@ static BOOL IsSelfRef(MethodTable * pMT)
 //
 // Go thru all fields and initialize their FieldDescs.
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
-
 VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                                                  const LayoutRawFieldInfo* pLayoutRawFieldInfos,
                                                  bmtInternalInfo* bmtInternal,
@@ -4727,10 +4706,6 @@ IS_VALUETYPE:
 
     return;
 } // MethodTableBuilder::InitializeFieldDescs
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*******************************************************************************
 // Verify self-referencing static ValueType fields with RVA (when the size of the ValueType is known).
@@ -7217,7 +7192,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
 
         if (NeedsNativeCodeSlot(*it))
             size += sizeof(MethodDesc::NativeCodeSlot);
-        
+
         if (it->GetAsyncMethodKind() != AsyncMethodKind::NotAsync)
             size += sizeof(AsyncMethodData);
 
@@ -7286,16 +7261,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
     COUNT_T methodDescCount = 0;
 
     SIZE_T offset = sizeof(MethodDescChunk);
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22019) // Suppress PREFast warning about integer underflow
-#endif // _PREFAST_
     for (COUNT_T i = 0; i < count; i++)
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
-
     {
         bmtMDMethod * pMDMethod = (*bmtMethod)[static_cast<SLOT_INDEX>(startIndex + i)];
 
@@ -7303,15 +7269,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
         pMD->SetChunkIndex(pChunk);
         InitNewMethodDesc(pMDMethod, pMD);
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22018) // Suppress PREFast warning about integer underflow
-#endif // _PREFAST_
         offset += pMD->SizeOf();
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
 
         methodDescCount++;
 
@@ -8824,7 +8782,7 @@ MethodTableBuilder::HandleExplicitLayout(
     }
 
     CQuickBytes qb;
-    PREFIX_ASSUME(sizeof(bmtFieldLayoutTag) == 1);
+    _ASSERTE(sizeof(bmtFieldLayoutTag) == 1);
     bmtFieldLayoutTag *pFieldLayout = (bmtFieldLayoutTag*)qb.AllocThrows(instanceSliceSize * sizeof(bmtFieldLayoutTag));
     for (i=0; i < instanceSliceSize; i++)
     {
@@ -10771,11 +10729,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 //
 // Setup the method table
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
-
 VOID
 MethodTableBuilder::SetupMethodTable2(
         Module * pLoaderModule)
@@ -11359,9 +11312,6 @@ MethodTableBuilder::SetupMethodTable2(
     // additional information in the bmtMFDescs structure. Now it's time to add
     // this information as an optional extension to the MethodTable.
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 // Returns true if there is at least one default implementation for this interface method
 // We don't care about conflicts at this stage in order to avoid impact type load performance

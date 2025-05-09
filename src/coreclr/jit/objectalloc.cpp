@@ -373,7 +373,7 @@ void ObjectAllocator::PrepareAnalysis()
     //
     // If conditional escape analysis is enabled, we reserve the range [N...N+M-1]
     // for locals allocated during the conditional escape analysis expansions,
-    // where N is the maximum number of pseudos.
+    // where M is the maximum number of pseudos.
     //
     // We reserve the range [N+M ... N+2M-1] for pseudos.
     //
@@ -614,47 +614,51 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             unsigned const   lclNum = tree->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(lclNum);
 
-            // If this local already escapes, no need to look further.
+            // Are we tracking this local?
             //
-            if (m_allocator->CanLclVarEscape(lclNum))
+            if (!m_allocator->IsTrackedLocal(lclNum))
             {
                 return Compiler::fgWalkResult::WALK_CONTINUE;
             }
 
-            bool lclEscapes = true;
+            const unsigned lclIndex = m_allocator->LocalToIndex(lclNum);
+
+            // If this local already escapes, no need to look further.
+            //
+            if (m_allocator->CanIndexEscape(lclIndex))
+            {
+                return Compiler::fgWalkResult::WALK_CONTINUE;
+            }
 
             if (tree->OperIsLocalStore())
             {
-                lclEscapes = false;
                 m_allocator->CheckForGuardedAllocationOrCopy(m_block, m_stmt, use, lclNum);
             }
-            else if (tree->OperIs(GT_LCL_VAR) && m_allocator->IsTrackedLocal(lclNum))
+            else if (tree->OperIs(GT_LCL_VAR))
             {
                 assert(tree == m_ancestors.Top());
-                if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum, m_block))
-                {
-                    lclEscapes = false;
-                }
+                m_allocator->AnalyzeParentStack(&m_ancestors, lclIndex, m_block);
             }
-            else if (tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() == TYP_STRUCT) &&
-                     m_allocator->IsTrackedLocal(lclNum))
+            else if (tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() == TYP_STRUCT))
             {
                 assert(tree == m_ancestors.Top());
-                if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum, m_block))
-                {
-                    lclEscapes = false;
-                }
+                m_allocator->AnalyzeParentStack(&m_ancestors, lclIndex, m_block);
             }
-
-            if (lclEscapes)
+            else if (tree->OperIs(GT_LCL_FLD))
             {
-                if (!m_allocator->CanLclVarEscape(lclNum))
-                {
-                    JITDUMP("V%02u first escapes via [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
-                }
+                // We generally don't see these in early IR. Bail for now.
+                //
+                JITDUMP("V%02u local field at [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
                 m_allocator->MarkLclVarAsEscaping(lclNum);
             }
-            else if (!tree->OperIsLocalStore())
+            else
+            {
+                assert((tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() != TYP_STRUCT)));
+                JITDUMP("V%02u address taken at [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
+                m_allocator->MarkLclVarAsEscaping(lclNum);
+            }
+
+            if (!m_allocator->CanIndexEscape(lclIndex) && !tree->OperIsLocalStore())
             {
                 // Note uses of variables of interest to conditional escape analysis.
                 //
@@ -1606,29 +1610,22 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
 }
 
 //------------------------------------------------------------------------
-// CanLclVarEscapeViaParentStack: Check if the local variable escapes via the given parent stack.
+// AnalyzeParentStack: Check if the local variable escapes via the given parent stack.
 //                                Update the connection graph as necessary.
 //
 // Arguments:
 //    parentStack     - Parent stack of the current visit
-//    lclNum          - Local variable number
+//    lclIndex        - Index for a tracked, unescaped local referenced at the top of the stack
 //    block           - basic block holding the trees
 //
-// Return Value:
-//    true if the local can escape via the parent stack; false otherwise
-//
-// Notes:
-//    The method currently treats all locals assigned to a field as escaping.
-//    The can potentially be tracked by special field edges in the connection graph.
-//
-bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack,
-                                                    unsigned int          lclNum,
-                                                    BasicBlock*           block)
+void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclIndex, BasicBlock* block)
 {
     assert(parentStack != nullptr);
-    int parentIndex = 1;
+    assert(!CanIndexEscape(lclIndex));
 
-    LclVarDsc* const lclDsc = comp->lvaGetDesc(lclNum);
+    int              parentIndex = 1;
+    const unsigned   lclNum      = IndexToLocal(lclIndex);
+    LclVarDsc* const lclDsc      = comp->lvaGetDesc(lclNum);
 
     bool       keepChecking                  = true;
     bool       canLclVarEscapeViaParentStack = true;
@@ -1675,10 +1672,11 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     break;
                 }
 
-                // Add an edge to the connection graph.
-                const unsigned int srcLclNum = lclNum;
+                const unsigned dstIndex = LocalToIndex(dstLclNum);
 
-                AddConnGraphEdge(dstLclNum, srcLclNum);
+                // Add an edge to the connection graph.
+                //
+                AddConnGraphEdgeIndex(dstIndex, lclIndex);
                 canLclVarEscapeViaParentStack = false;
 
                 // If the source of this store is an enumerator local,
@@ -1686,7 +1684,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 //
                 if (isCopy)
                 {
-                    CheckForEnumeratorUse(srcLclNum, dstLclNum);
+                    CheckForEnumeratorUse(lclNum, dstLclNum);
                 }
 
                 // Note that we modelled this store in the connection graph
@@ -1788,14 +1786,15 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
                         if (base->OperIs(GT_LCL_ADDR))
                         {
-                            unsigned const   dstLclNum = base->AsLclVarCommon()->GetLclNum();
-                            LclVarDsc* const dstDsc    = comp->lvaGetDesc(dstLclNum);
+                            unsigned const dstLclNum = base->AsLclVarCommon()->GetLclNum();
 
                             if (IsTrackedLocal(dstLclNum))
                             {
                                 JITDUMP("... local.field store\n");
+                                const unsigned dstIndex = LocalToIndex(dstLclNum);
                                 // Add an edge to the connection graph.
-                                AddConnGraphEdge(dstLclNum, lclNum);
+                                //
+                                AddConnGraphEdgeIndex(dstIndex, lclIndex);
                                 canLclVarEscapeViaParentStack = false;
                             }
                         }
@@ -1902,7 +1901,12 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
         }
     }
 
-    return canLclVarEscapeViaParentStack;
+    if (canLclVarEscapeViaParentStack)
+    {
+        JITDUMP("V%02u first escapes via [%06u]...[%06u]\n", lclNum, comp->dspTreeID(parentStack->Top()),
+                comp->dspTreeID(parentStack->Top(parentIndex)));
+        MarkLclVarAsEscaping(lclNum);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2510,11 +2514,11 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
 
         // See what locals were "assigned" to the pseudo.
         //
-        BitVec PseudoAdjacencies = m_ConnGraphAdjacencyMatrix[pseudoIndex];
+        BitVec pseudoAdjacencies = m_ConnGraphAdjacencyMatrix[pseudoIndex];
 
         // If we found an allocation but didn't find any conditionally escaping uses, then cloning is of no use
         //
-        if (BitVecOps::IsEmpty(bitVecTraits, PseudoAdjacencies))
+        if (BitVecOps::IsEmpty(bitVecTraits, pseudoAdjacencies))
         {
             JITDUMP("   No conditionally escaping uses under");
             JITDUMPEXEC(DumpIndex(pseudoIndex));
@@ -2525,7 +2529,7 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
 
         // Check if each conditionally escaping local escapes on its own; if so cloning is of no use
         //
-        BitVecOps::Iter iterator(bitVecTraits, PseudoAdjacencies);
+        BitVecOps::Iter iterator(bitVecTraits, pseudoAdjacencies);
         unsigned        lclNumIndex = BAD_VAR_NUM;
         while (canClone && iterator.NextElem(&lclNumIndex))
         {

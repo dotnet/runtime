@@ -385,57 +385,6 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             break;
         }
 
-        case NI_Vector128_WithElement:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_WithElement:
-        case NI_Vector512_WithElement:
-#elif defined(TARGET_ARM64)
-        case NI_Vector64_WithElement:
-#endif
-        {
-            assert(operandCount == 3);
-
-            GenTree* op1 = operands[0];
-            GenTree* op2 = operands[1];
-            GenTree* op3 = operands[2];
-
-            if (op2->OperIsConst())
-            {
-                ssize_t imm8  = op2->AsIntCon()->IconValue();
-                ssize_t count = simdSize / genTypeSize(simdBaseType);
-
-                if ((imm8 >= count) || (imm8 < 0))
-                {
-                    // Using software fallback if index is out of range (throw exception)
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                if (varTypeIsIntegral(simdBaseType))
-                {
-                    if (varTypeIsLong(simdBaseType))
-                    {
-                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41_X64))
-                        {
-                            break;
-                        }
-                    }
-                    else if (!varTypeIsShort(simdBaseType))
-                    {
-                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                        {
-                            break;
-                        }
-                    }
-                }
-#endif // TARGET_XARCH
-
-                result = comp->gtNewSimdWithElementNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
-                break;
-            }
-            break;
-        }
-
         default:
         {
             if (sigInfo.numArgs == 0)

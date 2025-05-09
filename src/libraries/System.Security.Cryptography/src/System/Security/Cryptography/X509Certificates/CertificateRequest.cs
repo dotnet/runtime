@@ -192,7 +192,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public CertificateRequest(
             string subjectName,
             MLDsa key)
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public CertificateRequest(
             X500DistinguishedName subjectName,
             MLDsa key)
@@ -248,7 +248,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public CertificateRequest(
             string subjectName,
             SlhDsa key)
@@ -276,7 +276,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public CertificateRequest(
             X500DistinguishedName subjectName,
             SlhDsa key)

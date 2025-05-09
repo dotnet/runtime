@@ -61,17 +61,7 @@ void MD5::HashMore(const void* pvInput, ULONG cbInput)
 
         // Hash the now-full buffer
         MD5Transform(m_state, (ULONG*)&m_data[0]);
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22019) // Suppress this OACR warning 22019:
-                               //     'cbInput-=cbRemaining' may be greater than 'cbInput'. This can be caused by integer underflow.
-                               //     This could yield an incorrect loop index 'cbInput>=64'
-                               // We only enter the else clause here if cbInput >= cbRemaining
-#endif
         cbInput -= cbRemaining;
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
         pbInput += cbRemaining;
 
         // Hash the data in 64-byte runs, starting just after what we've copied

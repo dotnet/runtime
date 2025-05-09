@@ -2945,6 +2945,9 @@ public:
         *infoPtr = &m_hdrInfoBody;
         return m_hdrInfoTable;
     }
+
+    PTR_CBYTE DecodeGCHdrInfo(hdrInfo * infoPtr, DWORD relOffset);
+
 private:
     PTR_CBYTE   DecodeGCHdrInfoHelper(hdrInfo   ** infoPtr);
 #endif // TARGET_X86

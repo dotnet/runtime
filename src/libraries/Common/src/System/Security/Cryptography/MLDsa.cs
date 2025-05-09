@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
     ///   The derived classes are intended for interop with the underlying system
     ///   cryptographic libraries.
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract partial class MLDsa : IDisposable
 #if DESIGNTIMEINTERFACES
 #pragma warning disable SA1001

@@ -857,6 +857,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                         // VectorT128
     { NI_Illegal, NI_Illegal },                         // Rcpc2
     { FIRST_NI_Sve, LAST_NI_Sve },
+    { NI_Illegal, NI_Illegal },                         // Sve2
     { FIRST_NI_ArmBase_Arm64, LAST_NI_ArmBase_Arm64 },
     { FIRST_NI_AdvSimd_Arm64, LAST_NI_AdvSimd_Arm64 },
     { NI_Illegal, NI_Illegal },                         // Aes_Arm64
@@ -866,6 +867,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                         // Sha1_Arm64
     { NI_Illegal, NI_Illegal },                         // Sha256_Arm64
     { NI_Illegal, NI_Illegal },                         // Sve_Arm64
+    { NI_Illegal, NI_Illegal },                         // Sve2_Arm64
 #else
 #error Unsupported platform
 #endif

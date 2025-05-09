@@ -803,11 +803,6 @@ RegMask     convertAllRegsMask(unsigned inMask) // EAX,ECX,EDX,EBX, EBP,ESI,EDI
          in the array, and argTabBytes specifies the total byte size of the
          array. [ Note this is an extremely rare case ]
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 static
 unsigned scanArgRegTable(PTR_CBYTE    table,
                          unsigned     curOffs,
@@ -1471,10 +1466,6 @@ FINISHED:
     _ASSERTE(int(stackDepth) < INT_MAX); // check that it did not underflow
     return (stackDepth * sizeof(unsigned));
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 /*****************************************************************************
  * scan the register argument table for the fully interruptible case.

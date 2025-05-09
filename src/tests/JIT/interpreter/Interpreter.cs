@@ -65,6 +65,17 @@ public struct MyStruct2
     }
 }
 
+public struct StructWithRefs
+{
+    public MyObj o1, o2;
+
+    public StructWithRefs(int val1, int val2)
+    {
+        o1 = new MyObj(val1);
+        o2 = new MyObj(val2);
+    }
+}
+
 public class InterpreterTest
 {
     static int Main(string[] args)
@@ -91,22 +102,21 @@ public class InterpreterTest
 
         if (!TestJitFields())
             Environment.FailFast(null);
-        // Disable below tests because they are potentially unstable since they do allocation
-        // and we currently don't have GC support. They should pass locally though.
-//        if (!TestFields())
-//            Environment.FailFast(null);
-//        if (!TestSpecialFields())
-//            Environment.FailFast(null);
+        if (!TestFields())
+            Environment.FailFast(null);
+        if (!TestStructRefFields())
+            Environment.FailFast(null);
+        if (!TestSpecialFields())
+            Environment.FailFast(null);
         if (!TestFloat())
             Environment.FailFast(null);
 
         if (!TestLocalloc())
             Environment.FailFast(null);
 
-//        if (!TestVirtual())
-//          Environment.FailFast(null);
+        if (!TestVirtual())
+            Environment.FailFast(null);
 
-        // For stackwalking validation
         System.GC.Collect();
     }
 
@@ -193,17 +203,44 @@ public class InterpreterTest
         if (sum != 33)
             return false;
 
+        ref int str_a = ref str.str.a;
+
+        System.GC.Collect();
+
         staticObj = obj;
         staticStr = str;
+
+        System.GC.Collect();
 
         sum = staticObj.str.a + staticStr.str.a + staticObj.ct + staticStr.ct;
         if (sum != 33)
             return false;
 
-        WriteInt(ref str.str.a, 11);
+        WriteInt(ref str_a, 11);
         WriteInt(ref staticObj.str.a, 22);
-        sum = ReadInt(ref str.str.a) + ReadInt(ref staticObj.str.a);
+        sum = ReadInt(ref str_a) + ReadInt(ref staticObj.str.a);
         if (sum != 33)
+            return false;
+
+        if (str_a != str.str.a)
+            return false;
+
+        return true;
+    }
+
+    public static bool TestStructRefFields()
+    {
+        StructWithRefs s = new StructWithRefs(3, 42);
+        if (s.o1.str.a != 3)
+            return false;
+        if (s.o2.str.a != 42)
+            return false;
+
+        System.GC.Collect();
+
+        if (s.o1.str.a != 3)
+            return false;
+        if (s.o2.str.a != 42)
             return false;
 
         return true;
@@ -218,6 +255,8 @@ public class InterpreterTest
     {
         threadStaticObj = new MyObj(1);
         threadStaticStr = new MyStruct2(2);
+
+        System.GC.Collect();
 
         int sum = threadStaticObj.str.a + threadStaticStr.str.a + threadStaticObj.ct + threadStaticStr.ct;
         if (sum != 33)
