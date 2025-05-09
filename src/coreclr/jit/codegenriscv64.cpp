@@ -318,7 +318,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *  Funclets have the following incoming arguments:
  *
  *      catch:          a0 = the exception object that was caught (see GT_CATCH_ARG)
- *      filter:         a0 = the exception object to filter (see GT_CATCH_ARG), a1 = CallerSP of the containing function
+ *      filter:         a0 = the exception object to filter (see GT_CATCH_ARG)
  *      finally/fault:  none
  *
  *  Funclets set the following registers on exit:
@@ -347,8 +347,6 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
- *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes, not including FP/RA
@@ -368,13 +366,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  * function, even if the funclet doesn't have any calls, or has a much smaller, or larger, maximum number of
  * outgoing arguments for any call).
  *
- * Note that in all cases, the PSPSym is in exactly the same position with respect to Caller-SP,
- * and that location is the same relative to Caller-SP as in the main function where higher than
- * the callee-saved registers.
- * That is to say, the PSPSym's relative offset to Caller-SP is not depended on the callee-saved registers.
- *
- * Funclets do not have varargs arguments. However, because the PSPSym must exist at the same offset from Caller-SP as in the main function, we
- * must add buffer space for the saved varargs/argument registers here, if the main function did the same.
+ * Funclets do not have varargs arguments.
  *
  * Note that localloc cannot be used in a funclet.
  *
@@ -464,45 +456,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
-
-    // If there is no PSPSym (NativeAOT ABI), we are done. Otherwise, we need to set up the PSPSym in the functlet
-    // frame.
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        if (isFilter)
-        {
-            // This is the first block of a filter
-            // Note that register a1 = CallerSP of the containing function
-            // A1 is overwritten by the first Load (new callerSP)
-            // A2 is scratch when we have a large constant offset
-
-            // Load the CallerSP of the main function (stored in the PSP of the dynamically containing funclet or
-            // function)
-            genInstrWithConstant(INS_ld, EA_PTRSIZE, REG_A1, REG_A1, genFuncletInfo.fiCallerSP_to_PSP_slot_delta,
-                                 REG_A2, false);
-            regSet.verifyRegUsed(REG_A1);
-
-            // Store the PSP value (aka CallerSP)
-            genInstrWithConstant(INS_sd, EA_PTRSIZE, REG_A1, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta, REG_A2,
-                                 false);
-
-            // re-establish the frame pointer
-            genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_FPBASE, REG_A1,
-                                 genFuncletInfo.fiFunction_CallerSP_to_FP_delta, REG_A2, false);
-        }
-        else // This is a non-filter funclet
-        {
-            // A3 is scratch, A2 can also become scratch.
-
-            // compute the CallerSP, given the frame pointer. a3 is scratch?
-            genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_A3, REG_FPBASE,
-                                 -genFuncletInfo.fiFunction_CallerSP_to_FP_delta, REG_A2, false);
-            regSet.verifyRegUsed(REG_A3);
-
-            genInstrWithConstant(INS_sd, EA_PTRSIZE, REG_A3, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta, REG_A2,
-                                 false);
-        }
-    }
 }
 
 /*****************************************************************************
@@ -580,21 +533,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert((rsMaskSaveRegs & RBM_RA) != 0);
     assert((rsMaskSaveRegs & RBM_FP) != 0);
 
-    // Because a method and funclets must have the same caller-relative PSPSym offset,
-    // if there is a PSPSym, we have to pad the funclet frame size for OSR.
-    //
-    int osrPad = 0;
-    if (compiler->opts.IsOSR())
-    {
-        osrPad -= compiler->info.compPatchpointInfo->TotalFrameSize();
-
-        // OSR pad must be already aligned to stack size.
-        assert((osrPad % STACK_ALIGN) == 0);
-    }
-
     /* Now save it for future use */
-    genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() + osrPad;
-
     int funcletFrameSize = compiler->lvaOutgoingArgSpaceSize;
 
     genFuncletInfo.fiSP_to_CalleeSaved_delta = funcletFrameSize;
@@ -607,13 +546,11 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         delta_PSP -= TARGET_POINTER_SIZE;
     }
 
-    funcletFrameSize = funcletFrameSize - delta_PSP - osrPad;
+    funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
 
-    genFuncletInfo.fiSpDelta                    = -funcletFrameSize;
-    genFuncletInfo.fiSaveRegs                   = rsMaskSaveRegs;
-    genFuncletInfo.fiSP_to_PSP_slot_delta       = funcletFrameSize + delta_PSP + osrPad;
-    genFuncletInfo.fiCallerSP_to_PSP_slot_delta = osrPad + delta_PSP;
+    genFuncletInfo.fiSpDelta  = -funcletFrameSize;
+    genFuncletInfo.fiSaveRegs = rsMaskSaveRegs;
 
 #ifdef DEBUG
     if (verbose)
@@ -623,22 +560,10 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("                        Save regs: ");
         dspRegMask(genFuncletInfo.fiSaveRegs);
         printf("\n");
-        if (compiler->opts.IsOSR())
-        {
-            printf("                          OSR Pad: %d\n", osrPad);
-        }
-        printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunction_CallerSP_to_FP_delta);
         printf("  SP to CalleeSaved location delta: %d\n", genFuncletInfo.fiSP_to_CalleeSaved_delta);
         printf("                       SP delta: %d\n", genFuncletInfo.fiSpDelta);
     }
     assert(genFuncletInfo.fiSP_to_CalleeSaved_delta >= 0);
-
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        assert(genFuncletInfo.fiCallerSP_to_PSP_slot_delta ==
-               compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)); // same offset used in main function and
-                                                                             // funclet!
-    }
 #endif // DEBUG
 }
 
@@ -792,33 +717,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     compiler->unwindEndEpilog();
 }
 
-void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
-{
-    assert(compiler->compGeneratingProlog);
-
-    if (compiler->lvaPSPSym == BAD_VAR_NUM)
-    {
-        return;
-    }
-
-    noway_assert(isFramePointerUsed()); // We need an explicit frame pointer
-
-    int SPtoCallerSPdelta = -genCallerSPtoInitialSPdelta();
-
-    if (compiler->opts.IsOSR())
-    {
-        SPtoCallerSPdelta += compiler->info.compPatchpointInfo->TotalFrameSize();
-    }
-
-    // We will just use the initReg since it is an available register
-    // and we are probably done using it anyway...
-    regNumber regTmp = initReg;
-    *pInitRegZeroed  = false;
-
-    genInstrWithConstant(INS_addi, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta, regTmp, false);
-    GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
-}
-
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     regNumber rAddr;
@@ -947,19 +845,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     BasicBlock* const nextBlock = block->Next();
 
     // Generate a call to the finally, like this:
-    //      mov  a0,qword ptr [fp + 10H] / sp    // Load a0 with PSPSym, or sp if PSPSym is not used
     //      jal  finally-funclet
     //      j    finally-return                  // Only for non-retless finally calls
     // The 'b' can be a NOP if we're going to the next block.
-
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        GetEmitter()->emitIns_R_S(INS_ld, EA_PTRSIZE, REG_A0, compiler->lvaPSPSym, 0);
-    }
-    else
-    {
-        GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_A0, REG_SPBASE, 0);
-    }
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
@@ -1485,7 +1373,6 @@ void CodeGen::genLclHeap(GenTree* tree)
     regNumber            targetReg                = tree->GetRegNum();
     regNumber            regCnt                   = REG_NA;
     regNumber            tempReg                  = REG_NA;
-    regNumber            pspSymReg                = REG_NA;
     var_types            type                     = genActualType(size->gtType);
     emitAttr             easz                     = emitTypeSize(type);
     BasicBlock*          endLabel                 = nullptr; // can optimize for riscv64.
@@ -2775,6 +2662,30 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 }
                 break;
 
+            case GT_SH1ADD:
+                ins = INS_sh1add;
+                break;
+
+            case GT_SH2ADD:
+                ins = INS_sh2add;
+                break;
+
+            case GT_SH3ADD:
+                ins = INS_sh3add;
+                break;
+
+            case GT_SH1ADD_UW:
+                ins = INS_sh1add_uw;
+                break;
+
+            case GT_SH2ADD_UW:
+                ins = INS_sh2add_uw;
+                break;
+
+            case GT_SH3ADD_UW:
+                ins = INS_sh3add_uw;
+                break;
+
             case GT_XOR_NOT:
                 assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
                 assert(!isImmed(treeNode));
@@ -3297,22 +3208,23 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             switch (cmpSize)
             {
                 case EA_4BYTE:
+                {
+                    regNumber tmpRegOp1 = internalRegisters.GetSingle(tree);
+                    assert(regOp1 != tmpRegOp1);
                     if (isUnsigned)
                     {
                         imm = static_cast<uint32_t>(imm);
-
-                        regNumber tmpRegOp1 = internalRegisters.GetSingle(tree);
-                        assert(regOp1 != tmpRegOp1);
-
                         emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
                         emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-                        regOp1 = tmpRegOp1;
                     }
                     else
                     {
                         imm = static_cast<int32_t>(imm);
+                        emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                     }
+                    regOp1 = tmpRegOp1;
                     break;
+                }
                 case EA_8BYTE:
                     break;
                 default:
@@ -3721,10 +3633,6 @@ int CodeGenInterface::genSPtoFPdelta() const
     assert(compiler->compCalleeRegsPushed >= 2); // always FP/RA.
 
     int delta = compiler->compLclFrameSize;
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        delta -= TARGET_POINTER_SIZE;
-    }
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         delta -= TARGET_POINTER_SIZE;
@@ -4582,6 +4490,23 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_IL_OFFSET:
             // Do nothing; these nodes are simply markers for debug info.
+            break;
+
+        case GT_SH1ADD:
+        case GT_SH1ADD_UW:
+        case GT_SH2ADD:
+        case GT_SH2ADD_UW:
+        case GT_SH3ADD:
+        case GT_SH3ADD_UW:
+            genCodeForShxadd(treeNode->AsOp());
+            break;
+
+        case GT_ADD_UW:
+            genCodeForAddUw(treeNode->AsOp());
+            break;
+
+        case GT_SLLI_UW:
+            genCodeForSlliUw(treeNode->AsOp());
             break;
 
         default:
@@ -5624,7 +5549,16 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // dest = base + (index << scale)
         if (node->gtElemSize <= 64)
         {
-            genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
+            instruction shxaddIns = getShxaddVariant(scale, (genTypeSize(index) == 4));
+
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zba) && (shxaddIns != INS_none))
+            {
+                GetEmitter()->emitIns_R_R_R(shxaddIns, attr, node->GetRegNum(), index->GetRegNum(), base->GetRegNum());
+            }
+            else
+            {
+                genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale, tempReg);
+            }
         }
         else
         {
@@ -6117,7 +6051,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
-    params.isJump = call->IsFastTailCall();
+    params.isJump      = call->IsFastTailCall();
+    params.hasAsyncRet = call->IsAsync();
 
     // We need to propagate the debug information to the call instruction, so we can emit
     // an IL to native mapping record for the call, to support managed return value debugging.
@@ -6176,18 +6111,37 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // For fast tailcall we have already consumed the target. We ensure in
         // RA that the target was allocated into a volatile register that will
         // not be messed up by epilog sequence.
-        if (!call->IsFastTailCall())
+        if (!call->IsFastTailCall() && !target->isContainedIntOrIImmed())
         {
             genConsumeReg(target);
+        }
+
+        regNumber targetReg;
+        ssize_t   jalrOffset = 0;
+
+        if (target->isContainedIntOrIImmed())
+        {
+            // Load upper (64-12) bits to a temporary register. Lower 12 bits will be put inside JALR's instruction as
+            // offset.
+            targetReg   = internalRegisters.GetSingle(call);
+            ssize_t imm = target->AsIntCon()->IconValue();
+            jalrOffset  = (imm << (64 - 12)) >> (64 - 12);
+            imm -= jalrOffset;
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, targetReg, imm);
+        }
+        else
+        {
+            targetReg = target->GetRegNum();
         }
 
         // We have already generated code for gtControlExpr evaluating it into a register.
         // We just need to emit "call reg" in this case.
         //
-        assert(genIsValidIntReg(target->GetRegNum()));
+        assert(genIsValidIntReg(targetReg));
 
         params.callType = EC_INDIR_R;
-        params.ireg     = target->GetRegNum();
+        params.ireg     = targetReg;
+        params.addr     = (jalrOffset == 0) ? nullptr : (void*)jalrOffset; // We use addr to pass offset value
 
         genEmitCallWithCurrentGC(params);
     }
@@ -6428,9 +6382,15 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             }
 
             case GenIntCastDesc::ZERO_EXTEND_INT:
-
-                emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 32);
-                emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 32);
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zba))
+                {
+                    emit->emitIns_R_R_R(INS_add_uw, EA_PTRSIZE, dstReg, srcReg, REG_R0);
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 32);
+                    emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 32);
+                }
                 break;
             case GenIntCastDesc::SIGN_EXTEND_INT:
                 emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, dstReg, srcReg, 0);
@@ -6718,6 +6678,83 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     genProduceReg(lea);
 }
 
+instruction CodeGen::getShxaddVariant(int scale, bool useUnsignedVariant)
+{
+    if (useUnsignedVariant)
+    {
+        switch (scale)
+        {
+            case 1:
+                return INS_sh1add_uw;
+            case 2:
+                return INS_sh2add_uw;
+            case 3:
+                return INS_sh3add_uw;
+        }
+    }
+    else
+    {
+        switch (scale)
+        {
+            case 1:
+                return INS_sh1add;
+            case 2:
+                return INS_sh2add;
+            case 3:
+                return INS_sh3add;
+        }
+    }
+    return INS_none;
+}
+
+void CodeGen::genCodeForShxadd(GenTreeOp* tree)
+{
+    instruction ins = genGetInsForOper(tree);
+
+    assert(ins == INS_sh1add || ins == INS_sh2add || ins == INS_sh3add || ins == INS_sh1add_uw ||
+           ins == INS_sh2add_uw || ins == INS_sh3add_uw);
+
+    genConsumeOperands(tree);
+
+    emitAttr attr = emitActualTypeSize(tree);
+
+    GetEmitter()->emitIns_R_R_R(ins, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(), tree->gtOp2->GetRegNum());
+
+    genProduceReg(tree);
+}
+
+void CodeGen::genCodeForAddUw(GenTreeOp* tree)
+{
+    assert(tree->gtOper == GT_ADD_UW);
+
+    genConsumeOperands(tree);
+
+    emitAttr attr = emitActualTypeSize(tree);
+
+    GetEmitter()->emitIns_R_R_R(INS_add_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(),
+                                tree->gtOp2->GetRegNum());
+
+    genProduceReg(tree);
+}
+
+void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
+{
+    assert(tree->gtOper == GT_SLLI_UW);
+
+    genConsumeOperands(tree);
+
+    emitAttr attr    = emitActualTypeSize(tree);
+    GenTree* shiftBy = tree->gtOp2;
+
+    assert(shiftBy->IsCnsIntOrI());
+
+    unsigned shamt = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+
+    GetEmitter()->emitIns_R_R_I(INS_slli_uw, attr, tree->GetRegNum(), tree->gtOp1->GetRegNum(), shamt);
+
+    genProduceReg(tree);
+}
+
 //------------------------------------------------------------------------
 // genEstablishFramePointer: Set up the frame pointer by adding an offset to the stack pointer.
 //
@@ -6771,7 +6808,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
         {
             // Find the helper-block which raises the exception.
             Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
-            PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
@@ -6915,8 +6952,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
  * 4. We allocate the frame here; no further changes to SP are allowed (except in the body, for localloc).
  *
  * For functions with GS and localloc, we had saved the frame pointer and RA at the top
- * of the frame. Note that the funclet frames must follow the same rule,
- * and both main frame and funclet frames (if any) must put PSPSym in the same offset from Caller-SP.
+ * of the frame.
  * Since this frame type is relatively rare, we force using it via stress modes, for additional coverage.
  *
  * The frames look like the following (simplified to only include components that matter for establishing the
@@ -6936,8 +6972,6 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
  *      |  Varargs regs space   | // Only for varargs functions; NYI on RV64
  *      |-----------------------|
  *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
- *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      |Callee saved registers | // not including FP/RA; multiple of 8 bytes
  *      |-----------------------|
@@ -7026,10 +7060,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     int totalFrameSize = genTotalFrameSize();
     int leftFrameSize  = 0;
     int localFrameSize = compiler->compLclFrameSize;
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;
@@ -7100,10 +7130,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     int totalFrameSize = genTotalFrameSize();
     int localFrameSize = compiler->compLclFrameSize;
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;

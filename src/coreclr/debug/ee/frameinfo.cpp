@@ -807,12 +807,12 @@ void FrameInfo::InitForM2UInternalFrame(CrawlFrame * pCF)
 //-----------------------------------------------------------------------------
 void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
 {
-    PREFIX_ASSUME(pCF != NULL);
+    _ASSERTE(pCF != NULL);
     MethodDesc * pMDHint = NULL;
 
 #ifdef FEATURE_COMINTEROP
     Frame * pFrame = pCF->GetFrame();
-    PREFIX_ASSUME(pFrame != NULL);
+    _ASSERTE(pFrame != NULL);
 
 
     // For regular U2M PInvoke cases, we don't care about MD b/c it's just going to

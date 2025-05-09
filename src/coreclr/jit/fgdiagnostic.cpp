@@ -2706,6 +2706,14 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
+    // Async resumptions are allowed to jump into try blocks at any point. They
+    // are introduced late enough that the invariant of single entry is no
+    // longer necessary.
+    if (blockPred->HasFlag(BBF_ASYNC_RESUMPTION))
+    {
+        return true;
+    }
+
     printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
@@ -3102,7 +3110,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
         // with the finally block the BBJ_CALLFINALLY is targeting. There is one special case: if the
         // BBJ_CALLFINALLY is the first block of a `try`, then its predecessor can be outside the `try`:
-        // either a branch or fall-through to the first block.
+        // either a branch or fall-through to the first block. Similarly internal resumption blocks for
+        // async are allowed to do this as they are introduced late enough that we no longer need the invariant.
         //
         // Note that this IR condition is a choice. It naturally occurs when importing EH constructs.
         // This condition prevents flow optimizations from skipping blocks in a `try` and branching
@@ -3140,7 +3149,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 }
                 else
                 {
-                    assert(bbInTryRegions(finallyIndex, block));
+                    assert(bbInTryRegions(finallyIndex, block) || block->HasFlag(BBF_ASYNC_RESUMPTION));
                 }
             }
         }
@@ -3357,6 +3366,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             break;
 
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
             expectedFlags |= GTF_ORDER_SIDEEFF;
             break;
 
@@ -3628,6 +3638,10 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
                 noway_assert(stmt->GetTreeList()->gtOper == GT_CATCH_ARG);
                 // The root of the tree should have GTF_ORDER_SIDEEFF set
                 noway_assert(stmt->GetRootNode()->gtFlags & GTF_ORDER_SIDEEFF);
+            }
+            else if (tree->OperIs(GT_ASYNC_CONTINUATION))
+            {
+                assert(tree->gtFlags & GTF_ORDER_SIDEEFF);
             }
         }
 

@@ -281,10 +281,9 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
-        [SkipOnPlatform(TestPlatforms.Browser, "https://github.com/dotnet/runtime/issues/114769")]
         public static async Task ZipArchiveEntry_CorruptedStream_EnsureNoExtraBytesReadOrOverWritten(bool async)
         {
-            MemoryStream stream = PopulateStream().Result;
+            MemoryStream stream = await LocalMemoryStream.ReadAppFileAsync(zfile("normal.zip"));
 
             int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
             PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
@@ -313,11 +312,6 @@ namespace System.IO.Compression.Tests
             await DisposeStream(async, source);
 
             await DisposeZipArchive(async, archive);
-        }
-
-        private static async Task<MemoryStream> PopulateStream()
-        {
-            return await LocalMemoryStream.ReadAppFileAsync(zfile("normal.zip"));
         }
 
         [Theory]
