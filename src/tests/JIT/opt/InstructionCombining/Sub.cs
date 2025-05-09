@@ -121,6 +121,106 @@ namespace TestSub
                 fail = true;
             }
 
+            if (SubGtZero(5, 3) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubGtZero(3, 3) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubGtZero(2, 4) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubGtZero(int.MinValue, 1) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubGtZero(int.MaxValue, -1) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubGeZero(5, 3) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubGeZero(3, 3) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubGeZero(2, 4) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubGeZero(int.MinValue, 1) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubGeZero(int.MaxValue, -1) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLtZero(5, 3) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLtZero(3, 3) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLtZero(2, 4) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubLtZero(int.MinValue, 1) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLtZero(int.MaxValue, -1) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubLeZero(5, 3) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLeZero(3, 3) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubLeZero(2, 4) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubLeZero(int.MinValue, 1) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLeZero(int.MaxValue, -1) != 1)
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -303,6 +403,49 @@ namespace TestSub
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return (a - b == 0) | (c - d == 0);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SubGtZero(int a, int b) {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, gt
+            if (a - b > 0) {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SubGeZero(int a, int b) {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, ge
+            if (a - b >= 0) {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SubLtZero(int a, int b) {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #31
+            if (a - b < 0) {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SubLeZero(int a, int b) {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, le
+            if (a - b <= 0) {
+                return 1;
+            }
+            return 0;
         }
     }
 }
