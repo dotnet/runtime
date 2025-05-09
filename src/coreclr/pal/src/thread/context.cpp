@@ -2216,7 +2216,7 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
         if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
         {
             // Copy APX EGPRs separately.
-            memcpy(this, &(ctx.R16), sizeof(DWORD64) * 16);
+            memcpy(&(this->R16), &(ctx.R16), sizeof(DWORD64) * 16);
         }
     }
     else
