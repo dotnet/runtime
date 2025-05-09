@@ -31,11 +31,6 @@ extern bool g_arm64_atomics_present;
 void * __cdecl _alloca(size_t);
 #endif // !TARGET_UNIX
 
-#ifdef _PREFAST_
-// Suppress prefast warning #6255: alloca indicates failure by raising a stack overflow exception
-#pragma warning(disable:6255)
-#endif // _PREFAST_
-
 BOOL inline FitsInI1(int64_t val)
 {
     LIMITED_METHOD_DAC_CONTRACT;

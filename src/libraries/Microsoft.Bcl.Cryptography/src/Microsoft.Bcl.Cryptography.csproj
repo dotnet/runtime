@@ -181,6 +181,8 @@
              Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
              Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
+
+    <Compile Include="System\Security\Cryptography\Helpers.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX509Loader)' == 'true'">
@@ -255,8 +257,6 @@
              Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\X509CertificateLoader.Pkcs12.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.Pkcs12.cs" />
-
-    <Compile Include="System\Security\Cryptography\Helpers.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX509Loader)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETFramework'">

@@ -309,7 +309,7 @@ namespace System.Net.Http.Functional.Tests
                 parentActivity.AddBaggage("correlationId", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.AddBaggage("moreBaggage", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.AddTag("tag", "tag"); // add tag to ensure it is not injected into request
-                parentActivity.TraceStateString = "Foo";
+                parentActivity.TraceStateString = "foo=1";
 
                 parentActivity.Start();
 
@@ -616,7 +616,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
                         }
-                        
+
                         using HttpClient client = new HttpClient(CreateHttpClientHandler(allowAllCertificates: true));
 
                         await client.SendAsync(bool.Parse(testAsync), CreateRequest(HttpMethod.Get, uri, version, exactVersion: true));
@@ -699,7 +699,7 @@ namespace System.Net.Http.Functional.Tests
                         requestRecorder.VerifyActivityRecorded(2);
                         Activity req2 = requestRecorder.LastFinishedActivity;
                         Assert.NotSame(req1, req2);
-                        waitForConnectionRecorder.VerifyActivityRecorded(version == HttpVersion30 ? 2 : 1);
+                        waitForConnectionRecorder.VerifyActivityRecorded(1);
                         connectionSetupRecorder.VerifyActivityRecorded(1);
 
                         // The second request should also have a link to the shared connection.
@@ -733,7 +733,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Version version = Version.Parse(useVersion);
 
-                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);   
+                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                 using HttpClient client = new HttpClient(handler);
 
                 Activity parentActivity = new Activity("parent").Start();
@@ -796,10 +796,10 @@ namespace System.Net.Http.Functional.Tests
                 else
                 {
                     Debug.Assert(failureType is "socket");
-                    
+
                     Assert.Equal(ActivityStatusCode.Error, conn.Status);
                     Assert.Equal(ActivityStatusCode.Error, wait.Status);
-                    
+
                     ActivityAssert.HasTag(conn, "error.type", "connection_error");
                     ActivityAssert.HasTag(wait, "error.type", "connection_error");
 
@@ -823,8 +823,12 @@ namespace System.Net.Http.Functional.Tests
 
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+                // To test the Hierarchical propagation format, we need to set the legacy propagator.
+                DistributedContextPropagator.Current = DistributedContextPropagator.CreatePreW3CPropagator();
+
                 Activity parentActivity = new Activity("parent");
                 parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
+
                 parentActivity.AddBaggage("bad/key", "value");
                 parentActivity.AddBaggage("goodkey", "bad/value");
                 parentActivity.AddBaggage("key", "value");
@@ -1288,7 +1292,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Activity parent = new Activity("parent");
             parent.SetIdFormat(idFormat);
-            parent.TraceStateString = "Foo";
+            parent.TraceStateString = "foo=1";
             parent.Start();
 
             await GetFactoryForVersion(UseVersion).CreateServerAsync(async (originalServer, originalUri) =>
@@ -1326,7 +1330,9 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        Assert.NotEqual(GetHeaderValue(firstRequestData, "Request-Id"), GetHeaderValue(secondRequestData, "Request-Id"));
+                        // Hierarchical format is not supported with the default W3C propgator. Only Legacy propagator support it.
+                        Assert.Null(GetHeaderValue(firstRequestData, "Request-Id"));
+                        Assert.Null(GetHeaderValue(secondRequestData, "Request-Id"));
                     }
                 });
             });
@@ -1357,7 +1363,14 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SocketsHttpHandlerPropagators_WithIdFormat_MemberData()
         {
-            foreach (var propagator in new[] { null, DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.CreateNoOutputPropagator(), DistributedContextPropagator.CreatePassThroughPropagator() })
+            foreach (var propagator in new[]
+                                        {
+                                            null,
+                                            DistributedContextPropagator.CreateDefaultPropagator(),
+                                            DistributedContextPropagator.CreatePreW3CPropagator(),
+                                            DistributedContextPropagator.CreateNoOutputPropagator(),
+                                            DistributedContextPropagator.CreatePassThroughPropagator()
+                                        })
             {
                 foreach (ActivityIdFormat format in new[] { ActivityIdFormat.Hierarchical, ActivityIdFormat.W3C })
                 {
@@ -1393,7 +1406,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        AssertHeadersAreInjected(requestData, parent, ReferenceEquals(propagator, DistributedContextPropagator.CreatePassThroughPropagator()));
+                        AssertHeadersAreInjected(requestData, parent, ReferenceEquals(propagator, DistributedContextPropagator.CreatePassThroughPropagator()), ReferenceEquals(propagator, DistributedContextPropagator.CreateDefaultPropagator()));
                     }
                 });
         }
@@ -1539,7 +1552,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }
                 return response;
-            }   
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -1582,6 +1595,77 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task Http3_WaitForConnection_RecordedWhenWaitingForStream()
+        {
+            if (UseVersion != HttpVersion30 || !TestAsync)
+            {
+                throw new SkipTestException("This test is specific to async HTTP/3 runs.");
+            }
+
+            using Http3LoopbackServer server =  CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = 1 });
+
+            TaskCompletionSource stream1Created = new();
+            TaskCompletionSource allRequestsWaiting = new();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                Http3LoopbackStream stream1 = await connection.AcceptRequestStreamAsync();
+                stream1Created.SetResult();
+
+                await allRequestsWaiting.Task;
+                await stream1.HandleRequestAsync();
+                await stream1.DisposeAsync();
+
+                Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
+                await stream2.HandleRequestAsync();
+                await stream2.DisposeAsync();
+
+                Http3LoopbackStream stream3 = await connection.AcceptRequestStreamAsync();
+                await stream3.HandleRequestAsync();
+                await stream3.DisposeAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using Activity parentActivity = new Activity("parent").Start();
+                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                {
+                    ExpectedParent = parentActivity
+                };
+                using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
+                {
+                    VerifyParent = false
+                };
+                waitForConnectionRecorder.OnStarted = a =>
+                {
+                    if (waitForConnectionRecorder.Started == 3)
+                    {
+                        allRequestsWaiting.SetResult();
+                    }
+                };
+
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                using HttpClient client = new HttpClient(CreateSocketsHttpHandler(allowAllCertificates: true))
+                {
+                    DefaultRequestVersion = HttpVersion30,
+                    DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                Task<HttpResponseMessage> request1Task = client.GetAsync(server.Address);
+                await stream1Created.Task;
+
+                Task<HttpResponseMessage> request2Task = client.GetAsync(server.Address);
+                Task<HttpResponseMessage> request3Task = client.GetAsync(server.Address);
+
+                await new Task[] { request1Task, request2Task, request3Task }.WhenAllOrAnyFailed(30_000);
+                Assert.Equal(3, waitForConnectionRecorder.Stopped);
+            });
+
+            await new Task[] { serverTask, clientTask }.WhenAllOrAnyFailed(30_000);
+        }
+
         private static T GetProperty<T>(object obj, string propertyName)
         {
             Type t = obj.GetType();
@@ -1608,19 +1692,31 @@ namespace System.Net.Http.Functional.Tests
             Assert.Null(GetHeaderValue(request, "Correlation-Context"));
         }
 
-        private static void AssertHeadersAreInjected(HttpRequestData request, Activity parent, bool passthrough = false)
+        private static void AssertHeadersAreInjected(HttpRequestData request, Activity parent, bool passthrough = false, bool isW3C = true)
         {
             string requestId = GetHeaderValue(request, "Request-Id");
             string traceparent = GetHeaderValue(request, "traceparent");
             string tracestate = GetHeaderValue(request, "tracestate");
 
-            if (parent.IdFormat == ActivityIdFormat.Hierarchical)
+            if (parent.IdFormat == ActivityIdFormat.Hierarchical && !isW3C)
             {
                 Assert.True(requestId != null, "Request-Id was not injected when instrumentation was enabled");
                 Assert.StartsWith(parent.Id, requestId);
                 Assert.Equal(passthrough, parent.Id == requestId);
                 Assert.Null(traceparent);
                 Assert.Null(tracestate);
+
+                List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, "Correlation-Context") ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(kvp => NameValueHeaderValue.Parse(kvp))
+                    .ToList();
+
+                List<KeyValuePair<string, string>> baggage = parent.Baggage.ToList();
+                Assert.Equal(baggage.Count, correlationContext.Count);
+                foreach (var kvp in baggage)
+                {
+                    Assert.Contains(new NameValueHeaderValue(kvp.Key, kvp.Value), correlationContext);
+                }
             }
             else if (parent.IdFormat == ActivityIdFormat.W3C)
             {
@@ -1629,18 +1725,18 @@ namespace System.Net.Http.Functional.Tests
                 Assert.StartsWith($"00-{parent.TraceId.ToHexString()}-", traceparent);
                 Assert.Equal(passthrough, parent.Id == traceparent);
                 Assert.Equal(parent.TraceStateString, tracestate);
-            }
 
-            List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, "Correlation-Context") ?? string.Empty)
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(kvp => NameValueHeaderValue.Parse(kvp))
-                .ToList();
+                List<NameValueHeaderValue> correlationContext = (GetHeaderValue(request, "baggage") ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(kvp => NameValueHeaderValue.Parse(kvp))
+                    .ToList();
 
-            List<KeyValuePair<string, string>> baggage = parent.Baggage.ToList();
-            Assert.Equal(baggage.Count, correlationContext.Count);
-            foreach (var kvp in baggage)
-            {
-                Assert.Contains(new NameValueHeaderValue(kvp.Key, kvp.Value), correlationContext);
+                List<KeyValuePair<string, string>> baggage = parent.Baggage.ToList();
+                Assert.Equal(baggage.Count, correlationContext.Count);
+                foreach (var kvp in baggage)
+                {
+                    Assert.Contains(new NameValueHeaderValue(kvp.Key, kvp.Value), correlationContext);
+                }
             }
         }
 

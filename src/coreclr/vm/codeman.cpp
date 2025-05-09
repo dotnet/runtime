@@ -1103,7 +1103,7 @@ TADDR IJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
     return funcletStartAddress;
 }
 
-BOOL IJitManager::IsFunclet(EECodeInfo * pCodeInfo)
+BOOL IJitManager::LazyIsFunclet(EECodeInfo * pCodeInfo)
 {
     CONTRACTL {
         NOTHROW;
@@ -1148,13 +1148,6 @@ BOOL IJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     for (ULONG i = 0; i < EHCount; i++)
     {
          GetNextEHClause(&pEnumState, &EHClause);
-
-        // Duplicate clauses are always listed at the end, so when we hit a duplicate clause,
-        // we have already visited all of the normal clauses.
-        if (IsDuplicateClause(&EHClause))
-        {
-            break;
-        }
 
         if (IsFilterHandler(&EHClause))
         {
@@ -1533,6 +1526,11 @@ void EEJitManager::SetCpuInfo()
         // if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
         {
             CPUCompileFlags.Set(InstructionSet_Sve);
+
+            if (((cpuFeatures & ARM64IntrinsicConstants_Sve2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve2))
+            {
+                CPUCompileFlags.Set(InstructionSet_Sve2);
+            }
         }
     }
 
@@ -2380,7 +2378,7 @@ static size_t GetDefaultReserveForJumpStubs(size_t codeHeapSize)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifdef TARGET_64BIT
     //
     // Keep a small default reserve at the end of the codeheap for jump stubs. It should reduce
     // chance that we won't be able allocate jump stub because of lack of suitable address space.
@@ -2432,7 +2430,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     bool fAllocatedFromEmergencyJumpStubReserve = false;
 
     size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     if (!pInfo->IsInterpreted())
     {
         allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
@@ -2492,7 +2490,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     // this first allocation is critical as it sets up correctly the loader heap info
     HeapList *pHp = new HeapList;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     if (pInfo->IsInterpreted())
     {
         pHp->CLRPersonalityRoutine = NULL;
@@ -2533,7 +2531,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(heapSize));
     pHp->pHdrMap         = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     if (pHp->CLRPersonalityRoutine != NULL)
     {
         ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
@@ -2662,7 +2660,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     size_t reserveSize = initialRequestSize;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     if (!pInfo->IsInterpreted())
     {
         reserveSize += JUMP_ALLOCATE_SIZE;
@@ -3496,7 +3494,7 @@ GCInfoToken InterpreterJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // The JIT-ed code always has the current version of GCInfo
+    // The Interpreter IR always has the current version of GCInfo
     return{ GetCodeHeader(MethodToken)->GetGCInfo(), GCINFO_VERSION };
 }
 #endif // FEATURE_INTERPRETER
@@ -3581,7 +3579,7 @@ TypeHandle EECodeGenManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
 
     MethodDesc* pMD = pCf->GetFunction();
     Module* pModule = pMD->GetModule();
-    PREFIX_ASSUME(pModule != NULL);
+    _ASSERTE(pModule != NULL);
 
     SigTypeContext typeContext(pMD);
     return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
@@ -4292,7 +4290,17 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
 
 #ifdef FEATURE_EH_FUNCLETS
         // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
-        pCodeInfo->m_pFunctionEntry = NULL;
+        if (pCHdr->MayHaveFunclets())
+        {
+            // Computed lazily by code:EEJitManager::LazyGetFunctionEntry
+            pCodeInfo->m_pFunctionEntry = NULL;
+            pCodeInfo->m_isFuncletCache = EECodeInfo::IsFuncletCache::NotSet;
+        }
+        else
+        {
+            pCodeInfo->m_pFunctionEntry = pCHdr->GetUnwindInfo(0);
+            pCodeInfo->m_isFuncletCache = EECodeInfo::IsFuncletCache::IsNotFunclet;
+        }
 #endif
     }
 
@@ -4429,7 +4437,7 @@ TADDR EECodeGenManager::FindMethodCode(RangeSection * pRangeSection, PCODE curre
     pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
 
     // #1 look up DWORD represnting current PC
-    PREFIX_ASSUME(pMap != NULL);
+    _ASSERTE(pMap != NULL);
     dword = VolatileLoadWithoutBarrier<DWORD>(pMap);
 
     // #2 if DWORD is a pointer, then we can return
@@ -6242,7 +6250,7 @@ TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClaus
     _ASSERTE(pMD != NULL);
 
     Module* pModule = pMD->GetModule();
-    PREFIX_ASSUME(pModule != NULL);
+    _ASSERTE(pModule != NULL);
 
     SigTypeContext typeContext(pMD);
     mdToken typeTok = pEHClause->ClassToken;
@@ -6507,7 +6515,7 @@ DWORD ReadyToRunJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToke
     return nFunclets;
 }
 
-BOOL ReadyToRunJitManager::IsFunclet(EECodeInfo* pCodeInfo)
+BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
 {
     CONTRACTL {
         NOTHROW;
