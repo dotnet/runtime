@@ -563,6 +563,9 @@ private:
     // Check if marking an operand of a node as reg-optional is safe.
     bool IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* node) const;
 
+    // Checks if it's profitable to optimize an shift and rotate operations to set the zero flag.
+    bool IsProfitableToSetZeroFlag(GenTree* op) const;
+
     inline LIR::Range& BlockRange() const
     {
         return LIR::AsRange(m_block);
