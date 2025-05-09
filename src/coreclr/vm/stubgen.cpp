@@ -610,7 +610,7 @@ ILStubLinker::LogILStubWorker(
         //
         // calculate the code size
         //
-        PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+        _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
         *pcbCode += s_rgbOpcodeSizes[instr];
 
         //
@@ -733,7 +733,7 @@ bool ILStubLinker::FirstPassLink(ILInstruction* pInstrBuffer, UINT numInstr, siz
         //
         // calculate the code size
         //
-        PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+        _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
         *pcbCode += s_rgbOpcodeSizes[instr];
 
         //
@@ -931,7 +931,7 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
         {
             const ILOpcode* pOpcode = &s_rgOpcodes[instr];
 
-            PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+            _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
             int     opSize = s_rgbOpcodeSizes[instr];
             bool    twoByteOp = (pOpcode->byte1 != 0xFF);
             int     argSize = opSize - (twoByteOp ? 2 : 1);
@@ -1995,7 +1995,7 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
                 m_pbSigCursor   += sizeof(TypeHandle);
                 m_cbSig         += sizeof(TypeHandle);
                 break;
-            
+
             case ELEMENT_TYPE_CMOD_INTERNAL:
             {
                 // Nove later elements in the signature to make room for the CMOD_INTERNAL payload

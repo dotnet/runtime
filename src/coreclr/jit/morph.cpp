@@ -2063,10 +2063,6 @@ unsigned CallArgs::CountUserArgs()
 //    argument and replaced in the "early" arg list with a placeholder node.
 //    Also see `CallArgs::EvalArgsToTemps`.
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 {
     GenTreeFlags flagsSummary = GTF_EMPTY;
@@ -2210,9 +2206,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #endif
     return call;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //-----------------------------------------------------------------------------
 // fgTryMorphStructArg:
@@ -7009,10 +7002,6 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
 // Returns:
 //    Tree, possibly updated
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone)
 {
     assert(tree->OperKind() & GTK_SMPOP);
@@ -10482,9 +10471,6 @@ GenTree* Compiler::fgMorphRetInd(GenTreeOp* ret)
     return lclFld;
 }
 
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 //-------------------------------------------------------------
 // fgMorphSmpOpOptional: optional post-order morping of some SMP trees
 //
@@ -11566,7 +11552,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
                 assert(tree != nullptr);
             }
         }
-        PREFAST_ASSUME(tree != nullptr);
+        assert(tree != nullptr);
     }
 
     /* Figure out what kind of a node we have */

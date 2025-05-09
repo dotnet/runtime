@@ -710,6 +710,17 @@ MONO_RESTORE_WARNING
 				opcode = (tto_type == MONO_TYPE_I2) ? OP_ICONV_TO_I2 : OP_ICONV_TO_U2;
 				tto_stack = STACK_I4;
 			} else if (size == 4) {
+#if TARGET_SIZEOF_VOID_P == 4
+				if (tto_type == MONO_TYPE_I)
+					tto_type = MONO_TYPE_I4;
+				else if (tto_type == MONO_TYPE_U)
+					tto_type = MONO_TYPE_U4;
+
+				if (tfrom_type == MONO_TYPE_I)
+					tfrom_type = MONO_TYPE_I4;
+				else if (tfrom_type == MONO_TYPE_U)
+					tfrom_type = MONO_TYPE_U4;
+#endif
 				if ((tfrom_type == MONO_TYPE_R4) && ((tto_type == MONO_TYPE_I4) || (tto_type == MONO_TYPE_U4))) {
 					opcode = OP_MOVE_F_TO_I4;
 					tto_stack = STACK_I4;
@@ -722,26 +733,33 @@ MONO_RESTORE_WARNING
 				}
 			} else if (size == 8) {
 #if TARGET_SIZEOF_VOID_P == 8
-					if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
-						opcode = OP_MOVE_F_TO_I8;
-						tto_stack = STACK_I8;
-					} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
-						opcode = OP_MOVE_I8_TO_F;
-						tto_stack = STACK_R8;
-					} else {
-						opcode = OP_MOVE;
-						tto_stack = STACK_I8;
-					}
-#else
-					return NULL;
+				if (tto_type == MONO_TYPE_I)
+					tto_type = MONO_TYPE_I8;
+				else if (tto_type == MONO_TYPE_U)
+					tto_type = MONO_TYPE_U8;
+
+				if (tfrom_type == MONO_TYPE_I)
+					tfrom_type = MONO_TYPE_I8;
+				else if (tfrom_type == MONO_TYPE_U)
+					tfrom_type = MONO_TYPE_U8;
 #endif
+				if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
+					opcode = OP_MOVE_F_TO_I8;
+					tto_stack = STACK_I8;
+				} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
+					opcode = OP_MOVE_I8_TO_F;
+					tto_stack = STACK_R8;
+				} else {
+					opcode = OP_MOVE;
+					tto_stack = STACK_I8;
+				}
 			}
 		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
-#if TARGET_SIZEOF_VOID_P == 8
-				opcode = OP_XCAST;
-				tto_stack = STACK_VTYPE;
+#if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
+			opcode = OP_XCAST;
+			tto_stack = STACK_VTYPE;
 #else
-				return NULL;
+			return NULL;
 #endif
 		}
 

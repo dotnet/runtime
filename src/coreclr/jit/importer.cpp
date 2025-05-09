@@ -6051,10 +6051,6 @@ checkForAwait:
     return false;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 /*****************************************************************************
  *  Import the instr for the given basic block
  */
@@ -10984,9 +10980,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     return;
 #undef _impResolveToken
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //------------------------------------------------------------------------
 // impCreateLocal: create a GT_LCL_VAR node to access a local that might need to be normalized on load
@@ -11694,11 +11687,6 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
 // Import the instructions for the given basic block.  Perform
 // verification, throwing an exception on failure.  Push any successor blocks that are enabled for the first
 // time, or whose verification pre-state is changed.
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 void Compiler::impImportBlock(BasicBlock* block)
 {
     // BBF_INTERNAL blocks only exist during importation due to EH canonicalization. We need to
@@ -12039,9 +12027,6 @@ SPILLSTACK:
         }
     }
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //------------------------------------------------------------------------
 // impImportBlockPending: ensure that block will be imported
@@ -13828,7 +13813,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
         // further references to the argument working off of the
         // bashed copy.
         op1 = gtCloneExpr(argNode);
-        PREFIX_ASSUME(op1 != nullptr);
+        assert(op1 != nullptr);
         argInfo.argTmpNum = BAD_VAR_NUM;
 
         // We may need to retype to ensure we match the callee's view of the type.
