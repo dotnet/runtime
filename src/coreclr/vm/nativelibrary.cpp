@@ -472,6 +472,7 @@ namespace
     NATIVE_LIBRARY_HANDLE LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
     {
         STANDARD_VM_CONTRACT;
+        _ASSERTE(libName != NULL);
 
         SString path{ pAssembly->GetPEAssembly()->GetPath() };
 
