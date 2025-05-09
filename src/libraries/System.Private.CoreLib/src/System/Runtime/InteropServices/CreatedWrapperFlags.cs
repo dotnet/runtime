@@ -4,7 +4,7 @@
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Enumeration of flags for <see cref="ComWrappers.CreateObject(IntPtr, CreateObjectFlags, object?, out CreatedWrapperFlags)"/>.
+    /// Enumeration of flags for <see cref="ComWrappers.CreateObject(IntPtr, CreateObjectFlags, object, out CreatedWrapperFlags)"/>.
     /// </summary>
     [Flags]
     public enum CreatedWrapperFlags
