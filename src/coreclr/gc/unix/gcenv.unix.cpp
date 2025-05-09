@@ -1467,42 +1467,7 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 //  Time stamp in milliseconds
 uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
-    uint64_t retval = 0;
-
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    retval = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / tccMilliSecondsToNanoSeconds;
-#elif HAVE_CLOCK_MONOTONIC
-    struct timespec ts;
-
-#if HAVE_CLOCK_MONOTONIC_COARSE
-    clockid_t clockType = CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
-#else
-    clockid_t clockType = CLOCK_MONOTONIC;
-#endif
-
-    if (clock_gettime(clockType, &ts) != 0)
-    {
-#if HAVE_CLOCK_MONOTONIC_COARSE
-        assert(!"clock_gettime(HAVE_CLOCK_MONOTONIC_COARSE) failed\n");
-#else
-        assert(!"clock_gettime(CLOCK_MONOTONIC) failed\n");
-#endif
-    }
-
-    retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
-#else
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == 0)
-    {
-        retval = (tv.tv_sec * tccSecondsToMilliSeconds) + (tv.tv_usec / tccMilliSecondsToMicroSeconds);
-    }
-    else
-    {
-        assert(!"gettimeofday() failed\n");
-    }
-#endif
-
-    return retval;
+    return (uint64_t)minipal_lowres_ticks();
 }
 
 // Gets the total number of processors on the machine, not taking
