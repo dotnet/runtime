@@ -1091,7 +1091,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             {
                 return NI_IsSupported_True;
             }
-            else
+            else if (isSupportedProp)
             {
                 assert(comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                 return NI_IsSupported_Dynamic;

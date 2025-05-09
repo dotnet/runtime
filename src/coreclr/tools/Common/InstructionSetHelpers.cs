@@ -198,21 +198,24 @@ namespace System.CommandLine
 
                 // If AVX was enabled, we can opportunistically enable instruction sets which use the VEX encodings
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
+                Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
-                    // TODO: Enable optimistic usage of AVX2 once we validate it doesn't break Vector<T> usage
-                    // optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
-
-                    if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX2))
-                    {
-                        optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
-                    }
-
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
+
+                    // If AVX2 is not in the supported set, we need to restrict the optimistic Vector<T> size, because
+                    // 256-bit Vector<T> cannot be fully accelerated based on AVX2 being in the optimistic set only.
+
+                    if (!supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX2))
+                    {
+                        maxVectorTBitWidth = 128;
+                    }
                 }
 
                 Debug.Assert(InstructionSet.X64_AVX512F == InstructionSet.X86_AVX512F);
