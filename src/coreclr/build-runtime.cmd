@@ -67,6 +67,7 @@ set __UnprocessedBuildArgs=
 
 set __BuildNative=1
 set __RestoreOptData=1
+set __CrossTarget=0
 set __HostOS=
 set __HostArch=
 set __PgoOptDataPath=
@@ -285,7 +286,14 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-if not "%__TargetOS%"=="android" (
+if "%__TargetOS%"=="android" (
+    set __CrossTarget=1
+)
+if "%__TargetOS%"=="browser" (
+    set __CrossTarget=1
+)
+
+if %__CrossTarget% EQU 0 (
     call "%__RepoRootDir%\eng\native\version\copy_version_files.cmd"
 ) else (
     call powershell -NoProfile -ExecutionPolicy ByPass -File "%__RepoRootDir%\eng\native\version\copy_version_files.ps1"
