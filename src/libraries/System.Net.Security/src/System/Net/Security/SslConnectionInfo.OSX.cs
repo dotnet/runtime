@@ -3,30 +3,59 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 
 namespace System.Net.Security
 {
     internal partial struct SslConnectionInfo
     {
-        public void UpdateSslConnectionInfo(SafeDeleteSslContext context)
+        public unsafe void UpdateSslConnectionInfo(SafeDeleteSslContext context)
         {
             SafeSslHandle sslContext = context.SslContext;
             SslProtocols protocol;
             TlsCipherSuite cipherSuite;
+            int osStatus;
+            IntPtr alpnPtr = IntPtr.Zero;
+            int alpnLength = 0;
 
-            int osStatus = Interop.AppleCrypto.SslGetProtocolVersion(sslContext, out protocol);
+            if (context.UseNwFramework)
+            {
+                osStatus = Interop.AppleCrypto.NwGetConnectionInfo(sslContext, out protocol, out cipherSuite, ref alpnPtr, ref alpnLength );
 
-            if (osStatus != 0)
-                throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+                if (osStatus != 0)
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
 
-            osStatus = Interop.AppleCrypto.SslGetCipherSuite(sslContext, out cipherSuite);
+                if (alpnPtr != IntPtr.Zero && alpnLength > 0)
+                {
+                    Span<byte> alpn = new Span<byte>((void*)alpnPtr, alpnLength);
+                    ApplicationProtocol = alpn.ToArray();
+                }
+            }
+            else
+            {
+                osStatus = Interop.AppleCrypto.SslGetProtocolVersion(sslContext, out protocol);
 
-            if (osStatus != 0)
-                throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+                if (osStatus != 0)
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+
+                osStatus = Interop.AppleCrypto.SslGetCipherSuite(sslContext, out cipherSuite);
+
+                if (osStatus != 0)
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+            }
+
 
             Protocol = (int)protocol;
             TlsCipherSuite = cipherSuite;
+            MapCipherSuite(cipherSuite);
+
+            if (context.UseNwFramework)
+            {
+
+                return;
+            }
+
             if (context.IsServer)
             {
                 if (context.SelectedApplicationProtocol.Protocol.Length > 0)
@@ -53,8 +82,6 @@ namespace System.Net.Security
             {
                 ApplicationProtocol = Interop.AppleCrypto.SslGetAlpnSelected(sslContext);
             }
-
-            MapCipherSuite(cipherSuite);
         }
     }
 }
