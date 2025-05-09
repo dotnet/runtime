@@ -96,5 +96,8 @@ namespace System.Net.Security
         /// are ignored.
         /// </summary>
         public X509ChainPolicy? CertificateChainPolicy { get; set; }
+
+        public bool AllowRsaPssPad { get; set; } = true;
+        public bool AllowRsaPkcsPad { get; set; } = true;
     }
 }
