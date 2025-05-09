@@ -132,17 +132,3 @@ extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnSt
     return pWeakReference;
 }
 #endif // FEATURE_COMINTEROP
-
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-
-FCIMPL1(FC_BOOL_RET, ComAwareWeakReferenceNative::HasInteropInfo, Object* pObject)
-{
-    FCALL_CONTRACT;
-    _ASSERTE(pObject != nullptr);
-
-    SyncBlock* pSyncBlock = pObject->PassiveGetSyncBlock();
-    return pSyncBlock != nullptr && pSyncBlock->GetInteropInfoNoCreate() != nullptr;
-}
-FCIMPLEND
-
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS

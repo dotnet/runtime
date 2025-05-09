@@ -370,12 +370,6 @@ FCFuncStart(gGCHandleFuncs)
     FCFuncElement("InternalCompareExchange", MarshalNative::GCHandleInternalCompareExchange)
 FCFuncEnd()
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-FCFuncStart(gComAwareWeakReferenceFuncs)
-    FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
-FCFuncEnd()
-#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-
 //
 //
 // Class definitions

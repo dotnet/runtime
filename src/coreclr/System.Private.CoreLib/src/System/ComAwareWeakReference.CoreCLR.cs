@@ -30,34 +30,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool PossiblyComObject(object target)
         {
-            // see: syncblk.h
-            const int IS_HASHCODE_BIT_NUMBER = 26;
-            const int BIT_SBLK_IS_HASHCODE = 1 << IS_HASHCODE_BIT_NUMBER;
-            const int BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX = 0x08000000;
-
-            fixed (byte* pRawData = &target.GetRawData())
-            {
-                // The header is 4 bytes before MT field on all architectures
-                int header = *(int*)(pRawData - sizeof(IntPtr) - sizeof(int));
-                // common case: target does not have a syncblock, so there is no interop info
-                return (header & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) == BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX;
-            }
+            return target is __ComObject || PossiblyComWrappersObject(target);
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool HasInteropInfo(object target);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectToComWeakRef")]
         private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw);
 
         internal static nint ObjectToComWeakRef(object target, out object? context)
         {
-            if (!HasInteropInfo(target))
-            {
-                context = null;
-                return IntPtr.Zero;
-            }
-
 #if FEATURE_COMINTEROP
             if (target is __ComObject)
             {
