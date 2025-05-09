@@ -2477,8 +2477,6 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             emitter* emit = GetEmitter();
 
             // op1: EAX, op2: reg/mem
-
-            // TODO: swap op1 and op2 if it makes snes ?
             emit->emitIns_Mov(INS_mov, attr, REG_EAX, op1Reg, /* canSkip */ true);
 
             // emit the MUL/IMUL instruction

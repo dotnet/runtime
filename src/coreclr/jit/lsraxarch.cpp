@@ -2488,10 +2488,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(dstCount == 2);
                 assert(isRMW);
 
-                // MUL implicitly put op1 to EAX with op2
+                // mulEAX always have op1 in EAX
                 srcCount += BuildOperandUses(op1, SRBM_EAX);
-
-                // TODO: DOes it need to handle contained ??
                 srcCount += BuildOperandUses(op2);
 
                 // result put in EAX and EDX

@@ -9444,7 +9444,6 @@ namespace System.Runtime.Intrinsics.X86
         public static (nuint Quotient, nuint Remainder) DivRem(nuint lower, nuint upper, nuint divisor) { throw null; }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw null; }
-
         public static void Pause() { throw null; }
         public abstract partial class X64
         {
