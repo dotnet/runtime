@@ -114,6 +114,16 @@ int64_t minipal_lowres_ticks()
     }
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToMillieSeconds)) + ((int64_t)(ts.tv_nsec) / (int64_t)(tccMillieSecondsToNanoSeconds));
+#elif HAVE_GETHRTIME
+    return (int64_t)(gethrtime () / tccMillieSecondsToNanoSeconds);
+#elif HAVE_READ_REAL_TIME
+    timebasestruct_t tb;
+    read_real_time (&tb, TIMEBASE_SZ);
+    if (time_base_to_time (&tb, TIMEBASE_SZ) != 0)
+    {
+        assert(!"time_base_to_time() failed");
+    }
+    return (tb.tb_high * tccSecondsToMillieSeconds) + (tb.tb_low / tccMillieSecondsToNanoSeconds);
 #else
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == 0)
@@ -124,8 +134,6 @@ int64_t minipal_lowres_ticks()
     {
         assert(!"gettimeofday() failed\n");
     }
-
-    // TODO: adapt more platforms from mono_msec_boottime
 #endif
 }
 
