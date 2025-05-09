@@ -5,6 +5,7 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <!-- declare types in namespaces; ConfigureAwait; Prefer 'static readonly' fields; trim warnings -->
     <NoWarn>$(NoWarn);CA1050;CA2007;CA1861;IL2104</NoWarn>
     <WasmEnableThreads>true</WasmEnableThreads>

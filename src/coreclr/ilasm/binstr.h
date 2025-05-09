@@ -8,11 +8,6 @@
 
 #include <string.h>         // for memmove, memcpy ...
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22008) // "Suppress PREfast warnings about integer overflow"
-#endif
-
 class BinStr {
 public:
     BinStr()  { len = 0L; max = 8L; ptr_ = buff; }
@@ -68,9 +63,6 @@ private:
     uint8_t buff[8];
 };
 BinStr* BinStrToUnicode(BinStr* pSource, bool Swap = false);
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 #endif
 

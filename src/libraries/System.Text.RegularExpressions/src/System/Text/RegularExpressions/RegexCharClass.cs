@@ -1543,7 +1543,7 @@ namespace System.Text.RegularExpressions
         public static string OneToStringClass(char c)
             => CharsToStringClass([c]);
 
-        internal static unsafe string CharsToStringClass(ReadOnlySpan<char> chars)
+        internal static string CharsToStringClass(ReadOnlySpan<char> chars)
         {
 #if DEBUG
             // Make sure they're all sorted with no duplicates
@@ -1592,20 +1592,15 @@ namespace System.Text.RegularExpressions
 
             // Get the pointer/length of the span to be able to pass it into string.Create.
             ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
-            return
 #if NET
-                string
-#else
-                StringExtensions
-#endif
-                .Create(SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
+            return string.Create(SetStartIndex + count, tmpChars, static (span, chars) =>
             {
                 // Fill in the set string
                 span[FlagsIndex] = (char)0;
                 span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
                 span[CategoryLengthIndex] = (char)0;
                 int i = SetStartIndex;
-                foreach (char c in *(ReadOnlySpan<char>*)charsPtr)
+                foreach (char c in chars)
                 {
                     span[i++] = c;
                     if (c != LastChar)
@@ -1615,7 +1610,31 @@ namespace System.Text.RegularExpressions
                 }
                 Debug.Assert(i == span.Length);
             });
+#else
+            unsafe
+            {
+                return StringExtensions.Create(SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
+                {
+                    // Fill in the set string
+                    span[FlagsIndex] = (char)0;
+                    span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
+                    span[CategoryLengthIndex] = (char)0;
+                    int i = SetStartIndex;
+                    ReadOnlySpan<char> chars = *(ReadOnlySpan<char>*)charsPtr;
+                    foreach (char c in chars)
+                    {
+                        span[i++] = c;
+                        if (c != LastChar)
+                        {
+                            span[i++] = (char)(c + 1);
+                        }
+                    }
+                    Debug.Assert(i == span.Length);
+                });
+            }
+#endif
         }
+
 
         /// <summary>
         /// Constructs the string representation of the class.

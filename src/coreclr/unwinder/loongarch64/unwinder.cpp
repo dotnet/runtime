@@ -64,7 +64,6 @@ typedef struct _LOONGARCH64_KTRAP_FRAME {
 // Volatile registers
 //
     ULONG64 R[19];
-    ULONG64 Tp;
     ULONG64 Sp;
     ULONG64 Fp;
     ULONG64 Ra;

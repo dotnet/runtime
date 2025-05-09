@@ -30,13 +30,13 @@ struct FakeHeapList
     size_t              maxCodeHeapSize;
     size_t              reserveForJumpStubs;
     DWORD_PTR           pLoaderAllocator;
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
     DWORD_PTR           CLRPersonalityRoutine;
 #endif
 
     DWORD_PTR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
         return CLRPersonalityRoutine;
 #else
         return mapBase;

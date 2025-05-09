@@ -12,12 +12,7 @@
     IMPORT GenericPInvokeCalliStubWorker
     IMPORT JIT_PInvokeEndRarePath
 
-    IMPORT s_gsCookie
     IMPORT g_TrapReturningThreads
-
-    SETALIAS InlinedCallFrame_vftable, ??_7InlinedCallFrame@@6B@
-    IMPORT $InlinedCallFrame_vftable
-
 
 ; ------------------------------------------------------------------
 ; Macro to generate PInvoke Stubs.
@@ -119,34 +114,29 @@ __PInvokeStubWorkerName SETS "$FuncPrefix":CC:"StubWorker"
 ;
         LEAF_ENTRY JIT_PInvokeBegin
 
-            ldr     x9, =s_gsCookie
-            ldr     x9, [x9]
+            ;; set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+            mov     x9, #FRAMETYPE_InlinedCallFrame
             str     x9, [x0]
-            add     x10, x0, SIZEOF__GSCookie
 
-            ;; set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
-            ldr     x9, =$InlinedCallFrame_vftable
-            str     x9, [x10]
-
-            str     xzr, [x10, #InlinedCallFrame__m_Datum]
+            str     xzr, [x0, #InlinedCallFrame__m_Datum]
 
             mov     x9, sp
-            str     x9, [x10, #InlinedCallFrame__m_pCallSiteSP]
-            str     fp, [x10, #InlinedCallFrame__m_pCalleeSavedFP]
-            str     lr, [x10, #InlinedCallFrame__m_pCallerReturnAddress]
+            str     x9, [x0, #InlinedCallFrame__m_pCallSiteSP]
+            str     fp, [x0, #InlinedCallFrame__m_pCalleeSavedFP]
+            str     lr, [x0, #InlinedCallFrame__m_pCallerReturnAddress]
 
             ;; x0 = GetThread(), TRASHES x9
-            INLINE_GETTHREAD x0, x9
+            INLINE_GETTHREAD x10, x9
 
             ;; pFrame->m_Next = pThread->m_pFrame;
-            ldr     x9, [x0, #Thread_m_pFrame]
-            str     x9, [x10, #Frame__m_Next]
+            ldr     x9, [x10, #Thread_m_pFrame]
+            str     x9, [x0, #Frame__m_Next]
 
             ;; pThread->m_pFrame = pFrame;
-            str     x10, [x0, #Thread_m_pFrame]
+            str     x0, [x10, #Thread_m_pFrame]
 
             ;; pThread->m_fPreemptiveGCDisabled = 0
-            str     wzr, [x0, #Thread_m_fPreemptiveGCDisabled]
+            str     wzr, [x10, #Thread_m_fPreemptiveGCDisabled]
 
             ret
 
@@ -159,8 +149,6 @@ __PInvokeStubWorkerName SETS "$FuncPrefix":CC:"StubWorker"
 ; x0 = InlinedCallFrame*
 ;
         LEAF_ENTRY JIT_PInvokeEnd
-
-            add     x0, x0, SIZEOF__GSCookie
 
             ;; x1 = GetThread(), TRASHES x2
             INLINE_GETTHREAD x1, x2

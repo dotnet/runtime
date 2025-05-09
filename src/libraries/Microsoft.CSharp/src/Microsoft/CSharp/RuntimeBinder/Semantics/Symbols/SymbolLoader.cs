@@ -10,14 +10,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal static class SymbolLoader
     {
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static AggregateSymbol GetPredefAgg(PredefinedType pt) => TypeManager.GetPredefAgg(pt);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static AggregateType GetPredefindType(PredefinedType pt) => GetPredefAgg(pt).getThisType();
 
         public static Symbol LookupAggMember(Name name, AggregateSymbol agg, symbmask_t mask) => SymbolStore.LookupSym(name, agg, mask);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool IsBaseInterface(AggregateType atsDer, AggregateType pBase)
         {
             Debug.Assert(atsDer != null);
@@ -42,6 +45,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static bool IsBaseClassOfClass(CType pDerived, CType pBase)
         {
             Debug.Assert(pDerived != null);
@@ -53,6 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool IsBaseClass(CType pDerived, CType pBase)
         {
             Debug.Assert(pDerived != null);
@@ -91,6 +96,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool HasCovariantArrayConversion(ArrayType pSource, ArrayType pDest)
         {
             Debug.Assert(pSource != null);
@@ -103,6 +109,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static bool HasIdentityOrImplicitReferenceConversion(CType pSource, CType pDest)
         {
             Debug.Assert(pSource != null);
@@ -118,6 +125,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static bool AreTypesEqualForConversion(CType pType1, CType pType2) => pType1.Equals(pType2);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool HasArrayConversionToInterface(ArrayType pSource, CType pDest)
         {
             Debug.Assert(pSource != null);
@@ -160,6 +168,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool HasImplicitReferenceConversion(CType pSource, CType pDest)
         {
             Debug.Assert(pSource != null);
@@ -287,6 +296,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool HasAnyBaseInterfaceConversion(CType pDerived, CType pBase)
         {
             if (!pBase.IsInterfaceType || !(pDerived is AggregateType atsDer))
@@ -325,6 +335,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //   equal to Ti, or there is an implicit reference conversion from Ti to Si.
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool HasInterfaceConversion(AggregateType pSource, AggregateType pDest)
         {
             Debug.Assert(pSource != null && pSource.IsInterfaceType);
@@ -335,6 +346,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool HasDelegateConversion(AggregateType pSource, AggregateType pDest)
         {
             Debug.Assert(pSource != null && pSource.IsDelegateType);
@@ -345,6 +357,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool HasVariantConversion(AggregateType pSource, AggregateType pDest)
         {
             Debug.Assert(pSource != null);
@@ -400,6 +413,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool HasImplicitBoxingConversion(CType pSource, CType pDest)
         {
             Debug.Assert(pSource != null);
@@ -438,6 +452,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static bool HasBaseConversion(CType pSource, CType pDest)
         {
             // By a "base conversion" we mean:

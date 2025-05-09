@@ -4,6 +4,8 @@
 .intel_syntax noprefix
 #include "unixasmmacros.inc"
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+
 // This is the number of times a successful chain lookup will occur before the
 // entry is promoted to the front of the chain. This is declared as extern because
 // the default value (CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT) is defined in the header.
@@ -87,3 +89,4 @@ Fail_RWCLAS:
 
 LEAF_END ResolveWorkerChainLookupAsmStub, _TEXT
 
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH

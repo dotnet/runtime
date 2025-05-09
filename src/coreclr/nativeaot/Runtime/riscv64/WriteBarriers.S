@@ -31,7 +31,6 @@
         la    t3, g_GCShadow
         ld    t3, 0(t3)
         beq  t3, zero, 1f
-        li   t4, 0
 
         // Save destReg since we're about to modify it (and we need the original value both within the macro and
         // once we exit the macro).
@@ -91,67 +90,70 @@
 // some interlocked helpers that need an inline barrier.
 
         // On entry:
-        //   destReg: location to be updated (cannot be t3,t4)
-        //   refReg:  objectref to be stored (cannot be t3,t4)
+        //   destReg: location to be updated (cannot be t2,t6)
+        //   refReg:  objectref to be stored (cannot be t2,t6)
         //
         // On exit:
-        //   t3,t4: trashed
+        //   t2, t6: trashed
         //
         .macro INSERT_UNCHECKED_WRITE_BARRIER_CORE destReg, refReg
 
-        // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
-        // we are in a debug build and write barrier checking has been enabled).
+        // Update the shadow copy of the heap with the same value just written to the same heap.
+        // (A no-op unless we are in a debug build and write barrier checking has been enabled).
         UPDATE_GC_SHADOW \destReg, \refReg
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Update the write watch table if necessary
-        la    t3, g_write_watch_table
-        ld    t3, 0(t3)
-        beq  t3, zero, 2f
-        srai t5, \destReg, 12
-        add  t3, t3, t5      // SoftwareWriteWatch::AddressToTableByteIndexShift
-        lb   t4, 0(t3)
-        bne  t4, zero, 2f
-        li   t4, 0xFF
-        sb   t4, 0(t3)
+        la      t2, g_write_watch_table
+        ld      t2, (t2)
+
+        beqz    t2, 2f
+        srli    t6, \destReg, 12   // SoftwareWriteWatch::AddressToTableByteIndexShift
+        add     t2, t2, t6
+        lb      t6, 0(t2)
+        bnez    t6, 2f
+        li      t6, 0xFF
+        sb      t6, 0(t2)
 #endif
 
 2:
         // We can skip the card table write if the reference is to
         // an object not on the ephemeral segment.
-        la    t3, g_ephemeral_low
-        ld    t3, 0(t3)
-        blt  \refReg, t3, 0f
-
-        la    t3, g_ephemeral_high
-        ld    t3, 0(t3)
-        bgeu \refReg, t3, 0f
+        la      t2, g_ephemeral_low
+        ld      t2, (t2)
+        la      t6, g_ephemeral_high
+        ld      t6, (t6)
+        bltu    \refReg, t2, 0f
+        bgeu    \refReg, t6, 0f
 
         // Set this object's card, if it has not already been set.
-        la    t3, g_card_table
-        srai t5, \destReg, 11
-        add  t4, t3, t5
+        la      t2, g_card_table
+        ld      t2, (t2)
+        srli    t6, \destReg, 11
+        add     t6, t2, t6
 
-        // Check that this card has not already been written. Avoiding useless writes is a big win on
-        // multi-processor systems since it avoids cache thrashing.
-        lb   t3, 0(t4)
-        li   t5, 0xFF
-        beq  t3, t5, 0f
+        // Check that this card has not already been written. Avoiding useless writes
+        // is a big win on multi-proc systems since it avoids cache thrashing.
+        lbu     t2, 0(t6)
+        addi    t2, t2, -0xFF
+        beqz    t2, 0f
 
-        li   t3, 0xFF
-        sb   t3, 0(t4)
+        li      t2, 0xFF
+        sb      t2, 0(t6)
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Check if we need to update the card bundle table
-        la    t3, g_card_bundle_table
-        srai t5, \destReg, 21
-        add  t4, t3, t5
-        lb   t3, 0(t4)
-        li   t5, 0xFF
-        beq  t3, t5, 0f
+        la      t2, g_card_bundle_table
+        ld      t2, (t2)
 
-        li   t3, 0xFF
-        sb   t3, 0(t4)
+        srli    t6, \destReg, 21
+        add     t6, t2, t6
+        lbu     t2, 0(t6)
+        addi    t2, t2, -0xFF
+        beqz    t2, 0f
+
+        li      t2, 0xFF
+        sb      t2, 0(t6)
 #endif
 
 0:
@@ -163,23 +165,20 @@
         //   refReg:  objectref to be stored
         //
         // On exit:
-        //   t3, t4: trashed
+        //   t2, t6: trashed
         //
         .macro INSERT_CHECKED_WRITE_BARRIER_CORE destReg, refReg
 
-        // The "check" of this checked write barrier - is destReg
-        // within the heap? If not, early out.
-        la    t3, g_lowest_address
-        ld    t3, 0(t3)
-        sltu  t4, \destReg, t3
+        // The "check" of this checked write barrier - is destReg within the heap?
+        // If no, early out.
 
-        la    t3, g_highest_address
-        ld    t3, 0(t3)
+        la      t2, g_lowest_address
+        ld      t2, (t2)
+        bltu    \destReg, t2, 0f
 
-        // If \destReg >= g_lowest_address, compare \destReg to g_highest_address.
-        // Otherwise, set the C flag (0x2) to take the next branch.
-        bnez  t4, 1f
-        bgeu \destReg, t3, 0f
+        la      t2, g_highest_address
+        ld      t2, (t2)
+        bgeu    \destReg, t2, 0f
 
 1:
         INSERT_UNCHECKED_WRITE_BARRIER_CORE \destReg, \refReg
@@ -190,12 +189,12 @@
 
 // void JIT_ByRefWriteBarrier
 // On entry:
-//   t6  : the source address (points to object reference to write)
-//   t5  : the destination address (object reference written here)
+//   t5  : the source address (points to object reference to write)
+//   t3  : the destination address (object reference written here)
 //
 // On exit:
-//   t6  : incremented by 8
 //   t5  : incremented by 8
+//   t3  : incremented by 8
 //   t4  : trashed
 //   t2, t3  : trashed
 //
@@ -208,8 +207,8 @@
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
     ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
-        ld    t5, 0(t6)
-        addi  t6, t6, 8
+        ld    t4, 0(t5)
+        addi  t5, t5, 8
         j C_FUNC(RhpCheckedAssignRef)
 
 LEAF_END RhpByRefAssignRef, _TEXT
@@ -220,31 +219,32 @@ LEAF_END RhpByRefAssignRef, _TEXT
 // on the managed heap.
 //
 // On entry:
-//   t5 : the destination address (LHS of the assignment).
+//   t3 : the destination address (LHS of the assignment).
 //         May not be a heap location (hence the checked).
-//   t6 : the object reference (RHS of the assignment).
+//   t4 : the object reference (RHS of the assignment).
 //
 // On exit:
-//   t3, t4 : trashed
-//   t5      : incremented by 8
+//   t2, t6 : trashed
+//   t3      : incremented by 8
 LEAF_ENTRY RhpCheckedAssignRef, _TEXT
 
-        // is destReg within the heap?
-        la    t3, g_lowest_address
-        ld    t3, 0(t3)
-        sltu  t4, t6, t3
+        # Check if the destination is within the heap bounds
+        la      t2, C_FUNC(g_lowest_address)
+        ld      t2, (t2)
+        la      t6, C_FUNC(g_highest_address)
+        ld      t6, (t6)
 
-        la    t3, g_highest_address
-        ld    t3, 0(t3)
-        sltu  t0, t3, t6
-        or    t4, t0, t4
-        beq   t4, zero, C_FUNC(RhpAssignRefRiscV64)
+        bltu    t3, t2, LOCAL_LABEL(NotInHeap)
+        bgeu    t3, t6, LOCAL_LABEL(NotInHeap)
 
-NotInHeap:
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
-        sd    t6, 0(t5)
-        addi  t5, t5, 8
-        jalr  ra
+        j       C_FUNC(RhpAssignRefRiscV64)
+
+LOCAL_LABEL(NotInHeap):
+        ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+        sd      t4, 0(t3)
+        addi    t3, t3, 8
+
+        ret
 
 LEAF_END RhpCheckedAssignRef, _TEXT
 
@@ -254,28 +254,31 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 // reside on the managed heap.
 //
 // On entry:
-//  t5 : the destination address (LHS of the assignment).
-//  t6 : the object reference (RHS of the assignment).
+//  t3 : the destination address (LHS of the assignment).
+//  t4 : the object reference (RHS of the assignment).
 //
 // On exit:
-//  t3, t4 : trashed
-//  t6 : incremented by 8
+//  t2, t6 : trashed
+//  t3 : incremented by 8
 LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
+        fence rw, rw
 
     ALTERNATE_ENTRY RhpAssignRefAVLocation
-        sd    t6, 0(t5)
+        sd    t4, 0(t3)
 
-        INSERT_UNCHECKED_WRITE_BARRIER_CORE t5, t6
+        INSERT_UNCHECKED_WRITE_BARRIER_CORE t3, t4
 
-        addi  t5, t5, 8
-        jalr  ra
+        addi  t3, t3, 8
+
+        ret
 
 LEAF_END RhpAssignRefRiscV64, _TEXT
 
 // Same as RhpAssignRefRiscV64, but with standard ABI.
 LEAF_ENTRY RhpAssignRef, _TEXT
-        mv   t5, a0                    ; t5 = dst
-        mv   t6, a1                    ; t6 = val
+        mv   t3, a0                    ; t3 = dst
+        mv   t4, a1                    ; t4 = val
+        mv   a1, ra
         j    C_FUNC(RhpAssignRefRiscV64)
 LEAF_END RhpAssignRef, _TEXT
 
@@ -298,34 +301,37 @@ LEAF_END RhpAssignRef, _TEXT
 //
 // On exit:
 //  a0: original value of objectref
-//  t1, t3, t6, t4: trashed
+//  t0, t1, t2, t6: trashed
 //
 LEAF_ENTRY RhpCheckedLockCmpXchg
 
-        mv   t1, a2
-        ld   t0, 0(a0)
-        beq  t0, t1, EndOfExchange
-        mv   t1, t0
-        j    EndOfExchange
-        sd   a1, 0(a0)
+LOCAL_LABEL(CmpXchgRetry):
+        // Load the current value at the destination address.
+        lr.d.aqrl    t0, (a0)       // t0 = *dest (load with acquire-release ordering)
+        // Compare the loaded value with the comparand.
+        bne     t0, a2, LOCAL_LABEL(CmpXchgNoUpdate) // if (*dest != comparand) goto CmpXchgNoUpdate
 
-EndOfExchange:
-        bne  a2, t1, CmpXchgNoUpdate
+        // Attempt to store the exchange value at the destination address.
+        sc.d.rl    t1, a1, (a0)  // t1 = (store conditional result: 0 if successful, with release ordering)
+        bnez    t1, LOCAL_LABEL(CmpXchgRetry) // if store conditional failed, retry
 
-DoCardsCmpXchg:
+        // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
+        // barrier is necessary.
+        fence   rw, rw
+
+LOCAL_LABEL(DoCardsCmpXchg):
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in a0 and the value in a1 so the arguments are
         // already correctly set up.
-
         INSERT_CHECKED_WRITE_BARRIER_CORE a0, a1
 
-CmpXchgNoUpdate:
-        // t1 still contains the original value.
-        mv   a0, t1
+LOCAL_LABEL(CmpXchgNoUpdate):
+        // t0 still contains the original value.
+        mv      a0, t0
 
-        jalr ra
+        ret
 
-LEAF_END RhpCheckedLockCmpXchg, _TEXT
+LEAF_END RhpCheckedLockCmpXchg
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at RhpCheckedXchgAVLocation
@@ -341,13 +347,14 @@ LEAF_END RhpCheckedLockCmpXchg, _TEXT
 //
 // On exit:
 //  a0: original value of objectref
-//  t1: trashed
-//  t3, t6, t4: trashed
+//  t1, t6: trashed
 //
 LEAF_ENTRY RhpCheckedXchg
+        amoswap.d.aqrl t1, a1, (a0)
 
-        ld   t1, 0(a0)
-        sd   a1, 0(a0)
+        // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
+        // barrier is necessary.
+        fence rw, rw
 
 DoCardsXchg:
         // We have successfully updated the value of the objectref so now we need a GC write barrier.

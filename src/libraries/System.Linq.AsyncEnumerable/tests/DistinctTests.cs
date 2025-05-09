@@ -16,6 +16,13 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => AsyncEnumerable.Distinct<int>(null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<int>().Distinct());
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<int>().Distinct());
+        }
+
         [Theory]
         [InlineData(new int[0])]
         [InlineData(new int[] { 1 })]

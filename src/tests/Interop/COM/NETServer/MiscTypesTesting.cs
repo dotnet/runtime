@@ -45,4 +45,18 @@ public class MiscTypesTesting : Server.Contract.IMiscTypesTesting
     {
         result = value;
     }
+
+    private class InterfaceImpl : Server.Contract.IInterface2
+    {
+    }
+
+    Server.Contract.IInterface2 Server.Contract.IMiscTypesTesting.Marshal_Interface(object inst)
+    {
+        if (inst is not Server.Contract.IInterface2)
+        {
+            throw new InvalidCastException();
+        }
+
+        return new InterfaceImpl();
+    }
 }

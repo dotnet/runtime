@@ -508,7 +508,6 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     }
     CONTRACTL_END;
 
-
     mdToken            mdLinkRef;
     DWORD              dwResourceFlags;
     DWORD              dwOffset;
@@ -557,14 +556,15 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     }
 
 
-    switch(TypeFromToken(mdLinkRef)) {
+    switch(TypeFromToken(mdLinkRef))
+    {
     case mdtAssemblyRef:
         {
             if (pAssembly == NULL)
                 return FALSE;
 
             AssemblySpec spec;
-            spec.InitializeSpec(mdLinkRef, GetMDImport(), pAssembly);
+            spec.InitializeSpec(mdLinkRef, pAssembly->GetMDImport(), pAssembly);
             Assembly* pLoadedAssembly = spec.LoadAssembly(FILE_LOADED);
 
             if (dwLocation) {
@@ -574,13 +574,13 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
                 *dwLocation = *dwLocation | 2; // ResourceLocation.containedInAnotherAssembly
             }
 
-            return GetResource(szName,
-                                cbResource,
-                                pbInMemoryResource,
-                                pAssemblyRef,
-                                szFileName,
-                                dwLocation,
-                                pLoadedAssembly);
+            return pLoadedAssembly->GetResource(
+                        szName,
+                        cbResource,
+                        pbInMemoryResource,
+                        pAssemblyRef,
+                        szFileName,
+                        dwLocation);
         }
 
     case mdtFile:
@@ -850,7 +850,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
 #ifndef DACCESS_COMPILE
 
 // Supports implementation of the legacy Assembly.CodeBase property.
-// Returns false if the assembly was loaded from a bundle, true otherwise
+// Returns false if the assembly was loaded via reflection emit or from a probe extension, true otherwise
 BOOL PEAssembly::GetCodeBase(SString &result)
 {
     CONTRACTL
@@ -864,7 +864,7 @@ BOOL PEAssembly::GetCodeBase(SString &result)
     CONTRACTL_END;
 
     PEImage* ilImage = GetPEImage();
-    if (ilImage != NULL && !ilImage->IsInBundle())
+    if (ilImage != NULL && !ilImage->IsInBundle() && !ilImage->IsExternalData())
     {
         // All other cases use the file path.
         result.Set(ilImage->GetPath());

@@ -284,6 +284,20 @@ public:
         void InsertAtBeginning(Range&& range);
         void InsertAtEnd(Range&& range);
 
+        template <typename... Trees>
+        void InsertAtBeginning(GenTree* tree, Trees&&... rest)
+        {
+            InsertAtBeginning(std::forward<Trees>(rest)...);
+            InsertAtBeginning(tree);
+        }
+
+        template <typename... Trees>
+        void InsertAtEnd(GenTree* tree, Trees&&... rest)
+        {
+            InsertAtEnd(tree);
+            InsertAtEnd(std::forward<Trees>(rest)...);
+        }
+
         void  Remove(GenTree* node, bool markOperandsUnused = false);
         Range Remove(GenTree* firstNode, GenTree* lastNode);
         Range Remove(ReadOnlyRange&& range);

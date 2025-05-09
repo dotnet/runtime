@@ -2561,8 +2561,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(varTypeIsFloating(node->gtType) || varTypeIsSIMD(node->gtType));
                 assert((targetReg == op2Reg) || (targetReg != op1Reg));
                 assert((targetReg == op2Reg) || (targetReg != op3Reg));
-                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg,
-                                          /* canSkip */ true);
+
+                GetEmitter()->emitIns_Mov(INS_sve_mov, EA_SCALABLE, targetReg, op2Reg, /* canSkip */ true, opt);
                 GetEmitter()->emitInsSve_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op3Reg, opt,
                                                INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
                 break;

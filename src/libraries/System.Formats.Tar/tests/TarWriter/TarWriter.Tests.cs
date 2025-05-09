@@ -9,6 +9,9 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarWriter_Tests : TarTestsBase
     {
+        private readonly DateTimeOffset TimestampForChecksum = new DateTimeOffset(2022, 1, 2, 3, 45, 00, TimeSpan.Zero);
+        private readonly DateTimeOffset UnixEpochTimestampForChecksum = DateTimeOffset.UnixEpoch;
+
         [Fact]
         public void Constructors_NullStream()
         {
@@ -99,13 +102,10 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        private readonly DateTimeOffset TimestampForChecksum = new DateTimeOffset(2022, 1, 2, 3, 45, 00, TimeSpan.Zero);
-
         [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
         public void Verify_Checksum_RegularFile(TarEntryFormat format) =>
             Verify_Checksum_Internal(
                 format,
@@ -114,44 +114,142 @@ namespace System.Formats.Tar.Tests
                 longLink: false,
                 longPath: false);
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Verify_Checksum_RegularFile_Gnu(bool testEpoch) =>
+            Verify_Checksum_Internal(TarEntryFormat.Gnu, TarEntryType.RegularFile, longPath: false, longLink: false, testEpoch);
+
         [Theory] // V7 does not support BlockDevice
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
         public void Verify_Checksum_BlockDevice(TarEntryFormat format) =>
             Verify_Checksum_Internal(format, TarEntryType.BlockDevice, longPath: false, longLink: false);
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Verify_Checksum_BlockDevice_Gnu(bool testEpoch) =>
+            Verify_Checksum_Internal(TarEntryFormat.Gnu, TarEntryType.BlockDevice, longPath: false, longLink: false, testEpoch);
+
+        [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
         public void Verify_Checksum_Directory_LongPath(TarEntryFormat format) =>
             Verify_Checksum_Internal(format, TarEntryType.Directory, longPath: true, longLink: false);
 
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void Verify_Checksum_SymbolicLink_LongLink(TarEntryFormat format) =>
-            Verify_Checksum_Internal(format, TarEntryType.SymbolicLink, longPath: false, longLink: true);
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Verify_Checksum_Directory_LongPath_Gnu(bool testEpoch) =>
+            Verify_Checksum_Internal(TarEntryFormat.Gnu, TarEntryType.Directory, longPath: true, longLink: false, testEpoch);
 
         [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
+        public void Verify_Checksum_SymbolicLink_LongLink(TarEntryFormat format) =>
+            Verify_Checksum_Internal(format, TarEntryType.SymbolicLink, longPath: false, longLink: true);
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Verify_Checksum_SymbolicLink_LongLink_Gnu(bool testEpoch) =>
+            Verify_Checksum_Internal(TarEntryFormat.Gnu, TarEntryType.SymbolicLink, longPath: false, longLink: true, testEpoch);
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
         public void Verify_Checksum_SymbolicLink_LongLink_LongPath(TarEntryFormat format) =>
             Verify_Checksum_Internal(format, TarEntryType.SymbolicLink, longPath: true, longLink: true);
 
-        private void Verify_Checksum_Internal(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink)
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Verify_Checksum_SymbolicLink_LongLink_LongPath_Gnu(bool testEpoch) =>
+            Verify_Checksum_Internal(TarEntryFormat.Gnu, TarEntryType.SymbolicLink, longPath: true, longLink: true, testEpoch);
+
+        [Fact]
+        public void Verify_Size_RegularFile_Empty()
+        {
+            using MemoryStream archiveStream = new();
+            string entryName = "entry.txt";
+            using (TarWriter archive = new(archiveStream, TarEntryFormat.V7, leaveOpen: true))
+            {
+                V7TarEntry e = new(TarEntryType.V7RegularFile, entryName)
+                {
+                    DataStream = new MemoryStream(0)
+                };
+                archive.WriteEntry(e);
+            }
+
+            int sizeLocation = 100 + // Name
+                               8 +   // Mode
+                               8 +   // Uid
+                               8;    // Gid
+            int sizeLength = 12;
+
+            archiveStream.Position = 0;
+            byte[] actual = archiveStream.GetBuffer()[sizeLocation..(sizeLocation + sizeLength)];
+
+            byte[] expected = [0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0];
+            AssertExtensions.SequenceEqual(expected, actual);
+
+            archiveStream.Position = 0;
+            using TarReader reader = new(archiveStream);
+
+            TarEntry? actualEntry = reader.GetNextEntry();
+            Assert.NotNull(actualEntry);
+            Assert.Equal(0, actualEntry.Length);
+            Assert.Null(actualEntry.DataStream); // No stream created when size field's value is 0
+        }
+
+        [Fact]
+        public void Verify_Compatibility_RegularFile_EmptyFile_NoSizeStored()
+        {
+            // Filling archiveStream contents without depending on the Tar implementation.
+            // The contents of the archiveStream are equivalent to creating the archive using TarWriter with this code:
+
+            // // using MemoryStream archiveStream = new();
+            // // string entryName = "entry.txt";
+            // // using (TarWriter archive = new(archiveStream, TarEntryFormat.V7, leaveOpen: true))
+            // // {
+            // //     V7TarEntry e = new(TarEntryType.V7RegularFile, entryName)
+            // //     {
+            // //         DataStream = new MemoryStream(0)
+            // //     };
+            // //     archive.WriteEntry(e);
+            // // }
+            using MemoryStream archiveStream = new(Convert.FromBase64String("ZW50cnkudHh0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAwMDA2NDQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADE0NzMwMzQ0MjQwADA1MTM2AAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+
+            int sizeLocation = 100 + // Name
+                               8 +   // Mode
+                               8 +   // Uid
+                               8;    // Gid
+
+            // Fill the size field with 12 zeros as we used to before the bug fix
+            byte[] replacement = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            archiveStream.Seek(sizeLocation, SeekOrigin.Begin);
+            archiveStream.Write(replacement);
+
+            archiveStream.Position = 0;
+            using TarReader reader = new(archiveStream);
+
+            TarEntry? actualEntry = reader.GetNextEntry(); // Should succeed to read the entry with a malformed size field value
+            Assert.NotNull(actualEntry);
+            Assert.Equal(0, actualEntry.Length); // Should succeed to detect the size field's value as zero
+            Assert.Null(actualEntry.DataStream); // No stream created when size field's value is 0
+        }
+
+        private void Verify_Checksum_Internal(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink, bool testEpoch = false)
         {
             using MemoryStream archive = new MemoryStream();
             int expectedChecksum;
             using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
             {
-                TarEntry entry = CreateTarEntryAndGetExpectedChecksum(format, entryType, longPath, longLink, out expectedChecksum);
+                TarEntry entry = CreateTarEntryAndGetExpectedChecksum(format, entryType, longPath, longLink, testEpoch, out expectedChecksum);
                 writer.WriteEntry(entry);
                 Assert.Equal(expectedChecksum, entry.Checksum);
             }
@@ -164,7 +262,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        private TarEntry CreateTarEntryAndGetExpectedChecksum(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink, out int expectedChecksum)
+        private TarEntry CreateTarEntryAndGetExpectedChecksum(TarEntryFormat format, TarEntryType entryType, bool longPath, bool longLink, bool testEpoch, out int expectedChecksum)
         {
             expectedChecksum = 0;
 
@@ -179,7 +277,7 @@ namespace System.Formats.Tar.Tests
             }
 
             expectedChecksum += GetChecksumForCommonFields(entry, entryType);
-            expectedChecksum += GetChecksumForFormatSpecificFields(entry, format);
+            expectedChecksum += GetChecksumForFormatSpecificFields(entry, format, testEpoch);
 
             return entry;
         }
@@ -246,7 +344,7 @@ namespace System.Formats.Tar.Tests
             int expectedChecksum = 256;
 
             // '0000744\0' = 48 + 48 + 48 + 48 + 55 + 52 + 52 + 0 = 351
-            entry.Mode = AssetMode; // octal 744 => u+rxw, g+r, o+r
+            entry.Mode = AssetMode; // decimal 484 (octal 744) => u+rxw, g+r, o+r
             expectedChecksum += 351;
 
             // '0017351\0' = 48 + 48 + 49 + 55 + 51 + 53 + 49 + 0 = 353
@@ -265,12 +363,17 @@ namespace System.Formats.Tar.Tests
             if (entryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
                 entry.DataStream = new MemoryStream();
-                byte[] buffer = new byte[] { 72, 101, 108, 108, 111 }; // values don't matter, only length (5)
+                byte[] buffer = [ 72, 101, 108, 108, 111 ]; // values don't matter, only length (5)
 
                 // '0000000005\0' = 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 53 + 0 = 533
                 entry.DataStream.Write(buffer);
                 entry.DataStream.Seek(0, SeekOrigin.Begin); // Rewind to ensure it gets written from the beginning
                 expectedChecksum += 533;
+            }
+            else
+            {
+                // '0000000000\0' = 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 0 = 528
+                expectedChecksum += 528;
             }
 
             // If V7 regular file:            '\0' = 0
@@ -285,7 +388,7 @@ namespace System.Formats.Tar.Tests
             return expectedChecksum;
         }
 
-        private int GetChecksumForFormatSpecificFields(TarEntry entry, TarEntryFormat format)
+        private int GetChecksumForFormatSpecificFields(TarEntry entry, TarEntryFormat format, bool testEpoch)
         {
             int checksum = 0;
             switch (format)
@@ -330,14 +433,29 @@ namespace System.Formats.Tar.Tests
 
                 if (posixEntry is GnuTarEntry gnuEntry)
                 {
-                    // '14164217674\0' = 49 + 52 + 49 + 54 + 52 + 50 + 49 + 55 + 54 + 55 + 52 + 0 = 571
-                    gnuEntry.AccessTime = TimestampForChecksum; // ToUnixTimeSeconds() = decimal 1641095100, octal 14164217674;
-                    checksum += 571;
+                    GetTimestampToTest(testEpoch, out DateTimeOffset expectedTimestampToTest, out int expectedTimestampChecksumToTest);
 
-                    // '14164217674\0' = 49 + 52 + 49 + 54 + 52 + 50 + 49 + 55 + 54 + 55 + 52 + 0 = 571
-                    gnuEntry.ChangeTime = TimestampForChecksum; // ToUnixTimeSeconds() = decimal 1641095100, octal 14164217674;
-                    checksum += 571;
-                    // Total: 1142
+                    gnuEntry.AccessTime = expectedTimestampToTest;
+                    checksum += expectedTimestampChecksumToTest;
+
+                    gnuEntry.ChangeTime = expectedTimestampToTest;
+                    checksum += expectedTimestampChecksumToTest;
+                    // Total: UnixEpoch = 1056, otherwise = 1142
+
+                    void GetTimestampToTest(bool testEpoch, out DateTimeOffset expectedTimestampToTest, out int expectedTimestampChecksumToTest)
+                    {
+                        if (!testEpoch)
+                        {
+                            expectedTimestampChecksumToTest = 571;
+
+                            // '14164217674\0' = 49 + 52 + 49 + 54 + 52 + 50 + 49 + 55 + 54 + 55 + 52 + 0 = 571
+                            expectedTimestampToTest = TimestampForChecksum; // ToUnixTimeSeconds() = decimal 1641095100, octal 14164217674;
+                        }
+
+                        expectedTimestampChecksumToTest = 528;
+                        // '00000000000\0' = 0
+                        expectedTimestampToTest = UnixEpochTimestampForChecksum; // ToUnixTimeSeconds() = decimal 0, octal 0;
+                    }
                 }
             }
 
@@ -348,23 +466,10 @@ namespace System.Formats.Tar.Tests
             // Gnu RegularFile: 623 + 1004 + 1142 = 2769
             // Ustar BlockDevice: 655 + 1004 + 686 = 2345
             // Pax BlockDevice: 655 + 1004 + 686 = 2345
-            // Gnu BlockDevice: 623 + 1004 + 686 + 1142 = 3455
+            // Gnu BlockDevice:
+            //    No epoch: 623 + 1004 + 686 + 1142 = 3455
+            //    Epoch: 623 + 1004 + 686 + 1056 = 3369
             return checksum;
-        }
-
-        [Fact]
-        void Verify_Size_RegularFile_Empty()
-        {
-            using MemoryStream emptyData = new(0);
-            using MemoryStream output = new();
-            using TarWriter archive = new(output, TarEntryFormat.Pax);
-            PaxTarEntry te = new(TarEntryType.RegularFile, "zero_size")
-            { DataStream = emptyData };
-            archive.WriteEntry(te);
-            var sizeBuffer = output.GetBuffer()[1148..(1148 + 12)];
-            // we expect ocal zeros
-            byte[] expected = [0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0];
-            Assert.True(sizeBuffer.SequenceEqual(expected));
         }
     }
 }

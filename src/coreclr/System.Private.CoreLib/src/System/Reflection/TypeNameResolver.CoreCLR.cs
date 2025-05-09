@@ -80,13 +80,13 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError);
+            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError, new() { IsAssemblyGetType = true });
 
             if (parsed is null)
             {
                 return null;
             }
-            else if (topLevelAssembly is not null && parsed.AssemblyName is not null)
+            else if (parsed.AssemblyName is not null)
             {
                 return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
             }
@@ -131,7 +131,12 @@ namespace System.Reflection
             bool throwOnError, bool requireAssemblyQualifiedName)
         {
             ReadOnlySpan<char> typeName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTypeName);
+            return GetTypeHelper(typeName, requestingAssembly, throwOnError, requireAssemblyQualifiedName);
+        }
 
+        internal static unsafe RuntimeType? GetTypeHelper(ReadOnlySpan<char> typeName, RuntimeAssembly? requestingAssembly,
+            bool throwOnError, bool requireAssemblyQualifiedName)
+        {
             // Compat: Empty name throws TypeLoadException instead of
             // the natural ArgumentException
             if (typeName.Length == 0)
@@ -231,7 +236,7 @@ namespace System.Reflection
                         }
                         return null;
                     }
-                    return GetTypeFromDefaultAssemblies(TypeNameHelpers.Unescape(escapedTypeName), nestedTypeNames, parsedName);
+                    return GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), nestedTypeNames, parsedName);
                 }
 
                 if (assembly is RuntimeAssembly runtimeAssembly)
@@ -239,7 +244,7 @@ namespace System.Reflection
                     // Compat: Non-extensible parser allows ambiguous matches with ignore case lookup
                     bool useReflectionForNestedTypes = _extensibleParser && _ignoreCase;
 
-                    type = runtimeAssembly.GetTypeCore(TypeNameHelpers.Unescape(escapedTypeName), useReflectionForNestedTypes ? default : nestedTypeNames,
+                    type = runtimeAssembly.GetTypeCore(TypeName.Unescape(escapedTypeName), useReflectionForNestedTypes ? default : nestedTypeNames,
                         throwOnFileNotFound: _throwOnError, ignoreCase: _ignoreCase);
 
                     if (type is null)
@@ -282,7 +287,7 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeNameHelpers.Unescape(escapedTypeName)),
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeName.Unescape(escapedTypeName)),
                             typeName: parsedName.FullName);
                     }
                     return null;

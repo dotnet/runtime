@@ -725,10 +725,6 @@ namespace
 //==========================================================================
 // Constructs MarshalInfo.
 //==========================================================================
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 MarshalInfo::MarshalInfo(Module* pModule,
                          SigPointer sig,
                          const SigTypeContext *pTypeContext,
@@ -2080,9 +2076,6 @@ lReallyExit:
     //_ASSERTE(!"Invalid ELEMENT_TYPE/NATIVE_TYPE combination");
     goto lExit;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 VOID MarshalInfo::EmitOrThrowInteropParamException(NDirectStubLinker* psl, BOOL fMngToNative, UINT resID, UINT paramIdx)
 {

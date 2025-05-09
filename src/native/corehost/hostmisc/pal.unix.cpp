@@ -456,7 +456,7 @@ bool get_install_location_from_file(const pal::string_t& file_path, bool& file_f
 {
     file_found = true;
     bool install_location_found = false;
-    FILE* install_location_file = pal::file_open(file_path, "r");
+    FILE* install_location_file = pal::file_open(file_path, _X("r"));
     if (install_location_file != nullptr)
     {
         if (!get_line_from_file(install_location_file, install_location))
@@ -819,12 +819,10 @@ pal::string_t pal::get_current_os_rid_platform()
     {
         // Read the file to get ID and VERSION_ID data that will be used
         // to construct the RID.
-        std::fstream fsVersionFile;
-
-        fsVersionFile.open(versionFile, std::fstream::in);
+        FILE* fsVersionFile = pal::file_open(versionFile, _X("r"));
 
         // Proceed only if we were able to open the file
-        if (fsVersionFile.good())
+        if (fsVersionFile != nullptr)
         {
             pal::string_t line;
             pal::string_t strID(_X("ID="));
@@ -834,11 +832,8 @@ pal::string_t pal::get_current_os_rid_platform()
 
             bool fFoundID = false, fFoundVersion = false;
 
-            // Read the first line
-            std::getline(fsVersionFile, line);
-
             // Loop until we are at the end of file
-            while (!fsVersionFile.eof())
+            while (get_line_from_file(fsVersionFile, line))
             {
                 // Look for ID if we have not found it already
                 if (!fFoundID)
@@ -872,13 +867,10 @@ pal::string_t pal::get_current_os_rid_platform()
                     // We have everything we need to form the RID - break out of the loop.
                     break;
                 }
-
-                // Read the next line
-                std::getline(fsVersionFile, line);
             }
 
             // Close the file now that we are done with it.
-            fsVersionFile.close();
+            fclose(fsVersionFile);
 
             if (fFoundID)
             {
@@ -991,6 +983,15 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 bool pal::file_exists(const pal::string_t& path)
 {
     return (::access(path.c_str(), F_OK) == 0);
+}
+
+bool pal::is_directory(const pal::string_t& path)
+{
+    struct stat sb;
+    if (::stat(path.c_str(), &sb) != 0)
+        return false;
+
+    return S_ISDIR(sb.st_mode);
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

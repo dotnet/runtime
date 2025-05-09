@@ -91,6 +91,58 @@ namespace SerializationTypes
         }
     }
 
+    public class TypeWithArraylikeMembers
+    {
+        public int[] IntAField;
+        public int[]? NIntAField;
+
+        public List<int> IntLField;
+        [XmlArray(IsNullable = true)]
+        public List<int>? NIntLField;
+
+        public int[] IntAProp { get; set; }
+        [XmlArray(IsNullable = true)]
+        public int[]? NIntAProp { get; set; }
+
+        public List<int> IntLProp { get; set; }
+        public List<int>? NIntLProp { get; set; }
+
+        private static Random r = new Random();
+        public static TypeWithArraylikeMembers CreateWithPopulatedMembers() => new TypeWithArraylikeMembers
+        {
+            IntAField = new int[] { r.Next(), r.Next(), r.Next() },
+            NIntAField = new int[] { r.Next(), r.Next() },
+            IntLField = new List<int> { r.Next() },
+            NIntLField = new List<int> { r.Next(), r.Next() },
+            IntAProp = new int[] { r.Next(), r.Next() },
+            NIntAProp = new int[] { r.Next(), r.Next(), r.Next() },
+            IntLProp = new List<int> { r.Next(), r.Next(), r.Next() },
+            NIntLProp = new List<int> { r.Next() },
+        };
+        public static TypeWithArraylikeMembers CreateWithEmptyMembers() => new TypeWithArraylikeMembers
+        {
+            IntAField = new int[] { },
+            NIntAField = new int[] { },
+            IntLField = new List<int> { },
+            NIntLField = new List<int> { },
+            IntAProp = new int[] { },
+            NIntAProp = new int[] { },
+            IntLProp = new List<int> { },
+            NIntLProp = new List<int> { },
+        };
+        public static TypeWithArraylikeMembers CreateWithNullMembers() => new TypeWithArraylikeMembers
+        {
+            IntAField = null,
+            NIntAField = null,
+            IntLField = null,
+            NIntLField = null,
+            IntAProp = null,
+            NIntAProp = null,
+            IntLProp = null,
+            NIntLProp = null,
+        };
+    }
+
     public struct StructNotSerializable
     {
         public int value;
@@ -931,12 +983,50 @@ namespace SerializationTypes
         public MoreChoices[] ChoiceArray;
     }
 
+    public class TypeWithPropertyHavingComplexChoice
+    {
+        // The ManyChoices field can contain an array
+        // of choices. Each choice must be matched to
+        // an array item in the ChoiceArray field.
+        [XmlChoiceIdentifier("ChoiceArray")]
+        [XmlElement("Item", typeof(ComplexChoiceA))]
+        [XmlElement("Amount", typeof(int))]
+        public object[] ManyChoices;
+
+        // TheChoiceArray field contains the enumeration
+        // values, one for each item in the ManyChoices array.
+        [XmlIgnore]
+        public MoreChoices[] ChoiceArray;
+    }
+
     public enum MoreChoices
     {
         None,
-        Item,
-        Amount
+        Item = 12,
+        Amount = 27
     }
+
+    [XmlInclude(typeof(ComplexChoiceB))]
+    public class ComplexChoiceA
+    {
+        public string Name { get; set; }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is ComplexChoiceA a)
+            {
+                return a.Name == Name;
+            }
+            return base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            //return HashCode.Combine(Name);
+            return Name.GetHashCode();
+        }
+    }
+    public class ComplexChoiceB : ComplexChoiceA { }
 
     public class TypeWithFieldsOrdered
     {

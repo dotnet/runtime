@@ -366,6 +366,16 @@ IStringTesting : IUnknown
         /*[out]*/ LCID* outLcid) = 0;
 };
 
+struct __declspec(uuid("4242A2F9-995D-4302-A722-02058CF58158"))
+IInterface1 : IUnknown
+{
+};
+
+struct __declspec(uuid("7AC820FE-E227-4C4D-A8B0-FCA68C459B43"))
+IInterface2 : public IInterface1
+{
+};
+
 struct __declspec(uuid("7FBB8677-BDD0-4E5A-B38B-CA92A4555466"))
 IMiscTypesTesting : IUnknown
 {
@@ -380,6 +390,10 @@ IMiscTypesTesting : IUnknown
       virtual HRESULT STDMETHODCALLTYPE Marshal_ByRefVariant (
         /*[inout]*/ VARIANT* result,
         /*[in]*/ VARIANT value) = 0;
+
+      virtual HRESULT STDMETHODCALLTYPE Marshal_Interface (
+        /*[in]*/ IUnknown* value,
+        /*[out,ret]*/ IInterface2** iface) = 0;
 };
 
 struct __declspec(uuid("592386a5-6837-444d-9de3-250815d18556"))

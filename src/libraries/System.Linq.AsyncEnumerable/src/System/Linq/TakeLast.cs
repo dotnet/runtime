@@ -16,10 +16,10 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             int count)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
-            return count <= 0 ?
-                Empty<TSource>() :
+            return
+                source.IsKnownEmpty() || count <= 0 ? Empty<TSource>() :
                 TakeRangeFromEndIterator(source, isStartIndexFromEnd: true, startIndex: count, isEndIndexFromEnd: true, endIndex: 0, default);
         }
     }

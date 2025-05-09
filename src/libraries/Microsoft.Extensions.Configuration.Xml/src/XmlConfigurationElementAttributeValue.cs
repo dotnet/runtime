@@ -9,8 +9,8 @@ namespace Microsoft.Extensions.Configuration.Xml
     {
         public XmlConfigurationElementAttributeValue(string attribute, string value, int? lineNumber, int? linePosition)
         {
-            ThrowHelper.ThrowIfNull(attribute);
-            ThrowHelper.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(attribute);
+            ArgumentNullException.ThrowIfNull(value);
 
             Attribute = attribute;
             Value = value;

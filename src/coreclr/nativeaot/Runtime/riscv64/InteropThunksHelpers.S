@@ -12,33 +12,29 @@
     //
     // RhCommonStub
     //
-    //  INPUT: tp: thunk's data block
+    //  INPUT: t1: thunk's data block
     //
-    //  TRASHES: t0, t1, tp
+    //  TRASHES: t0, t1, t2
     //
     LEAF_ENTRY RhCommonStub, _TEXT
         // There are arbitrary callers passing arguments with arbitrary signatures.
         // Custom calling convention:
         //      tp pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
 
-#ifdef FEATURE_EMULATED_TLS
-        // If using TLS emulation, fetch the TLS data block address
-        GETTHUNKDATA_ETLS_9
-#else
-        // Inline function to get TLS variable
+        mv               t2, a0
         INLINE_GET_TLS_VAR t0, C_FUNC(tls_thunkData)
-#endif
+        mv               a0, t2
 
         // t0 = base address of TLS data
-        // tp = address of context cell in thunk's data
+        // t1 = address of context cell in thunk's data
 
         // Load the thunk address from the data block and store it in the thread's static storage
-        ld    t1, 0(t0)        // Load thunk address into t1 from the TLS base address
-        sd    t1, 0(t0)        // Store the thunk address in thread static storage
+        ld    t2, 0(t1)        // Load thunk data into t2
+        sd    t2, 0(t0)        // Store the thunk address in thread static storage
 
         // Load the target address from the data block and jump to it
-        ld    t1, POINTER_SIZE(t0)  // Load target address into t1 from the data block
-        jalr  t1                    // Jump to the target address in t1
+        ld    t1, POINTER_SIZE(t1)  // Load target address into t1 from the data block
+        jr    t1                    // Jump to the target address in t1
 
     LEAF_END RhCommonStub, _TEXT
 

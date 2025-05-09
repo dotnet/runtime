@@ -5,7 +5,7 @@
 #include <minipal/time.h>
 #include "minipalconfig.h"
 
-#if HAVE_WINDOWS_H
+#if HOST_WINDOWS
 
 #include <Windows.h>
 
@@ -23,7 +23,7 @@ int64_t minipal_hires_tick_frequency()
     return ts.QuadPart;
 }
 
-#else // HAVE_WINDOWS_H
+#else // HOST_WINDOWS
 
 #include "minipalconfig.h"
 
@@ -77,17 +77,17 @@ int64_t minipal_hires_ticks(void)
 #endif
 }
 
-#endif // !HAVE_WINDOWS_H
+#endif // HOST_WINDOWS
 
 void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 {
-#if HAVE_WINDOWS_H
+#if HOST_WINDOWS
     if (usecs > 1000)
     {
         SleepEx(usecs / 1000, FALSE);
         if (usecsSinceYield)
         {
-            usecsSinceYield = 0;
+            *usecsSinceYield = 0;
         }
 
         return;
@@ -107,7 +107,7 @@ void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield)
 
         if (usecsSinceYield)
         {
-            usecsSinceYield = 0;
+            *usecsSinceYield = 0;
         }
 
         return;

@@ -122,7 +122,7 @@
       <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
                               PackagePath="runtimes\$(_packageTargetRuntime)\$(BuildOutputTargetFolder)\$(_targetFrameworkWithoutSuffix)\" />
       <!-- Create the item and use its metadata separately to avoid MSB4120. See https://aka.ms/msbuild/metadata-self-ref for more info. -->
-      <_RuntimeSymbolPath Include="$(RuntimeSymbolPath)" />
+      <_RuntimeSymbolPath Include="@(TfmRuntimeSpecificPackageFile->'%(RootDir)%(Directory)%(FileName).pdb')" Condition="'%(TfmRuntimeSpecificPackageFile.Extension)' == '.dll'" KeepMetadata="None" />
       <TfmSpecificDebugSymbolsFile Include="@(_RuntimeSymbolPath)"
                                    TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)/%(_RuntimeSymbolPath.Filename)%(_RuntimeSymbolPath.Extension)"
                                    TargetFramework="$(_targetFrameworkWithoutSuffix)"
@@ -168,21 +168,6 @@
       <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\netstandard2.0\$(PackageId).targets" />
       <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\%(NETStandardCompatError.Supported)\$(PackageId).targets" Condition="'@(NETStandardCompatError)' != ''" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="WarnOnProjectReferenceToFrameworkAssemblies"
-          BeforeTargets="IncludeTransitiveProjectReferences"
-          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and
-                     '@(ProjectReference)' != ''">
-    <!-- Find project references that overlap with NetCoreApp, are direct (NuGetPackageId is not set), actually referenced (ReferenceOutputAssembly), and not hidden with PrivateAssets
-         ProjectReferences can opt out of this checking by setting AllowFrameworkPackageReference, though they should not. -->
-    <Warning Text="Project reference '%(ProjectReference.Identity)' is a reference to a framework assembly and is not required in $(NetCoreAppCurrent) (NetCoreAppCurrent)."
-             Code="NETPKG0001"
-             Condition="$(NetCoreAppLibrary.Contains('%(ProjectReference.Filename);')) and
-                        '%(ProjectReference.ReferenceOutputAssembly)' != 'false' and
-                        '%(ProjectReference.NuGetPackageId)' == '' and
-                        '%(ProjectReference.PrivateAssets)' != 'all' and
-                        '%(ProjectReference.AllowFrameworkPackageReference)' != 'true'" />
   </Target>
 
   <Target Name="GenerateMultiTargetRoslynComponentTargetsFile"

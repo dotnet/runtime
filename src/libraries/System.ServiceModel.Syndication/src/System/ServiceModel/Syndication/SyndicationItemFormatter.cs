@@ -18,10 +18,7 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationItemFormatter(SyndicationItem itemToWrite)
         {
-            if (itemToWrite is null)
-            {
-                throw new ArgumentNullException(nameof(itemToWrite));
-            }
+            ArgumentNullException.ThrowIfNull(itemToWrite);
 
             _item = itemToWrite;
         }
@@ -40,10 +37,7 @@ namespace System.ServiceModel.Syndication
 
         protected internal virtual void SetItem(SyndicationItem item)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             _item = item;
         }

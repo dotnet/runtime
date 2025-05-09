@@ -1,0 +1,30 @@
+parameters:
+- name: buildStage
+  type: stage
+- name: otherStages
+  type: stageList
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    isOfficialBuild: true
+    stages:
+    - ${{ each stage in parameters.otherStages }}:
+      - ${{ insert }}: ${{ stage }}
+    - ${{ insert }}: ${{ parameters.buildStage }}
+
+    - stage: Publish
+      jobs:
+      - template: /eng/pipelines/official/prepare-signed-artifacts.yml
+        parameters:
+          buildStage: ${{ parameters.buildStage }}
+          logArtifactName: 'Logs-PrepareSignedArtifacts_Attempt$(System.JobAttempt)'
+      - template: /eng/common/templates-official/job/publish-build-assets.yml
+        parameters:
+          publishUsingPipelines: true
+          publishAssetsImmediately: true
+          pool:
+            name: $(DncEngInternalBuildPool)
+            demands: ImageOverride -equals 1es-windows-2022
+          symbolPublishingAdditionalParameters: '/p:PublishSpecialClrFiles=true'
+          dependsOn: PrepareSignedArtifacts

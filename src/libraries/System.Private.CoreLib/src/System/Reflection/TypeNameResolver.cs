@@ -20,6 +20,8 @@ namespace System.Reflection.Metadata
             }
         }
 #pragma warning restore CA1822
+
+        internal bool IsAssemblyGetType { get; set; }
     }
 }
 
@@ -80,7 +82,7 @@ namespace System.Reflection
                 current = typeName;
                 while (current.IsNested)
                 {
-                    nestedTypeNames[--nestingDepth] = TypeNameHelpers.Unescape(current.Name);
+                    nestedTypeNames[--nestingDepth] = TypeName.Unescape(current.Name);
                     current = current.DeclaringType!;
                 }
 

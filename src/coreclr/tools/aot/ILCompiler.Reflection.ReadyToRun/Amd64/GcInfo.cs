@@ -525,15 +525,20 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             int totalInterruptibleLength = 0;
             if (NumInterruptibleRanges == 0)
             {
-                totalInterruptibleLength = CodeLength;
+                totalInterruptibleLength = _gcInfoTypes.NormalizeCodeLength(CodeLength);
             }
             else
             {
                 foreach (InterruptibleRange range in InterruptibleRanges)
                 {
-                    totalInterruptibleLength += (int)(range.StopOffset - range.StartOffset);
+                    uint normStart = _gcInfoTypes.NormalizeCodeOffset(range.StartOffset);
+                    uint normStop  = _gcInfoTypes.NormalizeCodeOffset(range.StopOffset);
+                    totalInterruptibleLength += (int)(normStop - normStart);
                 }
             }
+
+            if (SlotTable.NumTracked == 0)
+                return new Dictionary<int, List<BaseGcTransition>>();
 
             int numChunks = (totalInterruptibleLength + _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK;
             int numBitsPerPointer = (int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.POINTER_SIZE_ENCBASE, ref bitOffset);
@@ -629,6 +634,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                     fSkip = !fSkip;
                     fReport = !fReport;
                 }
+                Debug.Assert(readSlots == numTracked);
             }
             else
             {
@@ -642,6 +648,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                         numCouldBeLiveSlots++;
                 }
             }
+            Debug.Assert(numCouldBeLiveSlots > 0);
             return numCouldBeLiveSlots;
         }
 

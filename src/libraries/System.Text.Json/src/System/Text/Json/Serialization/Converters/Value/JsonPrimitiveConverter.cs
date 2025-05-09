@@ -15,10 +15,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         public sealed override void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             WriteAsPropertyNameCore(writer, value, options, isWritingExtensionDataProperty: false);
         }

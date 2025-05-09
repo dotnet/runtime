@@ -188,7 +188,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         handle_signal(SIGINT, sigint_handler, &g_previous_sigint, 0 /* additionalFlags */, true /* skipIgnored */);
         handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit, 0 /* additionalFlags */, true /* skipIgnored */);
 
-#if HAVE_MACH_EXCEPTIONS
+#if HAVE_MACH_EXCEPTIONS || !HAVE_SIGALTSTACK
         handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
 #else
         handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
@@ -206,7 +206,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         }
 
         // Allocate the minimal stack necessary for handling stack overflow
-        int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 8 * 4096;
+        int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 9 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
         stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
         int flags = MAP_ANONYMOUS | MAP_PRIVATE;
@@ -569,6 +569,7 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
     RtlRestoreContext(&returnPoint->context, NULL);
 }
 
+#if HAVE_SIGALTSTACK
 /*++
 Function :
     SwitchStackAndExecuteHandler
@@ -609,6 +610,7 @@ static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *con
 
     return pReturnPoint->returnFromHandler;
 }
+#endif
 
 #endif // !HAVE_MACH_EXCEPTIONS
 
@@ -644,6 +646,10 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         {
             if (GetCurrentPalThread())
             {
+#if defined(TARGET_TVOS)
+                (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+                PROCAbort(SIGSEGV, siginfo);
+#else // TARGET_TVOS
                 size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
                 if (handlerStackTop == 0)
                 {
@@ -672,6 +678,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                     PROCAbort(SIGSEGV, siginfo);
                 }
                 (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
+#endif // TARGET_TVOS
             }
             else
             {
@@ -686,6 +693,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
             // hardware signal handler on the original stack.
 
+#if HAVE_SIGALTSTACK
             if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
             {
                 if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
@@ -694,6 +702,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                 }
             }
             else
+#endif
             {
                 // The code flow gets here when the signal handler is not running on an alternate stack or when it wasn't created
                 // by coreclr. In both cases, we execute the common_signal_handler directly.

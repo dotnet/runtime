@@ -794,6 +794,7 @@ OPDEF(MINT_MINF, "min_f", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_MAXF, "max_f", 4, 1, 2, MintOpNoArgs)
 
 OPDEF(MINT_PROF_ENTER, "prof_enter", 2, 0, 0, MintOpShortInt)
+OPDEF(MINT_PROF_SAMPLEPOINT, "prof_samplepoint", 2, 0, 0, MintOpShortInt)
 OPDEF(MINT_PROF_EXIT, "prof_exit", 5, 0, 1, MintOpShortAndInt)
 OPDEF(MINT_PROF_EXIT_VOID, "prof_exit_void", 2, 0, 0, MintOpNoArgs)
 OPDEF(MINT_PROF_COVERAGE_STORE, "prof_coverage_store", 5, 0, 0, MintOpLongInt)

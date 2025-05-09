@@ -445,8 +445,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="data">A reference to the data to box.</param>
         /// <returns>A boxed instance of the value at <paramref name="data"/>.</returns>
         /// <remarks>This method includes proper handling for nullable value types as well.</remarks>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
+        internal static unsafe object? Box(MethodTable* methodTable, ref byte data) =>
+            methodTable->IsNullable ? CastHelpers.Box_Nullable(methodTable, ref data) : CastHelpers.Box(methodTable, ref data);
 
         // Given an object reference, returns its MethodTable*.
         //
@@ -930,6 +930,9 @@ namespace System.Runtime.CompilerServices
             Debug.Assert((BaseSize - (nuint)(2 * sizeof(IntPtr)) == GetNumInstanceFieldBytes()));
             return BaseSize - (uint)(2 * sizeof(IntPtr));
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern IntPtr GetLoaderAllocatorHandle();
     }
 
     // Subset of src\vm\typedesc.h
@@ -963,7 +966,7 @@ namespace System.Runtime.CompilerServices
         {
             fixed (byte* p = &staticsPtr)
             {
-                 return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
+                return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
             }
         }
 
@@ -1150,8 +1153,8 @@ namespace System.Runtime.CompilerServices
                 CastResult.CanCast => true,
                 CastResult.CannotCast => false,
 
-                 // Reflection allows T to be cast to Nullable<T>.
-                 // See ObjIsInstanceOfCore()
+                // Reflection allows T to be cast to Nullable<T>.
+                // See ObjIsInstanceOfCore()
                 _ => CanCastToWorker(srcTH, destTH, nullableCast: true)
             };
         }

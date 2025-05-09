@@ -885,7 +885,7 @@ namespace System.Collections
                         }
                     }
                 }
-                else if (Ssse3.IsSupported && ((uint)m_length >= Vector512<byte>.Count * 2u))
+                else if (Ssse3.IsSupported && ((uint)m_length >= Vector128<byte>.Count * 2u))
                 {
                     Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
                     Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;

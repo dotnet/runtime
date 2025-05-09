@@ -173,6 +173,21 @@ void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)
     pInstrBuffer[idxCurInstr].uInstruction = static_cast<UINT16>(instr);
     pInstrBuffer[idxCurInstr].iStackDelta = iStackDelta;
     pInstrBuffer[idxCurInstr].uArg = uArg;
+
+    if(m_buildingEHClauses.GetCount() > 0)
+    {
+        ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+
+        if (clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
+             clause.handlerBeginLabel != NULL && clause.kind == ILStubEHClause::kTypedCatch)
+        {
+            if (clause.handlerBeginLabel->m_idxLabeledInstruction == idxCurInstr)
+            {
+                // Catch clauses start with an exception on the stack
+                pInstrBuffer[idxCurInstr].iStackDelta++;
+            }
+        }
+    }
 }
 
 ILCodeLabel* ILStubLinker::NewCodeLabel()
@@ -595,7 +610,7 @@ ILStubLinker::LogILStubWorker(
         //
         // calculate the code size
         //
-        PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+        _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
         *pcbCode += s_rgbOpcodeSizes[instr];
 
         //
@@ -718,7 +733,7 @@ bool ILStubLinker::FirstPassLink(ILInstruction* pInstrBuffer, UINT numInstr, siz
         //
         // calculate the code size
         //
-        PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+        _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
         *pcbCode += s_rgbOpcodeSizes[instr];
 
         //
@@ -916,7 +931,7 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
         {
             const ILOpcode* pOpcode = &s_rgOpcodes[instr];
 
-            PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+            _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
             int     opSize = s_rgbOpcodeSizes[instr];
             bool    twoByteOp = (pOpcode->byte1 != 0xFF);
             int     argSize = opSize - (twoByteOp ? 2 : 1);
@@ -1817,6 +1832,12 @@ void ILCodeStream::EmitUNALIGNED(BYTE alignment)
     Emit(CEE_UNALIGNED, 0, alignment);
 }
 
+void ILCodeStream::EmitUNBOX(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_UNBOX, 0, token);
+}
+
 void ILCodeStream::EmitUNBOX_ANY(int token)
 {
     WRAPPER_NO_CONTRACT;
@@ -1974,7 +1995,7 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
                 m_pbSigCursor   += sizeof(TypeHandle);
                 m_cbSig         += sizeof(TypeHandle);
                 break;
-            
+
             case ELEMENT_TYPE_CMOD_INTERNAL:
             {
                 // Nove later elements in the signature to make room for the CMOD_INTERNAL payload

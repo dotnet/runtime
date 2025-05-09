@@ -2573,7 +2573,7 @@ namespace System.Text.RegularExpressions.Generator
                     }
 
                     writer.WriteLine();
-                    writer.WriteLine($"base.TransferCapture({capnum}, {uncapnum}, {startingPos}, pos);");
+                    writer.WriteLine($"base.TransferCapture({capnum.ToString(CultureInfo.InvariantCulture)}, {uncapnum}, {startingPos}, pos);");
                 }
 
                 if (isAtomic || !childBacktracks)

@@ -261,12 +261,15 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a|b|c|d|e|g|h|z", "[a-eghz]")]
         [InlineData("a|b|c|def|g|h", "(?>[a-c]|def|[gh])")]
         [InlineData("this|that|there|then|those", "th(?>is|at|ere|en|ose)")]
+        [InlineData("^this|^that|^there|^then|^those", "^th(?>is|at|ere|en|ose)")]
+        [InlineData("\bthis|\bthat|\bthere|\bthen|\bthose", "\bth(?>is|at|ere|en|ose)")]
         [InlineData("it's (?>this|that|there|then|those)", "it's (?>th(?>is|at|e(?>re|n)|ose))")]
         [InlineData("it's (?>this|that|there|then|those)!", "it's (?>th(?>is|at|e(?>re|n)|ose))!")]
         [InlineData("abcd|abce", "abc[de]")]
         [InlineData("abcd|abef", "ab(?>cd|ef)")]
         [InlineData("abcd|aefg", "a(?>bcd|efg)")]
         [InlineData("abcd|abc|ab|a", "a(?>bcd|bc|b|)")]
+        [InlineData("^abcd|^abce", "^(?:abc[de])")]
         // [InlineData("abcde|abcdef", "abcde(?>|f)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
         [InlineData("abcdef|abcde", "abcde(?>f|)")]
         [InlineData("abcdef|abcdeg|abcdeh|abcdei|abcdej|abcdek|abcdel", "abcde[f-l]")]
@@ -495,6 +498,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a*(?(xyz)acd|efg)", "(?>a*)(?(xyz)acd|efg)")]
         [InlineData("a*(?(xyz)bcd|afg)", "(?>a*)(?(xyz)bcd|afg)")]
         [InlineData("a*(?(xyz)bcd)", "(?>a*)(?(xyz)bcd)")]
+        // Different prefixes on alternation branches
+        [InlineData("^abcd|$abce", "^abcd|^abce")]
         public void PatternsReduceDifferently(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.

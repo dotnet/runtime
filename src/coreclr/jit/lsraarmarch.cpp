@@ -274,6 +274,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
+    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    {
+        MarkAsyncContinuationBusyForCall(call);
+    }
+
     regMaskTP killMask = getKillSetForCall(call);
     if (dstCount > 0)
     {
@@ -457,13 +462,19 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             // go into registers.
             for (unsigned regIndex = 0; regIndex < currentRegCount; regIndex++)
             {
-                SingleTypeRegSet sourceMask = RBM_NONE;
                 if (sourceRegCount < argNode->gtNumRegs)
                 {
-                    sourceMask = genSingleTypeRegMask((regNumber)((unsigned)argReg + sourceRegCount));
+                    regNumber        nextArgReg = (regNumber)((unsigned)argReg + sourceRegCount);
+                    SingleTypeRegSet sourceMask = genSingleTypeRegMask(nextArgReg);
+                    BuildUse(node, sourceMask, regIndex);
+                    placedArgRegs.AddRegNumInMask(nextArgReg);
                 }
+                else
+                {
+                    BuildUse(node, RBM_NONE, regIndex);
+                }
+
                 sourceRegCount++;
-                BuildUse(node, sourceMask, regIndex);
             }
         }
         srcCount += sourceRegCount;

@@ -39,6 +39,16 @@ namespace System.IO.Hashing
         {
         }
 
+        /// <summary>Initializes a new instance of the <see cref="Crc32"/> class using the state from another instance.</summary>
+        private Crc32(uint crc) : base(Size)
+        {
+            _crc = crc;
+        }
+
+        /// <summary>Returns a clone of the current instance, with a copy of the current instance's internal state.</summary>
+        /// <returns>A new instance that will produce the same sequence of values as the current instance.</returns>
+        public Crc32 Clone() => new(_crc);
+
         /// <summary>
         ///   Appends the contents of <paramref name="source"/> to the data already
         ///   processed for the current hash computation.
@@ -93,10 +103,7 @@ namespace System.IO.Hashing
         /// </exception>
         public static byte[] Hash(byte[] source)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             return Hash(new ReadOnlySpan<byte>(source));
         }

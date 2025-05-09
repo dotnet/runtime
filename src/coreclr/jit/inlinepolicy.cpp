@@ -88,7 +88,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ProfilePolicy(compiler, isPrejitRoot);
     }
 
-    const bool isPrejit   = compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool isPrejit   = compiler->IsAot();
     const bool isSpeedOpt = compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT);
 
     if ((JitConfig.JitExtDefaultPolicy() != 0))
@@ -911,21 +911,6 @@ int DefaultPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* meth
 
 void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
-
-#if defined(DEBUG)
-
-    // Punt if we're inlining and we've reached the acceptance limit.
-    int      limit   = JitConfig.JitInlineLimit();
-    unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
-
-    if (!m_IsPrejitRoot && (limit >= 0) && (current >= static_cast<unsigned>(limit)))
-    {
-        SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
-        return;
-    }
-
-#endif // defined(DEBUG)
-
     assert(InlDecisionIsCandidate(m_Decision));
     assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
@@ -1133,20 +1118,6 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
     assert(InlDecisionIsCandidate(m_Decision));
     assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
-
-#if defined(DEBUG)
-
-    // Punt if we're inlining and we've reached the acceptance limit.
-    int      limit   = JitConfig.JitInlineLimit();
-    unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
-
-    if (!m_IsPrejitRoot && (limit >= 0) && (current >= static_cast<unsigned>(limit)))
-    {
-        SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
-        return;
-    }
-
-#endif // defined(DEBUG)
 
     // Budget check.
     const bool overBudget = this->BudgetCheck();
@@ -1360,6 +1331,18 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
 
         case InlineObservation::CALLSITE_IN_NORETURN_REGION:
             m_IsCallsiteInNoReturnRegion = value;
+            break;
+
+        case InlineObservation::CALLEE_UNBOX_ARG:
+            m_ArgUnbox++;
+            break;
+
+        case InlineObservation::CALLSITE_UNBOX_EXACT_ARG:
+            m_ArgUnboxExact++;
+            break;
+
+        case InlineObservation::CALLEE_MAY_RETURN_SMALL_ARRAY:
+            m_MayReturnSmallArray = true;
             break;
 
         default:
@@ -1716,6 +1699,30 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
 
+    if (m_ArgUnboxExact > 0)
+    {
+        // Callee has unbox(arg), caller supplies exact type (a box)
+        // We can likely optimize
+        multiplier += 4.0;
+        JITDUMP("\nInline candidate has %d exact arg unboxes.  Multiplier increased to %g.", m_ArgUnboxExact,
+                multiplier);
+    }
+
+    if (m_ArgUnbox > 0)
+    {
+        // Callee has unbox(arg), caller arg not known type
+        if (m_IsPrejitRoot)
+        {
+            // Assume these might be met with exact type args
+            multiplier += 4.0;
+        }
+        else
+        {
+            multiplier += 1.0;
+        }
+        JITDUMP("\nInline candidate has %d arg unboxes.  Multiplier increased to %g.", m_ArgUnboxExact, multiplier);
+    }
+
     switch (m_CallsiteFrequency)
     {
         case InlineCallsiteFrequency::RARE:
@@ -1771,6 +1778,12 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
             multiplier = 0.0;
             JITDUMP("\nInline candidate has %d switches.  Multiplier limited to %g.", m_Switch, multiplier);
         }
+    }
+
+    if (m_MayReturnSmallArray)
+    {
+        multiplier += 4.0;
+        JITDUMP("\nInline candidate may return small known-size array.  Multiplier increased to %g.", multiplier);
     }
 
     if (m_HasProfileWeights)
@@ -1886,6 +1899,7 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_IsCallsiteInNoReturnRegion)
     XATTR_B(m_HasProfileWeights)
     XATTR_B(m_InsideThrowBlock)
+    XATTR_B(m_MayReturnSmallArray)
 }
 #endif
 
@@ -2368,21 +2382,6 @@ bool DiscretionaryPolicy::PropagateNeverToRuntime() const
 
 void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
-
-#if defined(DEBUG)
-
-    // Punt if we're inlining and we've reached the acceptance limit.
-    int      limit   = JitConfig.JitInlineLimit();
-    unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
-
-    if (!m_IsPrejitRoot && (limit >= 0) && (current >= static_cast<unsigned>(limit)))
-    {
-        SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
-        return;
-    }
-
-#endif // defined(DEBUG)
-
     // Make additional observations based on the method info
     MethodInfoObservations(methodInfo);
 

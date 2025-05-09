@@ -17,10 +17,7 @@ namespace System.ServiceModel.Syndication
 
         protected CategoriesDocumentFormatter(CategoriesDocument documentToWrite)
         {
-            if (documentToWrite is null)
-            {
-                throw new ArgumentNullException(nameof(documentToWrite));
-            }
+            ArgumentNullException.ThrowIfNull(documentToWrite);
 
             _document = documentToWrite;
         }

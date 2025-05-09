@@ -84,6 +84,9 @@ namespace ILCompiler.Metadata
                 record.Parameters.Capacity = paramHandles.Count;
                 foreach (var paramHandle in paramHandles)
                 {
+                    if (!_policy.GeneratesMetadata(ecmaEntity.Module, paramHandle))
+                        continue;
+
                     Ecma.Parameter param = reader.GetParameter(paramHandle);
                     Parameter paramRecord = new Parameter
                     {

@@ -19,19 +19,17 @@
     LEAF_ENTRY RhpNewFast, _TEXT
 
         // a1 = GetThread()
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_1
-#else
+        // Save MethodTable pointer. INLINE_GETTHREAD will trash a0.
+        mv                t2, a0
         INLINE_GETTHREAD  a1
-#endif
 
         //
-        // a0 contains MethodTable pointer
+        // t2 contains MethodTable pointer
         //
-        lw  a2, OFFSETOF__MethodTable__m_uBaseSize(a0)
+        lw  a2, OFFSETOF__MethodTable__m_uBaseSize(t2)
 
         //
-        // a0: MethodTable pointer
+        // t2: MethodTable pointer
         // a1: Thread pointer
         // a2: base size
         //
@@ -49,13 +47,14 @@
         sd    a2, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a1)
 
         // Set the new objects MethodTable pointer
-        sd    a0, OFFSETOF__Object__m_pEEType(t3)
+        sd    t2, OFFSETOF__Object__m_pEEType(t3)
 
         mv    a0, t3
         ret
 
 LOCAL_LABEL(RhpNewFast_RarePath):
         mv    a1, zero
+        mv    a0, t2
         tail  RhpNewObject
     LEAF_END RhpNewFast, _TEXT
 
@@ -75,8 +74,8 @@ LOCAL_LABEL(RhpNewFast_RarePath):
 
         // a3: transition frame
 
-        // Preserve the MethodTable in s0
-        mv  s0, a0
+        // Preserve the MethodTable in s2
+        mv  s2, a0
 
         li  a2, 0 // numElements
 
@@ -97,7 +96,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
-        mv  a0, s0                // MethodTable pointer
+        mv  a0, s2                // MethodTable pointer
         li  a1, 0                 // Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
@@ -123,11 +122,9 @@ LOCAL_LABEL(NewOutOfMemory):
         // a1 == element count
         // a2 == string size
 
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_3
-#else
+        // Save MethodTable pointer. INLINE_GETTHREAD will trash a0.
+        mv               t2, a0
         INLINE_GETTHREAD a3
-#endif
 
         // Load potential new object address into t3.
         ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
@@ -145,7 +142,7 @@ LOCAL_LABEL(NewOutOfMemory):
         sd   a2, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
 
         // Set the new object's MethodTable pointer and element count.
-        sd   a0, OFFSETOF__Object__m_pEEType(t3)
+        sd   t2, OFFSETOF__Object__m_pEEType(t3)
         sd   a1, OFFSETOF__Array__m_Length(t3)
 
         // Return the object allocated in a0.
@@ -158,11 +155,12 @@ LOCAL_LABEL(StringSizeOverflow):
         // 32-bit value. We are going to tail-call to a managed helper that will throw
         // an OOM exception that the caller of this allocator understands.
 
-        // a0 holds MethodTable pointer already
+        mv    a0, t2
         li    a1, 1                  // Indicate that we should throw OverflowException
         tail  C_FUNC(RhExceptionHandling_FailedAllocation)
 
 LOCAL_LABEL(RhNewString_Rare):
+        mv    a0, t2
         tail  C_FUNC(RhpNewArrayRare)
     LEAF_END RhNewString, _TEXT
 
@@ -178,9 +176,9 @@ LOCAL_LABEL(RhNewString_Rare):
         li  a2, 0x7fffffff
         bltu  a2, a1, LOCAL_LABEL(ArraySizeOverflow)  // Branch if a2 < a1 (check for overflow)
 
-        ld   a2, OFFSETOF__MethodTable__m_usComponentSize(a0) // Load component size
+        lhu  a2, OFFSETOF__MethodTable__m_usComponentSize(a0) // Load component size
         mul  a2, a1, a2                // a2 = a1 * component size
-        ld   a3, OFFSETOF__MethodTable__m_uBaseSize(a0)       // Load base size
+        lw   a3, OFFSETOF__MethodTable__m_uBaseSize(a0)       // Load base size
         add  a2, a2, a3                // a2 = a2 + base size
         addi a2, a2, 7                 // a2 = a2 + 7
         andi a2, a2, ~0x7              // Clear the bits[2:0] of a2 (align to 8 bytes)
@@ -189,6 +187,8 @@ LOCAL_LABEL(RhNewString_Rare):
         // a1 == element count
         // a2 == array size
 
+        // Save MethodTable pointer. INLINE_GETTHREAD will trash a0.
+        mv               t2, a0
         INLINE_GETTHREAD a3
 
         // Load potential new object address into t3.
@@ -207,7 +207,7 @@ LOCAL_LABEL(RhNewString_Rare):
         sd   a2, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
 
         // Set the new object's MethodTable pointer and element count.
-        sd   a0, OFFSETOF__Object__m_pEEType(t3)
+        sd   t2, OFFSETOF__Object__m_pEEType(t3)
         sd   a1, OFFSETOF__Array__m_Length(t3)
 
         // Return the object allocated in a0.
@@ -220,11 +220,12 @@ LOCAL_LABEL(ArraySizeOverflow):
         // 32-bit value. We are going to tail-call to a managed helper that will throw
         // an overflow exception that the caller of this allocator understands.
 
-        // a0 holds MethodTable pointer already
+        mv   a0, t2
         li   a1, 1 // Indicate that we should throw OverflowException
         tail  C_FUNC(RhExceptionHandling_FailedAllocation)
 
 LOCAL_LABEL(RhpNewArray_Rare):
+        mv    a0, t2
         tail  C_FUNC(RhpNewArrayRare)
     LEAF_END RhpNewArray, _TEXT
 
@@ -242,7 +243,7 @@ LOCAL_LABEL(RhpNewArray_Rare):
         PUSH_COOP_PINVOKE_FRAME a3
 
         // Preserve data we will need later into the callee saved registers
-        mv   s0, a0              // Preserve MethodTable
+        mv   s2, a0              // Preserve MethodTable
 
         mv   a2, a1              // numElements
         li   a1, 0                // uFlags
@@ -263,7 +264,7 @@ LOCAL_LABEL(ArrayOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
-        mv   a0, s0             // MethodTable Pointer
+        mv   a0, s2             // MethodTable Pointer
         li   a1, 0               // Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME

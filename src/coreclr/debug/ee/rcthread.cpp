@@ -1379,7 +1379,7 @@ HRESULT DebuggerRCThread::Start(void)
 
         // This gets published immediately.
         DebuggerIPCControlBlock* dcb = GetDCB();
-        PREFIX_ASSUME(dcb != NULL);
+        _ASSERTE(dcb != NULL);
         dcb->m_realHelperThreadId = helperThreadId;
 
 #ifdef _DEBUG

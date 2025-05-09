@@ -108,18 +108,8 @@ namespace Internal.Reflection.Extensions.NonPortable
         //
         // Main iterator.
         //
-        private IEnumerable<CustomAttributeData> GetMatchingCustomAttributesIterator(E element, Func<Type, bool> rawPassesFilter, bool inherit)
+        private IEnumerable<CustomAttributeData> GetMatchingCustomAttributesIterator(E element, Func<Type, bool> passesFilter, bool inherit)
         {
-            Func<Type, bool> passesFilter =
-                delegate (Type attributeType)
-                {
-                    // Windows prohibits instantiating WinRT custom attributes. Filter them from the search as the desktop CLR does.
-                    TypeAttributes typeAttributes = attributeType.Attributes;
-                    if (0 != (typeAttributes & TypeAttributes.WindowsRuntime))
-                        return false;
-                    return rawPassesFilter(attributeType);
-                };
-
             LowLevelList<CustomAttributeData> immediateResults = new LowLevelList<CustomAttributeData>();
             foreach (CustomAttributeData cad in GetDeclaredCustomAttributes(element))
             {

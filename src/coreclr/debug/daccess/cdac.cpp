@@ -7,13 +7,13 @@
 #include "dbgutil.h"
 #include <cdac_reader.h>
 
-#define CDAC_LIB_NAME MAKEDLLNAME_W(W("cdacreader"))
+#define CDAC_LIB_NAME MAKEDLLNAME_W(W("mscordaccore_universal"))
 
 namespace
 {
     bool TryLoadCDACLibrary(HMODULE *phCDAC)
     {
-        // Load cdacreader from next to current module (DAC binary)
+        // Load cdac from next to current module (DAC binary)
         PathString path;
         if (WszGetModuleFileName((HMODULE)GetCurrentModuleBase(), path) == 0)
             return false;
@@ -25,6 +25,7 @@ namespace
         iter++;
         path.Truncate(iter);
         path.Append(CDAC_LIB_NAME);
+
         *phCDAC = CLRLoadLibrary(path.GetUnicode());
         if (*phCDAC == NULL)
             return false;
@@ -36,6 +37,16 @@ namespace
     {
         ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
         HRESULT hr = ReadFromDataTarget(target, addr, dest, count);
+        if (FAILED(hr))
+            return hr;
+
+        return S_OK;
+    }
+
+    int ReadThreadContext(uint32_t threadId, uint32_t contextFlags, uint32_t contextBufferSize, uint8_t* contextBuffer, void* context)
+    {
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        HRESULT hr = target->GetThreadContext(threadId, contextFlags, contextBufferSize, contextBuffer);
         if (FAILED(hr))
             return hr;
 
@@ -53,7 +64,7 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
     _ASSERTE(init != nullptr);
 
     intptr_t handle;
-    if (init(descriptorAddr, &ReadFromTargetCallback, target, &handle) != 0)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &ReadThreadContext, target, &handle) != 0)
     {
         ::FreeLibrary(cdacLib);
         return {};

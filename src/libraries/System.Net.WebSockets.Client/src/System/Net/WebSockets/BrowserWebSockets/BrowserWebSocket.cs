@@ -399,7 +399,7 @@ namespace System.Net.WebSockets
 
                 if (sendTask != null)  // this is optimization for single-threaded build, see resolvedPromise() in web-socket.ts. Null means synchronously resolved.
                 {
-                    await CancellationHelper(sendTask, cancellationToken, previousState, pinBuffer).ConfigureAwait(false);
+                    await CancellationHelper(sendTask, cancellationToken, previousState).ConfigureAwait(false);
                 }
             }
             catch (JSException ex)
@@ -442,7 +442,7 @@ namespace System.Net.WebSockets
 
                 if (receiveTask != null)  // this is optimization for single-threaded build, see resolvedPromise() in web-socket.ts. Null means synchronously resolved.
                 {
-                    await CancellationHelper(receiveTask, cancellationToken, previousState, pinBuffer).ConfigureAwait(false);
+                    await CancellationHelper(receiveTask, cancellationToken, previousState).ConfigureAwait(false);
                 }
 
                 return ConvertResponse();
@@ -550,13 +550,12 @@ namespace System.Net.WebSockets
             }
         }
 
-        private async Task CancellationHelper(Task promise, CancellationToken cancellationToken, WebSocketState previousState, IDisposable? disposable = null)
+        private async Task CancellationHelper(Task promise, CancellationToken cancellationToken, WebSocketState previousState)
         {
             try
             {
                 if (promise.IsCompletedSuccessfully)
                 {
-                    disposable?.Dispose();
                     return;
                 }
                 if (promise.IsCompleted)
@@ -588,7 +587,7 @@ namespace System.Net.WebSockets
                     }
                     if (ex is OperationCanceledException || cancellationToken.IsCancellationRequested || ex.Message == "Error: OperationCanceledException")
                     {
-                        if(state != WebSocketState.Closed)
+                        if (state != WebSocketState.Closed)
                         {
                             FastState = WebSocketState.Aborted;
                         }
@@ -601,10 +600,6 @@ namespace System.Net.WebSockets
                     }
                     throw new WebSocketException(WebSocketError.NativeError, ex);
                 }
-            }
-            finally
-            {
-                disposable?.Dispose();
             }
         }
 

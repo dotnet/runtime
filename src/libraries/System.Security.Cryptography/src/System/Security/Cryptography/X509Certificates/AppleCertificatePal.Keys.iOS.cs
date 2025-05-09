@@ -28,6 +28,12 @@ namespace System.Security.Cryptography.X509Certificates
             return ImportPkcs12(this, privateKey);
         }
 
+        public ICertificatePal CopyWithPrivateKey(MLDsa privateKey)
+        {
+            throw new PlatformNotSupportedException(
+                SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
+        }
+
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
             return ImportPkcs12(this, privateKey);

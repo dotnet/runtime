@@ -341,7 +341,7 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
     memcpy_s(pdbChecksumData + pdbChecksumOffset, pdbChecksumSize - pdbChecksumOffset, &pdbChecksum, sizeof(pdbChecksum));
     /* END PDB CHECKSUM */
 
-    auto finish = 
+    auto finish =
         [&](HRESULT hr) {
             if (codeViewData)
             {
@@ -558,18 +558,11 @@ HRESULT Assembler::CreateExportDirectory()
     // normalize ordinals
     for(i = 0; i < Nentries; i++) pOT[i] -= (WORD)ordBase;
     // fill the export address table
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22008) // "Suppress PREfast warnings about integer overflow"
-#endif
     for(i = 0; i < Nentries; i++)
     {
         pEATE = m_EATList.PEEK(i);
         pEAT[pEATE->dwOrdinal - ordBase] = pEATE->dwStubRVA;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
     // fill the export names table
     unsigned l, j;
     for(i = 0, j = 0; i < Nentries; i++)
@@ -1170,10 +1163,6 @@ HRESULT Assembler::AllocateStrongNameSignature()
     return S_OK;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 {
     HRESULT             hr;
@@ -1804,7 +1793,3 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 exit:
     return hr;
 }
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif

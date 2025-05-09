@@ -32,16 +32,23 @@ enum CORINFO_InstructionSet
     InstructionSet_VectorT128=14,
     InstructionSet_Rcpc2=15,
     InstructionSet_Sve=16,
-    InstructionSet_ArmBase_Arm64=17,
-    InstructionSet_AdvSimd_Arm64=18,
-    InstructionSet_Aes_Arm64=19,
-    InstructionSet_Crc32_Arm64=20,
-    InstructionSet_Dp_Arm64=21,
-    InstructionSet_Rdm_Arm64=22,
-    InstructionSet_Sha1_Arm64=23,
-    InstructionSet_Sha256_Arm64=24,
-    InstructionSet_Sve_Arm64=25,
+    InstructionSet_Sve2=17,
+    InstructionSet_ArmBase_Arm64=18,
+    InstructionSet_AdvSimd_Arm64=19,
+    InstructionSet_Aes_Arm64=20,
+    InstructionSet_Crc32_Arm64=21,
+    InstructionSet_Dp_Arm64=22,
+    InstructionSet_Rdm_Arm64=23,
+    InstructionSet_Sha1_Arm64=24,
+    InstructionSet_Sha256_Arm64=25,
+    InstructionSet_Sve_Arm64=26,
+    InstructionSet_Sve2_Arm64=27,
 #endif // TARGET_ARM64
+#ifdef TARGET_RISCV64
+    InstructionSet_RiscV64Base=1,
+    InstructionSet_Zba=2,
+    InstructionSet_Zbb=3,
+#endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
     InstructionSet_SSE=2,
@@ -306,7 +313,11 @@ public:
             AddInstructionSet(InstructionSet_Sha256_Arm64);
         if (HasInstructionSet(InstructionSet_Sve))
             AddInstructionSet(InstructionSet_Sve_Arm64);
+        if (HasInstructionSet(InstructionSet_Sve2))
+            AddInstructionSet(InstructionSet_Sve2_Arm64);
 #endif // TARGET_ARM64
+#ifdef TARGET_RISCV64
+#endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         if (HasInstructionSet(InstructionSet_X86Base))
             AddInstructionSet(InstructionSet_X86Base_X64);
@@ -420,6 +431,10 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Sve);
         if (resultflags.HasInstructionSet(InstructionSet_Sve_Arm64) && !resultflags.HasInstructionSet(InstructionSet_Sve))
             resultflags.RemoveInstructionSet(InstructionSet_Sve_Arm64);
+        if (resultflags.HasInstructionSet(InstructionSet_Sve2) && !resultflags.HasInstructionSet(InstructionSet_Sve2_Arm64))
+            resultflags.RemoveInstructionSet(InstructionSet_Sve2);
+        if (resultflags.HasInstructionSet(InstructionSet_Sve2_Arm64) && !resultflags.HasInstructionSet(InstructionSet_Sve2))
+            resultflags.RemoveInstructionSet(InstructionSet_Sve2_Arm64);
         if (resultflags.HasInstructionSet(InstructionSet_AdvSimd) && !resultflags.HasInstructionSet(InstructionSet_ArmBase))
             resultflags.RemoveInstructionSet(InstructionSet_AdvSimd);
         if (resultflags.HasInstructionSet(InstructionSet_Aes) && !resultflags.HasInstructionSet(InstructionSet_ArmBase))
@@ -442,7 +457,15 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_VectorT128);
         if (resultflags.HasInstructionSet(InstructionSet_Sve) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
             resultflags.RemoveInstructionSet(InstructionSet_Sve);
+        if (resultflags.HasInstructionSet(InstructionSet_Sve2) && !resultflags.HasInstructionSet(InstructionSet_Sve))
+            resultflags.RemoveInstructionSet(InstructionSet_Sve2);
 #endif // TARGET_ARM64
+#ifdef TARGET_RISCV64
+        if (resultflags.HasInstructionSet(InstructionSet_Zbb) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
+            resultflags.RemoveInstructionSet(InstructionSet_Zbb);
+        if (resultflags.HasInstructionSet(InstructionSet_Zba) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
+            resultflags.RemoveInstructionSet(InstructionSet_Zba);
+#endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         if (resultflags.HasInstructionSet(InstructionSet_X86Base) && !resultflags.HasInstructionSet(InstructionSet_X86Base_X64))
             resultflags.RemoveInstructionSet(InstructionSet_X86Base);
@@ -876,7 +899,19 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Sve";
         case InstructionSet_Sve_Arm64 :
             return "Sve_Arm64";
+        case InstructionSet_Sve2 :
+            return "Sve2";
+        case InstructionSet_Sve2_Arm64 :
+            return "Sve2_Arm64";
 #endif // TARGET_ARM64
+#ifdef TARGET_RISCV64
+        case InstructionSet_RiscV64Base :
+            return "RiscV64Base";
+        case InstructionSet_Zba :
+            return "Zba";
+        case InstructionSet_Zbb :
+            return "Zbb";
+#endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         case InstructionSet_X86Base :
             return "X86Base";
@@ -1153,7 +1188,13 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_VectorT128: return InstructionSet_VectorT128;
         case READYTORUN_INSTRUCTION_Rcpc2: return InstructionSet_Rcpc2;
         case READYTORUN_INSTRUCTION_Sve: return InstructionSet_Sve;
+        case READYTORUN_INSTRUCTION_Sve2: return InstructionSet_Sve2;
 #endif // TARGET_ARM64
+#ifdef TARGET_RISCV64
+        case READYTORUN_INSTRUCTION_RiscV64Base: return InstructionSet_RiscV64Base;
+        case READYTORUN_INSTRUCTION_Zba: return InstructionSet_Zba;
+        case READYTORUN_INSTRUCTION_Zbb: return InstructionSet_Zbb;
+#endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
         case READYTORUN_INSTRUCTION_Sse: return InstructionSet_SSE;

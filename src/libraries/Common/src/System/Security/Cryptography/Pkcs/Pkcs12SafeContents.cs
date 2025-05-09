@@ -62,10 +62,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void AddSafeBag(Pkcs12SafeBag safeBag)
         {
-            if (safeBag is null)
-            {
-                throw new ArgumentNullException(nameof(safeBag));
-            }
+            ArgumentNullException.ThrowIfNull(safeBag);
 
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
@@ -77,10 +74,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12CertBag AddCertificate(X509Certificate2 certificate)
         {
-            if (certificate is null)
-            {
-                throw new ArgumentNullException(nameof(certificate));
-            }
+            ArgumentNullException.ThrowIfNull(certificate);
 
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
@@ -92,10 +86,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12KeyBag AddKeyUnencrypted(AsymmetricAlgorithm key)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
@@ -108,10 +99,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12SafeContentsBag AddNestedContents(Pkcs12SafeContents safeContents)
         {
-            if (safeContents is null)
-            {
-                throw new ArgumentNullException(nameof(safeContents));
-            }
+            ArgumentNullException.ThrowIfNull(safeContents);
 
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
                 throw new ArgumentException(SR.Cryptography_Pkcs12_CannotProcessEncryptedSafeContents, nameof(safeContents));
@@ -140,10 +128,7 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
@@ -171,10 +156,7 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_SafeContentsIsReadOnly);
@@ -187,10 +169,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12SecretBag AddSecret(Oid secretType, ReadOnlyMemory<byte> secretValue)
         {
-            if (secretType is null)
-            {
-                throw new ArgumentNullException(nameof(secretType));
-            }
+            ArgumentNullException.ThrowIfNull(secretType);
 
             // Read to ensure that there is precisely one legally encoded value.
             PkcsHelpers.EnsureSingleBerValue(secretValue.Span);

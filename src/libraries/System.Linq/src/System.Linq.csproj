@@ -54,6 +54,8 @@
     <Compile Include="System\Linq\Range.SpeedOpt.cs" />
     <Compile Include="System\Linq\Repeat.cs" />
     <Compile Include="System\Linq\Repeat.SpeedOpt.cs" />
+    <Compile Include="System\Linq\Shuffle.SpeedOpt.cs" />
+    <Compile Include="System\Linq\Shuffle.cs" />
     <Compile Include="System\Linq\Reverse.cs" />
     <Compile Include="System\Linq\Reverse.SpeedOpt.cs" />
     <Compile Include="System\Linq\RightJoin.cs" />

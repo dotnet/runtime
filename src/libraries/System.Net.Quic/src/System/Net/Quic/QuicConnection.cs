@@ -658,14 +658,22 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status, (long)data.ErrorCode));
         _connectedTcs.TrySetException(exception);
-        _connectionCloseTcs.TrySetException(exception);
+        if (_connectionCloseTcs.TrySetException(exception))
+        {
+            // Observe the exception as the task is used only for internal workings and might not be observed.
+            _ = _connectionCloseTcs.Task.Exception;
+        }
         _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
     {
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException((long)data.ErrorCode));
-        _connectionCloseTcs.TrySetException(exception);
+        if (_connectionCloseTcs.TrySetException(exception))
+        {
+            // Observe the exception as the task is used only for internal workings and might not be observed.
+            _ = _connectionCloseTcs.Task.Exception;
+        }
         _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
     }
@@ -675,7 +683,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _tlsSecret?.WriteSecret();
 
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
-        _connectionCloseTcs.TrySetException(exception);
+        if (_connectionCloseTcs.TrySetException(exception))
+        {
+            // Observe the exception as the task is used only for internal workings and might not be observed.
+            _ = _connectionCloseTcs.Task.Exception;
+        }
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
         _shutdownTokenSource.Cancel();
@@ -850,7 +862,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         Debug.Assert(_connectionCloseTcs.Task.IsCompleted);
         _handle.Dispose();
         _shutdownTokenSource.Dispose();
-        _connectionCloseTcs.Task.ObserveException();
         _configuration?.Dispose();
 
         // Dispose remote certificate only if it hasn't been accessed via getter, in which case the accessing code becomes the owner of the certificate lifetime.

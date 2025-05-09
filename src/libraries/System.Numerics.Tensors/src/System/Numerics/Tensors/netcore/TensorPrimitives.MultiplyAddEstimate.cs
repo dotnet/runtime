@@ -128,9 +128,8 @@ namespace System.Numerics.Tensors
                 {
                     return Vector128.MultiplyAddEstimate(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
                 }
-                else
+                else if (typeof(T) == typeof(float))
                 {
-                    Debug.Assert(typeof(T) == typeof(float));
                     return Vector128.MultiplyAddEstimate(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                 }
 #else
@@ -149,9 +148,9 @@ namespace System.Numerics.Tensors
                 {
                     if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(z.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
                 }
+#endif
 
                 return (x * y) + z;
-#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -162,9 +161,8 @@ namespace System.Numerics.Tensors
                 {
                     return Vector256.MultiplyAddEstimate(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
                 }
-                else
+                else if (typeof(T) == typeof(float))
                 {
-                    Debug.Assert(typeof(T) == typeof(float));
                     return Vector256.MultiplyAddEstimate(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                 }
 #else
@@ -173,9 +171,9 @@ namespace System.Numerics.Tensors
                     if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                     if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
                 }
+#endif
 
                 return (x * y) + z;
-#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -186,9 +184,8 @@ namespace System.Numerics.Tensors
                 {
                     return Vector512.MultiplyAddEstimate(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
                 }
-                else
+                else if (typeof(T) == typeof(float))
                 {
-                    Debug.Assert(typeof(T) == typeof(float));
                     return Vector512.MultiplyAddEstimate(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                 }
 #else
@@ -197,9 +194,9 @@ namespace System.Numerics.Tensors
                     if (typeof(T) == typeof(float)) return Avx512F.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                     if (typeof(T) == typeof(double)) return Avx512F.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
                 }
+#endif
 
                 return (x * y) + z;
-#endif
             }
         }
     }

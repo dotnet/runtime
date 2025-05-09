@@ -3403,6 +3403,646 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector256ByteShuffleNativeOneInputTest()
+        {
+            Vector256<byte> vector = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector256<byte> result = Vector256.ShuffleNative(vector, Vector256.Create((byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector256<byte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256DoubleShuffleNativeOneInputTest()
+        {
+            Vector256<double> vector = Vector256.Create((double)1, 2, 3, 4);
+            Vector256<double> result = Vector256.ShuffleNative(vector, Vector256.Create((long)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector256<double>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int16ShuffleNativeOneInputTest()
+        {
+            Vector256<short> vector = Vector256.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector256<short> result = Vector256.ShuffleNative(vector, Vector256.Create((short)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector256<short>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int32ShuffleNativeOneInputTest()
+        {
+            Vector256<int> vector = Vector256.Create((int)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector256<int> result = Vector256.ShuffleNative(vector, Vector256.Create((int)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector256<int>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int64ShuffleNativeOneInputTest()
+        {
+            Vector256<long> vector = Vector256.Create((long)1, 2, 3, 4);
+            Vector256<long> result = Vector256.ShuffleNative(vector, Vector256.Create((long)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector256<long>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SByteShuffleNativeOneInputTest()
+        {
+            Vector256<sbyte> vector = Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector256<sbyte> result = Vector256.ShuffleNative(vector, Vector256.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector256<sbyte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SingleShuffleNativeOneInputTest()
+        {
+            Vector256<float> vector = Vector256.Create((float)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector256<float> result = Vector256.ShuffleNative(vector, Vector256.Create((int)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector256<float>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt16ShuffleNativeOneInputTest()
+        {
+            Vector256<ushort> vector = Vector256.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector256<ushort> result = Vector256.ShuffleNative(vector, Vector256.Create((ushort)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector256<ushort>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt32ShuffleNativeOneInputTest()
+        {
+            Vector256<uint> vector = Vector256.Create((uint)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector256<uint> result = Vector256.ShuffleNative(vector, Vector256.Create((uint)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector256<uint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt64ShuffleNativeOneInputTest()
+        {
+            Vector256<ulong> vector = Vector256.Create((ulong)1, 2, 3, 4);
+            Vector256<ulong> result = Vector256.ShuffleNative(vector, Vector256.Create((ulong)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector256<ulong>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256ByteShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector256<byte> result = Vector256.ShuffleNative(Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector256<byte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256DoubleShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector256<double> result = Vector256.ShuffleNative(Vector256.Create((double)1, 2, 3, 4), Vector256.Create((long)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector256<double>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int16ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector256<short> result = Vector256.ShuffleNative(Vector256.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector256.Create((short)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector256<short>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int32ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector256<int> result = Vector256.ShuffleNative(Vector256.Create((int)1, 2, 3, 4, 5, 6, 7, 8), Vector256.Create((int)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector256<int>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int64ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector256<long> result = Vector256.ShuffleNative(Vector256.Create((long)1, 2, 3, 4), Vector256.Create((long)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector256<long>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SByteShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector256<sbyte> result = Vector256.ShuffleNative(Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector256<sbyte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SingleShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector256<float> result = Vector256.ShuffleNative(Vector256.Create((float)1, 2, 3, 4, 5, 6, 7, 8), Vector256.Create((int)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector256<float>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt16ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector256<ushort> result = Vector256.ShuffleNative(Vector256.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector256.Create((ushort)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector256<ushort>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt32ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector256<uint> result = Vector256.ShuffleNative(Vector256.Create((uint)1, 2, 3, 4, 5, 6, 7, 8), Vector256.Create((uint)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector256<uint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt64ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector256<ulong> result = Vector256.ShuffleNative(Vector256.Create((ulong)1, 2, 3, 4), Vector256.Create((ulong)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector256<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector256<ulong>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256ByteShuffleNativeOneInputWithDirectVectorAndNoCrossLaneTest()
+        {
+            Vector256<byte> result = Vector256.ShuffleNative(Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16));
+
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<byte>.Count; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector256<byte>.Count - (index - Vector128<byte>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256DoubleShuffleNativeOneInputWithDirectVectorAndNoCrossLaneTest()
+        {
+            Vector256<double> result = Vector256.ShuffleNative(Vector256.Create((double)1, 2, 3, 4), Vector256.Create((long)1, 0, 3, 2));
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector128<double>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<double>.Count; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector256<double>.Count - (index - Vector128<double>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int16ShuffleNativeOneInputWithDirectVectorAndNoCrossLaneTest()
+        {
+            Vector256<short> result = Vector256.ShuffleNative(Vector256.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector256.Create((short)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8));
+
+            for (int index = 0; index < Vector128<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector128<short>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<short>.Count; index < Vector256<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector256<short>.Count - (index - Vector128<short>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int32ShuffleNativeOneInputWithDirectVectorAndNoCrossLaneTest()
+        {
+            Vector256<int> result = Vector256.ShuffleNative(Vector256.Create((int)1, 2, 3, 4, 5, 6, 7, 8), Vector256.Create((int)3, 2, 1, 0, 7, 6, 5, 4));
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector128<int>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<int>.Count; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector256<int>.Count - (index - Vector128<int>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int64ShuffleNativeOneInputWithDirectVectorAndNoCrossLaneTest()
+        {
+            Vector256<long> result = Vector256.ShuffleNative(Vector256.Create((long)1, 2, 3, 4), Vector256.Create((long)1, 0, 3, 2));
+
+            for (int index = 0; index < Vector128<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector128<long>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<long>.Count; index < Vector256<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector256<long>.Count - (index - Vector128<long>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SByteShuffleNativeOneInputWithDirectVectorAndNoCrossLaneTest()
+        {
+            Vector256<sbyte> result = Vector256.ShuffleNative(Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16));
+
+            for (int index = 0; index < Vector128<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector128<sbyte>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<sbyte>.Count; index < Vector256<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector256<sbyte>.Count - (index - Vector128<sbyte>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SingleShuffleNativeOneInputWithDirectVectorAndNoCrossLaneTest()
+        {
+            Vector256<float> result = Vector256.ShuffleNative(Vector256.Create((float)1, 2, 3, 4, 5, 6, 7, 8), Vector256.Create((int)3, 2, 1, 0, 7, 6, 5, 4));
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector128<float>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<float>.Count; index < Vector256<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector256<float>.Count - (index - Vector128<float>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt16ShuffleNativeOneInputWithDirectVectorAndNoCrossLaneTest()
+        {
+            Vector256<ushort> result = Vector256.ShuffleNative(Vector256.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector256.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8));
+
+            for (int index = 0; index < Vector128<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector128<ushort>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<ushort>.Count; index < Vector256<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector256<ushort>.Count - (index - Vector128<ushort>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt32ShuffleNativeOneInputWithDirectVectorAndNoCrossLaneTest()
+        {
+            Vector256<uint> result = Vector256.ShuffleNative(Vector256.Create((uint)1, 2, 3, 4, 5, 6, 7, 8), Vector256.Create((uint)3, 2, 1, 0, 7, 6, 5, 4));
+
+            for (int index = 0; index < Vector128<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector128<uint>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<uint>.Count; index < Vector256<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector256<uint>.Count - (index - Vector128<uint>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt64ShuffleNativeOneInputWithDirectVectorAndNoCrossLaneTest()
+        {
+            Vector256<ulong> result = Vector256.ShuffleNative(Vector256.Create((ulong)1, 2, 3, 4), Vector256.Create((ulong)1, 0, 3, 2));
+
+            for (int index = 0; index < Vector128<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector128<ulong>.Count - index), result.GetElement(index));
+            }
+
+            for (int index = Vector128<ulong>.Count; index < Vector256<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector256<ulong>.Count - (index - Vector128<ulong>.Count)), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256ByteShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector256<byte> vector = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector256<byte> indices = Vector256.Create((byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector256<byte> result = Vector256.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector256<byte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256DoubleShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector256<double> vector = Vector256.Create((double)1, 2, 3, 4);
+            Vector256<long> indices = Vector256.Create((long)3, 2, 1, 0);
+            Vector256<double> result = Vector256.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector256<double>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int16ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector256<short> vector = Vector256.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector256<short> indices = Vector256.Create((short)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector256<short> result = Vector256.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector256<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector256<short>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int32ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector256<int> vector = Vector256.Create((int)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector256<int> indices = Vector256.Create((int)7, 6, 5, 4, 3, 2, 1, 0);
+            Vector256<int> result = Vector256.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector256<int>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int64ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector256<long> vector = Vector256.Create((long)1, 2, 3, 4);
+            Vector256<long> indices = Vector256.Create((long)3, 2, 1, 0);
+            Vector256<long> result = Vector256.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector256<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector256<long>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SByteShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector256<sbyte> vector = Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector256<sbyte> indices = Vector256.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector256<sbyte> result = Vector256.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector256<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector256<sbyte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SingleShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector256<float> vector = Vector256.Create((float)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector256<int> indices = Vector256.Create((int)7, 6, 5, 4, 3, 2, 1, 0);
+            Vector256<float> result = Vector256.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector256<float>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt16ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector256<ushort> vector = Vector256.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector256<ushort> indices = Vector256.Create((ushort)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector256<ushort> result = Vector256.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector256<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector256<ushort>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt32ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector256<uint> vector = Vector256.Create((uint)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector256<uint> indices = Vector256.Create((uint)7, 6, 5, 4, 3, 2, 1, 0);
+            Vector256<uint> result = Vector256.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector256<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector256<uint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt64ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector256<ulong> vector = Vector256.Create((ulong)1, 2, 3, 4);
+            Vector256<ulong> indices = Vector256.Create((ulong)3, 2, 1, 0);
+            Vector256<ulong> result = Vector256.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector256<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector256<ulong>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256ByteShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector256<byte> vector = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector256<byte> result = Vector256.ShuffleNative(vector, Vector256<byte>.Zero);
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal((byte)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256DoubleShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector256<double> vector = Vector256.Create((double)1, 2, 3, 4);
+            Vector256<double> result = Vector256.ShuffleNative(vector, Vector256<long>.Zero);
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal((double)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int16ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector256<short> vector = Vector256.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector256<short> result = Vector256.ShuffleNative(vector, Vector256<short>.Zero);
+
+            for (int index = 0; index < Vector256<short>.Count; index++)
+            {
+                Assert.Equal((short)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int32ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector256<int> vector = Vector256.Create((int)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector256<int> result = Vector256.ShuffleNative(vector, Vector256<int>.Zero);
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal((int)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256Int64ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector256<long> vector = Vector256.Create((long)1, 2, 3, 4);
+            Vector256<long> result = Vector256.ShuffleNative(vector, Vector256<long>.Zero);
+
+            for (int index = 0; index < Vector256<long>.Count; index++)
+            {
+                Assert.Equal((long)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SByteShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector256<sbyte> vector = Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector256<sbyte> result = Vector256.ShuffleNative(vector, Vector256<sbyte>.Zero);
+
+            for (int index = 0; index < Vector256<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SingleShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector256<float> vector = Vector256.Create((float)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector256<float> result = Vector256.ShuffleNative(vector, Vector256<int>.Zero);
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                Assert.Equal((float)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt16ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector256<ushort> vector = Vector256.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector256<ushort> result = Vector256.ShuffleNative(vector, Vector256<ushort>.Zero);
+
+            for (int index = 0; index < Vector256<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt32ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector256<uint> vector = Vector256.Create((uint)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector256<uint> result = Vector256.ShuffleNative(vector, Vector256<uint>.Zero);
+
+            for (int index = 0; index < Vector256<uint>.Count; index++)
+            {
+                Assert.Equal((uint)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256UInt64ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector256<ulong> vector = Vector256.Create((ulong)1, 2, 3, 4);
+            Vector256<ulong> result = Vector256.ShuffleNative(vector, Vector256<ulong>.Zero);
+
+            for (int index = 0; index < Vector256<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
         public unsafe void Vector256ByteStoreTest()
         {
             byte* value = stackalloc byte[32] {

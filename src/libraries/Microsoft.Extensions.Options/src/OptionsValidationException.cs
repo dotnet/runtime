@@ -19,8 +19,8 @@ namespace Microsoft.Extensions.Options
         /// <param name="failureMessages">The validation failure messages.</param>
         public OptionsValidationException(string optionsName, Type optionsType, IEnumerable<string>? failureMessages)
         {
-            ThrowHelper.ThrowIfNull(optionsName);
-            ThrowHelper.ThrowIfNull(optionsType);
+            ArgumentNullException.ThrowIfNull(optionsName);
+            ArgumentNullException.ThrowIfNull(optionsType);
 
             Failures = failureMessages ?? new List<string>();
             OptionsType = optionsType;

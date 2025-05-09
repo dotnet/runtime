@@ -502,7 +502,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Can't substitute GT_LCLHEAP.
     //
     // Don't substitute a no return call (trips up morph in some cases).
-    if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP))
+    if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP, GT_ASYNC_CONTINUATION))
     {
         JITDUMP(" tree to sub is catch arg, or lcl heap\n");
         return false;
@@ -784,8 +784,8 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         unsigned const   dstLclNum = parentNode->AsLclVar()->GetLclNum();
         LclVarDsc* const dstVarDsc = lvaGetDesc(dstLclNum);
 
-        JITDUMP(" [marking V%02u as multi-reg-ret]", dstLclNum);
-        dstVarDsc->lvIsMultiRegRet = true;
+        JITDUMP(" [marking V%02u as multi-reg-dest]", dstLclNum);
+        dstVarDsc->SetIsMultiRegDest();
     }
 
     // If a method returns a multi-reg type, only forward sub locals,
@@ -835,6 +835,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
             LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
 
             JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
+            // TODO-Quirk: Only needed for heuristics
             fwdVarDsc->lvIsMultiRegRet = true;
             fwdSubNodeLocal->gtFlags |= GTF_DONT_CSE;
         }

@@ -53,22 +53,6 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
-            if (factory.TypeSystemContext.SupportsUniversalCanon)
-            {
-                foreach (var instantiationType in _type.Instantiation)
-                {
-                    if (instantiationType.IsValueType)
-                    {
-                        // All valuetype generic parameters of a constructed type may be effectively constructed. This is generally not that
-                        // critical, but in the presence of universal generics the compiler may generate a Box followed by calls to ToString,
-                        // GetHashcode or Equals in ways that cannot otherwise be detected by dependency analysis. Thus force all struct type
-                        // generic parameters to be considered constructed when walking dependencies of a constructed generic
-                        dependencyList.Add(factory.ConstructedTypeSymbol(instantiationType.ConvertToCanonForm(CanonicalFormKind.Specific)),
-                        "Struct generic parameters in constructed types may be assumed to be used as constructed in constructed generic types");
-                    }
-                }
-            }
-
             // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
             factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
 

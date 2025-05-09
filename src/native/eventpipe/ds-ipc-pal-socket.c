@@ -433,7 +433,7 @@ inline
 int
 ipc_socket_set_permission (ds_ipc_socket_t s)
 {
-#if defined(DS_IPC_PAL_AF_UNIX) && !(defined(__APPLE__) || defined(__FreeBSD__))
+#if defined(DS_IPC_PAL_AF_UNIX) && !(defined(__APPLE__) || defined(__FreeBSD__) || defined(__HAIKU__))
 	int result_fchmod;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	do {

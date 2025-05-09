@@ -69,6 +69,9 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
 #elif HAVE_SYS_MEMBARRIER_H
 #include <sys/membarrier.h>
+#ifdef TARGET_BROWSER
+#define membarrier(cmd, flags, cpu_id) 0 // browser/wasm is currently single threaded
+#endif
 #endif
 
 #ifdef __APPLE__
@@ -510,6 +513,9 @@ CorUnix::InternalCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
+#ifdef TARGET_TVOS
+    return ERROR_NOT_SUPPORTED;
+#else
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pobjProcess = NULL;
     IPalObject *pobjProcessRegistered = NULL;
@@ -1046,6 +1052,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
+#endif // !TARGET_TVOS
 }
 
 
@@ -2177,7 +2184,7 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
-#if defined(TARGET_IOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
     return FALSE;
 #else
     _ASSERTE(argv.size() > 0);
@@ -2307,7 +2314,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
-#endif // !TARGET_IOS
+#endif // !TARGET_IOS && !TARGET_TVOS
 }
 
 /*++
@@ -2449,6 +2456,16 @@ Parameters:
 
 (no return value)
 --*/
+#ifdef HOST_ANDROID
+#include <minipal/log.h>
+VOID
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+{
+    // TODO: Dump all managed threads callstacks into logcat and/or file?
+    // TODO: Dump stress log into logcat and/or file when enabled?
+    minipal_log_write_fatal("Aborting process.\n");
+}
+#else
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
 {
@@ -2517,6 +2534,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
         free(signalAddressArg);
     }
 }
+#endif
 
 /*++
 Function:

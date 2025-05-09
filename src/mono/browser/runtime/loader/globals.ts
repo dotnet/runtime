@@ -8,7 +8,7 @@ import { exceptions, simd } from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
-import type { DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, PThreadWorker, RuntimeHelpers } from "../types/internal";
+import type { DiagnosticHelpers, DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, PThreadWorker, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, installUnhandledErrorHandler, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
@@ -33,6 +33,7 @@ export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
 
 export let runtimeHelpers: RuntimeHelpers = {} as any;
 export let loaderHelpers: LoaderHelpers = {} as any;
+export let diagnosticHelpers: DiagnosticHelpers = {} as any;
 export let exportedRuntimeAPI: RuntimeAPI = {} as any;
 export let INTERNAL: any = {};
 export let _loaderModuleLoaded = false; // please keep it in place also as rollup guard
@@ -48,6 +49,7 @@ export const globalObjectsRoot: GlobalObjects = {
     module: emscriptenModule,
     loaderHelpers,
     runtimeHelpers,
+    diagnosticHelpers: diagnosticHelpers,
     api: exportedRuntimeAPI,
 } as any;
 
@@ -62,6 +64,7 @@ export function setLoaderGlobals (
     _loaderModuleLoaded = true;
     runtimeHelpers = globalObjects.runtimeHelpers;
     loaderHelpers = globalObjects.loaderHelpers;
+    diagnosticHelpers = globalObjects.diagnosticHelpers;
     exportedRuntimeAPI = globalObjects.api;
     INTERNAL = globalObjects.internal;
     Object.assign(exportedRuntimeAPI, {

@@ -23,4 +23,9 @@
     <Reference Include="System.Runtime" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
 </Project>

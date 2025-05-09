@@ -13,19 +13,13 @@
 #define OFFSETOF__Thread__m_alloc_context__alloc_ptr        (OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
 #define OFFSETOF__Thread__m_eeAllocContext__combined_limit  (OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit)
 
-
-
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  $a0 == MethodTable
     LEAF_ENTRY RhpNewFast, _TEXT
 
         // a1 = GetThread()
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_1
-#else
         INLINE_GETTHREAD  $a1
-#endif
 
         //
         // a0 contains MethodTable pointer
@@ -87,7 +81,7 @@ LOCAL_LABEL(RhpNewFast_RarePath):
         bl  C_FUNC(RhpGcAlloc)
 
         // Set the new objects MethodTable pointer on success.
-        beq  $a0, $zero, LOCAL_LABEL(NewOutOfMemory)
+        beqz  $a0, LOCAL_LABEL(NewOutOfMemory)
 
         .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
@@ -125,11 +119,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // a1 == element count
         // a2 == string size
 
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_3
-#else
         INLINE_GETTHREAD $a3
-#endif
 
         // Load potential new object address into t3.
         ld.d  $t3, $a3, OFFSETOF__Thread__m_alloc_context__alloc_ptr
@@ -253,7 +243,7 @@ LOCAL_LABEL(RhpNewArray_Rare):
         bl  C_FUNC(RhpGcAlloc)
 
         // Set the new objects MethodTable pointer and length on success.
-        beq  $a0, $zero, LOCAL_LABEL(ArrayOutOfMemory)
+        beqz  $a0, LOCAL_LABEL(ArrayOutOfMemory)
 
         .cfi_remember_state
         POP_COOP_PINVOKE_FRAME

@@ -729,23 +729,7 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                Type? argType = argumentTypes[i];
-                Type? paramType = parameterTypes[i];
-
-                if (argType.IsArray != paramType.IsArray ||
-                    argType.IsByRef != paramType.IsByRef ||
-                    argType.IsPointer != argType.IsPointer)
-                {
-                    return false;
-                }
-
-                if (argType.HasElementType || paramType.HasElementType)
-                {
-                    argType = argType.GetElementType();
-                    paramType = paramType.GetElementType();
-                }
-
-                if (argType == null || !argType.Equals(paramType))
+                if (!argumentTypes[i].Equals(parameterTypes[i]))
                 {
                     return false;
                 }
@@ -955,7 +939,6 @@ namespace System.Reflection.Emit
             return fields.ToArray();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
@@ -983,7 +966,10 @@ namespace System.Reflection.Emit
                 }
             }
 
+// Analyzer is not able to propagate `.Interfaces` on `this`.
+#pragma warning disable IL2063
             return match;
+#pragma warning restore IL2063
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
@@ -993,7 +979,7 @@ namespace System.Reflection.Emit
 
             List<Type> interfaces = _interfaces ?? [];
 
-            if(_typeParent != null)
+            if (_typeParent != null)
             {
                 interfaces.AddRange(_typeParent.GetInterfaces());
             }

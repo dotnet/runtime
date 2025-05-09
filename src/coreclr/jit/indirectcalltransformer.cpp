@@ -827,6 +827,16 @@ private:
                 {
                     returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
                     JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
+
+                    // Keep the information about small typedness to avoid
+                    // inserting unnecessary casts for normalization, which can
+                    // make tailcall invariants unhappy. This is the same logic
+                    // that impImportCall uses when it introduces call temps.
+                    if (varTypeIsSmall(origCall->gtReturnType))
+                    {
+                        assert(origCall->NormalizesSmallTypesOnReturn());
+                        compiler->lvaGetDesc(returnTemp)->lvType = origCall->gtReturnType;
+                    }
                 }
 
                 if (varTypeIsStruct(origCall))
@@ -906,6 +916,22 @@ private:
             // special candidate helper and we need to use the new 'this'.
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
+
+            // If the original call was flagged as one that might inspire enumerator de-abstraction
+            // cloning, move the flag to the devirtualized call.
+            //
+            if (compiler->hasImpEnumeratorGdvLocalMap())
+            {
+                Compiler::NodeToUnsignedMap* const map           = compiler->getImpEnumeratorGdvLocalMap();
+                unsigned                           enumeratorLcl = BAD_VAR_NUM;
+                if (map->Lookup(origCall, &enumeratorLcl))
+                {
+                    JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", compiler->dspTreeID(call),
+                            enumeratorLcl);
+                    map->Remove(origCall);
+                    map->Set(call, enumeratorLcl);
+                }
+            }
 
             INDEBUG(call->SetIsGuarded());
 

@@ -50,7 +50,7 @@ namespace System.Reflection
         /// </exception>
         public static MethodInvoker Create(MethodBase method)
         {
-            ArgumentNullException.ThrowIfNull(method, nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             if (method is RuntimeMethodInfo rmi)
             {

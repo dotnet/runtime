@@ -560,7 +560,7 @@ ep_on_exit:
 	return session_id;
 
 ep_on_error:
-	ep_session_free (session);
+	ep_session_dec_ref (session);
 	session_id = 0;
 	ep_exit_error_handler ();
 }
@@ -641,7 +641,7 @@ disable_holding_lock (
 		// been emitted.
 		ep_session_write_sequence_point_unbuffered (session);
 
-		ep_session_free (session);
+		ep_session_dec_ref (session);
 
 		// Providers can't be deleted during tracing because they may be needed when serializing the file.
 		// Allow delete deferred providers to accumulate to mitigate potential use-after-free should
@@ -1430,7 +1430,12 @@ ep_init (void)
 	ep_rt_init_providers_and_events ();
 
 	// Set the sampling rate for the sample profiler.
+
+#ifndef PERFTRACING_DISABLE_THREADS
 	const uint32_t default_profiler_sample_rate_in_nanoseconds = 1000000; // 1 msec.
+#else // PERFTRACING_DISABLE_THREADS
+	const uint32_t default_profiler_sample_rate_in_nanoseconds = 5000000; // 5 msec.
+#endif // PERFTRACING_DISABLE_THREADS
 	ep_sample_profiler_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
 
 	_ep_deferred_enable_session_ids = dn_vector_alloc_t (EventPipeSessionID);

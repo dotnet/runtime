@@ -16,6 +16,16 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => AsyncEnumerable.SkipLast((IAsyncEnumerable<int>)null, 42));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().SkipLast(42));
+
+            IAsyncEnumerable<int> source = CreateSource(2, 4, 8, 16);
+            Assert.Same(source, source.SkipLast(0));
+            Assert.Same(source, source.SkipLast(-1));
+        }
+
 #if NET
         [Theory]
         [InlineData(new int[0])]

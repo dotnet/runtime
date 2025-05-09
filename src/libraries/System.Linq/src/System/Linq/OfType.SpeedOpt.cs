@@ -174,6 +174,25 @@ namespace System.Linq
 
                 return base.Select(selector);
             }
+
+            public override bool Contains(TResult value)
+            {
+                if (!typeof(TResult).IsValueType && // don't box TResult
+                    _source is IList list)
+                {
+                    return list.Contains(value);
+                }
+
+                foreach (object? item in _source)
+                {
+                    if (item is TResult castItem && EqualityComparer<TResult>.Default.Equals(castItem, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
     }
 }

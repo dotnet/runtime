@@ -4,21 +4,72 @@
     <SupportedRids>linux-x64;linux-musl-x64;linux-arm64;linux-musl-arm64;linux-arm;linux-musl-arm</SupportedRids>
   </PropertyGroup>
 
-  <Target Name="VerifyCrossDacProperties" BeforeTargets="Build;Pack">
-    <Error Condition="'$(CrossDacArtifactsDir)' == '' or !Exists('$(CrossDacArtifactsDir)')"
-          Text="Packaging the Cross OS DAC requires property CrossDacArtifactsDir to a path containing all cross OS DAC assets needed." />
+  <!--
+    In dotnet/runtime's official build, we'll extract the runtime packs to a specific directory and pass that here.
+    In the VMR, we'll restore the runtime packs as NuGet packages.
+  -->
+  <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
+    <CrossRuntimeExtractionRoot>$(NuGetPackageRoot)</CrossRuntimeExtractionRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SupportedRid Include="linux-x64" TargetOS="linux" TargetArchitecture="x64" HostArch="x64" CrossDacOutputDir="linux.x64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-musl-x64" TargetOS="alpine" TargetArchitecture="x64" HostArch="x64" CrossDacOutputDir="linux_musl.x64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-arm64" TargetOS="linux" TargetArchitecture="arm64" HostArch="x64" CrossDacOutputDir="linux.arm64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-musl-arm64" TargetOS="alpine" TargetArchitecture="arm64" HostArch="x64" CrossDacOutputDir="linux_musl.arm64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-arm" TargetOS="linux" TargetArchitecture="arm" HostArch="x86" CrossDacOutputDir="linux.arm.$(Configuration)/x86" />
+    <SupportedRid Include="linux-musl-arm" TargetOS="alpine" TargetArchitecture="arm" HostArch="x86" CrossDacOutputDir="linux_musl.arm.$(Configuration)/x86" />
+
+    <SupportedRid Update="@(SupportedRid)" Rid="%(Identity)" />
+
+    <TargetRuntimePacks Include="@(SupportedRid->'Microsoft.NETCore.App.Runtime.%(Rid)')" />
+
+    <PackageDownload Condition="'$(DotNetBuildOrchestrator)' == 'true'" Include="@(TargetRuntimePacks)" Version="[$(Version)]" />
+  </ItemGroup>
+
+  <Target Name="BuildCrossOSDacs">
+    <ItemGroup>
+      <_CrossOSDacProject Include="@(SupportedRid->'$(RepoRoot)Build.proj')"
+                          AdditionalProperties="TargetOS=%(TargetOS);
+                                                TargetArchitecture=%(TargetArchitecture);
+                                                Subset=linuxdac+alpinedac;
+                                                BuildHostTools=false" />
+      <_RuntimePrereqsProject Include="$(CoreClrProjectRoot)runtime-prereqs.proj" />
+    </ItemGroup>
+
+    <!--
+      Manually restore and then build the runtime-prereqs project first so we do it exactly once
+      (and runtime.proj won't over-build it)
+    -->
+    <MSBuild Projects="@(_RuntimePrereqsProject)"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+    <MSBuild Projects="@(_RuntimePrereqsProject)" />
+
+    <!-- Now build the runtime projects. -->
+    <MSBuild Projects="@(_CrossOSDacProject)"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+    <MSBuild Projects="@(_CrossOSDacProject)" />
   </Target>
 
-  <Target Name="FilterSupportedCrossOsDacPackages" BeforeTargets="Build;Pack">
+  <Target Name="FilterSupportedCrossOsDacPackages" DependsOnTargets="BuildCrossOSDacs" BeforeTargets="Build;Pack">
+
+    <JoinItems
+      Left="@(Project)"
+      Right="@(TargetRuntimePacks)"
+      LeftKey="PackageTargetRuntime"
+      RightKey="Rid"
+      ItemSpecToUse="Left"
+      LeftMetadata="*"
+      RightMetadata="*">
+      <Output TaskParameter="JoinResult" ItemName="_projectsToBuild" />
+    </JoinItems>
+
     <ItemGroup>
-      <_projectsToBuild Include="@(Project)" Condition="$(SupportedRids.Contains('%(Project.PackageTargetRuntime)'))">
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-x64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux.x64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-x64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux_musl.x64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-arm64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux.arm64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-arm64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux_musl.arm64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-arm'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux.arm.$(Configuration)/x86</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-arm'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux_musl.arm.$(Configuration)/x86</AdditionalProperties>
-      </_projectsToBuild>
+      <_projectsToBuild CoreCLRRuntimePath="$(CrossRuntimeExtractionRoot)/microsoft.netcore.app.runtime.%(Rid)/$(Version)/runtimes/%(Rid)/native" />
+
+      <_projectsToBuild AdditionalProperties="%(_projectsToBuild.AdditionalProperties);CrossDacOutputDir=%(CrossDacOutputDir);CoreCLRRuntimePath=%(CoreCLRRuntimePath)" />
     </ItemGroup>
 
     <ItemGroup>

@@ -434,8 +434,7 @@ endif
         movdqa  xmm14,[r8 + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
         movdqa  xmm15,[r8 + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
 
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__SP]                ;; rcx <- establisher frame
-        mov     rdx, [rsp + rsp_offsetof_arguments + 0h]            ;; rdx <- exception object
+        mov     rcx, [rsp + rsp_offsetof_arguments + 0h]            ;; rcx <- exception object
         call    qword ptr [rsp + rsp_offsetof_arguments + 8h]       ;; call handler funclet
 
 ALTERNATE_ENTRY RhpCallCatchFunclet2
@@ -639,7 +638,6 @@ if 0 ;; _DEBUG ;; @TODO: temporarily removed because trashing RBP breaks the deb
         mov     [rax], r9
 endif
 
-        mov     rcx, [rdx + OFFSETOF__REGDISPLAY__SP]               ;; rcx <- establisher frame
         call    qword ptr [rsp + rsp_offsetof_arguments + 0h]       ;; handler funclet address
 
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
@@ -702,10 +700,7 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbp]
         mov     rbp, [rax]
 
-        mov     rax, rdx                                            ;; rax <- handler funclet address
-        mov     rdx, rcx                                            ;; rdx <- exception object
-        mov     rcx, [r8 + OFFSETOF__REGDISPLAY__SP]                ;; rcx <- establisher frame
-        call    rax
+        call    rdx
 
 ALTERNATE_ENTRY RhpCallFilterFunclet2
 

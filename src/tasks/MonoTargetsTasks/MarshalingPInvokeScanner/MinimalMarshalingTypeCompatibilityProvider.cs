@@ -40,7 +40,7 @@ namespace MonoTargetsTasks
         {
             HashSet<string>? incAssyTypes;
 
-            if(!_data.TryGetValue(assyName, out incAssyTypes))
+            if (!_data.TryGetValue(assyName, out incAssyTypes))
             {
                 incAssyTypes = new();
                 _data.Add(assyName, incAssyTypes);
@@ -51,7 +51,7 @@ namespace MonoTargetsTasks
 
         public HashSet<string> EnumerateForAssembly(string assyName)
         {
-            if(_data.TryGetValue(assyName, out HashSet<string>? incAssyTypes))
+            if (_data.TryGetValue(assyName, out HashSet<string>? incAssyTypes))
                 return incAssyTypes!;
 
             return new HashSet<string>();
@@ -108,7 +108,7 @@ namespace MonoTargetsTasks
                 if (baseTypeHandle.Kind == HandleKind.TypeReference)
                 {
                     TypeReference baseType = reader.GetTypeReference((TypeReferenceHandle)baseTypeHandle);
-                    if (reader.GetString(typeDef.Namespace) == "System" &&
+                    if (reader.GetString(baseType.Namespace) == "System" &&
                         reader.GetString(baseType.Name) == "Enum")
                         return Compatibility.Compatible;
                 }
@@ -124,7 +124,7 @@ namespace MonoTargetsTasks
                         return GetTypeFromDefinition(reader, handleInner, rawTypeKind);
                 }
             }
-            catch(BadImageFormatException ex)
+            catch (BadImageFormatException ex)
             {
                 _log.LogMessage(MessageImportance.Low, ex.Message);
             }

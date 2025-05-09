@@ -7,65 +7,50 @@ using System.Runtime.InteropServices.JavaScript;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
+
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal abstract class BaseJSGenerator : IJSMarshallingGenerator
+    internal abstract class BaseJSGenerator(TypePositionInfo info, StubCodeContext codeContext) : IBoundMarshallingGenerator
     {
-        protected IBoundMarshallingGenerator _inner;
-        public MarshalerType Type;
+        private static ValueTypeInfo JSMarshalerArgument = new ValueTypeInfo(Constants.JSMarshalerArgumentGlobal, Constants.JSMarshalerArgument, IsByRefLike: false);
 
-        protected BaseJSGenerator(MarshalerType marshalerType, IBoundMarshallingGenerator inner)
-        {
-            _inner = inner;
-            Type = marshalerType;
-        }
+        public TypePositionInfo TypeInfo => info;
 
-        public TypePositionInfo TypeInfo => _inner.TypeInfo;
+        public StubCodeContext CodeContext => codeContext;
 
-        public StubCodeContext CodeContext => _inner.CodeContext;
+        public ManagedTypeInfo NativeType => JSMarshalerArgument;
 
-        public ManagedTypeInfo NativeType => _inner.NativeType;
+        public SignatureBehavior NativeSignatureBehavior => TypeInfo.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
 
-        public SignatureBehavior NativeSignatureBehavior => _inner.NativeSignatureBehavior;
+        public ValueBoundaryBehavior ValueBoundaryBehavior => TypeInfo.IsByRef ? ValueBoundaryBehavior.AddressOfNativeIdentifier : ValueBoundaryBehavior.NativeIdentifier;
 
-        public ValueBoundaryBehavior ValueBoundaryBehavior => _inner.ValueBoundaryBehavior;
-
-        public virtual bool UsesNativeIdentifier => _inner.UsesNativeIdentifier;
+        public virtual bool UsesNativeIdentifier => true;
 
         public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic)
-            => _inner.SupportsByValueMarshalKind(marshalKind, out diagnostic);
-
-        public virtual IEnumerable<ExpressionSyntax> GenerateBind()
         {
-            yield return MarshalerTypeName(Type);
+            diagnostic = null;
+            return ByValueMarshalKindSupport.NotSupported;
         }
 
         public virtual IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
-            string argName = context.GetAdditionalIdentifier(TypeInfo, "js_arg");
-
-            if (context.CurrentStage == StubIdentifierContext.Stage.Setup)
+            MarshalDirection marshalDirection = MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext);
+            if (context.CurrentStage == StubIdentifierContext.Stage.Setup
+                && marshalDirection == MarshalDirection.ManagedToUnmanaged
+                && !TypeInfo.IsManagedReturnPosition)
             {
-                if (!TypeInfo.IsManagedReturnPosition)
-                {
-                    yield return LocalDeclarationStatement(VariableDeclaration(RefType(IdentifierName(Constants.JSMarshalerArgumentGlobal)))
-                    .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(argName))
-                    .WithInitializer(EqualsValueClause(RefExpression(ElementAccessExpression(IdentifierName(Constants.ArgumentsBuffer))
-                    .WithArgumentList(BracketedArgumentList(SingletonSeparatedList(
-                        Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(TypeInfo.ManagedIndex + 2))))))))))));
-                }
+                var (_, js) = context.GetIdentifiers(TypeInfo);
+                return [
+                    ExpressionStatement(
+                        MethodInvocation(TypeSyntaxes.System_Runtime_CompilerServices_Unsafe, IdentifierName("SkipInit"),
+                                    Argument(IdentifierName(js))
+                                    .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))
+                ];
             }
 
-            foreach (var x in _inner.Generate(context))
-            {
-                yield return x;
-            }
-        }
-
-        protected static IdentifierNameSyntax MarshalerTypeName(MarshalerType marshalerType)
-        {
-            return IdentifierName(Constants.JSMarshalerTypeGlobalDot + marshalerType.ToString());
+            return [];
         }
 
         protected static IdentifierNameSyntax GetToManagedMethod(MarshalerType marshalerType)

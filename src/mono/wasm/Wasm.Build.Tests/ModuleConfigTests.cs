@@ -83,15 +83,12 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     [InlineData(Configuration.Release, false)]
     public async Task OverrideBootConfigName(Configuration config, bool isPublish)
     {
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "OverrideBootConfigName");
-        (string _, string _) = isPublish ?
-            PublishProject(info, config) :
-            BuildProject(info, config);
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"OverrideBootConfigName_{isPublish}");
 
-        string extraArgs = "-p:WasmBootConfigFileName=boot.json";
-        (string _, string _) = isPublish ?
-            PublishProject(info, config, new PublishOptions(BootConfigFileName: "boot.json", UseCache: false, ExtraMSBuildArgs: extraArgs)) :
-            BuildProject(info, config, new BuildOptions(BootConfigFileName: "boot.json", UseCache: false, ExtraMSBuildArgs: extraArgs));
+        if (isPublish)
+            PublishProject(info, config, new PublishOptions(BootConfigFileName: "boot.json", UseCache: false));
+        else
+            BuildProject(info, config, new BuildOptions(BootConfigFileName: "boot.json", UseCache: false));
 
         var runOptions = new BrowserRunOptions(
             Configuration: config,

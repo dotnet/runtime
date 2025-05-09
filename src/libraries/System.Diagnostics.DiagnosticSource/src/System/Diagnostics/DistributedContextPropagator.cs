@@ -88,16 +88,32 @@ namespace System.Diagnostics
         /// </summary>
         /// <remarks>
         /// CreateDefaultPropagator will create a propagator instance that can inject and extract the headers with field names "tracestate",
-        /// "traceparent" of the identifiers which are formatted as W3C trace parent, "Request-Id" of the identifiers which are formatted as a hierarchical identifier.
-        /// The returned propagator can inject the baggage key-value pair list with header name "Correlation-Context" and it can extract the baggage values mapped to header names "Correlation-Context" and "baggage".
+        /// "traceparent" of the identifiers which are formatted as W3C trace parent.
+        /// The returned propagator can inject the baggage key-value pair list with header name "baggage" and it can extract the baggage values mapped to header name "baggage".
         /// </remarks>
-        public static DistributedContextPropagator CreateDefaultPropagator() => LegacyPropagator.Instance;
+        public static DistributedContextPropagator CreateDefaultPropagator() => W3CPropagator.Instance;
 
         /// <summary>
         /// Returns a propagator which attempts to act transparently, emitting the same data on outbound network requests that was received on the in-bound request.
         /// When encoding the outbound message, this propagator uses information from the request's root Activity, ignoring any intermediate Activities that may have been created while processing the request.
         /// </summary>
         public static DistributedContextPropagator CreatePassThroughPropagator() => PassThroughPropagator.Instance;
+
+        /// <summary>
+        /// Returns a propagator that encodes and decodes distributed context information in accordance with the W3C Trace Context and Baggage specifications.
+        /// </summary>
+        public static DistributedContextPropagator CreateW3CPropagator() => W3CPropagator.Instance;
+
+        /// <summary>
+        /// Returns a propagator that encodes and decodes distributed context and baggage information in a backward-compatible manner.
+        /// </summary>
+        /// <remarks>
+        /// This propagator is not fully compliant with the W3C specification.
+        /// It inserts baggage using the "Correlation-Context" header instead of "baggage".
+        /// It also takes a more relaxed approach to handling trace state and baggage key-value pairs, allowing characters that are not permitted by the W3C specification.
+        /// Additionally, this propagator supports injecting values from Activity objects that use the ActivityIdFormat.Hierarchical format, which is not supported by the W3C specification.
+        /// </remarks>
+        public static DistributedContextPropagator CreatePreW3CPropagator() => LegacyPropagator.Instance;
 
         /// <summary>
         /// Returns a propagator which does not transmit any distributed context information in outbound network messages.

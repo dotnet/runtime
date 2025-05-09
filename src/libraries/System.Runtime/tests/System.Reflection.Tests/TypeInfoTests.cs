@@ -940,6 +940,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(MembersClass), new Type[] { typeof(TI_NonGenericInterface1), typeof(TI_NonGenericInterface2) })]
         [InlineData(typeof(TI_NonGenericInterface2), new Type[0])]
+        [InlineData(typeof(IntEnum), new Type[] { typeof(IComparable), typeof(ISpanFormattable), typeof(IFormattable), typeof(IConvertible) })]
         public void GetInterfaces(Type type, Type[] expected)
         {
             Assert.Equal(expected.OrderBy(t => t.Name), type.GetTypeInfo().GetInterfaces().OrderBy(t => t.Name));

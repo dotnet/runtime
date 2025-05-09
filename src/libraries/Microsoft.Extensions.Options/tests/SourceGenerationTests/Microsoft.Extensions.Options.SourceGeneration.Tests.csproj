@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_4)</RoslynApiVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- <CompilerGeneratedFilesOutputPath>$(OutputPath)/$(TargetFramework)/Generated</CompilerGeneratedFilesOutputPath> -->
@@ -11,7 +11,6 @@
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
-    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
     <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs" Link="SourceGenerators\RoslynTestUtils.cs" />
 
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\gen\DiagDescriptorsBase.cs" Link="gen\DiagDescriptorsBase.cs" />

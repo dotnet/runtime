@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using System.Text;
-using System.Security.Cryptography;
 using Microsoft.DotNet.XUnitExtensions;
-using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -18,12 +14,26 @@ namespace System.Security.Cryptography.Tests
         protected abstract byte[] IV { get; }
         protected abstract SymmetricAlgorithm CreateAlgorithm();
 
-        protected void OneShotRoundtripTest(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0)
+        protected void OneShotRoundtripTest(
+            byte[] plaintext,
+            byte[] ciphertext,
+            PaddingMode padding,
+            CipherMode mode,
+            int feedbackSize = 0,
+            bool viaSetKey = false)
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
             {
                 int paddingSizeBytes = mode == CipherMode.CFB ? feedbackSize / 8 : alg.BlockSize / 8;
-                alg.Key = Key;
+
+                if (viaSetKey)
+                {
+                    alg.SetKey(Key);
+                }
+                else
+                {
+                    alg.Key = Key;
+                }
 
                 // Set the instance to use a different mode and padding than what will be used
                 // in the one-shots to test that the one shot "wins".

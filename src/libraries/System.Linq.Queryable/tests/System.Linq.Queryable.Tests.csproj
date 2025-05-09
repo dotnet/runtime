@@ -31,6 +31,7 @@
     <Compile Include="JoinTests.cs" />
     <Compile Include="LastOrDefaultTests.cs" />
     <Compile Include="LastTests.cs" />
+    <Compile Include="ShuffleTests.cs" />
     <Compile Include="RightJoinTests.cs" />
     <Compile Include="LongCountTests.cs" />
     <Compile Include="MaxTests.cs" />
@@ -62,7 +63,6 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs"
-             Link="Common\System\Linq\SkipTakeData.cs" />
+    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs" Link="Common\System\Linq\SkipTakeData.cs" />
   </ItemGroup>
 </Project>

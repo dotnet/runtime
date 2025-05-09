@@ -52,6 +52,7 @@ enum ARM64IntrinsicConstants
     ARM64IntrinsicConstants_Rcpc = 0x0100,
     ARM64IntrinsicConstants_Rcpc2 = 0x0200,
     ARM64IntrinsicConstants_Sve = 0x0400,
+    ARM64IntrinsicConstants_Sve2 = 0x0800,
 };
 
 #include <assert.h>
@@ -61,6 +62,14 @@ enum ARM64IntrinsicConstants
 static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
 
 #endif // HOST_ARM64
+
+#if defined(HOST_RISCV64)
+enum RiscV64IntrinsicConstants
+{
+    RiscV64IntrinsicConstants_Zba = 0x0001,
+    RiscV64IntrinsicConstants_Zbb = 0x0002,
+};
+#endif // HOST_RISCV64
 
 #ifdef __cplusplus
 extern "C"

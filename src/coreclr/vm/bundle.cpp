@@ -31,17 +31,17 @@ const SString &BundleFileLocation::Path() const
 }
 
 Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
+    : m_probe(probe)
+    , m_basePathLength(0)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(probe != nullptr);
+    _ASSERTE(m_probe != nullptr);
 
     m_path.SetUTF8(bundlePath);
-    m_probe = probe;
 
     // The bundle-base path is the directory containing the single-file bundle.
     // When the Probe() function searches within the bundle, it masks out the basePath from the assembly-path (if found).
-
     LPCSTR pos = strrchr(bundlePath, DIRECTORY_SEPARATOR_CHAR_A);
     _ASSERTE(pos != nullptr);
     size_t baseLen = pos - bundlePath + 1; // Include DIRECTORY_SEPARATOR_CHAR_A in m_basePath
@@ -52,8 +52,6 @@ Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
 BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative) const
 {
     STANDARD_VM_CONTRACT;
-
-    BundleFileLocation loc;
 
     // Skip over m_base_path, if any. For example:
     //    Bundle.Probe("lib.dll") => m_probe("lib.dll")
@@ -77,32 +75,29 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
         else
         {
             // This is not a file within the bundle
-            return loc;
+            return BundleFileLocation::Invalid();
         }
     }
 
+    BundleFileLocation loc;
     INT64 fileSize = 0;
     INT64 compressedSize = 0;
-
-    m_probe(utf8Path, &loc.Offset, &fileSize, &compressedSize);
-
-    if (compressedSize)
+    if (m_probe(utf8Path, &loc.Offset, &fileSize, &compressedSize))
     {
-        loc.Size = compressedSize;
-        loc.UncompresedSize = fileSize;
+        // Found assembly in bundle
+        if (compressedSize)
+        {
+            loc.Size = compressedSize;
+            loc.UncompressedSize = fileSize;
+        }
+        else
+        {
+            loc.Size = fileSize;
+            loc.UncompressedSize = 0;
+        }
+
+        return loc;
     }
-    else
-    {
-        loc.Size = fileSize;
-        loc.UncompresedSize = 0;
-    }
 
-    return loc;
-}
-
-BundleFileLocation Bundle::ProbeAppBundle(const SString& path, bool pathIsBundleRelative)
-{
-    STANDARD_VM_CONTRACT;
-
-    return AppIsBundle() ? AppBundle->Probe(path, pathIsBundleRelative) : BundleFileLocation::Invalid();
+    return BundleFileLocation::Invalid();
 }

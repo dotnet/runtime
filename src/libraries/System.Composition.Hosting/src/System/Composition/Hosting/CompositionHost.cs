@@ -43,10 +43,7 @@ namespace System.Composition.Hosting
         /// <returns>The container as an <see cref="CompositionHost"/>.</returns>
         public static CompositionHost CreateCompositionHost(IEnumerable<ExportDescriptorProvider> providers)
         {
-            if (providers is null)
-            {
-                throw new ArgumentNullException(nameof(providers));
-            }
+            ArgumentNullException.ThrowIfNull(providers);
 
             var allProviders = new ExportDescriptorProvider[] {
                 new LazyExportDescriptorProvider(),

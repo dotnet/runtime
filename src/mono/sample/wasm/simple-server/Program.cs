@@ -22,8 +22,11 @@ namespace HttpServer
 
     public sealed class Program
     {
-        private static bool Verbose = false;
+        internal static bool Verbose = false;
         private static string URLSuffix = "";
+        private static bool UseChromeDriver = false;
+        internal static string? ChromeDriverExitLine = null;
+        private static SeleniumHelper? seleniumHelper;
         private ConcurrentDictionary<string, Session> Sessions = new ConcurrentDictionary<string, Session>();
         private Dictionary<string, FileContent> cache = new(StringComparer.OrdinalIgnoreCase);
 
@@ -44,6 +47,12 @@ namespace HttpServer
                 { "s=",
                     "URL {suffix}",
                     v => URLSuffix =  v },
+                { "chromedriver",
+                    "Use chrome driver",
+                    v => UseChromeDriver = true },
+                { "chromedriver-exit-line=",
+                    "Regex to match the line against the chromedriver output to exit. This forces verbose output.",
+                    v => { ChromeDriverExitLine = v; Verbose = true; }},
                 { "v|verbose",
                     "Output more information during the run of the server.",
                     v => Verbose = true },
@@ -78,6 +87,8 @@ namespace HttpServer
                     break;
             }
 
+            seleniumHelper?.Dispose();
+
             return 0;
         }
 
@@ -105,6 +116,19 @@ namespace HttpServer
         }
 
         private void OpenUrl(string url)
+        {
+            if (UseChromeDriver)
+            {
+                new Thread(() => {
+                    seleniumHelper = new SeleniumHelper();
+                    seleniumHelper.OpenUrl(url);
+                }).Start();
+            }
+            else
+                OpenUrlWithDefaultBrowser(url);
+        }
+
+        private void OpenUrlWithDefaultBrowser(string url)
         {
             var proc = new Process();
             var si = new ProcessStartInfo();
@@ -356,6 +380,7 @@ namespace HttpServer
                 // context.Response.AppendHeader("cache-control", "public, max-age=31536000");
                 context.Response.AppendHeader("Cross-Origin-Embedder-Policy", "require-corp");
                 context.Response.AppendHeader("Cross-Origin-Opener-Policy", "same-origin");
+                context.Response.AppendHeader("Timing-Allow-Origin", "*");
                 context.Response.AppendHeader("ETag", fc.hash);
 
                 // test download re-try

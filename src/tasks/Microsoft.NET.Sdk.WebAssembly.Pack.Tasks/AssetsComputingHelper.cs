@@ -25,6 +25,11 @@ public class AssetsComputingHelper
         "dotnet.runtime"
     };
 
+    private static readonly string[] dotnetJsDiagNames = new[]
+    {
+        "dotnet.diagnostics",
+    };
+
     private static readonly string[] icuShardsFromRuntimePack = new[]
     {
         "icudt_EFIGS",
@@ -40,6 +45,7 @@ public class AssetsComputingHelper
         bool copySymbols,
         string customIcuCandidateFilename,
         bool enableThreads,
+        bool wasmPerfTracing,
         bool emitSourceMap,
         out string reason)
     {
@@ -66,9 +72,15 @@ public class AssetsComputingHelper
             ".dat" when IsDefaultIcuMode() && !(icuShardsFromRuntimePack.Any(f => f == fileName)) => "automatic icu shard selection, based on application culture, is enabled",
             ".json" when fromMonoPackage && (fileName == "wasm-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
-            ".map" when !emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => "source map file is not published",
+            ".map" when emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => null,
+            ".map" when emitSourceMap && fromMonoPackage && wasmPerfTracing && fileName == "dotnet.diagnostics.js" => null,
+            ".map" when emitSourceMap && fromMonoPackage && !wasmPerfTracing && fileName == "dotnet.diagnostics.js" => "perf tracing is not enabled",
+            ".map" when !emitSourceMap && fromMonoPackage => "source map file is not published",
             ".ts" when fromMonoPackage && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
-            ".js" when assetType == "native" && !dotnetJsSingleThreadNames.Contains(fileName) => $"{fileName}{extension} is not used by Blazor",
+            ".js" when assetType == "native" && dotnetJsSingleThreadNames.Contains(fileName) => null,
+            ".js" when assetType == "native" && wasmPerfTracing && dotnetJsDiagNames.Contains(fileName) => null,
+            ".js" when assetType == "native" && !wasmPerfTracing && dotnetJsDiagNames.Contains(fileName) => "perf tracing is not enabled",
+            ".js" when assetType == "native" => $"{fileName}{extension} is not used by Blazor",
             ".mjs" when assetType == "native" && !(enableThreads && fileName == "dotnet.native.worker") => $"{fileName}{extension} is not used by Blazor",
             ".pdb" when !copySymbols => "copying symbols is disabled",
             ".symbols" when fromMonoPackage => "extension .symbols is not required.",
@@ -115,6 +127,7 @@ public class AssetsComputingHelper
             {
                 ("dotnet", ".js") => string.Concat(fileName, fingerprintDotNetJs ? requiredFingerprint : optionalFingerprint, extension),
                 ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.diagnostics", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.native.worker", ".mjs") => string.Concat(fileName, requiredFingerprint, extension),
                 _ => string.Concat(fileName, extension)

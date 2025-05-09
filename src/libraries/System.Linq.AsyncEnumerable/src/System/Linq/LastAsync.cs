@@ -20,7 +20,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source, cancellationToken);
 
@@ -28,27 +28,21 @@ namespace System.Linq
                 IAsyncEnumerable<TSource> source,
                 CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    if (!await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        ThrowHelper.ThrowNoElementsException();
-                    }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                    TSource result;
-                    do
-                    {
-                        result = e.Current;
-                    }
-                    while (await e.MoveNextAsync().ConfigureAwait(false));
-
-                    return result;
-                }
-                finally
+                if (!await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    ThrowHelper.ThrowNoElementsException();
                 }
+
+                TSource result;
+                do
+                {
+                    result = e.Current;
+                }
+                while (await e.MoveNextAsync());
+
+                return result;
             }
         }
 
@@ -69,8 +63,8 @@ namespace System.Linq
             Func<TSource, bool> predicate,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return Impl(source, predicate, cancellationToken);
 
@@ -79,36 +73,30 @@ namespace System.Linq
                 Func<TSource, bool> predicate,
                 CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                while (await e.MoveNextAsync())
                 {
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
+                    TSource element = e.Current;
+                    if (predicate(element))
                     {
-                        TSource element = e.Current;
-                        if (predicate(element))
+                        TSource result = element;
+
+                        while (await e.MoveNextAsync())
                         {
-                            TSource result = element;
-
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
+                            element = e.Current;
+                            if (predicate(element))
                             {
-                                element = e.Current;
-                                if (predicate(element))
-                                {
-                                    result = element;
-                                }
+                                result = element;
                             }
-
-                            return result;
                         }
-                    }
 
-                    ThrowHelper.ThrowNoMatchException();
-                    return default!;
+                        return result;
+                    }
                 }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
-                }
+
+                ThrowHelper.ThrowNoMatchException();
+                return default!;
             }
         }
 
@@ -129,8 +117,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return Impl(source, predicate, cancellationToken);
 
@@ -139,36 +127,30 @@ namespace System.Linq
                 Func<TSource, CancellationToken, ValueTask<bool>> predicate,
                 CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                while (await e.MoveNextAsync())
                 {
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
+                    TSource element = e.Current;
+                    if (await predicate(element, cancellationToken))
                     {
-                        TSource element = e.Current;
-                        if (await predicate(element, cancellationToken).ConfigureAwait(false))
+                        TSource result = element;
+
+                        while (await e.MoveNextAsync())
                         {
-                            TSource result = element;
-
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
+                            element = e.Current;
+                            if (await predicate(element, cancellationToken))
                             {
-                                element = e.Current;
-                                if (await predicate(element, cancellationToken).ConfigureAwait(false))
-                                {
-                                    result = element;
-                                }
+                                result = element;
                             }
-
-                            return result;
                         }
-                    }
 
-                    ThrowHelper.ThrowNoMatchException();
-                    return default!;
+                        return result;
+                    }
                 }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
-                }
+
+                ThrowHelper.ThrowNoMatchException();
+                return default!;
             }
         }
 
@@ -198,32 +180,26 @@ namespace System.Linq
             TSource defaultValue,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source, defaultValue, cancellationToken);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source, TSource defaultValue, CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
-                {
-                    TSource result = defaultValue;
-                    if (await e.MoveNextAsync().ConfigureAwait(false))
-                    {
-                        do
-                        {
-                            result = e.Current;
-                        }
-                        while (await e.MoveNextAsync().ConfigureAwait(false));
-                    }
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
 
-                    return result;
-                }
-                finally
+                TSource result = defaultValue;
+                if (await e.MoveNextAsync())
                 {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    do
+                    {
+                        result = e.Current;
+                    }
+                    while (await e.MoveNextAsync());
                 }
+
+                return result;
             }
         }
 
@@ -270,8 +246,8 @@ namespace System.Linq
             TSource defaultValue,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return Impl(source, predicate, defaultValue, cancellationToken);
 
@@ -281,36 +257,30 @@ namespace System.Linq
                 TSource defaultValue,
                 CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                TSource result = defaultValue;
+                while (await e.MoveNextAsync())
                 {
-                    TSource result = defaultValue;
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
+                    TSource element = e.Current;
+                    if (predicate(element))
                     {
-                        TSource element = e.Current;
-                        if (predicate(element))
+                        result = element;
+
+                        while (await e.MoveNextAsync())
                         {
-                            result = element;
-
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
+                            element = e.Current;
+                            if (predicate(element))
                             {
-                                element = e.Current;
-                                if (predicate(element))
-                                {
-                                    result = element;
-                                }
+                                result = element;
                             }
-
-                            break;
                         }
-                    }
 
-                    return result;
+                        break;
+                    }
                 }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
-                }
+
+                return result;
             }
         }
 
@@ -329,44 +299,38 @@ namespace System.Linq
             TSource defaultValue,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return Impl(source, predicate, defaultValue, cancellationToken);
 
             static async ValueTask<TSource> Impl(
                 IAsyncEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask<bool>> predicate, TSource defaultValue, CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                TSource result = defaultValue;
+                while (await e.MoveNextAsync())
                 {
-                    TSource result = defaultValue;
-                    while (await e.MoveNextAsync().ConfigureAwait(false))
+                    TSource element = e.Current;
+                    if (await predicate(element, cancellationToken))
                     {
-                        TSource element = e.Current;
-                        if (await predicate(element, cancellationToken).ConfigureAwait(false))
+                        result = element;
+
+                        while (await e.MoveNextAsync())
                         {
-                            result = element;
-
-                            while (await e.MoveNextAsync().ConfigureAwait(false))
+                            element = e.Current;
+                            if (await predicate(element, cancellationToken))
                             {
-                                element = e.Current;
-                                if (await predicate(element, cancellationToken).ConfigureAwait(false))
-                                {
-                                    result = element;
-                                }
+                                result = element;
                             }
-
-                            break;
                         }
-                    }
 
-                    return result;
+                        break;
+                    }
                 }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
-                }
+
+                return result;
             }
         }
     }

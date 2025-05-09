@@ -9,6 +9,10 @@ set(MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME "diagnostics_tracing")
 set(MONO_DEBUGGER_COMPONENT_NAME "debugger")
 set(MONO_MARSHAL_ILGEN_COMPONENT_NAME "marshal-ilgen")
 
+set(EP_GENERATED_HEADER_PATH "${CMAKE_CURRENT_BINARY_DIR}")
+include (${SHARED_EVENTPIPE_SOURCE_PATH}configure.cmake)
+include_directories(${SHARED_EVENTPIPE_CONFIG_HEADER_PATH})
+
 add_subdirectory(${SHARED_CONTAINERS_SOURCE_PATH} containers)
 add_subdirectory(${SHARED_EVENTPIPE_SOURCE_PATH} eventpipe)
 

@@ -297,6 +297,15 @@ namespace Internal.TypeSystem.Ecma
 
             return null;
         }
+
+        public override LayoutInt MetadataOffset
+        {
+            get
+            {
+                int offset = MetadataReader.GetFieldDefinition(_handle).GetOffset();
+                return offset == -1 ? LayoutInt.Indeterminate : new LayoutInt(offset);
+            }
+        }
     }
 
     public static class EcmaFieldExtensions

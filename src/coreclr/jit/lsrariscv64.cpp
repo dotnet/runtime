@@ -143,10 +143,13 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CNS_DBL:
         {
-            // There is no instruction for loading float/double imm directly into FPR.
-            // Reserve int to load constant from memory (IF_LARGELDC)
-            buildInternalIntRegisterDefForNode(tree);
-            buildInternalRegisterUses();
+            emitAttr size = emitActualTypeSize(tree);
+            int64_t  bits;
+            if (emitter::isSingleInstructionFpImm(tree->AsDblCon()->DconValue(), size, &bits) && bits != 0)
+            {
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
         }
             FALLTHROUGH;
 
@@ -258,7 +261,15 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSZ:
         case GT_ROR:
         case GT_ROL:
-            if (tree->OperIs(GT_ROR, GT_ROL))
+        case GT_SH1ADD:
+        case GT_SH1ADD_UW:
+        case GT_SH2ADD:
+        case GT_SH2ADD_UW:
+        case GT_SH3ADD:
+        case GT_SH3ADD_UW:
+        case GT_ADD_UW:
+        case GT_SLLI_UW:
+            if (tree->OperIs(GT_ROR, GT_ROL) && !compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
                 buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
             buildInternalRegisterUses();
@@ -343,19 +354,56 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            noway_assert((tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Ceiling) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Floor) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Sqrt));
-
-            // Both operand and its result must be of the same floating point type.
             GenTree* op1 = tree->gtGetOp1();
-            assert(varTypeIsFloating(op1));
-            assert(op1->TypeGet() == tree->TypeGet());
+            GenTree* op2 = tree->gtGetOp2IfPresent();
+
+            switch (tree->AsIntrinsic()->gtIntrinsicName)
+            {
+                // Both operands and its result must be of the same floating-point type.
+                case NI_System_Math_MinNumber:
+                case NI_System_Math_MaxNumber:
+                    assert(op2 != nullptr);
+                    assert(op2->TypeIs(tree->TypeGet()));
+                    FALLTHROUGH;
+                case NI_System_Math_Abs:
+                case NI_System_Math_Sqrt:
+                    assert(op1->TypeIs(tree->TypeGet()));
+                    assert(varTypeIsFloating(tree));
+                    break;
+
+                // Integer Min/Max
+                case NI_System_Math_Min:
+                case NI_System_Math_Max:
+                case NI_System_Math_MinUnsigned:
+                case NI_System_Math_MaxUnsigned:
+                    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                    assert(op2 != nullptr);
+                    assert(op2->TypeIs(tree->TypeGet()));
+                    assert(op1->TypeIs(tree->TypeGet()));
+                    assert(tree->TypeIs(TYP_I_IMPL));
+                    break;
+
+                // Operand and its result must be integers
+                case NI_PRIMITIVE_LeadingZeroCount:
+                case NI_PRIMITIVE_TrailingZeroCount:
+                case NI_PRIMITIVE_PopCount:
+                    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                    assert(op2 == nullptr);
+                    assert(varTypeIsIntegral(op1));
+                    assert(varTypeIsIntegral(tree));
+                    break;
+
+                default:
+                    NO_WAY("Unknown intrinsic");
+            }
 
             BuildUse(op1);
             srcCount = 1;
+            if (op2 != nullptr)
+            {
+                BuildUse(op2);
+                srcCount++;
+            }
             assert(dstCount == 1);
             BuildDef(tree);
         }
@@ -394,34 +442,11 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_GT:
         {
             var_types op1Type = genActualType(tree->gtGetOp1()->TypeGet());
-            if (varTypeIsFloating(op1Type))
-            {
-                bool isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
-                if (isUnordered)
-                {
-                    if (tree->OperIs(GT_EQ))
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-                else
-                {
-                    if (tree->OperIs(GT_NE))
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-            }
-            else
+            if (!varTypeIsFloating(op1Type))
             {
                 emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
-                if (tree->gtGetOp2()->isContainedIntOrIImmed())
-                {
-                    bool isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
-                    if (cmpSize == EA_4BYTE && isUnsigned)
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-                else
-                {
-                    if (cmpSize == EA_4BYTE)
-                        buildInternalIntRegisterDefForNode(tree);
-                }
+                if (cmpSize == EA_4BYTE)
+                    buildInternalIntRegisterDefForNode(tree);
             }
             buildInternalRegisterUses();
         }
@@ -443,16 +468,44 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* cas = tree->AsCmpXchg();
-            assert(!cas->Comparand()->isContained());
-            srcCount = 3;
             assert(dstCount == 1);
 
-            buildInternalIntRegisterDefForNode(tree); // temp reg for store conditional error
+            srcCount = 1;
             // Extend lifetimes of argument regs because they may be reused during retries
+            assert(!cas->Addr()->isContained());
             setDelayFree(BuildUse(cas->Addr()));
-            setDelayFree(BuildUse(cas->Data()));
-            setDelayFree(BuildUse(cas->Comparand()));
 
+            GenTree* data = cas->Data();
+            if (!data->isContained())
+            {
+                srcCount++;
+                setDelayFree(BuildUse(data));
+            }
+            else
+            {
+                assert(data->IsIntegralConst(0));
+            }
+
+            GenTree* comparand = cas->Comparand();
+            if (!comparand->isContained())
+            {
+                srcCount++;
+                RefPosition* use = BuildUse(comparand);
+                if (comparand->TypeIs(TYP_INT, TYP_UINT))
+                {
+                    buildInternalIntRegisterDefForNode(tree); // temp reg for sign-extended comparand
+                }
+                else
+                {
+                    setDelayFree(use);
+                }
+            }
+            else
+            {
+                assert(comparand->IsIntegralConst(0));
+            }
+
+            buildInternalIntRegisterDefForNode(tree); // temp reg for store conditional error
             // Internals may not collide with target
             setInternalRegsDelayFree = true;
             buildInternalRegisterUses();
@@ -472,11 +525,20 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == (tree->TypeIs(TYP_VOID) ? 0 : 1));
             GenTree* addr = tree->gtGetOp1();
             GenTree* data = tree->gtGetOp2();
-            assert(!addr->isContained() && !data->isContained());
-            srcCount = 2;
+            assert(!addr->isContained());
 
+            srcCount = 1;
             BuildUse(addr);
-            BuildUse(data);
+            if (!data->isContained())
+            {
+                srcCount++;
+                BuildUse(data);
+            }
+            else
+            {
+                assert(data->IsIntegralConst(0));
+            }
+
             if (dstCount == 1)
             {
                 BuildDef(tree);
@@ -705,6 +767,11 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
+            break;
+
         case GT_INDEX_ADDR:
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -803,6 +870,10 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 buildInternalIntRegisterDefForNode(indirTree);
             }
         }
+        else if (addr->OperGet() == GT_CNS_INT)
+        {
+            buildInternalIntRegisterDefForNode(indirTree);
+        }
     }
 
 #ifdef FEATURE_SIMD
@@ -890,6 +961,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
             }
             assert(ctrlExprCandidates != RBM_NONE);
         }
+
+        // In case ctrlExpr is a contained constant, we need a register to store the value.
+        if (ctrlExpr->isContainedIntOrIImmed())
+        {
+            buildInternalIntRegisterDefForNode(call);
+        }
     }
     else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
@@ -927,7 +1004,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     srcCount += BuildCallArgUses(call);
 
-    if (ctrlExpr != nullptr)
+    if (ctrlExpr != nullptr && !ctrlExpr->isContainedIntOrIImmed())
     {
         BuildUse(ctrlExpr, ctrlExprCandidates);
         srcCount++;
@@ -936,6 +1013,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
+    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    {
+        MarkAsyncContinuationBusyForCall(call);
+    }
+
     regMaskTP killMask = getKillSetForCall(call);
     if (dstCount > 0)
     {

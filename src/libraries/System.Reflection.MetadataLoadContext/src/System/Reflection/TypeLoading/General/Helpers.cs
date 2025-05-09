@@ -274,8 +274,7 @@ namespace System.Reflection.TypeLoading
 
         public static bool HasSameMetadataDefinitionAsCore<M>(this M thisMember, MemberInfo other) where M : MemberInfo
         {
-            if (other is null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             // Ensure that "other" is one of our MemberInfo objects. Do this check before calling any methods on it!
             if (!(other is M))

@@ -222,8 +222,8 @@ enum insFlags : uint64_t
     Encoding_REX2  = 1ULL << 44,
 
     // APX: EVEX.ND:
-    INS_Flags_Has_NDD  = 1ULL << 45,    
-    
+    INS_Flags_Has_NDD  = 1ULL << 45,
+
     // APX: EVEX.NF:
     INS_Flags_Has_NF  = 1ULL << 46,
 
@@ -275,8 +275,16 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
 
     INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
+    INS_OPTS_EVEX_dfv_byte_offset = 8, // save the bit offset for first dfv flag pos
 
-    INS_OPTS_EVEX_NoApxPromotion = 1 << 8,    // Do not promote to APX-EVEX
+    INS_OPTS_EVEX_dfv_cf = 1 << 8,
+    INS_OPTS_EVEX_dfv_zf = 1 << 9,
+    INS_OPTS_EVEX_dfv_sf = 1 << 10,
+    INS_OPTS_EVEX_dfv_of = 1 << 11,
+
+    INS_OPTS_EVEX_dfv_MASK = 0xF00,
+
+    INS_OPTS_EVEX_NoApxPromotion = 1 << 12,    // Do not promote to APX-EVEX
 
 };
 
@@ -430,16 +438,16 @@ enum insSvePattern : unsigned
 enum insSvePrfop : unsigned
 {
     SVE_PRFOP_PLDL1KEEP = 0b0000,
-    SVE_PRFOP_PLDL1STRM = 0b0001, 
-    SVE_PRFOP_PLDL2KEEP = 0b0010, 
-    SVE_PRFOP_PLDL2STRM = 0b0011, 
-    SVE_PRFOP_PLDL3KEEP = 0b0100, 
-    SVE_PRFOP_PLDL3STRM = 0b0101, 
-    SVE_PRFOP_PSTL1KEEP = 0b1000, 
-    SVE_PRFOP_PSTL1STRM = 0b1001, 
-    SVE_PRFOP_PSTL2KEEP = 0b1010, 
-    SVE_PRFOP_PSTL2STRM = 0b1011, 
-    SVE_PRFOP_PSTL3KEEP = 0b1100, 
+    SVE_PRFOP_PLDL1STRM = 0b0001,
+    SVE_PRFOP_PLDL2KEEP = 0b0010,
+    SVE_PRFOP_PLDL2STRM = 0b0011,
+    SVE_PRFOP_PLDL3KEEP = 0b0100,
+    SVE_PRFOP_PLDL3STRM = 0b0101,
+    SVE_PRFOP_PSTL1KEEP = 0b1000,
+    SVE_PRFOP_PSTL1STRM = 0b1001,
+    SVE_PRFOP_PSTL2KEEP = 0b1010,
+    SVE_PRFOP_PSTL2STRM = 0b1011,
+    SVE_PRFOP_PSTL3KEEP = 0b1100,
     SVE_PRFOP_PSTL3STRM = 0b1101,
 
     SVE_PRFOP_CONST6    = 0b0110,

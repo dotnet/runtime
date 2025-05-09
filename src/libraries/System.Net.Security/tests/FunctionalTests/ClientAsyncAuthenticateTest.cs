@@ -145,7 +145,7 @@ namespace System.Net.Security.Tests
                     Task clientTask = client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                     {
                         EnabledSslProtocols = clientSslProtocols,
-                        RemoteCertificateValidationCallback = AllowAnyServerCertificate,
+                        RemoteCertificateValidationCallback = certificateCallback ?? AllowAnyServerCertificate,
                         TargetHost = serverName
                     });
                     serverTask = server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions

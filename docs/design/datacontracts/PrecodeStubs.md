@@ -9,7 +9,7 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
     TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint);
 ```
 
-## Version 1
+## Version 1 and 2
 
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
@@ -24,9 +24,12 @@ Data descriptors used:
 | PrecodeMachineDescriptor | PInvokeImportPrecodeType| precode sort byte for PInvoke precode stubs, if supported |
 | PrecodeMachineDescriptor | HasFixupPrecode | 1 if platform supports fixup precode stubs |
 | PrecodeMachineDescriptor | FixupPrecodeType| precode sort byte for fixup precode stubs, if supported |
-| StubPrecodeData | MethodDesc | pointer to the MethodDesc associated with this stub precode |
+| PrecodeMachineDescriptor | ThisPointerRetBufPrecodeType | precode sort byte for this pointer ret buf precodes |
+| StubPrecodeData | MethodDesc | pointer to the MethodDesc associated with this stub precode (Version 1 only) |
+| StubPrecodeData | SecretParam | pointer to the MethodDesc associated with this stub precode or a second stub data pointer for other types (Version 2 only) |
 | StubPrecodeData | Type | precise sort of stub precode |
 | FixupPrecodeData | MethodDesc | pointer to the MethodDesc associated with this fixup precode |
+| ThisPtrRetBufPrecodeData | MethodDesc | pointer to the MethodDesc associated with the ThisPtrRetBufPrecode (Version 2 only) |
 
 arm32 note: the `CodePointerToInstrPointerMask` is used to convert IP values that may include an arm Thumb bit (for example extracted from disassembling a call instruction or from a snapshot of the registers) into an address.  On other architectures applying the mask is a no-op.
 
@@ -145,7 +148,10 @@ After the initial precode type is determined, for stub precodes a refined precod
         internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             TargetPointer stubPrecodeDataAddress = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
-            return target.ReadPointer (stubPrecodeDataAddress + /* offset of StubPrecodeData.MethodDesc */ );
+            if (ContractVersion(PrecodeStubs) == 1)
+                return target.ReadPointer (stubPrecodeDataAddress + /* offset of StubPrecodeData.MethodDesc */ );
+            else
+                return target.ReadPointer (stubPrecodeDataAddress + /* offset of StubPrecodeData.SecretParam */ );
         }
     }
 
@@ -170,7 +176,10 @@ After the initial precode type is determined, for stub precodes a refined precod
 
         internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
-            throw new NotImplementedException(); // TODO(cdac)
+            if (ContractVersion(PrecodeStubs) == 1)
+                throw new NotImplementedException(); // TODO(cdac)
+            else
+                return target.ReadPointer(target.ReadPointer (stubPrecodeDataAddress + /* offset of StubPrecodeData.SecretParam */ ) + /*offset of ThisPtrRetBufPrecodeData.MethodDesc*/);
         }
     }
 

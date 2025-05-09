@@ -124,8 +124,7 @@ namespace System.Linq.Tests
                 for (int c = 1; c <= i; c++) sum += c;
                 double expected = (double)sum / i;
 
-                yield return [Shuffler.Shuffle(Enumerable.Range(1, i)), expected];
-                yield return [Shuffler.Shuffle(Enumerable.Range(1, i).ToArray()), expected];
+                yield return [Enumerable.Range(1, i).Shuffle(), expected];
             }
         }
 
@@ -255,8 +254,7 @@ namespace System.Linq.Tests
                 for (int c = 1; c <= i; c++) sum += c;
                 double expected = (double)sum / i;
 
-                yield return [Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (long)i)), expected];
-                yield return [Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (long)i).ToArray()), expected];
+                yield return [Enumerable.Range(1, i).Select(i => (long)i).Shuffle(), expected];
             }
         }
 
@@ -385,8 +383,7 @@ namespace System.Linq.Tests
                 for (int c = 1; c <= i; c++) sum += c;
                 double expected = (double)sum / i;
 
-                yield return [Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (double)i)), expected];
-                yield return [Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (double)i).ToArray()), expected];
+                yield return [Enumerable.Range(1, i).Select(i => (double)i).Shuffle(), expected];
             }
         }
 
@@ -507,8 +504,7 @@ namespace System.Linq.Tests
                 for (int c = 1; c <= i; c++) sum += c;
                 decimal expected = (decimal)sum / i;
 
-                yield return [Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (decimal)i)), expected];
-                yield return [Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (decimal)i).ToArray()), expected];
+                yield return [Enumerable.Range(1, i).Select(i => (decimal)i).Shuffle(), expected];
             }
         }
 
@@ -636,8 +632,7 @@ namespace System.Linq.Tests
                 for (int c = 1; c <= i; c++) sum += c;
                 float expected = (float)sum / i;
 
-                yield return [Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (float)i)), expected];
-                yield return [Shuffler.Shuffle(Enumerable.Range(1, i).Select(i => (float)i).ToArray()), expected];
+                yield return [Enumerable.Range(1, i).Select(i => (float)i).Shuffle(), expected];
             }
         }
 

@@ -28,6 +28,7 @@
 
     <_AppleBuildCommand Condition="'$(IncludesTestRunner)' == 'true'">apple test</_AppleBuildCommand>
     <_AppleBuildCommand Condition="'$(IncludesTestRunner)' != 'true'">apple run</_AppleBuildCommand>
+
     <_AppleExpectedExitCode Condition="'$(ExpectedExitCode)' != ''">--expected-exit-code $(ExpectedExitCode)</_AppleExpectedExitCode>
     <_AfterBuildCommands>
       mv $XHARNESS_OUT/AOTBuild.binlog &quot;$HELIX_WORKITEM_UPLOAD_ROOT&quot;
@@ -178,7 +179,7 @@
       <HybridGlobalization>true</HybridGlobalization>
       <IncludesTestRunner Condition="'$(IncludesTestRunner)' == ''">true</IncludesTestRunner>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
 
       <AppleBuildDir>$(PublishDir)</AppleBuildDir>
       <AppleBundleDir>$(BundleDir)</AppleBundleDir>
