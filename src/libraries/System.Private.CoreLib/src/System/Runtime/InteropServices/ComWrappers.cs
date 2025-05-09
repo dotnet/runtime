@@ -1404,7 +1404,12 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
             }
 
-            return s_globalInstanceForMarshalling.GetOrCreateComInterfaceForObject(instance, CreateComInterfaceFlags.None);
+            if (TryGetComInstance(instance, out IntPtr comObject))
+            {
+                return comObject;
+            }
+
+            return s_globalInstanceForMarshalling.GetOrCreateComInterfaceForObject(instance, CreateComInterfaceFlags.TrackerSupport);
         }
 
         internal static unsafe IntPtr ComInterfaceForObject(object instance, Guid targetIID)
@@ -1423,7 +1428,7 @@ namespace System.Runtime.InteropServices
             return comObjectInterface;
         }
 
-        internal static object ComObjectForInterface(IntPtr externalComObject)
+        internal static object ComObjectForInterface(IntPtr externalComObject, CreateObjectFlags flags = CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap)
         {
             if (s_globalInstanceForMarshalling == null)
             {
@@ -1431,7 +1436,7 @@ namespace System.Runtime.InteropServices
             }
 
             // TrackerObject support and unwrapping matches the built-in semantics that the global marshalling scenario mimics.
-            return s_globalInstanceForMarshalling.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap);
+            return s_globalInstanceForMarshalling.GetOrCreateObjectForComInstance(externalComObject, flags);
         }
 
         internal static IntPtr GetOrCreateTrackerTarget(IntPtr externalComObject)
