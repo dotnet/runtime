@@ -216,7 +216,6 @@
     <!-- https://github.com/dotnet/runtime/issues/62547 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
   </ItemGroup>
 
   <!-- x86-only android failures -->
@@ -227,6 +226,12 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Extensions.Tests\System.Runtime.Extensions.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/111699 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\LibraryMode_AOT_LLVM\Android.Device_Emulator.LibraryMode_Aot_Llvm.Test.csproj" />
+  </ItemGroup>
+
+  <!-- Mono-specific android failures -->
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisablediOSTests)' != 'true'">
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Static.Test.csproj" />
   </ItemGroup>
 
   <!-- CoreCLR-specific android failures -->
