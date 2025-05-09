@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -2784,6 +2785,122 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(2, ptr[1]);
                 Assert.Equal(3, ptr[2]);
                 Assert.Equal(4, ptr[3]);
+            }
+        }
+
+        [Fact]
+        public void IsDenseTests()
+        {
+            // Dense
+
+            Assert.True(Tensor.Create<int>([1]).IsDense);
+            Assert.True(Tensor.Create<int>([1], [0]).IsDense);
+
+            Assert.True(Tensor.Create<int>([2]).IsDense);
+            Assert.True(Tensor.Create<int>([2], [1]).IsDense);
+
+            Assert.True(Tensor.Create<int>([1, 2]).IsDense);
+            Assert.True(Tensor.Create<int>([1, 2], [2, 1]).IsDense);
+
+            Assert.True(Tensor.Create<int>([2, 2]).IsDense);
+            Assert.True(Tensor.Create<int>([2, 2], [2, 1]).IsDense);
+
+            Assert.True(Tensor.Create<int>([4, 3]).IsDense);
+            Assert.True(Tensor.Create<int>([4, 3], [12, 1]).IsDense);
+
+            // Non-dense
+
+            Assert.False(Tensor.Create<int>([2], [0]).IsDense);
+            Assert.False(Tensor.Create<int>([2], [2]).IsDense);
+
+            Assert.False(Tensor.Create<int>([2, 2], [1, 2]).IsDense);
+            Assert.False(Tensor.Create<int>([2, 2], [1, 0]).IsDense);
+
+            Assert.False(Tensor.Create<int>([3, 4], [1, 12]).IsDense);
+            Assert.False(Tensor.Create<int>([3, 4], [1, 0]).IsDense);
+        }
+
+        [Fact]
+        public void HasAnyDenseDimensionTests()
+        {
+            // Dense
+
+            Assert.True(Tensor.Create<int>([1]).HasAnyDenseDimension);
+            Assert.True(Tensor.Create<int>([1], [0]).HasAnyDenseDimension);
+
+            Assert.True(Tensor.Create<int>([2]).HasAnyDenseDimension);
+            Assert.True(Tensor.Create<int>([2], [1]).HasAnyDenseDimension);
+
+            Assert.True(Tensor.Create<int>([1, 2]).HasAnyDenseDimension);
+            Assert.True(Tensor.Create<int>([1, 2], [2, 1]).HasAnyDenseDimension);
+
+            Assert.True(Tensor.Create<int>([2, 2]).HasAnyDenseDimension);
+            Assert.True(Tensor.Create<int>([2, 2], [2, 1]).HasAnyDenseDimension);
+
+            Assert.True(Tensor.Create<int>([4, 3]).HasAnyDenseDimension);
+            Assert.True(Tensor.Create<int>([4, 3], [12, 1]).HasAnyDenseDimension);
+
+            // Non-dense w/ Dense Dimension
+
+            Assert.True(Tensor.Create<int>([2], [0]).HasAnyDenseDimension);
+
+            Assert.True(Tensor.Create<int>([2, 2], [1, 0]).HasAnyDenseDimension);
+
+            Assert.True(Tensor.Create<int>([3, 4], [1, 0]).HasAnyDenseDimension);
+
+            // Non-dense w/ Non-dense Dimension
+
+            Assert.False(Tensor.Create<int>([2], [2]).HasAnyDenseDimension);
+
+            Assert.False(Tensor.Create<int>([2, 2], [1, 2]).HasAnyDenseDimension);
+
+            Assert.False(Tensor.Create<int>([3, 4], [1, 12]).HasAnyDenseDimension);
+        }
+
+        [Fact]
+        public void ToDenseTensorTests()
+        {
+            // Dense
+
+            AssertReturnsSelf(Tensor.Create<int>([1]));
+            AssertReturnsSelf(Tensor.Create<int>([1], [0]));
+
+            AssertReturnsSelf(Tensor.Create<int>([2]));
+            AssertReturnsSelf(Tensor.Create<int>([2], [1]));
+
+            AssertReturnsSelf(Tensor.Create<int>([1, 2]));
+            AssertReturnsSelf(Tensor.Create<int>([1, 2], [2, 1]));
+
+            AssertReturnsSelf(Tensor.Create<int>([2, 2]));
+            AssertReturnsSelf(Tensor.Create<int>([2, 2], [2, 1]));
+
+            AssertReturnsSelf(Tensor.Create<int>([4, 3]));
+            AssertReturnsSelf(Tensor.Create<int>([4, 3], [12, 1]));
+
+            // Non-dense
+
+            AssertReturnsNewTensor(Tensor.Create<int>([2], [0]));
+            AssertReturnsNewTensor(Tensor.Create<int>([2], [2]));
+
+            AssertReturnsNewTensor(Tensor.Create<int>([2, 2], [1, 2]));
+            AssertReturnsNewTensor(Tensor.Create<int>([2, 2], [1, 0]));
+
+            AssertReturnsNewTensor(Tensor.Create<int>([3, 4], [1, 12]));
+            AssertReturnsNewTensor(Tensor.Create<int>([3, 4], [1, 0]));
+
+            static void AssertReturnsSelf<T>(Tensor<T> tensor)
+            {
+                Assert.Same(tensor, tensor.ToDenseTensor());
+            }
+
+            static void AssertReturnsNewTensor<T>(Tensor<T> tensor)
+                where T : IEqualityOperators<T, T, bool>
+            {
+                Tensor<T> denseTensor = tensor.ToDenseTensor();
+                Assert.NotSame(tensor, denseTensor);
+
+                Assert.Equal(tensor.FlattenedLength, denseTensor.FlattenedLength);
+                Assert.True(Tensor.EqualsAll<T>(tensor, denseTensor));
             }
         }
     }
