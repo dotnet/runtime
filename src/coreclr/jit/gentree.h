@@ -6617,10 +6617,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         }
     }
 
-#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
-    bool HasAllMaskVariant();
-#endif
-
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 

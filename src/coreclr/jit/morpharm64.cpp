@@ -18,38 +18,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef FEATURE_MASKED_HW_INTRINSICS
 
 //------------------------------------------------------------------------
-// HasAllMaskVariant: Does this intrinsic have a variant where all of it's operands
-//                    are mask types?
-//
-// Return Value:
-//     true if an all-mask variant exists for the intrinsic, else false.
-//
-bool GenTreeHWIntrinsic::HasAllMaskVariant()
-{
-    switch (GetHWIntrinsicId())
-    {
-        // ZIP1 <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
-        // ZIP2 <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
-        // UZP1 <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
-        // UZP2 <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
-        // TRN1 <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
-        // TRN2 <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
-        // REV  <Pd>.<T>, <Pn>.<T>
-        case NI_Sve_ZipHigh:
-        case NI_Sve_ZipLow:
-        case NI_Sve_UnzipOdd:
-        case NI_Sve_UnzipEven:
-        case NI_Sve_TransposeEven:
-        case NI_Sve_TransposeOdd:
-        case NI_Sve_ReverseElement:
-            return true;
-
-        default:
-            return false;
-    }
-}
-
-//------------------------------------------------------------------------
 // canMorphVectorOperandToMask: Can this vector operand be converted to a
 //                              node with type TYP_MASK easily?
 //
@@ -119,84 +87,41 @@ GenTree* Compiler::doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic*
 //
 GenTree* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node)
 {
-    if (node->HasAllMaskVariant() && canMorphAllVectorOperandsToMasks(node))
+    if (HWIntrinsicInfo::HasAllMaskVariant(node->GetHWIntrinsicId()))
     {
-        for (size_t i = 1; i <= node->GetOperandCount(); i++)
+        NamedIntrinsic maskVariant = HWIntrinsicInfo::GetMaskVariant(node->GetHWIntrinsicId());
+
+        // As some intrinsics have many variants, check that the count of operands on the node
+        // matches the number of operands required for the mask variant of the intrinsic. The mask
+        // variant of the intrinsic must have a fixed number of operands.
+        int numArgs = HWIntrinsicInfo::lookupNumArgs(maskVariant);
+        assert(numArgs >= 0);
+        if (node->GetOperandCount() == numArgs)
         {
-            node->Op(i) = doMorphVectorOperandToMask(node->Op(i), node);
-        }
-
-        node->gtType = TYP_MASK;
-        return node;
-    }
-
-    if (node->OperIsHWIntrinsic(NI_Sve_ConditionalSelect))
-    {
-        GenTree* mask  = node->Op(1);
-        GenTree* left  = node->Op(2);
-        GenTree* right = node->Op(3);
-
-        if (left->OperIsHWIntrinsic())
-        {
-            assert(canMorphVectorOperandToMask(mask));
-
-            if (canMorphAllVectorOperandsToMasks(left->AsHWIntrinsic()))
+            // We're sure it will work at this point, so perform the pattern match on operands.
+            if (canMorphAllVectorOperandsToMasks(node))
             {
-                // At this point we know the 'left' node is a HWINTRINSIC node and all of its operands look like
-                // mask nodes.
-                //
-                // The ConditionalSelect could be substituted for the named intrinsic in it's 'left' operand and
-                // transformed to a mask-type operation for some named intrinsics. Doing so will encourage codegen
-                // to emit predicate variants of instructions rather than vector variants, and we can lose some
-                // unnecessary mask->vector conversion nodes.
-                GenTreeHWIntrinsic* actualOp = left->AsHWIntrinsic();
-
-                switch (actualOp->GetHWIntrinsicId())
+                switch (node->GetOperandCount())
                 {
-                    // AND <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B
-                    // BIC <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B
-                    // EOR <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B
-                    // ORR <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B
-                    case NI_Sve_And:
-                    case NI_Sve_BitwiseClear:
-                    case NI_Sve_Xor:
-                    case NI_Sve_Or:
-                        if (right->IsVectorZero())
-                        {
-                            // The operation is equivalent for all lane arrangements, because it is a bitwise operation.
-                            // It's safe to bash the type to 8-bit required to assemble the instruction.
-                            actualOp->SetSimdBaseJitType(CORINFO_TYPE_BYTE);
-
-                            actualOp->ResetHWIntrinsicId(actualOp->GetHWIntrinsicId(), this,
-                                                         doMorphVectorOperandToMask(mask, actualOp),
-                                                         doMorphVectorOperandToMask(actualOp->Op(1), actualOp),
-                                                         doMorphVectorOperandToMask(actualOp->Op(2), actualOp));
-                            actualOp->gtType = TYP_MASK;
-                            return actualOp;
-                        }
+                    case 1:
+                        node->ResetHWIntrinsicId(maskVariant, doMorphVectorOperandToMask(node->Op(1), node));
+                        break;
+                    case 2:
+                        node->ResetHWIntrinsicId(maskVariant, doMorphVectorOperandToMask(node->Op(1), node),
+                                                 doMorphVectorOperandToMask(node->Op(2), node));
+                        break;
+                    case 3:
+                        node->ResetHWIntrinsicId(maskVariant, this, doMorphVectorOperandToMask(node->Op(1), node),
+                                                 doMorphVectorOperandToMask(node->Op(2), node),
+                                                 doMorphVectorOperandToMask(node->Op(3), node));
                         break;
                     default:
-                        break;
+                        unreached();
                 }
+
+                node->gtType = TYP_MASK;
+                return node;
             }
-        }
-
-        // If we got this far, then there was no match on any predicated operation.
-        // ConditionalSelect itself can be a mask operation for 8-bit lane types, using
-        // SEL <Pd>.B, <Pg>, <Pn>.B, <Pm>.B
-        if (canMorphAllVectorOperandsToMasks(node))
-        {
-            for (size_t i = 1; i <= node->GetOperandCount(); i++)
-            {
-                node->Op(i) = doMorphVectorOperandToMask(node->Op(i), node);
-            }
-
-            // Again this operation is bitwise, so the lane arrangement doesn't matter.
-            // We can bash the type to 8-bit.
-            node->SetSimdBaseJitType(CORINFO_TYPE_BYTE);
-
-            node->gtType = TYP_MASK;
-            return node;
         }
     }
 
