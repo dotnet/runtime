@@ -361,7 +361,7 @@ namespace System.Formats.Tar.Tests
             expectedChecksum += GetChecksum(gidOctal);
 
             // '14164217674\0' = 49 + 52 + 49 + 54 + 52 + 50 + 49 + 55 + 54 + 55 + 52 + 0 = 571
-            DateTimeOffset mtime = TimestampForChecksum; // ToUnixTimeSeconds() = 1641095100 (oct6al 14164217674)
+            DateTimeOffset mtime = TimestampForChecksum; // ToUnixTimeSeconds() = 1641095100 (octal 14164217674)
             entry.ModificationTime = mtime;
             expectedChecksum += GetChecksum(Convert.ToString(mtime.ToUnixTimeSeconds(), 8).PadLeft(11, '0'));
 

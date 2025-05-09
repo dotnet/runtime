@@ -540,7 +540,7 @@ namespace System.Formats.Tar
         {
             // Convert byte arrays
             ReadOnlySpan<byte> aTimeBuffer = buffer.Slice(FieldLocations.ATime, FieldLengths.ATime);
-            if (!aTimeBuffer.SequenceEqual(ArrayOf12NullBytes)) // An all nulls buffer is interpreted as MinValue
+            if (!aTimeBuffer.SequenceEqual(ArrayOf12NullBytes)) // null values are ignored
             {
                 long aTime = TarHelpers.ParseNumeric<long>(aTimeBuffer);
                 _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);

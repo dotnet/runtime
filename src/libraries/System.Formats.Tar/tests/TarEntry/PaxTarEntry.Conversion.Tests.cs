@@ -92,40 +92,28 @@ namespace System.Formats.Tar.Tests
             dataStream.Position = 0;
             originalEntry.DataStream = dataStream;
 
-            DateTimeOffset expectedATime;
-            DateTimeOffset expectedCTime;
+            DateTimeOffset expectedATime = default;
+            DateTimeOffset expectedCTime = default;
 
-            if (originalEntryFormat is TarEntryFormat.Pax or TarEntryFormat.Gnu)
+            if (originalEntry is GnuTarEntry gnuEntry)
             {
-                // The constructor should've set the atime and ctime automatically to the same value of UnixEpoch
-                if (originalEntry is GnuTarEntry gnuEntry)
-                {
-                    Assert.Equal(default, gnuEntry.AccessTime);
-                    Assert.Equal(default, gnuEntry.ChangeTime);
-                    // Change them to mtime
-                    gnuEntry.AccessTime = gnuEntry.ModificationTime;
-                    gnuEntry.ChangeTime = gnuEntry.ModificationTime;
+                Assert.Equal(default, gnuEntry.AccessTime);
+                Assert.Equal(default, gnuEntry.ChangeTime);
+                // Change them to mtime
+                gnuEntry.AccessTime = gnuEntry.ModificationTime;
+                gnuEntry.ChangeTime = gnuEntry.ModificationTime;
 
-                    expectedATime = gnuEntry.ModificationTime;
-                    expectedCTime = gnuEntry.ModificationTime;
-                }
-                else
-                {
-                    PaxTarEntry paxEntry = originalEntry as PaxTarEntry;
-
-                    expectedATime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
-                    expectedCTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
-
-                    Assert.Equal(paxEntry.ModificationTime, expectedATime);
-                    Assert.Equal(paxEntry.ModificationTime, expectedCTime);
-                    // Can't change them, it's a read-only dictionary
-                }
+                expectedATime = gnuEntry.ModificationTime;
+                expectedCTime = gnuEntry.ModificationTime;
             }
-            else
+            else if (originalEntry is PaxTarEntry paxEntry)
             {
-                // ustar and v7 do not have atime and ctime, so the expected values of atime and ctime should be set to UnixEpoch.
-                expectedATime = DateTimeOffset.UnixEpoch;
-                expectedCTime = DateTimeOffset.UnixEpoch;
+                expectedATime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                expectedCTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
+
+                Assert.Equal(paxEntry.ModificationTime, expectedATime);
+                Assert.Equal(paxEntry.ModificationTime, expectedCTime);
+                // Can't change them, it's a read-only dictionary
             }
 
             TarEntry convertedEntry = InvokeTarEntryConversionConstructor(TarEntryFormat.Pax, originalEntry);
@@ -164,11 +152,6 @@ namespace System.Formats.Tar.Tests
                 {
                     Assert.Equal(expectedATime, atime);
                     Assert.Equal(expectedCTime, ctime);
-                }
-                else
-                {
-                    AssertExtensions.GreaterThanOrEqualTo(atime, initialNow);
-                    AssertExtensions.GreaterThanOrEqualTo(ctime, initialNow);
                 }
             }
         }
