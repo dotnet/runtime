@@ -78,7 +78,8 @@ namespace System.Net.Test.Common
                         }
                     }
                 }
-                catch { };
+                catch { }
+                ;
 
                 try
                 {
@@ -95,7 +96,8 @@ namespace System.Net.Test.Common
                         }
                     }
                 }
-                catch { };
+                catch { }
+                ;
             }
 
             internal static X509ExtensionCollection BuildTlsServerCertExtensions(string serverName)
@@ -160,10 +162,10 @@ namespace System.Net.Test.Common
                 responder.Dispose();
                 root.Dispose();
 
-                if (!ephemeralKey && PlatformDetection.IsWindows)
+                if (PlatformDetection.IsWindows)
                 {
                     X509Certificate2 ephemeral = endEntity;
-                    endEntity = X509CertificateLoader.LoadPkcs12(endEntity.Export(X509ContentType.Pfx), (string?)null, X509KeyStorageFlags.Exportable);
+                    endEntity = X509CertificateLoader.LoadPkcs12(endEntity.Export(X509ContentType.Pfx), (string?)null, ephemeralKey ? X509KeyStorageFlags.EphemeralKeySet : X509KeyStorageFlags.Exportable);
                     ephemeral.Dispose();
                 }
 
