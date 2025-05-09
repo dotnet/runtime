@@ -406,7 +406,7 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
 bool Lowering::IsProfitableToSetZeroFlag(GenTree* op) const
 {
 #ifdef TARGET_XARCH
-    if (op->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROR))
+    if (op->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROR, GT_ROL))
     {
         // BMI2 instructions (SHLX, SARX, SHRX, RORX) do not set zero flag.
         if (!op->AsOp()->gtGetOp2()->OperIsConst())
