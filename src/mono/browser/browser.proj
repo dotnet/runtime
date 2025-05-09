@@ -122,7 +122,7 @@
         <UseWasm64 Condition="'$(WasmEnableMemory64)' == 'true'">--target=wasm64</UseWasm64>
     </PropertyGroup>
     
-    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c $(UseWasm64) @$(_WasmTimezonesSourcesRsp)"
+    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c $(UseWasm64) @$(_WasmTimezonesSourcesRsp) -sWASM_ASYNC_COMPILATION=0"
           WorkingDirectory="$(WasmObjDir)"
           EmSdkPath="$(EMSDK_PATH)"
           ConsoleToMsBuild="true"
@@ -392,7 +392,7 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
 
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-sWASM_ASYNC_COMPILATION=0 -g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(WasmEnableMemory64)' == 'true'">$(CMakeConfigurationLinkFlags) -DMEMORY64 --target=wasm64</CMakeConfigurationEmccFlags>
 
