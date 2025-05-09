@@ -754,10 +754,10 @@ MONO_RESTORE_WARNING
 					opcode = OP_MOVE;
 					tto_stack = STACK_I8;
 				}
-			}
 #else
-			return NULL;
+				return NULL;
 #endif
+			}
 		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
 #if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
 			opcode = OP_XCAST;
