@@ -487,11 +487,11 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
 #ifdef _DEBUG
     MethodTable * pItfMT =  ownerType.GetMethodTable();
-    PREFIX_ASSUME(pItfMT != NULL);
+    _ASSERTE(pItfMT != NULL);
 #endif // _DEBUG
 
     MethodTable *pServerMT = (*pServer)->GetMethodTable();
-    PREFIX_ASSUME(pServerMT != NULL);
+    _ASSERTE(pServerMT != NULL);
 
 #ifdef FEATURE_COMINTEROP
     if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
@@ -552,7 +552,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
     CONTRACT_END;
 
     MethodTable * pItfMT =  pItfMD->GetMethodTable();
-    PREFIX_ASSUME(pItfMT != NULL);
+    _ASSERTE(pItfMT != NULL);
 
         // We now handle __ComObject class that doesn't have Dynamic Interface Map
     if (!HasDynamicInterfaceMap())
@@ -904,7 +904,7 @@ unsigned MethodTable::GetNumDynamicallyAddedInterfaces()
     PRECONDITION(HasDynamicInterfaceMap());
 
     PTR_InterfaceInfo pInterfaces = GetInterfaceMap();
-    PREFIX_ASSUME(pInterfaces != NULL);
+    _ASSERTE(pInterfaces != NULL);
     return (unsigned)*(dac_cast<PTR_SIZE_T>(pInterfaces) - 1);
 }
 
@@ -956,7 +956,7 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
     // Copy the old map into the new one.
     if (TotalNumInterfaces > 0) {
         InterfaceInfo_t *pInterfaceMap = GetInterfaceMap();
-        PREFIX_ASSUME(pInterfaceMap != NULL);
+        _ASSERTE(pInterfaceMap != NULL);
 
         for (unsigned index = 0; index < TotalNumInterfaces; ++index)
         {
@@ -4328,7 +4328,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         ClassLoader::ValidateMethodsWithCovariantReturnTypes(this);
     }
 
-    if ((level == CLASS_LOADED) && 
+    if ((level == CLASS_LOADED) &&
         this->GetModule()->AreJITOptimizationsDisabled() &&
         !HasInstantiation() &&
         !GetModule()->GetAssembly()->IsLoading()) // Do not do this during the vtable fixup stage of C++/CLI assembly loading. See https://github.com/dotnet/runtime/issues/110365
@@ -8209,7 +8209,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         bool differsByAsyncVariant = false;
         if (!pMethodDecl->HasSameMethodDefAs(pInterfaceMD))
         {
-            if (pMethodDecl->GetMemberDef() == pInterfaceMD->GetMemberDef() && 
+            if (pMethodDecl->GetMemberDef() == pInterfaceMD->GetMemberDef() &&
                 pMethodDecl->GetModule() == pInterfaceMD->GetModule() &&
                 pMethodDecl->IsAsyncVariantMethod() != pInterfaceMD->IsAsyncVariantMethod())
             {

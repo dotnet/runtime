@@ -33,19 +33,10 @@ struct CORDBG_SYMBOL_URL
     GUID        FormatID;               // ID of the format type.
     WCHAR       rcName[2];              // Variable sized name of the item.
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6305) // "Potential mismatch between sizeof and countof quantities"
-#endif
-
     ULONG Size() const
     {
         return (ULONG)(sizeof(GUID) + ((u16_strlen(rcName) + 1) * 2));
     }
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 };
 
 

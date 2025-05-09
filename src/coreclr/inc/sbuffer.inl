@@ -268,7 +268,7 @@ inline void SBuffer::Set(const SBuffer &buffer)
 
         // PreFix seems to think it can choose m_allocation==0 and buffer.m_size > 0 here.
         // From the code for Resize and EnsureMutable, this is clearly impossible.
-        PREFIX_ASSUME( (this->m_buffer != NULL) || (buffer.m_size == 0) );
+        _ASSERTE( (this->m_buffer != NULL) || (buffer.m_size == 0) );
 
         MoveMemory(m_buffer, buffer.m_buffer, buffer.m_size);
     }
@@ -294,7 +294,7 @@ inline void SBuffer::Set(const BYTE *buffer, COUNT_T size)
 
     // PreFix seems to think it can choose m_allocation==0 and size > 0 here.
     // From the code for Resize, this is clearly impossible.
-    PREFIX_ASSUME( (this->m_buffer != NULL) || (size == 0) );
+    _ASSERTE( (this->m_buffer != NULL) || (size == 0) );
 
     if (size != 0)
         MoveMemory(m_buffer, buffer, size);

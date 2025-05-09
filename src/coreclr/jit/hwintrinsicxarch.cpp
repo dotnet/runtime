@@ -3806,34 +3806,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
 
-            if (!indexOp->OperIsConst())
-            {
-                if (!opts.OptimizationEnabled())
-                {
-                    // Only enable late stage rewriting if optimizations are enabled
-                    // as we won't otherwise encounter a constant at the later point
-                    return nullptr;
-                }
-
-                op3 = impPopStack().val;
-                op2 = impPopStack().val;
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
-
-                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
-                break;
-            }
-
-            ssize_t imm8  = indexOp->AsIntCon()->IconValue();
-            ssize_t count = simdSize / genTypeSize(simdBaseType);
-
-            if ((imm8 >= count) || (imm8 < 0))
-            {
-                // Using software fallback if index is out of range (throw exception)
-                return nullptr;
-            }
-
             switch (simdBaseType)
             {
                 // Using software fallback if simdBaseType is not supported by hardware
