@@ -38,6 +38,11 @@ static Thread* g_RuntimeInitializingThread;
 
 #endif //!DACCESS_COMPILE
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+extern "C" void* PacSignPtr(void* ptr);
+#endif // TARGET_ARM64
+
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
 {
     minipal_xoshiro128pp_init(&random_state, (uint32_t)PalGetTickCount64());
@@ -805,6 +810,10 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         CrossThreadUnhijack();
 
         void* pvRetAddr = *ppvRetAddrLocation;
+#if defined(TARGET_ARM64)
+        pvRetAddr = PacStripPtr(pvRetAddr);
+#endif // TARGET_ARM64
+
         ASSERT(pvRetAddr != NULL);
         ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
 
@@ -817,6 +826,9 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 #endif
 
         *ppvRetAddrLocation = (void*)pfnHijackFunction;
+#if defined(TARGET_ARM64)
+        *ppvRetAddrLocation = PacSignPtr(*ppvRetAddrLocation);
+#endif // TARGET_ARM64
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
@@ -944,7 +956,11 @@ void Thread::UnhijackWorker()
 
     // Restore the original return address.
     ASSERT(m_ppvHijackedReturnAddressLocation != NULL);
+
     *m_ppvHijackedReturnAddressLocation = m_pvHijackedReturnAddress;
+#if defined(TARGET_ARM64)
+    *m_ppvHijackedReturnAddressLocation = PacSignPtr(*m_ppvHijackedReturnAddressLocation);
+#endif // TARGET_ARM64
 
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;
