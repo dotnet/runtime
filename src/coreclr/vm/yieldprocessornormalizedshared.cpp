@@ -9,12 +9,12 @@ enum class NormalizationState : uint8_t
 };
 
 static const int NsPerYieldMeasurementCount = 8;
-static const unsigned int MeasurementPeriodMs = 4000;
+static const int64_t MeasurementPeriodMs = 4000;
 
 static const unsigned int NsPerS = 1000 * 1000 * 1000;
 
 static NormalizationState s_normalizationState = NormalizationState::Uninitialized;
-static unsigned int s_previousNormalizationTimeMs;
+static int64_t s_previousNormalizationTimeMs;
 
 static int64_t s_performanceCounterTicksPerS;
 static double s_nsPerYieldMeasurements[NsPerYieldMeasurementCount];
@@ -22,15 +22,6 @@ static int s_nextMeasurementIndex;
 static double s_establishedNsPerYield = YieldProcessorNormalization::TargetNsPerNormalizedYield;
 
 void RhEnableFinalization();
-
-inline unsigned int GetTickCountPortable()
-{
-#ifdef FEATURE_NATIVEAOT
-    return (unsigned int)PalGetTickCount64();
-#else
-    return GetTickCount();
-#endif
-}
 
 static unsigned int DetermineMeasureDurationUs()
 {
@@ -127,7 +118,7 @@ void YieldProcessorNormalization::PerformMeasurement()
     double latestNsPerYield;
     if (s_normalizationState == NormalizationState::Initialized)
     {
-        if (GetTickCountPortable() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
+        if (minipal_lowres_ticks() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
         {
             return;
         }
@@ -212,7 +203,7 @@ void YieldProcessorNormalization::PerformMeasurement()
 
     GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)yieldsPerNormalizedYield);
 
-    s_previousNormalizationTimeMs = GetTickCountPortable();
+    s_previousNormalizationTimeMs = (unsigned int)minipal_lowres_ticks();
     s_normalizationState = NormalizationState::Initialized;
     s_isMeasurementScheduled = false;
 }
@@ -231,7 +222,7 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
     NormalizationState normalizationState = VolatileLoadWithoutBarrier(&s_normalizationState);
     if (normalizationState == NormalizationState::Initialized)
     {
-        if (GetTickCountPortable() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
+        if (minipal_lowres_ticks() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
         {
             return;
         }

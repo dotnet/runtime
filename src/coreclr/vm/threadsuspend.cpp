@@ -209,7 +209,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
 #if defined(_DEBUG)
     int nCnt = 0;
     bool bDiagSuspend = g_pConfig->GetDiagnosticSuspend();
-    ULONGLONG i64TimestampStart = CLRGetTickCount64();
+    ULONGLONG i64TimestampStart = minipal_lowres_ticks();
     ULONGLONG i64TimestampCur = i64TimestampStart;
     ULONGLONG i64TimestampPrev = i64TimestampStart;
 
@@ -321,7 +321,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                 if ((!fOneTryOnly) && bDiagSuspend)
                 {
                     while ( m_dwForbidSuspendThread != 0 &&
-                        CLRGetTickCount64()-i64TimestampStart < nCnt*(i64TimestampTicksMax>>3) )
+                        minipal_lowres_ticks()-i64TimestampStart < nCnt*(i64TimestampTicksMax>>3) )
                     {
                         if (g_SystemInfo.dwNumberOfProcessors > 1)
                         {
@@ -379,9 +379,9 @@ retry:
 
 #if defined(_DEBUG)
         i64TimestampPrev = i64TimestampCur;
-        i64TimestampCur = CLRGetTickCount64();
-        // CLRGetTickCount64() is global per machine (not per CPU, like getTimeStamp()).
-        // Next ASSERT states that CLRGetTickCount64() is increasing, or has wrapped.
+        i64TimestampCur = minipal_lowres_ticks();
+        // minipal_lowres_ticks() is global per machine (not per CPU, like getTimeStamp()).
+        // Next ASSERT states that minipal_lowres_ticks() is increasing, or has wrapped.
         // If it wrapped, the last iteration should have executed faster then 0.5 seconds.
         _ASSERTE(i64TimestampCur >= i64TimestampPrev || i64TimestampCur <= 500);
 
@@ -1202,8 +1202,8 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     // Swap in timeout
     if (timeout != INFINITE)
     {
-        ULONG64 curTime = CLRGetTickCount64();
-        ULONG64 newEndTime = curTime + timeout;
+        ULONGLONG curTime = minipal_lowres_ticks();
+        ULONGLONG newEndTime = curTime + timeout;
 
         SetAbortEndTime(newEndTime, abortType == EEPolicy::TA_Rude);
     }
@@ -1263,7 +1263,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
         ULONGLONG abortEndTime = GetAbortEndTime();
         if (abortEndTime != MAXULONGLONG)
         {
-            ULONGLONG now_time = CLRGetTickCount64();
+            ULONGLONG now_time = minipal_lowres_ticks();
 
             if (now_time >= abortEndTime)
             {
@@ -1657,7 +1657,7 @@ LPrepareRetry:
                 return S_OK;
             }
 
-            ULONGLONG curTime = CLRGetTickCount64();
+            ULONGLONG curTime = minipal_lowres_ticks();
             if (curTime >= GetAbortEndTime())
             {
                 break;

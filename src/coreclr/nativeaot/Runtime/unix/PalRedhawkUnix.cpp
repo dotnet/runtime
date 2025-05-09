@@ -730,15 +730,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ Backgro
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-// Returns a 64-bit tick count with a millisecond resolution. It tries its best
-// to return monotonically increasing counts and avoid being affected by changes
-// to the system clock (either due to drift or due to explicit changes to system
-// time).
-REDHAWK_PALEXPORT uint64_t REDHAWK_PALAPI PalGetTickCount64()
-{
-    return GCToOSInterface::GetLowPrecisionTimeStamp();
-}
-
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     HANDLE moduleHandle = NULL;

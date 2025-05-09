@@ -2600,7 +2600,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
             // Measure the time we wait so that, in the case where we wake up
             // and fail to acquire the mutex, we can adjust remaining timeout
             // accordingly.
-            ULONGLONG start = CLRGetTickCount64();
+            int64_t start = minipal_lowres_ticks();
 
             // It is likely the case that An APC threw an exception, for instance Thread.Interrupt(). The wait subsystem
             // guarantees that if a signal to the event being waited upon is observed by the woken thread, that thread's
@@ -2688,8 +2688,8 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
             // case is taken care of by 32-bit modulo arithmetic automatically.
             if (timeOut != (INT32)INFINITE)
             {
-                ULONGLONG end = CLRGetTickCount64();
-                ULONGLONG duration;
+                int64_t end = minipal_lowres_ticks();
+                int64_t duration;
                 if (end == start)
                 {
                     duration = 1;
@@ -2698,7 +2698,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
                 {
                     duration = end - start;
                 }
-                duration = min(duration, (ULONGLONG)timeOut);
+                duration = min(duration, (int64_t)timeOut);
                 timeOut -= (INT32)duration;
             }
         }

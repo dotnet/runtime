@@ -17,6 +17,7 @@
 BOOL FinalizerThread::fQuitFinalizer = FALSE;
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
+#include "minipal/time.h"
 #define LINUX_HEAP_DUMP_TIME_OUT 10000
 
 extern bool s_forcedGCInProgress;
@@ -277,7 +278,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         }
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-        if (g_TriggerHeapDump && (CLRGetTickCount64() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
+        if (g_TriggerHeapDump && (minipal_lowres_ticks() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
         {
             s_forcedGCInProgress = true;
             GetFinalizerThread()->DisablePreemptiveGC();
@@ -285,7 +286,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             GetFinalizerThread()->EnablePreemptiveGC();
             s_forcedGCInProgress = false;
 
-            LastHeapDumpTime = CLRGetTickCount64();
+            LastHeapDumpTime = minipal_lowres_ticks();
             g_TriggerHeapDump = FALSE;
         }
 #endif
