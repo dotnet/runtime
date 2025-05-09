@@ -3021,9 +3021,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // Currently dstCount = 2 is only used for DivRem and Multiply, which has special constraints and is handled above
+        // Currently dstCount = 2 is only used for DivRem and Multiply, which has special constraints and is handled
+        // above
         assert((dstCount == 0) ||
-               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) || (intrinsicId == NI_X86Base_Multiply) || (intrinsicId == NI_X86Base_X64_Multiply))));
+               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
+                                    (intrinsicId == NI_X86Base_Multiply) || (intrinsicId == NI_X86Base_X64_Multiply))));
     }
 
     *pDstCount = dstCount;
