@@ -56,10 +56,10 @@ namespace System.Formats.Tar.Tests
 
         protected void SetGnuProperties(GnuTarEntry entry)
         {
-            Assert.Equal(DateTimeOffset.MinValue, entry.AccessTime);
+            Assert.Equal(default, entry.AccessTime);
             entry.AccessTime = TestAccessTime;
 
-            Assert.Equal(DateTimeOffset.MinValue, entry.ChangeTime);
+            Assert.Equal(default, entry.ChangeTime);
             entry.ChangeTime = TestChangeTime;
         }
 
@@ -113,8 +113,8 @@ namespace System.Formats.Tar.Tests
 
         protected void VerifyGnuTimestamps(GnuTarEntry gnu)
         {
-            Assert.Equal(DateTimeOffset.MinValue, gnu.AccessTime);
-            Assert.Equal(DateTimeOffset.MinValue, gnu.ChangeTime);
+            Assert.Equal(default, gnu.AccessTime);
+            Assert.Equal(default, gnu.ChangeTime);
         }
     }
 }

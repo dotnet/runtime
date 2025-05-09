@@ -463,7 +463,7 @@ namespace System.Formats.Tar.Tests
 
                         expectedTimestampChecksumToTest = 0;
                         // '\0\0\0\0\0\0\0\0\0\0\0\0' = 0
-                        expectedTimestampToTest = DateTimeOffset.MinValue;
+                        expectedTimestampToTest = default;
                     }
                 }
             }

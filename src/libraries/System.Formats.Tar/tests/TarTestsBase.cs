@@ -342,7 +342,7 @@ namespace System.Formats.Tar.Tests
             }
             else
             {
-                entry.ModificationTime = DateTimeOffset.MinValue;
+                entry.ModificationTime = default;
             }
             entry.ModificationTime = TestModificationTime;
 

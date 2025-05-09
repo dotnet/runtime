@@ -77,8 +77,8 @@ namespace System.Formats.Tar.Tests
             else if (format is TarEntryFormat.Gnu)
             {
                 GnuTarEntry gnuEntry = firstEntry as GnuTarEntry;
-                Assert.Equal(DateTimeOffset.MinValue, gnuEntry.AccessTime);
-                Assert.Equal(DateTimeOffset.MinValue, gnuEntry.ChangeTime);
+                Assert.Equal(default, gnuEntry.AccessTime);
+                Assert.Equal(default, gnuEntry.ChangeTime);
             }
 
             return firstEntry;
@@ -182,9 +182,8 @@ namespace System.Formats.Tar.Tests
                 }
                 else if (originalEntry.Format is TarEntryFormat.Ustar or TarEntryFormat.V7)
                 {
-                    // We set atime and ctime to UnixEpoch
-                    Assert.Equal(DateTimeOffset.MinValue, gnuEntry.AccessTime);
-                    Assert.Equal(DateTimeOffset.MinValue, gnuEntry.ChangeTime);
+                    Assert.Equal(default, gnuEntry.AccessTime);
+                    Assert.Equal(default, gnuEntry.ChangeTime);
                 }
             }
 
@@ -200,8 +199,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Contains("atime", originalPaxEntry.ExtendedAttributes); //  We are verifying that the original had an atime and ctime set
                 Assert.Contains("ctime", originalPaxEntry.ExtendedAttributes); //  and that when converting to GNU we are _not_ preserving them
                 // And that instead, we are setting them to MinValue
-                expectedATime = formatToConvert is TarEntryFormat.Gnu ? DateTimeOffset.MinValue : GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, "atime");
-                expectedCTime = formatToConvert is TarEntryFormat.Gnu ? DateTimeOffset.MinValue : GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, "ctime");
+                expectedATime = formatToConvert is TarEntryFormat.Gnu ? default : GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, "atime");
+                expectedCTime = formatToConvert is TarEntryFormat.Gnu ? default : GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, "ctime");
             }
             else
             {
