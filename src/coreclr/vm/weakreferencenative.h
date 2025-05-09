@@ -13,16 +13,6 @@
 
 #include "weakreference.h"
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-
-class ComAwareWeakReferenceNative
-{
-public:
-    static FCDECL1(FC_BOOL_RET, HasInteropInfo, Object* pObject);
-};
-
-#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-
 #ifdef FEATURE_COMINTEROP
 
 extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference * pComWeakReference, QCall::ObjectHandleOnStack retRcw);

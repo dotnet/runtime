@@ -30,6 +30,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool PossiblyComObject(object target)
         {
+            return HasRealSyncBlock(target) || PossiblyComWrappersObject(target);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool HasRealSyncBlock(object target)
+        {
             // see: syncblk.h
             const int IS_HASHCODE_BIT_NUMBER = 26;
             const int BIT_SBLK_IS_HASHCODE = 1 << IS_HASHCODE_BIT_NUMBER;
@@ -44,20 +50,11 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool HasInteropInfo(object target);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectToComWeakRef")]
         private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw);
 
         internal static nint ObjectToComWeakRef(object target, out object? context)
         {
-            if (!HasInteropInfo(target))
-            {
-                context = null;
-                return IntPtr.Zero;
-            }
-
 #if FEATURE_COMINTEROP
             if (target is __ComObject)
             {
