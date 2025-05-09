@@ -67,6 +67,31 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task ReadLongStringAsync()
+        {
+            string str = new string('a', 1_000_000);
+            byte[] bytes = Encoding.UTF8.GetBytes(str);
+            bytes[0] = bytes[bytes.Length - 1] = (byte)'"';
+
+            using (MemoryStream stream = new MemoryStream(bytes))
+            {
+                JsonSerializerOptions options = new JsonSerializerOptions
+                {
+                    DefaultBufferSize = 1
+                };
+
+                string actual = await Serializer.DeserializeWrapper<string>(stream, options);
+                Assert.Equal(str
+#if NET
+                    .AsSpan(2)
+#else
+                    .Substring(2)
+#endif
+                    , actual);
+            }
+        }
+
+        [Fact]
         public async Task ReadPrimitivesWithTrailingTriviaAsync()
         {
             using (MemoryStream stream = new MemoryStream(" 1\t// Comment\r\n/* Multi\r\nLine */"u8.ToArray()))

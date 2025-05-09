@@ -18,7 +18,7 @@ namespace System.Text.Json.Nodes
         public JsonValuePrimitive(TValue value, JsonConverter<TValue> converter, JsonNodeOptions? options) : base(value, options)
         {
             Debug.Assert(TypeIsSupportedPrimitive, $"The type {typeof(TValue)} is not a supported primitive.");
-            Debug.Assert(converter is { IsInternalConverter: true, ConverterStrategy: ConverterStrategy.Value });
+            Debug.Assert(converter is { IsInternalConverter: true, ConverterStrategy: ConverterStrategy.SimpleValue or ConverterStrategy.SegmentableValue });
 
             _converter = converter;
             _valueKind = DetermineValueKind(value);

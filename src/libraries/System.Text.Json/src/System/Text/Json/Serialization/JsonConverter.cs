@@ -39,16 +39,14 @@ namespace System.Text.Json.Serialization
 
         internal ConverterStrategy ConverterStrategy
         {
-            get => _converterStrategy;
+            get => field;
             init
             {
-                CanUseDirectReadOrWrite = value == ConverterStrategy.Value && IsInternalConverter;
-                RequiresReadAhead = value == ConverterStrategy.Value;
-                _converterStrategy = value;
+                CanUseDirectReadOrWrite = value == ConverterStrategy.SimpleValue && IsInternalConverter;
+                RequiresReadAhead = value == ConverterStrategy.SimpleValue;
+                field = value;
             }
         }
-
-        private ConverterStrategy _converterStrategy;
 
         /// <summary>
         /// Invoked by the base contructor to populate the initial value of the <see cref="ConverterStrategy"/> property.
@@ -89,6 +87,8 @@ namespace System.Text.Json.Serialization
         /// before calling into the converter for deserialization.
         /// </summary>
         internal bool RequiresReadAhead { get; private protected set; }
+
+        internal bool CanConsumePartialReaderValue => ConverterStrategy == ConverterStrategy.SegmentableValue;
 
         /// <summary>
         /// Whether the converter is a special root-level value streaming converter.

@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization
             return typeToConvert == typeof(T);
         }
 
-        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Value;
+        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.SimpleValue;
 
         internal sealed override JsonTypeInfo CreateJsonTypeInfo(JsonSerializerOptions options)
         {
@@ -160,7 +160,7 @@ namespace System.Text.Json.Serialization
                 return true;
             }
 
-            if (ConverterStrategy == ConverterStrategy.Value)
+            if (ConverterStrategy == ConverterStrategy.SimpleValue)
             {
                 // A value converter should never be within a continuation.
                 Debug.Assert(!state.IsContinuation);
@@ -339,7 +339,7 @@ namespace System.Text.Json.Serialization
                 return true;
             }
 
-            if (ConverterStrategy == ConverterStrategy.Value)
+            if (ConverterStrategy == ConverterStrategy.SimpleValue)
             {
                 Debug.Assert(!state.IsContinuation);
 
@@ -360,9 +360,19 @@ namespace System.Text.Json.Serialization
 
             Debug.Assert(IsInternalConverter);
             bool isContinuation = state.IsContinuation;
+
+            if (ConverterStrategy == ConverterStrategy.SegmentableValue && !state.IsContinuation)
+            {
+                Debug.Assert(this is JsonHybridResumableConverter<T>);
+
+                JsonHybridResumableConverter<T> jsonHybridConverter = (JsonHybridResumableConverter<T>)this;
+                return jsonHybridConverter.WriteWithoutStackFrame(writer, value, options, ref state);
+            }
+
             bool success;
 
             if (
+                ConverterStrategy != ConverterStrategy.SegmentableValue &&
 #if NET
                 // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
                 !typeof(T).IsValueType &&
@@ -411,6 +421,7 @@ namespace System.Text.Json.Serialization
             // DEBUG: ensure push/pop operations preserve stack integrity
             JsonTypeInfo originalJsonTypeInfo = state.Current.JsonTypeInfo;
 #endif
+
             state.Push();
             Debug.Assert(Type == state.Current.JsonTypeInfo.Type);
 
@@ -498,7 +509,7 @@ namespace System.Text.Json.Serialization
 
         internal void VerifyRead(JsonTokenType tokenType, int depth, long bytesConsumed, bool isValueConverter, ref Utf8JsonReader reader)
         {
-            Debug.Assert(isValueConverter == (ConverterStrategy == ConverterStrategy.Value));
+            Debug.Assert(isValueConverter == (ConverterStrategy == ConverterStrategy.SimpleValue));
 
             switch (tokenType)
             {
@@ -527,7 +538,7 @@ namespace System.Text.Json.Serialization
                     break;
 
                 case JsonTokenType.None:
-                    Debug.Assert(IsRootLevelMultiContentStreamingConverter);
+                    Debug.Assert(IsRootLevelMultiContentStreamingConverter || CanConsumePartialReaderValue);
                     break;
 
                 default:
@@ -543,7 +554,7 @@ namespace System.Text.Json.Serialization
                     {
                         // A non-value converter (object or collection) should always have Start and End tokens
                         // unless it is polymorphic or supports null value reads.
-                        if (!CanBePolymorphic && !(HandleNullOnRead && tokenType == JsonTokenType.Null))
+                        if (!CanBePolymorphic && !(HandleNullOnRead && tokenType == JsonTokenType.Null) && tokenType != JsonTokenType.String)
                         {
                             ThrowHelper.ThrowJsonException_SerializationConverterRead(this);
                         }

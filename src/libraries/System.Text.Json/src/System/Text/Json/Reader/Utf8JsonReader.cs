@@ -46,6 +46,8 @@ namespace System.Text.Json
         private SequencePosition _currentPosition;
         private readonly ReadOnlySequence<byte> _sequence;
 
+        internal bool _hasPartialStringValue;
+
         private readonly bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
 
         internal readonly ReadOnlySequence<byte> OriginalSequence => _sequence;
@@ -1276,7 +1278,7 @@ namespace System.Text.Json
             return true;
         }
 
-        private bool ConsumeString()
+        private bool ConsumeString(int offset = 0)
         {
             Debug.Assert(_buffer.Length >= _consumed + 1);
             Debug.Assert(_buffer[_consumed] == JsonConstants.Quote);
@@ -1288,7 +1290,7 @@ namespace System.Text.Json
             // If the first found byte is a quote, we have reached an end of string, and
             // can avoid validation.
             // Otherwise, in the uncommon case, iterate one character at a time and validate.
-            int idx = localBuffer.IndexOfQuoteOrAnyControlOrBackSlash();
+            int idx = localBuffer.Slice(offset).IndexOfQuoteOrAnyControlOrBackSlash() + offset;
 
             if (idx >= 0)
             {
@@ -1300,6 +1302,7 @@ namespace System.Text.Json
                     ValueIsEscaped = false;
                     _tokenType = JsonTokenType.String;
                     _consumed += idx + 2;
+                    _hasPartialStringValue = false;
                     return true;
                 }
                 else
@@ -1314,8 +1317,17 @@ namespace System.Text.Json
                     _bytePositionInLine += localBuffer.Length + 1;  // Account for the start quote
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.EndOfStringNotFound);
                 }
+
+                ValueSpan = localBuffer;
+                ValueIsEscaped = false;
+                _hasPartialStringValue = true;
                 return false;
             }
+        }
+
+        internal bool ContinueConsumeString()
+        {
+            return ConsumeString(ValueSpan.Length);
         }
 
         // Found a backslash or control characters which are considered invalid within a string.
@@ -1367,7 +1379,8 @@ namespace System.Text.Json
                         else
                         {
                             // We found less than 4 hex digits. Check if there is more data to follow, otherwise throw.
-                            idx = data.Length;
+                            idx += 5;
+                            Debug.Assert(idx > data.Length);
                             break;
                         }
 
@@ -1390,6 +1403,9 @@ namespace System.Text.Json
                 }
                 _lineNumber = prevLineNumber;
                 _bytePositionInLine = prevLineBytePosition;
+                ValueSpan = idx > data.Length ? data.Slice(0, idx - 6) : data;
+                ValueIsEscaped = true;
+                _hasPartialStringValue = true;
                 return false;
             }
 
@@ -1399,6 +1415,7 @@ namespace System.Text.Json
             ValueIsEscaped = true;
             _tokenType = JsonTokenType.String;
             _consumed += idx + 2;
+            _hasPartialStringValue = false;
             return true;
         }
 
