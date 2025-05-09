@@ -9445,11 +9445,6 @@ namespace System.Runtime.Intrinsics.X86
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw null; }
 
-        public static (uint Lower, uint Upper) Multiply(uint left, uint right) { throw null; }
-        public static (int Lower, int Upper) Multiply(int left, int right) { throw null; }
-        public static (nuint Lower, nuint Upper) Multiply(nuint left, nuint right) { throw null; }
-        public static (nint Lower, nint Upper) Multiply(nint left, nint right) { throw null; }
-
         public static void Pause() { throw null; }
         public abstract partial class X64
         {
@@ -9459,8 +9454,6 @@ namespace System.Runtime.Intrinsics.X86
             public static (ulong Quotient, ulong Remainder) DivRem(ulong lower, ulong upper, ulong divisor) { throw null; }
             [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
             public static (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) { throw null; }
-            public static (ulong Lower, ulong Upper) Multiply(ulong left, ulong right) { throw null; }
-            public static (long Lower, long Upper) Multiply(long left, long right) { throw null; }
         }
     }
 
