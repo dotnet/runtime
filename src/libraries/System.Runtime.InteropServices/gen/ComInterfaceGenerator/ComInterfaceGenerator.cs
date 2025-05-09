@@ -391,7 +391,11 @@ namespace Microsoft.Interop
 
             MarshallingInfo exceptionMarshallingInfo;
 
-            if (generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller is not null)
+            if (generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller is null)
+            {
+                exceptionMarshallingInfo = new ComExceptionMarshalling();
+            }
+            else
             {
                 exceptionMarshallingInfo = CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
                     environment.Compilation.GetTypeByMetadataName(TypeNames.System_Exception),
@@ -399,10 +403,6 @@ namespace Microsoft.Interop
                     generatedComAttribute,
                     environment.Compilation,
                     generatorDiagnostics);
-            }
-            else
-            {
-                exceptionMarshallingInfo = new ComExceptionMarshalling();
             }
 
             return new IncrementalMethodStubGenerationContext(
