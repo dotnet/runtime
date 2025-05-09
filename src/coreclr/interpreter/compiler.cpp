@@ -8,6 +8,7 @@
 #endif // debug_instrumented_return
 
 #include "interpreter.h"
+#include "stackmap.h"
 
 #include <inttypes.h>
 
@@ -832,7 +833,10 @@ void InterpCompiler::EmitCode()
         for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
         {
             if (InterpOpIsEmitNop(ins->opcode))
+            {
+                ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
                 continue;
+            }
 
             ip = EmitCodeIns(ip, ins, &relocs);
         }
@@ -862,25 +866,158 @@ void InterpCompiler::EmitCode()
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
 }
 
+#ifdef FEATURE_INTERPRETER
+class InterpGcSlotAllocator
+{
+    InterpCompiler *m_compiler;
+    InterpreterGcInfoEncoder *m_encoder;
+    // [pObjects, pByrefs]
+    GcSlotId *m_slotTables[2];
+    unsigned m_slotTableSize;
+
+#ifdef DEBUG
+    bool m_verbose;
+#endif
+
+    GcSlotId* LocateGcSlotTableEntry(uint32_t offsetBytes, GcSlotFlags flags)
+    {
+        GcSlotId *slotTable = m_slotTables[(flags & GC_SLOT_INTERIOR) == GC_SLOT_INTERIOR];
+        uint32_t slotIndex = offsetBytes / sizeof(void *);
+        assert(slotIndex < m_slotTableSize);
+        return &slotTable[slotIndex];
+    }
+
+public:
+    InterpGcSlotAllocator(InterpCompiler *compiler, InterpreterGcInfoEncoder *encoder)
+        : m_compiler(compiler)
+        , m_encoder(encoder)
+        , m_slotTableSize(compiler->m_totalVarsStackSize / sizeof(void *))
+#ifdef DEBUG
+        , m_verbose(compiler->m_verbose)
+#endif
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            m_slotTables[i] = new (compiler) GcSlotId[m_slotTableSize];
+            // 0 is a valid slot id so default-initialize all the slots to 0xFFFFFFFF
+            memset(m_slotTables[i], 0xFF, sizeof(GcSlotId) * m_slotTableSize);
+        }
+    }
+
+    void AllocateOrReuseGcSlot(uint32_t offsetBytes, GcSlotFlags flags)
+    {
+        GcSlotId *pSlot = LocateGcSlotTableEntry(offsetBytes, flags);
+        bool allocateNewSlot = *pSlot == ((GcSlotId)-1);
+
+        if (allocateNewSlot)
+        {
+            // Important to pass GC_FRAMEREG_REL, the default is broken due to GET_CALLER_SP being unimplemented
+            *pSlot = m_encoder->GetStackSlotId(offsetBytes, flags, GC_FRAMEREG_REL);
+        }
+        else
+        {
+            assert((flags & GC_SLOT_UNTRACKED) == 0);
+        }
+
+        INTERP_DUMP(
+            "%s %s%sgcslot %u at %u\n",
+            allocateNewSlot ? "Allocated" : "Reused",
+            (flags & GC_SLOT_UNTRACKED) ? "global " : "",
+            (flags & GC_SLOT_INTERIOR) ? "interior " : "",
+            *pSlot,
+            offsetBytes
+        );
+    }
+
+    void ReportLiveRange(uint32_t offsetBytes, GcSlotFlags flags, int varIndex)
+    {
+        GcSlotId *pSlot = LocateGcSlotTableEntry(offsetBytes, flags);
+        assert(varIndex < m_compiler->m_varsSize);
+
+        InterpVar *pVar = &m_compiler->m_pVars[varIndex];
+        if (pVar->global)
+            return;
+
+        GcSlotId slot = *pSlot;
+        assert(slot != ((GcSlotId)-1));
+        assert(pVar->liveStart);
+        assert(pVar->liveEnd);
+        uint32_t startOffset = m_compiler->ConvertOffset(m_compiler->GetLiveStartOffset(varIndex)),
+            endOffset = m_compiler->ConvertOffset(m_compiler->GetLiveEndOffset(varIndex));
+        INTERP_DUMP(
+            "Slot %u (%s var #%d offset %u) live [IR_%04x - IR_%04x] [%u - %u]\n",
+            slot, pVar->global ? "global" : "local",
+            varIndex, pVar->offset,
+            m_compiler->GetLiveStartOffset(varIndex), m_compiler->GetLiveEndOffset(varIndex),
+            startOffset, endOffset
+        );
+        m_encoder->SetSlotState(startOffset, slot, GC_SLOT_LIVE);
+        m_encoder->SetSlotState(endOffset, slot, GC_SLOT_DEAD);
+    }
+};
+#endif
+
 void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 {
 #ifdef FEATURE_INTERPRETER
     InterpIAllocator* pAllocator = new (this) InterpIAllocator(this);
     InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
-    assert(gcInfoEncoder);
+    InterpGcSlotAllocator slotAllocator (this, gcInfoEncoder);
 
-    gcInfoEncoder->SetCodeLength(m_methodCodeSize);
+    gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
 
-    // TODO: Request slot IDs for all our locals before finalizing
+    INTERP_DUMP("Allocating gcinfo slots for %u vars\n", m_varsSize);
 
-    gcInfoEncoder->FinalizeSlotIds();
+    for (int pass = 0; pass < 2; pass++)
+    {
+        for (int i = 0; i < m_varsSize; i++)
+        {
+            InterpVar *pVar = &m_pVars[i];
+            GcSlotFlags flags = pVar->global
+                ? (GcSlotFlags)GC_SLOT_UNTRACKED
+                : (GcSlotFlags)0;
 
-    // TODO: Use finalized slot IDs to declare live ranges
+            switch (pVar->interpType) {
+                case InterpTypeO:
+                    break;
+                case InterpTypeByRef:
+                    flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
+                    break;
+                case InterpTypeVT:
+                {
+                    InterpreterStackMap *stackMap = GetInterpreterStackMap(m_compHnd, pVar->clsHnd);
+                    for (unsigned j = 0; j < stackMap->m_slotCount; j++)
+                    {
+                        InterpreterStackMapSlot slotInfo = stackMap->m_slots[j];
+                        unsigned fieldOffset = pVar->offset + slotInfo.m_offsetBytes;
+                        GcSlotFlags fieldFlags = (GcSlotFlags)(flags | slotInfo.m_gcSlotFlags);
+                        if (pass == 0)
+                            slotAllocator.AllocateOrReuseGcSlot(fieldOffset, fieldFlags);
+                        else
+                            slotAllocator.ReportLiveRange(fieldOffset, fieldFlags, i);
+                    }
 
-    gcInfoEncoder->Build();
+                    // Don't perform the regular allocateGcSlot call
+                    continue;
+                }
+                default:
+                    // Neither an object, interior pointer, or vt, so no slot needed
+                    continue;
+            }
+
+            if (pass == 0)
+                slotAllocator.AllocateOrReuseGcSlot(pVar->offset, flags);
+            else
+                slotAllocator.ReportLiveRange(pVar->offset, flags, i);
+        }
+
+        if (pass == 0)
+            gcInfoEncoder->FinalizeSlotIds();
+        else
+            gcInfoEncoder->Build();
+    }
 
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
-    // let's save the values anyway for debugging purposes
     gcInfoEncoder->Emit();
 #endif
 }
@@ -908,6 +1045,8 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
+    : m_pInitLocalsIns(nullptr)
+    , m_globalVarsWithRefsStackTop(0)
 {
     // Fill in the thread-local used for assertions
     t_InterpJitInfoTls = compHnd;
@@ -948,6 +1087,7 @@ InterpMethod* InterpCompiler::CompileMethod()
 #endif
 
     AllocOffsets();
+    PatchInitLocals(m_methodInfo);
 
     EmitCode();
 
@@ -963,6 +1103,33 @@ InterpMethod* InterpCompiler::CompileMethod()
 #endif
 
     return CreateInterpMethod();
+}
+
+void InterpCompiler::PatchInitLocals(CORINFO_METHOD_INFO* methodInfo)
+{
+    // We may have global vars containing managed pointers or interior pointers, so we need
+    //  to zero the region of the stack containing global vars, not just IL locals. Now that
+    //  offset allocation has occurred we know where the global vars end, so we can expand
+    //  the initlocals opcode that was originally generated to also zero them.
+    int32_t startOffset = m_pInitLocalsIns->data[0];
+    int32_t totalSize = m_globalVarsWithRefsStackTop - startOffset;
+    if (totalSize > m_pInitLocalsIns->data[1])
+    {
+        INTERP_DUMP(
+            "Expanding initlocals from [%d-%d] to [%d-%d]\n",
+            startOffset, startOffset + m_pInitLocalsIns->data[1],
+            startOffset, startOffset + totalSize
+        );
+        m_pInitLocalsIns->data[1] = totalSize;
+    }
+    else
+    {
+        INTERP_DUMP(
+            "Not expanding initlocals from [%d-%d] for global vars stack top of %d\n",
+            startOffset, startOffset + m_pInitLocalsIns->data[1],
+            m_globalVarsWithRefsStackTop
+        );
+    }
 }
 
 // Adds a conversion instruction for the value pointed to by sp, also updating the stack information
@@ -1801,6 +1968,7 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
 
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
 {
+    bool isBoxedStatic  = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
     switch (pFieldInfo->fieldAccessor)
     {
         case CORINFO_FIELD_STATIC_ADDRESS:
@@ -1863,6 +2031,25 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             assert(0);
             break;
     }
+
+    if (isBoxedStatic)
+    {
+        // Obtain boxed instance ref
+        m_pStackPointer--;
+        AddIns(INTOP_LDIND_I);
+        m_pLastNewIns->data[0] = 0;
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+        PushInterpType(InterpTypeO, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+        // Skip method table word
+        m_pStackPointer--;
+        AddIns(INTOP_ADD_P_IMM);
+        m_pLastNewIns->data[0] = sizeof(void*);
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+        PushInterpType(InterpTypeByRef, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+    }
 }
 
 void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad)
@@ -1916,12 +2103,13 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         AddIns(INTOP_BREAKPOINT);
 #endif
 
-    if ((methodInfo->options & CORINFO_OPT_INIT_LOCALS) && m_ILLocalsSize > 0)
-    {
-        AddIns(INTOP_INITLOCALS);
-        m_pLastNewIns->data[0] = m_ILLocalsOffset;
-        m_pLastNewIns->data[1] = m_ILLocalsSize;
-    }
+    // We need to always generate this opcode because even if we have no IL locals, we may have
+    //  global vars which contain managed pointers or interior pointers
+    m_pInitLocalsIns = AddIns(INTOP_INITLOCALS);
+    // if (methodInfo->options & CORINFO_OPT_INIT_LOCALS)
+    // FIXME: We can't currently skip zeroing locals because we don't have accurate liveness for global refs and byrefs
+    m_pInitLocalsIns->data[0] = m_ILLocalsOffset;
+    m_pInitLocalsIns->data[1] = m_ILLocalsSize;
 
     codeEnd = m_ip + m_ILCodeSize;
 

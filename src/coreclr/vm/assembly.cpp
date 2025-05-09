@@ -649,7 +649,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
 #ifndef DACCESS_COMPILE
                     // LoadAssembly never returns NULL
                     pAssembly = GetModule()->LoadAssembly(mdLinkRef);
-                    PREFIX_ASSUME(pAssembly != NULL);
+                    _ASSERTE(pAssembly != NULL);
                     break;
 #else
                     _ASSERTE(!"DAC shouldn't attempt to trigger loading");
@@ -1105,7 +1105,7 @@ void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
     {
         szUTFMethodName = "Invalid MethodDef record";
     }
-    PREFIX_ASSUME(szUTFMethodName!=NULL);
+    _ASSERTE(szUTFMethodName!=NULL);
     MAKE_WIDEPTR_FROMUTF8(szMethodName, szUTFMethodName);
     COMPlusThrowHR(COR_E_METHODACCESS, resID, szClassName, szMethodName);
 }
