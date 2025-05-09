@@ -128,6 +128,16 @@
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.Helpers.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ThreadSafety.cs"
              Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ThreadSafety.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestImplementation.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestImplementation.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaImplementationTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaImplementationTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsBase.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsBase.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaAlgorithmTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaAlgorithmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaContractTests.cs"

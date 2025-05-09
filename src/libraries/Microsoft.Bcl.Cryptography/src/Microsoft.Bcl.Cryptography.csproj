@@ -372,6 +372,14 @@
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs"
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsa.cs"
+             Link="Common\System\Security\Cryptography\MLDsa.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\MLDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\MLDsaImplementation.NotSupported.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

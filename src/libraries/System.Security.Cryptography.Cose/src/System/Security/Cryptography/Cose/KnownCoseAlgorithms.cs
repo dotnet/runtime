@@ -12,20 +12,28 @@ namespace System.Security.Cryptography.Cose
         internal const int ES256 = -7;
         internal const int ES384 = -35;
         internal const int ES512 = -36;
+
         // RSASSA-PSS w/SHA
         internal const int PS256 = -37;
         internal const int PS384 = -38;
         internal const int PS512 = -39;
+
         // RSASSA-PKCS1-v1_5 using SHA
         internal const int RS256 = -257;
         internal const int RS384 = -258;
         internal const int RS512 = -259;
 
+        // ML-DSA
+        internal const int MLDsa44 = -48;
+        internal const int MLDsa65 = -49;
+        internal const int MLDsa87 = -50;
+
         internal static void ThrowIfNotSupported(long alg)
         {
             if (alg != ES256 &&
                 (alg > ES384 || alg < PS512) &&
-                (alg > RS256 || alg < RS512))
+                (alg > RS256 || alg < RS512) &&
+                (alg > MLDsa44 || alg < MLDsa87))
             {
                 throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, alg));
             }

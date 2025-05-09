@@ -107,6 +107,36 @@ namespace Test.Cryptography
             }
         }
 
+        private static bool CheckIfRsaPssSupported()
+        {
+            if (PlatformDetection.IsAndroid)
+            {
+                // Android supports PSS at the algorithms layer, but does not support it
+                // being used in cert chains.
+                return false;
+            }
+
+            if (PlatformDetection.IsBrowser)
+            {
+                // Browser doesn't support PSS or RSA at all.
+                return false;
+            }
+
+            using (RSA rsa = RSA.Create())
+            {
+                try
+                {
+                    rsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+                }
+                catch (CryptographicException)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         // Platforms that use Apple Cryptography
         internal const TestPlatforms AppleCrypto = TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst;
         internal const TestPlatforms MobileAppleCrypto = TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst;
@@ -129,5 +159,6 @@ namespace Test.Cryptography
 
         private static bool? s_isVbsAvailable;
         internal static bool IsVbsAvailable => s_isVbsAvailable ??= CheckIfVbsAvailable();
+        internal static bool IsRsaPssSupported { get; } = CheckIfRsaPssSupported();
     }
 }
