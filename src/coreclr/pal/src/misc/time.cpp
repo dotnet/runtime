@@ -118,54 +118,6 @@ EXIT:
     PERF_EXIT(GetSystemTime);
 }
 
-/*++
-Function:
-  GetTickCount
-
-The GetTickCount function retrieves the number of milliseconds that
-have elapsed since the system was started. It is limited to the
-resolution of the system timer. To obtain the system timer resolution,
-use the GetSystemTimeAdjustment function.
-
-Parameters
-
-This function has no parameters.
-
-Return Values
-
-The return value is the number of milliseconds that have elapsed since
-the system was started.
-
-In the PAL implementation the return value is the elapsed time since
-the start of the epoch.
-
---*/
-DWORD
-PALAPI
-GetTickCount(
-         VOID)
-{
-    DWORD retval = 0;
-    PERF_ENTRY(GetTickCount);
-    ENTRY("GetTickCount ()\n");
-
-    // Get the 64-bit count from GetTickCount64 and truncate the results.
-    retval = (DWORD) GetTickCount64();
-
-    LOGEXIT("GetTickCount returns DWORD %u\n", retval);
-    PERF_EXIT(GetTickCount);
-    return retval;
-}
-
-/*++
-Function:
-  QueryThreadCycleTime
-
-Puts the execution time (in nanoseconds) for the thread pointed to by ThreadHandle, into the unsigned long
-pointed to by CycleTime. ThreadHandle must refer to the current thread. Returns TRUE on success, FALSE on
-failure.
---*/
-
 BOOL
 PALAPI
 QueryThreadCycleTime(
@@ -193,58 +145,6 @@ QueryThreadCycleTime(
 
 EXIT:
     return retval;
-}
-
-/*++
-Function:
-  GetTickCount64
-
-Returns a 64-bit tick count with a millisecond resolution. It tries its best
-to return monotonically increasing counts and avoid being affected by changes
-to the system clock (either due to drift or due to explicit changes to system
-time).
---*/
-PALAPI
-ULONGLONG
-GetTickCount64()
-{
-    LONGLONG retval = 0;
-
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    return  (LONGLONG)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (LONGLONG)(tccMillieSecondsToNanoSeconds);
-#elif HAVE_CLOCK_MONOTONIC || HAVE_CLOCK_MONOTONIC_COARSE
-    struct timespec ts;
-
-#if HAVE_CLOCK_MONOTONIC_COARSE
-    // CLOCK_MONOTONIC_COARSE has enough precision for GetTickCount but
-    // doesn't have the same overhead as CLOCK_MONOTONIC. This allows
-    // overall higher throughput. See dotnet/coreclr#2257 for more details.
-
-    const clockid_t clockType = CLOCK_MONOTONIC_COARSE;
-#else
-    const clockid_t clockType = CLOCK_MONOTONIC;
-#endif
-
-    int result = clock_gettime(clockType, &ts);
-
-    if (result != 0)
-    {
-#if HAVE_CLOCK_MONOTONIC_COARSE
-        ASSERT("clock_gettime(CLOCK_MONOTONIC_COARSE) failed: %d\n", result);
-#else
-        ASSERT("clock_gettime(CLOCK_MONOTONIC) failed: %d\n", result);
-#endif
-        retval = FALSE;
-    }
-    else
-    {
-        retval = ((LONGLONG)(ts.tv_sec) * (LONGLONG)(tccSecondsToMillieSeconds)) + ((LONGLONG)(ts.tv_nsec) / (LONGLONG)(tccMillieSecondsToNanoSeconds));
-    }
-#else
-    #error "The PAL requires either mach_absolute_time() or clock_gettime(CLOCK_MONOTONIC) to be supported."
-#endif
-
-    return (ULONGLONG)(retval);
 }
 
 /*++
