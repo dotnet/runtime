@@ -243,6 +243,7 @@ PhaseStatus ObjectAllocator::DoPhase()
 
     if (didStackAllocate)
     {
+        // printf("*** Stack allocations in 0x%08X\n", comp->info.compMethodHash());
         assert(enabled);
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
@@ -866,6 +867,12 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                 JITDUMP(" -> ");
                 JITDUMPEXEC(DumpIndex(i));
                 JITDUMP(";\n");
+            }
+
+            if (CanIndexEscape(i))
+            {
+                JITDUMPEXEC(DumpIndex(i));
+                JITDUMP(" -> E;\n");
             }
         }
         JITDUMP("}\n");
@@ -1790,14 +1797,25 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
         {
             case GT_STORE_LCL_VAR:
             {
+                const unsigned int dstLclNum = parent->AsLclVar()->GetLclNum();
+
                 // If the store value is a local address, anything assigned to that local escapes
                 //
                 if (isAddress)
                 {
+                    // If destination is tracked, then connect source to destination's field
+                    // Vxx = &Vyy ==> *Vxx = Vyy
+
+                    if (IsTrackedLocal(dstLclNum))
+                    {
+                        const unsigned dstFieldIndex = GetFieldIndexFromLocal(dstLclNum);
+                        if (dstFieldIndex != BAD_VAR_NUM)
+                        {
+                            AddConnGraphEdgeIndex(lclIndex, dstFieldIndex);
+                        }
+                    }
                     break;
                 }
-
-                const unsigned int dstLclNum = parent->AsLclVar()->GetLclNum();
 
                 // If we're not tracking stores to the dest local, the value does not escape.
                 //
@@ -1817,8 +1835,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 // If we are assigning object references, then we introduce
                 // aliasing of their fields.
                 //
-                unsigned dstFieldIndex = GetFieldIndexFromLocalIndex(dstIndex);
-                unsigned srcFieldIndex = GetFieldIndexFromLocalIndex(lclIndex);
+                const unsigned dstFieldIndex = GetFieldIndexFromLocalIndex(dstIndex);
+                const unsigned srcFieldIndex = GetFieldIndexFromLocalIndex(lclIndex);
 
                 if ((dstFieldIndex != BAD_VAR_NUM) && (srcFieldIndex != BAD_VAR_NUM))
                 {
