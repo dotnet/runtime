@@ -6094,7 +6094,7 @@ void StatisticsBase::RollOverIfNeeded()
     const DWORD RolloverInterval = 3900;
 
     // every so often, print a summary of our statistics
-    DWORD ticksNow = GetTickCount();
+    DWORD ticksNow = (DWORD)minipal_lowres_ticks();
 
     if (secondsToDisplay == 0)
     {
@@ -6109,7 +6109,7 @@ void StatisticsBase::RollOverIfNeeded()
     {
         DisplayAndUpdate();
 
-        startTick = GetTickCount();
+        startTick = (DWORD)minipal_lowres_ticks();
 
         // Our counters are 32 bits and can count to 4 GB in microseconds or 4K in seconds.
         // Reset when we get close to overflowing
