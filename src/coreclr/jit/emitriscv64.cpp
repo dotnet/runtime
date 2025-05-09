@@ -5528,6 +5528,9 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             case GT_OR_NOT:
             case GT_XOR:
             case GT_XOR_NOT:
+            case GT_BIT_SET:
+            case GT_BIT_CLEAR:
+            case GT_BIT_INVERT:
             {
                 emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
 
