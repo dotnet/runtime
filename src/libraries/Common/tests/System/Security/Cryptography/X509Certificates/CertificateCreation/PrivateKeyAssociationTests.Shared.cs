@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, certKey.ExportSlhDsaPublicKey());
 
                 // Verify the key is not actually private
-                AssertExtensions.ThrowsExceptionAssignableTo<CryptographicException>(() => certKey.SignData([1, 2, 3]));
+                Assert.ThrowsAny<CryptographicException>(() => certKey.SignData([1, 2, 3]));
             }
 
             // Cert with private key
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, certKey.ExportSlhDsaPublicKey());
 
                 // Verify the key is not actually private
-                AssertExtensions.ThrowsExceptionAssignableTo<CryptographicException>(() => certKey.SignData([1, 2, 3]));
+                Assert.ThrowsAny<CryptographicException>(() => certKey.SignData([1, 2, 3]));
             }
         }
 
