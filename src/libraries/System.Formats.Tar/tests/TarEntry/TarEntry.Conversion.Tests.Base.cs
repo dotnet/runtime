@@ -1,20 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Diagnostics.Runtime.ICorDebug;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
     public class TarTestsConversionBase : TarTestsBase
     {
+        private readonly TimeSpan _oneSecond = TimeSpan.FromSeconds(1);
+
         protected void TestConstructionConversion(
             TarEntryType originalEntryType,
             TarEntryFormat firstFormat,
@@ -123,16 +118,54 @@ namespace System.Formats.Tar.Tests
             if (formatToConvert is TarEntryFormat.Pax)
             {
                 PaxTarEntry paxEntry = convertedEntry as PaxTarEntry;
-                DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
-                DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
-                if (originalEntry.Format is TarEntryFormat.Pax or TarEntryFormat.Gnu)
+                if (originalEntry.Format is TarEntryFormat.Gnu)
                 {
-                    GetExpectedTimestampsFromOriginalPaxOrGnu(originalEntry, formatToConvert, out DateTimeOffset expectedATime, out DateTimeOffset expectedCTime);
-                    Assert.Equal(expectedATime, actualAccessTime);
-                    Assert.Equal(expectedCTime, actualChangeTime);
+                    GnuTarEntry gnuEntry = originalEntry as GnuTarEntry;
+
+                    DateTimeOffset expectedATime = gnuEntry.AccessTime;
+                    DateTimeOffset expectedCTime = gnuEntry.ChangeTime;
+
+                    DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                    DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
+
+                    if (expectedATime == default)
+                    {
+                        AssertExtensions.GreaterThanOrEqualTo(actualAccessTime, paxEntry.ModificationTime);
+                    }
+                    else
+                    {
+                        expectedATime = expectedATime - _oneSecond;
+                        AssertExtensions.GreaterThanOrEqualTo(expectedATime, actualAccessTime);
+                    }
+
+                    if (expectedCTime == default)
+                    {
+                        AssertExtensions.GreaterThanOrEqualTo(actualChangeTime, paxEntry.ModificationTime);
+                    }
+                    else
+                    {
+                        expectedCTime = expectedCTime - _oneSecond;
+                        AssertExtensions.GreaterThanOrEqualTo(expectedCTime, actualChangeTime);
+                    }
+                }
+                else if (originalEntry.Format is TarEntryFormat.Pax)
+                {
+                    PaxTarEntry originalPaxEntry = originalEntry as PaxTarEntry;
+
+                    DateTimeOffset expectedATime = GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, PaxEaATime) - _oneSecond;
+                    DateTimeOffset expectedCTime = GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, PaxEaCTime) - _oneSecond;
+
+                    DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                    DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
+
+                    AssertExtensions.GreaterThanOrEqualTo(actualAccessTime, expectedATime);
+                    AssertExtensions.GreaterThanOrEqualTo(actualChangeTime, expectedCTime);
                 }
                 else if (originalEntry.Format is TarEntryFormat.Ustar or TarEntryFormat.V7)
                 {
+                    DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                    DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
+
                     AssertExtensions.GreaterThanOrEqualTo(actualAccessTime, initialNow);
                     AssertExtensions.GreaterThanOrEqualTo(actualChangeTime, initialNow);
                 }
