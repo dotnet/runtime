@@ -734,6 +734,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/115425", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetCallingAssemblyInCctor()
         {

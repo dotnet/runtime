@@ -10,8 +10,7 @@ namespace System.Reflection
 {
     internal sealed partial class RuntimeConstructorInfo : ConstructorInfo
     {
-        [MethodImpl(MethodImplOptions.NoInlining)] // move lazy invocation flags population out of the hot path
-        internal InvocationFlags ComputeAndUpdateInvocationFlags()
+        internal InvocationFlags ComputeInvocationFlags()
         {
             InvocationFlags invocationFlags = InvocationFlags.IsConstructor; // this is a given
 
@@ -104,7 +103,9 @@ namespace System.Reflection
             CultureInfo? culture)
         {
             if ((InvocationFlags & InvocationFlags.NoInvoke) != 0)
+            {
                 ThrowNoInvokeException();
+            }
 
             if (!IsStatic)
             {
@@ -126,9 +127,18 @@ namespace System.Reflection
                 return null;
             }
 
-            return argCount == 0 ?
-                Invoker.InvokeConstructorWithoutAlloc(obj!, (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0) :
-                Invoker.InvokeConstructorWithoutAlloc(obj!, invokeAttr, binder, parameters!, culture);
+            MethodBaseInvoker invoker = Invoker.GetInvokerForCallingCtorAsMethod();
+            _ = invoker.Strategy switch
+            {
+                MethodBase.InvokerStrategy.Obj0 => invoker.InvokeWithNoArgs(obj, invokeAttr),
+                MethodBase.InvokerStrategy.Obj1 => invoker.InvokeWith1Arg(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Obj4 => invoker.InvokeWith4Args(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.ObjSpan => invoker.InvokeWithSpanArgs(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Ref4 => invoker.InvokeWith4RefArgs(obj, invokeAttr, binder, parameters, culture),
+                _ => invoker.InvokeWithManyRefArgs(obj, invokeAttr, binder, parameters!, culture)
+            };
+
+            return null;
         }
 
         [DebuggerStepThrough]
@@ -150,12 +160,14 @@ namespace System.Reflection
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
 
-            return argCount switch
+            return Invoker.Strategy switch
             {
-                0 => Invoker.InvokeWithNoArgs(obj: null, invokeAttr)!,
-                1 => Invoker.InvokeWithOneArg(obj: null, invokeAttr, binder, parameters!, culture)!,
-                2 or 3 or 4 => Invoker.InvokeWithFewArgs(obj: null, invokeAttr, binder, parameters!, culture)!,
-                _ => Invoker.InvokeWithManyArgs(obj: null, invokeAttr, binder, parameters!, culture)!,
+                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWithNoArgs(obj: null, invokeAttr)!,
+                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj: null, invokeAttr, binder, parameters!, culture)!,
+                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj: null, invokeAttr, binder, parameters!, culture)!,
+                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj: null, invokeAttr, binder, parameters!, culture)!,
+                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj: null, invokeAttr, binder, parameters, culture)!,
+                _ => Invoker.InvokeWithManyRefArgs(obj : null, invokeAttr, binder, parameters!, culture)!
             };
         }
     }
