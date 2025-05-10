@@ -150,7 +150,7 @@ namespace System.Reflection.PortableExecutable
             return result.MoveToImmutable();
         }
 
-        private static unsafe void WritePESignature(BlobBuilder builder)
+        private static void WritePESignature(BlobBuilder builder)
         {
             // MS-DOS stub (128 bytes)
             builder.WriteBytes(DosHeader);
