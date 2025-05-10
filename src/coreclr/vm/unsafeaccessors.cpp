@@ -158,8 +158,7 @@ namespace
             return;
         }
 
-        // Extract the instantiation from parameterized type.
-        MethodTable* pMT = th.GetMethodTableOfRootTypeParam();
+        MethodTable* pMT = th.GetMethodTable();
         Instantiation inst = pMT->GetInstantiation();
 
         // If we have any generic variables, mark as ELEMENT_TYPE_GENERICINST.
@@ -594,7 +593,7 @@ namespace
 
         // Following a similar iteration pattern found in MemberLoader::FindMethod().
         // However, we are only operating on the current type not walking the type hierarchy.
-        MethodTable::IntroducedMethodIterator iter(pMT, /* restrictToCanonicalTypes */ FALSE);
+        MethodTable::IntroducedMethodIterator iter(pMT);
         for (; iter.IsValid(); iter.Next())
         {
             MethodDesc* curr = iter.GetMethodDesc();
