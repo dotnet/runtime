@@ -49,8 +49,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "tools\ref", "{D2576A
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{5224A519-F2DB-487E-AB04-CB1C45853202}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Bcl.Memory", "..\Microsoft.Bcl.Memory\src\Microsoft.Bcl.Memory.csproj", "{F4E97880-F5DA-43F5-96FC-2E980426724D}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,10 +123,6 @@ Global
 		{CDFCF052-9073-42E3-BC4F-5283E9BFAD1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDFCF052-9073-42E3-BC4F-5283E9BFAD1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDFCF052-9073-42E3-BC4F-5283E9BFAD1B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F4E97880-F5DA-43F5-96FC-2E980426724D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F4E97880-F5DA-43F5-96FC-2E980426724D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F4E97880-F5DA-43F5-96FC-2E980426724D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F4E97880-F5DA-43F5-96FC-2E980426724D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -154,7 +148,6 @@ Global
 		{A7680571-EBD8-41A8-8AE1-90F01057673F} = {5224A519-F2DB-487E-AB04-CB1C45853202}
 		{CDFCF052-9073-42E3-BC4F-5283E9BFAD1B} = {D2576A59-A647-4D5C-8690-C4CC586631F6}
 		{D2576A59-A647-4D5C-8690-C4CC586631F6} = {5224A519-F2DB-487E-AB04-CB1C45853202}
-		{F4E97880-F5DA-43F5-96FC-2E980426724D} = {19CD37AB-E6A2-431C-8893-5ED903B847BA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {64BB97AB-FD23-40BA-B638-FE4756AE6452}
