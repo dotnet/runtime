@@ -131,14 +131,14 @@ namespace
             return;
         }
 
-        if (th.IsArray())
+        if (th.HasTypeParam())
         {
-            // Append the array element type.
+            // Append the element type.
             sig.AppendElementType(elemType);
-            TypeHandle elemTypeHandle = th.GetArrayElementTypeHandle();
-            AppendTypeToSignature(sig, elemTypeHandle);
+            TypeHandle typeParam = th.GetTypeParam();
+            AppendTypeToSignature(sig, typeParam);
 
-            // Append ArrayShape for MD array
+            // Append ArrayShape for MD arrays
             // See II.23.2.13 ArrayShape
             if (elemType == ELEMENT_TYPE_ARRAY)
             {
