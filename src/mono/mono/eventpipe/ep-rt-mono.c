@@ -390,7 +390,6 @@ static mach_timebase_info_data_t _ep_rt_mono_time_base_info = {0};
 
 static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
 static const int64_t SECS_TO_100NS = 10000000;
-static const int64_t SECS_TO_NS = 1000000000;
 static const int64_t MSECS_TO_MIS = 1000;
 
 /* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */

@@ -86,7 +86,7 @@ int64_t minipal_hires_ticks(void)
 #endif
 }
 
-int64_t minipal_lowres_ticks()
+int64_t minipal_lowres_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMillieSecondsToNanoSeconds);
