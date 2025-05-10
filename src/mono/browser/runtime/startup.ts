@@ -13,10 +13,10 @@ import { mono_wasm_init_aot_profiler, mono_wasm_init_devtools_profiler, mono_was
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
-import { strings_init, utf8ToString } from "./strings";
+import { strings_init, stringToUTF8Ptr, utf8ToString } from "./strings";
 import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
-import { CharPtr, EmscriptenModule, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
+import { CharPtr, CharPtrPtr, EmscriptenModule, InstantiateWasmCallBack, InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
 import { wait_for_all_assets } from "./assets";
 import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
@@ -28,7 +28,7 @@ import { populateEmscriptenPool, mono_wasm_init_threads } from "./pthreads";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads";
 import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
-import { localHeapViewU8, malloc } from "./memory";
+import { localHeapViewU8, malloc, setU32 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
@@ -617,7 +617,41 @@ export function mono_wasm_load_runtime (): void {
         if (!loaderHelpers.isDebuggingSupported() || !runtimeHelpers.config.resources!.pdb) {
             debugLevel = 0;
         }
-        cwraps.mono_wasm_load_runtime(debugLevel);
+
+        const runtimeConfigProperties = new Map<string, string>();
+        if (runtimeHelpers.config.runtimeConfig?.runtimeOptions?.configProperties) {
+            for (const [key, value] of Object.entries(runtimeHelpers.config.runtimeConfig?.runtimeOptions?.configProperties)) {
+                runtimeConfigProperties.set(key, "" + value);
+            }
+        }
+        runtimeConfigProperties.set("APP_CONTEXT_BASE_DIRECTORY", "/");
+        runtimeConfigProperties.set("RUNTIME_IDENTIFIER", "browser-wasm");
+        const propertyCount = runtimeConfigProperties.size;
+
+        const buffers:VoidPtr[] = [];
+        const appctx_keys = malloc(4 * runtimeConfigProperties.size) as any as CharPtrPtr;
+        const appctx_values = malloc(4 * runtimeConfigProperties.size) as any as CharPtrPtr;
+        buffers.push(appctx_keys as any);
+        buffers.push(appctx_values as any);
+
+        let position = 0;
+        for (const [key, value] of runtimeConfigProperties.entries()) {
+            const keyPtr = stringToUTF8Ptr(key);
+            const valuePtr = stringToUTF8Ptr(value);
+            setU32((appctx_keys as any) + (position * 4), keyPtr);
+            setU32((appctx_values as any) + (position * 4), valuePtr);
+            position++;
+            buffers.push(keyPtr as any);
+            buffers.push(valuePtr as any);
+        }
+
+        cwraps.mono_wasm_load_runtime(debugLevel, propertyCount, appctx_keys, appctx_values);
+
+        // free the buffers
+        for (const buffer of buffers) {
+            Module._free(buffer);
+        }
+
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
     } catch (err: any) {

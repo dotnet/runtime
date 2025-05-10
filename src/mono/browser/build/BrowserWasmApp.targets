@@ -181,7 +181,7 @@
       WasmIcuDataFileName="$(WasmIcuDataFileName)"
       RuntimeAssetsLocation="$(WasmRuntimeAssetsLocation)"
       CacheBootResources="$(BlazorCacheBootResources)"
-      RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
+      RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       >
