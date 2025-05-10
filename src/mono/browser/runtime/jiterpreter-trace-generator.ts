@@ -3922,7 +3922,7 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
         if (runtimeHelpers.featureWasmRelaxedSimd) {
             builder.appendSimd(WasmSimdOpcode.i8x16_relaxed_swizzle);
         } else {
-                builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
+            builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
         }
         builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
         // multiply indices by 2 or 4 to scale from elt indices to byte indices
