@@ -2103,7 +2103,6 @@ DELEGATEREF COMDelegate::CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc*
 
     // save the secure invoke stub.  GetWrapperInvoke() can trigger GC.
     PCODE tmp = GetWrapperInvoke(pMD);
-
     gc.refWrapperDel->SetMethodPtr(tmp);
     // save the delegate MethodDesc for the frame
     gc.refWrapperDel->SetInvocationCount((INT_PTR)pMD);
