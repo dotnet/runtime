@@ -338,6 +338,16 @@ int minipal_getcpufeatures(void)
                                         result |= XArchIntrinsicConstants_AvxVnni;
                                     }
 
+                                    if ((cpuidInfo[CPUID_EDX] & (1 << 4)) != 0)                                 // AVX-VNNI-INT8
+                                    {
+                                        result |= XArchIntrinsicConstants_AvxVnniInt8;
+                                    }
+
+                                    if ((cpuidInfo[CPUID_EDX] & (1 << 10)) != 0)                                // AVX-VNNI-INT16
+                                    {
+                                        result |= XArchIntrinsicConstants_AvxVnniInt16;
+                                    }
+
                                     if (IsApxEnabled() && apxStateSupport())
                                     {
                                         if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                            // Apx
