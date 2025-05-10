@@ -144,13 +144,13 @@ namespace
             {
                 DWORD rank = th.GetRank();
                 sig.AppendData(rank);
-                sig.AppendData(0); // Append the number of sizes.
 
-                // Roslyn always emits the lower bounds of 0 for each dimension.
+                // Roslyn always emits size and lower bounds of 0 in C# signatures.
                 // In order to match the signature, we also need to append the number
                 // of lower bounds for each dimension.
                 // We can emit 0 for each lower bound, since UnsafeAccessors is only
                 // supported in C# and C# doesn't support lower bounds.
+                sig.AppendData(0); // Append the number of sizes.
                 sig.AppendData(rank);
                 for (DWORD i = 0; i < rank; i++)
                     sig.AppendData(0);
@@ -243,8 +243,8 @@ namespace
             // parameter in the signature.
             TypeHandle currHandle = origSig.GetTypeHandleThrowing(pSigModule, NULL);
 
-            // Since byrefs don't support variance, we can't allow returning a byref to a fully
-            // typed field as a byref to an "opaque" type (for example, "ref string" -> "ref object").
+            // Since byrefs don't support variance, we can't allow returning a
+            // fully typed byref as a byref to an "opaque" type (for example, "ref string" -> "ref object").
             // This is blocked for type safety reasons.
             if (i == 0 // Return type
                 && currHandle.IsByRef())
@@ -1178,7 +1178,7 @@ extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(Metho
     MethodDesc* typicalMD = unsafeAccessorMethod->LoadTypicalMethodDefinition();
     Instantiation genericParams = isMethodParam
         ? typicalMD->GetMethodInstantiation()
-        : typicalMD->GetMethodTable()->GetInstantiation();
+        : typicalMD->GetClassInstantiation();
 
     if (0 <= paramIndex && paramIndex < genericParams.GetNumArgs())
         ret = genericParams[paramIndex];
