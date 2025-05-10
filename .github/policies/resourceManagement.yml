@@ -934,7 +934,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -947,7 +947,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -960,7 +960,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -974,6 +974,7 @@ configuration:
             mentionees:
             - cheenamalhotra
             - david-engel
+            - roji
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1588,7 +1589,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
