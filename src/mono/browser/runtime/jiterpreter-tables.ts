@@ -45,6 +45,11 @@ export const unopTable: { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_NEG_R4]:        [WasmOpcode.f32_neg, WasmOpcode.f32_load, WasmOpcode.f32_store],
     [MintOpcode.MINT_NEG_R8]:        [WasmOpcode.f64_neg, WasmOpcode.f64_load, WasmOpcode.f64_store],
 
+    [MintOpcode.MINT_BITCAST_I4_R4]: [WasmOpcode.i32_reinterpret_f32, WasmOpcode.f32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_BITCAST_I8_R8]: [WasmOpcode.i64_reinterpret_f64, WasmOpcode.f64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_BITCAST_R4_I4]: [WasmOpcode.f32_reinterpret_i32, WasmOpcode.i32_load, WasmOpcode.f32_store],
+    [MintOpcode.MINT_BITCAST_R8_I8]: [WasmOpcode.f64_reinterpret_i64, WasmOpcode.i64_load, WasmOpcode.f64_store],
+
     [MintOpcode.MINT_CONV_R4_I4]:    [WasmOpcode.f32_convert_s_i32, WasmOpcode.i32_load, WasmOpcode.f32_store],
     [MintOpcode.MINT_CONV_R8_I4]:    [WasmOpcode.f64_convert_s_i32, WasmOpcode.i32_load, WasmOpcode.f64_store],
     [MintOpcode.MINT_CONV_R_UN_I4]:  [WasmOpcode.f64_convert_u_i32, WasmOpcode.i32_load, WasmOpcode.f64_store],
