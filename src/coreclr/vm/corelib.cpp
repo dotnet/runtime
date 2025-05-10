@@ -37,6 +37,7 @@
 #include "proftoeeinterfaceimpl.h"
 
 #include "appdomainnative.hpp"
+#include "conditionalweaktable.h"
 #include "runtimehandles.h"
 #include "reflectioninvocation.h"
 #include "managedmdimport.hpp"
@@ -48,6 +49,10 @@
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
 #endif // FEATURE_COMINTEROP
+
+#if defined(FEATURE_COMWRAPPERS)
+#include "interoplibinterface_comwrappers.h"
+#endif
 
 #include "interoplibinterface.h"
 

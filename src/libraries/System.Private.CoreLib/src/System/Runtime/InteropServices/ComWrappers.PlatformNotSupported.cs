@@ -7,8 +7,26 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
-    public abstract partial class ComWrappers
+    [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
+    [CLSCompliant(false)]
+    public abstract class ComWrappers
     {
+        public struct ComInterfaceEntry
+        {
+            public Guid IID;
+
+            public IntPtr Vtable;
+        }
+
+        protected abstract unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
+
+        protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
+
+        protected internal abstract void ReleaseObjects(IEnumerable objects);
+
         public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
         {
             unknown = default;
@@ -21,8 +39,9 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        public partial struct ComInterfaceDispatch
+        public struct ComInterfaceDispatch
         {
+            public IntPtr Vtable;
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 throw new PlatformNotSupportedException();

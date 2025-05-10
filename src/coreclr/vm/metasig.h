@@ -193,10 +193,8 @@ DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr, j I r(I) r(F), I))
 DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RetIntPtr, j I r(I), I))
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_COMWRAPPERS
-DEFINE_METASIG_T(SM(Scenario_ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid, g(COMWRAPPERSSCENARIO) C(COMWRAPPERS) j g(CREATECOMINTERFACEFLAGS) r(i), P(v)))
-DEFINE_METASIG_T(SM(Scenario_ComWrappers_IntPtr_CreateFlags_RetObj, g(COMWRAPPERSSCENARIO) C(COMWRAPPERS) I g(CREATEOBJECTFLAGS), j))
-DEFINE_METASIG_T(SM(ComWrappers_IEnumerable_RetVoid, C(COMWRAPPERS) C(IENUMERABLE), v))
-DEFINE_METASIG_T(SM(Obj_RefGuid_RefIntPtr_RetInt, j r(g(GUID)) r(I), i))
+DEFINE_METASIG_T(SM(IntPtr_CreateObjectFlags_RetObj, I g(CREATEOBJECTFLAGS), j))
+DEFINE_METASIG_T(SM(ManagedObjectWrapperHolder_RefGuid_RefIntPtr_RetInt, C(MANAGED_OBJECT_WRAPPER_HOLDER) r(g(GUID)) r(I), i))
 #endif // FEATURE_COMWRAPPERS
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_METASIG_T(SM(Exception_Obj_RefIntPtr_RetVoidPtr, C(EXCEPTION) j r(I), P(v)))

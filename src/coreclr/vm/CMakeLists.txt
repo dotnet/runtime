@@ -162,6 +162,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     codeman.h
     codeman.inl
     codeversion.h
+    conditionalweaktable.h
     contractimpl.h
     crst.h
     debugdebugger.h
@@ -275,6 +276,7 @@ endif(FEATURE_JIT_PITCHING)
 
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
+    conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.
     threaddebugblockinginfo.cpp
 )
 
