@@ -722,7 +722,7 @@ bool TieredCompilationManager::DoBackgroundWork(
     _ASSERTE(workDurationTicksRef != nullptr);
     _ASSERTE(minWorkDurationTicks <= maxWorkDurationTicks);
 
-    UINT64 workDurationTicks = *workDurationTicksRef;
+    int64_t workDurationTicks = *workDurationTicksRef;
     _ASSERTE(workDurationTicks >= minWorkDurationTicks);
     _ASSERTE(workDurationTicks <= maxWorkDurationTicks);
 
@@ -845,7 +845,7 @@ bool TieredCompilationManager::DoBackgroundWork(
             ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(countOfMethodsToOptimize, jittedMethodCount);
         }
 
-        UINT64 beforeSleepTicks = currentTicks;
+        int64_t beforeSleepTicks = currentTicks;
         ClrSleepEx(0, false);
 
         currentTicks = minipal_hires_ticks();
@@ -859,8 +859,8 @@ bool TieredCompilationManager::DoBackgroundWork(
         // work duration is capped to a maximum and since a long sleep delay is likely to repeat, to avoid going back to
         // too-frequent yielding too quickly, the background work duration is decayed back to the minimum if the sleep duration
         // becomes consistently short.
-        UINT64 newWorkDurationTicks = (currentTicks - beforeSleepTicks) / 4;
-        UINT64 decayedWorkDurationTicks = (workDurationTicks + workDurationTicks / 2) / 2;
+        int64_t newWorkDurationTicks = (currentTicks - beforeSleepTicks) / 4;
+        int64_t decayedWorkDurationTicks = (workDurationTicks + workDurationTicks / 2) / 2;
         workDurationTicks = newWorkDurationTicks < decayedWorkDurationTicks ? decayedWorkDurationTicks : newWorkDurationTicks;
         if (workDurationTicks < minWorkDurationTicks)
         {

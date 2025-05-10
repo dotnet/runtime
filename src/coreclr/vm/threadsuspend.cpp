@@ -6056,11 +6056,10 @@ DWORD StatisticsBase::secondsToDisplay = 0;
 DWORD StatisticsBase::GetTime()
 {
     LIMITED_METHOD_CONTRACT;
-    LARGE_INTEGER large;
 
     if (divisor == 0)
     {
-        divisor = minipal_hires_tick_frequency() / (1000 * 1000);        // microseconds
+        divisor = (DWORD)minipal_hires_tick_frequency() / (1000 * 1000);        // microseconds
     }
 
     return (DWORD) (minipal_hires_ticks() / divisor);
