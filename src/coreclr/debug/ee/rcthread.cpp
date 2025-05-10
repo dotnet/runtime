@@ -610,7 +610,7 @@ void DebuggerRCThread::ThreadProc(void)
     // This message actually serves a purpose (which is why it is always run)
     // The Stress log is run during hijacking, when other threads can be suspended
     // at arbitrary locations (including when holding a lock that NT uses to serialize
-    // all memory allocations).  By sending a message now, we insure that the stress
+    // all memory allocations).  By sending a message now, we ensure that the stress
     // log will not allocate memory at these critical times an avoid deadlock.
     {
         SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
@@ -1379,7 +1379,7 @@ HRESULT DebuggerRCThread::Start(void)
 
         // This gets published immediately.
         DebuggerIPCControlBlock* dcb = GetDCB();
-        PREFIX_ASSUME(dcb != NULL);
+        _ASSERTE(dcb != NULL);
         dcb->m_realHelperThreadId = helperThreadId;
 
 #ifdef _DEBUG

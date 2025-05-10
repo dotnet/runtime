@@ -10,7 +10,7 @@ namespace System
     // The backing algorithm and the proofs behind it are described in more detail here:  https://www.cs.indiana.edu/~dyb/pubs/FP-Printing-PLDI96.pdf
     internal static partial class Number
     {
-        public static unsafe void Dragon4<TNumber>(TNumber value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
+        public static void Dragon4<TNumber>(TNumber value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
         {
             TNumber v = TNumber.IsNegative(value) ? -value : value;

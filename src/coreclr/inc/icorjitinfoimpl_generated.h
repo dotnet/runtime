@@ -99,6 +99,11 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(
           CORINFO_METHOD_HANDLE ftn,
           bool* requiresInstMethodTableArg) override;
 
+CORINFO_METHOD_HANDLE getInstantiatedEntry(
+          CORINFO_METHOD_HANDLE ftn,
+          CORINFO_METHOD_HANDLE* methodArg,
+          CORINFO_CLASS_HANDLE* classArg) override;
+
 CORINFO_CLASS_HANDLE getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
@@ -182,6 +187,10 @@ const char* getClassNameFromMetadata(
 
 CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
           CORINFO_CLASS_HANDLE cls,
+          unsigned index) override;
+
+CORINFO_CLASS_HANDLE getMethodInstantiationArgument(
+          CORINFO_METHOD_HANDLE ftn,
           unsigned index) override;
 
 size_t printClassName(
@@ -270,9 +279,6 @@ CorInfoHelpFunc getSharedCCtorHelper(
           CORINFO_CLASS_HANDLE clsHnd) override;
 
 CORINFO_CLASS_HANDLE getTypeForBox(
-          CORINFO_CLASS_HANDLE cls) override;
-
-CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
           CORINFO_CLASS_HANDLE cls) override;
 
 CorInfoHelpFunc getBoxHelper(
@@ -489,7 +495,8 @@ bool runWithSPMIErrorTrap(
 void getEEInfo(
           CORINFO_EE_INFO* pEEInfoOut) override;
 
-const char16_t* getJitTimeLogFilename() override;
+void getAsyncInfo(
+          CORINFO_ASYNC_INFO* pAsyncInfoOut) override;
 
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
@@ -652,6 +659,8 @@ bool getTailCallHelpers(
           CORINFO_SIG_INFO* sig,
           CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
           CORINFO_TAILCALL_HELPERS* pResult) override;
+
+CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
 
 bool convertPInvokeCalliToCall(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,

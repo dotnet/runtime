@@ -11,7 +11,7 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_WaitOneCore")]
         private static partial int WaitOneCore(IntPtr waitHandle, int millisecondsTimeout, [MarshalAs(UnmanagedType.Bool)] bool useTrivialWaits);
 
-        private static unsafe int WaitMultipleIgnoringSyncContextCore(ReadOnlySpan<IntPtr> waitHandles, bool waitAll, int millisecondsTimeout)
+        private static int WaitMultipleIgnoringSyncContextCore(ReadOnlySpan<IntPtr> waitHandles, bool waitAll, int millisecondsTimeout)
             => WaitMultipleIgnoringSyncContext(waitHandles, waitHandles.Length, waitAll, millisecondsTimeout);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_WaitMultipleIgnoringSyncContext")]

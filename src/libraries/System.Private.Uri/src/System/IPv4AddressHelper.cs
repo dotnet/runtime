@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 
-namespace System
+namespace System.Net
 {
     // The class designed as to keep minimal the working set of Uri class.
     // The idea is to stay with static helper methods and strings

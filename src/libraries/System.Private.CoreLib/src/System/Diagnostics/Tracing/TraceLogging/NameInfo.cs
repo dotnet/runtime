@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tracing
         : ConcurrentSetItem<KeyValuePair<string, EventTags>, NameInfo>
     {
         /// <summary>
-        /// Insure that eventIds strictly less than 'eventId' will not be
+        /// Ensure that eventIds strictly less than 'eventId' will not be
         /// used by the SelfDescribing events.
         /// </summary>
         internal static void ReserveEventIDsBelow(int eventId)

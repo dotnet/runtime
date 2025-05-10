@@ -1184,8 +1184,6 @@ namespace System.Collections.Generic
 
         public struct Enumerator : IEnumerator<T>, IEnumerator
         {
-            internal static IEnumerator<T>? s_emptyEnumerator;
-
             private readonly List<T> _list;
             private int _index;
             private readonly int _version;

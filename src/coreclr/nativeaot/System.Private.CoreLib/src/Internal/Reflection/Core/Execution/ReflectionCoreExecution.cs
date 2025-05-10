@@ -24,9 +24,6 @@ namespace Internal.Reflection.Core.Execution
         {
             Debug.Assert(s_executionEnvironment == null);
             s_executionEnvironment = executionEnvironment;
-
-            ReflectionCoreCallbacks reflectionCallbacks = new ReflectionCoreCallbacksImplementation();
-            ReflectionAugments.Initialize(reflectionCallbacks);
         }
 
         internal static ExecutionEnvironment ExecutionEnvironment

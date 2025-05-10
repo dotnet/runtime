@@ -15,6 +15,8 @@ namespace System.Formats.Tar
     // Reads the header attributes from a tar archive entry.
     internal sealed partial class TarHeader
     {
+        private readonly byte[] ArrayOf12NullBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
@@ -537,11 +539,18 @@ namespace System.Formats.Tar
         private void ReadGnuAttributes(ReadOnlySpan<byte> buffer)
         {
             // Convert byte arrays
-            long aTime = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
-
-            long cTime = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
-            _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
+            ReadOnlySpan<byte> aTimeBuffer = buffer.Slice(FieldLocations.ATime, FieldLengths.ATime);
+            if (!aTimeBuffer.SequenceEqual(ArrayOf12NullBytes)) // null values are ignored
+            {
+                long aTime = TarHelpers.ParseNumeric<long>(aTimeBuffer);
+                _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
+            }
+            ReadOnlySpan<byte> cTimeBuffer = buffer.Slice(FieldLocations.CTime, FieldLengths.CTime);
+            if (!cTimeBuffer.SequenceEqual(ArrayOf12NullBytes)) // An all nulls buffer is interpreted as MinValue
+            {
+                long cTime = TarHelpers.ParseNumeric<long>(cTimeBuffer);
+                _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
+            }
 
             // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
         }
@@ -566,15 +575,16 @@ namespace System.Formats.Tar
         // Throws if end of stream is reached or if an attribute is malformed.
         private void ReadExtendedAttributesBlock(Stream archiveStream)
         {
-            if (_size != 0)
+            long size = _size;
+            if (size != 0)
             {
                 ValidateSize();
 
                 byte[]? buffer = null;
-                Span<byte> span = _size <= 256 ?
+                Span<byte> span = (ulong)size <= 256 ?
                     stackalloc byte[256] :
-                    (buffer = ArrayPool<byte>.Shared.Rent((int)_size));
-                span = span.Slice(0, (int)_size);
+                    (buffer = ArrayPool<byte>.Shared.Rent((int)size));
+                span = span.Slice(0, (int)size);
 
                 archiveStream.ReadExactly(span);
                 ReadExtendedAttributesFromBuffer(span, _name);
@@ -636,15 +646,16 @@ namespace System.Formats.Tar
         // Throws if end of stream is reached.
         private void ReadGnuLongPathDataBlock(Stream archiveStream)
         {
-            if (_size != 0)
+            long size = _size;
+            if (size != 0)
             {
                 ValidateSize();
 
                 byte[]? buffer = null;
-                Span<byte> span = _size <= 256 ?
+                Span<byte> span = (ulong)size <= 256 ?
                     stackalloc byte[256] :
-                    (buffer = ArrayPool<byte>.Shared.Rent((int)_size));
-                span = span.Slice(0, (int)_size);
+                    (buffer = ArrayPool<byte>.Shared.Rent((int)size));
+                span = span.Slice(0, (int)size);
 
                 archiveStream.ReadExactly(span);
                 ReadGnuLongPathDataFromBuffer(span);

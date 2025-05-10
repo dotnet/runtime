@@ -14,6 +14,7 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
     public class ComAwareEventInfo : EventInfo
     {
         private readonly EventInfo _innerEventInfo;

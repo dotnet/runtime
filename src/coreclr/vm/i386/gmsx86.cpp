@@ -26,10 +26,10 @@
 
       if (machState.setMachState != 0) return;
 
-   setMachState is guarnenteed to return 0 (so the return
+   setMachState is guaranteed to return 0 (so the return
    statement will never be executed), but the expression above
-   insures insures that there is a 'quick' path to epilog
-   of the function.  This insures that setMachState will only
+   ensures that there is a 'quick' path to epilog
+   of the function.  This ensures that setMachState will only
    have to parse a limited number of X86 instructions.   */
 
 
@@ -47,7 +47,7 @@
 #if !defined(DACCESS_COMPILE)
 
 #ifdef _MSC_VER
-#pragma optimize("gsy", on )        // optimize to insure that code generation does not have junk in it
+#pragma optimize("gsy", on )        // optimize to ensure that code generation does not have junk in it
 #endif // _MSC_VER
 #pragma warning(disable:4717)
 
@@ -321,13 +321,6 @@ static bool shouldEnterCall(PTR_BYTE ip) {
 
     return false;
 }
-
-
-/***************************************************************/
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 
 /***************************************************************/
 // A fundamental requirement of managed code is that we need to be able to enumerate all GC references on the
@@ -1130,12 +1123,11 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                     DebugBreak();
                     goto again;
                 }
-#ifndef _PREFIX_
+
                 *((volatile int*) 0) = 1; // If you get at this error, it is because yout
                                         // set a breakpoint in a helpermethod frame epilog
                                         // you can't do that unfortunately.  Just move it
                                         // into the interior of the method to fix it
-#endif // !_PREFIX_
                 goto done;
 #endif //!DACCESS_COMPILE
 
@@ -1247,9 +1239,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 _ASSERTE(!"Bad opcode");
                 // FIX what to do here?
 #ifndef DACCESS_COMPILE
-#ifndef _PREFIX_
                 *((volatile PTR_BYTE*) 0) = ip;  // cause an access violation (Free Build assert)
-#endif // !_PREFIX_
 #else
                 DacNotImpl();
 #endif
@@ -1263,9 +1253,7 @@ done:
     // state when the helper returns to its caller.
     lazyState->_esp = dac_cast<TADDR>(ESP);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
+
 #else  // !USE_EXTERNAL_UNWINDER
 
 void LazyMachState::unwindLazyState(LazyMachState* baseState,

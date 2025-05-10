@@ -1,0 +1,148 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <Import Project="BuildTask.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
+    <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
+    <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
+
+    <PackageOverridesInputPath>$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\PackageOverrides.txt</PackageOverridesInputPath>
+    <PackageOverridesOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)PackageOverrides.txt</PackageOverridesOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
+    <ProjectReference Include="sfx-gen.proj" OutputItemType="SharedFrameworkAnalyzerAssembly" />
+
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
+  </ItemGroup>
+
+  <Target Name="GetGenerateFrameworkListFileInputs">
+    <Error Text="Shared framework assemblies must be built before the framework list can be generated."
+           Condition="'@(SharedFrameworkAssembly)' == '' or '@(SharedFrameworkAnalyzerAssembly)' == ''" />
+
+    <ItemGroup>
+      <SharedFrameworkAssemblyWithReferenceAssembly Include="@(SharedFrameworkAssembly->WithMetadataValue('IsPrivateAssembly', 'false')->HasMetadata('ReferenceAssembly'))" />
+      <SharedFrameworkAssemblyWithoutReferenceAssembly Include="@(SharedFrameworkAssembly->WithMetadataValue('IsPrivateAssembly', 'false'))"
+                                                       Exclude="@(SharedFrameworkAssemblyWithReferenceAssembly)" />
+
+      <FrameworkListInputFile Include="@(SharedFrameworkAssemblyWithReferenceAssembly->Metadata('ReferenceAssembly'));
+                                       @(SharedFrameworkAssemblyWithoutReferenceAssembly)"
+                              TargetPath="ref/$(NetCoreAppCurrent)" />
+      <FrameworkListInputFile Include="@(SharedFrameworkAnalyzerAssembly)"
+                              TargetPath="%(SharedFrameworkAnalyzerAssembly.GeneratorProjectBaseTargetPath)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Generate the targeting pack's framework list so that out-of-band projects can leverage it. -->
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)" Condition="'$(DotNetSharedFrameworkTaskFile)' != ''" />
+  <Target Name="GenerateFrameworkListFile"
+          DependsOnTargets="GetGenerateFrameworkListFileInputs"
+          AfterTargets="Build"
+          Inputs="@(FrameworkListInputFile)"
+          Outputs="$(FrameworkListOutputPath)">
+    <ItemGroup>
+      <FrameworkListRootAttribute Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
+      <FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
+      <FrameworkListRootAttribute Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
+      <FrameworkListRootAttribute Include="FrameworkName" Value="$(MicrosoftNetCoreAppFrameworkName)" />
+    </ItemGroup>
+
+    <CreateFrameworkListFile Files="@(FrameworkListInputFile)"
+                             TargetFile="$(FrameworkListOutputPath)"
+                             TargetFilePrefixes="ref/;runtimes/;analyzers/"
+                             RootAttributes="@(FrameworkListRootAttribute)" />
+  </Target>
+
+  <Target Name="CreatePackageOverrides"
+          AfterTargets="Build"
+          Inputs="$(PackageOverridesInputPath)"
+          Outputs="$(PackageOverridesOutputPath)">
+    <ItemGroup>
+      <CreatePackageOverridesTemplateProperty Include="ProductVersion=$(ProductVersion)" />
+    </ItemGroup>
+
+    <GenerateFileFromTemplate
+      TemplateFile="$(PackageOverridesInputPath)"
+      Properties="@(CreatePackageOverridesTemplateProperty)"
+      OutputPath="$(PackageOverridesOutputPath)" />
+  </Target>
+
+  <!-- Copy the intellisense file to the targeting pack directory. -->
+  <Target Name="CopyDocumentationFiles" AfterTargets="Build">
+    <ItemGroup>
+      <DocumentationFileToCopy Include="@(SharedFrameworkAssembly->WithMetadataValue('IsPrivateAssembly', 'false')->Metadata('DocFileItem'))" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(DocumentationFileToCopy)"
+          DestinationFolder="$(MicrosoftNetCoreAppRefPackRefDir)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+  </Target>
+
+  <Target Name="ValidateSharedFramework" AfterTargets="Build">
+    <ItemGroup>
+      <!-- exclude private assemblies from ref-->
+      <_expectedRef Include="@(NetCoreAppLibrary)" Condition="!$([System.String]::new('%(Identity)').StartsWith('System.Private'))" />
+      <_expectedSharedFrameworkFile Include="@(_expectedRefs->'$(MicrosoftNetCoreAppRefPackRefDir)%(Identity).dll')" />
+
+      <!-- exclude the full facades from expected docs since they have no types -->
+      <_expectedDoc Include="@(_expectedRefs)" Exclude="netstandard;@(NetFxReference)" />
+      <_expectedSharedFrameworkFile Include="@(_expectedDoc->'$(MicrosoftNetCoreAppRefPackRefDir)%(Identity).xml')" />
+
+      <!-- exclude CoreLib from expected libs, since it's placed in native -->
+      <_expectedLib Include="@(NetCoreAppLibrary)" Exclude="System.Private.CoreLib" />
+      <_expectedSharedFrameworkFile Include="@(_expectedLib->'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)%(Identity).dll')" />
+
+      <_missingSharedFrameworkFile Include="@(_expectedSharedFrameworkFile)" Exclude="@(_expectedSharedFrameworkFile->Exists())" />
+    </ItemGroup>
+
+    <Error Text="The shared framework files '@(_missingSharedFrameworkFile)' were missing." Condition="'@(_missingSharedFrameworkFile)' != ''" />
+  </Target>
+
+  <Target Name="GetTrimSharedFrameworkAssembliesInputs" DependsOnTargets="ResolveProjectReferences">
+    <PropertyGroup>
+      <SharedFrameworkAssembliesTrimDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'illink-$(TargetArchitecture)'))</SharedFrameworkAssembliesTrimDir>
+      <SharedFrameworkAssembliesTrimMarkerFile>$(SharedFrameworkAssembliesTrimDir)linker-marker.txt</SharedFrameworkAssembliesTrimMarkerFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <SharedFrameworkSuppressionsXml Include="@(SharedFrameworkAssembly->Metadata('ILLinkSuppressionsXmls'))" />
+      <SharedFrameworkSuppressionsXml Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="TrimSharedFrameworkAssemblies"
+          AfterTargets="Build"
+          DependsOnTargets="ResolveProjectReferences;GetTrimSharedFrameworkAssembliesInputs;PrepareForAssembliesTrim"
+          Inputs="@(SharedFrameworkAssembly);@(SharedFrameworkSuppressionsXml);$(ILLinkTasksAssembly)"
+          Outputs="$(SharedFrameworkAssembliesTrimMarkerFile)">
+    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRID) shared framework assemblies with ILLinker..." Importance="high" />
+
+    <PropertyGroup>
+      <SharedFrameworkILLinkArgs>$(ILLinkArgs)</SharedFrameworkILLinkArgs>
+      <!-- update debug symbols -->
+      <SharedFrameworkILLinkArgs>$(SharedFrameworkILLinkArgs) -b true</SharedFrameworkILLinkArgs>
+      <SharedFrameworkILLinkArgs Condition="'@(SharedFrameworkSuppressionsXml)' != ''" >$(SharedFrameworkILLinkArgs) --link-attributes "@(SharedFrameworkSuppressionsXml, '" --link-attributes "')"</SharedFrameworkILLinkArgs>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <SharedFrameworkAssembly RootMode="library" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(SharedFrameworkAssembliesTrimDir)" />
+    <ILLink AssemblyPaths=""
+        RootAssemblyNames="@(SharedFrameworkAssembly)"
+        OutputDirectory="$(SharedFrameworkAssembliesTrimDir)"
+        ExtraArgs="$(SharedFrameworkILLinkArgs)"
+        ToolExe="$(_DotNetHostFileName)"
+        ToolPath="$(_DotNetHostDirectory)" />
+
+    <!-- Create a marker file which serves as the target's output to enable incremental builds. -->  
+    <Touch Files="$(SharedFrameworkAssembliesTrimMarkerFile)"
+           AlwaysCreate="true" />
+  </Target>
+
+</Project>

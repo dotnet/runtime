@@ -25,6 +25,11 @@ const char *GetTType( TraceType tt);
 
 #define IsSingleStep(exception) ((exception) == EXCEPTION_SINGLE_STEP)
 
+typedef enum __TailCallFunctionType {
+    TailCallThatReturns = 1,
+    StoreTailCallArgs = 2
+} TailCallFunctionType;
+
 // -------------------------------------------------------------------------
 //  DebuggerController routines
 // -------------------------------------------------------------------------
@@ -944,7 +949,8 @@ DebuggerController::DebuggerController(Thread * pThread, AppDomain * pAppDomain)
     m_eventQueuedCount(0),
     m_deleted(false),
     m_fEnableMethodEnter(false),
-    m_multicastDelegateHelper(false)
+    m_multicastDelegateHelper(false),
+    m_externalMethodFixup(false)
 {
     CONTRACTL
     {
@@ -1136,6 +1142,8 @@ void DebuggerController::DisableAll()
             DisableMethodEnter();
         if (m_multicastDelegateHelper)
             DisableMultiCastDelegate();
+        if (m_externalMethodFixup)
+            DisableExternalMethodFixup();
     }
 }
 
@@ -2397,6 +2405,10 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
         EnableMultiCastDelegate();
         return true;
 
+    case TRACE_EXTERNAL_METHOD_FIXUP:
+        EnableExternalMethodFixup();
+        return true;
+
     case TRACE_OTHER:
         LOG((LF_CORDB, LL_INFO10000,
              "Can't set a trace patch for TRACE_OTHER...\n"));
@@ -3225,7 +3237,7 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
         context = GetManagedStoppedCtx(thread);
     }
     CONSISTENCY_CHECK_MSGF(context != NULL, ("Can't apply ss flag to thread 0x%p b/c it's not in a safe place.\n", thread));
-    PREFIX_ASSUME(context != NULL);
+    _ASSERTE(context != NULL);
 
 
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
@@ -3975,6 +3987,74 @@ void DebuggerController::DispatchMulticastDelegate(DELEGATEREF pbDel, INT32 coun
         p = p->m_next;
     }
 }
+
+void DebuggerController::EnableExternalMethodFixup()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    ControllerLockHolder chController;
+    if (!m_externalMethodFixup)
+    {
+        LOG((LF_CORDB, LL_INFO1000000, "DC::EnableExternalMethodFixup, this=%p, previously disabled\n", this));
+        m_externalMethodFixup = true;
+        g_externalMethodFixupTraceActiveCount += 1;
+    }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO1000000, "DC::EnableExternalMethodFixup, this=%p, already set\n", this));
+    }
+}
+
+void DebuggerController::DisableExternalMethodFixup()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    ControllerLockHolder chController;
+    if (m_externalMethodFixup)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "DC::DisableExternalMethodFixup, this=%p, previously set\n", this));
+        m_externalMethodFixup = false;
+        g_externalMethodFixupTraceActiveCount -= 1;
+    }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO10000, "DC::DisableExternalMethodFixup, this=%p, already disabled\n", this));
+    }
+}
+
+// Loop through controllers and dispatch TriggerExternalMethodFixup
+void DebuggerController::DispatchExternalMethodFixup(PCODE addr)
+{
+    LOG((LF_CORDB, LL_INFO10000, "DC::DispatchExternalMethodFixup\n"));
+
+    Thread * pThread = g_pEEInterface->GetThread();
+    _ASSERTE(pThread  != NULL);
+
+    ControllerLockHolder lockController;
+
+    DebuggerController *p = g_controllers;
+    while (p != NULL)
+    {
+        if (p->m_externalMethodFixup)
+        {
+            if ((p->GetThread() == NULL) || (p->GetThread() == pThread))
+            {
+                p->TriggerExternalMethodFixup(addr);
+            }
+        }
+        p = p->m_next;
+    }
+}
 //
 // AddProtection adds page protection to (at least) the given range of
 // addresses
@@ -4121,7 +4201,11 @@ void DebuggerController::DispatchFuncEvalExit(Thread * thread)
 }
 void DebuggerController::TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount)
 {
-    _ASSERTE(!"This code should be unreachable. If your controller enables MulticastDelegateHelper events,it should also override this callback to do something useful when the event arrives.");
+    _ASSERTE(!"This code should be unreachable. If your controller enables MulticastDelegateHelper events, it should also override this callback to do something useful when the event arrives.");
+}
+void DebuggerController::TriggerExternalMethodFixup(PCODE target)
+{
+    _ASSERTE(!"This code should be unreachable. If your controller enables ExternalMethodFixup events, it should also override this callback to do something useful when the event arrives.");
 }
 
 
@@ -4184,7 +4268,7 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
     CONTRACTL_END;
 
     LOG((LF_CORDB, LL_EVERYTHING, "DispatchNativeException was called\n"));
-    LOG((LF_CORDB, LL_INFO10000, "Native exception at 0x%p, code=0x%8x, context=0x%p, er=0x%p\n",
+    LOG((LF_CORDB, LL_INFO10000, "Native exception at %p, code=0x%8x, context=%p, er=%p\n",
          pException->ExceptionAddress, dwCode, pContext, pException));
 
 
@@ -4385,7 +4469,19 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
         ThisFunctionMayHaveTriggerAGC();
     }
 #endif
-
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    if (pCurThread->m_State & Thread::TS_SSToExitApcCall)
+    {
+        if (!CheckActivationSafePoint(GetIP(pContext)))
+        {
+            return FALSE;
+        }
+        pCurThread->SetThreadState(Thread::TS_SSToExitApcCallDone);
+        pCurThread->ResetThreadState(Thread::TS_SSToExitApcCall);
+        DebuggerController::UnapplyTraceFlag(pCurThread);
+        pCurThread->MarkForSuspensionAndWait(Thread::TS_DebugSuspendPending);
+    }
+#endif
 
 
     // Must restore the filter context. After the filter context is gone, we're
@@ -5710,10 +5806,10 @@ static bool IsTailCallJitHelper(const BYTE * ip)
 // control flow will be a little peculiar in that the function will return
 // immediately, so we need special handling in the debugger for it. This
 // function detects that case to be used for those scenarios.
-static bool IsTailCallThatReturns(const BYTE * ip, ControllerStackInfo* info)
+static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunctionType type)
 {
     MethodDesc* pTailCallDispatcherMD = TailCallHelp::GetTailCallDispatcherMD();
-    if (pTailCallDispatcherMD == NULL)
+    if (pTailCallDispatcherMD == NULL && type == TailCallFunctionType::TailCallThatReturns)
     {
         return false;
     }
@@ -5728,6 +5824,11 @@ static bool IsTailCallThatReturns(const BYTE * ip, ControllerStackInfo* info)
         trace.GetTraceType() == TRACE_UNJITTED_METHOD
         ? trace.GetMethodDesc()
         : g_pEEInterface->GetNativeCodeMethodDesc(trace.GetAddress());
+
+    if (type == TailCallFunctionType::StoreTailCallArgs)
+    {
+        return (pTargetMD && pTargetMD->IsDynamicMethod() && pTargetMD->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubTailCallStoreArgs);
+    }
 
     if (pTargetMD != pTailCallDispatcherMD)
     {
@@ -5837,7 +5938,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
 #ifdef TARGET_X86
     LOG((LF_CORDB,LL_INFO1000, "GetJitInfo for pc = 0x%x (addr of "
         "that value:0x%x)\n", (const BYTE*)(GetControlPC(&info->m_activeFrame.registers)),
-        info->m_activeFrame.registers.PCTAddr));
+        GetRegdisplayPCTAddr(&info->m_activeFrame.registers)));
 #endif
 
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and
@@ -5960,6 +6061,13 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     fCallingIntoFunclet = IsAddrWithinMethodIncludingFunclet(ji, info->m_activeFrame.md, walker.GetNextIP()) &&
                         ((CORDB_ADDRESS)(SIZE_T)walker.GetNextIP() != ji->m_addrOfCode);
 #endif
+                    // If we are stepping into a tail call that uses the StoreTailCallArgs
+                    // we need to enable the method enter, otherwise it will behave like a resume
+                    if (in && IsTailCall(walker.GetNextIP(), info, TailCallFunctionType::StoreTailCallArgs))
+                    {
+                        EnableMethodEnter();
+                        return true;
+                    }
                     // At this point, we know that the call/branch target is not
                     // in the current method. The possible cases is that this is
                     // a jump or a tailcall-via-helper. There are two separate
@@ -5971,7 +6079,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     // is done by stepping out to the previous user function
                     // (non IL stub).
                     if ((fIsJump && !fCallingIntoFunclet) || IsTailCallJitHelper(walker.GetNextIP()) ||
-                        IsTailCallThatReturns(walker.GetNextIP(), info))
+                        IsTailCall(walker.GetNextIP(), info, TailCallFunctionType::TailCallThatReturns))
                     {
                         // A step-over becomes a step-out for a tail call.
                         if (!in)
@@ -6117,7 +6225,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 return true;
             }
 
-            if (IsTailCallJitHelper(walker.GetNextIP()) || IsTailCallThatReturns(walker.GetNextIP(), info))
+            if (IsTailCallJitHelper(walker.GetNextIP()) || IsTailCall(walker.GetNextIP(), info, TailCallFunctionType::TailCallThatReturns))
             {
                 if (!in)
                 {
@@ -7489,7 +7597,15 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     if (!g_pEEInterface->IsManagedNativeCode(ip))
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
-        DisableSingleStep();
+        // Sometimes we can get here with a callstack that is coming from an APC
+        // this will disable the single stepping and incorrectly resume an app that the user
+        // is stepping through.
+#ifdef FEATURE_THREAD_ACTIVATION
+        if ((thread->m_State & Thread::TS_DebugWillSync) == 0)
+#endif // FEATURE_THREAD_ACTIVATION
+        {
+            DisableSingleStep();
+        }
         return false;
     }
 
@@ -7702,6 +7818,18 @@ void DebuggerStepper::TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateC
     //fStopInUnmanaged only matters for TRACE_UNMANAGED
     PatchTrace(&trace, fp, /*fStopInUnmanaged*/false);
     this->DisableMultiCastDelegate();
+}
+
+void DebuggerStepper::TriggerExternalMethodFixup(PCODE target)
+{
+    TraceDestination trace;
+    FramePointer fp = LEAF_MOST_FRAME;
+
+    trace.InitForStub(target);
+    g_pEEInterface->FollowTrace(&trace);
+    //fStopInUnmanaged only matters for TRACE_UNMANAGED
+    PatchTrace(&trace, fp, /*fStopInUnmanaged*/false);
+    this->DisableExternalMethodFixup();
 }
 
 // Prepare for sending an event.
@@ -9088,7 +9216,7 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
     }
 
     // On WIN64, by the time we get here the DebuggerExState is gone already.
-    // ExceptionTrackers are cleaned up before we resume execution for a handled exception.
+    // ExInfos are cleaned up before we resume execution for a handled exception.
 #if !defined(FEATURE_EH_FUNCLETS)
     thread->GetExceptionState()->GetDebuggerState()->SetDebuggerInterceptContext(NULL);
 #endif // !FEATURE_EH_FUNCLETS

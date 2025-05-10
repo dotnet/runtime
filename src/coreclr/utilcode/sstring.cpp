@@ -690,7 +690,7 @@ void SString::ConvertToUnicode() const
         {
             StackSString s;
             ConvertToUnicode(s);
-            PREFIX_ASSUME(!s.IsImmutable());
+            _ASSERTE(!s.IsImmutable());
             (const_cast<SString*>(this))->Set(s);
         }
     }
@@ -772,7 +772,7 @@ void SString::ConvertToUTF8() const
         {
             StackSString s;
             ConvertToUTF8(s);
-            PREFIX_ASSUME(!s.IsImmutable());
+            _ASSERTE(!s.IsImmutable());
             (const_cast<SString*>(this))->Set(s);
         }
     }
@@ -1712,18 +1712,6 @@ void SString::Printf(const CHAR *format, ...)
     VPrintf(format, args);
     va_end(args);
 }
-
-#ifndef EBADF
-#define EBADF 9
-#endif
-
-#ifndef ENOMEM
-#define ENOMEM 12
-#endif
-
-#ifndef ERANGE
-#define ERANGE 34
-#endif
 
 #if defined(_MSC_VER)
 #undef va_copy

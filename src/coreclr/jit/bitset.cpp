@@ -139,7 +139,7 @@ void BitSetSupport::BitSetOpCounter::RecordOp(BitSetSupport::Operation op)
     {
         if (OpOutputFile == nullptr)
         {
-            OpOutputFile = fopen(m_fileName, "a");
+            OpOutputFile = fopen_utf8(m_fileName, "a");
         }
         fprintf(OpOutputFile, "@ %d total ops.\n", TotalOps);
 

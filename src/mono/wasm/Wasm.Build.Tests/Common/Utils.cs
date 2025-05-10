@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 internal static class Utils
 {
-    public static void DirectoryCopy(string sourceDirName, string destDirName, Func<string, bool>? predicate=null, bool copySubDirs=true, bool silent=false, ITestOutputHelper? testOutput = null)
+    public static void DirectoryCopy(string sourceDirName, string destDirName, Func<string, bool>? predicate=null, bool copySubDirs=true, bool silent=false, ITestOutputHelper? testOutput = null, bool overwrite = false)
     {
         // Get the subdirectories for the specified directory.
         DirectoryInfo dir = new DirectoryInfo(sourceDirName);
@@ -45,7 +45,7 @@ internal static class Utils
             string tempPath = Path.Combine(destDirName, file.Name);
              if (!silent)
                  testOutput?.WriteLine($"Copying {fullPath} to {tempPath}");
-            file.CopyTo(tempPath, false);
+            file.CopyTo(tempPath, overwrite);
         }
 
         // If copying subdirectories, copy them and their contents to new location.

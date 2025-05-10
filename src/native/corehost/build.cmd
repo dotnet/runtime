@@ -5,7 +5,7 @@ setlocal
 :: Initialize the args that will be passed to cmake
 set "__sourceDir=%~dp0"
 :: remove trailing slash
-if %__sourceDir:~-1%==\ set "__ProjectDir=%__sourceDir:~0,-1%"
+if "%__sourceDir:~-1%"=="\" set "__sourceDir=%__sourceDir:~0,-1%"
 
 set "__RepoRootDir=%__sourceDir%\..\..\.."
 :: normalize
@@ -104,7 +104,6 @@ for /f "delims=-" %%i in ("%__OutputRid%") do set __HostFallbackOS=%%i
 if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
 
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLI_CMAKE_COMMIT_HASH=%__CommitSha%"
-set __ExtraCmakeParams=%__ExtraCmakeParams% "-DRUNTIME_FLAVOR=%__RuntimeFlavor% "
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 :: Regenerate the native build files

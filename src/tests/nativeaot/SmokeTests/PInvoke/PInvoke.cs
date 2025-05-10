@@ -404,6 +404,12 @@ namespace PInvokeTests
 
             ThrowIfNotEquals(0, CheckIncremental(arr, ArraySize), "Array marshalling failed");
 
+            int[] empty = new int[0];
+            ThrowIfNotEquals(0, CheckIncremental(empty, 0), "Empty array marshalling failed");
+
+            int[] nullArray = null;
+            ThrowIfNotEquals(1, CheckIncremental(nullArray, 0), "Null array marshalling failed");
+
             Console.WriteLine("Testing marshalling blittable struct arrays");
 
             Foo[] arr_foo = null;

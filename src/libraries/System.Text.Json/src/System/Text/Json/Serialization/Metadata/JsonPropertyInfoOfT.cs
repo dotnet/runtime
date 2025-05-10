@@ -178,7 +178,7 @@ namespace System.Text.Json.Serialization.Metadata
 #else
                 !EffectiveConverter.IsValueType &&
 #endif
-                Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                Options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.IgnoreCycles &&
                 value is not null &&
                 !state.IsContinuation &&
                 // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
@@ -427,6 +427,14 @@ namespace System.Text.Json.Serialization.Metadata
                 case JsonIgnoreCondition.WhenWritingDefault:
                     ShouldSerialize = ShouldSerializeIgnoreWhenWritingDefault;
                     IgnoreDefaultValuesOnWrite = true;
+                    break;
+
+                case JsonIgnoreCondition.WhenWriting:
+                    ShouldSerialize = ShouldSerializeIgnoreConditionAlways;
+                    break;
+
+                case JsonIgnoreCondition.WhenReading:
+                    Set = null;
                     break;
 
                 default:

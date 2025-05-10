@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// COM+99 Debug Interface Header
+// CLR Debug Interface Header
 //
 
 
@@ -411,6 +411,10 @@ public:
     virtual HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef) = 0;
     virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
     virtual void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count) = 0;
+    virtual void ExternalMethodFixupNextStep(PCODE address) = 0;
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    virtual void SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext) = 0;
+#endif // FEATURE_SPECIAL_USER_MODE_APC        
 #endif //DACCESS_COMPILE
 };
 

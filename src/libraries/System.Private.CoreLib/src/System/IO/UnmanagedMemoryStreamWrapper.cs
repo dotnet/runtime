@@ -87,7 +87,7 @@ namespace System.IO
             return _unmanagedStream.Seek(offset, loc);
         }
 
-        public override unsafe byte[] ToArray()
+        public override byte[] ToArray()
         {
             byte[] buffer = new byte[_unmanagedStream.Length];
             _unmanagedStream.Read(buffer, 0, (int)_unmanagedStream.Length);
@@ -110,7 +110,7 @@ namespace System.IO
         }
 
         // Writes this MemoryStream to another stream.
-        public override unsafe void WriteTo(Stream stream)
+        public override void WriteTo(Stream stream)
         {
             ArgumentNullException.ThrowIfNull(stream);
 

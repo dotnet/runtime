@@ -108,6 +108,105 @@ namespace System.Tests
         }
 
         [Fact]
+        public void CreateInstance_WithCustomBinder_ThrowsMissingMethodException()
+        {
+            // MissingMethodException not caused by a binder must not contain an inner exception.
+            var mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: false));
+            Assert.Contains("System.Tests.ActivatorTests+TypeWithPrivateDefaultConstructor", mme.Message);
+            Assert.Null(mme.InnerException);
+
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithoutDefaultCtor)));
+            Assert.Contains("System.Tests.ActivatorTests+TypeWithoutDefaultCtor", mme.Message);
+            Assert.Null(mme.InnerException);
+
+            // MissingMethodException caused by a binder must be wrapped.
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
+                typeof(object), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new MissingMethodException("Hello, World!!") },
+                null, null, null
+            ));
+            Assert.Contains("System.Object", mme.Message);
+            Assert.NotNull(mme.InnerException);
+            Assert.IsType<MissingMethodException>(mme.InnerException);
+            Assert.Equal("Hello, World!!", mme.InnerException.Message);
+
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new MissingMethodException("good-bye...") },
+                null, null, null
+            ));
+            Assert.Contains("System.Random", mme.Message);
+            Assert.NotNull(mme.InnerException);
+            Assert.IsType<MissingMethodException>(mme.InnerException);
+            Assert.Equal("good-bye...", mme.InnerException.Message);
+
+            // Any other exceptions will not be caught.
+            Assert.Throws<Exception>(() => Activator.CreateInstance(
+                typeof(object), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new Exception() },
+                null, null, null
+            ));
+            Assert.Throws<ArgumentNullException>(() => Activator.CreateInstance(
+                typeof(object), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new ArgumentNullException() },
+                null, null, null
+            ));
+            Assert.Throws<FileNotFoundException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new FileNotFoundException() },
+                null, null, null
+            ));
+            Assert.Throws<InvalidOperationException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new InvalidOperationException() },
+                null, null, null
+            ));
+
+            // MissingMethodException must not contain an inner exception when BindToMethod returns null.
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
+                typeof(object), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => null },
+                null, null, null
+            ));
+            Assert.Contains("System.Object", mme.Message);
+            Assert.Null(mme.InnerException);
+
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => null },
+                null, null, null
+            ));
+            Assert.Contains("System.Random", mme.Message);
+            Assert.Null(mme.InnerException);
+        }
+
+        class CustomBinder : Binder
+        {
+            public required Func<MethodBase?> BindToMethodAction { get; init; }
+
+            public override MethodBase BindToMethod(BindingFlags bindingAttr, MethodBase[] match, ref object?[] args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? names, out object? state)
+            {
+                state = null;
+                return this.BindToMethodAction()!;
+            }
+
+            public override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo? culture)
+                => throw new NotImplementedException();
+
+            public override object ChangeType(object value, Type type, CultureInfo? culture)
+                => throw new NotImplementedException();
+
+            public override void ReorderArgumentArray(ref object?[] args, object state)
+                => throw new NotImplementedException();
+
+            public override MethodBase? SelectMethod(BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
+                => throw new NotImplementedException();
+
+            public override PropertyInfo? SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type? returnType, Type[]? indexes, ParameterModifier[]? modifiers)
+                => throw new NotImplementedException();
+        }
+
+        [Fact]
         public void CreateInstance_NullableType_ReturnsNull()
         {
             Assert.Null(Activator.CreateInstance(typeof(int?)));

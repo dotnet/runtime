@@ -11,7 +11,7 @@
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <RunAnalyzers>false</RunAnalyzers>
-    <DefineConstants>TYPEEQUIVALENCEASSEMBLY_1</DefineConstants>
+    <DefineConstants>$(DefineConstants);TYPEEQUIVALENCEASSEMBLY_1</DefineConstants>
     <!-- This assembly has no LibraryImports and uses a custom corelib, so disable the generator. -->
     <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
   </PropertyGroup>

@@ -16,10 +16,13 @@ namespace ILCompiler
     {
         private EcmaModule _module;
 
-        public UnmanagedEntryPointsRootProvider(EcmaModule module)
+        public UnmanagedEntryPointsRootProvider(EcmaModule module, bool hidden = false)
         {
             _module = module;
+            Hidden = hidden;
         }
+
+        public bool Hidden { get; }
 
         public IEnumerable<EcmaMethod> ExportedMethods
         {
@@ -62,12 +65,12 @@ namespace ILCompiler
                 if (ecmaMethod.IsUnmanagedCallersOnly)
                 {
                     string unmanagedCallersOnlyExportName = ecmaMethod.GetUnmanagedCallersOnlyExportName();
-                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName);
+                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName, Hidden);
                 }
                 else
                 {
                     string runtimeExportName = ecmaMethod.GetRuntimeExportName();
-                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName);
+                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName, Hidden);
                 }
             }
         }

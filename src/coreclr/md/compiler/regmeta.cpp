@@ -21,6 +21,7 @@
 #include "posterror.h"
 #include "stgio.h"
 #include "sstring.h"
+#include <minipal/guid.h>
 
 #include "mdinternalrw.h"
 
@@ -65,7 +66,6 @@ RegMeta::RegMeta() :
     m_trLanguageType(0),
     m_SetAPICaller(EXTERNAL_CALLER),
     m_ModuleType(ValidatorModuleTypeInvalid),
-    m_bKeepKnownCa(false),
     m_ReorderingOptions(NoReordering)
 #ifdef FEATURE_METADATA_RELEASE_MEMORY_ON_REOPEN
     , m_safeToDeleteStgdb(true)
@@ -78,8 +78,6 @@ RegMeta::RegMeta() :
     {
         _ASSERTE(!"RegMeta()");
     }
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_KeepKnownCA))
-        m_bKeepKnownCa = true;
 #endif // _DEBUG
 
 } // RegMeta::RegMeta()
@@ -246,7 +244,7 @@ RegMeta::CreateNewMD()
     ModuleRec *pModule;
     GUID       mvid;
     IfFailGo(m_pStgdb->m_MiniMd.AddModuleRecord(&pModule, &iRecord));
-    IfFailGo(CoCreateGuid(&mvid));
+    IfFailGo(minipal_guid_v4_create(&mvid) ? S_OK : E_FAIL);
     IfFailGo(m_pStgdb->m_MiniMd.PutGuid(TBL_Module, ModuleRec::COL_Mvid, pModule, mvid));
 
     // Add the dummy module typedef which we are using to parent global items.
@@ -590,6 +588,10 @@ RegMeta::QueryInterface(
     {
         *ppUnk = (IMetaDataEmit3 *)this;
         fIsInterfaceRW = true;
+    }
+    else if (riid == IID_IILAsmPortablePdbWriter)
+    {
+        *ppUnk = static_cast<IILAsmPortablePdbWriter *>(this);
     }
 #endif
     else if (riid == IID_IMetaDataAssemblyEmit)

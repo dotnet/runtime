@@ -12,6 +12,11 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System", "GC");
         }
 
+        public static MetadataType GetType(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System", "Type");
+        }
+
         public static MetadataType GetSafeHandle(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "SafeHandle");
@@ -30,6 +35,11 @@ namespace Internal.TypeSystem.Interop
         public static MetadataType GetPInvokeMarshal(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "PInvokeMarshal");
+        }
+
+        public static MetadataType GetRuntimeHelpers(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers");
         }
 
         public static MetadataType GetMarshal(TypeSystemContext context)

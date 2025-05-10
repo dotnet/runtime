@@ -16,7 +16,6 @@
 #include "gcheaputilities.h"
 #include "field.h"
 #include "eeconfig.h"
-#include "runtimehandles.h" // for SignatureNative
 #include "winwrap.h"
 #include <formattype.h>
 #include "sigbuilder.h"
@@ -138,7 +137,7 @@ unsigned GetSizeForCorElementType(CorElementType etyp)
 
 #ifndef DACCESS_COMPILE
 
-void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
 {
     CONTRACTL
     {
@@ -346,7 +345,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
     }
 }
 
-void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalSignature(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
 {
     CONTRACTL
     {
@@ -386,6 +385,21 @@ void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *
         ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
         cArgs--;
     }
+}
+
+void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE additionalCallConv)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    SigPointer spEnd(*this);
+    IfFailThrowBF(spEnd.SkipSignature(), BFA_BAD_COMPLUS_SIG, pSigModule);
+    pSigBuilder->AppendByte(*m_ptr | additionalCallConv);
+    pSigBuilder->AppendBlob((const PVOID)(m_ptr + 1), spEnd.m_ptr - (m_ptr + 1));
 }
 #endif // DACCESS_COMPILE
 
@@ -685,6 +699,8 @@ MetaSig::MetaSig(MethodDesc *pMD, Instantiation classInst, Instantiation methodI
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
+    if (pMD->IsAsyncMethod())
+        SetIsAsyncCall();
 }
 
 MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
@@ -706,6 +722,8 @@ MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
+    if (pMD->IsAsyncMethod())
+        SetIsAsyncCall();
 }
 
 #ifdef _DEBUG
@@ -1028,11 +1046,6 @@ static uint32_t NormalizeFnPtrCallingConvention(uint32_t callConv)
 
     return callConv;
 }
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 
 // Method: TypeHandle SigPointer::GetTypeHandleThrowing()
 // pZapSigContext is only set when decoding zapsigs
@@ -1883,9 +1896,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
     RETURN thRet;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 TypeHandle SigPointer::GetGenericInstType(ModuleBase *        pModule,
                                     ClassLoader::LoadTypesFlag  fLoadTypes/*=LoadTypes*/,
@@ -3667,7 +3677,7 @@ ErrExit:
 #endif //!DACCESS_COMPILE
 } // CompareTypeTokens
 
-static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
+void MetaSig::ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
 {
     mdToken tk;
     void* ptr;
@@ -3700,11 +3710,6 @@ static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSi
         }
     }
 }
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 
 //---------------------------------------------------------------------------------------
 //
@@ -4319,10 +4324,6 @@ MetaSig::CompareElementType(
     // Unreachable
     UNREACHABLE();
 } // MetaSig::CompareElementType
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -5146,12 +5147,9 @@ void PromoteCarefully(promote_func   fn,
 
     if (sc->promotion)
     {
-        LoaderAllocator*pLoaderAllocator = LoaderAllocator::GetAssociatedLoaderAllocator_Unsafe(PTR_TO_TADDR(*ppObj));
-        if (pLoaderAllocator != NULL)
-        {
-            GcReportLoaderAllocator(fn, sc, pLoaderAllocator);
-        }
+        LoaderAllocator::GcReportAssociatedLoaderAllocators_Unsafe(PTR_TO_TADDR(*ppObj), fn, sc);
     }
+
 #endif // !defined(DACCESS_COMPILE)
 
     (*fn) (ppObj, sc, flags);
@@ -5276,6 +5274,13 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
 #endif // UNIX_AMD64_ABI
 
     ReportPointersFromValueType(fn, sc, pMT, pSrc->GetDestinationAddress());
+}
+
+BOOL MetaSig::HasAsyncContinuation()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return IsAsyncCall();
 }
 
 //------------------------------------------------------------------
@@ -5415,7 +5420,7 @@ void MetaSig::EnsureSigValueTypesLoaded(MethodDesc *pMD)
     // The signature format is approximately:
     // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
     // There is also a blob length at pSig-1.
-    SigPointer ptr(pMD->GetSig());
+    SigPointer ptr = pMD->GetSigPointer();
 
     // Skip over calling convention.
     IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);
@@ -5454,7 +5459,7 @@ void MetaSig::CheckSigTypesCanBeLoaded(MethodDesc * pMD)
     // The signature format is approximately:
     // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
     // There is also a blob length at pSig-1.
-    SigPointer ptr(pMD->GetSig());
+    SigPointer ptr = pMD->GetSigPointer();
 
     // Skip over calling convention.
     IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);

@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public bool ValidateScopes { get; set; }
 
         /// <summary>
-        /// Gets or sets a value that indicates whether validation is performed to ensure all services can be created when <see cref="M:BuildServiceProvider(IServiceCollection,ServiceProviderOptions)" /> is called.
+        /// Gets or sets a value that indicates whether validation is performed to ensure all services can be created when <see cref="ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(IServiceCollection, ServiceProviderOptions)" /> is called.
         /// </summary>
         /// <remarks>
         /// Open generics services aren't validated.

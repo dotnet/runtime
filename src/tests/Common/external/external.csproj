@@ -78,11 +78,11 @@
   </ItemGroup>
 
   <Target Name="AddXunitConsoleRunner" BeforeTargets="ResolveReferences">
-    <Error Condition="!Exists('$(XunitConsoleNetCore21AppPath)')"
+    <Error Condition="!Exists('$(XunitConsoleNetCoreAppPath)')"
             Text="Error: looks the package Microsoft.DotNet.XUnitConsoleRunner is not restored or missing xunit.console.dll."
     />
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCore21AppPath)'))\*.*">
+      <ReferenceCopyLocalPaths Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCoreAppPath)'))\*.*">
         <Private>false</Private>
         <NuGetPackageId>Microsoft.DotNet.XUnitConsoleRunner</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftDotNetXUnitConsoleRunnerVersion)</NuGetPackageVersion>

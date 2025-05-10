@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
@@ -87,10 +88,7 @@ namespace System.Security.Cryptography
         /// <returns>The key and explicit curve parameters used by the ECC object.</returns>
         public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
         {
-            byte[] blob = ExportFullKeyBlob(includePrivateParameters);
-            ECParameters ecparams = default;
-            ECCng.ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters);
-            return ecparams;
+            return ECCng.ExportExplicitParameters(Key, includePrivateParameters);
         }
 
         /// <summary>
@@ -103,23 +101,7 @@ namespace System.Security.Cryptography
         /// <returns>The key and named curve parameters used by the ECC object.</returns>
         public override ECParameters ExportParameters(bool includePrivateParameters)
         {
-            ECParameters ecparams = default;
-
-            string? curveName = GetCurveName(out string? oidValue);
-
-            if (string.IsNullOrEmpty(curveName))
-            {
-                byte[] fullKeyBlob = ExportFullKeyBlob(includePrivateParameters);
-                ECCng.ExportPrimeCurveParameters(ref ecparams, fullKeyBlob, includePrivateParameters);
-            }
-            else
-            {
-                byte[] keyBlob = ExportKeyBlob(includePrivateParameters);
-                ECCng.ExportNamedCurveParameters(ref ecparams, keyBlob, includePrivateParameters);
-                ecparams.Curve = ECCurve.CreateFromOid(new Oid(oidValue, curveName));
-            }
-
-            return ecparams;
+            return ECCng.ExportParameters(Key, includePrivateParameters);
         }
 
         public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)

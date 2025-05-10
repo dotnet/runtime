@@ -45,7 +45,7 @@ namespace System.Diagnostics
         /// Constants representing the importance level of messages to be logged.
         ///
         /// An attached debugger can enable or disable which messages will
-        /// actually be reported to the user through the COM+ debugger
+        /// actually be reported to the user through the CLR debugger
         /// services API.  This info is communicated to the runtime so only
         /// desired events are actually reported to the debugger.
         /// Constant representing the default category

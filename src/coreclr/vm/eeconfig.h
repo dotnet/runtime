@@ -124,6 +124,10 @@ public:
     }
 #endif // FEATURE_GDBJIT && _DEBUG
 
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+    bool UseCachedInterfaceDispatch() const { LIMITED_METHOD_CONTRACT; return fUseCachedInterfaceDispatch; }
+#endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
 #if defined(FEATURE_GDBJIT_FRAME)
     inline bool ShouldEmitDebugFrame(void) const {LIMITED_METHOD_CONTRACT; return fGDBJitEmitDebugFrame;}
 #endif // FEATURE_GDBJIT_FRAME
@@ -317,9 +321,6 @@ public:
     unsigned SuspendDeadlockTimeout() const
     {LIMITED_METHOD_CONTRACT; return m_SuspendDeadlockTimeout; }
 
-    // Verifier
-    bool    IsVerifierOff()                 const {LIMITED_METHOD_CONTRACT;  return fVerifierOff; }
-
     inline bool fAssertOnBadImageFormat() const
     {LIMITED_METHOD_CONTRACT;  return m_fAssertOnBadImageFormat; }
 
@@ -328,9 +329,6 @@ public:
 
     inline bool SuppressChecks() const
     {LIMITED_METHOD_CONTRACT;  return fSuppressChecks; }
-
-    inline bool EnableFullDebug() const
-    {LIMITED_METHOD_CONTRACT;  return fEnableFullDebug; }
 
 #endif
 #ifdef ENABLE_STARTUP_DELAY
@@ -502,8 +500,6 @@ private: //----------------------------------------------------------------
 
     unsigned m_SuspendThreadDeadlockTimeoutMs;  // Used in Thread::SuspendThread()
     unsigned m_SuspendDeadlockTimeout; // Used in Thread::SuspendRuntime.
-
-    bool fEnableFullDebug;
 #endif // _DEBUG
 
 #ifdef FEATURE_COMINTEROP
@@ -522,10 +518,6 @@ private: //----------------------------------------------------------------
     bool fExpandAllOnLoad;              // True if we want to load all types/jit all methods in an assembly
                                         // at load time.
     bool fJitVerificationDisable;       // Turn off jit verification (for testing purposes only)
-
-
-    // Verifier
-    bool fVerifierOff;
 
 #ifdef FEATURE_EH_FUNCLETS
     bool fSuppressLockViolationsOnReentryFromOS;
@@ -642,6 +634,11 @@ private: //----------------------------------------------------------------
 #if defined(FEATURE_GDBJIT_FRAME)
     bool fGDBJitEmitDebugFrame;
 #endif
+
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+    bool fUseCachedInterfaceDispatch;
+#endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
 public:
 
     enum BitForMask {

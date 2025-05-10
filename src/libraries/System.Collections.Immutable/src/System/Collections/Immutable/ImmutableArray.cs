@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -104,6 +105,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
         /// <returns>An immutable array containing the specified items.</returns>
+        [OverloadResolutionPriority(-1)]
         public static ImmutableArray<T> Create<T>(Span<T> items)
         {
             return Create((ReadOnlySpan<T>)items);
@@ -126,6 +128,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of element in the list.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
         /// <returns>An immutable array containing the specified items.</returns>
+        [OverloadResolutionPriority(-1)]
         public static ImmutableArray<T> ToImmutableArray<T>(this Span<T> items)
         {
             return Create((ReadOnlySpan<T>)items);

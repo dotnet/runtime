@@ -29,7 +29,7 @@ namespace System.Collections.Generic
         {
             // Copied from Array.MaxLength in System.Private.CoreLib/src/libraries/System.Private.CoreLib/src/System/Array.cs
             const int ArrayMaxLength = 0X7FFFFFC7;
-#if NET6_0_OR_GREATER
+#if NET
             Debug.Assert(Array.MaxLength == ArrayMaxLength);
 #endif
             if (source is ICollection<T> ic)

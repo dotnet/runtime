@@ -897,6 +897,7 @@ namespace Internal.IL
             if (opCode == ILOpcode.unbox)
             {
                 helper = ReadyToRunHelper.Unbox;
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Unbox_TypeTest), "Unbox");
             }
             else
             {
@@ -1237,11 +1238,16 @@ namespace Internal.IL
 
         private void ImportStoreElement(int token)
         {
-            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "stelem");
+            ImportStoreElement((TypeDesc)_methodIL.GetObject(token));
         }
 
         private void ImportStoreElement(TypeDesc elementType)
         {
+            if (elementType == null || elementType.IsGCPointer)
+            {
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Stelem_Ref), "stelem");
+            }
+
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "stelem");
         }
 
@@ -1254,6 +1260,8 @@ namespace Internal.IL
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType), "ldelema");
                 else
                     _dependencies.Add(_factory.NecessaryTypeSymbol(elementType), "ldelema");
+
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Ldelema_Ref), "ldelema");
             }
 
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelema");

@@ -6,10 +6,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.NET.HostModel.AppHost;
+using Microsoft.NET.HostModel.MachO;
 
 namespace Microsoft.NET.HostModel.Bundle
 {
@@ -91,7 +94,7 @@ namespace Microsoft.NET.HostModel.Bundle
         /// startOffset: offset of the start 'file' within 'bundle'
         /// compressedSize: size of the compressed data, if entry was compressed, otherwise 0
         /// </returns>
-        private (long startOffset, long compressedSize) AddToBundle(Stream bundle, FileStream file, FileType type)
+        private (long startOffset, long compressedSize) AddToBundle(FileStream bundle, FileStream file, FileType type)
         {
             long startOffset = bundle.Position;
             if (ShouldCompress(type))
@@ -272,22 +275,20 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BinaryUtils.CopyFile(hostSource, bundlePath);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
-            {
-                RemoveCodesignIfNecessary(bundlePath);
-            }
-
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
             // We can't really make assumptions about the file systems (even on Linux there can be case insensitive file systems
             // and vice versa for Windows). So it's safer to do case sensitive comparison everywhere.
             var relativePathToSpec = new Dictionary<string, FileSpec>(StringComparer.Ordinal);
 
             long headerOffset = 0;
-            using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(bundlePath)))
+            using (FileStream bundle = File.Open(bundlePath, FileMode.Open, FileAccess.ReadWrite))
+            using (BinaryWriter writer = new BinaryWriter(bundle, Encoding.Default, leaveOpen: true))
             {
-                Stream bundle = writer.BaseStream;
+                if (_target.IsOSX)
+                {
+                    MachObjectFile.RemoveCodeSignatureIfPresent(bundle);
+                }
                 bundle.Position = bundle.Length;
-
                 foreach (var fileSpec in fileSpecs)
                 {
                     string relativePath = fileSpec.BundleRelativePath;
@@ -343,36 +344,9 @@ namespace Microsoft.NET.HostModel.Bundle
                 _tracer.Log($"Bundle: Path={bundlePath}, Size={bundle.Length}");
             }
 
-            HostWriter.SetAsBundle(bundlePath, headerOffset);
-
-            // Sign the bundle if requested
-            if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
-            {
-                var (exitCode, stdErr) = HostModelUtils.RunCodesign("-s -", bundlePath);
-                if (exitCode != 0)
-                {
-                    throw new InvalidOperationException($"Failed to codesign '{bundlePath}': {stdErr}");
-                }
-            }
+            HostWriter.SetAsBundle(bundlePath, headerOffset, _macosCodesign);
 
             return bundlePath;
-
-            // Remove mac code signature if applied before bundling
-            static void RemoveCodesignIfNecessary(string bundlePath)
-            {
-                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
-                Debug.Assert(HostModelUtils.IsCodesignAvailable());
-
-                // `codesign -v` returns 0 if app is signed
-                if (HostModelUtils.RunCodesign("-v", bundlePath).ExitCode == 0)
-                {
-                    var (exitCode, stdErr) = HostModelUtils.RunCodesign("--remove-signature", bundlePath);
-                    if (exitCode != 0)
-                    {
-                        throw new InvalidOperationException($"Removing codesign from '{bundlePath}' failed: {stdErr}");
-                    }
-                }
-            }
         }
     }
 }

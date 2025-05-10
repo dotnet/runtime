@@ -96,6 +96,7 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_THROW,             // Throw an exception object
         CORINFO_HELP_RETHROW,           // Rethrow the currently active exception
+        CORINFO_HELP_THROWEXACT,        // Throw an exception object, preserving stack trace
         CORINFO_HELP_USER_BREAKPOINT,   // For a user program to break to the debugger
         CORINFO_HELP_RNGCHKFAIL,        // array bounds check failed
         CORINFO_HELP_OVERFLOW,          // throw an overflow exception
@@ -124,7 +125,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_STOP_FOR_GC,       // Call GC (force a GC)
         CORINFO_HELP_POLL_GC,           // Ask GC if it wants to collect
 
-        CORINFO_HELP_STRESS_GC,         // Force a GC, but then update the JITTED code to be a noop call
         CORINFO_HELP_CHECK_OBJ,         // confirm that ECX is a valid object pointer (debugging only)
 
         /* GC Write barrier support */
@@ -171,6 +171,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
         /* Debugger */
 
         CORINFO_HELP_DBG_IS_JUST_MY_CODE,    // Check if this is "JustMyCode" and needs to be stepped through.
@@ -268,7 +269,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
         CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
-        CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+        CORINFO_HELP_PATCHPOINT_FORCED,         // Notify runtime that code has reached a part of the method that needs to transition
 
         CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
         CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
@@ -283,6 +284,10 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
         CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
+
+        CORINFO_HELP_ALLOC_CONTINUATION,
+        CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
+        CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
         CORINFO_HELP_COUNT,
     }

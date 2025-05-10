@@ -45,7 +45,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 			string Name { get; set; }
 		}
 
-		[Kept (By = Tool.Trimmer)]
+		[Kept]
 		interface IFoo<T>
 		{
 
@@ -62,6 +62,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 			int Bar3 { get; set; }
 		}
 
+		[Kept (By = Tool.NativeAot)]
 		class Cat
 		{
 		}

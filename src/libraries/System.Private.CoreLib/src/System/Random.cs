@@ -378,6 +378,54 @@ namespace System
             }
         }
 
+        /// <summary>Creates a string populated with characters chosen at random from <paramref name="choices"/>.</summary>
+        /// <param name="choices">The characters to use to populate the string.</param>
+        /// <param name="length">The length of string to return.</param>
+        /// <returns>A string populated with items selected at random from <paramref name="choices"/>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="choices" /> is empty.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length" /> is not zero or a positive number.</exception>
+        /// <seealso cref="GetItems{T}(ReadOnlySpan{T}, Span{T})" />
+        public string GetString(ReadOnlySpan<char> choices, int length)
+        {
+            if (choices.IsEmpty)
+            {
+                throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
+            }
+
+            if (length <= 0)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(length);
+                return string.Empty;
+            }
+
+            string destination = string.FastAllocateString(length);
+            GetItems(choices, new Span<char>(ref destination.GetRawStringData(), destination.Length));
+            return destination;
+        }
+
+        /// <summary>Creates a string filled with random hexadecimal characters.</summary>
+        /// <param name="stringLength">The length of string to create.</param>
+        /// <param name="lowercase">
+        /// <see langword="true" /> if the hexadecimal characters should be lowercase; <see langword="false" /> if they should be uppercase.
+        /// The default is <see langword="false" />.
+        /// </param>
+        /// <returns>A string populated with random hexadecimal characters.</returns>
+        public string GetHexString(int stringLength, bool lowercase = false) =>
+            GetString(GetHexChoices(lowercase), stringLength);
+
+        /// <summary>Fills a buffer with random hexadecimal characters.</summary>
+        /// <param name="destination">The buffer to receive the characters.</param>
+        /// <param name="lowercase">
+        /// <see langword="true" /> if the hexadecimal characters should be lowercase; <see langword="false" /> if they should be uppercase.
+        /// The default is <see langword="false" />.
+        /// </param>
+        public void GetHexString(Span<char> destination, bool lowercase = false) =>
+            GetItems(GetHexChoices(lowercase), destination);
+
+        /// <summary>Gets all possible hex characters for the specified casing.</summary>
+        private static ReadOnlySpan<char> GetHexChoices(bool lowercase) =>
+            lowercase ? "0123456789abcdef" : "0123456789ABCDEF";
+
         /// <summary>Returns a random floating-point number between 0.0 and 1.0.</summary>
         /// <returns>A double-precision floating point number that is greater than or equal to 0.0, and less than 1.0.</returns>
         protected virtual double Sample()

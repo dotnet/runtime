@@ -200,8 +200,10 @@ namespace Mono.Linker
 
 		protected LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory, UnintializedContextFactory factory)
 		{
+			ArgumentNullException.ThrowIfNull (logger);
+
 			_pipeline = pipeline;
-			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
+			_logger = logger;
 
 			_resolver = factory.CreateResolver (this);
 			_actions = new Dictionary<string, AssemblyAction> ();
@@ -386,7 +388,7 @@ namespace Mono.Linker
 			Annotations.SetAction (assembly, action);
 		}
 #endif
-		public AssemblyAction CalculateAssemblyAction (AssemblyDefinition assembly)
+		public virtual AssemblyAction CalculateAssemblyAction (AssemblyDefinition assembly)
 		{
 			if (_actions.TryGetValue (assembly.Name.Name, out AssemblyAction action)) {
 				if (IsCPPCLIAssembly (assembly.MainModule) && action != AssemblyAction.Copy && action != AssemblyAction.Skip) {

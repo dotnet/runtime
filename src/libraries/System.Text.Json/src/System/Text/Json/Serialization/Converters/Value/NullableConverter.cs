@@ -5,7 +5,7 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class NullableConverter<T> : JsonConverter<T?> where T : struct
+    internal sealed class NullableConverter<T> : JsonConverter<T?> where T : struct // Do not rename FQN (legacy schema generation)
     {
         internal override Type? ElementType => typeof(T);
         internal override JsonConverter? NullableElementConverter => _elementConverter;
@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Converters
 
         // It is possible to cache the underlying converter since this is an internal converter and
         // an instance is created only once for each JsonSerializerOptions instance.
-        private readonly JsonConverter<T> _elementConverter;
+        private readonly JsonConverter<T> _elementConverter; // Do not rename (legacy schema generation)
 
         public NullableConverter(JsonConverter<T> elementConverter)
         {

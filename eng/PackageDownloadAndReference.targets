@@ -1,6 +1,6 @@
 <Project>
 
-  <!-- These file supports using PackageDownloadAndReference items.
+  <!-- This file supports using PackageDownloadAndReference items.
 
   The PackageDownloadAndReference item is used to download a package and reference it in the project, without restoring the package's dependency closure.
 

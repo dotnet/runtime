@@ -187,11 +187,11 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 		break;
 	case MONO_TYPE_PTR:
 		sigbuffer_add_value (buf, type->type);
-		encode_type (assembly, type->data.type, buf);
+		encode_type (assembly, m_type_data_get_type_unchecked (type), buf);
 		break;
 	case MONO_TYPE_SZARRAY:
 		sigbuffer_add_value (buf, type->type);
-		encode_type (assembly, m_class_get_byval_arg (type->data.klass), buf);
+		encode_type (assembly, m_class_get_byval_arg (m_type_data_get_klass_unchecked (type)), buf);
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
@@ -216,13 +216,13 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 	}
 	case MONO_TYPE_ARRAY:
 		sigbuffer_add_value (buf, type->type);
-		encode_type (assembly, m_class_get_byval_arg (type->data.array->eklass), buf);
-		sigbuffer_add_value (buf, type->data.array->rank);
+		encode_type (assembly, m_class_get_byval_arg (m_type_data_get_array_unchecked (type)->eklass), buf);
+		sigbuffer_add_value (buf, m_type_data_get_array_unchecked (type)->rank);
 		sigbuffer_add_value (buf, 0); /* FIXME: set to 0 for now */
 		sigbuffer_add_value (buf, 0);
 		break;
 	case MONO_TYPE_GENERICINST:
-		encode_generic_class (assembly, type->data.generic_class, buf);
+		encode_generic_class (assembly, m_type_data_get_generic_class_unchecked (type), buf);
 		break;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:

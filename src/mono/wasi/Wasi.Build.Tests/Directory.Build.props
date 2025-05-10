@@ -20,5 +20,7 @@
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
+    <!-- TODO: this is necessary to workaround restoring Mono desktop runtime packs, check whether this project really should be self-contained -->
+    <UseMonoRuntime>false</UseMonoRuntime>
   </PropertyGroup>
 </Project>

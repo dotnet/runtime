@@ -273,7 +273,7 @@ Typical Baggage usage includes adding a few baggage properties and enumeration t
 `TimeSpan Duration { get; private set; }` - Represents Activity duration if activity was stopped, TimeSpan.Zero otherwise.
 
 ### Id
-`string Id { get; private set; }` - Represents particular activity identifier. Filtering to a particular Id insures that you get only log records related to specific request within the operation. It is generated when the activity is started.
+`string Id { get; private set; }` - Represents particular activity identifier. Filtering to a particular Id ensures that you get only log records related to specific request within the operation. It is generated when the activity is started.
 Id is passed to external dependencies and considered as [ParentId](#parentid) for new external activity.
 
 ### ParentId

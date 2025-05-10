@@ -64,30 +64,19 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <vector>
 
 #ifdef __linux__
-#include <sys/syscall.h> // __NR_membarrier
-// Ensure __NR_membarrier is defined for portable builds.
-# if !defined(__NR_membarrier)
-#  if defined(__amd64__)
-#   define __NR_membarrier  324
-#  elif defined(__i386__)
-#   define __NR_membarrier  375
-#  elif defined(__arm__)
-#   define __NR_membarrier  389
-#  elif defined(__aarch64__)
-#   define __NR_membarrier  283
-#  elif defined(__loongarch64)
-#   define __NR_membarrier  283
-#  else
-#   error Unknown architecture
-#  endif
-# endif
+#include <linux/membarrier.h>
+#include <sys/syscall.h>
+#define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
+#elif HAVE_SYS_MEMBARRIER_H
+#include <sys/membarrier.h>
+#ifdef TARGET_BROWSER
+#define membarrier(cmd, flags, cpu_id) 0 // browser/wasm is currently single threaded
+#endif
 #endif
 
 #ifdef __APPLE__
-#include <libproc.h>
 #include <pwd.h>
 #include <sys/sysctl.h>
-#include <sys/posix_sem.h>
 #include <mach/task.h>
 #include <mach/vm_map.h>
 extern "C"
@@ -119,6 +108,11 @@ extern "C"
 #include <sys/user.h>
 #endif
 
+#ifdef __HAIKU__
+#include <image.h>
+#include <OS.h>
+#endif
+
 extern char *g_szCoreCLRPath;
 extern bool g_running_in_exe;
 
@@ -127,44 +121,16 @@ using namespace CorUnix;
 CObjectType CorUnix::otProcess(
                 otiProcess,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CProcProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
-                PROCESS_ALL_ACCESS,
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::CrossProcessDuplicationAllowed,
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
                 CObjectType::ThreadReleaseHasNoSideEffects,
                 CObjectType::NoOwner
                 );
-
-//
-// Helper membarrier function
-//
-#ifdef __NR_membarrier
-# define membarrier(...)  syscall(__NR_membarrier, __VA_ARGS__)
-#else
-# define membarrier(...)  -ENOSYS
-#endif
-
-enum membarrier_cmd
-{
-    MEMBARRIER_CMD_QUERY                                 = 0,
-    MEMBARRIER_CMD_GLOBAL                                = (1 << 0),
-    MEMBARRIER_CMD_GLOBAL_EXPEDITED                      = (1 << 1),
-    MEMBARRIER_CMD_REGISTER_GLOBAL_EXPEDITED             = (1 << 2),
-    MEMBARRIER_CMD_PRIVATE_EXPEDITED                     = (1 << 3),
-    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED            = (1 << 4),
-    MEMBARRIER_CMD_PRIVATE_EXPEDITED_SYNC_CORE           = (1 << 5),
-    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED_SYNC_CORE  = (1 << 6)
-};
 
 //
 // Tracks if the OS supports FlushProcessWriteBuffers using membarrier
@@ -229,7 +195,7 @@ PathCharString* gSharedFilesPath = nullptr;
 #if defined(__NetBSD__)
 #define CLR_SEM_MAX_NAMELEN 15
 #elif defined(__APPLE__)
-#define CLR_SEM_MAX_NAMELEN PSEMNAMLEN
+#define CLR_SEM_MAX_NAMELEN 31
 #elif defined(NAME_MAX)
 #define CLR_SEM_MAX_NAMELEN (NAME_MAX - 4)
 #else
@@ -547,6 +513,9 @@ CorUnix::InternalCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
+#ifdef TARGET_TVOS
+    return ERROR_NOT_SUPPORTED;
+#else
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pobjProcess = NULL;
     IPalObject *pobjProcessRegistered = NULL;
@@ -1083,6 +1052,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
+#endif // !TARGET_TVOS
 }
 
 
@@ -1397,7 +1367,7 @@ PALIMPORT
 VOID
 PALAPI
 PAL_SetCreateDumpCallback(
-    IN PCREATEDUMP_CALLBACK callback) 
+    IN PCREATEDUMP_CALLBACK callback)
 {
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
@@ -1679,6 +1649,23 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     *disambiguationKey = secondsSinceEpoch;
 
     return TRUE;
+
+#elif defined(__HAIKU__)
+
+    // On Haiku, we return the process start time expressed in microseconds since boot time.
+
+    team_info info;
+
+    if (get_team_info(processId, &info) == B_OK)
+    {
+        *disambiguationKey = info.start_time;
+        return TRUE;
+    }
+    else
+    {
+        WARN("Failed to get start time of a process.");
+        return FALSE;
+    }
 
 #elif HAVE_PROCFS_STAT
 
@@ -2197,6 +2184,9 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
+    return FALSE;
+#else
     _ASSERTE(argv.size() > 0);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
 
@@ -2206,8 +2196,11 @@ PROCCreateCrashDump(
         size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
         if (previousThreadId != 0)
         {
-            // Should never reenter or recurse
-            _ASSERTE(previousThreadId != currentThreadId);
+            // Return error if reenter this code
+            if (previousThreadId == currentThreadId)
+            {
+                return false;
+            }
 
             // The first thread generates the crash info and any other threads are blocked
             while (true)
@@ -2321,6 +2314,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
+#endif // !TARGET_IOS && !TARGET_TVOS
 }
 
 /*++
@@ -2462,6 +2456,16 @@ Parameters:
 
 (no return value)
 --*/
+#ifdef HOST_ANDROID
+#include <minipal/log.h>
+VOID
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+{
+    // TODO: Dump all managed threads callstacks into logcat and/or file?
+    // TODO: Dump stress log into logcat and/or file when enabled?
+    minipal_log_write_fatal("Aborting process.\n");
+}
+#else
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
 {
@@ -2530,6 +2534,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
         free(signalAddressArg);
     }
 }
+#endif
 
 /*++
 Function:
@@ -2577,21 +2582,23 @@ InitializeFlushProcessWriteBuffers()
     _ASSERTE(s_helperPage == 0);
     _ASSERTE(s_flushUsingMemBarrier == 0);
 
+#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     // Starting with Linux kernel 4.14, process memory barriers can be generated
     // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
+    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0, 0);
     if (mask >= 0 &&
         mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED)
     {
         // Register intent to use the private expedited command.
-        if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
+        if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0, 0) == 0)
         {
             s_flushUsingMemBarrier = TRUE;
             return TRUE;
         }
     }
+#endif
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2621,7 +2628,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2645,12 +2652,15 @@ VOID
 PALAPI
 FlushProcessWriteBuffers()
 {
+#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
-        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0);
+        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0, 0);
         FATAL_ASSERT(status == 0, "Failed to flush using membarrier");
     }
-    else if (s_helperPage != 0)
+    else
+#endif
+    if (s_helperPage != 0)
     {
         int status = pthread_mutex_lock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
@@ -2671,7 +2681,7 @@ FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     else
     {
         mach_msg_type_number_t cThreads;
@@ -2700,7 +2710,7 @@ FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 }
 
 /*++
@@ -3630,10 +3640,16 @@ getFileName(
         wcEnd = *lpEnd;
         *lpEnd = 0x0000;
 
-        /* Convert to ASCII */
+        /* Convert to UTF-8 */
         int size = 0;
-        int length = (PAL_wcslen(lpCommandLine)+1) * sizeof(WCHAR);
-        lpFileName = lpFileNamePS.OpenStringBuffer(length);
+        int length = WideCharToMultiByte(CP_ACP, 0, lpCommandLine, -1, NULL, 0, NULL, NULL);
+        if (length == 0)
+        {
+            ERROR("Failed to calculate the required buffer length.\n");
+            return FALSE;
+        };
+
+        lpFileName = lpFileNamePS.OpenStringBuffer(length - 1);
         if (NULL == lpFileName)
         {
             ERROR("Not Enough Memory!\n");

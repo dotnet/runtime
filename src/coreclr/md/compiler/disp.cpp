@@ -308,7 +308,7 @@ HRESULT Disp::OpenRawScopeOnMemory(        // Return code.
     IfFailGo(pMeta->SetOption(&m_OptionValue));
 
 
-    PREFIX_ASSUME(pMeta != NULL);
+    _ASSERTE(pMeta != NULL);
     // Always initialize the RegMeta's stgdb.
     IfFailGo(pMeta->OpenExistingMD(0 /* szFileName */, const_cast<void*>(pData), cbData, dwOpenFlags));
 
@@ -518,7 +518,7 @@ HRESULT Disp::OpenRawScopeOnCustomDataSource(        // Return code.
     IfFailGo(pMeta->SetOption(&m_OptionValue));
 
 
-    PREFIX_ASSUME(pMeta != NULL);
+    _ASSERTE(pMeta != NULL);
     // Always initialize the RegMeta's stgdb.
     // TODO
     IfFailGo(pMeta->OpenExistingMD(pDataSource, dwOpenFlags));
@@ -581,6 +581,8 @@ HRESULT Disp::QueryInterface(REFIID riid, void **ppUnk)
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     else if (riid == IID_IMetaDataDispenserEx2)
         *ppUnk = (IMetaDataDispenserEx2 *) this;
+    else if (riid == IID_IILAsmPortablePdbWriter)
+        *ppUnk = (IILAsmPortablePdbWriter *) this;
 #endif
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     else if (riid == IID_IMetaDataDispenserCustom)

@@ -53,6 +53,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "tools\ref", "{431EB5
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{A7035BA8-B608-4D27-AC36-DD3C774247FB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Serialization.Formatters", "..\System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj", "{BF78CA18-36A2-4B8E-8F93-F6D233EE3F17}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -135,6 +137,10 @@ Global
 		{DC3C5A99-A276-47C1-B2AB-17EE36410525}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC3C5A99-A276-47C1-B2AB-17EE36410525}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC3C5A99-A276-47C1-B2AB-17EE36410525}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF78CA18-36A2-4B8E-8F93-F6D233EE3F17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF78CA18-36A2-4B8E-8F93-F6D233EE3F17}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF78CA18-36A2-4B8E-8F93-F6D233EE3F17}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF78CA18-36A2-4B8E-8F93-F6D233EE3F17}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -162,8 +168,13 @@ Global
 		{86873B77-50BA-4690-A527-C4562EAE5A1B} = {A7035BA8-B608-4D27-AC36-DD3C774247FB}
 		{DC3C5A99-A276-47C1-B2AB-17EE36410525} = {431EB5F6-6BF9-4FED-BE3F-239E89431CCA}
 		{431EB5F6-6BF9-4FED-BE3F-239E89431CCA} = {A7035BA8-B608-4D27-AC36-DD3C774247FB}
+		{BF78CA18-36A2-4B8E-8F93-F6D233EE3F17} = {A0596070-E285-49A1-A0AA-187B69E55A39}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4C1CDE35-7742-40EC-A075-B1ABF99F50B5}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\..\tools\illink\src\ILLink.Shared\ILLink.Shared.projitems*{8b4d69dd-7ef8-428c-b5f1-4815c6d4f9fc}*SharedItemsImports = 5
+		..\..\tools\illink\src\ILLink.Shared\ILLink.Shared.projitems*{b3f664a9-6611-4ebd-b30c-6df8dd7a9cf2}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

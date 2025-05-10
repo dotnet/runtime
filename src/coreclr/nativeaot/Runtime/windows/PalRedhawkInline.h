@@ -67,12 +67,30 @@ FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int
                                           iOldValue) != iOldValue);
     return iOldValue;
 }
+
+FORCEINLINE int64_t PalInterlockedIncrement64(_Inout_ int64_t volatile *Addend)
+{
+    int64_t Old;
+    do {
+        Old = *Addend;
+    } while (PalInterlockedCompareExchange64(Addend,
+                                          Old + 1,
+                                          Old) != Old);
+    return Old + 1;
+}
 #else // HOST_X86
 EXTERN_C int64_t _InterlockedExchange64(int64_t volatile *, int64_t);
 #pragma intrinsic(_InterlockedExchange64)
 FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
 {
     return _InterlockedExchange64(pDst, iValue);
+}
+
+EXTERN_C int64_t _InterlockedIncrement64(int64_t volatile *);
+#pragma intrinsic(_InterlockedIncrement64)
+FORCEINLINE int64_t PalInterlockedIncrement64(_Inout_ int64_t volatile *pDst)
+{
+    return _InterlockedIncrement64(pDst);
 }
 #endif // HOST_X86
 

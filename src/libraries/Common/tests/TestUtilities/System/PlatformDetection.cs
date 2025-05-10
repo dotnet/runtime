@@ -66,7 +66,6 @@ namespace System
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
         public static bool IsS390xProcess => (int)RuntimeInformation.ProcessArchitecture == 5; // Architecture.S390x
         public static bool IsLoongArch64Process => (int)RuntimeInformation.ProcessArchitecture == 6; // Architecture.LoongArch64;
-        public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
         public static bool IsPpc64leProcess => (int)RuntimeInformation.ProcessArchitecture == 8; // Architecture.Ppc64le
         public static bool IsRiscV64Process => (int)RuntimeInformation.ProcessArchitecture == 9; // Architecture.RiscV64;
         public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
@@ -117,9 +116,9 @@ namespace System
                 if (IsReleaseRuntime)
                     return 1;
                 if (IsRiscV64Process)
-                    return IsDebugRuntime? 10 : 2;
+                    return IsDebugRuntime ? 10 : 2;
                 else
-                    return IsDebugRuntime? 5 : 1;
+                    return IsDebugRuntime ? 5 : 1;
             }
         }
 
@@ -142,8 +141,17 @@ namespace System
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
 
-        public static bool IsSpeedOptimized => !IsSizeOptimized;
-        public static bool IsSizeOptimized => IsBrowser || IsWasi || IsAndroid || IsAppleMobile;
+        public static bool IsLinqSpeedOptimized => !IsLinqSizeOptimized;
+        public static bool IsLinqSizeOptimized => s_linqIsSizeOptimized.Value;
+        private static readonly Lazy<bool> s_linqIsSizeOptimized = new Lazy<bool>(ComputeIsLinqSizeOptimized);
+        private static bool ComputeIsLinqSizeOptimized()
+        {
+#if NET
+            return (bool)typeof(Enumerable).GetMethod("get_IsSizeOptimized", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, Array.Empty<object>());
+#else
+            return false;
+#endif
+        }
 
         public static bool IsBrowserDomSupported => IsEnvironmentVariableTrue("IsBrowserDomSupported");
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
@@ -154,6 +162,7 @@ namespace System
         public static bool IsFirefox => IsEnvironmentVariableTrue("IsFirefox");
         public static bool IsChromium => IsEnvironmentVariableTrue("IsChromium");
         public static bool IsNotNodeJS => !IsNodeJS;
+        public static bool IsNotNodeJSOrFirefox => !IsNodeJS && !IsFirefox;
         public static bool IsNodeJSOnWindows => GetNodeJSPlatform() == "win32";
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
@@ -169,8 +178,8 @@ namespace System
             return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
         }
 
-        // Drawing is not supported on non windows platforms in .NET 7.0+.
-        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
+        // Drawing is not supported on non windows platforms in .NET 7.0+ and on Mono.
+        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore && IsNotMonoRuntime;
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !IsWasi;
 
@@ -287,7 +296,14 @@ namespace System
         // Changed to `true` when trimming
         public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
+        public static bool IsBrowserAndIsBuiltWithAggressiveTrimming => IsBuiltWithAggressiveTrimming && IsBrowser;
         public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
+
+#if NET
+        public static bool DataSetXmlSerializationIsSupported => AppContext.TryGetSwitch("System.Data.DataSet.XmlSerializationIsSupported", out bool isSupported) ? isSupported : true;
+#else
+        public static bool DataSetXmlSerializationIsSupported => true;
+#endif
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
@@ -388,17 +404,16 @@ namespace System
 
         public static bool IsInvariantGlobalization => m_isInvariant.Value;
         public static bool IsHybridGlobalization => m_isHybrid.Value;
-        public static bool IsHybridGlobalizationOnBrowser => m_isHybrid.Value && IsBrowser;
         public static bool IsHybridGlobalizationOnApplePlatform => m_isHybrid.Value && (IsMacCatalyst || IsiOS || IstvOS);
-        public static bool IsNotHybridGlobalizationOnBrowser => !IsHybridGlobalizationOnBrowser;
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsNotHybridGlobalization => !IsHybridGlobalization;
         public static bool IsNotHybridGlobalizationOnApplePlatform => !IsHybridGlobalizationOnApplePlatform;
 
+        // This can be removed once numeric comparisons are supported on Apple platforms
+        public static bool IsNumericComparisonSupported => !IsHybridGlobalizationOnApplePlatform;
+
         // HG on apple platforms implies ICU
         public static bool IsIcuGlobalization => !IsInvariantGlobalization && (IsHybridGlobalizationOnApplePlatform || ICUVersion > new Version(0, 0, 0, 0));
-
-        public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization && !IsHybridGlobalization;
 
         public static bool IsSubstAvailable

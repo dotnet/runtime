@@ -24,7 +24,7 @@ public class ReliabilityTestSet
     private string _friendlyName;
     private bool _enablePerfCounters = true, _disableLogging = false, _installDetours = false;
     private bool _suppressConsoleOutputFromTests = false;
-    private bool _debugBreakOnTestHang = true;
+    private bool _debugBreakOnTestHang = false;
     private bool _debugBreakOnBadTest = false;
     private bool _debugBreakOnOutOfMemory = false;
     private bool _debugBreakOnPathTooLong = false;

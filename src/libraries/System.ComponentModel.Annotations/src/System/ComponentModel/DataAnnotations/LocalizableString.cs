@@ -128,9 +128,8 @@ namespace System.ComponentModel.DataAnnotations
                     // We need to detect bad configurations so that we can throw exceptions accordingly
                     var badlyConfigured = false;
 
-                    // Make sure we found the property and it's the correct type, and that the type itself is public
-                    if (!_resourceType.IsVisible || property == null ||
-                        property.PropertyType != typeof(string))
+                    // Make sure we found the property and it's the correct type
+                    if (property == null || property.PropertyType != typeof(string))
                     {
                         badlyConfigured = true;
                     }

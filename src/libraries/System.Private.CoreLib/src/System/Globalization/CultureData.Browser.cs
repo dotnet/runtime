@@ -10,7 +10,6 @@ namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
-        private const int CULTURE_INFO_BUFFER_LEN = 60;
         private const int LOCALE_INFO_BUFFER_LEN = 80;
 
         private void JSInitLocaleInfo()
@@ -66,66 +65,6 @@ namespace System.Globalization
             return string.IsNullOrEmpty(countryName) ?
                     languageName :
                     $"{languageName} ({countryName})";
-        }
-
-        private static unsafe CultureData JSLoadCultureInfoFromBrowser(string localeName, CultureData culture)
-        {
-            ReadOnlySpan<char> localeNameSpan = localeName.AsSpan();
-            fixed (char* pLocaleName = &MemoryMarshal.GetReference(localeNameSpan))
-            {
-                char* buffer = stackalloc char[CULTURE_INFO_BUFFER_LEN];
-                nint exceptionPtr = Interop.JsGlobalization.GetCultureInfo(pLocaleName, localeNameSpan.Length, buffer, CULTURE_INFO_BUFFER_LEN, out int resultLength);
-                Helper.MarshalAndThrowIfException(exceptionPtr);
-                string result = new string(buffer, 0, resultLength);
-                string[] subresults = result.Split("##");
-                if (subresults.Length < 4)
-                    throw new Exception("CultureInfo recieved from the Browser is in incorrect format.");
-                culture._sAM1159 = subresults[0];
-                culture._sPM2359 = subresults[1];
-                culture._saLongTimes = new string[] { subresults[2] };
-                culture._saShortTimes = new string[] { subresults[3] };
-            }
-            return culture;
-        }
-
-        private static unsafe int GetFirstDayOfWeek(string localeName)
-        {
-            ReadOnlySpan<char> localeNameSpan = localeName.AsSpan();
-            fixed (char* pLocaleName = &MemoryMarshal.GetReference(localeNameSpan))
-            {
-                nint exceptionPtr = Interop.JsGlobalization.GetFirstDayOfWeek(pLocaleName, localeNameSpan.Length, out int result);
-                if (exceptionPtr != IntPtr.Zero)
-                {
-                    int success = Helper.MarshalAndThrowIfException(
-                        exceptionPtr,
-                        failOnlyDebug: true,
-                        failureMessage: $"[CultureData.GetFirstDayOfWeek()] failed with");
-                    // Failed, just use 0
-                    if (success == -1)
-                        return 0;
-                }
-                return result;
-            }
-        }
-
-        private static unsafe int GetFirstWeekOfYear(string localeName)
-        {
-            ReadOnlySpan<char> localeNameSpan = localeName.AsSpan();
-            fixed (char* pLocaleName = &MemoryMarshal.GetReference(localeNameSpan))
-            {
-                nint exceptionPtr = Interop.JsGlobalization.GetFirstWeekOfYear(pLocaleName, localeNameSpan.Length, out int result);
-                if (exceptionPtr != IntPtr.Zero)
-                {
-                    int success = Helper.MarshalAndThrowIfException(
-                        exceptionPtr,
-                        failOnlyDebug: true,
-                        failureMessage: $"[CultureData.GetFirstWeekOfYear()] failed with");
-                    // Failed, just use 0
-                    if (success == -1)
-                        return 0;
-                }
-                return result;
-            }
         }
     }
 

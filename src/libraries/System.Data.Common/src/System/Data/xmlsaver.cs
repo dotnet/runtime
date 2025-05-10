@@ -541,6 +541,7 @@ namespace System.Data
         // SxS: this method can generate XSD files if the input xmlWriter is XmlTextWriter or DataTextWriter and its underlying stream is FileStream
         // These XSDs are located in the same folder as the underlying stream's file path (see SetPath method).
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void SchemaTree(XmlDocument xd, XmlWriter xmlWriter, DataSet? ds, DataTable? dt, bool writeHierarchy)
         {
             _constraintNames = new ArrayList();
@@ -938,6 +939,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal XmlElement SchemaTree(XmlDocument xd, DataTable dt)
         {
             _dsElement = xd.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_ELEMENT, Keywords.XSDNS);
@@ -1097,12 +1099,14 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void Save(DataSet ds, XmlWriter xw)
         {
             Save(ds, null, xw);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void Save(DataTable dt, XmlWriter xw)
         {
             XmlDocument doc = new XmlDocument();
@@ -1116,18 +1120,21 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void Save(DataSet ds, DataTable? dt, XmlWriter xw)
         {
             Save(ds, dt, xw, false);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void Save(DataSet? ds, DataTable? dt, XmlWriter xw, bool writeHierarchy)
         {
             Save(ds, dt, xw, writeHierarchy, null);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void Save(DataSet? ds, DataTable? dt, XmlWriter xw, bool writeHierarchy, Converter<Type, string>? multipleTargetConverter)
         {
             _targetConverter = multipleTargetConverter;
@@ -1412,6 +1419,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal XmlElement HandleColumn(DataColumn col, XmlDocument dc, XmlElement schema, bool fWriteOrdinal)
         {
             Debug.Assert(_prefixes != null);
@@ -1588,6 +1596,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal XmlElement HandleTable(DataTable table, XmlDocument dc, XmlElement schema)
         {
             return HandleTable(table, dc, schema, true);
@@ -1714,6 +1723,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal XmlElement HandleTable(DataTable table, XmlDocument dc, XmlElement schema, bool genNested)
         {
             Debug.Assert(_prefixes != null);
@@ -2334,12 +2344,14 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void Save(XmlWriter xmlw)
         {
             Save(xmlw, null);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void Save(XmlWriter xmlw, DataTable? table)
         {
             _xmlw = DataTextWriter.CreateWriter(xmlw);
@@ -2400,6 +2412,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private void GenerateTable(DataTable table)
         {
             int rowCount = table.Rows.Count;
@@ -2476,6 +2489,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private void GenerateRow(DataRow row)
         {
             DataRowState state = row.RowState;
@@ -2533,6 +2547,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private void GenerateColumn(DataRow row, DataColumn col, DataRowVersion version)
         {
             string? value;
@@ -2784,6 +2799,7 @@ namespace System.Data
         // for the new diffgram format
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void SaveDiffgramData(XmlWriter xw, Hashtable rowsOrder)
         {
             Debug.Assert(_ds != null || _dt != null);
@@ -2827,6 +2843,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void Save(XmlWriter xw, bool writeSchema)
         {
             Debug.Assert(_ds != null || _dt != null);
@@ -2919,6 +2936,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void XmlDataRowWriter(DataRow row, string encodedTableName)
         {
             Debug.Assert(_xmlw != null);

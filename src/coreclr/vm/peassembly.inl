@@ -150,7 +150,7 @@ inline const SString& PEAssembly::GetPath()
     }
     CONTRACTL_END;
 
-    if (IsReflectionEmit() || m_PEImage->IsInBundle ())
+    if (IsReflectionEmit() || m_PEImage->IsInBundle() || m_PEImage->IsExternalData())
     {
         return SString::Empty();
     }
@@ -182,7 +182,6 @@ inline const SString& PEAssembly::GetIdentityPath()
     return m_PEImage->GetPath();
 }
 
-#ifdef DACCESS_COMPILE
 inline const SString &PEAssembly::GetModuleFileNameHint()
 {
     CONTRACTL
@@ -201,7 +200,6 @@ inline const SString &PEAssembly::GetModuleFileNameHint()
     else
         return m_PEImage->GetModuleFileNameHintForDAC();
 }
-#endif // DACCESS_COMPILE
 
 #ifdef LOGGING
 inline LPCUTF8 PEAssembly::GetDebugName()

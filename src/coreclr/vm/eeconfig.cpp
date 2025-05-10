@@ -133,7 +133,6 @@ HRESULT EEConfig::Init()
     pszBreakOnComToClrNativeInfoInit = 0;
     pszBreakOnStructMarshalSetup = 0;
     fJitVerificationDisable= false;
-    fVerifierOff           = false;
 
 #ifdef ENABLE_STARTUP_DELAY
     iStartupDelayMS = 0;
@@ -171,7 +170,6 @@ HRESULT EEConfig::Init()
 
     fSuppressChecks = false;
     fConditionalContracts = false;
-    fEnableFullDebug = false;
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
@@ -557,10 +555,6 @@ HRESULT EEConfig::sync()
     Contract::SetUnconditionalContractEnforcement(!fConditionalContracts);
 #endif
 
-    fEnableFullDebug = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableFullDebug) != 0);
-
-    fVerifierOff    = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VerifierOff) != 0);
-
     fJitVerificationDisable = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitVerificationDisable) != 0);
 #endif
 
@@ -681,7 +675,7 @@ HRESULT EEConfig::sync()
 
         tieredCompilation_CallCountingDelayMs =
             Configuration::GetKnobDWORDValue(W("System.Runtime.TieredCompilation.CallCountingDelayMs"), CLRConfig::EXTERNAL_TC_CallCountingDelayMs);
-        
+
         bool hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
         if (hasSingleProcessor)
         {
@@ -769,6 +763,11 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_GDBJIT_FRAME)
     fGDBJitEmitDebugFrame = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitEmitDebugFrame) != 0;
 #endif
+
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+    fUseCachedInterfaceDispatch = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseCachedInterfaceDispatch) != 0;
+#endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
     return hr;
 }
 
@@ -847,25 +846,24 @@ bool EEConfig::IsInMethList(MethodNamesList* list, MethodDesc* pMD)
     } CONTRACTL_END;
 
     if (list == 0)
-        return(false);
-    else
-    {
-        DefineFullyQualifiedNameForClass();
+        return false;
 
-        LPCUTF8 name = pMD->GetName();
-        if (name == NULL)
-        {
-            return false;
-        }
-        LPCUTF8 className = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
-        if (className == NULL)
-        {
-            return false;
-        }
-        PCCOR_SIGNATURE sig = pMD->GetSig();
+    DefineFullyQualifiedNameForClass();
 
-        return list->IsInList(name, className, sig);
-    }
+    LPCUTF8 name = pMD->GetName();
+    if (name == NULL)
+        return false;
+
+    LPCUTF8 className = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
+    if (className == NULL)
+        return false;
+
+    SigPointer sig = pMD->GetSigPointer();
+    uint32_t argCount = 0;
+    if (FAILED(sig.SkipMethodHeaderSignature(&argCount)))
+        return false;
+
+    return list->IsInList(name, className, (int32_t)argCount);
 }
 
 // Ownership of the string buffer passes to ParseTypeList

@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	public class RequiresOnAttributeCtor
 	{
 		// Simple way to suppress all warnings in Main
+		[UnconditionalSuppressMessage ("Reflection", "IL2123", Justification = "The RUC suppresses warnings in an entrypoint, but we don't mind")]
 		[RequiresUnreferencedCode ("main")]
 		public static void Main ()
 		{

@@ -8,7 +8,7 @@
 //
 // This struct enables exposing information that is private to a class to the cDAC. For example,
 // if class C has private information that must be provided, declare cdac_data<D> as a friend of C
-// where D is the specialization of cdac_data that will expose the information. Then provide a 
+// where D is the specialization of cdac_data that will expose the information. Then provide a
 // specialization cdac_data<D> with constexpr members exposing the information.
 //
 // Note: in the common case, type D will be type C.

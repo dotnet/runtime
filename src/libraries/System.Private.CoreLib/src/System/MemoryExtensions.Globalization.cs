@@ -378,6 +378,7 @@ namespace System
         /// <remarks>
         /// Invalid sequences will be represented in the enumeration by <see cref="Rune.ReplacementChar"/>.
         /// </remarks>
+        [OverloadResolutionPriority(-1)]
         public static SpanRuneEnumerator EnumerateRunes(this Span<char> span)
         {
             return new SpanRuneEnumerator(span);
@@ -404,6 +405,7 @@ namespace System
         /// for <see cref="string.ReplaceLineEndings"/> for more information on how newline
         /// sequences are detected.
         /// </remarks>
+        [OverloadResolutionPriority(-1)]
         public static SpanLineEnumerator EnumerateLines(this Span<char> span)
         {
             return new SpanLineEnumerator(span);

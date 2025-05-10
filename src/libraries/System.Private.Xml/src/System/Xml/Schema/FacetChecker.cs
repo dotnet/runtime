@@ -1342,7 +1342,7 @@ namespace System.Xml.Schema
     { //All types derived from string & anyURI
 
         [GeneratedRegex("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$", RegexOptions.ExplicitCapture)]
-        private static partial Regex LanguageRegex();
+        private static partial Regex LanguageRegex { get; }
 
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
@@ -1456,7 +1456,7 @@ namespace System.Xml.Schema
                     {
                         return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
                     }
-                    if (!LanguageRegex().IsMatch(s))
+                    if (!LanguageRegex.IsMatch(s))
                     {
                         return new XmlSchemaException(SR.Sch_InvalidLanguageId, string.Empty);
                     }

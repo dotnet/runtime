@@ -44,7 +44,7 @@ namespace System.Tests
         public static void ExitCode_VoidMainAppReturnsSetValue(int mode)
         {
             int expectedExitCode = 123;
-            const string AppName = "VoidMainWithExitCodeApp.exe";
+            const string AppName = "VoidMainWithExitCodeApp.dll";
 
             using (Process p = Process.Start(RemoteExecutor.HostRunner, new[] { AppName, expectedExitCode.ToString(), mode.ToString() }))
             {

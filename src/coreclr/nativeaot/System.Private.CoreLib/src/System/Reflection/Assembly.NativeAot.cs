@@ -24,7 +24,7 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef, throwOnFileNotFound: true);
+        public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.Load(assemblyRef, throwOnFileNotFound: true);
 
         public static Assembly Load(string assemblyString)
         {

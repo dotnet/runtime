@@ -11,8 +11,8 @@ namespace System.Net.Mail
     // RFC 2822 Section 3.2.4 - Atom, Dot-Atom
     //
     // A Dot-Atom is a string of ASCII characters separated by dots.  Dots would normally not be allowed at the start
-    // or end, but we do allow dots at the end for compatibility with other mail clients.  We also allow
-    // multiple consecutive dots, which would normally be invalid.
+    // or end, but we do allow dots at the end for compatibility with other mail clients.  We don't allow
+    // multiple consecutive dots as specified in RFC 2822 section 3.4.1.
     //
     internal static class DotAtomReader
     {
@@ -45,7 +45,8 @@ namespace System.Net.Mail
             for (; 0 <= index; index--)
             {
                 if (Ascii.IsValid(data[index]) // Any ASCII allowed
-                 && (data[index] != MailBnfHelper.Dot && !MailBnfHelper.Atext[data[index]])) // Invalid char
+                 && ((data[index] != MailBnfHelper.Dot && !MailBnfHelper.Atext[data[index]])
+                 || (data[index] == MailBnfHelper.Dot && index > 0 && data[index - 1] == MailBnfHelper.Dot))) // Invalid char
                 {
                     break;
                 }
@@ -57,6 +58,18 @@ namespace System.Net.Mail
                 if (throwExceptionIfFail)
                 {
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                }
+                else
+                {
+                    outIndex = default;
+                    return false;
+                }
+            }
+            else if (index > 0 && data[index] == MailBnfHelper.Dot && data[index - 1] == MailBnfHelper.Dot)
+            {
+                if (throwExceptionIfFail)
+                {
+                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, MailBnfHelper.ConsecutiveDots));
                 }
                 else
                 {

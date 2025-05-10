@@ -48,9 +48,7 @@ Abstract:
 
 namespace CorUnix
 {
-    const DWORD WTLN_FLAG_OWNER_OBJECT_IS_SHARED                 = 1<<0;
     const DWORD WTLN_FLAG_WAIT_ALL                               = 1<<1;
-    const DWORD WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS = 1<<2;
 
 #ifdef SYNCH_OBJECT_VALIDATION
     const DWORD HeadSignature  = 0x48454144;
@@ -69,8 +67,7 @@ namespace CorUnix
     enum WaitCompletionState
     {
         WaitIsNotSatisfied,
-        WaitIsSatisfied,
-        WaitMayBeSatisfied
+        WaitIsSatisfied
     };
 
     typedef union _SynchDataGenrPtr
@@ -92,11 +89,9 @@ namespace CorUnix
 #endif
         WTLNodeGenrPtr ptrNext;
         WTLNodeGenrPtr ptrPrev;
-        SharedID shridSHRThis;
 
         // Data
         DWORD dwThreadId;
-        DWORD dwProcessId;
         DWORD dwObjIndex;
         DWORD dwFlags;
 
@@ -149,8 +144,6 @@ namespace CorUnix
         WTLNodeGenrPtr  m_ptrWTLHead;
         WTLNodeGenrPtr  m_ptrWTLTail;
         ULONG m_ulcWaitingThreads;
-        SharedID m_shridThis;
-        ObjectDomain m_odObjectDomain;
         PalObjectTypeId m_otiObjectTypeId;
         LONG  m_lRefCount;
         LONG  m_lSignalCount;
@@ -171,12 +164,12 @@ namespace CorUnix
 
     public:
         CSynchData()
-            : m_ulcWaitingThreads(0), m_shridThis(NULL), m_lRefCount(1),
+            : m_ulcWaitingThreads(0), m_lRefCount(1),
               m_lSignalCount(0), m_lOwnershipCount(0), m_dwOwnerPid(0),
               m_dwOwnerTid(0), m_pOwnerThread(NULL),
               m_poolnOwnedObjectListNode(NULL), m_fAbandoned(false)
         {
-            // m_ptrWTLHead, m_ptrWTLTail, m_odObjectDomain
+            // m_ptrWTLHead, m_ptrWTLTail
             // and m_otiObjectTypeId are initialized by
             // CPalSynchronizationManager::AllocateObjectSynchData
 #ifdef SYNCH_STATISTICS
@@ -206,17 +199,6 @@ namespace CorUnix
             CPalThread * pthrTarget);
 
         void WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode, bool fPrioritize);
-        void SharedWaiterEnqueue(SharedID shridNewNode, bool fPrioritize);
-
-        // Object Domain accessor methods
-        ObjectDomain GetObjectDomain(void)
-        {
-            return m_odObjectDomain;
-        }
-        void SetObjectDomain(ObjectDomain odObjectDomain)
-        {
-            m_odObjectDomain = odObjectDomain;
-        }
 
         // Object Type accessor methods
         CObjectType * GetObjectType(void)
@@ -236,25 +218,12 @@ namespace CorUnix
             m_otiObjectTypeId = oti;
         }
 
-        // Object shared 'this' pointer accessor methods
-        SharedID GetSharedThis (void)
-        {
-            return m_shridThis;
-        }
-        void SetSharedThis (SharedID shridThis)
-        {
-            m_shridThis = shridThis;
-        }
-
         void Signal(
             CPalThread * pthrCurrent,
-            LONG lSignalCount,
-            bool fWorkerThread);
+            LONG lSignalCount);
 
         bool ReleaseFirstWaiter(
-            CPalThread * pthrCurrent,
-            bool * pfDelegated,
-            bool fWorkerThread);
+            CPalThread * pthrCurrent);
 
         LONG ReleaseAllLocalWaiters(
             CPalThread * pthrCurrent);
@@ -413,18 +382,14 @@ namespace CorUnix
     protected:
         CPalThread * m_pthrOwner;
         ControllerType m_ctCtrlrType;
-        ObjectDomain m_odObjectDomain;
         CObjectType * m_potObjectType;
         CSynchData * m_psdSynchData;
-        WaitDomain m_wdWaitDomain;
 
         PAL_ERROR Init(
             CPalThread * pthrCurrent,
             ControllerType ctCtrlrType,
-            ObjectDomain odObjectDomain,
             CObjectType *potObjectType,
-            CSynchData * psdSynchData,
-            WaitDomain wdWaitDomain);
+            CSynchData * psdSynchData);
 
         void Release(void);
 
@@ -496,7 +461,6 @@ namespace CorUnix
     class CPalSynchronizationManager : public IPalSynchronizationManager
     {
         friend class CPalSynchMgrController;
-        template <class T, class... Ts> friend T *CorUnix::InternalNew(Ts... args);
 
     public:
         // types
@@ -523,8 +487,6 @@ namespace CorUnix
         enum SynchWorkerCmd
         {
             SynchWorkerCmdNop,
-            SynchWorkerCmdRemoteSignal,
-            SynchWorkerCmdDelegatedObjectSignaling,
             SynchWorkerCmdShutdown,
             SynchWorkerCmdTerminationRequest,
             SynchWorkerCmdLast
@@ -666,51 +628,6 @@ namespace CorUnix
             return pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount;
         }
 
-        static void AcquireSharedSynchLock(CPalThread * pthrCurrent)
-        {
-            _ASSERTE(0 <= pthrCurrent->synchronizationInfo.m_lSharedSynchLockCount);
-            _ASSERT_MSG(0 < pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount,
-                "The local synch lock should be acquired before grabbing the "
-                "shared one.\n");
-            if (1 == ++pthrCurrent->synchronizationInfo.m_lSharedSynchLockCount)
-            {
-                SHMLock();
-            }
-        }
-        static void ReleaseSharedSynchLock(CPalThread * pthrCurrent)
-        {
-            _ASSERTE(0 < pthrCurrent->synchronizationInfo.m_lSharedSynchLockCount);
-            if (0 == --pthrCurrent->synchronizationInfo.m_lSharedSynchLockCount)
-            {
-                _ASSERT_MSG(0 < pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount,
-                    "Final release of the shared synch lock while not holding the "
-                    "local one. Local synch lock should always be acquired first and "
-                    "released last.\n");
-                SHMRelease();
-            }
-        }
-        static LONG ResetSharedSynchLock(CPalThread * pthrCurrent)
-        {
-            LONG lRet = pthrCurrent->synchronizationInfo.m_lSharedSynchLockCount;
-
-            _ASSERTE(0 <= lRet);
-            _ASSERTE(0 == lRet ||
-                     0 < pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount);
-            if (0 < lRet)
-            {
-                pthrCurrent->synchronizationInfo.m_lSharedSynchLockCount = 0;
-                SHMRelease();
-            }
-            return lRet;
-        }
-        static LONG GetSharedSynchLockCount(CPalThread * pthrCurrent)
-        {
-            _ASSERTE(0 <= pthrCurrent->synchronizationInfo.m_lSharedSynchLockCount);
-            _ASSERTE(0 == pthrCurrent->synchronizationInfo.m_lSharedSynchLockCount ||
-                     0 < pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount);
-            return pthrCurrent->synchronizationInfo.m_lSharedSynchLockCount;
-        }
-
         CSynchWaitController * CacheGetWaitCtrlr(CPalThread * pthrCurrent)
         {
             return m_cacheWaitCtrlrs.Get(pthrCurrent);
@@ -842,31 +759,22 @@ namespace CorUnix
 
         virtual PAL_ERROR AllocateObjectSynchData(
             CObjectType *potObjectType,
-            ObjectDomain odObjectDomain,
             VOID **ppvSynchData);
 
         virtual void FreeObjectSynchData(
             CObjectType *potObjectType,
-            ObjectDomain odObjectDomain,
             VOID *pvSynchData);
-
-        virtual PAL_ERROR PromoteObjectSynchData(
-            CPalThread *pthrCurrent,
-            VOID *pvLocalSynchData,
-            VOID **ppvSharedSynchData);
 
         virtual PAL_ERROR CreateSynchStateController(
             CPalThread *pthrCurrent,
             CObjectType *potObjectType,
             VOID *pvSynchData,
-            ObjectDomain odObjectDomain,
             ISynchStateController **ppStateController);
 
         virtual PAL_ERROR CreateSynchWaitController(
             CPalThread *pthrCurrent,
             CObjectType *potObjectType,
             VOID *pvSynchData,
-            ObjectDomain odObjectDomain,
             ISynchWaitController **ppWaitController);
 
         virtual PAL_ERROR QueueUserAPC(
@@ -902,19 +810,6 @@ namespace CorUnix
             CPalThread * pthrCurrent,
             CPalThread * pthrTarget);
 
-        static PAL_ERROR WakeUpRemoteThread(
-            SharedID shridWLNode);
-
-        static PAL_ERROR DelegateSignalingToRemoteProcess(
-            CPalThread * pthrCurrent,
-            DWORD dwTargetProcessId,
-            SharedID shridSynchData);
-
-        static PAL_ERROR SendMsgToRemoteWorker(
-            DWORD dwProcessId,
-            BYTE * pMsg,
-            int iMsgSize);
-
         static ThreadWaitInfo * GetThreadWaitInfo(
             CPalThread * pthrCurrent);
 
@@ -927,13 +822,6 @@ namespace CorUnix
             CPalThread * pthrTarget,
             WaitingThreadsListNode * pwtlnNode,
             CSynchData * psdTgtObjectSynchData);
-
-        static void MarkWaitForDelegatedObjectSignalingInProgress(
-            CPalThread * pthrCurrent,
-            WaitingThreadsListNode * pwtlnNode);
-
-        static void UnmarkTWListForDelegatedObjectSignalingInProgress(
-            CSynchData * pTgtObjectSynchData);
 
         static PAL_ERROR ThreadNativeWait(
             ThreadNativeWaitData * ptnwdNativeWaitData,
@@ -987,8 +875,7 @@ namespace CorUnix
         //
         void UnRegisterWait(
             CPalThread * pthrCurrent,
-            ThreadWaitInfo * ptwiWaitInfo,
-            bool fHaveSharedLock);
+            ThreadWaitInfo * ptwiWaitInfo);
 
         PAL_ERROR RegisterProcessForMonitoring(
             CPalThread * pthrCurrent,

@@ -23,7 +23,6 @@ Revision History:
 #include "pal/dbgmsg.h"
 #include "pal/critsect.h"
 #include "pal/module.h"
-#include "pal/misc.h"
 
 #include "errorstrings.h"
 

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
@@ -16,6 +17,16 @@ namespace System.Diagnostics
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static void BreakForUserUnhandledException(Exception exception)
         {
+        }
+
+        [FeatureSwitchDefinition("System.Diagnostics.Debugger.IsSupported")]
+        internal static bool IsSupported { get; } = InitializeIsSupported();
+
+        private static bool InitializeIsSupported()
+        {
+            return AppContext.TryGetSwitch("System.Diagnostics.Debugger.IsSupported", out bool isSupported)
+                   ? isSupported
+                   : true;
         }
     }
 }

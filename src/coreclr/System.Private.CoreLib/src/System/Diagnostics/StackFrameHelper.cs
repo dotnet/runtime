@@ -164,7 +164,7 @@ namespace System.Diagnostics
             if (mh == IntPtr.Zero)
                 return null;
 
-            IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(mh, this));
+            IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(new RuntimeMethodHandleInternal(mh), this));
 
             return RuntimeType.GetMethodBase(mhReal);
         }
@@ -177,7 +177,7 @@ namespace System.Diagnostics
 
         public bool IsLastFrameFromForeignExceptionStackTrace(int i)
         {
-            return (rgiLastFrameFromForeignExceptionStackTrace == null) ? false : rgiLastFrameFromForeignExceptionStackTrace[i];
+            return rgiLastFrameFromForeignExceptionStackTrace != null && rgiLastFrameFromForeignExceptionStackTrace[i];
         }
 
         public int GetNumberOfFrames() { return iFrameCount; }

@@ -140,12 +140,7 @@ namespace System.Globalization
         /// </summary>
         public char ToLower(char c)
         {
-#if TARGET_BROWSER
-            // for invariant culture _cultureName is empty - HybridGlobalization does not have to call JS
-            if (GlobalizationMode.Invariant || (GlobalizationMode.Hybrid && HasEmptyCultureName))
-#else
             if (GlobalizationMode.Invariant)
-#endif
             {
                 return InvariantModeCasing.ToLower(c);
             }
@@ -178,12 +173,7 @@ namespace System.Globalization
         {
             ArgumentNullException.ThrowIfNull(str);
 
-#if TARGET_BROWSER
-            // for invariant culture _cultureName is empty - HybridGlobalization does not have to call JS
-            if (GlobalizationMode.Invariant || (GlobalizationMode.Hybrid && HasEmptyCultureName))
-#else
             if (GlobalizationMode.Invariant)
-#endif
             {
                 return InvariantModeCasing.ToLower(str);
             }
@@ -194,9 +184,6 @@ namespace System.Globalization
         private unsafe char ChangeCase(char c, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-#if TARGET_BROWSER
-            Debug.Assert(!(GlobalizationMode.Hybrid && HasEmptyCultureName));
-#endif
             char dst = default;
             ChangeCaseCore(&c, 1, &dst, 1, toUpper);
             return dst;
@@ -239,9 +226,6 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
-#if TARGET_BROWSER
-            Debug.Assert(!(GlobalizationMode.Hybrid && HasEmptyCultureName));
-#endif
 
             if (source.IsEmpty)
             {
@@ -278,9 +262,6 @@ namespace System.Globalization
 
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(source != null);
-#if TARGET_BROWSER
-            Debug.Assert(!(GlobalizationMode.Hybrid && HasEmptyCultureName));
-#endif
 
             // If the string is empty, we're done.
             if (source.Length == 0)
@@ -430,12 +411,7 @@ namespace System.Globalization
         /// </summary>
         public char ToUpper(char c)
         {
-#if TARGET_BROWSER
-            // for invariant culture _cultureName is empty - HybridGlobalization does not have to call JS
-            if (GlobalizationMode.Invariant || (GlobalizationMode.Hybrid && HasEmptyCultureName))
-#else
             if (GlobalizationMode.Invariant)
-#endif
             {
                 return InvariantModeCasing.ToUpper(c);
             }
@@ -468,12 +444,7 @@ namespace System.Globalization
         {
             ArgumentNullException.ThrowIfNull(str);
 
-#if TARGET_BROWSER
-            // for invariant culture _cultureName is empty - HybridGlobalization does not have to call JS
-            if (GlobalizationMode.Invariant || (GlobalizationMode.Hybrid && HasEmptyCultureName))
-#else
             if (GlobalizationMode.Invariant)
-#endif
             {
                 return InvariantModeCasing.ToUpper(str);
             }
@@ -544,7 +515,7 @@ namespace System.Globalization
         /// influence which letter or letters of a "word" are uppercased when titlecasing strings.  For example
         /// "l'arbre" is considered two words in French, whereas "can't" is considered one word in English.
         /// </summary>
-        public unsafe string ToTitleCase(string str)
+        public string ToTitleCase(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
 
@@ -732,13 +703,7 @@ namespace System.Globalization
                 NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
                 return;
             }
-#if TARGET_BROWSER
-            if (GlobalizationMode.Hybrid)
-            {
-                JsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
-                return;
-            }
-#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
             {
                 ChangeCaseNative(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);

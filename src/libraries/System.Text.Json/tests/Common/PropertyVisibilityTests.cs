@@ -2165,6 +2165,35 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"{}", json);
         }
 
+        [Fact]
+        public async Task JsonIgnoreCondition_WhenWriting()
+        {
+            var options = new JsonSerializerOptions { IgnoreReadOnlyProperties = true };
+            var json = await Serializer.SerializeWrapper
+                (
+                    new JsonIgnoreCondition_WhenReadingWritingTestModel { Age = 10, Name = "Mike" },
+                    options
+                );
+            Assert.Equal("""{"Age":10}""", json);
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_WhenReading()
+        {
+            var json = """{"Age":10, "Name":"Mike"}""";
+            var model = await Serializer.DeserializeWrapper<JsonIgnoreCondition_WhenReadingWritingTestModel>(json);
+            Assert.Equal("Mike", model.Name);
+            Assert.Equal(0, model.Age);
+        }
+
+        public class JsonIgnoreCondition_WhenReadingWritingTestModel
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
+            public int Age { get; set; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWriting)]
+            public string? Name { get; set; }
+        }
+
         public class ClassWithReadOnlyStringProperty
         {
             public string MyString { get; }

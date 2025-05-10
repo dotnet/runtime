@@ -397,7 +397,7 @@ static void regenLog(unsigned codeDelta,
 
     if (logFile == NULL)
     {
-        logFile = fopen("regen.txt", "a");
+        logFile = fopen_utf8("regen.txt", "a");
         InitializeCriticalSection(&logFileLock);
     }
 
@@ -424,7 +424,7 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
 {
     if (logFile == NULL)
     {
-        logFile = fopen("regen.txt", "a");
+        logFile = fopen_utf8("regen.txt", "a");
         InitializeCriticalSection(&logFileLock);
     }
 
@@ -1588,10 +1588,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
         assert(header->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
     }
 
-    assert((compiler->compArgSize & 0x3) == 0);
-
-    size_t argCount =
-        (compiler->compArgSize - (compiler->codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES)) / REGSIZE_BYTES;
+    size_t argCount = compiler->lvaParameterStackSize / REGSIZE_BYTES;
     assert(argCount <= MAX_USHORT_SIZE_T);
     header->argCount = static_cast<unsigned short>(argCount);
 
@@ -2098,11 +2095,6 @@ unsigned PendingArgsStack::pasEnumGCoffs(unsigned iter, unsigned* offs)
  *  entry, which is never more than 10 bytes), so this can be used to merely
  *  compute the size of the table.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset)
 {
     unsigned   varNum;
@@ -3202,9 +3194,24 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     callArgCnt = genRegPtrTemp->rpdPtrArg;
 
-                    unsigned gcrefRegMask = genRegPtrTemp->rpdCallGCrefRegs;
+                    unsigned gcrefRegMask = 0;
 
-                    byrefRegMask = genRegPtrTemp->rpdCallByrefRegs;
+                    byrefRegMask = 0;
+
+                    // The order here is fixed: it must agree with the order assumed in eetwain.
+                    // NB: x86 GC decoder does not report return registers at call sites.
+                    static const regNumber calleeSaveOrder[] = {REG_EDI, REG_ESI, REG_EBX, REG_EBP};
+                    for (unsigned i = 0; i < ArrLen(calleeSaveOrder); i++)
+                    {
+                        if ((genRegPtrTemp->rpdCallGCrefRegs & (1 << (calleeSaveOrder[i] - REG_INT_FIRST))) != 0)
+                        {
+                            gcrefRegMask |= 1u << i;
+                        }
+                        if ((genRegPtrTemp->rpdCallByrefRegs & (1 << (calleeSaveOrder[i] - REG_INT_FIRST))) != 0)
+                        {
+                            byrefRegMask |= 1u << i;
+                        }
+                    }
 
                     assert((gcrefRegMask & byrefRegMask) == 0);
 
@@ -3535,9 +3542,6 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     return totalSize;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 /*****************************************************************************/
 #if DUMP_GC_TABLES
@@ -3709,15 +3713,6 @@ public:
         }
     }
 
-    void SetReturnKind(ReturnKind returnKind)
-    {
-        m_gcInfoEncoder->SetReturnKind(returnKind);
-        if (m_doLogging)
-        {
-            printf("Set ReturnKind to %s.\n", ReturnKindToString(returnKind));
-        }
-    }
-
     void SetStackBaseRegister(UINT32 registerNumber)
     {
         m_gcInfoEncoder->SetStackBaseRegister(registerNumber);
@@ -3743,15 +3738,6 @@ public:
         {
             printf("Set GS Cookie stack slot to %d, valid from 0x%x to 0x%x.\n", spOffsetGSCookie, validRangeStart,
                    validRangeEnd);
-        }
-    }
-
-    void SetPSPSymStackSlot(INT32 spOffsetPSPSym)
-    {
-        m_gcInfoEncoder->SetPSPSymStackSlot(spOffsetPSPSym);
-        if (m_doLogging)
-        {
-            printf("Set PSPSym stack slot to %d.\n", spOffsetPSPSym);
         }
     }
 
@@ -3786,7 +3772,7 @@ public:
             printf("Set WantsReportOnlyLeaf.\n");
         }
     }
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     void SetHasTailCalls()
     {
         m_gcInfoEncoder->SetHasTailCalls();
@@ -3832,8 +3818,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 
     gcInfoEncoderWithLog->SetCodeLength(methodSize);
 
-    gcInfoEncoderWithLog->SetReturnKind(getReturnKind());
-
     if (compiler->isFramePointerUsed())
     {
         gcInfoEncoderWithLog->SetStackBaseRegister(REG_FPBASE);
@@ -3869,12 +3853,13 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
                 assert(false);
         }
 
-        const int offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
-                                                                 compiler->isFramePointerUsed());
+        const int offset = compiler->lvaCachedGenericContextArgOffset();
 
 #ifdef DEBUG
         if (compiler->opts.IsOSR())
         {
+            const int callerSpOffset = compiler->lvaToCallerSPRelativeOffset(offset, compiler->isFramePointerUsed());
+
             // Sanity check the offset vs saved patchpoint info.
             //
             const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
@@ -3883,12 +3868,12 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             // subtract off 2 register slots (saved FP, saved RA).
             //
             const int osrOffset = ppInfo->GenericContextArgOffset() - 2 * REGSIZE_BYTES;
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->GenericContextArgOffset();
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #endif
         }
 #endif
@@ -3901,23 +3886,16 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     {
         assert(compiler->info.compThisArg != BAD_VAR_NUM);
 
-        // OSR can report the root method's frame slot, if that method reported context.
-        // If not, the OSR frame will have saved the needed context.
-        //
-        bool useRootFrameSlot = true;
-        if (compiler->opts.IsOSR())
-        {
-            const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
-
-            useRootFrameSlot = ppInfo->HasKeptAliveThis();
-        }
-
-        const int offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
-                                                                 compiler->isFramePointerUsed(), useRootFrameSlot);
+        const int offset = compiler->lvaCachedGenericContextArgOffset();
 
 #ifdef DEBUG
-        if (compiler->opts.IsOSR() && useRootFrameSlot)
+        // OSR can report the root method's frame slot, if that method reported context.
+        // If not, the OSR frame will have saved the needed context.
+        if (compiler->opts.IsOSR() && compiler->info.compPatchpointInfo->HasKeptAliveThis())
         {
+            const int callerSpOffset =
+                compiler->lvaToCallerSPRelativeOffset(offset, compiler->isFramePointerUsed(), true);
+
             // Sanity check the offset vs saved patchpoint info.
             //
             const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
@@ -3926,12 +3904,12 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             // subtract off 2 register slots (saved FP, saved RA).
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset() - 2 * REGSIZE_BYTES;
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset();
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #endif
         }
 #endif
@@ -3956,16 +3934,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         gcInfoEncoderWithLog->SetPrologSize(prologSize);
     }
 
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-#ifdef TARGET_AMD64
-        // The PSPSym is relative to InitialSP on X64 and CallerSP on other platforms.
-        gcInfoEncoderWithLog->SetPSPSymStackSlot(compiler->lvaGetInitialSPRelativeOffset(compiler->lvaPSPSym));
-#else  // !TARGET_AMD64
-        gcInfoEncoderWithLog->SetPSPSymStackSlot(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
-#endif // !TARGET_AMD64
-    }
-
 #ifdef TARGET_AMD64
     if (compiler->ehAnyFunclets())
     {
@@ -3974,12 +3942,12 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     }
 #endif // TARGET_AMD64
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (compiler->codeGen->GetHasTailCalls())
     {
         gcInfoEncoderWithLog->SetHasTailCalls();
     }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_RISCV64 || TARGET_LOONGARCH64
 
 #if FEATURE_FIXED_OUT_ARGS
     // outgoing stack area size
@@ -4064,14 +4032,7 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
-    // TODO: Decide on whether we should enable this optimization for all
-    // targets: https://github.com/dotnet/runtime/issues/103917
-#ifdef TARGET_XARCH
-    const bool noTrackedGCSlots =
-        compiler->opts.MinOpts() && !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-#else
-    const bool noTrackedGCSlots = false;
-#endif
+    const bool noTrackedGCSlots = compiler->opts.MinOpts();
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
@@ -4486,8 +4447,8 @@ void GCInfo::gcMakeRegPtrTable(
             assert(call->u1.cdArgMask == 0 && call->cdArgCnt == 0);
 
             // Other than that, we just have to deal with the regmasks.
-            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALL_GC_REGS.GetIntRegSet();
-            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALL_GC_REGS.GetIntRegSet();
+            regMaskSmall gcrefRegMask = call->cdGCrefRegs;
+            regMaskSmall byrefRegMask = call->cdByrefRegs;
 
             assert((gcrefRegMask & byrefRegMask) == 0);
 
@@ -4573,11 +4534,8 @@ void GCInfo::gcMakeRegPtrTable(
                 {
                     // This is a true call site.
 
-                    regMaskSmall gcrefRegMask =
-                        genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallGCrefRegs).GetIntRegSet();
-
-                    regMaskSmall byrefRegMask =
-                        genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallByrefRegs).GetIntRegSet();
+                    regMaskSmall gcrefRegMask = regMaskSmall(genRegPtrTemp->rpdCallGCrefRegs << REG_INT_FIRST);
+                    regMaskSmall byrefRegMask = regMaskSmall(genRegPtrTemp->rpdCallByrefRegs << REG_INT_FIRST);
 
                     assert((gcrefRegMask & byrefRegMask) == 0);
 

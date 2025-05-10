@@ -1,33 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Internal.Runtime;
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class GenericDefinitionEETypeNode : EETypeNode
+    internal abstract class GenericDefinitionEETypeNode : EETypeNode
     {
         public GenericDefinitionEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
             Debug.Assert(type.IsGenericDefinition);
         }
 
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        public override bool HasConditionalStaticDependencies => false;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+
+        public override ISymbolNode NodeForLinkage(NodeFactory factory)
         {
-            return false;
-        }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList dependencyList = null;
-
-            // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
-
-            return dependencyList;
+            return factory.NecessaryTypeSymbol(_type);
         }
 
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
@@ -63,7 +59,57 @@ namespace ILCompiler.DependencyAnalysis
 
             return dataBuilder.ToObjectData();
         }
+    }
 
-        public override int ClassCode => -160325006;
+    internal sealed class ReflectionInvisibleGenericDefinitionEETypeNode : GenericDefinitionEETypeNode
+    {
+        public ReflectionInvisibleGenericDefinitionEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
+        {
+        }
+
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        {
+            return factory.ConstructedTypeSymbol(_type).Marked;
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            return new DependencyList();
+        }
+
+        public override int ClassCode => -287423988;
+    }
+
+    internal sealed class ReflectionVisibleGenericDefinitionEETypeNode : GenericDefinitionEETypeNode
+    {
+        public ReflectionVisibleGenericDefinitionEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
+        {
+        }
+
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        {
+            return false;
+        }
+
+        protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
+        {
+            return factory.SerializedConstructedRuntimeTypeObject(_type);
+        }
+
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler) + " reflection visible";
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            var dependencyList = new DependencyList();
+
+            dependencyList.Add(factory.NecessaryTypeSymbol(_type), "Reflection invisible type for a visible type");
+
+            // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
+
+            return dependencyList;
+        }
+
+        public override int ClassCode => 983279111;
     }
 }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -160,5 +161,10 @@ namespace ILLink.RoslynAnalyzer
 				SimpleNameSyntax simple => simple,
 				_ => throw new InvalidOperationException ("Unreachable"),
 			};
+
+		public static INamedTypeSymbol? TaskType (this Compilation compilation)
+			=> compilation.GetTypeByMetadataName (typeof (Task).FullName!);
+		public static INamedTypeSymbol? TaskOfTType (this Compilation compilation)
+			=> compilation.GetTypeByMetadataName (typeof (Task<>).FullName!);
 	}
 }

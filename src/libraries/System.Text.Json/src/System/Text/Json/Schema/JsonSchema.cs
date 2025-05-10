@@ -26,8 +26,8 @@ namespace System.Text.Json.Schema
         internal const string MinLengthPropertyName = "minLength";
         internal const string MaxLengthPropertyName = "maxLength";
 
-        public static JsonSchema False { get; } = new(false);
-        public static JsonSchema True { get; } = new(true);
+        public static JsonSchema CreateFalseSchema() => new(false);
+        public static JsonSchema CreateTrueSchema() => new(true);
 
         public JsonSchema() { }
         private JsonSchema(bool trueOrFalse) { _trueOrFalse = trueOrFalse; }
@@ -279,7 +279,7 @@ namespace System.Text.Json.Schema
             switch (schema._trueOrFalse)
             {
                 case false:
-                    schema = new JsonSchema { Not = True };
+                    schema = new JsonSchema { Not = CreateTrueSchema() };
                     break;
                 case true:
                     schema = new JsonSchema();

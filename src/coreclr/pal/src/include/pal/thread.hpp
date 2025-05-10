@@ -20,11 +20,9 @@ Abstract:
 #define _PAL_THREAD_HPP_
 
 #include "corunix.hpp"
-#include "shm.hpp"
 #include "cs.hpp"
 
 #include <pthread.h>
-#include <sys/syscall.h>
 #if HAVE_MACH_EXCEPTIONS
 #include <mach/mach.h>
 #endif // HAVE_MACH_EXCEPTIONS
@@ -574,7 +572,7 @@ namespace CorUnix
             m_pNext = pNext;
         };
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
         BOOL
         EnsureSignalAlternateStack(
             void
@@ -663,24 +661,6 @@ namespace CorUnix
             pThread = CreateCurrentThreadData();
         return pThread;
     }
-
-/***
-
-    $$TODO: These are needed only to support cross-process thread duplication
-
-    class CThreadImmutableData
-    {
-    public:
-        DWORD dwProcessId;
-    };
-
-    class CThreadSharedData
-    {
-    public:
-        DWORD dwThreadId;
-        DWORD dwExitCode;
-    };
-***/
 
     //
     // The process local information for a thread is just a pointer

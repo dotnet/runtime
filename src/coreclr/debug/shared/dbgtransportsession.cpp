@@ -89,9 +89,8 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     // The RS randomly allocates a session ID which is sent to the LS in the SessionRequest message. In the
     // case of network errors during session formation this allows the LS to tell SessionRequest re-sends from
     // a new request from a different RS.
-    HRESULT hr = CoCreateGuid(&m_sSessionID);
-    if (FAILED(hr))
-        return hr;
+    if (!minipal_guid_v4_create(&m_sSessionID))
+        return E_FAIL;
 #endif // RIGHT_SIDE_COMPILE
 
 
@@ -1252,10 +1251,6 @@ DWORD WINAPI DbgTransportSession::TransportWorkerStatic(LPVOID pvContext)
     goto Shutdown;                              \
 } while (false)
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void DbgTransportSession::TransportWorker()
 {
     _ASSERTE(m_eState == SS_Opening_NC);
@@ -2204,6 +2199,7 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_AFTER_GARBAGE_COLLECTION:
     case DB_IPCE_DISABLE_OPTS_RESULT:
     case DB_IPCE_CATCH_HANDLER_FOUND_RESULT:
+    case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT:
         cbAdditionalSize = 0;
         break;
 
@@ -2518,9 +2514,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     return cbBaseSize + cbAdditionalSize;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 #ifdef _DEBUG
 // Debug helper which returns the name associated with a MessageType.

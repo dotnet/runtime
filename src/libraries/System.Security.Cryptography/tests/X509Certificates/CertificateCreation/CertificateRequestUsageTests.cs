@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using RsaTestData = System.Security.Cryptography.Rsa.Tests.TestData;
 using Test.Cryptography;
 using Xunit;
 
@@ -1115,6 +1116,77 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 using (ECDsa publicKey = selfSignedCert.GetECDsaPublicKey())
                 {
                     Assert.NotNull(publicKey);
+                }
+            }
+        }
+
+        [Fact]
+        public static void Create_SubjectCertificateNullKeyParameters()
+        {
+
+            using (RSA rootKey = RSA.Create(RsaTestData.RSA2048Params))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaNoParametersCertificate))
+            {
+                CertificateRequest rootReq = new("CN=Root", rootKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+                rootReq.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForCertificateAuthority());
+
+                using (X509Certificate2 root = rootReq.CreateSelfSigned(
+                    DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(1)))
+                {
+                    PublicKey publicKey = cert.PublicKey;
+                    Assert.Null(publicKey.EncodedParameters);
+
+                    CertificateRequest req = new(
+                        cert.SubjectName,
+                        publicKey,
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pss);
+                    byte[] serial = RandomNumberGenerator.GetBytes(8);
+
+                    using (X509Certificate2 issued = req.Create(root, root.NotBefore, root.NotAfter.AddDays(-1), serial))
+                    {
+                        Assert.Null(issued.GetKeyAlgorithmParameters());
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public static void CreateSigningRequest_SubjectCertificateNullKeyParameters()
+        {
+
+            using (RSA rootKey = RSA.Create(RsaTestData.RSA2048Params))
+            using (RSA leafKey = RSA.Create(2048))
+            {
+                CertificateRequest rootReq = new("CN=Root", rootKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+                rootReq.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForCertificateAuthority());
+
+                using (X509Certificate2 root = rootReq.CreateSelfSigned(
+                    DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(1)))
+                {
+                    PublicKey publicKey = new(leafKey);
+                    PublicKey parameterlessPublicKey = new(publicKey.Oid, null, publicKey.EncodedKeyValue);
+
+                    CertificateRequest req = new(
+                        new X500DistinguishedName("CN=My Cert"),
+                        parameterlessPublicKey,
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pss);
+
+                    X509SignatureGenerator generator = X509SignatureGenerator.CreateForRSA(leafKey, RSASignaturePadding.Pss);
+                    byte[] reqBytes = req.CreateSigningRequest(generator);
+
+                    CertificateRequest reloaded = CertificateRequest.LoadSigningRequest(
+                        reqBytes,
+                        HashAlgorithmName.SHA256,
+                        signerSignaturePadding: RSASignaturePadding.Pss);
+
+                    byte[] serial = RandomNumberGenerator.GetBytes(8);
+
+                    using (X509Certificate2 issued = req.Create(root, root.NotBefore, root.NotAfter.AddDays(-1), serial))
+                    {
+                        Assert.Null(issued.GetKeyAlgorithmParameters());
+                    }
                 }
             }
         }

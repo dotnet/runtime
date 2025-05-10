@@ -1,0 +1,99 @@
+# This pipeline deploys the test servers we are using to run (outerloop) Functional tests for various functionality in System.Net namespace.
+# The pipeline deploys to staging slots, which are available at
+# - corefx-net-http11-staging.azurewebsites.net
+# - corefx-net-http2-staging.azurewebsites.net
+#
+# Usage instructions:
+# 1) Start pipeline at https://dev.azure.com/dnceng/internal/_build?definitionId=1419
+#    (deploy-networking-echo-test-servers), pick the correct branch and start the build.
+# 2) After pipeline succeeds, check your changes against the staging slots, two possible ways to do this are:
+#   - create a no-merge PR where you overwrite the default urls (e.g. https://github.com/dotnet/runtime/pull/111396)
+#   - test locally, either by same changes as in above PR, or by using the override environment variables
+#
+#     DOTNET_TEST_HTTPHOST=http://corefx-net-http11-staging.azurewebsites.net
+#     DOTNET_TEST_SECUREHTTPHOST=https://corefx-net-http11-staging.azurewebsites.net
+#     DOTNET_TEST_WEBSOKETHOST=http://corefx-net-http11-staging.azurewebsites.net
+#     DOTNET_TEST_SECUREWEBSOKETHOST=http://corefx-net-http11-staging.azurewebsites.net
+#
+#     DOTNET_TEST_HTTP2HOST=http://corefx-net-http2-staging.azurewebsites.net
+# 3) If there are no issues, you can swap the staging slots with production slots via the Azure portal.
+#    Only the members of the .NET Networking team have access to the Azure Subscription which hosts the
+#    servers. Look for the "Deployment slots" section at corefx-net-http11 and corefx-net-http2 Web Apps
+
+trigger: none
+
+resources:
+  repositories:
+    - repository: 1ESPipelineTemplates
+      type: git
+      name: 1ESPipelineTemplates/1ESPipelineTemplates
+      ref: refs/tags/release
+
+variables:
+  - template: /eng/common/templates-official/variables/pool-providers.yml
+  - name: FrameworkVersion
+    value: 8.x
+  - name: TargetFramework
+    value: net8.0
+
+extends:
+  template: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    customBuildTags:
+      - 1ES.PT.ViaStartRight
+    pool:
+      name: $(DncEngInternalBuildPool)
+      image: 1es-windows-2022
+      os: windows
+
+    stages:
+      - stage: stage
+        displayName: Building in a VM
+        jobs:
+          - job: job
+            displayName: Build
+            steps:
+              - checkout: self
+
+              - task: UseDotNet@2
+                inputs:
+                  packageType: "sdk"
+                  version: $(FrameworkVersion)
+
+              - script: echo {} > ./global.json
+                displayName: Bypass repository global.json
+                workingDirectory: ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer
+
+              - script: dotnet publish -c Release /p:GenevaTelemetry=true /p:_TargetFrameworkForXHarness=$(TargetFramework)
+                workingDirectory: ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer
+                displayName: Run dotnet publish
+
+              - task: zip@0
+                displayName: Zip artifacts
+                inputs:
+                  pathToZipFolder: 'artifacts\bin\NetCoreServer\Release\$(TargetFramework)\publish\'
+                  pathToZipFile: 'artifacts\bin\NetCoreServer\Release\$(TargetFramework)\publish.zip'
+
+              - task: AzureRmWebAppDeployment@4
+                displayName: Deploy to corefx-net-http11-staging
+                inputs:
+                  ConnectionType: "AzureRM"
+                  azureSubscription: .NET Libraries Network Testing
+                  appType: "webApp"
+                  WebAppName: "corefx-net-http11"
+                  deployToSlotOrASE: true
+                  ResourceGroupName: "Production-WestUS"
+                  SlotName: "staging"
+                  package: 'artifacts\bin\NetCoreServer\Release\$(TargetFramework)\publish.zip'
+
+              - task: AzureRmWebAppDeployment@4
+                displayName: Deploy to corefx-net-http2-staging
+                inputs:
+                  ConnectionType: "AzureRM"
+                  azureSubscription: .NET Libraries Network Testing
+                  appType: "webApp"
+                  WebAppName: "corefx-net-http2"
+                  deployToSlotOrASE: true
+                  ResourceGroupName: "Production-WestUS"
+                  SlotName: "staging"
+                  package: 'artifacts\bin\NetCoreServer\Release\$(TargetFramework)\publish.zip'

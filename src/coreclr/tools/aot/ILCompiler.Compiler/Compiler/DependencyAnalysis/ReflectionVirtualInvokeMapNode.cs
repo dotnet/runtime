@@ -88,10 +88,6 @@ namespace ILCompiler.DependencyAnalysis
                     factory.NecessaryTypeSymbol(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)),
                     "Reflection virtual invoke owning type");
 
-                NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
-                NativeLayoutPlacedSignatureVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
-                dependencies.Add(placedNameAndSig, "Reflection virtual invoke method signature");
-
                 if (!method.HasInstantiation)
                 {
                     MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
@@ -162,24 +158,22 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Grammar of an entry in the hash table:
                 // Virtual Method uses a normal slot
-                // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1) + slot
+                // TypeKey + MethodHandle + (NumberOfStepsUpParentHierarchyToType << 1) + slot
                 // OR
                 // Generic Virtual Method
-                // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1 + 1)
+                // TypeKey + MethodHandle + (NumberOfStepsUpParentHierarchyToType << 1 + 1)
 
                 int parentHierarchyDistance;
                 MethodDesc declaringMethodForSlot = GetDeclaringVirtualMethodAndHierarchyDistance(method, out parentHierarchyDistance);
                 ISymbolNode containingTypeKeyNode = factory.NecessaryTypeSymbol(containingTypeKey);
-                NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
-                NativeLayoutPlacedSignatureVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
-
+                int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, method.GetTypicalMethodDefinition());
 
                 Vertex vertex;
                 if (method.HasInstantiation)
                 {
                     vertex = writer.GetTuple(
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(containingTypeKeyNode)),
-                        writer.GetUnsignedConstant((uint)placedNameAndSig.SavedVertex.VertexOffset),
+                        writer.GetUnsignedConstant((uint)token),
                         writer.GetUnsignedConstant(((uint)parentHierarchyDistance << 1) + VirtualInvokeTableEntry.GenericVirtualMethod));
                 }
                 else
@@ -190,7 +184,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     vertex = writer.GetTuple(
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(containingTypeKeyNode)),
-                        writer.GetUnsignedConstant((uint)placedNameAndSig.SavedVertex.VertexOffset));
+                        writer.GetUnsignedConstant((uint)token));
 
                     vertex = writer.GetTuple(vertex,
                         writer.GetUnsignedConstant((uint)parentHierarchyDistance << 1),

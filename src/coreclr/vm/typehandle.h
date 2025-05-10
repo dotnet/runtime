@@ -158,44 +158,17 @@ public:
         return(m_asTAddr != typeHnd.m_asTAddr);
     }
 
-        // Methods for probing exactly what kind of a type handle we have
-    FORCEINLINE BOOL IsNull() const {
+    // Methods for probing exactly what kind of a type handle we have
+    bool IsNull() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef _PREFIX_
-        if (m_asTAddr == 0) {
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr == NULL);
-#endif
-            return true;
-        }
-        else {
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr != NULL);
-#endif
-            return false;
-        }
-#else
-        return(m_asTAddr == 0);
-#endif
+        return (m_asTAddr == 0);
     }
 
-    // Note that this returns denormalized BOOL to help the compiler with optimizations
-    FORCEINLINE BOOL IsTypeDesc() const  {
+    bool IsTypeDesc() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef _PREFIX_
-        if (m_asTAddr & 2) {
-            PREFIX_ASSUME(m_asTAddr != NULL);
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr   != NULL);
-#endif
-            return true;
-        }
-        else {
-            return false;
-        }
-#else
-        return(m_asTAddr & 2);
-#endif
+        return !!(m_asTAddr & 2);
     }
 
     BOOL IsEnum() const;
@@ -267,7 +240,8 @@ public:
     // Note that if the TypeHandle is a valuetype, the caller is responsible
     // for checking that the valuetype is in its boxed form before calling
     // CanCastTo. Otherwise, the caller should be using IsBoxedAndCanCastTo()
-    typedef enum { CannotCast, CanCast, MaybeCast } CastResult;
+    // See CastCache.cs for matching managed type.
+    typedef enum { CannotCast = 0, CanCast = 1, MaybeCast = 2 } CastResult;
 
     BOOL CanCastTo(TypeHandle type, TypeHandlePairList *pVisited = NULL) const;
     BOOL IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pVisited) const;
@@ -467,8 +441,6 @@ public:
 
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;
-
-    Module* GetDefiningModuleForOpenType() const;
 
     // Is type that has a type parameter (ARRAY, SZARRAY, BYREF, PTR)
     BOOL HasTypeParam() const;

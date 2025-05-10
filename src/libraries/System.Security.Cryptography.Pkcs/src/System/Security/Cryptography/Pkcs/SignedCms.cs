@@ -43,10 +43,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public SignedCms(SubjectIdentifierType signerIdentifierType, ContentInfo contentInfo, bool detached)
         {
-            if (contentInfo is null)
-            {
-                throw new ArgumentNullException(nameof(contentInfo));
-            }
+            ArgumentNullException.ThrowIfNull(contentInfo);
 
             if (contentInfo.Content == null)
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "contentInfo.Content"), nameof(contentInfo));
@@ -158,15 +155,17 @@ namespace System.Security.Cryptography.Pkcs
 
         public void Decode(byte[] encodedMessage)
         {
-            if (encodedMessage is null)
-            {
-                throw new ArgumentNullException(nameof(encodedMessage));
-            }
+            ArgumentNullException.ThrowIfNull(encodedMessage);
 
             Decode(new ReadOnlySpan<byte>(encodedMessage));
         }
 
-        public void Decode(ReadOnlySpan<byte> encodedMessage)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void Decode(ReadOnlySpan<byte> encodedMessage)
         {
             // Hold a copy of the SignedData memory so we are protected against memory reuse by the caller.
             _heldData = CopyContent(encodedMessage);
@@ -301,10 +300,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void ComputeSignature(CmsSigner signer, bool silent)
         {
-            if (signer is null)
-            {
-                throw new ArgumentNullException(nameof(signer));
-            }
+            ArgumentNullException.ThrowIfNull(signer);
 
             // While it shouldn't be possible to change the length of ContentInfo.Content
             // after it's built, use the property at this stage, then use the saved value
@@ -410,10 +406,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void RemoveSignature(SignerInfo signerInfo)
         {
-            if (signerInfo is null)
-            {
-                throw new ArgumentNullException(nameof(signerInfo));
-            }
+            ArgumentNullException.ThrowIfNull(signerInfo);
 
             int idx = SignerInfos.FindIndexForSigner(signerInfo);
 
@@ -670,7 +663,12 @@ namespace System.Security.Cryptography.Pkcs
             return ref _signedData;
         }
 
-        public void AddCertificate(X509Certificate2 certificate)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void AddCertificate(X509Certificate2 certificate)
         {
             int existingLength = _signedData.CertificateSet?.Length ?? 0;
 
@@ -704,7 +702,12 @@ namespace System.Security.Cryptography.Pkcs
             Reencode();
         }
 
-        public void RemoveCertificate(X509Certificate2 certificate)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void RemoveCertificate(X509Certificate2 certificate)
         {
             int existingLength = _signedData.CertificateSet?.Length ?? 0;
 

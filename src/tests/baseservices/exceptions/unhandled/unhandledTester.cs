@@ -89,7 +89,7 @@ namespace TestUnhandledExceptionTester
             }
             else
             {
-                if (unhandledType == "main")
+                if (unhandledType == "main" || unhandledType == "secondary")
                 {
                     if (lines[0] != "Unhandled exception. System.Exception: Test")
                     {
@@ -98,7 +98,8 @@ namespace TestUnhandledExceptionTester
                 }
                 else if (unhandledType == "foreign")
                 {
-                    if (!lines[0].StartsWith("Unhandled exception. System.DllNotFoundException:"))
+                    if (!lines[0].StartsWith("Unhandled exception. System.DllNotFoundException:") &&
+                        !lines[0].StartsWith("Unhandled exception. System.EntryPointNotFoundException: Unable to find an entry point named 'HelloCpp'"))
                     {
                         throw new Exception("Missing Unhandled exception header");
                     }
@@ -112,6 +113,13 @@ namespace TestUnhandledExceptionTester
                     throw new Exception("Missing exception source frame");
                 }
             }
+            else if (unhandledType == "secondary")
+            {
+                if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program."))
+                {
+                    throw new Exception("Missing exception source frame");
+                }
+            }
 
             Console.WriteLine("Test process exited with expected error code and produced expected output");
         }
@@ -120,6 +128,7 @@ namespace TestUnhandledExceptionTester
         public static void TestEntryPoint()
         {
             RunExternalProcess("main", "unhandled.dll");
+            RunExternalProcess("secondary", "unhandled.dll");
             RunExternalProcess("foreign", "unhandled.dll");
             File.Delete(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "dependencytodelete.dll"));
             RunExternalProcess("missingdependency", "unhandledmissingdependency.dll");

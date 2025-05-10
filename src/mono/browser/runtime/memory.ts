@@ -17,7 +17,7 @@ let alloca_base: VoidPtr, alloca_offset: VoidPtr, alloca_limit: VoidPtr;
 function _ensure_allocated (): void {
     if (alloca_base)
         return;
-    alloca_base = Module._malloc(alloca_buffer_size);
+    alloca_base = malloc(alloca_buffer_size);
     alloca_offset = alloca_base;
     alloca_limit = <VoidPtr>(<any>alloca_base + alloca_buffer_size);
 }
@@ -35,6 +35,15 @@ export function temp_malloc (size: number): VoidPtr {
     if (alloca_offset >= alloca_limit)
         throw new Error("Out of temp storage space");
     return result;
+}
+
+// returns always uint32 (not negative Number)
+export function malloc (size: number): VoidPtr {
+    return (Module._malloc(size) as any >>> 0) as any;
+}
+
+export function free (ptr: VoidPtr) {
+    Module._free(ptr);
 }
 
 export function _create_temp_frame (): void {
@@ -326,7 +335,7 @@ export function withStackAlloc<T1, T2, T3, TResult> (bytesWanted: number, f: (pt
 //  and it is copied to that location. returns the address of the allocation.
 export function mono_wasm_load_bytes_into_heap (bytes: Uint8Array): VoidPtr {
     // pad sizes by 16 bytes for simd
-    const memoryOffset = Module._malloc(bytes.length + 16);
+    const memoryOffset = malloc(bytes.length + 16);
     if (<any>memoryOffset <= 0) {
         mono_log_error(`malloc failed to allocate ${(bytes.length + 16)} bytes.`);
         throw new Error("Out of memory");
@@ -500,4 +509,8 @@ export function forceThreadMemoryViewRefresh () {
     if (wasmMemory.buffer !== Module.HEAPU8.buffer) {
         runtimeHelpers.updateMemoryViews();
     }
+}
+
+export function fixupPointer (signature: any, shiftAmount: number): any {
+    return ((signature as any) >>> shiftAmount) as any;
 }
