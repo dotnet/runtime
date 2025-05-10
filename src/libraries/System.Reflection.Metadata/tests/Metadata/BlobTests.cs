@@ -16,12 +16,15 @@ namespace System.Reflection.Metadata.Tests
         public void Ctor()
         {
             var builder = new BlobBuilder();
+            Assert.Equal(BlobBuilder.DefaultChunkSize, builder.ChunkCapacity);
             Assert.Equal(BlobBuilder.DefaultChunkSize, builder.Capacity);
 
             builder = new BlobBuilder(0);
+            Assert.Equal(BlobBuilder.MinChunkSize, builder.ChunkCapacity);
             Assert.Equal(BlobBuilder.MinChunkSize, builder.Capacity);
 
             builder = new BlobBuilder(10001);
+            Assert.Equal(10001, builder.ChunkCapacity);
             Assert.Equal(10001, builder.Capacity);
 
             var buffer = new byte[1024];
@@ -64,7 +67,7 @@ namespace System.Reflection.Metadata.Tests
         {
             var builder = new BlobBuilder();
             Assert.True(builder.ContentEquals(builder));
-            Assert.False(builder.ContentEquals(null));
+            Assert.False(builder.ContentEquals((BlobBuilder)null));
 
             TestContentEquals([], []);
             TestContentEquals([1], []);

@@ -137,17 +137,23 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// The size of the byte array underpinning the <see cref="BlobBuilder"/>.
+        /// The maximum number of bytes that can be contained in the memory allocated by the <see cref="BlobBuilder"/>.
         /// </summary>
-        /// <exception cref="InvalidOperationException">The value is set while the <see cref="BlobBuilder"/>
-        /// is not the head of a chain of <see cref="BlobBuilder"/> instances.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The value is set to less than the current <see cref="Length"/>.</exception>
+        /// <exception cref="InvalidOperationException">The value is accessed while the
+        /// <see cref="BlobBuilder"/> is not the head of a chain of <see cref="BlobBuilder"/>
+        /// instances.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The value is set to less than
+        /// the current <see cref="Length"/>.</exception>
         /// <seealso cref="SetCapacity"/>
         public int Capacity
         {
             get
             {
-                return _buffer.Length;
+                if (!IsHead)
+                {
+                    Throw.InvalidOperationBuilderAlreadyLinked();
+                }
+                return _previousLengthOrFrozenSuffixLengthDelta + _buffer.Length;
             }
             set
             {
@@ -159,7 +165,7 @@ namespace System.Reflection.Metadata
                 {
                     Throw.ArgumentOutOfRange(nameof(value));
                 }
-                if (value != _buffer.Length)
+                if (value != _previousLengthOrFrozenSuffixLengthDelta + _buffer.Length)
                 {
                     SetCapacity(value);
                 }
@@ -292,6 +298,9 @@ namespace System.Reflection.Metadata
         }
 
         protected int FreeBytes => _buffer.Length - Length;
+
+        // internal for testing
+        protected internal int ChunkCapacity => _buffer.Length;
 
         // internal for testing
         internal Chunks GetChunks()
@@ -684,7 +693,7 @@ namespace System.Reflection.Metadata
             }
 
             var newChunk = AllocateChunk(Math.Max(newLength, MinChunkSize));
-            if (newChunk.Capacity < newLength)
+            if (newChunk.ChunkCapacity < newLength)
             {
                 // The overridden allocator didn't provide large enough buffer:
                 throw new InvalidOperationException(SR.Format(SR.ReturnedBuilderSizeTooSmall, GetType(), nameof(AllocateChunk)));
