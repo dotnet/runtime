@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Xml.Schema;
+using System.Xml.Schema.DateAndTime;
+using System.Xml.Schema.DateAndTime.Specifications;
 using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
@@ -199,7 +201,7 @@ namespace System.Xml.Xsl.Runtime
 
         public static string ToString(DateTime value)
         {
-            return (new XsdDateTime(value, XsdDateTimeFlags.DateTime)).ToString();
+            return (new XsdDateTime(value, XsdDateAndTimeFlags.DateTime)).ToString();
         }
 
         public static double ToDouble(decimal value)
@@ -239,7 +241,7 @@ namespace System.Xml.Xsl.Runtime
 
         public static DateTime ToDateTime(string value)
         {
-            return (DateTime)(new XsdDateTime(value, XsdDateTimeFlags.AllXsd));
+            return (DateTime)(new XsdDateTime(value, XsdDateAndTimeFlags.AllXsd));
         }
 
 
