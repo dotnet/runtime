@@ -52,11 +52,6 @@ SPTR_IMPL (SyncBlockCache, SyncBlockCache, s_pSyncBlockCache);
 
 #ifndef DACCESS_COMPILE
 
-#ifndef TARGET_UNIX
-// static
-SLIST_HEADER InteropSyncBlockInfo::s_InteropInfoStandbyList;
-#endif // !TARGET_UNIX
-
 InteropSyncBlockInfo::~InteropSyncBlockInfo()
 {
     CONTRACTL
@@ -70,30 +65,6 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
 
     FreeUMEntryThunk();
 }
-
-#ifndef TARGET_UNIX
-// Deletes all items in code:s_InteropInfoStandbyList.
-void InteropSyncBlockInfo::FlushStandbyList()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PSLIST_ENTRY pEntry = InterlockedFlushSList(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-    while (pEntry)
-    {
-        PSLIST_ENTRY pNextEntry = pEntry->Next;
-
-        // make sure to use the global delete since the destructor has already run
-        ::delete (void *)pEntry;
-        pEntry = pNextEntry;
-    }
-}
-#endif // !TARGET_UNIX
 
 void InteropSyncBlockInfo::FreeUMEntryThunk()
 {
@@ -656,10 +627,6 @@ void SyncBlockCache::Start()
     g_SyncBlockCacheInstance.Init();
 
     SyncBlockCache::GetSyncBlockCache()->m_EphemeralBitmap = bm;
-
-#ifndef TARGET_UNIX
-    InitializeSListHead(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-#endif // !TARGET_UNIX
 }
 
 
@@ -976,19 +943,7 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
         CleanupSyncBlockComData(psb->m_pInteropInfo);
 #endif // FEATURE_COMINTEROP
 
-#ifndef TARGET_UNIX
-        if (g_fEEShutDown)
-        {
-            delete psb->m_pInteropInfo;
-        }
-        else
-        {
-            psb->m_pInteropInfo->~InteropSyncBlockInfo();
-            InterlockedPushEntrySList(&InteropSyncBlockInfo::s_InteropInfoStandbyList, (PSLIST_ENTRY)psb->m_pInteropInfo);
-        }
-#else // !TARGET_UNIX
         delete psb->m_pInteropInfo;
-#endif // !TARGET_UNIX
     }
 
 #ifdef FEATURE_METADATA_UPDATER
