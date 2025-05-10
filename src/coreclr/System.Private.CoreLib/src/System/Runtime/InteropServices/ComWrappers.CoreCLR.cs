@@ -79,7 +79,7 @@ namespace System.Runtime.InteropServices
         {
             if (s_globalInstanceForMarshalling == null)
             {
-                return IntPtr.Zero;
+                return null;
             }
 
             try
