@@ -2391,6 +2391,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetTickCount64.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetTickCount64.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetTimestamp.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetTimestamp.cs</Link>
     </Compile>
