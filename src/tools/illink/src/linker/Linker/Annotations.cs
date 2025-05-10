@@ -147,21 +147,6 @@ namespace Mono.Linker
 			MemberActions.PrimarySubstitutionInfo.SetMethodStubValue (method, value);
 		}
 
-		public bool HasSubstitutedInit (FieldDefinition field)
-		{
-			return MemberActions.HasSubstitutedInit (field);
-		}
-
-		public void SetSubstitutedInit (TypeDefinition type)
-		{
-			fieldType_init.Add (type);
-		}
-
-		public bool HasSubstitutedInit (TypeDefinition type)
-		{
-			return fieldType_init.Contains (type);
-		}
-
 		[Obsolete ("Mark token providers with a reason instead.")]
 		public void Mark (IMetadataTokenProvider provider)
 		{
