@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
     ///   The derived classes are intended for interop with the underlying system
     ///   cryptographic libraries.
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract partial class SlhDsa : IDisposable
 #if DESIGNTIMEINTERFACES
 #pragma warning disable SA1001
@@ -93,23 +93,21 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Sign the specified data, writing the signature into the provided buffer.
+        ///   Signs the specified data, writing the signature into the provided buffer.
         /// </summary>
         /// <param name="data">
         ///   The data to sign.
         /// </param>
         /// <param name="destination">
-        ///   The buffer to receive the signature.
+        ///   The buffer to receive the signature. Its length must be exactly
+        ///   <see cref="SlhDsaAlgorithm.SignatureSizeInBytes"/>.
         /// </param>
         /// <param name="context">
         ///   An optional context-specific value to limit the scope of the signature.
         ///   The default value is an empty buffer.
         /// </param>
-        /// <returns>
-        ///   The number of bytes written to the <paramref name="destination" /> buffer.
-        /// </returns>
         /// <exception cref="ArgumentException">
-        ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
+        ///   The buffer in <paramref name="destination"/> is the incorrect length to receive the signature.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
@@ -123,8 +121,17 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the data.</para>
         /// </exception>
-        public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
+        public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
+            int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
+
+            if (destination.Length != signatureSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, signatureSizeInBytes),
+                    nameof(destination));
+            }
+
             if (context.Length > MaxContextLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -133,17 +140,45 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
-
-            if (destination.Length < signatureSizeInBytes)
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
-
             ThrowIfDisposed();
 
-            SignDataCore(data, context, destination.Slice(0, signatureSizeInBytes));
-            return signatureSizeInBytes;
+            SignDataCore(data, context, destination);
+        }
+
+        /// <summary>
+        ///   Signs the specified data.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to sign.
+        /// </param>
+        /// <param name="context">
+        ///   An optional context-specific value to limit the scope of the signature.
+        ///   The default value is <see langword="null" />.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the data.</para>
+        /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
+        public byte[] SignData(byte[] data, byte[]? context = default)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+
+            byte[] destination = new byte[Algorithm.SignatureSizeInBytes];
+            SignData(new ReadOnlySpan<byte>(data), destination.AsSpan(), new ReadOnlySpan<byte>(context));
+            return destination;
         }
 
         /// <summary>
@@ -192,6 +227,47 @@ namespace System.Security.Cryptography
             }
 
             return VerifyDataCore(data, context, signature);
+        }
+
+        /// <summary>
+        ///   Verifies that the specified signature is valid for this key and the provided data.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to verify.
+        /// </param>
+        /// <param name="signature">
+        ///   The signature to verify.
+        /// </param>
+        /// <param name="context">
+        ///   The context value which was provided during signing.
+        ///   The default value is <see langword="null" />.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> or <paramref name="signature"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="context"/> has a length in excess of 255 bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the data.</para>
+        /// </exception>
+        /// <remarks>
+        ///   A <see langword="null" /> context is treated as empty.
+        /// </remarks>
+        public bool VerifyData(byte[] data, byte[] signature, byte[]? context = default)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(signature);
+
+            return VerifyData(new ReadOnlySpan<byte>(data), new ReadOnlySpan<byte>(signature), new ReadOnlySpan<byte>(context));
         }
 
         /// <summary>
@@ -758,31 +834,34 @@ namespace System.Security.Cryptography
         ///   Exports the public-key portion of the current key in the FIPS 205 public key format.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the public key.
+        ///   The buffer to receive the public key. Its length must be exactly
+        ///   <see cref="SlhDsaAlgorithm.SecretKeySizeInBytes"/>.
         /// </param>
-        /// <returns>
-        ///   The number of bytes written to <paramref name="destination"/>.
-        /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is too small to hold the public key.
+        ///   <paramref name="destination"/> is the incorrect length to receive the public key.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public int ExportSlhDsaPublicKey(Span<byte> destination)
+        /// <remarks>
+        ///   <paramref name="destination"/> is required to be exactly
+        ///   <see cref="SlhDsaAlgorithm.PublicKeySizeInBytes"/> in length.
+        /// </remarks>
+        public void ExportSlhDsaPublicKey(Span<byte> destination)
         {
             int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
 
-            if (destination.Length < publicKeySizeInBytes)
+            if (destination.Length != publicKeySizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, publicKeySizeInBytes),
+                    nameof(destination));
             }
 
             ThrowIfDisposed();
 
-            ExportSlhDsaPublicKeyCore(destination.Slice(0, publicKeySizeInBytes));
-            return publicKeySizeInBytes;
+            ExportSlhDsaPublicKeyCore(destination);
         }
 
         /// <summary>
@@ -808,13 +887,11 @@ namespace System.Security.Cryptography
         ///   Exports the current key in the FIPS 205 secret key format.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the secret key.
+        ///   The buffer to receive the secret key. Its length must be exactly
+        ///   <see cref="SlhDsaAlgorithm.SecretKeySizeInBytes"/>.
         /// </param>
-        /// <returns>
-        ///   The number of bytes written to <paramref name="destination"/>.
-        /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is too small to hold the secret key.
+        ///   <paramref name="destination"/> is the incorrect length to receive the secret key.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>The current instance cannot export a secret key.</para>
@@ -822,19 +899,20 @@ namespace System.Security.Cryptography
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public int ExportSlhDsaSecretKey(Span<byte> destination)
+        public void ExportSlhDsaSecretKey(Span<byte> destination)
         {
             int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
 
-            if (destination.Length < secretKeySizeInBytes)
+            if (destination.Length != secretKeySizeInBytes)
             {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, secretKeySizeInBytes),
+                    nameof(destination));
             }
 
             ThrowIfDisposed();
 
-            ExportSlhDsaSecretKeyCore(destination.Slice(0, secretKeySizeInBytes));
-            return secretKeySizeInBytes;
+            ExportSlhDsaSecretKeyCore(destination);
         }
 
         /// <summary>

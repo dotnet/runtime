@@ -505,7 +505,7 @@ extends:
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR_Bootstrapped
-            buildArgs: -s clr+libs+host -c $(_BuildConfig) -rc Checked --bootstrap
+            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -rc Checked --bootstrap
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -1768,12 +1768,12 @@ extends:
           parameters:
             platforms:
               - name: CentOS9
-                baseOS: linux-x64
+                baseRID: linux-x64
                 targetRID: centos.9-x64
                 portableBuild: false
                 container: SourceBuild_centos_x64
               - name: NonexistentRID
-                baseOS: linux-x64
+                baseRID: linux-x64
                 targetRID: banana.24-x64
                 portableBuild: false
                 container: SourceBuild_centos_x64
