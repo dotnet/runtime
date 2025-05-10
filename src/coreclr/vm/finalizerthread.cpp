@@ -21,7 +21,7 @@ BOOL FinalizerThread::fQuitFinalizer = FALSE;
 #define LINUX_HEAP_DUMP_TIME_OUT 10000
 
 extern bool s_forcedGCInProgress;
-ULONGLONG FinalizerThread::LastHeapDumpTime = 0;
+int64_t FinalizerThread::LastHeapDumpTime = 0;
 
 Volatile<BOOL> g_TriggerHeapDump = FALSE;
 #endif // __linux__
