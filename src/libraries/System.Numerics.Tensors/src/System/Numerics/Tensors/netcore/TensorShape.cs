@@ -41,7 +41,7 @@ namespace System.Numerics.Tensors
         None = 0,
         IsDense = (1 << 0),
         IsBroadcast = (1 << 1),
-        HasDenseDimension = (1 << 2),
+        HasAnyDenseDimensions = (1 << 2),
     }
 
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
@@ -191,7 +191,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // When the strides are automatically computed, then we must be dense
-                _flags |= (TensorFlags.IsDense | TensorFlags.HasDenseDimension);
+                _flags |= (TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions);
             }
             else if (strides.Length != lengths.Length)
             {
@@ -290,7 +290,7 @@ namespace System.Numerics.Tensors
 
                 if (isDense)
                 {
-                    _flags |= (TensorFlags.IsDense | TensorFlags.HasDenseDimension);
+                    _flags |= (TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions);
                 }
                 else
                 {
@@ -307,7 +307,7 @@ namespace System.Numerics.Tensors
 
                         if (stride == 1)
                         {
-                            _flags |= TensorFlags.HasDenseDimension;
+                            _flags |= TensorFlags.HasAnyDenseDimensions;
                             break;
                         }
 
@@ -391,7 +391,7 @@ namespace System.Numerics.Tensors
             ValidateState();
         }
 
-        public bool HasDenseElements => (_flags & TensorFlags.HasDenseDimension) != 0;
+        public bool HasAnyDenseDimensions => (_flags & TensorFlags.HasAnyDenseDimensions) != 0;
 
         public bool IsBroadcast => (_flags & TensorFlags.IsBroadcast) != 0;
 
@@ -947,7 +947,7 @@ namespace System.Numerics.Tensors
                     strides: [1],
                     linearRankOrder: [0],
                     rank: 1,
-                    TensorFlags.IsDense | TensorFlags.HasDenseDimension
+                    TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions
                 );
             }
             return default;
@@ -1046,7 +1046,7 @@ namespace System.Numerics.Tensors
                     strides: [1],
                     linearRankOrder: [0],
                     rank: 1,
-                    TensorFlags.IsDense | TensorFlags.HasDenseDimension
+                    TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions
                 );
             }
             else if (linearLength != 0)
@@ -1102,13 +1102,13 @@ namespace System.Numerics.Tensors
             if (IsDense)
             {
                 Debug.Assert(FlattenedLength == LinearLength);
-                Debug.Assert(HasDenseElements);
+                Debug.Assert(HasAnyDenseDimensions);
             }
             else
             {
                 Debug.Assert(FlattenedLength != LinearLength);
 
-                bool hasDenseDimension = false;
+                bool hasAnyDenseDimensions = false;
 
                 for (int i = 0; i < Strides.Length; i++)
                 {
@@ -1117,7 +1117,7 @@ namespace System.Numerics.Tensors
 
                     if (stride == 1)
                     {
-                        hasDenseDimension = true;
+                        hasAnyDenseDimensions = true;
                         break;
                     }
 
@@ -1134,7 +1134,7 @@ namespace System.Numerics.Tensors
                     }
                 }
 
-                Debug.Assert(HasDenseElements == hasDenseDimension);
+                Debug.Assert(HasAnyDenseDimensions == hasAnyDenseDimensions);
             }
             Debug.Assert(IsBroadcast == Strides.Contains(0));
         }
@@ -1276,7 +1276,7 @@ namespace System.Numerics.Tensors
 
             if (isDense)
             {
-                flags |= (TensorFlags.IsDense | TensorFlags.HasDenseDimension);
+                flags |= (TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions);
             }
 
             TensorShape result = new TensorShape(
