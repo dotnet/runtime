@@ -157,74 +157,74 @@ namespace System.Reflection
             bytesWritten = destinationLength - destination.Length;
         }
 #else
-        public static void WriteUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool allowUnpairedSurrogates)
+        public static unsafe void WriteUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool allowUnpairedSurrogates)
         {
             const char ReplacementCharacter = '\uFFFD';
 
             int sourceLength = source.Length;
             int destinationLength = destination.Length;
 
-            while (!source.IsEmpty)
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (byte* pDestination = &MemoryMarshal.GetReference(destination))
             {
-                char c = source[0];
-                if (c < 0x80)
+                char* src = pSource, srcEnd = pSource + source.Length;
+                byte* dst = pDestination, dstEnd = pDestination + destination.Length;
+
+                while (src < srcEnd)
                 {
-                    if (destination.Length < 1)
+                    char c = *src++;
+                    if (c < 0x80)
                     {
-                        break;
-                    }
-                    destination[0] = (byte)c;
-                    destination = destination.Slice(1);
-                    source = source.Slice(1);
-                }
-                else if (c < 0x7FF)
-                {
-                    if (destination.Length < 2)
-                    {
-                        break;
-                    }
-                    destination[0] = (byte)((c >> 6) | 0xC0);
-                    destination[1] = (byte)((c & 0x3F) | 0x80);
-                    destination = destination.Slice(2);
-                    source = source.Slice(1);
-                }
-                else
-                {
-                    if (char.IsSurrogate(c))
-                    {
-                        // surrogate pair
-                        if (char.IsHighSurrogate(c) && source.Length > 1 && source[1] is char cLow && char.IsLowSurrogate(cLow))
+                        if (dstEnd - dst < 1)
                         {
-                            if (destination.Length < 4)
+                            break;
+                        }
+                        *dst++ = (byte)c;
+                    }
+                    else if (c < 0x7FF)
+                    {
+                        if (dstEnd - dst < 2)
+                        {
+                            break;
+                        }
+                        *dst++ = (byte)((c >> 6) | 0xC0);
+                        *dst++ = (byte)((c & 0x3F) | 0x80);
+                    }
+                    else
+                    {
+                        if (char.IsSurrogate(c))
+                        {
+                            // surrogate pair
+                            if (char.IsHighSurrogate(c) && src < srcEnd && *src is char cLow && char.IsLowSurrogate(cLow))
                             {
-                                break;
+                                src++;
+                                if (dstEnd - dst < 4)
+                                {
+                                    break;
+                                }
+                                int codepoint = ((c - 0xd800) << 10) + cLow - 0xdc00 + 0x10000;
+                                *dst++ = (byte)((codepoint >> 18) | 0xF0);
+                                *dst++ = (byte)(((codepoint >> 12) & 0x3F) | 0x80);
+                                *dst++ = (byte)(((codepoint >> 6) & 0x3F) | 0x80);
+                                *dst++ = (byte)((codepoint & 0x3F) | 0x80);
+                                continue;
                             }
-                            int codepoint = ((c - 0xd800) << 10) + cLow - 0xdc00 + 0x10000;
-                            destination[0] = (byte)((codepoint >> 18) | 0xF0);
-                            destination[1] = (byte)(((codepoint >> 12) & 0x3F) | 0x80);
-                            destination[2] = (byte)(((codepoint >> 6) & 0x3F) | 0x80);
-                            destination[3] = (byte)((codepoint & 0x3F) | 0x80);
-                            destination = destination.Slice(4);
-                            source = source.Slice(2);
-                            continue;
+
+                            // unpaired high/low surrogate
+                            if (!allowUnpairedSurrogates)
+                            {
+                                c = ReplacementCharacter;
+                            }
                         }
 
-                        // unpaired high/low surrogate
-                        if (!allowUnpairedSurrogates)
+                        if (dstEnd - dst < 3)
                         {
-                            c = ReplacementCharacter;
+                            break;
                         }
+                        *dst++ = (byte)((c >> 12) | 0xE0);
+                        *dst++ = (byte)(((c >> 6) & 0x3F) | 0x80);
+                        *dst++ = (byte)((c & 0x3F) | 0x80);
                     }
-
-                    if (destination.Length < 3)
-                    {
-                        break;
-                    }
-                    destination[0] = (byte)((c >> 12) | 0xE0);
-                    destination[1] = (byte)(((c >> 6) & 0x3F) | 0x80);
-                    destination[2] = (byte)((c & 0x3F) | 0x80);
-                    destination = destination.Slice(3);
-                    source = source.Slice(1);
                 }
             }
 
