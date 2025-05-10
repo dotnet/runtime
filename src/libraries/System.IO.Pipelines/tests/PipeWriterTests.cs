@@ -294,6 +294,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public async Task CompleteWithLargeWriteThrows()
         {
             var completeDelay = TimeSpan.FromMilliseconds(10);
