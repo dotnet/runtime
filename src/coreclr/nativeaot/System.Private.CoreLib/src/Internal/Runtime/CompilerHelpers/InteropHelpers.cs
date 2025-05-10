@@ -292,7 +292,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             string moduleName = GetModuleName(pCell);
 
-            uint dllImportSearchPath = 0;
+            uint dllImportSearchPath = (uint)DllImportSearchPath.AssemblyDirectory;
             bool hasDllImportSearchPath = (pCell->DllImportSearchPathAndCookie & InteropDataConstants.HasDllImportSearchPath) != 0;
             if (hasDllImportSearchPath)
             {

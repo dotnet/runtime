@@ -120,6 +120,18 @@ namespace
             return pal::pal_utf8string(get_filename_without_ext(context->application), value_buffer, value_buffer_size);
         }
 
+        if (::strcmp(key, HOST_PROPERTY_BUNDLE_EXTRACTION_PATH) == 0)
+        {
+            if (!bundle::info_t::is_single_file_bundle())
+                return -1;
+
+            auto bundle = bundle::runner_t::app();
+            if (bundle->extraction_path().empty())
+                return -1;
+
+            return pal::pal_utf8string(bundle->extraction_path(), value_buffer, value_buffer_size);
+        }
+
         // Properties from runtime initialization
         pal::string_t key_str;
         if (pal::clr_palstring(key, &key_str))
