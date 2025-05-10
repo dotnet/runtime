@@ -26,7 +26,6 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
-  <Import Project="$(RepositoryEngineeringDir)python.targets" />
   <Import Project="$(RepositoryEngineeringDir)generatorProjects.targets" Condition="'$(IsGeneratorProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'" />
