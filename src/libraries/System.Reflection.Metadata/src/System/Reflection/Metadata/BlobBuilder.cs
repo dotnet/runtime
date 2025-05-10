@@ -602,6 +602,8 @@ namespace System.Reflection.Metadata
                 return;
             }
 
+            OnLinking(this, suffix);
+
             bool isEmpty = Count == 0;
 
             // swap buffers of the heads:
@@ -613,8 +615,6 @@ namespace System.Reflection.Metadata
             suffix._length = FrozenLength; // suffix is not a head anymore
             _buffer = suffixBuffer;
             _length = suffixLength;
-
-            OnLinking(this, suffix);
 
             PreviousLength += suffix.Length + suffixPreviousLength;
 
