@@ -243,7 +243,7 @@ PhaseStatus ObjectAllocator::DoPhase()
 
     if (didStackAllocate)
     {
-        // printf("*** Stack allocations in 0x%08X\n", comp->info.compMethodHash());
+        printf("*** Stack allocations in 0x%08X\n", comp->info.compMethodHash());
         assert(enabled);
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
@@ -1920,7 +1920,6 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 
             case GT_STOREIND:
             case GT_STORE_BLK:
-            case GT_BLK:
             {
                 GenTree* const addr = parent->AsIndir()->Addr();
                 if (tree == addr)
@@ -1939,11 +1938,11 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 
                 // Is this a store to a field of a local struct...?
                 //
-                if (parent->OperIs(GT_STOREIND))
+                // if (parent->OperIs(GT_STOREIND))
                 {
                     // Are we storing to a local field?
                     //
-                    if (addr->OperIs(GT_FIELD_ADDR, GT_INDEX_ADDR))
+                    if (addr->OperIs(GT_FIELD_ADDR, GT_INDEX_ADDR, GT_ADD))
                     {
                         // Simple check for which local.
                         //
@@ -2009,6 +2008,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
             }
 
             case GT_IND:
+            case GT_BLK:
             {
                 // Does this load a type we're tracking?
                 //
