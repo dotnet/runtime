@@ -107,8 +107,7 @@ namespace
 
     void AppendTypeToSignature(
         SigBuilder& sig,
-        TypeHandle th,
-        Instantiation inst)
+        TypeHandle th)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(!th.IsNull());
@@ -117,6 +116,52 @@ namespace
         // Building the signature follows details defined in ECMA-335 - II.23.2.12
         //
 
+        CorElementType elemType = th.GetSignatureCorElementType();
+        if (CorIsPrimitiveType(elemType))
+        {
+            sig.AppendElementType(elemType);
+            return;
+        }
+
+        if (th.IsGenericVariable())
+        {
+            TypeVarTypeDesc* typeVar = th.AsGenericVariable();
+            sig.AppendElementType(typeVar->GetInternalCorElementType());
+            sig.AppendData(typeVar->GetIndex());
+            return;
+        }
+
+        if (th.IsArray())
+        {
+            // Append the array element type.
+            sig.AppendElementType(elemType);
+            TypeHandle elemTypeHandle = th.GetArrayElementTypeHandle();
+            AppendTypeToSignature(sig, elemTypeHandle);
+
+            // Append ArrayShape for MD array
+            // See II.23.2.13 ArrayShape
+            if (elemType == ELEMENT_TYPE_ARRAY)
+            {
+                DWORD rank = th.GetRank();
+                sig.AppendData(rank);
+                sig.AppendData(0); // Append the number of sizes.
+
+                // Roslyn always emits the lower bounds of 0 for each dimension.
+                // In order to match the signature, we also need to append the number
+                // of lower bounds for each dimension.
+                // We can emit 0 for each lower bound, since UnsafeAccessors is only
+                // supported in C# and C# doesn't support lower bounds.
+                sig.AppendData(rank);
+                for (DWORD i = 0; i < rank; i++)
+                    sig.AppendData(0);
+            }
+            return;
+        }
+
+        // Extract the instantiation from parameterized type.
+        MethodTable* pMT = th.GetMethodTableOfRootTypeParam();
+        Instantiation inst = pMT->GetInstantiation();
+
         // If we have any generic variables, mark as ELEMENT_TYPE_GENERICINST.
         BOOL hasGenericVariables = !inst.IsEmpty();
         if (hasGenericVariables)
@@ -124,7 +169,7 @@ namespace
             sig.AppendElementType(ELEMENT_TYPE_GENERICINST);
 
             // Embed the generic type definition in the signature.
-            th = TypeHandle{ th.GetMethodTableOfRootTypeParam()->GetTypicalMethodTable() };
+            th = TypeHandle{ pMT->GetTypicalMethodTable() };
             _ASSERTE(th.IsGenericTypeDefinition());
         }
 
@@ -139,22 +184,7 @@ namespace
             sig.AppendData(inst.GetNumArgs());
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
-                TypeHandle& instTh = inst[i];
-                if (instTh.IsGenericVariable())
-                {
-                    TypeVarTypeDesc* typeVar = instTh.AsGenericVariable();
-                    sig.AppendElementType(typeVar->GetInternalCorElementType());
-                    sig.AppendData(typeVar->GetIndex());
-                }
-                else if (CorIsPrimitiveType(instTh.GetSignatureCorElementType()))
-                {
-                    sig.AppendElementType(instTh.GetSignatureCorElementType());
-                }
-                else
-                {
-                    sig.AppendElementType(ELEMENT_TYPE_INTERNAL);
-                    sig.AppendPointer(instTh.AsPtr());
-                }
+                AppendTypeToSignature(sig, inst[i]);
             }
         }
     }
@@ -251,11 +281,8 @@ namespace
             if (!isValid)
                 ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSORTYPE);
 
-            // Extract the new target from the parameterized type.
-            Instantiation inst = newTypeMaybe.GetMethodTableOfRootTypeParam()->GetInstantiation();
-
             // Append the new type to the signature.
-            AppendTypeToSignature(newSig, newTypeMaybe, inst);
+            AppendTypeToSignature(newSig, newTypeMaybe);
         }
 
         // Create a copy of the new signature and store it on the context.
@@ -777,7 +804,7 @@ namespace
         else
         {
             SigBuilder sigBuilder;
-            AppendTypeToSignature(sigBuilder, th, th.GetInstantiation());
+            AppendTypeToSignature(sigBuilder, th);
 
             uint32_t sigLen;
             PCCOR_SIGNATURE sig = (PCCOR_SIGNATURE)sigBuilder.GetSignature((DWORD*)&sigLen);

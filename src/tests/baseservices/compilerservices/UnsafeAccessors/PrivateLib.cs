@@ -42,5 +42,9 @@ namespace PrivateLib
         Type M6<X>(Dictionary<X, int> a) => typeof(X);
 
         Type M7<Y>(Dictionary<int, Y> a) => typeof(Y);
+
+        Z M8<Z>() where Z : class, new() => new Z();
+
+        bool M9<Z>(List<List<Z>> a, List<Z[,,]> b, List<List<T[,][]>> c) => true;
     }
 }

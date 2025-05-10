@@ -57,12 +57,14 @@ class TargetClass
     private Type M_C1Array(C1[,,] c) => typeof(C1[,,]);
     private Type M_C1Array(C1[][] c) => typeof(C1[][]);
     private Type M_C1Array(C1[][][] c) => typeof(C1[][][]);
+    private Type M_C1Array(C1[][,] c) => typeof(C1[][,]);
 
     private Type M_S1Array(S1[] c) => typeof(S1[]);
     private Type M_S1Array(S1[,] c) => typeof(S1[,]);
     private Type M_S1Array(S1[,,] c) => typeof(S1[,,]);
     private Type M_S1Array(S1[][] c) => typeof(S1[][]);
     private Type M_S1Array(S1[][][] c) => typeof(S1[][][]);
+    private Type M_S1Array(S1[][,] c) => typeof(S1[][,]);
 
 #pragma warning disable CS8500
     private unsafe void M_C1Pointer(C1* c) { }
@@ -161,12 +163,14 @@ public static unsafe class UnsafeAccessorsTestsTypes
         Assert.Equal(typeof(C1[,,]), CallM_C1MDArray3(tgt, new C1[1,1,1]));
         Assert.Equal(typeof(C1[][]), CallM_C1JaggedArray2(tgt, new C1[0][]));
         Assert.Equal(typeof(C1[][][]), CallM_C1JaggedArray3(tgt, new C1[0][][]));
+        Assert.Equal(typeof(C1[][,]), CallM_C1MixedArrays(tgt, new C1[0][,]));
 
         Assert.Equal(typeof(S1[]), CallM_S1Array(tgt, Array.Empty<S1>()));
         Assert.Equal(typeof(S1[,]), CallM_S1MDArray2(tgt, new S1[1,1]));
         Assert.Equal(typeof(S1[,,]), CallM_S1MDArray3(tgt, new S1[1,1,1]));
         Assert.Equal(typeof(S1[][]), CallM_S1JaggedArray2(tgt, new S1[0][]));
         Assert.Equal(typeof(S1[][][]), CallM_S1JaggedArray3(tgt, new S1[0][][]));
+        Assert.Equal(typeof(S1[][,]), CallM_S1MixedArrays(tgt, new S1[0][,]));
 
         CallM_C1Pointer(tgt, null);
 
@@ -208,6 +212,9 @@ public static unsafe class UnsafeAccessorsTestsTypes
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Array")]
         extern static Type CallM_C1JaggedArray3(TargetClass tgt, [UnsafeAccessorType("C1[][][]")] object a);
 
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Array")]
+        extern static Type CallM_C1MixedArrays(TargetClass tgt, [UnsafeAccessorType("C1[,][]")] object a);
+
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_S1Array")]
         extern static Type CallM_S1Array(TargetClass tgt, [UnsafeAccessorType("S1[]")] object a);
 
@@ -222,6 +229,9 @@ public static unsafe class UnsafeAccessorsTestsTypes
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_S1Array")]
         extern static Type CallM_S1JaggedArray3(TargetClass tgt, [UnsafeAccessorType("S1[][][]")] object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_S1Array")]
+        extern static Type CallM_S1MixedArrays(TargetClass tgt, [UnsafeAccessorType("S1[,][]")] object a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M_C1Pointer")]
         extern static void CallM_C1Pointer(TargetClass tgt, [UnsafeAccessorType("C1*")] void* a);
@@ -392,10 +402,25 @@ public static unsafe class UnsafeAccessorsTestsTypes
             object a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M7")]
-        public extern static Type CallGenericClassM7<X>(
+        public extern static Type CallGenericClassM7<Y>(
             [UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object tgt,
             [UnsafeAccessorType("System.Collections.Generic.Dictionary`2[[System.Int32],[!!0]]")]
             object a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M8")]
+        [return: UnsafeAccessorType("!!0")]
+        public extern static object CallGenericClassM8<Z>(
+            [UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object tgt) where Z : class, new();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M9")]
+        public extern static bool CallGenericClassM9<A>(
+            [UnsafeAccessorType("PrivateLib.GenericClass`1[[!0]], PrivateLib")] object tgt,
+            [UnsafeAccessorType("System.Collections.Generic.List`1[[System.Collections.Generic.List`1[[!!0]]]]")]
+            object a,
+            [UnsafeAccessorType("System.Collections.Generic.List`1[[!!0[,,]]]")]
+            object b,
+            [UnsafeAccessorType("System.Collections.Generic.List`1[[System.Collections.Generic.List`1[[!0[][,]]]]]")]
+            object c);
     }
 
     // Skip validating error cases on Mono runtime
@@ -507,6 +532,7 @@ public static unsafe class UnsafeAccessorsTestsTypes
             Assert.True(Accessors<int>.CallGenericClassM5<string, int>(genericClass, null, null, null, null));
             Assert.Equal(typeof(int), Accessors<int>.CallGenericClassM6<int>(genericClass, null));
             Assert.Equal(typeof(int), Accessors<int>.CallGenericClassM7<int>(genericClass, null));
+            Assert.True(Accessors<int>.CallGenericClassM9<string>(genericClass, null, null, null));
         }
 
         {
@@ -525,6 +551,8 @@ public static unsafe class UnsafeAccessorsTestsTypes
             Assert.True(Accessors<string>.CallGenericClassM5<int, string>(genericClass, null, null, null, null));
             Assert.Equal(typeof(string), Accessors<string>.CallGenericClassM6<string>(genericClass, null));
             Assert.Equal(typeof(string), Accessors<string>.CallGenericClassM7<string>(genericClass, null));
+            Assert.Equal(typeof(C1), Accessors<string>.CallGenericClassM8<C1>(genericClass).GetType());
+            Assert.True(Accessors<string>.CallGenericClassM9<int>(genericClass, null, null, null));
         }
     }
 
