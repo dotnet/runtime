@@ -57,5 +57,11 @@
     <type fullname="System.Runtime.Intrinsics.Arm.Sve/Arm64">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.Sve2">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.Sve2/Arm64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
   </assembly>
 </linker>
