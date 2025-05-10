@@ -74,7 +74,7 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         je      CheckCardTable_Debug
         mov     r10, rdi
         shr     r10, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
-        PREPARE_EXTERNAL_VAR g_sw_ww_table, r11
+        PREPARE_EXTERNAL_VAR g_write_watch_table, r11
         add     r10, qword ptr [r11]
         cmp     byte ptr [r10], 0x0
         jne     CheckCardTable_Debug

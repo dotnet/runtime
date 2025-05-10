@@ -23,7 +23,7 @@ class Thread;
 
 BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord);
 BOOL IsIPinVirtualStub(PCODE f_IP);
-bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
+bool IsIPInMarkedJitHelper(PCODE uControlPc);
 
 BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable);
 

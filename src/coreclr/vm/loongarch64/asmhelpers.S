@@ -63,7 +63,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    la.local  $a2, g_sw_ww_table
+    la.local  $a2, g_write_watch_table
     ld.d  $a2, $a2, 0
 #endif
 

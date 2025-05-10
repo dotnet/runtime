@@ -13,7 +13,7 @@
     option  casemap:none
     .code
 
-include AsmMacros.inc
+include AsmMacros_Shared.inc
 
 ;; Macro used to copy contents of newly updated GC heap locations to a shadow copy of the heap. This is used
 ;; during garbage collections to verify that object references where never written to the heap without using a
@@ -104,6 +104,7 @@ FASTCALL_FUNC RhpAssignRef&REFREG&, 8
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <EDX>
     ALTERNATE_ENTRY RhpAssignRef
+    ALTERNATE_ENTRY @RhpAssignRef@8
     ALTERNATE_ENTRY _RhpAssignRefAVLocation
     endif
 
@@ -202,6 +203,7 @@ FASTCALL_FUNC RhpCheckedAssignRef&REFREG&, 8
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <EDX>
     ALTERNATE_ENTRY RhpCheckedAssignRef
+    ALTERNATE_ENTRY @RhpCheckedAssignRef@8
     ALTERNATE_ENTRY _RhpCheckedAssignRefAVLocation
     endif
 
