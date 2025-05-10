@@ -4877,7 +4877,7 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
 //
 GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    assert(tree->OperIsIndir());
+    assert(tree->OperIsIndirOrArrMetaData());
 
     bool updated = optNonNullAssertionProp_Ind(assertions, tree);
     if (tree->OperIs(GT_STOREIND))
@@ -5062,14 +5062,14 @@ GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, Gen
 //
 bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir)
 {
-    assert(indir->OperIsIndir());
+    assert(indir->OperIsIndirOrArrMetaData());
 
     if ((indir->gtFlags & GTF_EXCEPT) == 0)
     {
         return false;
     }
 
-    if (optAssertionIsNonNull(indir->AsIndir()->Addr(), assertions))
+    if (optAssertionIsNonNull(indir->GetIndirOrArrMetaDataAddr(), assertions))
     {
         JITDUMP("Non-null assertion prop for indirection [%06d] in " FMT_BB ":\n", dspTreeID(indir), compCurBB->bbNum);
 
@@ -5550,6 +5550,17 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_STOREIND:
         case GT_NULLCHECK:
             return optAssertionProp_Ind(assertions, tree, stmt);
+
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
+            if (!optLocalAssertionProp)
+            {
+                // Quirk: if we do it in the local prop, we might confuse CSE (mismatched exception sets)
+                // Until that is fixed, we have this quirk here for better diffs.
+                return optAssertionProp_Ind(assertions, tree, stmt);
+            }
+            return nullptr;
 
         case GT_BOUNDS_CHECK:
             return optAssertionProp_BndsChk(assertions, tree, stmt);
@@ -6466,7 +6477,7 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
     {
         newTree = optNonNullAssertionProp_Call(empty, tree->AsCall());
     }
-    else if (tree->OperIsIndir())
+    else if (tree->OperIsIndirOrArrMetaData())
     {
         newTree = optAssertionProp_Ind(empty, tree, stmt);
     }
