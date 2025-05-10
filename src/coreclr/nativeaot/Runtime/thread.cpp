@@ -30,6 +30,7 @@
 #include "RhConfig.h"
 #include "GcEnum.h"
 #include "NativeContext.h"
+#include "minipal/time.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -40,7 +41,7 @@ static Thread* g_RuntimeInitializingThread;
 
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
 {
-    minipal_xoshiro128pp_init(&random_state, (uint32_t)PalGetTickCount64());
+    minipal_xoshiro128pp_init(&random_state, (uint32_t)minipal_lowres_ticks());
 }
 
 thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();

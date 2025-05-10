@@ -1012,7 +1012,7 @@ void ETW::TypeSystemLog::SendObjectAllocatedEvent(Object * pObject)
     }
 
     SIZE_T nTotalSizeForTypeSample = size;
-    DWORD dwTickNow = GetTickCount();
+    DWORD dwTickNow = (DWORD)minipal_lowres_ticks();
     DWORD dwObjectCountForTypeSample = 0;
 
     // Get stats for type

@@ -141,7 +141,7 @@ us anything over what we already have."
     }
 
      /* Register the start time */
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
     testStats.relationId   = RELATION_ID;
     testStats.processCount = PROCESS_COUNT;
     testStats.threadCount  = THREAD_COUNT;

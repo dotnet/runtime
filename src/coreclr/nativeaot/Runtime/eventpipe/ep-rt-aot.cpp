@@ -18,6 +18,7 @@
 #endif
 
 #include <minipal/random.h>
+#include <minipal/time.h>
 
 #include "gcenv.h"
 #include "thread.h"
@@ -415,14 +416,14 @@ int64_t
 ep_rt_aot_perf_counter_query (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (int64_t)PalQueryPerformanceCounter();
+    return minipal_hires_ticks();
 }
 
 int64_t
 ep_rt_aot_perf_frequency_query (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (int64_t)PalQueryPerformanceFrequency();
+    return minipal_hires_tick_frequency();
 }
 
 int64_t

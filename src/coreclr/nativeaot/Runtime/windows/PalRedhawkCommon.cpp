@@ -102,8 +102,3 @@ REDHAWK_PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOu
     *pModuleNameOut = NULL;
     return 0;
 }
-
-REDHAWK_PALEXPORT uint64_t REDHAWK_PALAPI PalGetTickCount64()
-{
-    return GetTickCount64();
-}

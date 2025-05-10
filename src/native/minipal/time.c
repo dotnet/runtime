@@ -23,11 +23,17 @@ int64_t minipal_hires_tick_frequency()
     return ts.QuadPart;
 }
 
+int64_t minipal_lowres_ticks()
+{
+    return GetTickCount64();
+}
+
 #else // HOST_WINDOWS
 
 #include "minipalconfig.h"
 
-#include <time.h> // nanosleep
+#include <time.h>
+#include <sys/time.h>
 #include <errno.h>
 
 inline static void YieldProcessor(void);
@@ -56,6 +62,9 @@ inline static void YieldProcessor(void)
 }
 
 #define tccSecondsToNanoSeconds 1000000000      // 10^9
+#define tccSecondsToMillieSeconds 1000          // 10^3
+#define tccMillieSecondsToNanoSeconds 1000000   // 10^6
+#define tccMillieSecondsToMicroSeconds 1000     // 10^3
 int64_t minipal_hires_tick_frequency(void)
 {
     return tccSecondsToNanoSeconds;
@@ -74,6 +83,54 @@ int64_t minipal_hires_ticks(void)
     }
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
+#endif
+}
+
+int64_t minipal_lowres_ticks()
+{
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMillieSecondsToNanoSeconds);
+#elif HAVE_CLOCK_MONOTONIC
+    struct timespec ts;
+
+#if HAVE_CLOCK_MONOTONIC_COARSE
+    // CLOCK_MONOTONIC_COARSE has enough precision for GetTickCount but
+    // doesn't have the same overhead as CLOCK_MONOTONIC. This allows
+    // overall higher throughput. See dotnet/coreclr#2257 for more details.
+
+    const clockid_t clockType = CLOCK_MONOTONIC_COARSE;
+#else
+    const clockid_t clockType = CLOCK_MONOTONIC;
+#endif
+
+    int result = clock_gettime(clockType, &ts);
+    if (result != 0)
+    {
+#if HAVE_CLOCK_MONOTONIC_COARSE
+        assert("clock_gettime(CLOCK_MONOTONIC_COARSE) failed");
+#else
+        assert("clock_gettime(CLOCK_MONOTONIC) failed");
+#endif
+    }
+
+    return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToMillieSeconds)) + ((int64_t)(ts.tv_nsec) / (int64_t)(tccMillieSecondsToNanoSeconds));
+#elif HAVE_GETHRTIME
+    return (int64_t)(gethrtime () / tccMillieSecondsToNanoSeconds);
+#elif HAVE_READ_REAL_TIME
+    timebasestruct_t tb;
+    read_real_time (&tb, TIMEBASE_SZ);
+    if (time_base_to_time (&tb, TIMEBASE_SZ) != 0)
+    {
+        assert(!"time_base_to_time() failed");
+    }
+    return (tb.tb_high * tccSecondsToMillieSeconds) + (tb.tb_low / tccMillieSecondsToNanoSeconds);
+#else
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL) != 0)
+    {
+        assert(!"gettimeofday() failed\n");
+    }
+    return ((int64_t)(tv.tv_sec) * (int64_t)(tccSecondsToMillieSeconds)) + ((int64_t)(tv.tv_usec) / (int64_t)(tccMillieSecondsToMicroSeconds));
 #endif
 }
 

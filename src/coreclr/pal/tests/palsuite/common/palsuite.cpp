@@ -12,6 +12,7 @@
 
 
 #include "palsuite.h"
+#include "minipal/time.h"
 
 const char* szTextFile = "text.txt";
 
@@ -53,13 +54,7 @@ char* convertC(const WCHAR * wString)
 
 UINT64 GetHighPrecisionTimeStamp(LARGE_INTEGER performanceFrequency)
 {
-    LARGE_INTEGER ts;
-    if (!QueryPerformanceCounter(&ts))
-    {
-        Fail("ERROR: Unable to query performance counter!\n");      
-    }
-    
-    return ts.QuadPart / (performanceFrequency.QuadPart / 1000);    
+    return (UINT64)minipal_hires_ticks();
 }
 
 static const char* rgchPathDelim = "/";
