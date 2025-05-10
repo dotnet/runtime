@@ -658,14 +658,15 @@ namespace System.Reflection.Metadata
         /// Returns a buffer to write new data into. You must call <see cref="AddLength"/> afterwards with the
         /// number of bytes written.
         /// </summary>
+        /// <param name="minBytes">The minimum amount of bytes to return.</param>
         /// <remarks>
         /// Alongside <see cref="AddLength"/>, this method provides an API similar to <see cref="Buffers.IBufferWriter{T}"/>.
         /// </remarks>
-        private ArraySegment<byte> GetWriteBuffer()
+        private ArraySegment<byte> GetWriteBuffer(int minBytes = 1)
         {
-            if (FreeBytes == 0)
+            if (FreeBytes < minBytes)
             {
-                Expand(Math.Min(Count, _maxChunkSize));
+                Expand(Math.Max(minBytes, Math.Min(Count, _maxChunkSize)));
             }
             return new ArraySegment<byte>(_buffer, Length, FreeBytes);
         }
@@ -1220,7 +1221,8 @@ namespace System.Reflection.Metadata
 
             while (!str.IsEmpty)
             {
-                Span<byte> writeBuffer = GetWriteBuffer().AsSpan();
+                // Request at least four bytes to guarantee writing at least one character per iteration.
+                Span<byte> writeBuffer = GetWriteBuffer(4).AsSpan();
                 BlobUtilities.WriteUtf8(str, writeBuffer, out int charsConsumed, out int bytesWritten, allowUnpairedSurrogates);
                 AddLength(bytesWritten);
                 str = str.Slice(charsConsumed);
