@@ -243,7 +243,9 @@ PhaseStatus ObjectAllocator::DoPhase()
 
     if (didStackAllocate)
     {
+#ifdef DEBUG
         printf("*** Stack allocations in 0x%08X\n", comp->info.compMethodHash());
+#endif
         assert(enabled);
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
