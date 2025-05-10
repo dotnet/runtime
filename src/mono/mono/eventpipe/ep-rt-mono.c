@@ -13,6 +13,7 @@
 #include <mono/metadata/profiler.h>
 #include <mono/mini/mini-runtime.h>
 #include <minipal/getexepath.h>
+#include <minipal/time.h>
 #include <runtime_version.h>
 #include <clretwallmain.h>
 
@@ -329,27 +330,19 @@ ep_rt_mono_thread_exited (void)
 	}
 }
 
-#ifdef HOST_WIN32
 int64_t
 ep_rt_mono_perf_counter_query (void)
 {
-	LARGE_INTEGER value;
-	if (QueryPerformanceCounter (&value))
-		return (int64_t)value.QuadPart;
-	else
-		return 0;
+	return minipal_hires_ticks();
 }
 
 int64_t
 ep_rt_mono_perf_frequency_query (void)
 {
-	LARGE_INTEGER value;
-	if (QueryPerformanceFrequency (&value))
-		return (int64_t)value.QuadPart;
-	else
-		return 0;
+	return minipal_hires_tick_frequency();
 }
 
+#ifdef HOST_WIN32
 void
 ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 {
@@ -429,46 +422,6 @@ time_base_info_lazy_init (void)
 		memset (&_ep_rt_mono_time_base_info, 0, sizeof (_ep_rt_mono_time_base_info));
 }
 #endif
-
-int64_t
-ep_rt_mono_perf_counter_query (void)
-{
-#if HAVE_MACH_ABSOLUTE_TIME
-	return (int64_t)mach_absolute_time ();
-#elif HAVE_CLOCK_MONOTONIC
-	struct timespec ts;
-	int result = clock_gettime (CLOCK_MONOTONIC, &ts);
-	if (result == 0)
-		return ((int64_t)(ts.tv_sec) * (int64_t)(SECS_TO_NS)) + (int64_t)(ts.tv_nsec);
-#else
-	#error "ep_rt_mono_perf_counter_get requires either mach_absolute_time () or clock_gettime (CLOCK_MONOTONIC) to be supported."
-#endif
-	return 0;
-}
-
-int64_t
-ep_rt_mono_perf_frequency_query (void)
-{
-#if HAVE_MACH_ABSOLUTE_TIME
-	// (numer / denom) gives you the nanoseconds per tick, so the below code
-	// computes the number of ticks per second. We explicitly do the multiplication
-	// first in order to help minimize the error that is produced by integer division.
-	mono_lazy_initialize (&_ep_rt_mono_time_base_info_init, time_base_info_lazy_init);
-	if (_ep_rt_mono_time_base_info.denom == 0 || _ep_rt_mono_time_base_info.numer == 0)
-		return 0;
-	return ((int64_t)(SECS_TO_NS) * (int64_t)(_ep_rt_mono_time_base_info.denom)) / (int64_t)(_ep_rt_mono_time_base_info.numer);
-#elif HAVE_CLOCK_MONOTONIC
-	// clock_gettime () returns a result in terms of nanoseconds rather than a count. This
-	// means that we need to either always scale the result by the actual resolution (to
-	// get a count) or we need to say the resolution is in terms of nanoseconds. We prefer
-	// the latter since it allows the highest throughput and should minimize error propagated
-	// to the user.
-	return (int64_t)(SECS_TO_NS);
-#else
-	#error "ep_rt_mono_perf_frequency_query requires either mach_absolute_time () or clock_gettime (CLOCK_MONOTONIC) to be supported."
-#endif
-	return 0;
-}
 
 void
 ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
