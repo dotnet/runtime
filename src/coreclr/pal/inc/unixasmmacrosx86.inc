@@ -24,6 +24,12 @@ C_FUNC(\Name):
 C_FUNC(\Name):
 .endm
 
+.macro ALTERNATE_ENTRY Name
+        .global C_FUNC(\Name)
+        .type \Name, %function
+C_FUNC(\Name):
+.endm
+
 .macro LEAF_END Name, Section
         .size \Name, .-\Name
         .cfi_endproc
@@ -107,6 +113,58 @@ C_FUNC(\Name\()_End):
     addl  $_GLOBAL_OFFSET_TABLE_ + (1b - 0b), %\Reg
     movl  C_FUNC(\Name)@GOT(%\Reg), %\Reg
 .intel_syntax noprefix
+.endm
+
+.macro PUSH_COOP_PINVOKE_FRAME Target
+    // push ebp-frame
+    PROLOG_BEG
+
+    // save CalleeSavedRegisters
+    PROLOG_PUSH ebx
+    PROLOG_PUSH esi
+    PROLOG_PUSH edi
+
+    // push ArgumentRegisters
+    PROLOG_PUSH ecx
+    PROLOG_PUSH edx
+
+    // set frame pointer
+    PROLOG_END
+
+    mov \Target, esp
+
+    // alignment
+    sub esp, 4
+.endm
+
+// Inlined version of GetThreadEEAllocContext.
+.macro INLINE_GET_ALLOC_CONTEXT
+    push  ecx
+    push  eax
+    call  C_FUNC(_ZTW23t_runtime_thread_locals)
+    lea   edx, [eax + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
+    pop   eax
+    pop   ecx
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+    // alignment
+    add esp, 4
+
+    // restore stack pointer
+    EPILOG_BEG
+
+    // pop ArgumentRegisters
+    EPILOG_POP edx
+    EPILOG_POP ecx
+
+    // pop CalleeSavedRegisters
+    EPILOG_POP edi
+    EPILOG_POP esi
+    EPILOG_POP ebx
+
+    // pop ebp-frame
+    EPILOG_END
 .endm
 
 .macro CHECK_STACK_ALIGNMENT

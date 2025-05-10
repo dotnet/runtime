@@ -2,7 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .intel_syntax noprefix
-#include <unixasmmacros.inc>
+#include "AsmMacros_Shared.h"
+
+#if defined(__APPLE__)
+    // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
+    // Fix, but adding an empty, unused method
+    LEAF_ENTRY RhpWriteBarriersDoNotFailToBuild, _TEXT
+       ret
+    LEAF_END RhpWriteBarriersDoNotFailToBuild, _TEXT
+#endif
 
 #ifdef WRITE_BARRIER_CHECK
 
@@ -261,6 +269,14 @@ LEAF_END RhpCheckedXchg, _TEXT
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
 ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
     mov     rcx, [rsi]
+#ifdef TARGET_APPLE
+// Apple's linker has issues which break unwind info if
+// an ALTERNATE_ENTRY is present in the middle of a function
+    jmp     C_FUNC(RhpByRefAssignRef2)
+LEAF_END RhpByRefAssignRef, _TEXT
+
+LEAF_ENTRY RhpByRefAssignRef2, _TEXT
+#endif
 ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
     mov     [rdi], rcx
 
@@ -325,4 +341,8 @@ LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired):
     add     rdi, 0x8
     add     rsi, 0x8
     ret
+#ifdef TARGET_APPLE
+LEAF_END RhpByRefAssignRef2, _TEXT
+#else
 LEAF_END RhpByRefAssignRef, _TEXT
+#endif

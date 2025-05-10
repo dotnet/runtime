@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <unixasmmacros.inc>
+#include "AsmMacros_Shared.h"
 
 // Macro used to copy contents of newly updated GC heap locations to a shadow copy of the heap. This is used
 // during garbage collections to verify that object references were never written to the heap without using a

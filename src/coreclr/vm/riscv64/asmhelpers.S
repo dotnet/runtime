@@ -65,7 +65,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    ld   a4, g_sw_ww_table
+    ld   a4, g_write_watch_table
 #endif
 
     ld   a5, g_ephemeral_low
