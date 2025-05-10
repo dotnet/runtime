@@ -163,6 +163,7 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
+            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true /p:BuildTestsOnHelix=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
             buildAllTestsAsStandalone: true
