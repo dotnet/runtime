@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -37,10 +36,8 @@ namespace System.Security.Cryptography.Pkcs
                 _expectedDigest = expectedDigest;
             }
 
-            protected override bool VerifyKeyType(AsymmetricAlgorithm key)
-            {
-                return (key as DSA) != null;
-            }
+            protected override bool VerifyKeyType(object key) => key is DSA;
+            internal override bool NeedsHashedMessage => true;
 
             internal override bool VerifySignature(
 #if NET || NETSTANDARD2_1
@@ -51,10 +48,11 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] signature,
 #endif
                 string? digestAlgorithmOid,
-                HashAlgorithmName digestAlgorithmName,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
             {
+                HashAlgorithmName digestAlgorithmName = PkcsHelpers.GetDigestAlgorithm(digestAlgorithmOid, forVerification: true);
+
                 if (_expectedDigest != digestAlgorithmName)
                 {
                     throw new CryptographicException(
@@ -104,11 +102,11 @@ namespace System.Security.Cryptography.Pkcs
 #if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else
-                byte[] dataHash,
+                ReadOnlyMemory<byte> dataHash,
 #endif
-                HashAlgorithmName hashAlgorithmName,
+                string? hashAlgorithmOid,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm? key,
+                object? key,
                 bool silent,
                 [NotNullWhen(true)] out string? signatureAlgorithm,
                 [NotNullWhen(true)] out byte[]? signatureValue,
@@ -130,11 +128,14 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 string? oidValue =
-                    hashAlgorithmName == HashAlgorithmName.SHA1 ? Oids.DsaWithSha1 :
-                    hashAlgorithmName == HashAlgorithmName.SHA256 ? Oids.DsaWithSha256 :
-                    hashAlgorithmName == HashAlgorithmName.SHA384 ? Oids.DsaWithSha384 :
-                    hashAlgorithmName == HashAlgorithmName.SHA512 ? Oids.DsaWithSha512 :
-                    null;
+                    hashAlgorithmOid switch
+                    {
+                        Oids.Sha1 => Oids.DsaWithSha1,
+                        Oids.Sha256 => Oids.DsaWithSha256,
+                        Oids.Sha384 => Oids.DsaWithSha384,
+                        Oids.Sha512 => Oids.DsaWithSha512,
+                        _ => null
+                    };
 
                 if (oidValue == null)
                 {

@@ -142,6 +142,18 @@ namespace Internal.Cryptography
             };
         }
 
+        internal static IncrementalHash CreateIncrementalHash(HashAlgorithmName hashAlgorithmName)
+        {
+            try
+            {
+                return IncrementalHash.CreateHash(hashAlgorithmName);
+            }
+            catch (PlatformNotSupportedException ex)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName), ex);
+            }
+        }
+
         internal static CryptographicException CreateAlgorithmUnknownException(AsnWriter encodedId)
         {
 #if NET10_0_OR_GREATER
