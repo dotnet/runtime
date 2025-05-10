@@ -378,12 +378,6 @@ ep_rt_mono_system_timestamp_get (void)
 #include <sys/time.h>
 #endif // HAVE_SYS_TIME_H
 
-#if HAVE_MACH_ABSOLUTE_TIME
-#include <mach/mach_time.h>
-static mono_lazy_init_t _ep_rt_mono_time_base_info_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-static mach_timebase_info_data_t _ep_rt_mono_time_base_info = {0};
-#endif
-
 #ifdef HAVE_LOCALTIME_R
 #define HAVE_GMTIME_R 1
 #endif
@@ -402,25 +396,10 @@ static const int64_t MISECS_TO_NS = 1000;
 #endif
 
 static
-void
-time_base_info_lazy_init (void);
-
-static
 int64_t
 system_time_to_int64 (
 	time_t sec,
 	long nsec);
-
-#if HAVE_MACH_ABSOLUTE_TIME
-static
-void
-time_base_info_lazy_init (void)
-{
-	kern_return_t result = mach_timebase_info (&_ep_rt_mono_time_base_info);
-	if (result != KERN_SUCCESS)
-		memset (&_ep_rt_mono_time_base_info, 0, sizeof (_ep_rt_mono_time_base_info));
-}
-#endif
 
 void
 ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)

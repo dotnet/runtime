@@ -24,10 +24,6 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/atomic.h>
 
-#if HAVE_MACH_ABSOLUTE_TIME
-#include <mach/mach_time.h>
-#endif
-
 #define MTICKS_PER_SEC (10 * 1000 * 1000)
 
 typedef enum _TimeConversionConstants

@@ -266,9 +266,6 @@
 /* clockid_t */
 #cmakedefine HAVE_CLOCKID_T 1
 
-/* mach_absolute_time */
-#cmakedefine HAVE_MACH_ABSOLUTE_TIME 1
-
 /* Define to 1 if you have the `clock_nanosleep' function. */
 #cmakedefine HAVE_CLOCK_NANOSLEEP 1
 
