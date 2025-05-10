@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Internal;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Reflection.Metadata
 {
@@ -424,7 +425,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            WriteUTF8(str, 0, str.Length, allowUnpairedSurrogates: true, prependSize: true);
+            WriteUTF8(str, allowUnpairedSurrogates: true, prependSize: true);
         }
 
         /// <summary>
@@ -461,24 +462,22 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(value));
             }
 
-            WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
+            WriteUTF8(value, allowUnpairedSurrogates, prependSize: false);
         }
 
-        private unsafe void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
+        private void WriteUTF8(string str, bool allowUnpairedSurrogates, bool prependSize)
         {
-            fixed (char* strPtr = str)
+            if (prependSize)
             {
-                char* charPtr = strPtr + start;
-                int byteCount = BlobUtilities.GetUTF8ByteCount(charPtr, length);
-
-                if (prependSize)
-                {
-                    WriteCompressedInteger(byteCount);
-                }
-
-                int startOffset = Advance(byteCount);
-                _buffer.WriteUTF8(startOffset, charPtr, length, byteCount, allowUnpairedSurrogates);
+                WriteCompressedInteger(Encoding.UTF8.GetByteCount(str));
             }
+
+            BlobUtilities.WriteUtf8(str.AsSpan(), _buffer.AsSpan(_position), out int charsRead, out int bytesWritten, allowUnpairedSurrogates);
+            if (charsRead != str.Length)
+            {
+                Throw.OutOfBounds();
+            }
+            _position += bytesWritten;
         }
 
         /// <summary>
