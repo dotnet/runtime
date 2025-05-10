@@ -177,7 +177,10 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
 
                 case HeapIndex.Guid:
-                    _guidBuilder.Capacity = byteCount;
+                    if (byteCount > _guidBuilder.Count)
+                    {
+                        _guidBuilder.Capacity = byteCount;
+                    }
                     break;
 
                 case HeapIndex.String:
@@ -185,7 +188,10 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
 
                 case HeapIndex.UserString:
-                    _userStringBuilder.Capacity = byteCount;
+                    if (byteCount > _userStringBuilder.Count)
+                    {
+                        _userStringBuilder.Capacity = byteCount;
+                    }
                     break;
 
                 default:

@@ -33,8 +33,7 @@ namespace System.Reflection.Metadata.Tests
         public void Ctor_Errors()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilder(-1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilder(BlobBuilder.MinChunkSize - 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilderWithEvents(new byte[BlobBuilder.MinChunkSize - 1]));
+            Assert.Throws<ArgumentException>(() => new BlobBuilderWithEvents(new byte[BlobBuilder.MinChunkSize - 1]));
             Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilderWithEvents(new byte[1024], BlobBuilder.MinChunkSize - 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilderWithEvents(new byte[1024], -1));
         }
@@ -132,20 +131,23 @@ namespace System.Reflection.Metadata.Tests
             builder.WriteBytes(1, 100);
 
             var blobs = builder.GetBlobs().ToArray();
-            Assert.Equal(2, blobs.Length);
-            Assert.Equal(16, blobs[0].Length);
-            Assert.Equal(100 - 16, blobs[1].Length);
-
-            builder.WriteByte(1);
-
-            blobs = builder.GetBlobs().ToArray();
-            Assert.Equal(3, blobs.Length);
+            Assert.Equal(4, blobs.Length);
             Assert.Equal(16, blobs[0].Length);
             Assert.Equal(16, blobs[0].GetBytes().Array.Length);
-            Assert.Equal(100 - 16, blobs[1].Length);
-            Assert.Equal(100 - 16, blobs[1].GetBytes().Array.Length);
-            Assert.Equal(1, blobs[2].Length);
-            Assert.Equal(100 - 16, blobs[2].GetBytes().Array.Length);
+            Assert.Equal(16, blobs[1].Length);
+            Assert.Equal(16, blobs[1].GetBytes().Array.Length);
+            Assert.Equal(32, blobs[2].Length);
+            Assert.Equal(32, blobs[2].GetBytes().Array.Length);
+            Assert.Equal(36, blobs[3].Length);
+            Assert.Equal(64, blobs[3].GetBytes().Array.Length);
+
+            builder.WriteBytes(1, 64 - 36 + 1);
+
+            blobs = builder.GetBlobs().ToArray();
+            Assert.Equal(5, blobs.Length);
+            Assert.Equal(64, blobs[3].Length);
+            Assert.Equal(1, blobs[4].Length);
+            Assert.Equal(128, blobs[4].GetBytes().Array.Length);
 
             builder.Clear();
 
@@ -164,18 +166,13 @@ namespace System.Reflection.Metadata.Tests
             {
                 var builder = new BlobBuilder(16);
 
-                for (int i = 0; i < j; i++)
+                builder.WriteBytes(0, 16);
+                for (int i = 0; i < j - 1; i++)
                 {
-                    builder.WriteBytes((byte)i, 16);
+                    builder.WriteBytes((byte)i, 16 << i);
                 }
 
-                int n = 0;
-                foreach (var chunk in builder.GetChunks())
-                {
-                    n++;
-                }
-
-                Assert.Equal(j, n);
+                Assert.Equal(j, builder.GetChunks().Count());
 
                 var chunks = new HashSet<BlobBuilder>();
                 foreach (var chunk in builder.GetChunks())
@@ -1123,24 +1120,17 @@ namespace System.Reflection.Metadata.Tests
         public void SetCapacityGetsCalled()
         {
             var b = new BlobBuilderWithEvents();
-            bool calledPreviously = false;
-            b.SettingCapacity += SettingCapacityHandler;
-
-            b.ReserveBytes(1024);
-            Assert.True(calledPreviously);
-
-            b = new BlobBuilderWithEvents();
-            calledPreviously = false;
+            bool called = false;
             b.SettingCapacity += SettingCapacityHandler;
 
             b.Capacity = 1024;
-            Assert.True(calledPreviously);
+            Assert.True(called);
 
             void SettingCapacityHandler(int c)
             {
                 Assert.Equal(1024, c);
-                Assert.False(calledPreviously);
-                calledPreviously = true;
+                Assert.False(called);
+                called = true;
             }
         }
 
@@ -1151,20 +1141,20 @@ namespace System.Reflection.Metadata.Tests
             const byte TestValue = (byte)'a';
             const int TestSize = 1024;
 
-            var b = new ChunkedBlobBuilder(ChunkSize);
+            var b = new FixedChunkBlobBuilder(ChunkSize);
             b.WriteBytes(Enumerable.Repeat(TestValue, TestSize).ToArray().AsSpan());
             AssertIsChunked();
 
-            b = new ChunkedBlobBuilder(ChunkSize);
+            b = new FixedChunkBlobBuilder(ChunkSize);
             b.WriteBytes(TestValue, TestSize);
             AssertIsChunked();
 
-            b = new ChunkedBlobBuilder(ChunkSize);
+            b = new FixedChunkBlobBuilder(ChunkSize);
             int written = b.TryWriteBytes(new MemoryStream(Enumerable.Repeat(TestValue, TestSize).ToArray()), TestSize);
             Assert.Equal(TestSize, written);
             AssertIsChunked();
 
-            b = new ChunkedBlobBuilder(ChunkSize);
+            b = new FixedChunkBlobBuilder(ChunkSize);
             b.WriteUTF8(new string((char)TestValue, TestSize));
             AssertIsChunked();
 
@@ -1182,18 +1172,13 @@ namespace System.Reflection.Metadata.Tests
             }
         }
 
-        private sealed class ChunkedBlobBuilder(int maxChunkSize) : BlobBuilder(new byte[maxChunkSize], maxChunkSize)
-        {
-            private readonly int _maxChunkSize = maxChunkSize;
-
-            protected override BlobBuilder AllocateChunk(int minimalSize) => new ChunkedBlobBuilder(Math.Max(minimalSize, _maxChunkSize));
-        }
+        private sealed class FixedChunkBlobBuilder(int size) : BlobBuilder(new byte[size], size);
 
         private sealed class BlobBuilderWithEvents : BlobBuilder
         {
-            public event Action<BlobBuilder> Linking;
+            public event Action<BlobBuilder>? Linking;
 
-            public event Action<int> SettingCapacity;
+            public event Action<int>? SettingCapacity;
 
             public BlobBuilderWithEvents() { }
 
@@ -1201,13 +1186,13 @@ namespace System.Reflection.Metadata.Tests
 
             protected override void OnLinking(BlobBuilder builder)
             {
-                Linking(builder);
+                Linking?.Invoke(builder);
                 base.OnLinking(builder);
             }
 
             protected override void SetCapacity(int capacity)
             {
-                SettingCapacity(capacity);
+                SettingCapacity?.Invoke(capacity);
                 base.SetCapacity(capacity);
             }
         }
