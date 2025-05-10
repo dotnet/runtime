@@ -126,14 +126,11 @@ int64_t minipal_lowres_ticks()
     return (tb.tb_high * tccSecondsToMillieSeconds) + (tb.tb_low / tccMillieSecondsToNanoSeconds);
 #else
     struct timeval tv;
-    if (gettimeofday(&tv, NULL) == 0)
-    {
-        return ((int64_t)(tv.tv_sec) * (int64_t)(tccSecondsToMillieSeconds)) + ((int64_t)(tv.tv_usec) / (int64_t)(tccMillieSecondsToMicroSeconds));
-    }
-    else
+    if (gettimeofday(&tv, NULL) != 0)
     {
         assert(!"gettimeofday() failed\n");
     }
+    return ((int64_t)(tv.tv_sec) * (int64_t)(tccSecondsToMillieSeconds)) + ((int64_t)(tv.tv_usec) / (int64_t)(tccMillieSecondsToMicroSeconds));
 #endif
 }
 
