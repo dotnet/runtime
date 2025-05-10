@@ -158,6 +158,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.UnificationKey.cs" />
     <Compile Include="System\CrashInfo.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComAwareWeakReference.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.NativeAot.cs" />
     <Compile Include="System\Activator.NativeAot.cs" />
     <Compile Include="System\AppContext.NativeAot.cs" />
@@ -168,7 +169,6 @@
     <Compile Include="System\Collections\Generic\Comparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
-    <Compile Include="System\ComAwareWeakReference.NativeAot.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\FileLoadException.NativeAot.cs" />
     <Compile Include="System\IO\Stream.NativeAot.cs" />
@@ -276,9 +276,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetApartmentType.cs">
       <Link>Interop\Windows\Ole32\Interop.CoGetApartmentType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetContextToken.cs">
-      <Link>Interop\Windows\Ole32\Interop.CoGetContextToken.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
@@ -575,11 +572,7 @@
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
 
-  <Target Name="GenerateEventingFiles"
-          Inputs="@(EventingGenerationScript);@(EventManifestFile);@(EventingInclusionList)"
-          Outputs="@(EventingSourceFile)"
-          DependsOnTargets="FindPython"
-          BeforeTargets="BeforeCompile">
+  <Target Name="GenerateEventingFiles" Inputs="@(EventingGenerationScript);@(EventManifestFile);@(EventingInclusionList)" Outputs="@(EventingSourceFile)" DependsOnTargets="FindPython" BeforeTargets="BeforeCompile">
 
     <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.Generared.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>

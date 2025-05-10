@@ -69,10 +69,6 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     CONTRACTL_END;
 
     FreeUMEntryThunk();
-
-#if defined(FEATURE_COMWRAPPERS)
-    delete m_managedObjectComWrapperMap;
-#endif // FEATURE_COMWRAPPERS
 }
 
 #ifndef TARGET_UNIX
@@ -714,7 +710,7 @@ void    SyncBlockCache::InsertCleanupSyncBlock(SyncBlock* psb)
             continue;
     }
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
     if (psb->m_pInteropInfo)
     {
         // called during GC
@@ -976,9 +972,9 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
     // clean up comdata
     if (psb->m_pInteropInfo)
     {
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
         CleanupSyncBlockComData(psb->m_pInteropInfo);
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP
 
 #ifndef TARGET_UNIX
         if (g_fEEShutDown)
