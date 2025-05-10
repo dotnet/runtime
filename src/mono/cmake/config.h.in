@@ -272,12 +272,6 @@
 /* mach_absolute_time */
 #cmakedefine HAVE_MACH_ABSOLUTE_TIME 1
 
-/* gethrtime */
-#cmakedefine HAVE_GETHRTIME 1
-
-/* read_real_time */
-#cmakedefine HAVE_READ_REAL_TIME 1
-
 /* Define to 1 if you have the `clock_nanosleep' function. */
 #cmakedefine HAVE_CLOCK_NANOSLEEP 1
 
