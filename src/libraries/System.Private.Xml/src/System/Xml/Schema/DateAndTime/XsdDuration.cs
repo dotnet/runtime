@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
-namespace System.Xml.Schema
+namespace System.Xml.Schema.DateAndTime
 {
     /// <summary>
     /// This structure holds components of an Xsd Duration.  It is used internally to support Xsd durations without loss
@@ -101,7 +100,7 @@ namespace System.Xml.Schema
             if (durationType == DurationType.YearMonthDuration)
             {
                 int years = (int)(ticksPos / ((ulong)TimeSpan.TicksPerDay * 365));
-                int months = (int)((ticksPos % ((ulong)TimeSpan.TicksPerDay * 365)) / ((ulong)TimeSpan.TicksPerDay * 30));
+                int months = (int)(ticksPos % ((ulong)TimeSpan.TicksPerDay * 365) / ((ulong)TimeSpan.TicksPerDay * 30));
 
                 if (months == 12)
                 {
@@ -123,10 +122,10 @@ namespace System.Xml.Schema
 
                 _years = 0;
                 _months = 0;
-                _days = (int)(ticksPos / (ulong)TimeSpan.TicksPerDay);
-                _hours = (int)((ticksPos / (ulong)TimeSpan.TicksPerHour) % 24);
-                _minutes = (int)((ticksPos / (ulong)TimeSpan.TicksPerMinute) % 60);
-                _seconds = (int)((ticksPos / (ulong)TimeSpan.TicksPerSecond) % 60);
+                _days = (int)(ticksPos / TimeSpan.TicksPerDay);
+                _hours = (int)(ticksPos / TimeSpan.TicksPerHour % 24);
+                _minutes = (int)(ticksPos / TimeSpan.TicksPerMinute % 60);
+                _seconds = (int)(ticksPos / TimeSpan.TicksPerSecond % 60);
             }
         }
 
@@ -274,7 +273,7 @@ namespace System.Xml.Schema
                     if (durationType != DurationType.DayTimeDuration)
                     {
                         ticks += ((ulong)_years + (ulong)_months / 12) * 365;
-                        ticks += ((ulong)_months % 12) * 30;
+                        ticks += (ulong)_months % 12 * 30;
                     }
 
                     // Discard day and time parts if constructing TimeSpan for YearMonthDuration
@@ -292,13 +291,13 @@ namespace System.Xml.Schema
                         ticks += (ulong)_seconds;
 
                         // Tick count interval is in 100 nanosecond intervals (7 digits)
-                        ticks *= (ulong)TimeSpan.TicksPerSecond;
+                        ticks *= TimeSpan.TicksPerSecond;
                         ticks += (ulong)Nanoseconds / 100;
                     }
                     else
                     {
                         // Multiply YearMonth duration by number of ticks per day
-                        ticks *= (ulong)TimeSpan.TicksPerDay;
+                        ticks *= TimeSpan.TicksPerDay;
                     }
 
                     if (IsNegative)
@@ -310,7 +309,7 @@ namespace System.Xml.Schema
                         }
                         else
                         {
-                            result = new TimeSpan(-((long)ticks));
+                            result = new TimeSpan(-(long)ticks);
                         }
                     }
                     else
@@ -619,7 +618,7 @@ namespace System.Xml.Schema
             }
             else if (durationType == DurationType.YearMonthDuration)
             {
-                if ((parts & ~(XsdDuration.Parts.HasYears | XsdDuration.Parts.HasMonths)) != 0)
+                if ((parts & ~(Parts.HasYears | Parts.HasMonths)) != 0)
                     goto InvalidFormat;
             }
 
