@@ -257,19 +257,15 @@ namespace
             IfFailThrow(origSig.SkipExactlyOne());
 
             bool isValid;
-            if (newTypeMaybe.IsArray())
+            if (newTypeMaybe.IsByRef())
             {
-                isValid = currHandle == TypeHandle{ g_pObjectClass };
+                isValid = currHandle.IsByRef()
+                    && currHandle.GetTypeParam() == TypeHandle{ g_pObjectClass };
             }
             else if (newTypeMaybe.IsPointer())
             {
                 isValid = currHandle.IsPointer()
                     && currHandle.GetTypeParam() == TypeHandle{ CoreLibBinder::GetClass(CLASS__VOID) };
-            }
-            else if (newTypeMaybe.IsByRef())
-            {
-                isValid = currHandle.IsByRef()
-                    && currHandle.GetTypeParam() == TypeHandle{ g_pObjectClass };
             }
             else
             {
