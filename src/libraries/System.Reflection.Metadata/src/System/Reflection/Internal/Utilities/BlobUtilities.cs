@@ -172,7 +172,7 @@ namespace System.Reflection
 
                 while (src < srcEnd)
                 {
-                    char c = *src++;
+                    char c = *src;
                     if (c < 0x80)
                     {
                         if (dstEnd - dst < 1)
@@ -180,6 +180,7 @@ namespace System.Reflection
                             break;
                         }
                         *dst++ = (byte)c;
+                        src++;
                     }
                     else if (c < 0x7FF)
                     {
@@ -189,15 +190,15 @@ namespace System.Reflection
                         }
                         *dst++ = (byte)((c >> 6) | 0xC0);
                         *dst++ = (byte)((c & 0x3F) | 0x80);
+                        src++;
                     }
                     else
                     {
                         if (char.IsSurrogate(c))
                         {
                             // surrogate pair
-                            if (char.IsHighSurrogate(c) && src < srcEnd && *src is char cLow && char.IsLowSurrogate(cLow))
+                            if (char.IsHighSurrogate(c) && src - srcEnd < 2 && src[1] is char cLow && char.IsLowSurrogate(cLow))
                             {
-                                src++;
                                 if (dstEnd - dst < 4)
                                 {
                                     break;
@@ -207,6 +208,7 @@ namespace System.Reflection
                                 *dst++ = (byte)(((codepoint >> 12) & 0x3F) | 0x80);
                                 *dst++ = (byte)(((codepoint >> 6) & 0x3F) | 0x80);
                                 *dst++ = (byte)((codepoint & 0x3F) | 0x80);
+                                src += 2;
                                 continue;
                             }
 
@@ -224,12 +226,13 @@ namespace System.Reflection
                         *dst++ = (byte)((c >> 12) | 0xE0);
                         *dst++ = (byte)(((c >> 6) & 0x3F) | 0x80);
                         *dst++ = (byte)((c & 0x3F) | 0x80);
+                        src++;
                     }
                 }
-            }
 
-            charsRead = sourceLength - source.Length;
-            bytesWritten = destinationLength - destination.Length;
+                charsRead = (int)(src - pSource);
+                bytesWritten = (int)(dst - pDestination);
+            }
         }
 #endif
 
