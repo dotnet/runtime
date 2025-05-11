@@ -2189,13 +2189,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			// The underlying API always throws for reference type inputs, so we
 			// fallback to the managed implementation to let that handling occur
 
-			MonoTypeEnum tfrom_type = tfrom->type;
-			if (MONO_TYPE_IS_REFERENCE (tfrom)) {
-				return FALSE;
-			}
-
-			MonoTypeEnum tto_type = tto->type;
-			if (MONO_TYPE_IS_REFERENCE (tto)) {
+			if (MONO_TYPE_IS_REFERENCE (tfrom) ||MONO_TYPE_IS_REFERENCE (tto)) {
 				return FALSE;
 			}
 
@@ -2229,19 +2223,13 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			// for anything that can't be special cased as potentially zero-cost move.
 
 			bool tfrom_is_primitive_or_enum = false;
-			if (m_class_is_primitive(tfrom_klass)) {
+			if (m_class_is_primitive(tfrom_klass) || m_class_is_enumtype(tfrom_klass)) {
 				tfrom_is_primitive_or_enum = true;
-			} else if (m_class_is_enumtype(tfrom_klass)) {
-				tfrom_is_primitive_or_enum = true;
-				tfrom_type = mono_class_enum_basetype_internal(tfrom_klass)->type;
 			}
 
 			bool tto_is_primitive_or_enum = false;
-			if (m_class_is_primitive(tto_klass)) {
+			if (m_class_is_primitive(tto_klass || m_class_is_enumtype(tto_klass)) {
 				tto_is_primitive_or_enum = true;
-			} else if (m_class_is_enumtype(tto_klass)) {
-				tto_is_primitive_or_enum = true;
-				tto_type = mono_class_enum_basetype_internal(tto_klass)->type;
 			}
 
 			if (tfrom_is_primitive_or_enum && tto_is_primitive_or_enum) {
