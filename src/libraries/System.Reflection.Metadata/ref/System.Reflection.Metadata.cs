@@ -228,7 +228,7 @@ namespace System.Reflection.Metadata
         protected BlobBuilder(byte[] buffer, int maxChunkSize = 0) { }
         public BlobBuilder(int capacity = 256) { }
         protected internal int ChunkCapacity { get { throw null; } }
-        public byte[] Buffer { get { throw null; } set { } }
+        protected byte[] Buffer { get { throw null; } set { } }
         public int Capacity { get { throw null; } set { } }
         public int Count { get { throw null; } }
         protected int FreeBytes { get { throw null; } }
@@ -3365,7 +3365,7 @@ namespace System.Reflection.PortableExecutable
         public const int ManagedResourcesDataAlignment = 8;
         public const int MappedFieldDataAlignment = 8;
         public ManagedPEBuilder(System.Reflection.PortableExecutable.PEHeaderBuilder header, System.Reflection.Metadata.Ecma335.MetadataRootBuilder metadataRootBuilder, System.Reflection.Metadata.BlobBuilder ilStream, System.Reflection.Metadata.BlobBuilder? mappedFieldData = null, System.Reflection.Metadata.BlobBuilder? managedResources = null, System.Reflection.PortableExecutable.ResourceSectionBuilder? nativeResources = null, System.Reflection.PortableExecutable.DebugDirectoryBuilder? debugDirectoryBuilder = null, int strongNameSignatureSize = 128, System.Reflection.Metadata.MethodDefinitionHandle entryPoint = default(System.Reflection.Metadata.MethodDefinitionHandle), System.Reflection.PortableExecutable.CorFlags flags = System.Reflection.PortableExecutable.CorFlags.ILOnly, System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId>? deterministicIdProvider = null) : base (default(System.Reflection.PortableExecutable.PEHeaderBuilder), default(System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId>)) { }
-        protected virtual System.Reflection.Metadata.BlobBuilder CreateBlobBuilder(int minumumSize = 0) { throw null; }
+        protected virtual System.Reflection.Metadata.BlobBuilder CreateBlobBuilder(int minimumSize = 0) { throw null; }
         protected override System.Collections.Immutable.ImmutableArray<System.Reflection.PortableExecutable.PEBuilder.Section> CreateSections() { throw null; }
         protected internal override System.Reflection.PortableExecutable.PEDirectoriesBuilder GetDirectories() { throw null; }
         protected override System.Reflection.Metadata.BlobBuilder SerializeSection(string name, System.Reflection.PortableExecutable.SectionLocation location) { throw null; }
