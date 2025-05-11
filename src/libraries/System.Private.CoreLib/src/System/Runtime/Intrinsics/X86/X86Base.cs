@@ -72,7 +72,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  MUL reg/m64</para>
             /// </summary>
             /// <remarks>
-            ///   <para>This method is to remain internal.</para>
             ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
             /// </remarks>
             internal static (ulong Lower, ulong Upper) Multiply(ulong left, ulong right) => Multiply(left, right);
@@ -81,7 +80,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  IMUL reg/m64</para>
             /// </summary>
             /// <remarks>
-            ///   <para>This method is to remain internal.</para>
             ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
             /// </remarks>
             internal static (long Lower, long Upper) Multiply(long left, long right) => Multiply(left, right);
@@ -146,7 +144,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  MUL reg/m32</para>
         /// </summary>
         /// <remarks>
-        ///   <para>This method is to remain internal.</para>
         ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
         /// </remarks>
         internal static (uint Lower, uint Upper) Multiply(uint left, uint right) => Multiply(left, right);
@@ -155,23 +152,14 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  IMUL reg/m32</para>
         /// </summary>
         /// <remarks>
-        ///   <para>This method is to remain internal.</para>
         ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
         /// </remarks>
         internal static (int Lower, int Upper) Multiply(int left, int right) => Multiply(left, right);
 
         /// <summary>  MUL reg/m</summary>
-        /// <remarks>
-        ///   <para>This method is to remain internal.</para>
-        ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
-        /// </remarks>
         internal static (nuint Lower, nuint Upper) Multiply(nuint left, nuint right) => Multiply(left, right);
 
         /// <summary>  IMUL reg/m</summary>
-        /// <remarks>
-        ///   <para>This method is to remain internal.</para>
-        ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
-        /// </remarks>
         internal static (nint Lower, nint Upper) Multiply(nint left, nint right) => Multiply(left, right);
 
         /// <summary>
