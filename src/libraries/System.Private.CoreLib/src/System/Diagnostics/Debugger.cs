@@ -9,6 +9,15 @@ namespace System.Diagnostics
     public static partial class Debugger
     {
         /// <summary>
+        /// Represents the default category of message with a constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this default constant is `null`. <see cref="Debugger.DefaultCategory"/>
+        /// is used by <see cref="Debugger.Log"/>.
+        /// </remarks>
+        public static readonly string? DefaultCategory;
+
+        /// <summary>
         /// Signals a breakpoint to an attached debugger with the <paramref name="exception"/> details
         /// if a .NET debugger is attached with break on user-unhandled exception enabled and a method
         /// attributed with DebuggerDisableUserUnhandledExceptionsAttribute calls this method.

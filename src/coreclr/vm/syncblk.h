@@ -615,11 +615,6 @@ class InteropSyncBlockInfo
     friend class ClrDataAccess;
 
 public:
-#ifndef TARGET_UNIX
-    // List of InteropSyncBlockInfo instances that have been freed since the last syncblock cleanup.
-    static SLIST_HEADER s_InteropInfoStandbyList;
-#endif // !TARGET_UNIX
-
     InteropSyncBlockInfo()
         : m_pUMEntryThunk{}
 #ifdef FEATURE_COMINTEROP
@@ -639,11 +634,6 @@ public:
 #ifndef DACCESS_COMPILE
     ~InteropSyncBlockInfo();
 #endif
-
-#ifndef TARGET_UNIX
-    // Deletes all items in code:s_InteropInfoStandbyList.
-    static void FlushStandbyList();
-#endif // !TARGET_UNIX
 
 #ifdef FEATURE_COMINTEROP
 
@@ -963,20 +953,7 @@ class SyncBlock
 
         if (!m_pInteropInfo)
         {
-            NewHolder<InteropSyncBlockInfo> pInteropInfo;
-#ifndef TARGET_UNIX
-            pInteropInfo = (InteropSyncBlockInfo *)InterlockedPopEntrySList(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-
-            if (pInteropInfo != NULL)
-            {
-                // cache hit - reinitialize the data structure
-                new (pInteropInfo) InteropSyncBlockInfo();
-            }
-            else
-#endif // !TARGET_UNIX
-            {
-                pInteropInfo = new InteropSyncBlockInfo();
-            }
+            NewHolder<InteropSyncBlockInfo> pInteropInfo = new InteropSyncBlockInfo();
 
             if (SetInteropInfo(pInteropInfo))
                 pInteropInfo.SuppressRelease();
