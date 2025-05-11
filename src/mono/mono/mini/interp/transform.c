@@ -2141,13 +2141,13 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && (!strcmp (klass_name, "BitConverter"))) {
 		if (!strcmp (tm, "DoubleToInt64Bits") || !strcmp (tm, "DoubleToUInt64Bits")) {
-			*op = MINT_BITCAST_I8_R8;
+			*op = MINT_MOV_8;
 		} else if (!strcmp (tm, "Int32BitsToSingle") || !strcmp (tm, "UInt32BitsToSingle")) {
-			*op = MINT_BITCAST_R4_I4;
+			*op = MINT_MOV_4;
 		} else if (!strcmp (tm, "Int64BitsToDouble") || !strcmp (tm, "UInt64BitsToDouble")) {
-			*op = MINT_BITCAST_R8_I8;
+			*op = MINT_MOV_8;
 		} else if (!strcmp (tm, "SingleToInt32Bits") || !strcmp (tm, "SingleToUInt32Bits")) {
-			*op = MINT_BITCAST_I4_R4;
+			*op = MINT_MOV_4;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "Unsafe")) {
 		if (!strcmp (tm, "AddByteOffset"))
@@ -2245,16 +2245,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			}
 
 			if (tfrom_is_primitive_or_enum && tto_is_primitive_or_enum) {
-				*op = interp_get_mov_for_type (mono_mint_type(tto), TRUE);
-				if ((tfrom_type == MONO_TYPE_R4) && ((tto_type == MONO_TYPE_I4) || (tto_type == MONO_TYPE_U4))) {
-					*op = MINT_BITCAST_I4_R4;
-				} else if ((tto_type == MONO_TYPE_R4) && ((tfrom_type == MONO_TYPE_I4) || (tfrom_type == MONO_TYPE_U4))) {
-					*op = MINT_BITCAST_R4_I4;
-				} else if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
-					*op = MINT_BITCAST_I8_R8;
-				} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
-					*op = MINT_BITCAST_R8_I8;
-				}
+				*op = interp_get_mov_for_type (mono_mint_type(tto), FALSE);
 			}
 
 			if (*op == -1) {
