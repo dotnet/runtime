@@ -2189,7 +2189,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			// The underlying API always throws for reference type inputs, so we
 			// fallback to the managed implementation to let that handling occur
 
-			if (MONO_TYPE_IS_REFERENCE (tfrom) ||MONO_TYPE_IS_REFERENCE (tto)) {
+			if (MONO_TYPE_IS_REFERENCE (tfrom) || MONO_TYPE_IS_REFERENCE (tto)) {
 				return FALSE;
 			}
 
@@ -2223,17 +2223,17 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			// for anything that can't be special cased as potentially zero-cost move.
 
 			bool tfrom_is_primitive_or_enum = false;
-			if (m_class_is_primitive(tfrom_klass) || m_class_is_enumtype(tfrom_klass)) {
+			if (m_class_is_primitive (tfrom_klass) || m_class_is_enumtype (tfrom_klass)) {
 				tfrom_is_primitive_or_enum = true;
 			}
 
 			bool tto_is_primitive_or_enum = false;
-			if (m_class_is_primitive(tto_klass || m_class_is_enumtype(tto_klass)) {
+			if (m_class_is_primitive (tto_klass) || m_class_is_enumtype (tto_klass)) {
 				tto_is_primitive_or_enum = true;
 			}
 
 			if (tfrom_is_primitive_or_enum && tto_is_primitive_or_enum) {
-				*op = interp_get_mov_for_type (mono_mint_type(tto), FALSE);
+				*op = interp_get_mov_for_type (mono_mint_type (tto), FALSE);
 			}
 
 			if (*op == -1) {
