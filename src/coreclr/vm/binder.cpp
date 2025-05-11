@@ -21,6 +21,8 @@
 #include "sigbuilder.h"
 #include "olevariant.h"
 #include "configuration.h"
+#include "conditionalweaktable.h"
+#include "interoplibinterface_comwrappers.h"
 
 //
 // Retrieve structures from ID.

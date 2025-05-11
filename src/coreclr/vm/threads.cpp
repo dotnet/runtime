@@ -6868,14 +6868,6 @@ void Thread::DoExtraWorkForFinalizer()
 
     if (RequireSyncBlockCleanup())
     {
-#ifndef TARGET_UNIX
-        InteropSyncBlockInfo::FlushStandbyList();
-#endif // !TARGET_UNIX
-
-#ifdef FEATURE_COMINTEROP
-        RCW::FlushStandbyList();
-#endif // FEATURE_COMINTEROP
-
         SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
     }
     if (SystemDomain::System()->RequireAppDomainCleanup())
