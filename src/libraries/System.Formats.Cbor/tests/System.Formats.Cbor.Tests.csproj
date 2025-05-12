@@ -1,4 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Through FsCheck, this project has an FSharp.Core dependency.
+       F# projects can find the bundled FSharp.Core package from the SDK.
+       We configure this C# project so it can find the that package in case it is not available from the CI feed. -->
+  <Import Project="$(MSBuildToolsPath)/FSharp/Microsoft.FSharp.Core.NetSdk.props" />
+  <PropertyGroup>
+    <RestoreAdditionalProjectSources Condition="Exists('$(_FSharpCoreLibraryPacksFolder)')">$(RestoreAdditionalProjectSources);$(_FSharpCoreLibraryPacksFolder)</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
