@@ -2793,31 +2793,31 @@ namespace System.Numerics.Tensors.Tests
         {
             // Dense
 
-            Assert.True(Tensor.Create<int>([1]).IsDense);
-            Assert.True(Tensor.Create<int>([1], [0]).IsDense);
+            Assert.True(Tensor.Create<int>([(nint)1]).IsDense);
+            Assert.True(Tensor.Create<int>([(nint)1], [0]).IsDense);
 
-            Assert.True(Tensor.Create<int>([2]).IsDense);
-            Assert.True(Tensor.Create<int>([2], [1]).IsDense);
+            Assert.True(Tensor.Create<int>([(nint)2]).IsDense);
+            Assert.True(Tensor.Create<int>([(nint)2], [1]).IsDense);
 
-            Assert.True(Tensor.Create<int>([1, 2]).IsDense);
-            Assert.True(Tensor.Create<int>([1, 2], [2, 1]).IsDense);
+            Assert.True(Tensor.Create<int>([(nint)1, 2]).IsDense);
+            Assert.True(Tensor.Create<int>([(nint)1, 2], [0, 1]).IsDense);
 
-            Assert.True(Tensor.Create<int>([2, 2]).IsDense);
-            Assert.True(Tensor.Create<int>([2, 2], [2, 1]).IsDense);
+            Assert.True(Tensor.Create<int>([(nint)2, 2]).IsDense);
+            Assert.True(Tensor.Create<int>([(nint)2, 2], [2, 1]).IsDense);
 
-            Assert.True(Tensor.Create<int>([4, 3]).IsDense);
-            Assert.True(Tensor.Create<int>([4, 3], [12, 1]).IsDense);
+            Assert.True(Tensor.Create<int>([(nint)4, 3]).IsDense);
+            Assert.True(Tensor.Create<int>([(nint)4, 3], [3, 1]).IsDense);
 
             // Non-dense
 
-            Assert.False(Tensor.Create<int>([2], [0]).IsDense);
-            Assert.False(Tensor.Create<int>([2], [2]).IsDense);
+            Assert.False(Tensor.Create<int>([(nint)2], [0]).IsDense);
+            Assert.False(Tensor.Create<int>([(nint)2], [2]).IsDense);
 
-            Assert.False(Tensor.Create<int>([2, 2], [1, 2]).IsDense);
-            Assert.False(Tensor.Create<int>([2, 2], [1, 0]).IsDense);
+            Assert.False(Tensor.Transpose(Tensor.Create<int>([(nint)2, 2], [2, 1])).IsDense);
+            Assert.False(Tensor.Create<int>([(nint)2, 2], [1, 0]).IsDense);
 
-            Assert.False(Tensor.Create<int>([3, 4], [1, 12]).IsDense);
-            Assert.False(Tensor.Create<int>([3, 4], [1, 0]).IsDense);
+            Assert.False(Tensor.Transpose(Tensor.Create<int>([(nint)3, 4], [8, 1])).IsDense);
+            Assert.False(Tensor.Create<int>([(nint)3, 4], [1, 0]).IsDense);
         }
 
         [Fact]
@@ -2825,36 +2825,42 @@ namespace System.Numerics.Tensors.Tests
         {
             // Dense
 
-            Assert.True(Tensor.Create<int>([1]).HasAnyDenseDimensions);
-            Assert.True(Tensor.Create<int>([1], [0]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)1]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)1], [0]).HasAnyDenseDimensions);
 
-            Assert.True(Tensor.Create<int>([2]).HasAnyDenseDimensions);
-            Assert.True(Tensor.Create<int>([2], [1]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)2]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)2], [1]).HasAnyDenseDimensions);
 
-            Assert.True(Tensor.Create<int>([1, 2]).HasAnyDenseDimensions);
-            Assert.True(Tensor.Create<int>([1, 2], [2, 1]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)1, 2]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)1, 2], [0, 1]).HasAnyDenseDimensions);
 
-            Assert.True(Tensor.Create<int>([2, 2]).HasAnyDenseDimensions);
-            Assert.True(Tensor.Create<int>([2, 2], [2, 1]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)2, 2]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)2, 2], [2, 1]).HasAnyDenseDimensions);
 
-            Assert.True(Tensor.Create<int>([4, 3]).HasAnyDenseDimensions);
-            Assert.True(Tensor.Create<int>([4, 3], [12, 1]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)4, 3]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)4, 3], [3, 1]).HasAnyDenseDimensions);
 
             // Non-dense w/ Dense Dimension
 
-            Assert.True(Tensor.Create<int>([2], [0]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)1], [0]).HasAnyDenseDimensions);
 
-            Assert.True(Tensor.Create<int>([2, 2], [1, 0]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)2, 1], [1, 0]).HasAnyDenseDimensions);
 
-            Assert.True(Tensor.Create<int>([3, 4], [1, 0]).HasAnyDenseDimensions);
+            Assert.True(Tensor.Create<int>([(nint)3, 1], [1, 0]).HasAnyDenseDimensions);
 
             // Non-dense w/ Non-dense Dimension
 
-            Assert.False(Tensor.Create<int>([2], [2]).HasAnyDenseDimensions);
+            Assert.False(Tensor.Create<int>([(nint)2], [0]).HasAnyDenseDimensions);
 
-            Assert.False(Tensor.Create<int>([2, 2], [1, 2]).HasAnyDenseDimensions);
+            Assert.False(Tensor.Create<int>([(nint)2, 2], [1, 0]).HasAnyDenseDimensions);
 
-            Assert.False(Tensor.Create<int>([3, 4], [1, 12]).HasAnyDenseDimensions);
+            Assert.False(Tensor.Create<int>([(nint)3, 4], [1, 0]).HasAnyDenseDimensions);
+
+            Assert.False(Tensor.Create<int>([(nint)2], [2]).HasAnyDenseDimensions);
+
+            Assert.False(Tensor.Transpose(Tensor.Create<int>([(nint)2, 2], [2, 1])).HasAnyDenseDimensions);
+
+            Assert.False(Tensor.Transpose(Tensor.Create<int>([(nint)3, 4], [8, 1])).HasAnyDenseDimensions);
         }
 
         [Fact]
@@ -2862,31 +2868,31 @@ namespace System.Numerics.Tensors.Tests
         {
             // Dense
 
-            AssertReturnsSelf(Tensor.Create<int>([1]));
-            AssertReturnsSelf(Tensor.Create<int>([1], [0]));
+            AssertReturnsSelf(Tensor.Create<int>([(nint)1]));
+            AssertReturnsSelf(Tensor.Create<int>([(nint)1], [0]));
 
-            AssertReturnsSelf(Tensor.Create<int>([2]));
-            AssertReturnsSelf(Tensor.Create<int>([2], [1]));
+            AssertReturnsSelf(Tensor.Create<int>([(nint)2]));
+            AssertReturnsSelf(Tensor.Create<int>([(nint)2], [1]));
 
-            AssertReturnsSelf(Tensor.Create<int>([1, 2]));
-            AssertReturnsSelf(Tensor.Create<int>([1, 2], [2, 1]));
+            AssertReturnsSelf(Tensor.Create<int>([(nint)1, 2]));
+            AssertReturnsSelf(Tensor.Create<int>([(nint)1, 2], [0, 1]));
 
-            AssertReturnsSelf(Tensor.Create<int>([2, 2]));
-            AssertReturnsSelf(Tensor.Create<int>([2, 2], [2, 1]));
+            AssertReturnsSelf(Tensor.Create<int>([(nint)2, 2]));
+            AssertReturnsSelf(Tensor.Create<int>([(nint)2, 2], [2, 1]));
 
-            AssertReturnsSelf(Tensor.Create<int>([4, 3]));
-            AssertReturnsSelf(Tensor.Create<int>([4, 3], [12, 1]));
+            AssertReturnsSelf(Tensor.Create<int>([(nint)4, 3]));
+            AssertReturnsSelf(Tensor.Create<int>([(nint)4, 3], [3, 1]));
 
             // Non-dense
 
-            AssertReturnsNewTensor(Tensor.Create<int>([2], [0]));
-            AssertReturnsNewTensor(Tensor.Create<int>([2], [2]));
+            AssertReturnsNewTensor(Tensor.Create<int>([(nint)2], [0]));
+            AssertReturnsNewTensor(Tensor.Create<int>([(nint)2], [2]));
 
-            AssertReturnsNewTensor(Tensor.Create<int>([2, 2], [1, 2]));
-            AssertReturnsNewTensor(Tensor.Create<int>([2, 2], [1, 0]));
+            AssertReturnsNewTensor(Tensor.Transpose(Tensor.Create<int>([(nint)2, 2], [2, 1])));
+            AssertReturnsNewTensor(Tensor.Create<int>([(nint)2, 2], [1, 0]));
 
-            AssertReturnsNewTensor(Tensor.Create<int>([3, 4], [1, 12]));
-            AssertReturnsNewTensor(Tensor.Create<int>([3, 4], [1, 0]));
+            AssertReturnsNewTensor(Tensor.Transpose(Tensor.Create<int>([(nint)3, 4], [8, 1])));
+            AssertReturnsNewTensor(Tensor.Create<int>([(nint)3, 4], [1, 0]));
 
             static void AssertReturnsSelf<T>(Tensor<T> tensor)
             {

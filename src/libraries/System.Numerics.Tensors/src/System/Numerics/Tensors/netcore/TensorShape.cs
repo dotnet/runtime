@@ -212,7 +212,7 @@ namespace System.Numerics.Tensors
                 // n+1. This makes it convenient to support implicit broadcasting where higher dimensions
                 // aren't actually stored in memory.
 
-                nint minimumNonZeroStride = 0;
+                nint minimumNonZeroStride = 1;
                 var sortedWithIndex = destinationLinearRankOrder.ToArray()
                     .Select((value, index) => new { Value = value, Index = index })
                     .OrderBy(x => x.Value)
@@ -1217,7 +1217,7 @@ namespace System.Numerics.Tensors
 
             nint flattenedLength = 1;
             nint maximumLinearIndex = 0;
-            nint minimumNonZeroStride = 0;
+            nint minimumNonZeroStride = 1;
 
             nint computedOffset = 0;
             bool isDense = true;
