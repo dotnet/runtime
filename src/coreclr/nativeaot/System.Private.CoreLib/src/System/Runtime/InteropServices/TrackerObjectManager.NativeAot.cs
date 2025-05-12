@@ -204,7 +204,9 @@ namespace System.Runtime.InteropServices
     {
         internal static GCHandle s_currentRootObjectHandle;
 
-        [UnmanagedCallersOnly]
+#pragma warning disable CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+#pragma warning restore CS3016
         private static unsafe int IFindReferenceTargetsCallback_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
         {
             if (*guid == IID_IFindReferenceTargetsCallback || *guid == IID_IUnknown)
@@ -218,7 +220,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [UnmanagedCallersOnly]
+#pragma warning disable CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+#pragma warning restore CS3016
         private static unsafe int IFindReferenceTargetsCallback_FoundTrackerTarget(IntPtr pThis, IntPtr referenceTrackerTarget)
         {
             if (referenceTrackerTarget == IntPtr.Zero)
@@ -237,10 +241,10 @@ namespace System.Runtime.InteropServices
 
         internal struct ReferenceTargetsVftbl
         {
-            public delegate* unmanaged<IntPtr, Guid*, IntPtr*, int> QueryInterface;
-            public delegate* unmanaged<IntPtr, uint> AddRef;
-            public delegate* unmanaged<IntPtr, uint> Release;
-            public delegate* unmanaged<IntPtr, IntPtr, int> FoundTrackerTarget;
+            public delegate* unmanaged[MemberFunction]<IntPtr, Guid*, IntPtr*, int> QueryInterface;
+            public delegate* unmanaged[MemberFunction]<IntPtr, uint> AddRef;
+            public delegate* unmanaged[MemberFunction]<IntPtr, uint> Release;
+            public delegate* unmanaged[MemberFunction]<IntPtr, IntPtr, int> FoundTrackerTarget;
         }
 
         [FixedAddressValueType]
