@@ -906,6 +906,48 @@ static partial class Class
         }
 
         [Fact]
+        public async Task CodeFixForConstantPatternExpressionWithQuote()
+        {
+            // From https://github.com/dotnet/runtime/issues/104371
+            // When constant expression patterns need to be escaped, we generate
+            // a verbatim string literal. However, we still need to escape quotes.
+            string expression = """
+                "[" + @"\/:<>|" + "\"]"
+                """;
+
+            string test = $@"using System.Text;
+using System.Text.RegularExpressions;
+
+public class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = [|Regex.IsMatch("""", {expression})|];
+    }}
+}}";
+
+            string verbatimPattern = """
+                @"[\/:<>|""]"
+                """;
+
+            string fixedSource = @$"using System.Text;
+using System.Text.RegularExpressions;
+
+public partial class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = MyRegex().IsMatch("""");
+    }}
+
+    [GeneratedRegex({verbatimPattern})]
+    private static partial Regex MyRegex();
+}}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
         public async Task RawStringLiteralSyntaxPreservedByFixer()
         {
             string test = @"using System.Text.RegularExpressions;
