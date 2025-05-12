@@ -1,7 +1,7 @@
 <Project>
 
-  <!-- The list of redistributed assemblies that via out-of-band packages.
-       Includes the assembly name, PackageId and the PackageVersion:
+  <!-- The list of redistributed assemblies that also ship via out-of-band packages.
+       Includes the AssemblyName, PackageId and the PackageVersion:
        <RuntimeWindowsDesktopPackageLibrary Include="" PackageId="" PackageVersion="" /> -->
   <ItemGroup>
     ${RuntimeWindowsDesktopPackageLibraries}
