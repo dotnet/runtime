@@ -513,12 +513,12 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary,
 #if TARGET_WINDOWS && TARGET_X86
-            "_RhUntracked_Release@4"
+            "_RhUntracked_AddRefRelease@4"
 #else
-            "RhUntracked_Release"
+            "RhUntracked_AddRefRelease"
 #endif
         )]
-        internal static extern uint RhUntracked_Release(nint pThis);
+        internal static extern uint RhUntracked_AddRefRelease(nint pThis);
 
 #if FEATURE_OBJCMARSHAL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -58,8 +58,9 @@ namespace System.Runtime.InteropServices
 
         internal static unsafe void GetUntrackedIUnknownImpl(out delegate* unmanaged[MemberFunction]<IntPtr, uint> fpAddRef, out delegate* unmanaged[MemberFunction]<IntPtr, uint> fpRelease)
         {
-            fpAddRef = &Untracked_AddRef;
-            fpRelease = (delegate* unmanaged[MemberFunction]<IntPtr, uint>)(void*)(delegate*<IntPtr, uint>)&RuntimeImports.RhUntracked_Release; // Implemented in C/C++ to avoid GC transitions during shutdown
+            // Implemented in C/C++ to avoid GC transitions during shutdown
+            fpAddRef = (delegate* unmanaged[MemberFunction]<IntPtr, uint>)(void*)(delegate*<IntPtr, uint>)&RuntimeImports.RhUntracked_AddRefRelease;
+            fpRelease = (delegate* unmanaged[MemberFunction]<IntPtr, uint>)(void*)(delegate*<IntPtr, uint>)&RuntimeImports.RhUntracked_AddRefRelease;
         }
 
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
@@ -83,13 +84,6 @@ namespace System.Runtime.InteropServices
             {
                 return (IntPtr)(delegate* unmanaged[MemberFunction]<IntPtr, IntPtr, int>)&VtableImplementations.ITaggedImpl_IsCurrentVersion;
             }
-        }
-
-        // Lifetime maintained by stack - we don't care about ref counts
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-        internal static unsafe uint Untracked_AddRef(IntPtr _)
-        {
-            return 1;
         }
 
         internal static unsafe IntPtr DefaultIUnknownVftblPtr => (IntPtr)Unsafe.AsPointer(in VtableImplementations.IUnknown);

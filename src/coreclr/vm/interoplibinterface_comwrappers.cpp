@@ -620,27 +620,17 @@ extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_IsGlobalPeggingEnabled()
 // Therefore, we need to provide unmanaged implementations of AddRef and Release.
 namespace
 {
-    int STDMETHODCALLTYPE Untracked_AddRef(void*)
-    {
-        return 1;
-    }
-    int STDMETHODCALLTYPE Untracked_Release(void*)
+    int STDMETHODCALLTYPE Untracked_AddRefRelease(void*)
     {
         return 1;
     }
 }
 
-extern "C" void* QCALLTYPE ComWrappers_GetUntrackedAddRef()
+extern "C" void* QCALLTYPE ComWrappers_GetUntrackedAddRefRelease()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    return (void*)Untracked_AddRef;
-}
-
-extern "C" void* QCALLTYPE ComWrappers_GetUntrackedRelease()
-{
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-    return (void*)Untracked_Release;
+    return (void*)Untracked_AddRefRelease;
 }
 
 #endif // FEATURE_COMWRAPPERS
