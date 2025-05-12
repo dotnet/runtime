@@ -1101,12 +1101,13 @@ namespace System.Numerics.Tensors
         {
             if (IsDense)
             {
+                Debug.Assert(!IsEmpty);
                 Debug.Assert(FlattenedLength == LinearLength);
                 Debug.Assert(HasAnyDenseDimensions);
             }
             else
             {
-                Debug.Assert(FlattenedLength != LinearLength);
+                Debug.Assert((FlattenedLength != LinearLength) || IsEmpty);
 
                 bool hasAnyDenseDimensions = false;
 
