@@ -11,7 +11,7 @@ public static class SingleBit
     static int Set(int a, int b) => a | (1 << b);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int SetPow2(int a, int b) => a | (0b100 << b);
+    static int SetSwap(int a, int b) => (1 << b) | a ;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Set10(int a) => a | (1 << 10);
@@ -24,7 +24,10 @@ public static class SingleBit
     static int Clear(int a, int b) => a & ~(1 << b);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int ClearPow2(int a, int b) => a & ~(0b100 << b);
+    static int ClearNeg(int a, int b) => a & (~1 << b);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ClearSwap(int a, int b) => ~(1 << b) & a;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Clear10(int a) => a & ~(1 << 10);
@@ -82,7 +85,7 @@ public static class SingleBit
     static int Invert(int a, int b) => a ^ (1 << b);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int InvertPow2(int a, int b) => a ^ (0b100 << b);
+    static int InvertSwap(int a, int b) => (1 << b) ^ a;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Invert10(int a) => a ^ (1 << 10);
@@ -96,15 +99,17 @@ public static class SingleBit
     {
         Assert.Equal(0x12345478, Set(0x12345078, 10));
         Assert.Equal(0x12345878, Set(0x12345078, 11));
-        Assert.Equal(0x12345478, SetPow2(0x12345078, 8));
-        Assert.Equal(0x12345878, SetPow2(0x12345078, 9));
+        Assert.Equal(0x12345478, SetSwap(0x12345078, 10));
+        Assert.Equal(0x12345878, SetSwap(0x12345078, 11));
         Assert.Equal(0x12345478, Set10(0x12345078));
         Assert.Equal(0x12345878, Set11(0x12345078));
 
         Assert.Equal(0x12345078, Clear(0x12345478, 10));
         Assert.Equal(0x12345078, Clear(0x12345878, 11));
-        Assert.Equal(0x12345078, ClearPow2(0x12345478, 8));
-        Assert.Equal(0x12345078, ClearPow2(0x12345878, 9));
+        Assert.Equal(0x12345078, ClearNeg(0x12345478, 10));
+        Assert.Equal(0x12345078, ClearNeg(0x12345878, 11));
+        Assert.Equal(0x12345078, ClearSwap(0x12345478, 10));
+        Assert.Equal(0x12345078, ClearSwap(0x12345878, 11));
         Assert.Equal(0x12345078, Clear10(0x12345478));
         Assert.Equal(0x12345078, Clear11(0x12345878));
 
@@ -135,10 +140,10 @@ public static class SingleBit
         Assert.Equal(0x12345078, Invert(0x12345478, 10));
         Assert.Equal(0x12345878, Invert(0x12345078, 11));
         Assert.Equal(0x12345078, Invert(0x12345878, 11));
-        Assert.Equal(0x12345478, InvertPow2(0x12345078, 8));
-        Assert.Equal(0x12345078, InvertPow2(0x12345478, 8));
-        Assert.Equal(0x12345878, InvertPow2(0x12345078, 9));
-        Assert.Equal(0x12345078, InvertPow2(0x12345878, 9));
+        Assert.Equal(0x12345478, InvertSwap(0x12345078, 10));
+        Assert.Equal(0x12345078, InvertSwap(0x12345478, 10));
+        Assert.Equal(0x12345878, InvertSwap(0x12345078, 11));
+        Assert.Equal(0x12345078, InvertSwap(0x12345878, 11));
         Assert.Equal(0x12345478, Invert10(0x12345078));
         Assert.Equal(0x12345078, Invert10(0x12345478));
         Assert.Equal(0x12345878, Invert11(0x12345078));
