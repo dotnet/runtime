@@ -211,28 +211,42 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                     LIR::Use use;
                     if (BlockRange().TryGetUse(binOp, &use))
                     {
-                        bool isOp1ShiftRight = (op1->OperIs(GT_RSZ, GT_RSH) && op1->gtGetOp2()->IsIntegralConst());
-
                         GenTree* user = use.User();
                         if ((user->OperIs(GT_NE) && user->gtGetOp2()->IsIntegralConst(0)) ||   // (a >> N) & bit != 0
                             (user->OperIs(GT_EQ) && user->gtGetOp2()->IsIntegralConst(bit)) || // (a >> N) & bit == bit
-                            (isOp1ShiftRight && bit == 1))                                     // (a >> N) & 1
+                            (op1->OperIs(GT_RSZ, GT_RSH) && bit == 1))                         // (a >> N) & 1
                         {
                             binOp->ChangeOper(GT_BIT_EXTRACT);
                             binOp->gtType = TYP_INT;
 
                             uint32_t log2 = BitOperations::Log2(bit);
-                            if (isOp1ShiftRight)
-                            {
-                                GenTreeIntConCommon* shiftAmount = op1->gtGetOp2()->AsIntConCommon();
-                                log2 += shiftAmount->IntegralValue();
+                            constant->SetIntegralValue(log2);
+                            constant->SetContained();
 
-                                BlockRange().Remove(shiftAmount);
+                            if (op1->OperIs(GT_RSZ, GT_RSH)) // (a >> N) & bit  =>  BIT_EXTRACT(a, N + log2(bit))
+                            {
+                                GenTree* shiftAmount = op1->gtGetOp2();
+                                if (shiftAmount->IsIntegralConst())
+                                {
+                                    constant->SetIntegralValue(log2 + shiftAmount->AsIntConCommon()->IntegralValue());
+                                    BlockRange().Remove(shiftAmount);
+                                }
+                                else
+                                {
+                                    if (log2 != 0)
+                                    {
+                                        op2 = comp->gtNewOperNode(GT_ADD, binOp->gtType, shiftAmount, constant);
+                                        BlockRange().InsertAfter(constant, op2);
+                                    }
+                                    else
+                                    {
+                                        op2 = shiftAmount;
+                                        BlockRange().Remove(constant);
+                                    }
+                                }
                                 BlockRange().Remove(op1);
                                 op1 = op1->gtGetOp1();
                             }
-                            constant->SetIntegralValue(log2);
-                            constant->SetContained();
 
                             if (user->OperIs(GT_EQ, GT_NE))
                             {
