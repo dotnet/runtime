@@ -2650,9 +2650,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Sve2_BitwiseClearXor:
-                assert(targetReg == op1Reg);
+                if (targetReg != op1Reg)
+                {
+                    assert(targetReg != op2Reg);
+                    GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                }
                 // Always use the lane size D. It's a bitwise operation so this is fine for all integer vector types.
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, op1Reg, op2Reg, op3Reg, INS_OPTS_SCALABLE_D);
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, INS_OPTS_SCALABLE_D);
                 break;
 
             default:
