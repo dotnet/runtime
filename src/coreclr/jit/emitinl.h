@@ -63,8 +63,6 @@ inline void emitter::check3opImulValues()
     assert(INS_imul_21 - INS_imul_AX == REG_R21);
     assert(INS_imul_22 - INS_imul_AX == REG_R22);
     assert(INS_imul_23 - INS_imul_AX == REG_R23);
-    // TODO-XArch-APX: The asserts below need the register definition from R24~R31.
-    /*
     assert(INS_imul_24 - INS_imul_AX == REG_R24);
     assert(INS_imul_25 - INS_imul_AX == REG_R25);
     assert(INS_imul_26 - INS_imul_AX == REG_R26);
@@ -73,7 +71,6 @@ inline void emitter::check3opImulValues()
     assert(INS_imul_29 - INS_imul_AX == REG_R29);
     assert(INS_imul_30 - INS_imul_AX == REG_R30);
     assert(INS_imul_31 - INS_imul_AX == REG_R31);
-    */
 #endif
 }
 
