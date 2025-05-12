@@ -751,7 +751,7 @@ namespace System.Numerics
         /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        internal static Vector<T> CreateScalar<T>(T value)
+        public static Vector<T> CreateScalar<T>(T value)
         {
             Vector<T> result = Vector<T>.Zero;
             result.SetElementUnsafe(0, value);
@@ -765,7 +765,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector<T> CreateScalarUnsafe<T>(T value)
+        public static Vector<T> CreateScalarUnsafe<T>(T value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.

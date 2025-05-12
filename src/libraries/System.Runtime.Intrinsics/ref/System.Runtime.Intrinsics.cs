@@ -26,6 +26,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<nint> AsNInt<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<nuint> AsNUInt<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
+        public static System.Numerics.Plane AsPlane(this System.Runtime.Intrinsics.Vector128<System.Single> value) { throw null; }
+        public static System.Numerics.Quaternion AsQuaternion(this System.Runtime.Intrinsics.Vector128<System.Single> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.SByte> AsSByte<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Single> AsSingle<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
@@ -35,6 +37,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.UInt32> AsUInt32<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> AsUInt64<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<System.Single> AsVector128(this System.Numerics.Plane value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<System.Single> AsVector128(this System.Numerics.Quaternion value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Single> AsVector128(this System.Numerics.Vector2 value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Single> AsVector128(this System.Numerics.Vector3 value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Single> AsVector128(this System.Numerics.Vector4 value) { throw null; }
