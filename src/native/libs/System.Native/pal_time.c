@@ -79,9 +79,9 @@ int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times)
     return result;
 }
 
-uint64_t SystemNative_GetTimestamp(void)
+int64_t SystemNative_GetTimestamp(void)
 {
-    return (uint64_t)minipal_hires_ticks();
+    return minipal_hires_ticks();
 }
 
 int64_t SystemNative_GetLowResolutionTimestamp(void)
