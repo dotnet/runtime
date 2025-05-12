@@ -2222,18 +2222,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			// back to what is effectively `ReadUnaligned<TTo>(ref As<TFrom, byte>(ref source))`
 			// for anything that can't be special cased as potentially zero-cost move.
 
-			bool tfrom_is_primitive_or_enum = false;
-			if (m_class_is_primitive (tfrom_klass) || m_class_is_enumtype (tfrom_klass)) {
-				tfrom_is_primitive_or_enum = true;
-			}
-
-			bool tto_is_primitive_or_enum = false;
-			if (m_class_is_primitive (tto_klass) || m_class_is_enumtype (tto_klass)) {
-				tto_is_primitive_or_enum = true;
-			}
+			bool tfrom_is_primitive_or_enum = m_class_is_primitive (tfrom_klass) || m_class_is_enumtype (tfrom_klass);
+			bool tto_is_primitive_or_enum = m_class_is_primitive (tto_klass) || m_class_is_enumtype (tto_klass);
 
 			if (tfrom_is_primitive_or_enum && tto_is_primitive_or_enum) {
-				*op = interp_get_mov_for_type (mono_mint_type (tto), FALSE);
+				*op = interp_get_mov_for_type (mono_mint_type (tto), TRUE);
 			}
 
 			if (*op == -1) {
