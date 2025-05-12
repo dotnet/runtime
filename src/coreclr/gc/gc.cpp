@@ -4848,11 +4848,7 @@ public:
     // Now we set more bits should actually only clear the mark bit
     void ClearMarked()
     {
-#ifdef DOUBLY_LINKED_FL
         RawSetMethodTable ((MethodTable *)(((size_t) RawGetMethodTable()) & (~GC_MARKED)));
-#else
-        RawSetMethodTable (GetMethodTable());
-#endif //DOUBLY_LINKED_FL
     }
 
 #ifdef DOUBLY_LINKED_FL
