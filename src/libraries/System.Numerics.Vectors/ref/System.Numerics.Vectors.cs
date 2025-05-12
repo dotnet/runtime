@@ -16,10 +16,18 @@ namespace System.Numerics
         public float M32;
         public Matrix3x2(float m11, float m12, float m21, float m22, float m31, float m32) { throw null; }
         public static System.Numerics.Matrix3x2 Identity { get { throw null; } }
-        public float this[int row, int column] { readonly get { throw null; } set { throw null; } }
         public readonly bool IsIdentity { get { throw null; } }
-        public System.Numerics.Vector2 Translation { readonly get { throw null; } set { } }
+        public System.Numerics.Vector2 Translation { readonly get { throw null; } set { throw null; } }
+        public System.Numerics.Vector2 X { readonly get { throw null; } set { throw null; } }
+        public System.Numerics.Vector2 Y { readonly get { throw null; } set { throw null; } }
+        public System.Numerics.Vector2 Z { readonly get { throw null; } set { throw null; } }
+        public System.Numerics.Vector2 this[int row] { readonly get { throw null; } set { throw null; } }
+        public float this[int row, int column] { readonly get { throw null; } set { throw null; } }
         public static System.Numerics.Matrix3x2 Add(System.Numerics.Matrix3x2 value1, System.Numerics.Matrix3x2 value2) { throw null; }
+        public static Matrix3x2 Create(float value) { throw null; }
+        public static Matrix3x2 Create(System.Numerics.Vector2 value) { throw null; }
+        public static Matrix3x2 Create(System.Numerics.Vector2 x, System.Numerics.Vector2 y, System.Numerics.Vector2 z) { throw null; }
+        public static Matrix3x2 Create(float m11, float m12, float m21, float m22, float m31, float m32) { throw null; }
         public static System.Numerics.Matrix3x2 CreateRotation(float radians) { throw null; }
         public static System.Numerics.Matrix3x2 CreateRotation(float radians, System.Numerics.Vector2 centerPoint) { throw null; }
         public static System.Numerics.Matrix3x2 CreateScale(System.Numerics.Vector2 scales) { throw null; }
@@ -35,6 +43,8 @@ namespace System.Numerics
         public readonly bool Equals(System.Numerics.Matrix3x2 other) { throw null; }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public readonly float GetDeterminant() { throw null; }
+        public readonly float GetElement(int row, int column) { throw null; }
+        public readonly System.Numerics.Vector2 GetRow(int index) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static bool Invert(System.Numerics.Matrix3x2 matrix, out System.Numerics.Matrix3x2 result) { throw null; }
         public static System.Numerics.Matrix3x2 Lerp(System.Numerics.Matrix3x2 matrix1, System.Numerics.Matrix3x2 matrix2, float amount) { throw null; }
@@ -50,6 +60,8 @@ namespace System.Numerics
         public static System.Numerics.Matrix3x2 operator -(System.Numerics.Matrix3x2 value) { throw null; }
         public static System.Numerics.Matrix3x2 Subtract(System.Numerics.Matrix3x2 value1, System.Numerics.Matrix3x2 value2) { throw null; }
         public override readonly string ToString() { throw null; }
+        public readonly System.Numerics.Matrix3x2 WithElement(int row, int column, float value) { throw null; }
+        public readonly System.Numerics.Matrix3x2 WithRow(int index, System.Numerics.Vector2 value) { throw null; }
     }
     public partial struct Matrix4x4 : System.IEquatable<System.Numerics.Matrix4x4>
     {
@@ -72,10 +84,20 @@ namespace System.Numerics
         public Matrix4x4(System.Numerics.Matrix3x2 value) { throw null; }
         public Matrix4x4(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44) { throw null; }
         public static System.Numerics.Matrix4x4 Identity { get { throw null; } }
-        public float this[int row, int column] { readonly get { throw null; } set { throw null; } }
         public readonly bool IsIdentity { get { throw null; } }
-        public System.Numerics.Vector3 Translation { readonly get { throw null; } set { } }
+        public System.Numerics.Vector3 Translation { readonly get { throw null; } set { throw null; } }
+        public System.Numerics.Vector4 X { readonly get { throw null; } set { throw null; } }
+        public System.Numerics.Vector4 Y { readonly get { throw null; } set { throw null; } }
+        public System.Numerics.Vector4 Z { readonly get { throw null; } set { throw null; } }
+        public System.Numerics.Vector4 W { readonly get { throw null; } set { throw null; } }
+        public System.Numerics.Vector4 this[int row] { readonly get { throw null; } set { throw null; } }
+        public float this[int row, int column] { readonly get { throw null; } set { throw null; } }
         public static System.Numerics.Matrix4x4 Add(System.Numerics.Matrix4x4 value1, System.Numerics.Matrix4x4 value2) { throw null; }
+        public static Matrix4x4 Create(float value) { throw null; }
+        public static Matrix4x4 Create(System.Numerics.Matrix3x2 value) { throw null; }
+        public static Matrix4x4 Create(System.Numerics.Vector4 value) { throw null; }
+        public static Matrix4x4 Create(System.Numerics.Vector4 x, System.Numerics.Vector4 y, System.Numerics.Vector4 z, System.Numerics.Vector4 w) { throw null; }
+        public static Matrix4x4 Create(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44) { throw null; }
         public static System.Numerics.Matrix4x4 CreateBillboard(System.Numerics.Vector3 objectPosition, System.Numerics.Vector3 cameraPosition, System.Numerics.Vector3 cameraUpVector, System.Numerics.Vector3 cameraForwardVector) { throw null; }
         public static System.Numerics.Matrix4x4 CreateBillboardLeftHanded(System.Numerics.Vector3 objectPosition, System.Numerics.Vector3 cameraPosition, System.Numerics.Vector3 cameraUpVector, System.Numerics.Vector3 cameraForwardVector) { throw null; }
         public static System.Numerics.Matrix4x4 CreateConstrainedBillboard(System.Numerics.Vector3 objectPosition, System.Numerics.Vector3 cameraPosition, System.Numerics.Vector3 rotateAxis, System.Numerics.Vector3 cameraForwardVector, System.Numerics.Vector3 objectForwardVector) { throw null; }
@@ -120,6 +142,8 @@ namespace System.Numerics
         public readonly bool Equals(System.Numerics.Matrix4x4 other) { throw null; }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public readonly float GetDeterminant() { throw null; }
+        public readonly float GetElement(int row, int column) { throw null; }
+        public readonly System.Numerics.Vector4 GetRow(int index) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static bool Invert(System.Numerics.Matrix4x4 matrix, out System.Numerics.Matrix4x4 result) { throw null; }
         public static System.Numerics.Matrix4x4 Lerp(System.Numerics.Matrix4x4 matrix1, System.Numerics.Matrix4x4 matrix2, float amount) { throw null; }
@@ -137,14 +161,19 @@ namespace System.Numerics
         public override readonly string ToString() { throw null; }
         public static System.Numerics.Matrix4x4 Transform(System.Numerics.Matrix4x4 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Matrix4x4 Transpose(System.Numerics.Matrix4x4 matrix) { throw null; }
+        public readonly System.Numerics.Matrix4x4 WithElement(int row, int column, float value) { throw null; }
+        public readonly System.Numerics.Matrix4x4 WithRow(int index, System.Numerics.Vector4 value) { throw null; }
     }
     public partial struct Plane : System.IEquatable<System.Numerics.Plane>
     {
         public System.Numerics.Vector3 Normal;
         public float D;
-        public Plane(System.Numerics.Vector3 normal, float d) { throw null; }
         public Plane(System.Numerics.Vector4 value) { throw null; }
+        public Plane(System.Numerics.Vector3 normal, float d) { throw null; }
         public Plane(float x, float y, float z, float d) { throw null; }
+        public static Plane Create(System.Numerics.Vector4 value) { throw null; }
+        public static Plane Create(System.Numerics.Vector3 normal, float d) { throw null; }
+        public static Plane Create(float x, float y, float z, float d) { throw null; }
         public static System.Numerics.Plane CreateFromVertices(System.Numerics.Vector3 point1, System.Numerics.Vector3 point2, System.Numerics.Vector3 point3) { throw null; }
         public static float Dot(System.Numerics.Plane plane, System.Numerics.Vector4 value) { throw null; }
         public static float DotCoordinate(System.Numerics.Plane plane, System.Numerics.Vector3 value) { throw null; }
@@ -174,6 +203,8 @@ namespace System.Numerics
         public static System.Numerics.Quaternion Add(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public static System.Numerics.Quaternion Concatenate(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public static System.Numerics.Quaternion Conjugate(System.Numerics.Quaternion value) { throw null; }
+        public static System.Numerics.Quaternion Create(System.Numerics.Vector3 vectorPart, float scalarPart) { throw null; }
+        public static System.Numerics.Quaternion Create(float x, float y, float z, float w) { throw null; }
         public static System.Numerics.Quaternion CreateFromAxisAngle(System.Numerics.Vector3 axis, float angle) { throw null; }
         public static System.Numerics.Quaternion CreateFromRotationMatrix(System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Quaternion CreateFromYawPitchRoll(float yaw, float pitch, float roll) { throw null; }
@@ -215,8 +246,11 @@ namespace System.Numerics
         public static System.Numerics.Vector<TTo> As<TFrom, TTo>(this System.Numerics.Vector<TFrom> vector) { throw null; }
         public static System.Numerics.Plane AsPlane(this System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Quaternion AsQuaternion(this System.Numerics.Vector4 value) { throw null; }
+        public static System.Numerics.Vector2 AsVector2(this System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector2 AsVector2(this System.Numerics.Vector4 value) { throw null; }
+        public static System.Numerics.Vector3 AsVector3(this System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector3 AsVector3(this System.Numerics.Vector4 value) { throw null; }
+        public static System.Numerics.Vector3 AsVector3Unsafe(this System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector4 AsVector4(this System.Numerics.Plane value) { throw null; }
         public static System.Numerics.Vector4 AsVector4(this System.Numerics.Quaternion value) { throw null; }
         public static System.Numerics.Vector4 AsVector4(this System.Numerics.Vector2 value) { throw null; }
@@ -274,6 +308,8 @@ namespace System.Numerics
         public static int CountWhereAllBitsSet<T>(System.Numerics.Vector<T> vector) { throw null; }
         public static System.Numerics.Vector<T> Create<T>(T value) { throw null; }
         public static System.Numerics.Vector<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
+        public static System.Numerics.Vector<T> CreateScalar<T>(T value) { throw null; }
+        public static System.Numerics.Vector<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Numerics.Vector<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Numerics.Vector<double> DegreesToRadians(System.Numerics.Vector<double> degrees) { throw null; }
         public static System.Numerics.Vector<float> DegreesToRadians(System.Numerics.Vector<float> degrees) { throw null; }
@@ -561,13 +597,15 @@ namespace System.Numerics
         public static System.Numerics.Vector2 CopySign(System.Numerics.Vector2 value, System.Numerics.Vector2 sign) { throw null; }
         public static int Count(System.Numerics.Vector2 vector, float value) { throw null; }
         public static int CountWhereAllBitsSet(System.Numerics.Vector2 vector) { throw null; }
-        public static System.Numerics.Vector2 Create(float value) { throw null; }
-        public static System.Numerics.Vector2 Create(float x, float y) { throw null; }
-        public static System.Numerics.Vector2 Create(System.ReadOnlySpan<float> values) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
         public static System.Numerics.Vector2 Cos(System.Numerics.Vector2 vector) { throw null; }
+        public static System.Numerics.Vector2 Create(float value) { throw null; }
+        public static System.Numerics.Vector2 Create(float x, float y) { throw null; }
+        public static System.Numerics.Vector2 Create(System.ReadOnlySpan<float> values) { throw null; }
+        public static System.Numerics.Vector2 CreateScalar(float x) { throw null; }
+        public static System.Numerics.Vector2 CreateScalarUnsafe(float x) { throw null; }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector2 DegreesToRadians(System.Numerics.Vector2 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
@@ -726,14 +764,16 @@ namespace System.Numerics
         public static System.Numerics.Vector3 CopySign(System.Numerics.Vector3 value, System.Numerics.Vector3 sign) { throw null; }
         public static int Count(System.Numerics.Vector3 vector, float value) { throw null; }
         public static int CountWhereAllBitsSet(System.Numerics.Vector3 vector) { throw null; }
-        public static System.Numerics.Vector3 Create(float value) { throw null; }
-        public static System.Numerics.Vector3 Create(System.Numerics.Vector2 vector, float z) { throw null; }
-        public static System.Numerics.Vector3 Create(float x, float y, float z) { throw null; }
-        public static System.Numerics.Vector3 Create(System.ReadOnlySpan<float> values) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
         public static System.Numerics.Vector3 Cos(System.Numerics.Vector3 vector) { throw null; }
+        public static System.Numerics.Vector3 Create(float value) { throw null; }
+        public static System.Numerics.Vector3 Create(System.Numerics.Vector2 vector, float z) { throw null; }
+        public static System.Numerics.Vector3 Create(float x, float y, float z) { throw null; }
+        public static System.Numerics.Vector3 Create(System.ReadOnlySpan<float> values) { throw null; }
+        public static System.Numerics.Vector3 CreateScalar(float x) { throw null; }
+        public static System.Numerics.Vector3 CreateScalarUnsafe(float x) { throw null; }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector3 Cross(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public static System.Numerics.Vector3 DegreesToRadians(System.Numerics.Vector3 degrees) { throw null; }
@@ -893,15 +933,17 @@ namespace System.Numerics
         public static System.Numerics.Vector4 CopySign(System.Numerics.Vector4 value, System.Numerics.Vector4 sign) { throw null; }
         public static int Count(System.Numerics.Vector4 vector, float value) { throw null; }
         public static int CountWhereAllBitsSet(System.Numerics.Vector4 vector) { throw null; }
+        public readonly void CopyTo(float[] array) { }
+        public readonly void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(System.Span<float> destination) { }
+        public static System.Numerics.Vector4 Cos(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 Create(float value) { throw null; }
         public static System.Numerics.Vector4 Create(System.Numerics.Vector2 vector, float z, float w) { throw null; }
         public static System.Numerics.Vector4 Create(System.Numerics.Vector3 vector, float w) { throw null; }
         public static System.Numerics.Vector4 Create(float x, float y, float z, float w) { throw null; }
         public static System.Numerics.Vector4 Create(System.ReadOnlySpan<float> values) { throw null; }
-        public readonly void CopyTo(float[] array) { }
-        public readonly void CopyTo(float[] array, int index) { }
-        public readonly void CopyTo(System.Span<float> destination) { }
-        public static System.Numerics.Vector4 Cos(System.Numerics.Vector4 vector) { throw null; }
+        public static System.Numerics.Vector4 CreateScalar(float x) { throw null; }
+        public static System.Numerics.Vector4 CreateScalarUnsafe(float x) { throw null; }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector4 DegreesToRadians(System.Numerics.Vector4 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
