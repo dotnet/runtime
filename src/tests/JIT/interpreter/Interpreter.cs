@@ -228,12 +228,16 @@ public class InterpreterTest
         return s;
     }
 
-
-    static int Main(string[] args)
+    static void TestCallingConvention12(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h, byte i, char j, int k, int l, long m)
     {
-        jitField1 = 42;
-        jitField2 = 43;
+        Console.WriteLine("TestCallingConvention12: a = {0}, b = {1}, c = {2}, d = {3}, e = {4}, f = {5}, g = {6}, h = {7}, i = {8}, j = {9}, k = {10}, l = {11}, m = {12}", a, b, c, d, e, f, g, h, i, j, k, l, m);
+    }
 
+    // This method is invoked before we start interpretting anything, so the methods invoked in it will be jitted.
+    // This is necessary for the calling convention tests that test calls from the interpreter to the JITted code
+    // to actually test things.
+    static void EnsureCallingConventionTestTargetMethodsAreJitted()
+    {
         TestCallingConvention0(1, 2.0f, 3, 4.0, 5, 6.0);
 
         TestStruct s = new TestStruct();
@@ -278,6 +282,16 @@ public class InterpreterTest
         Console.WriteLine(s11.b);
         Console.WriteLine(s11.c);
 
+        TestCallingConvention12(1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 10, 11, 12);
+    }
+
+    static int Main(string[] args)
+    {
+        jitField1 = 42;
+        jitField2 = 43;
+
+        EnsureCallingConventionTestTargetMethodsAreJitted();
+
         RunInterpreterTests();
         return 100;
     }
@@ -302,7 +316,7 @@ public class InterpreterTest
         Console.WriteLine(s2.b);
 
 #if VECTOR_ALIGNMENT_WORKS
-        // TODO: enable this again after fixing the alignment for the Vector2 struct and similar ones
+        // Interpreter-TODO: enable this again after fixing the alignment for the Vector2 struct and similar ones
         Vector2 v = TestCallingConvention3();
         Console.WriteLine("TestCallingConvention: v = ");
         Console.WriteLine(v[0]);
@@ -363,6 +377,8 @@ public class InterpreterTest
         Console.WriteLine(s11.a);
         Console.WriteLine(s11.b);
         Console.WriteLine(s11.c);
+
+        TestCallingConvention12(1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 10, 11, 12);
 
         // Console.WriteLine("Run interp tests");
         if (SumN(50) != 1275)

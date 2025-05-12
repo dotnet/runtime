@@ -870,18 +870,46 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     EPILOG_BRANCH_REG x12
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
+// Copy arguments from the interpreter stack to the processor stack
+// Except for Apple target, the CPU stack slots are aligned to
+// pointer size.
 LEAF_ENTRY Load_Stack
-    ldr w14, [x10, #4]! // SP offset
-    ldr w12, [x10, #4]! // number of stack slots
+    ldr w14, [x10], #4 // SP offset
+    ldr w12, [x10], #4 // number of stack slots
     add x14, sp, x14
+#ifdef TARGET_APPLE
+    cmp x12, #8
+    blt LOCAL_LABEL(LessThan8Bytes)
+#endif // TARGET_APPLE
 LOCAL_LABEL(CopyLoop):
     ldr x13, [x9], #8
     str x13, [x14], #8
     subs x12, x12, #8
     bne LOCAL_LABEL(CopyLoop)
+#ifdef TARGET_APPLE
+    b LOCAL_LABEL(DoneLoop)
+LOCAL_LABEL(LessThan8Bytes):
+    cmp x12, #4
+    blt LOCAL_LABEL(LessThan4Bytes)
+    ldr w13, [x9], #8
+    str w13, [x14], #4
+    b LOCAL_LABEL(DoneLoop)
+LOCAL_LABEL(LessThan4Bytes):
+    cmp x12, #2
+    blt LOCAL_LABEL(LessThan2Bytes)
+    ldrh w13, [x9], #8
+    strh w13, [x14], #2
+    b LOCAL_LABEL(DoneLoop)
+LOCAL_LABEL(LessThan2Bytes):
+    ldrb w13, [x9], #8
+    strb w13, [x14], #1
+LOCAL_LABEL(DoneLoop):
+#endif // TARGET_APPLE
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Load_Stack
+
+// Routines for passing value type arguments by reference in general purpose registers X0..X7
 
 LEAF_ENTRY Load_Ref_X0
     mov x0, x9
@@ -947,6 +975,8 @@ LEAF_ENTRY Load_Ref_X7
     EPILOG_BRANCH_REG x11
 LEAF_END Load_Ref_X7
 
+// Routines for passing arguments by value in general purpose registers X0..X7
+
 LEAF_ENTRY Load_X0
     ldr x0, [x9], #8
     ldr x11, [x10], #8
@@ -961,6 +991,7 @@ LEAF_END Load_X0_X1
 
 LEAF_ENTRY Load_X0_X1_X2
     ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2
     ldr x2, [x9], #8
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -968,6 +999,7 @@ LEAF_END Load_X0_X1_X2
 
 LEAF_ENTRY Load_X0_X1_X2_X3
     ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2_X3
     ldp x2, x3, [x9], #16
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -975,7 +1007,9 @@ LEAF_END Load_X0_X1_X2_X3
 
 LEAF_ENTRY Load_X0_X1_X2_X3_X4
     ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2_X3_X4
     ldp x2, x3, [x9], #16
+ALTERNATE_ENTRY Load_X4
     ldr x4, [x9], #8
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -983,7 +1017,9 @@ LEAF_END Load_X0_X1_X2_X3_X4
 
 LEAF_ENTRY Load_X0_X1_X2_X3_X4_X5
     ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2_X3_X4_X5
     ldp x2, x3, [x9], #16
+ALTERNATE_ENTRY Load_X4_X5
     ldp x4, x5, [x9], #16
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -991,8 +1027,11 @@ LEAF_END Load_X0_X1_X2_X3_X4_X5
 
 LEAF_ENTRY Load_X0_X1_X2_X3_X4_X5_X6
     ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2_X3_X4_X5_X6
     ldp x2, x3, [x9], #16
+ALTERNATE_ENTRY Load_X4_X5_X6
     ldp x4, x5, [x9], #16
+ALTERNATE_ENTRY Load_X6
     ldr x6, [x9], #8
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -1000,8 +1039,11 @@ LEAF_END Load_X0_X1_X2_X3_X4_X5_X6
 
 LEAF_ENTRY Load_X0_X1_X2_X3_X4_X5_X6_X7
     ldp x0, x1, [x9], #16
+ALTERNATE_ENTRY Load_X2_X3_X4_X5_X6_X7
     ldp x2, x3, [x9], #16
+ALTERNATE_ENTRY Load_X4_X5_X6_X7
     ldp x4, x5, [x9], #16
+ALTERNATE_ENTRY Load_X6_X7
     ldp x6, x7, [x9], #16
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -1021,6 +1063,7 @@ LEAF_END Load_X1_X2
 
 LEAF_ENTRY Load_X1_X2_X3
     ldp x1, x2, [x9], #16
+ALTERNATE_ENTRY Load_X3
     ldr x3, [x9], #8
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -1028,6 +1071,7 @@ LEAF_END Load_X1_X2_X3
 
 LEAF_ENTRY Load_X1_X2_X3_X4
     ldp x1, x2, [x9], #16
+ALTERNATE_ENTRY Load_X3_X4
     ldp x3, x4, [x9], #16
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -1035,7 +1079,9 @@ LEAF_END Load_X1_X2_X3_X4
 
 LEAF_ENTRY Load_X1_X2_X3_X4_X5
     ldp x1, x2, [x9], #16
+ALTERNATE_ENTRY Load_X3_X4_X5
     ldp x3, x4, [x9], #16
+ALTERNATE_ENTRY Load_X5
     ldr x5, [x9], #8
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -1043,7 +1089,9 @@ LEAF_END Load_X1_X2_X3_X4_X5
 
 LEAF_ENTRY Load_X1_X2_X3_X4_X5_X6
     ldp x1, x2, [x9], #16
+ALTERNATE_ENTRY Load_X3_X4_X5_X6
     ldp x3, x4, [x9], #16
+ALTERNATE_ENTRY Load_X5_X6
     ldp x5, x6, [x9], #16
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -1051,149 +1099,17 @@ LEAF_END Load_X1_X2_X3_X4_X5_X6
 
 LEAF_ENTRY Load_X1_X2_X3_X4_X5_X6_X7
     ldp x1, x2, [x9], #16
+ALTERNATE_ENTRY Load_X3_X4_X5_X6_X7
     ldp x3, x4, [x9], #16
+ALTERNATE_ENTRY Load_X5_X6_X7
     ldp x5, x6, [x9], #16
+ALTERNATE_ENTRY Load_X7
     ldr x7, [x9], #8
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Load_X1_X2_X3_X4_X5_X6_X7
 
-LEAF_ENTRY Load_X2
-    ldr x2, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X2
-LEAF_ENTRY Load_X2_X3
-    ldp x2, x3, [x9], #16
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X2_X3
-
-LEAF_ENTRY Load_X2_X3_X4
-    ldp x2, x3, [x9], #16
-    ldr x4, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X2_X3_X4
-
-LEAF_ENTRY Load_X2_X3_X4_X5
-    ldp x2, x3, [x9], #16
-    ldp x4, x5, [x9], #16
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X2_X3_X4_X5
-
-LEAF_ENTRY Load_X2_X3_X4_X5_X6
-    ldp x2, x3, [x9], #16
-    ldp x4, x5, [x9], #16
-    ldr x6, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X2_X3_X4_X5_X6
-
-LEAF_ENTRY Load_X2_X3_X4_X5_X6_X7
-    ldp x2, x3, [x9], #16
-    ldp x4, x5, [x9], #16
-    ldp x6, x7, [x9], #16
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X2_X3_X4_X5_X6_X7
-
-LEAF_ENTRY Load_X3
-    ldr x3, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X3
-LEAF_ENTRY Load_X3_X4
-    ldp x3, x4, [x9], #16
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X3_X4
-
-LEAF_ENTRY Load_X3_X4_X5
-    ldp x3, x4, [x9], #16
-    ldr x5, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X3_X4_X5
-
-LEAF_ENTRY Load_X3_X4_X5_X6
-    ldp x3, x4, [x9], #16
-    ldp x5, x6, [x9], #16
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X3_X4_X5_X6
-
-LEAF_ENTRY Load_X3_X4_X5_X6_X7
-    ldp x3, x4, [x9], #16
-    ldp x5, x6, [x9], #16
-    ldr x7, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X3_X4_X5_X6_X7
-
-LEAF_ENTRY Load_X4
-    ldr x4, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X4
-
-LEAF_ENTRY Load_X4_X5
-    ldp x4, x5, [x9], #16
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X4_X5
-
-LEAF_ENTRY Load_X4_X5_X6
-    ldp x4, x5, [x9], #16
-    ldr x6, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X4_X5_X6
-
-LEAF_ENTRY Load_X4_X5_X6_X7
-    ldp x4, x5, [x9], #16
-    ldp x6, x7, [x9], #16
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X4_X5_X6_X7
-
-LEAF_ENTRY Load_X5
-    ldr x5, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X5
-
-LEAF_ENTRY Load_X5_X6
-    ldp x5, x6, [x9], #16
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X5_X6
-
-LEAF_ENTRY Load_X5_X6_X7
-    ldp x5, x6, [x9], #16
-    ldr x7, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X5_X6_X7
-
-LEAF_ENTRY Load_X6
-    ldr x6, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X6
-
-LEAF_ENTRY Load_X6_X7
-    ldp x6, x7, [x9], #16
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X6_X7
-
-LEAF_ENTRY Load_X7
-    ldr x7, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_X7    
+// Routines for passing arguments in floating point registers D0..D7
 
 LEAF_ENTRY Load_D0
     ldr d0, [x9], #8
@@ -1282,27 +1198,7 @@ ALTERNATE_ENTRY Load_D6
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Load_D0_D1_D2_D3_D4_D5_D6
-/*
-LEAF_ENTRY Load_D0_D1_D2_D3_D4_D5_D6_D7
-    ldr d0, [x9], #8
-ALTERNATE_ENTRY Load_D1_D2_D3_D4_D5_D6_D7
-    ldr d1, [x9], #8
-ALTERNATE_ENTRY Load_D2_D3_D4_D5_D6_D7
-    ldr d2, [x9], #8
-ALTERNATE_ENTRY Load_D3_D4_D5_D6_D7
-    ldr d3, [x9], #8
-ALTERNATE_ENTRY Load_D4_D5_D6_D7
-    ldr d4, [x9], #8
-ALTERNATE_ENTRY Load_D5_D6_D7
-    ldr d5, [x9], #8
-ALTERNATE_ENTRY Load_D6_D7
-    ldr d6, [x9], #8
-ALTERNATE_ENTRY Load_D7
-    ldr d7, [x9], #8
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-LEAF_END Load_D0_D1_D2_D3_D4_D5_D6_D7
-*/
+
 LEAF_ENTRY Load_D0_D1_D2_D3_D4_D5_D6_D7
     ldp d0, d1, [x9], #16
 ALTERNATE_ENTRY Load_D2_D3_D4_D5_D6_D7
@@ -1325,7 +1221,12 @@ ALTERNATE_ENTRY Load_D7
     ldr d7, [x9], #8
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
-LEAF_END Load_D0_D1_D2_D3_D4_D5_D6_D7
+LEAF_END Load_D1_D2_D3_D4_D5_D6_D7
+
+// Functions to invoke a sequence of routines to:
+// 1. load arguments from the interpreter stack to registers / stack based on the calling convention
+// 2. call the target method
+// 3. put the return value of the target method to the interpreter stack
 
 // X0 - routines array
 // X1 - interpreter stack args location
@@ -1337,8 +1238,9 @@ NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
 // X0 - routines array
@@ -1353,8 +1255,9 @@ NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
     mov x8, x2
     ldr x11, [x10], #8
     blr x11
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRetBuff, _TEXT
 
 // X0 - routines array
@@ -1371,8 +1274,9 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     blr x11
     ldr x2, [sp, #16]
     str x0, [x2]
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRetI8, _TEXT
 
 // X0 - routines array
@@ -1389,8 +1293,9 @@ NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
     blr x11
     ldr x2, [sp, #16]
     stp x0, x1, [x2]
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRet2I8, _TEXT
 
 // X0 - routines array
@@ -1407,8 +1312,9 @@ NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
     blr x11
     ldr x2, [sp, #16]
     str d0, [x2]
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRetDouble, _TEXT
 
 // X0 - routines array
@@ -1425,8 +1331,9 @@ NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
     blr x11
     ldr x2, [sp, #16]
     stp d0, d1, [x2]
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRet2Double, _TEXT
 
 // X0 - routines array
@@ -1444,8 +1351,9 @@ NESTED_ENTRY CallJittedMethodRet3Double, _TEXT, NoHandler
     ldr x2, [sp, #16]
     stp d0, d1, [x2], #16
     str d2, [x2]
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRet3Double, _TEXT
 
 // X0 - routines array
@@ -1463,8 +1371,9 @@ NESTED_ENTRY CallJittedMethodRet4Double, _TEXT, NoHandler
     ldr x2, [sp, #16]
     stp d0, d1, [x2], #16
     stp d2, d3, [x2]
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRet4Double, _TEXT
 
 // X0 - routines array
@@ -1481,8 +1390,9 @@ NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
     blr x11
     ldr x2, [sp, #16]
     str s0, [x2]
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRetFloat, _TEXT
 
 // X0 - routines array
@@ -1499,8 +1409,9 @@ NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
     blr x11
     ldr x2, [sp, #16]
     stp s0, s1, [x2]
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRet2Float, _TEXT
 
 // X0 - routines array
@@ -1518,8 +1429,9 @@ NESTED_ENTRY CallJittedMethodRet3Float, _TEXT, NoHandler
     ldr x2, [sp, #16]
     stp s0, s1, [x2], #8
     str s2, [x2]
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRet3Float, _TEXT
 
 // X0 - routines array
@@ -1537,6 +1449,7 @@ NESTED_ENTRY CallJittedMethodRet4Float, _TEXT, NoHandler
     ldr x2, [sp, #16]
     stp s0, s1, [x2], #8
     stp s2, s3, [x2]
+    EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
-    ret lr
+    EPILOG_RETURN
 NESTED_END CallJittedMethodRet4Float, _TEXT

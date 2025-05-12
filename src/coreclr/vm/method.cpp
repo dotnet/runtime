@@ -254,7 +254,7 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
 }
 
 #ifdef FEATURE_INTERPRETER
-HRESULT MethodDesc::SetCallStubHeader(CallStubHeader *pHeader)
+HRESULT MethodDesc::SetCallStub(CallStubHeader *pHeader)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -262,20 +262,20 @@ HRESULT MethodDesc::SetCallStubHeader(CallStubHeader *pHeader)
     IfFailRet(EnsureCodeDataExists(NULL));
 
     _ASSERTE(m_codeData != NULL);
-    if (InterlockedCompareExchangeT(&m_codeData->CallStubHeader, pHeader, NULL) != NULL)
+    if (InterlockedCompareExchangeT(&m_codeData->CallStub, pHeader, NULL) != NULL)
         return S_FALSE;
 
     return S_OK;
 }
 
-CallStubHeader *MethodDesc::GetCallStubHeader()
+CallStubHeader *MethodDesc::GetCallStub()
 {
     WRAPPER_NO_CONTRACT;
 
     PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
     if (codeData == NULL)
         return NULL;
-    return VolatileLoadWithoutBarrier(&codeData->CallStubHeader);
+    return VolatileLoadWithoutBarrier(&codeData->CallStub);
 }
 #endif // FEATURE_INTERPRETER
 

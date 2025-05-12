@@ -628,6 +628,9 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         FUNCLET_CALL_EPILOGUE
         ret
 NESTED_END CallEHFilterFunclet, _TEXT
+
+; Copy arguments from the interpreter stack to the processor stack.
+; The CPU stack slots are aligned to pointer size.
 LEAF_ENTRY Load_Stack, _TEXT
         push rdi
         push rsi
@@ -646,6 +649,8 @@ LEAF_ENTRY Load_Stack, _TEXT
         add r11, 16
         jmp qword ptr [r11]
 LEAF_END Load_Stack, _TEXT
+
+; Routines for passing value type arguments by reference in general purpose registers RCX, RDX, R8, R9
 
 LEAF_ENTRY Load_Ref_RCX, _TEXT
         mov rcx, r10
@@ -674,6 +679,8 @@ LEAF_ENTRY Load_Ref_R9, _TEXT
         add r11, 16
         jmp qword ptr [r11]
 LEAF_END Load_Ref_R9, _TEXT
+
+; Routines for passing arguments by value in general purpose registers RCX, RDX, R8, R9
 
 LEAF_ENTRY Load_RCX, _TEXT
         mov rcx, [r10]
@@ -754,6 +761,8 @@ LEAF_ENTRY Load_R9, _TEXT
         add r11, 8
         jmp qword ptr [r11]
 LEAF_END Load_R9, _TEXT
+
+; Routines for passing arguments in floating point registers XMM0..XMM3
 
 LEAF_ENTRY Load_XMM0, _TEXT
         movsd xmm0, real8 ptr [r10]
@@ -865,28 +874,40 @@ END_PROLOGUE
 NESTED_END CallJittedMethodRetBuff, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT
+        push_nonvol_reg rbp
+        mov  rbp, rsp
         push_vol_reg r8
-        alloc_stack 20h
+        push_vol_reg rax ; align
 END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
         mov r11, rcx ; The routines list
         mov r10, rdx ; interpreter stack args
         call qword ptr [r11]
         add rsp, 20h
-        pop r8
+        mov r8, [rbp - 8]
         movsd real8 ptr [r8], xmm0
+        mov rsp, rbp
+        pop rbp
         ret
 NESTED_END CallJittedMethodRetDouble, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT
+        push_nonvol_reg rbp
+        mov  rbp, rsp
         push_vol_reg r8
-        alloc_stack 20h
+        push_vol_reg rax ; align
 END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
         mov r11, rcx ; The routines list
         mov r10, rdx ; interpreter stack args
         call qword ptr [r11]
         add rsp, 20h
-        pop r8
+        mov r8, [rbp - 8]
         mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
         ret
 NESTED_END CallJittedMethodRetI8, _TEXT
 

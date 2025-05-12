@@ -107,13 +107,6 @@ extern "C" void Load_R8();
 extern "C" void Load_R8_R9();
 extern "C" void Load_R9();
 
-extern "C" void Load_Ref_RDI();
-extern "C" void Load_Ref_RSI();
-extern "C" void Load_Ref_RDX();
-extern "C" void Load_Ref_RCX();
-extern "C" void Load_Ref_R8();
-extern "C" void Load_Ref_R9();
-
 PCODE GPRegsRoutines[] =
 {
     (PCODE)Load_RDI,                    // 00
@@ -517,13 +510,6 @@ PCODE GetFPRegRangeLoadRoutine(int x1, int x2)
     return FPRegsRoutines[index];
 }
 
-PCODE GetStackRangeLoadRoutine(int s1, int s2)
-{
-    // Stack range is not supported yet
-    assert(!"Stack range is not supported yet");
-    return NULL;
-}
-
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
@@ -547,30 +533,66 @@ extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*
 extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 #endif // TARGET_ARM64
 
+// Generate the call stub for the given method.
+// The returned call stub header must be freed by the caller using FreeCallStub.
 CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_ANY;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+        PRECONDITION(CheckPointer(pMD));
+    }
+    CONTRACTL_END
+
     MetaSig sig(pMD);
     ArgIterator argIt(&sig);
-    int ofs = 0;
-    DWORD arg = 0;
-    m_r1 = argIt.HasThis() ? 0 :  NO_RANGE; // The "this" argument register is not enumerated by the arg iterator.
+
+    m_r1 = NoRange; // indicates that there is no active range of general purpose registers
     m_r2 = 0;
-    m_x1 = NO_RANGE; // indicates that there is no active range of FP registers
+    m_x1 = NoRange; // indicates that there is no active range of FP registers
     m_x2 = 0;
-    m_s1 = NO_RANGE; // indicates that there is no active range of stack arguments
+    m_s1 = NoRange; // indicates that there is no active range of stack arguments
     m_s2 = 0;
     m_routineIndex = 0;
     m_totalStackSize = 0;
+
     int numArgs = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0);
-    
+
+    if (argIt.HasThis())
+    {
+        // The "this" argument register is not enumerated by the arg iterator, so
+        // we need to "inject" it here.
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+        if (argIt.HasRetBuffArg())
+        {
+            // The return buffer on Windows AMD64 is passed in the first argument register, so the
+            // "this" argument is be passed in the second argument register.
+            m_r1 = 1;
+        }
+        else
+#endif // TARGET_WINDOWS && TARGET_AMD64
+        {
+            // The "this" pointer is passed in the first argument register.
+            m_r1 = 0;
+        }
+    }
+
     // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
     // plus one slot for the target pointer and reallocated to the real size at the end.
 
-    // Interpreter-TODO: handle OOM here and at the realloc
     m_pHeader = (CallStubHeader*)malloc(sizeof(CallStubHeader) + (2 * numArgs + 1) * sizeof(PCODE));
+    if (m_pHeader == NULL)
+    {
+        return NULL;
+    }
+
     PCODE *routines = m_pHeader->Routines;
 
-    for (; TransitionBlock::InvalidOffset != (ofs = argIt.GetNextOffset()); arg++)
+    int ofs;
+    while ((ofs = argIt.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
         ArgLocDesc argLocDesc;
         argIt.GetArgLoc(ofs, &argLocDesc);
@@ -628,15 +650,16 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
     }
 
     // All arguments were processed, but there is likely a pending ranges to store.
-    if (m_r1 != NO_RANGE)
+    // Process such a range if any.
+    if (m_r1 != NoRange)
     {
         routines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
     }
-    else if (m_x1 != NO_RANGE)
+    else if (m_x1 != NoRange)
     {
         routines[m_routineIndex++] = GetFPRegRangeLoadRoutine(m_x1, m_x2);
     }
-    else if (m_s1 != NO_RANGE)
+    else if (m_s1 != NoRange)
     {
         m_totalStackSize += m_s2 - m_s1 + 1;
         routines[m_routineIndex++] = (PCODE)Load_Stack;
@@ -821,38 +844,44 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
     m_pHeader->NumRoutines = m_routineIndex + 1; // Reserve one extra slot for the target method pointer
     m_pHeader->TotalStackSize = m_totalStackSize;
 
-    // resize the structure to its actually used size
-    return (CallStubHeader*)realloc(m_pHeader, sizeof(CallStubHeader) + m_pHeader->NumRoutines * sizeof(PCODE));
+    // resize the structure to its actually utilized size
+    m_pHeader = (CallStubHeader*)realloc(m_pHeader, sizeof(CallStubHeader) + m_pHeader->NumRoutines * sizeof(PCODE));
+    // In case the reallocation failed, this function return NULL
+    return m_pHeader;
 }
 
+// Process the argument described by argLocDesc. This function is called for each argument in the method signature.
+// It updates the ranges of registers and emits entries into the routines array at discontinuities.
 void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDesc)
 {
+    LIMITED_METHOD_CONTRACT;
+
     PCODE *routines = m_pHeader->Routines;
 
     // Check if we have a range of registers or stack arguments that we need to store because the current argument
     // terminates it.
-    if ((argLocDesc.m_cGenReg == 0) && (m_r1 != NO_RANGE))
+    if ((argLocDesc.m_cGenReg == 0) && (m_r1 != NoRange))
     {
         // No GP register is used to pass the current argument, but we already have a range of GP registers,
         // store the routine for the range
         routines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
-        m_r1 = NO_RANGE;
+        m_r1 = NoRange;
     }
-    else if (((argLocDesc.m_cFloatReg == 0)) && (m_x1 != NO_RANGE))
+    else if (((argLocDesc.m_cFloatReg == 0)) && (m_x1 != NoRange))
     {
         // No floating point register is used to pass the current argument, but we already have a range of FP registers,
         // store the routine for the range
         routines[m_routineIndex++] = GetFPRegRangeLoadRoutine(m_x1, m_x2);
-        m_x1 = NO_RANGE;
+        m_x1 = NoRange;
     }
-    else if ((argLocDesc.m_byteStackSize == 0) && (m_s1 != NO_RANGE))
+    else if ((argLocDesc.m_byteStackSize == 0) && (m_s1 != NoRange))
     {
         // No stack argument is used to pass the current argument, but we already have a range of stack arguments,
         // store the routine for the range
         m_totalStackSize += m_s2 - m_s1 + 1;
         routines[m_routineIndex++] = (PCODE)Load_Stack;
         routines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
-        m_s1 = NO_RANGE;
+        m_s1 = NoRange;
     }
 
     if (argLocDesc.m_cGenReg != 0)
@@ -860,12 +889,12 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
 #ifndef UNIX_AMD64_ABI
         if (argIt.IsArgPassedByRef())
         {
-            if (m_r1 != NO_RANGE)
+            if (m_r1 != NoRange)
             {
                 // The args passed by reference use a separate routine, so we need to flush the existing range
                 // of general purpose registers if we have one.
                 routines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
-                m_r1 = NO_RANGE;
+                m_r1 = NoRange;
             }
             // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
             // So the argument loading routine needs to load the address of the argument. To avoid explosion of number of the routines,
@@ -876,7 +905,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
         else
 #endif // UNIX_AMD64_ABI
         {
-            if (m_r1 == NO_RANGE) // No active range yet
+            if (m_r1 == NoRange) // No active range yet
             {
                 // Start a new range
                 m_r1 = argLocDesc.m_idxGenReg;
@@ -899,7 +928,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
 
     if (argLocDesc.m_cFloatReg != 0)
     {
-        if (m_x1 == NO_RANGE) // No active range yet
+        if (m_x1 == NoRange) // No active range yet
         {
             // Start a new range
             m_x1 = argLocDesc.m_idxFloatReg;
@@ -921,15 +950,23 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
 
     if (argLocDesc.m_byteStackSize != 0)
     {
-        if (m_s1 == NO_RANGE) // No active range yet
+        if (m_s1 == NoRange) // No active range yet
         {
             // Start a new range
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         } 
-        else if (argLocDesc.m_byteStackIndex == m_s2 + 1)
+        else if (argLocDesc.m_byteStackIndex == m_s2 + 1
+#ifdef TARGET_APPLE
+                 && ((m_s2 - m_s1 + 1) >= sizeof(void*))
+#endif // TARGET_APPLE
+                )
         {
-            // Extend an existing range
+            // Extend an existing range, but only if the previous range was at least pointer size large.
+            // The only case when this is not true is on arm64 Apple OSes where types smaller than 8 bytes
+            // are passed on the stack in a packed manner. We process such arguments one by one to avoid
+            // explosion of the number of routines. The interpreter stack has pointer size alignment for
+            // all types of arguments.
             m_s2 += argLocDesc.m_byteStackSize;
         }
         else
@@ -944,8 +981,19 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
     }
 }
 
+// Free the call stub header generated by GenerateCallStub.
 void CallStubGenerator::FreeCallStub(CallStubHeader *pHeader)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_ANY;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+        PRECONDITION(CheckPointer(pHeader));
+    }
+    CONTRACTL_END
+
     free(pHeader);
 }
 

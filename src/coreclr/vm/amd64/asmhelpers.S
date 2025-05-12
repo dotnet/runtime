@@ -452,6 +452,9 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         FUNCLET_CALL_EPILOGUE
         ret
 NESTED_END CallEHFilterFunclet, _TEXT
+
+// Copy arguments from the interpreter stack to the processor stack.
+// The CPU stack slots are aligned to pointer size.
 LEAF_ENTRY Load_Stack, _TEXT
         push rdi
         push rsi
@@ -471,47 +474,7 @@ LEAF_ENTRY Load_Stack, _TEXT
         jmp qword ptr [r11]
 LEAF_END Load_Stack, _TEXT
 
-LEAF_ENTRY Load_Ref_RDI, _TEXT
-        mov rdi, r10
-        add r10, [r11 + 8]
-        add r11, 16
-        jmp qword ptr [r11]
-LEAF_END Load_Ref_RDI, _TEXT
-
-LEAF_ENTRY Load_Ref_RSI, _TEXT
-        mov rsi, r10
-        add r10, [r11 + 8]
-        add r11, 16
-        jmp qword ptr [r11]
-LEAF_END Load_Ref_RSI, _TEXT
-
-LEAF_ENTRY Load_Ref_RDX, _TEXT
-        mov rdx, r10
-        add r10, [r11 + 8]
-        add r11, 16
-        jmp qword ptr [r11]
-LEAF_END Load_Ref_RDX, _TEXT
-
-LEAF_ENTRY Load_Ref_RCX, _TEXT
-        mov rcx, r10
-        add r10, [r11 + 8]
-        add r11, 16
-        jmp qword ptr [r11]
-LEAF_END Load_Ref_RCX, _TEXT
-
-LEAF_ENTRY Load_Ref_R8, _TEXT
-        mov r8, r10
-        add r10, [r11 + 8]
-        add r11, 16
-        jmp qword ptr [r11]
-LEAF_END Load_Ref_R8, _TEXT
-
-LEAF_ENTRY Load_Ref_R9, _TEXT
-        mov r9, r10
-        add r10, [r11 + 8]
-        add r11, 16
-        jmp qword ptr [r11]
-LEAF_END Load_Ref_R9, _TEXT
+// Routines for passing arguments by value in general purpose registers RDI, RSI, RDX, RCX, R8, R9
 
 LEAF_ENTRY Load_RDI, _TEXT
         mov rdi, [r10]
@@ -711,6 +674,8 @@ LEAF_ENTRY Load_R9, _TEXT
         add r11, 8
         jmp qword ptr [r11]
 LEAF_END Load_R9, _TEXT
+
+// Routines for passing arguments in floating point registers XMM0..XMM7
 
 LEAF_ENTRY Load_XMM0, _TEXT
         movsd xmm0, real8 ptr [r10]
@@ -1050,7 +1015,6 @@ LEAF_END Load_XMM7, _TEXT
 
 
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
-// TODO: decide whether to create RBP frame everywhere or not
         push_nonvol_reg rbp
         mov  rbp, rsp
         alloc_stack 0x10
@@ -1142,6 +1106,10 @@ NESTED_ENTRY CallJittedMethodRetI8Double, _TEXT, NoHandler
         push_register rdx
         push_register rax // align
 END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
         mov rcx, [rbp - 8]
         mov qword ptr [rcx], rax
         movsd real8 ptr [rcx + 8], xmm0
@@ -1156,6 +1124,10 @@ NESTED_ENTRY CallJittedMethodRetDoubleI8, _TEXT, NoHandler
         push_register rdx
         push_register rax // align
 END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
         mov rcx, [rbp - 8]
         movsd real8 ptr [rcx], xmm0
         mov qword ptr [rcx + 8], rax
@@ -1170,6 +1142,10 @@ NESTED_ENTRY CallJittedMethodRetDoubleDouble, _TEXT, NoHandler
         push_register rdx
         push_register rax // align
 END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
         mov rcx, [rbp - 8]
         movsd real8 ptr [rcx], xmm0
         movsd real8 ptr [rcx + 8], xmm1

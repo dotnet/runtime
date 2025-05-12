@@ -234,7 +234,7 @@ struct MethodDescCodeData final
     PTR_MethodDescVersioningState VersioningState;
     PCODE TemporaryEntryPoint;
 #ifdef FEATURE_INTERPRETER
-    CallStubHeader *CallStubHeader;
+    CallStubHeader *CallStub;
 #endif // FEATURE_INTERPRETER
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
@@ -1821,8 +1821,8 @@ public:
 
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
 #ifdef FEATURE_INTERPRETER
-    HRESULT SetCallStubHeader(CallStubHeader *pHeader);
-    CallStubHeader *GetCallStubHeader();
+    HRESULT SetCallStub(CallStubHeader *pHeader);
+    CallStubHeader *GetCallStub();
 #endif // FEATURE_INTERPRETER
 
 #endif //!DACCESS_COMPILE
