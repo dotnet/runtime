@@ -299,8 +299,8 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="IReadOnlyTensor.FlattenedLength" />
         public nint FlattenedLength => _shape.FlattenedLength;
 
-        /// <inheritdoc cref="IReadOnlyTensor.HasAnyDenseDimension" />
-        public bool HasAnyDenseDimension => _shape.HasAnyDenseDimension;
+        /// <inheritdoc cref="IReadOnlyTensor.HasAnyDenseDimensions" />
+        public bool HasAnyDenseDimensions => _shape.HasAnyDenseDimensions;
 
         /// <inheritdoc cref="IReadOnlyTensor.IsDense" />
         public bool IsDense => _shape.IsDense;

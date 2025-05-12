@@ -1589,7 +1589,7 @@ namespace System.Numerics.Tensors
             if (tensor.Lengths.SequenceEqual(lengths))
                 return tensor;
 
-            if (!tensor.IsContiguousAndDense && !tensor.Strides.Contains(0))
+            if (!tensor.IsDense && !tensor.Strides.Contains(0))
             {
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
