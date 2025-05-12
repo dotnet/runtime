@@ -723,7 +723,7 @@ namespace Internal.IL
             for (int i = beginIndex; i < stubArgCount; ++i)
             {
                 codeStream.EmitLdArg(i);
-                if (context.ReplacedSignatureElements[i + 1])
+                if (context.ReplacedSignatureElements?[i + 1] == true)
                 {
                     if (context.DeclarationSignature[i] is { Category: TypeFlags.Class } classType)
                     {
