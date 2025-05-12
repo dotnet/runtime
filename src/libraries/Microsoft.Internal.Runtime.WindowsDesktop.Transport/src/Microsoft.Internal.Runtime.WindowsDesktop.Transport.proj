@@ -45,7 +45,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <TransportPropsTemplateProperty Include="RuntimeWindowsDesktopPackageLibrary=$(RuntimeWindowsDesktopPackageLibraryContent)" />
+      <TransportPropsTemplateProperty Include="RuntimeWindowsDesktopPackageLibraries=$(RuntimeWindowsDesktopPackageLibraryContent)" />
     </ItemGroup>
 
     <GenerateFileFromTemplate
