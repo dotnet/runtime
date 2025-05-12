@@ -2007,6 +2007,7 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     assert(op1->TypeGet() == tree->TypeGet());
     RefPosition* internalFloatDef = nullptr;
     bool         useEvex          = compiler->canUseEvexEncoding();
+    bool canUseApxRegs = (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding());
 
     switch (tree->AsIntrinsic()->gtIntrinsicName)
     {
@@ -2049,20 +2050,26 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
         SingleTypeRegSet op1RegCandidates = RBM_NONE;
 
         // op1RegCandidates = BuildApxIncompatibleGPRMask(op1, op1RegCandidates);
-        if (!useEvex)
+        switch (tree->AsIntrinsic()->gtIntrinsicName)
         {
-            switch (tree->AsIntrinsic()->gtIntrinsicName)
+            case NI_System_Math_Ceiling:
+            case NI_System_Math_Floor:
+            case NI_System_Math_Truncate:
+            case NI_System_Math_Round:
+            case NI_System_Math_Sqrt:
             {
-                case NI_System_Math_Ceiling:
-                case NI_System_Math_Floor:
-                {
-                    op1RegCandidates = BuildApxIncompatibleGPRMask(op1);
-                    break;
-                }
-                default:
-                {
-                    op1RegCandidates = BuildEvexIncompatibleMask(op1);
-                }
+                op1RegCandidates = BuildApxIncompatibleGPRMask(op1);
+                break;
+            }
+            case NI_System_Math_Abs:
+            {
+                op1RegCandidates = canUseApxRegs ? op1RegCandidates : BuildApxIncompatibleGPRMask(op1);
+            }
+            default:
+            {
+                noway_assert(!"Unsupported math intrinsic");
+                unreached();
+                break;
             }
         }
 
@@ -2077,14 +2084,7 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     {
         buildInternalRegisterUses();
     }
-    if (useEvex)
-    {
-        BuildDef(tree);
-    }
-    else
-    {
-        BuildDef(tree, BuildEvexIncompatibleMask(tree));
-    }
+    BuildDef(tree, BuildEvexIncompatibleMask(tree));
     return srcCount;
 }
 
