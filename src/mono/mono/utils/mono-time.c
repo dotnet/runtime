@@ -15,11 +15,6 @@
 #include <sys/time.h>
 #endif
 
-#ifdef HOST_DARWIN
-#include <mach/clock.h>
-#include <mach/mach.h>
-#endif
-
 
 #include <mono/utils/mono-time.h>
 #include <mono/utils/atomic.h>
@@ -46,11 +41,6 @@ mono_msec_ticks (void)
 
 #ifdef HOST_WIN32
 #include <windows.h>
-
-#ifndef _MSC_VER
-/* we get "error: implicit declaration of function 'GetTickCount64'" */
-WINBASEAPI ULONGLONG WINAPI GetTickCount64(void);
-#endif
 
 /* Returns the number of 100ns ticks from unspecified time: this should be monotonic */
 gint64
