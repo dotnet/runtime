@@ -519,8 +519,12 @@ async function instantiate_wasm_module (
 }
 
 async function ensureUsedWasmFeatures () {
-    runtimeHelpers.featureWasmSimd = await loaderHelpers.simd();
-    runtimeHelpers.featureWasmEh = await loaderHelpers.exceptions();
+    const simd = loaderHelpers.simd();
+    const relaxedSimd = loaderHelpers.relaxedSimd();
+    const exceptions = loaderHelpers.exceptions();
+    runtimeHelpers.featureWasmSimd = await simd;
+    runtimeHelpers.featureWasmRelaxedSimd = await relaxedSimd;
+    runtimeHelpers.featureWasmEh = await exceptions;
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableSIMD) {
         mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
